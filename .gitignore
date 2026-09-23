@@ -1,0 +1,30 @@
+# devkitPro build outputs
+build/
+*.elf
+*.3dsx
+*.smdh
+*.cia
+*.bnr
+*.map
+*.t3x
+*.shbin
+
+# PC tests
+tests/*.exe
+tests/*.o
+
+# Large source audio (only processed .ogg files are committed)
+assets/audio/music/source/
+*.seam-preview.wav
+
+# Blender backups and exports scratch
+*.blend1
+tools/blender/out/
+
+# Python / editors / OS
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -556,9 +556,25 @@ void update(App& app, const Input& in) {
     }
 }
 
+// While its profile is open (WP8): the dragon posing, turning slowly in its heartglow's light.
+void drawProfileTop(App& app, const Dragon& d, s64 now) {
+    const Rgb glow = heartglowColor(static_cast<Element>(d.genome.elementA));
+    verticalGradient(0, 0, kTopW, kScreenH, theme::rgba(40, 28, 52), theme::kDenPlum);
+    C2D_DrawEllipseSolid(80, 150, 0, 240, 70, withAlpha(fromRgb(glow), 0.18f));
+    C2D_DrawEllipseSolid(130, 196, 0, 140, 22, withAlpha(theme::rgba(0, 0, 0), 0.25f));
+    if (r3d::ready()) r3d::drawShowcase(app, d, nullptr, now, 0.6f * std::sin(app.t * 0.35f));
+    char line[64];
+    std::snprintf(line, sizeof(line), "%s  -  %s %s", d.name, breedName(d.genome), stageName(d.stage));
+    textCentered(app, line, 200, 18, 0.6f, theme::kClutchGold, 380, Face::Title);
+}
+
 void drawTop(App& app) {
     const Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
+    if (app.care.profileOpen && d.stage != Stage::Egg && !app.hatch.active) {
+        drawProfileTop(app, d, now);
+        return;
+    }
     const bool room = r3d::ready() && r3d::roomReady();
     if (room) {
         const u32 dark = r3d::backdrop(now);  // the dark beyond the cutaway room

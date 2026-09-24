@@ -71,7 +71,8 @@ struct CareState {
     int sampleCount = 0;
     CareFx fx[64];
     int fxCount = 0;
-    bool profileOpen = false;    // the little profile card (tap the heartglow): name, rename
+    bool profileOpen = false;    // the profile (tap the heartglow): about it, its family (WP8)
+    u8 profileTab = 0;           // 0 about, 1 family
     // Toys (Alpha 2 WP7): the one in the tray's last slot, and its picker row.
     Tool toy = Tool::Ball;
     bool toyRow = false;
@@ -190,6 +191,8 @@ struct App {
     int wanderPick = -1;
     WanderFinds finds;
     int findsFrom = -1;  // who found them (SaveData index), -1: nothing to show
+    bool storeProfile = false;  // the Sanctuary / Cold Vault: the picked one's profile (WP8)
+    u8 storeProfileTab = 0;
     u8 marketTab = 0;    // the Market: food, goods, sell, the egg of the day
     u8 goodsPick = 0;    // the Market's goods (WP7): the item picked (core/items Item)...
     u8 goodsPage = 0;    // ...and the page of the stall

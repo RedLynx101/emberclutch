@@ -4,7 +4,7 @@ Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 done: the den of three 
 and two eggs (D53), and their life together. WP2 done (the Sanctuary and Cold Vault), with
 a first world map. WP3 done (breeding at the Nesting Stone). WP4 done (the Wanderings).
 WP5 done (the Market, Gleam and the pouch). WP6 done (the map's trips). WP7 done (toys and
-decor). Goal (D31): complete through Alpha 2. Scope and assets:
+decor). WP8 done (the profile and family tree). Goal (D31): complete through Alpha 2. Scope and assets:
 [content & assets](content-and-assets.md) (A2 rows); screens: [screens & flow](../design/screens-and-flow.md).
 
 **The order matters** (Noah, 2026-09-24): everything that doesn't depend on how the
@@ -130,6 +130,16 @@ Worked through alone, package by package (D49).
 ### WP8 — Dragon profile and family tree
 - Name, breed, sex, stage, personality, stats, the sweet spot once found, parents and
   grandparents.
+- *Done:* `src/core/profile.*` (trait names, Wing / Wit / Spark from the breed's aptitudes
+  and the stage until training grows them in Beta, the sweet spot as a place, the family:
+  parents, grandparents, young; PC-tested). Each dragon now remembers where its egg came
+  from (first egg, the Nesting Stone, a wild egg, the Market) and what you've found out
+  (its sweet spot, its favourite food; the first find says where it is). The heartglow
+  opens the full profile: About (identity, bond hearts, stats, looks, the discoveries) and
+  Family (a three-generation tree, or the egg's story), with Rename and To the Sanctuary;
+  the top screen shows the dragon posing in its heartglow's light. The Sanctuary and the
+  Cold Vault open the same pages for the one picked (an egg's family, too). Dev menu page 2:
+  Add family. `tests/autotest/profile.txt`.
 
 ### WP9 — Sounds
 - Wire in the [sound brief 2](../audio/sfx-batch-2.md) sounds as they arrive

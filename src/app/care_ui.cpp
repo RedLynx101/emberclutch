@@ -9,8 +9,10 @@
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
+#include "core/egg.hpp"
 #include "core/genetics.hpp"
 #include "core/market.hpp"
+#include "core/profile.hpp"
 #include "care.h"      // sprite indices (gfx/care.t3s, tools/blender/care_sprites.py)
 #include "care_t3x.h"  // the sprite atlas, linked into the program
 
@@ -190,7 +192,9 @@ void useHand(App& app, const Input& in, Dragon& d, bool hit, const TouchHit& h, 
             if (!c.sweetFound) {
                 c.sweetFound = true;
                 addBond(d, 3);
-                showToast(app, str::kSweetSpot);
+                if (!(d.known & kKnownSweetSpot)) showToastf(app, str::kFoundSweetSpot, sweetSpotText(d));
+                else showToast(app, str::kSweetSpot);
+                d.known |= kKnownSweetSpot;  // (the profile shows it from now on)
             }
         }
     } else {
@@ -226,6 +230,7 @@ void useFood(App& app, const Input& in, Dragon& d) {
     audio::playSfx(audio::Sfx::Munch);
     emit(app, kFxCrumb, mouth, 5);
     const bool favourite = taste == Taste::Favorite;
+    if (favourite && static_cast<int>(c.food) == d.favoriteFood) d.known |= kKnownFavourite;
     if (c.bitesLeft <= 0) {
         c.holdingFood = false;
         feed(d, info.belly, favourite);
@@ -445,28 +450,119 @@ void selectTool(App& app, Dragon& d, Tool t) {
     audio::playSfx(audio::Sfx::Tap);
 }
 
-// The little profile card (tap the heartglow): who it is, and renaming (D27). Alpha 2's
-// Dragons tab grows this into the full profile.
-void drawProfile(App& app, const Input& in, const Dragon& d, s64 now) {
-    CareState& c = app.care;
-    panel({22, 34, 276, 166}, withAlpha(theme::kDenPlum, 0.94f));
-    text(app, d.name, 160, 42, 0.85f, theme::kClutchGold, C2D_AlignCenter, 200);
-    if (denRoster(app.game).presentCount() + denRoster(app.game).eggCount > 1) {  // the others in the den
-        if (button(app, {30, 42, 34, 28}, "<", in)) cycleCare(app, -1);
-        if (button(app, {256, 42, 34, 28}, ">", in)) cycleCare(app, 1);
+u32 glowOf(const Dragon& d, u8 alpha = 255) {
+    return fromRgb(heartglowColor(static_cast<Element>(d.genome.elementA)), alpha);
+}
+
+// One of the family: a heart in its colour, its name and breed (or "Unknown").
+void kinBox(App& app, Rect r, const SaveData& s, int who, const char* role) {
+    panel(r, withAlpha(theme::kShell, who >= 0 ? 0.16f : 0.07f));
+    if (who < 0) {
+        textCentered(app, role ? role : str::kUnknownKin, r.x + r.w / 2, r.y + r.h / 2, 0.36f, withAlpha(theme::kShell, 0.45f),
+                     r.w - 6);
+        return;
     }
-    char line[80];
-    std::snprintf(line, sizeof(line), "%s %s %s", sexName(d.sex), breedName(d.genome), stageName(d.stage));
-    text(app, line, 160, 74, 0.5f, theme::kShell);
-    std::snprintf(line, sizeof(line), "%s: %s", str::kPersonality, personalityName(d.personality));
-    text(app, line, 160, 94, 0.5f, theme::kShell);
-    std::snprintf(line, sizeof(line), "%s %d   -   %s %d", str::kBond, d.bond, str::kDay, daysSinceHatch(d, now) + 1);
-    text(app, line, 160, 114, 0.5f, theme::kShell);
-    if (button(app, {30, 150, 84, 36}, str::kRename, in)) {
+    const Dragon& k = s.dragons[who];
+    heart(r.x + 11, r.y + r.h / 2, 7, glowOf(k));
+    text(app, k.name, r.x + 20, r.y + 3, 0.38f, theme::kShell, C2D_AlignLeft, r.w - 23);
+    text(app, breedName(k.genome), r.x + 20, r.y + r.h / 2 + 1, 0.32f, withAlpha(theme::kShell, 0.7f), C2D_AlignLeft, r.w - 23);
+}
+
+void profileAbout(App& app, const Dragon& d, s64 now) {
+    char line[96];
+    if (d.stage == Stage::Egg) {  // what's inside is a surprise until it hatches
+        std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", breedName(d.genome), str::kEggSuffix,
+                      static_cast<int>(eggProgress(d) * 100), str::kIncubated);
+        textCentered(app, line, 160, 110, 0.5f, theme::kShell, 300);
+        textCentered(app, originText(d), 160, 134, 0.42f, withAlpha(theme::kShell, 0.75f), 300);
+        return;
+    }
+    std::snprintf(line, sizeof(line), "%s %s %s  -  %s %d", sexName(d.sex), breedName(d.genome), stageName(d.stage),
+                  str::kDay, daysSinceHatch(d, now) + 1);
+    textCentered(app, line, 160, 76, 0.46f, theme::kShell, 304);
+    std::snprintf(line, sizeof(line), "%s  -  %s", personalityName(d.personality), str::kBond);
+    const float w = textWidth(app, line, 0.44f);
+    text(app, line, 160 - (w + 70) / 2, 86, 0.44f, withAlpha(theme::kShell, 0.85f), C2D_AlignLeft);
+    for (int h = 0; h < 5; ++h)  // bond, a heart per 200
+        heart(160 - (w + 70) / 2 + w + 10 + h * 13, 94, 5.5f, d.bond >= (h + 1) * 200 ? glowOf(d) : withAlpha(theme::kShell, 0.25f));
+    // Stats (left) and looks (right).
+    const Stats st = statsOf(d);
+    const char* const names[3] = {str::kStatWing, str::kStatWit, str::kStatSpark};
+    const int values[3] = {st.wing, st.wit, st.spark};
+    for (int k = 0; k < 3; ++k) {
+        const float y = 110 + k * 16;
+        text(app, names[k], 14, y, 0.4f, theme::kShell, C2D_AlignLeft);
+        C2D_DrawRectSolid(56, y + 4, 0.5f, 90, 7, withAlpha(theme::kShell, 0.15f));
+        C2D_DrawRectSolid(56, y + 4, 0.5f, 90 * values[k] / 100.0f, 7, theme::kClutchGold);
+    }
+    const Genome& g = d.genome;
+    std::snprintf(line, sizeof(line), "%s build, %s horns", buildName(g.build), hornsName(g.horns));
+    text(app, line, 160, 110, 0.36f, theme::kShell, C2D_AlignLeft, 152);
+    std::snprintf(line, sizeof(line), "%s frill, %s wings", frillName(g.frill), wingsName(g.wings));
+    text(app, line, 160, 126, 0.36f, theme::kShell, C2D_AlignLeft, 152);
+    const char* rare = rareName(g.rareFlags);
+    std::snprintf(line, sizeof(line), "%s tail, %s%s%s", tailName(g.tailTip), patternName(g.pattern), rare ? ", " : "",
+                  rare ? rare : "");
+    text(app, line, 160, 142, 0.36f, theme::kShell, C2D_AlignLeft, 152);
+    // What you've found out.
+    if (d.known & kKnownSweetSpot) std::snprintf(line, sizeof(line), str::kSweetSpotIs, sweetSpotText(d));
+    else std::snprintf(line, sizeof(line), "%s", str::kSweetSpotUnknown);
+    textCentered(app, line, 160, 168, 0.4f, theme::kClutchGold, 300);
+    if ((d.known & kKnownFavourite) && d.favoriteFood < static_cast<int>(Food::Count))
+        std::snprintf(line, sizeof(line), str::kFavouriteIs, foodInfo(static_cast<Food>(d.favoriteFood)).name);
+    else std::snprintf(line, sizeof(line), "%s", str::kFavouriteUnknown);
+    textCentered(app, line, 160, 184, 0.4f, theme::kClutchGold, 300);
+}
+
+void profileFamily(App& app, const Dragon& d) {
+    const SaveData& s = app.game;
+    const Family f = familyOf(s, d);
+    const u32 line = withAlpha(theme::kShell, 0.35f);
+    const bool parents = f.mother >= 0 || f.father >= 0;
+    if (parents) {
+        const float gx[4] = {6, 84, 162, 240};  // grandparents, then parents under their pairs
+        for (int k = 0; k < 4; ++k) {
+            const float px = k < 2 ? 82 : 238;
+            C2D_DrawLine(gx[k] + 37, 104, line, px, 118, line, 1.5f, 0.5f);
+            kinBox(app, {gx[k], 70, 74, 34}, s, f.grand[k], nullptr);
+        }
+        C2D_DrawLine(82, 152, line, 160, 164, line, 1.5f, 0.5f);
+        C2D_DrawLine(238, 152, line, 160, 164, line, 1.5f, 0.5f);
+        kinBox(app, {27, 118, 110, 34}, s, f.mother, str::kMother);
+        kinBox(app, {183, 118, 110, 34}, s, f.father, str::kFather);
+    } else {
+        panel({30, 92, 260, 44}, withAlpha(theme::kShell, 0.1f));
+        textCentered(app, originText(d), 160, 114, 0.46f, theme::kShell, 250);
+        C2D_DrawLine(160, 136, line, 160, 164, line, 1.5f, 0.5f);
+    }
+    const Rect me{95, 164, 130, 32};
+    panel(me, withAlpha(theme::kClutchGold, 0.3f));
+    heart(me.x + 12, me.y + me.h / 2, 7.5f, glowOf(d));
+    text(app, d.name, me.x + 22, me.y + 2, 0.42f, theme::kShell, C2D_AlignLeft, me.w - 26);
+    char young[32];
+    if (f.young > 0) std::snprintf(young, sizeof(young), str::kYoungCount, f.young);
+    else std::snprintf(young, sizeof(young), "%s", breedName(d.genome));
+    text(app, young, me.x + 22, me.y + 17, 0.34f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, me.w - 26);
+}
+
+// The profile (tap the heartglow; WP8): about it (its looks, stats, what you've found out)
+// and its family; renaming (D27) and sending it to the Sanctuary. The top screen shows it posing.
+void drawProfile(App& app, const Input& in, Dragon& d, s64 now) {
+    CareState& c = app.care;
+    C2D_DrawRectSolid(0, 0, 0.5f, 320, 240, withAlpha(theme::kDenPlum, 0.97f));
+    glow(298, 16, 14, glowOf(d), heartglowLevel(d, app.t));
+    heart(298, 16, 11, glowOf(d));
+    textCentered(app, d.name, 150, 19, 0.8f, theme::kClutchGold, 180, Face::Title);
+    if (denRoster(app.game).presentCount() > 1) {  // the others in the den
+        if (button(app, {6, 4, 34, 28}, "<", in)) cycleCare(app, -1);
+        if (button(app, {240, 4, 34, 28}, ">", in)) cycleCare(app, 1);
+    }
+    drawProfilePages(app, in, d, now, c.profileTab);
+    if (button(app, {6, 202, 100, 34}, str::kRename, in)) {
         c.profileOpen = false;
         app.keyboard = KeyboardFor::Rename;  // opens after this frame (main.cpp)
     }
-    if (button(app, {118, 150, 84, 36}, str::kToSanctuary, in)) {  // off to the keepers
+    if (button(app, {110, 202, 100, 34}, str::kToSanctuary, in)) {  // off to the keepers
         const DenRoster r = denRoster(app.game);
         if (r.presentCount() + r.eggCount <= 1) {
             showToast(app, str::kStayHome);
@@ -478,7 +574,7 @@ void drawProfile(App& app, const Input& in, const Dragon& d, s64 now) {
             return;
         }
     }
-    if (button(app, {206, 150, 84, 36}, str::kProfileClose, in) || (in.down & KEY_B)) {
+    if (button(app, {214, 202, 100, 34}, str::kProfileClose, in) || (in.down & KEY_B)) {
         c.profileOpen = false;
         audio::playSfx(audio::Sfx::Back);
     }
@@ -501,6 +597,23 @@ const char* hintFor(Tool t) {
 }  // namespace
 
 void drawFood(Food f, float x, float y, float scale) { sprite(foodSprite(f), x, y, scale); }
+
+void drawProfilePages(App& app, const Input& in, const Dragon& d, s64 now, u8& tab) {
+    static const char* const kTabs[2] = {str::kTabAbout, str::kTabFamily};
+    for (int k = 0; k < 2; ++k) {
+        const Rect r{40.0f + k * 122.0f, 38, 118, 24};
+        const bool on = tab == k;
+        panel(r, on ? theme::kClutchGold : withAlpha(theme::kShell, 0.2f));
+        textCentered(app, kTabs[k], r.x + r.w / 2, r.y + r.h / 2, 0.44f, on ? theme::kDenPlum : theme::kShell, r.w - 6);
+        if (in.released && r.contains(in.rx, in.ry) && !on) {
+            tab = static_cast<u8>(k);
+            audio::playSfx(audio::Sfx::Tap);
+        }
+    }
+    if (in.down & (KEY_L | KEY_R)) tab ^= 1;
+    if (tab == 0) profileAbout(app, d, now);
+    else profileFamily(app, d);
+}
 
 void drawItem(Item i, float x, float y, float scale) {
     if (i < Item::Count) sprite(care_item_featherwand_idx + static_cast<std::size_t>(i), x, y, scale);

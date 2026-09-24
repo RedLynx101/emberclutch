@@ -119,6 +119,8 @@ void writeDragon(Writer& w, const Dragon& d) {
     w.u8v(d.denSlot);  // Alpha 2: its bed or nest in the den
     w.s64v(d.wanderSince);  // Alpha 2: out on the Wanderings
     w.u32v(d.wanderSteps);
+    w.u8v(static_cast<u8>(d.origin));  // Alpha 2: the profile (where its egg came from, what you know)
+    w.u8v(d.known);
     w.patchU16(sizeAt, static_cast<u16>(w.pos() - start));
 }
 
@@ -176,6 +178,13 @@ bool readDragon(Reader& r, Dragon& d) {
     if (r.pos() + 12 <= start + size) {  // older records: at home
         d.wanderSince = r.s64v();
         d.wanderSteps = r.u32v();
+    }
+    if (r.pos() + 2 <= start + size) {  // older records: from parents if it has them, else the first egg
+        const u8 origin = r.u8v();
+        d.origin = origin < static_cast<u8>(Origin::Count) ? static_cast<Origin>(origin) : Origin::Starter;
+        d.known = r.u8v();
+    } else if (d.motherId != 0) {
+        d.origin = Origin::Bred;
     }
     r.seek(start + size);  // skip fields from newer builds
 

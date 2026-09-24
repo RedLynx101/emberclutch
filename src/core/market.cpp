@@ -61,6 +61,7 @@ int buyDailyEgg(SaveData& s, s64 now) {
     if (s.eggBoughtDay == today || s.gleam < kDailyEggPrice || s.dragonCount >= static_cast<int>(kMaxDragons)) return -1;
     const DailyEgg e = dailyEgg(s, today);
     Dragon egg = makeEgg(s.nextId++, e.genome, e.sex, now);
+    egg.origin = Origin::Market;
     if (!placeEgg(s, egg) && vaultCount(s) >= kVaultEggs) {
         --s.nextId;
         return -1;

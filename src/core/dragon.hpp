@@ -28,6 +28,9 @@ enum BodyRegion : u8 {
     kRegionCount,
 };
 
+// Where an egg came from (Alpha 2 WP8: the profile's family page).
+enum class Origin : u8 { Starter, Bred, Wild, Market, Count };
+
 struct Dragon {
     u32 id = 0;
     BodyPlan bodyPlan = BodyPlan::Draconic;
@@ -35,6 +38,8 @@ struct Dragon {
     Genome genome{};
     Sex sex = Sex::Female;           // rolled when the egg is laid, shown at hatch
     u32 motherId = 0, fatherId = 0;  // 0 = starter / wild / Market egg
+    Origin origin = Origin::Starter;
+    u8 known = 0;  // what you've found out (core/profile Known: its sweet spot, its favourite food)
     s64 lastBredAt = 0;
     Personality personality = Personality::Playful;
     u8 favoriteFood = 0;  // index into the food table (later)

@@ -168,6 +168,22 @@ inline constexpr const char* kEggBought = "Yours! It's in a nest (or the Cold Va
 inline constexpr const char* kEggTomorrowMarket = "Today's egg is sold. Another tomorrow!";
 inline constexpr const char* kMarketLocked = "Opens when a dragon grows to Juvenile.";
 inline constexpr const char* kPrice = "%lu Gleam";
+// The profile (WP8)
+inline constexpr const char* kTabAbout = "About";
+inline constexpr const char* kProfile = "Profile";
+inline constexpr const char* kTabFamily = "Family";
+inline constexpr const char* kStatWing = "Wing";
+inline constexpr const char* kStatWit = "Wit";
+inline constexpr const char* kStatSpark = "Spark";
+inline constexpr const char* kSweetSpotIs = "Sweet spot: %s";
+inline constexpr const char* kSweetSpotUnknown = "Sweet spot: not found yet. Scratch around!";
+inline constexpr const char* kFavouriteIs = "Favourite food: %s";
+inline constexpr const char* kFavouriteUnknown = "Favourite food: not found yet";
+inline constexpr const char* kFoundSweetSpot = "Its sweet spot: %s!";
+inline constexpr const char* kMother = "Mother";
+inline constexpr const char* kFather = "Father";
+inline constexpr const char* kUnknownKin = "Unknown";
+inline constexpr const char* kYoungCount = "%d young";
 // Things to keep (WP7): the Market's goods
 inline constexpr const char* kTabGoods = "Goods";
 inline constexpr const char* kBuyFor = "Buy: %lu Gleam";

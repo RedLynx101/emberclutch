@@ -13,6 +13,9 @@ void freeSprites();
 void drawFood(Food f, float x, float y, float scale);
 // A thing from the Market (core/items), its icon centred at (x, y).
 void drawItem(Item i, float x, float y, float scale);
+// The profile's pages (WP8) for any dragon or egg: About / Family tabs at y 38 and the page
+// below them (to y 196). The den's profile uses them; so do the Sanctuary and the Cold Vault.
+void drawProfilePages(App& app, const Input& in, const Dragon& d, s64 now, u8& tab);
 
 // Which close-up the tool in hand wants (the face for petting, feeding and play; the whole
 // body for grooming and the bath).

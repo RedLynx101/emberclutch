@@ -13,6 +13,7 @@
 #include "core/den_roster.hpp"
 #include "core/items.hpp"
 #include "core/market.hpp"
+#include "core/profile.hpp"
 #include "core/wanderings.hpp"
 #include "core/save.hpp"
 
@@ -302,7 +303,7 @@ TEST(the_nesting_stone) {
     const int e = layDueEgg(s, tomorrow, rng);
     CHECK(e == 2 && s.dragonCount == 3 && s.nestA == 0 && s.nestB == 0);
     const Dragon& egg = s.dragons[e];
-    CHECK(egg.stage == Stage::Egg && egg.motherId == 2 && egg.fatherId == 1 && egg.id == 3);
+    CHECK(egg.stage == Stage::Egg && egg.motherId == 2 && egg.fatherId == 1 && egg.id == 3 && egg.origin == Origin::Bred);
     CHECK(egg.location == Location::Den && denRoster(s).eggCount == 1);
     CHECK(layDueEgg(s, tomorrow + kDay, rng) == -1);  // one egg per pairing
     CHECK(!settleToNest(s, 0, 1, tomorrow));  // they rest for three days
@@ -380,6 +381,61 @@ TEST(the_wanderings) {
 // from it; trinkets sold; one egg of the day, labelled, the same all day.
 // Things to keep (Alpha 2 WP7): bought once; toys set down on the den floor; decor up in its
 // spot at once if it's free, swapped later; the food bowl feeds the hungry; warm stones.
+// The profile (Alpha 2 WP8): trait names, stats from breed aptitude and stage, what you've
+// found out, and the family: parents, grandparents, young, and where an egg came from.
+TEST(a_dragons_profile) {
+    for (u8 v = 0; v < 6; ++v)
+        CHECK(buildName(v) && hornsName(v) && frillName(v) && wingsName(v) && tailName(v) && patternName(v));
+    CHECK(std::strcmp(hornsName(kHornsCrystal), "Crystal") == 0 && std::strcmp(patternName(kPatternRunes), "Runes") == 0);
+    CHECK(rareName(0) == nullptr && std::strcmp(rareName(kRareLeucistic), "Leucistic") == 0);
+
+    Rng rng(47);
+    static SaveData s;
+    s = SaveData{};
+    // Two grandparent pairs, two parents, a child.
+    auto add = [&](Element e, Sex sex, u32 mother, u32 father, Stage stage) {
+        Dragon d = readyAdult(s.nextId++, e, sex, rng);
+        d.stage = stage;
+        d.motherId = mother;
+        d.fatherId = father;
+        s.dragons[s.dragonCount++] = d;
+        return d.id;
+    };
+    s.nextId = 1;
+    const u32 gm1 = add(Element::Ember, Sex::Female, 0, 0, Stage::Adult), gf1 = add(Element::Tide, Sex::Male, 0, 0, Stage::Adult);
+    const u32 gm2 = add(Element::Gale, Sex::Female, 0, 0, Stage::Adult), gf2 = add(Element::Frost, Sex::Male, 0, 0, Stage::Adult);
+    const u32 mum = add(Element::Ember, Sex::Female, gm1, gf1, Stage::Adult), dad = add(Element::Gale, Sex::Male, gm2, gf2, Stage::Adult);
+    add(Element::Lumen, Sex::Female, mum, dad, Stage::Hatchling);
+    const Dragon& child = s.dragons[6];
+    const Family f = familyOf(s, child);
+    CHECK(f.mother == 4 && f.father == 5 && f.young == 0);
+    CHECK(f.grand[0] == 0 && f.grand[1] == 1 && f.grand[2] == 2 && f.grand[3] == 3);
+    CHECK(familyOf(s, s.dragons[4]).young == 1 && familyOf(s, s.dragons[0]).young == 1);
+    CHECK(familyOf(s, s.dragons[0]).mother == -1 && indexOfId(s, 0) == -1 && indexOfId(s, dad) == 5);
+
+    // Stats: the breed's aptitude shows (a pure Ember sparks, a Gale flies), and growing up adds.
+    Dragon ember = s.dragons[0], gale = s.dragons[2];
+    ember.genome.elementA = ember.genome.elementB = static_cast<u8>(Element::Ember);
+    gale.genome.elementA = gale.genome.elementB = static_cast<u8>(Element::Gale);
+    const Stats se = statsOf(ember), sg = statsOf(gale);
+    CHECK(se.spark > se.wing && se.spark > se.wit && sg.wing > sg.spark);
+    Dragon young = ember;
+    young.stage = Stage::Hatchling;
+    CHECK(statsOf(young).spark < se.spark && se.spark <= 100);
+
+    // What you know: the sweet spot reads as a place; the egg's origin as a story.
+    for (u32 id = 1; id < 40; ++id) {
+        Dragon d;
+        d.id = id;
+        CHECK(sweetSpotText(d) && std::strlen(sweetSpotText(d)) > 4);
+    }
+    CHECK(std::strcmp(originText(child), "Your very first egg") == 0);  // (no origin set here)
+    s.gleam = 1000;
+    const int bought = buyDailyEgg(s, kT0);
+    CHECK(bought >= 0 && s.dragons[bought].origin == Origin::Market);
+    CHECK(std::strstr(originText(s.dragons[bought]), "Market") != nullptr);
+}
+
 TEST(things_to_keep) {
     static SaveData s;
     s = SaveData{};
@@ -529,6 +585,8 @@ static SaveData& sampleSave() {
         d.denSlot = static_cast<u8>(i % 3);
         d.wanderSince = i == 2 ? kT0 + 5 : 0;
         d.wanderSteps = static_cast<u32>(i * 100);
+        d.origin = static_cast<Origin>(i % static_cast<int>(Origin::Count));
+        d.known = static_cast<u8>(i & 3);
         d.lastTurnedAt = kT0 + i * kHour;
         d.motherId = i;
         d.location = static_cast<Location>(i % 2);
@@ -546,7 +604,7 @@ static bool sameDragon(const Dragon& a, const Dragon& b) {
            a.upset == b.upset && a.napping == b.napping &&
            std::memcmp(a.dirt, b.dirt, sizeof(a.dirt)) == 0 && a.eggTurns == b.eggTurns &&
            a.lastTurnedAt == b.lastTurnedAt && a.denSlot == b.denSlot && a.wanderSince == b.wanderSince &&
-           a.wanderSteps == b.wanderSteps;
+           a.wanderSteps == b.wanderSteps && a.origin == b.origin && a.known == b.known;
 }
 
 // Dust settles over a day or two, faster on the belly than the wings; grooming, brushing a
@@ -664,7 +722,7 @@ TEST(save_round_trip) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 1 + 12 + 2));
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 1 + 12 + 2 + 2));
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
@@ -756,6 +814,7 @@ int main() {
     RUN(breeding_requirements);
     RUN(the_nesting_stone);
     RUN(the_wanderings);
+    RUN(a_dragons_profile);
     RUN(things_to_keep);
     RUN(the_market);
     RUN(egg_sexes_are_roughly_even);

@@ -6,6 +6,7 @@
 #include <cstdio>
 
 #include "app/audio.hpp"
+#include "app/care_ui.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
@@ -137,13 +138,23 @@ void drawBottom(App& app, const Input& in) {
     else
         std::snprintf(line, sizeof(line), vault(app) ? str::kVaultCount : str::kSanctuaryCount, n,
                       vault(app) ? kVaultEggs : static_cast<int>(kMaxDragons));
-    textCentered(app, vault(app) ? str::kVault : str::kSanctuary, 160, 14, 0.75f, theme::kClutchGold, 300, Face::Title);
-    textCentered(app, line, 160, 32, 0.4f, withAlpha(theme::kShell, 0.75f), 300);
+    if (n == 0) app.storeProfile = false;
+    if (app.storeProfile) {  // the picked one's profile (WP8): about it, its family
+        const Dragon& d = app.game.dragons[list[app.storePick]];
+        char title[40];
+        if (d.stage == Stage::Egg) std::snprintf(title, sizeof(title), "%s %s", breedName(d.genome), str::kEggSuffix);
+        else std::snprintf(title, sizeof(title), "%s", d.name);
+        textCentered(app, title, 160, 19, 0.75f, theme::kClutchGold, 300, Face::Title);
+        care::drawProfilePages(app, in, d, nowLocal(app), app.storeProfileTab);
+    } else {
+        textCentered(app, vault(app) ? str::kVault : str::kSanctuary, 160, 14, 0.75f, theme::kClutchGold, 300, Face::Title);
+        textCentered(app, line, 160, 32, 0.4f, withAlpha(theme::kShell, 0.75f), 300);
+    }
     if (n == 0) {
         textCentered(app, vault(app) ? str::kVaultEmpty : str::kSanctuaryEmpty, 160, 110, 0.48f, theme::kShell, 290);
     }
     const int first = app.storePage * kPerPage;
-    for (int k = 0; k < kPerPage && first + k < n; ++k) {
+    for (int k = 0; k < kPerPage && first + k < n && !app.storeProfile; ++k) {
         const Rect r{8.0f + (k % kCols) * 103.0f, 44.0f + (k / kCols) * 60.0f, 98, 54};
         card(app, r, app.game.dragons[list[first + k]], first + k == app.storePick);
         if (in.released && r.contains(in.rx, in.ry)) {
@@ -152,13 +163,17 @@ void drawBottom(App& app, const Input& in) {
         }
     }
     const int pages = (n + kPerPage - 1) / kPerPage;
-    if (pages > 1) {
+    if (pages > 1 && !app.storeProfile) {
         std::snprintf(line, sizeof(line), "%d / %d", app.storePage + 1, pages);
         textCentered(app, line, 160, 176, 0.42f, theme::kShell);
         if (button(app, {96, 164, 32, 26}, "<", in) && app.storePage > 0) app.storePick = (app.storePage - 1) * kPerPage;
         if (button(app, {192, 164, 32, 26}, ">", in) && app.storePage + 1 < pages) app.storePick = (app.storePage + 1) * kPerPage;
     }
-    if (n > 0 && button(app, {16, 200, 150, 34}, str::kToTheDen, in)) {
+    if (n > 0 && button(app, {8, 200, 112, 34}, app.storeProfile ? str::kProfileClose : str::kProfile, in)) {
+        app.storeProfile = !app.storeProfile;
+        if (vault(app)) app.storeProfileTab = 1;  // an egg's page is its family
+    }
+    if (n > 0 && button(app, {124, 200, 100, 34}, str::kToTheDen, in)) {
         const int idx = list[app.storePick];
         if (bringHome(app.game, idx, nowLocal(app))) {
             const Dragon& d = app.game.dragons[idx];
@@ -173,7 +188,10 @@ void drawBottom(App& app, const Input& in) {
             audio::playSfx(audio::Sfx::Error);
         }
     }
-    if (button(app, {176, 200, 128, 34}, str::kMap, in)) openMap(app);
+    if (button(app, {228, 200, 84, 34}, str::kMap, in)) {
+        app.storeProfile = false;
+        openMap(app);
+    }
 }
 
 }  // namespace

@@ -69,6 +69,7 @@ Dragon layEgg(u32 id, Dragon& a, Dragon& b, s64 now, Rng& rng) {
     Dragon& mother = a.sex == Sex::Female ? a : b;
     Dragon& father = a.sex == Sex::Female ? b : a;
     Dragon egg = makeEgg(id, breed(mother.genome, father.genome, rng), rollSex(rng), now);
+    egg.origin = Origin::Bred;
     egg.motherId = mother.id;
     egg.fatherId = father.id;
     mother.lastBredAt = father.lastBredAt = now;

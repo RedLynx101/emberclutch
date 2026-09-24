@@ -49,7 +49,7 @@ shot s06-map-sanctuary
 tap 62 96
 wait 2.5
 shot s07-sanctuary
-tap 91 217
+tap 174 217
 wait 1
 shot s08-sanctuary-home
 # Back to the map, then the Vault.
@@ -60,7 +60,7 @@ wait 0.4
 tap 262 62
 wait 2.5
 shot s09-vault
-tap 91 217
+tap 174 217
 wait 1
 shot s10-vault-home
 # Home.

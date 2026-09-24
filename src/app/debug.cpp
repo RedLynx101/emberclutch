@@ -89,6 +89,45 @@ void devAddDragon(App& app, bool asEgg) {
     saveNow(app);
 }
 
+// Alpha 2 WP8: three generations at once, to see a family tree: two pairs of grandparents
+// and the parents in the Sanctuary, and their grandchild, just hatched, in a free bed.
+void devAddFamily(App& app) {
+    SaveData& s = app.game;
+    if (s.dragonCount + 7 > static_cast<int>(kMaxDragons) || bedForHatchling(s) < 0) {
+        showToast(app, str::kDenFull);
+        return;
+    }
+    const s64 now = nowLocal(app);
+    Rng& rng = app.rng;
+    auto adult = [&](Element e, Sex sex, u32 mother, u32 father) {
+        Dragon d = makeEgg(s.nextId++, makePurebred(e, rng), sex, now - 30 * kDay);
+        d.incubationSeconds = kIncubationSeconds;
+        tryHatch(d, now - 29 * kDay, rng);
+        d.stage = Stage::Adult;
+        d.motherId = mother;
+        d.fatherId = father;
+        d.origin = mother ? Origin::Bred : Origin::Wild;
+        d.location = Location::Sanctuary;
+        suggestName(d, rng.next(), d.name, sizeof(d.name));
+        s.dragons[s.dragonCount++] = d;
+        return d.id;
+    };
+    const u32 a = adult(Element::Ember, Sex::Female, 0, 0), b = adult(Element::Tide, Sex::Male, 0, 0);
+    const u32 c = adult(Element::Gale, Sex::Female, 0, 0), e = adult(Element::Frost, Sex::Male, 0, 0);
+    const u32 mum = adult(Element::Ember, Sex::Female, a, b), dad = adult(Element::Gale, Sex::Male, c, e);
+    Dragon kid = makeEgg(s.nextId++, breed(s.dragons[s.dragonCount - 2].genome, s.dragons[s.dragonCount - 1].genome, rng),
+                         rollSex(rng), now);
+    kid.motherId = mum;
+    kid.fatherId = dad;
+    kid.origin = Origin::Bred;
+    kid.incubationSeconds = kIncubationSeconds;
+    tryHatch(kid, now, rng);
+    kid.denSlot = static_cast<u8>(bedForHatchling(s));
+    suggestName(kid, rng.next(), kid.name, sizeof(kid.name));
+    s.dragons[s.dragonCount++] = kid;
+    saveNow(app);
+}
+
 bool debugMenu(App& app, const Input& in) {
     if (!EC_DEV) return false;
     if (in.down & KEY_SELECT) app.devMenu = !app.devMenu;
@@ -113,7 +152,7 @@ bool debugMenu(App& app, const Input& in) {
     };
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
-        {"Next decor", 24}, {"Fill bowl", 25},
+        {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26},
     };
     const Entry* items = app.devPage ? kPage2 : kPage1;
     const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
@@ -156,6 +195,7 @@ bool debugMenu(App& app, const Input& in) {
                     }
                 }
                 break;
+            case 26: devAddFamily(app); break;
             case 25:
                 app.game.owned |= 1u << static_cast<int>(ec::Item::FoodBowl);
                 app.game.bowlFood = static_cast<u8>(Food::HearthBread);

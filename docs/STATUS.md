@@ -2,19 +2,19 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-23 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP8 ✅, WP9 ✅, WP2 sculpt → R1 answered, R1b sent; WP4 next)
+**Updated:** 2026-09-23 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP8 ✅, WP9 ✅; WP2 sculpt approved, texturing next; WP5 next)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D35 recorded ([log](plan/decisions.md)); D36–D38 (two body forms, classic
-  wings, stronger breed silhouettes) proposed in R1b.
+  Decisions D1–D39 recorded ([log](plan/decisions.md)); nothing open.
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
   [Alpha 1 plan](plan/alpha-1.md).
 - **Code:** `src/core` (genetics, needs, mood, growth, eggs, clock, breeding, save, model
-  format, skeleton/rig) with PC tests (17,786 checks). `src/app` is a themed citro2d
-  prototype with a 2D placeholder dragon (the 3D renderer is WP4); it runs in Azahar at 60 fps.
+  format, skeleton/rig, per-dragon mesh assembly) with PC tests (21,164 checks). `src/app`
+  draws the dragon in 3D (skinned toon shader) inside themed citro2d screens; the room is
+  still 2D. Runs in Azahar at 60 fps.
 - **Art:** two dragon forms built by script (`tools/blender/dragon_model.py`): a metaball
   hatchling and the skin-modifier grown body, classic wings, part variants. Exported to
   `romfs/models/{hatchling,grown}.ecm`.
@@ -26,9 +26,15 @@
   romfs enabled (music packed in, 7 MB `.3dsx`), budget overlay (frame/CPU/GPU ms,
   command buffer, triangles, draw calls, bones, memory, romfs check), dev menu on
   SELECT (time skip, needs, hatch, next stage, save, reset). Verified in Azahar.
-- ⏸ **WP2 dragon model:** R1 answered (hatchlings "super ugly", wings odd, breeds too
-  alike). Reworked: a separate baby body (D36), classic wings for all (D37), strong
-  build/ridge differences (D38). **R1b sent**; texturing waits for it.
+- ⏸ **WP2 dragon model:** sculpt **approved** after R1 → R1b → R1c (D36–D39: baby body,
+  classic wings, strong breed shapes, nostrils and mouth, bigger late hatchling). Still to
+  do: the egg model and texturing (review R2, not blocking).
+- ✅ **WP4 renderer:** `dragon.v.pica` (2-bone skinning, palette colours, fragment-light
+  outputs) and `render3d` (toon ramp + rim + emissive heartglow with a white-hot core;
+  citro3d inside citro2d scenes). Den camera, a bottom-screen petting close-up, per-dragon
+  caches, LOD1 for background dragons. Verified in Azahar: hatchling, juvenile, adult;
+  three adults at LOD0 were 8,368 triangles, so LOD1 was added (~4,850 expected;
+  **confirm in the emulator**). The static-mesh path moves to WP6 with the den model.
 - ✅ **WP3 model pipeline:** `export_dragon.py` writes `.ecm` (skeleton, growth/build tables,
   body, wing and part variants baked at 4 growth keys, vertex paint). `src/core/model.cpp`
   loads it; `skeleton.cpp` + `rig.cpp` reproduce Blender's deformation. PC tests: parity for
@@ -48,9 +54,14 @@
   Note: the emulator needs `sdmc:/3ds/dspfirm.cdc`; a local dummy file works in Azahar (never commit it).
 
 ## Next actions
-1. **WP4 renderer** (picasso skinning shader, per-dragon palette, three draws per dragon,
-   depth with citro2d) while Noah reviews R1b. Effort: extra-high.
-2. Fold in R1b feedback; texturing (R2) starts after the OK.
+1. **WP5 animation and behavior:** `.eca` clips authored by Blender scripts, playback and
+   crossfades in `src/core` (PC-tested), the behavior state machine.
+2. **WP2 rest:** egg model; texturing (UVs, scale detail, the Pattern gene) → R2.
+3. WP6 den scene, WP7 interactions, WP10 UI/fonts, WP11 CIA packaging, WP12 wrap-up.
+
+**Emulator checks are paused** (Noah asked for no computer use until he says so). Queued
+for the next session: 3-dragon test triangle count with LOD1, the petting close-up, the
+heartglow core, then everything built since.
 
 ## Current goal (D31)
 **Complete through Alpha 2.** Gates that stop the run:
@@ -58,16 +69,14 @@
 - **Alpha 2's last step is one run on Noah's old 3DS** (D34). Everything before it uses the
   emulator plus budget counters.
 - Fonts are pre-approved (D33). Missing Suno sounds use placeholders (D35).
-- Effort: **high** for Alpha 1, and ask Noah for **extra-high** during WP3 (converter) and
-  WP4 (renderer). Alpha 2: high for breeding/parts/Wanderings, medium for the Market,
+- Effort: **high** for Alpha 1, with extra-high for WP3/WP4 (both done: Noah can switch
+  back to high). Alpha 2: high for breeding/parts/Wanderings, medium for the Market,
   items and storage screens. Tell Noah when to switch.
 
 ## Waiting on Noah
 - Optional, non-blocking: Suno [music batch 2](audio/suno-music-batch-2.md) and the
   [sound effects](audio/suno-sfx-alpha1.md).
-- **Review R1b (sculpt, second pass)**, sent 2026-09-23:
-  [docs/art/reviews/R1b-sculpt.md](art/reviews/R1b-sculpt.md) with `R1b-sculpt.png` and
-  `R1b-growth.png`. Texturing waits for it. Everything else continues.
+- Nothing blocking. R1c (faces, growth) was sent as a follow-up; comments welcome.
 
 ## How to work
 - Build: `tools\build.ps1` · Tests: `tools\test.ps1` · Emulator: `tools\emu.ps1`

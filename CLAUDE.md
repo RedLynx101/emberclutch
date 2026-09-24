@@ -36,6 +36,13 @@ session, and add new decisions to the log.
   `blender -b -P tools/blender/export_dragon.py -- --out-dir romfs/models --reference-dir tests/data`
   and `tools\test.ps1` (the parity and triangle-budget tests must stay green).
 - Headless Blender resolves relative output paths unpredictably: pass absolute `--out` paths.
+- Heredocs in the Bash tool can also fail with "unexpected EOF" on long Python patches; write
+  the patch to a script file (Write tool) and run it instead.
+- Windows PowerShell 5 `Set-Content -Encoding utf8` adds a BOM; edit files with the Edit
+  tool or Python instead.
+- The emulator saves are `save.a`/`save.b` in `%APPDATA%\Azahar\sdmc\3ds\emberclutch`
+  (`tools\emu.ps1 -ResetSave` deletes them). Dev menu (SELECT, `N` in Azahar): Hatch now,
+  Next stage, Next breed, 3-dragon test.
 
 ## Conventions
 - Match the existing style: 4-space indent, `ec` namespace, `kConstant` names, short

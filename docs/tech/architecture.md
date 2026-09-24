@@ -18,7 +18,7 @@ Status: **v0.2** (2026-09-23)
 |---|---|
 | Target frame rate | **30 fps locked** in 3D scenes, 60 fps in menus |
 | Skinned dragons on screen | ≤ 3 (den), 1 up close (petting, riding) |
-| Dragon triangles | LOD0 ≤ 3,000 for the heaviest gene mix (grown: body 1,800 + wings ≤ 464 + parts; hatchling ≤ 2,700), checked by a PC test · LOD1 ≤ 1,200 |
+| Dragon triangles | LOD0 ≤ 3,000 for the heaviest gene mix (grown 2,994, hatchling 2,778) · LOD1 ≤ 1,200 (1,123 / 1,047), both checked by a PC test. A full den draws the cared-for dragon at LOD0 and the others at LOD1 (~4,850 for three adults) |
 | Bones per draw | ≤ 24 (vertex shader constant limit, see §4) |
 | Dragon colour | Per-vertex palette paint (no texture per variant); a shared scale-detail texture comes with texturing |
 | Environment | Vertex-colored, ≤ 8k visible triangles, fog-limited |
@@ -75,7 +75,11 @@ the whole simulation deterministic and testable without hardware (`make -C tests
   draw call. The rig targets **≤ 24 bones per draw**. The body and wings are separate
   draw calls with their own bone sets if the full rig grows past that.
 - Skinning happens in a picasso vertex shader (`src/app/dragon.v.pica`), with 2 bone
-  weights per vertex (limited in Blender, so the parity test matches exactly).
+  weights per vertex (limited in Blender, so the parity test matches exactly). The shader
+  reads bone rows by relative addressing (`a0` = bone index × 3); uniforms are projection
+  (4) + model-view (4) + 24 bones (72) + palette (9) + 2 constants = 91 of 96.
+- **LOD1** (`{form}_lod1.ecm`): the same skeleton, growth tables and part layout with
+  fewer segments. A PC test checks it shares the LOD0 rig.
 - **Pose math** (`src/core/skeleton.cpp`) copies Blender's rule for bones with scale
   inheritance off: a child's joint follows the parent's full, scaled matrix, but its
   orientation ignores the parent's scale.
@@ -93,9 +97,27 @@ pattern, horn, membrane, iris, pupil, glint, heartglow) as vertex-shader uniform
 shader mixes the two slots, so the belly/throat accent and every colour variant cost no
 texture memory and no UVs. The accent weight comes from the model's painted mask.
 
-Fragment stage (TEV): `vertex colour x toon lighting` (lighting = ambient + a stepped
-L.N lookup table) `+ vertex colour x emissive` (heartglow, eye glints). Scale detail
-arrives later as a grayscale texture multiplied in (after the R2 texturing review).
+Fragment lighting (`src/app/render3d.cpp`): primary = a plum-tinted ambient; secondary
+= specular 0 through lookup table D0 on L.N (the stepped **toon ramp**); secondary alpha =
+the Fresnel table on N.V (a thin **rim**). One directional light, fixed in view space.
+
+TEV: `(primary + secondary) x vertex colour + vertex colour x emissive + rim colour x rim`.
+The heartglow is emissive with a white-hot core (the exporter paints a radial glint→glow
+gradient) and pulses with mood. Scale detail arrives later as a grayscale texture
+multiplied in (after the R2 texturing review).
+
+### Mixing citro3d with citro2d (as built in WP4)
+
+- Screens stay citro2d scenes. The 3D pass runs inside one: `C2D_Flush()`, bind the dragon
+  program, draw, then `C2D_Prepare()` to hand the GPU back.
+- citro2d is set to depth test `ALWAYS` with colour-only writes (`r3d::prepare2D`), so 2D
+  never writes depth: the cleared depth buffer is free for the dragons (`GREATER`), and
+  2D drawn after them (text, toasts, the overlay) always lands on top.
+- Den camera: in front and a little left, aimed so the feet land on the rug. Its size
+  blends each dragon's framing (80%) with the adult's (20%): babies read smaller than
+  adults but still fill the screen. The bottom screen draws a head-and-chest close-up
+  under the pet pad (the petting view WP7 builds on).
+- A static-mesh path (den props, environment) comes with the den scene (WP6).
 
 Rare traits change the palette constants or add a lookup table (Iridescent).
 

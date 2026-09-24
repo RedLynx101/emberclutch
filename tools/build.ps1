@@ -14,6 +14,8 @@ $unixRoot = $root -replace "\\", "/"
 if ($unixRoot -match "^([A-Za-z]):(.*)$") { $unixRoot = "/" + $Matches[1].ToLowerInvariant() + $Matches[2] }
 
 $cleanCmd = if ($Clean) { "make clean && " } else { "" }
+# make doesn't track romfs/ (models, clips, sounds): drop the .3dsx so it is always repacked.
+Remove-Item (Join-Path $root "emberclutch.3dsx") -ErrorAction SilentlyContinue
 & $bash -lc "source /etc/profile.d/devkit-env.sh && cd '$unixRoot' && $cleanCmd make"
 if ($LASTEXITCODE -ne 0) { throw "3DS build failed with exit code $LASTEXITCODE" }
 

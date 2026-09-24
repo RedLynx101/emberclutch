@@ -37,12 +37,14 @@ def sin01(t, period, phase=0.0):
 # ------------------------------------------------------------------------------ poses
 # At rest the wings are lowered and swept back along the flanks, the finger fan closed
 # (the model's rest pose has them raised in a V, for spreading and flying).
-# Folded like a bird's wing (a Z): upper arm up and back, forearm down and forward, the hand
-# back along the side, so the wing tucks between shoulder and mid-back, clear of the spine.
-# Solved from bone directions by tools/blender/fold_solver.py (--variant zfold, grown form).
-WINGS_FOLDED = {"wing_arm*": (8, 14, 19), "wing_fore*": (-33, -121, -106),
-                "wing_f1*": (13, 22, -134), "wing_f2*": (55, 71, -138), "wing_f3*": (101, -15, -24),
-                "wing_f4*": (118, 69, -83)}
+# Folded like a bird's wing (a Z): the upper arm back along the shoulder with the elbow near
+# the back line, the forearm down and forward, the hand back along the side, every bone
+# twisted so the membrane lies flat against the flank. Solved from bone directions by
+# tools/blender/fold_solver.py (--variant zfold4, grown form; the hatchling's own solve is
+# within a few degrees).
+WINGS_FOLDED = {"wing_arm*": (-86, 133, 6), "wing_fore*": (-46, -126, -65),
+                "wing_f1*": (39, 118, -73), "wing_f2*": (43, 63, -32), "wing_f3*": (25, 24, -5),
+                "wing_f4*": (-1, -1, 4)}
 WINGS_HALF = {"wing_arm*": (0, 20, -25), "wing_f1*": (12, 10, 0), "wing_f4*": (-4, -3, 0)}
 WINGS_OPEN = {"wing_arm*": (0, -10, 10)}  # a little wider than the rest V
 

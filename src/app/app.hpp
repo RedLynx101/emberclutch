@@ -24,6 +24,10 @@ struct Input {
     u32 down = 0, held = 0;
     float tx = 0, ty = 0;
     bool touching = false, tapped = false;
+    // The stylus lifted this frame, last seen at (rx, ry). Buttons fire on release: a press
+    // can slide off to cancel, and a first touch frame never counts with a stale position.
+    bool released = false;
+    float rx = 0, ry = 0;
 };
 
 enum class SceneId : u8 { Title, PickStarter, Den, Count };

@@ -29,6 +29,11 @@ Input readInput() {
     in.tapped = in.down & KEY_TOUCH;
     in.tx = touch.px;
     in.ty = touch.py;
+    static float lastX = 0, lastY = 0;  // hidTouchRead reads (0, 0) once the stylus lifts
+    in.released = hidKeysUp() & KEY_TOUCH;
+    in.rx = lastX;
+    in.ry = lastY;
+    if (in.touching) lastX = in.tx, lastY = in.ty;
     return in;
 }
 
@@ -104,6 +109,10 @@ int main() {
         C2D_TargetClear(app.bottom, theme::kDenPlum);
         C2D_SceneBegin(app.bottom);
         if (!debugMenu(app, in)) sceneFns(app.scene).drawBottom(app, in);
+        if (EC_DEV && app.overlay && in.touching) {  // where the game reads the stylus
+            C2D_DrawRectSolid(in.tx - 8, in.ty - 0.5f, 0, 17, 1, theme::rgba(0, 255, 120));
+            C2D_DrawRectSolid(in.tx - 0.5f, in.ty - 8, 0, 1, 17, theme::rgba(0, 255, 120));
+        }
 
         C3D_FrameEnd(0);
     }

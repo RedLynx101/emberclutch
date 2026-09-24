@@ -150,9 +150,13 @@ void panel(const Rect& r, u32 color) {
 }
 
 bool button(App& app, const Rect& r, const char* label, const Input& in) {
-    const bool hit = in.tapped && r.contains(in.tx, in.ty);
+    // Fires when the stylus lifts over it (a few pixels forgiving at the edges); lights up
+    // while pressed.
+    const Rect reach{r.x - 4, r.y - 4, r.w + 8, r.h + 8};
+    const bool pressed = in.touching && reach.contains(in.tx, in.ty);
+    const bool hit = in.released && reach.contains(in.rx, in.ry);
     if (hit) audio::playSfx(audio::Sfx::Tap);
-    panel(r, hit ? theme::kClutchGold : theme::kShell);
+    panel(r, pressed || hit ? theme::kClutchGold : theme::kShell);
     text(app, label, r.x + r.w / 2, r.y + r.h / 2 - 8, 0.55f, theme::kDenPlum);
     return hit;
 }

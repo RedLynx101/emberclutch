@@ -587,7 +587,6 @@ def place_dragons(specs):
             sys.path.insert(0, p)
     import clips as clip_lib  # noqa: E402
     import dragon_model as dm  # noqa: E402
-    from eca import q_from_pyr  # noqa: E402
     for breed, form, stage, at, heading, clip_name, when in specs:
         before = set(bpy.data.objects)
         d = dm.build_dragon(breed, form)
@@ -598,7 +597,7 @@ def place_dragons(specs):
         rest = {b.name: b.matrix_local.to_quaternion() for b in arm.data.bones}
         clip = next(c for c in clip_lib.CLIPS if c.name == clip_name)
         for pb in arm.pose.bones:
-            q = Quaternion(q_from_pyr(*clip.sample(pb.name, when)))
+            q = Quaternion(clip.sample_q(pb.name, when))
             pb.rotation_mode = "QUATERNION"
             pb.rotation_quaternion = idle[pb.name] @ (rest[pb.name].conjugated() @ q @ rest[pb.name])
         # Move the dragon by its root (the armature; the body and wings are its children). Parts

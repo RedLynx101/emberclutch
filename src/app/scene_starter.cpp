@@ -49,7 +49,7 @@ void drawBottom(App& app, const Input& in) {
         panel(r, selected ? theme::kShell : withAlpha(theme::kShell, 0.35f));
         egg(r.x + r.w / 2, r.y + 50, 36, 48, {250, 240, 225}, heartglowColor(kStarters[i]), selected ? 0.9f : 0.5f);
         text(app, elementName(kStarters[i]), r.x + r.w / 2, r.y + 92, 0.5f, theme::kDenPlum);
-        if (in.tapped && r.contains(in.tx, in.ty)) {
+        if (in.released && r.contains(in.rx, in.ry)) {
             if (selected) {
                 chooseStarter(app, i);
                 return;

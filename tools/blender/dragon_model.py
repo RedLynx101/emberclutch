@@ -1083,6 +1083,37 @@ def add_face_details(body):
     smooth(body)
 
 
+def weight_membrane(mem, side):
+    """Membrane weights from the wing's own frame: each vertex follows the two struts nearest
+    to it (fingers, forearm, upper arm, or the flank), blended by distance. The membrane is
+    a sparse fan (the wrist and its outline), and heat weights leaked its outline points onto
+    the arm and body bones, so a folded wing left its panels behind its fingers."""
+    w = wing_points(side)
+    mid = w["root"].lerp(w["body"], 0.5)
+    struts = [(f"wing_f{k}_{side}", w["wrist"], w[f"f{k}"]) for k in range(1, 5)]
+    struts += [(f"wing_fore_{side}", w["elbow"], w["wrist"]), (f"wing_arm_{side}", w["root"], w["elbow"]),
+               ("chest", w["root"], mid), ("belly", mid, w["body"])]
+
+    def gap(p, a, b):
+        ab = b - a
+        t = max(0.0, min(1.0, (p - a).dot(ab) / ab.length_squared))
+        return (p - (a + ab * t)).length
+
+    for vg in list(mem.vertex_groups):
+        mem.vertex_groups.remove(vg)
+    groups = {name: mem.vertex_groups.new(name=name) for name, _, _ in struts}
+    for v in mem.data.vertices:
+        p = mem.matrix_world @ v.co
+        if (p - w["wrist"]).length < 0.03:  # every finger pivots here
+            groups[f"wing_fore_{side}"].add([v.index], 1.0, "REPLACE")
+            continue
+        (d0, n0), (d1, n1) = sorted((gap(p, a, b), name) for name, a, b in struts)[:2]
+        w0 = d1 / (d0 + d1) if d0 + d1 > 1e-6 else 1.0
+        groups[n0].add([v.index], w0, "REPLACE")
+        if w0 < 1.0:
+            groups[n1].add([v.index], 1.0 - w0, "REPLACE")
+
+
 def wing_keep(name):
     return name.startswith("wing") or name in WING_DRAW_BODY_BONES
 
@@ -1101,6 +1132,8 @@ def build_dragon(breed, form="grown"):
     wings = build_wings(b["wings"], mats)
     for wobj in wings:
         bind(wobj, arm, wing_keep)
+        if wobj.name.startswith("membrane"):
+            weight_membrane(wobj, wobj.name.split("_")[1][0])
 
     groups = {"eyes": [], "horns": [], "frill": [], "spikes": [], "tail_tip": [], "heart": []}
     snap = {"eyes": [], "horns": [], "frill": [], "spikes": [], "heart": []}

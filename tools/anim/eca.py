@@ -125,6 +125,30 @@ class Clip:
                 value = [a + b for a, b in zip(value, extra)]
         return tuple(value)
 
+    def sample_q(self, bone, t):
+        """The bone's delta as a quaternion. Keys are interpolated as rotations (Catmull-Rom
+        on hemisphere-aligned quaternions), so a swing between poses far apart, like folded
+        to open wings, takes the short way instead of wandering through odd Euler mixes.
+        Procedural waves add a small rotation on top."""
+        keys = self.filled_keys()
+        q = (1.0, 0.0, 0.0, 0.0)
+        if bone in keys:
+            qkeys, prev = {}, None
+            for tk in sorted(keys[bone]):
+                qk = q_from_pyr(*keys[bone][tk])
+                if prev is not None and sum(a * b for a, b in zip(qk, prev)) < 0:
+                    qk = tuple(-v for v in qk)
+                qkeys[tk] = prev = qk
+            q = _normalized(_curve(qkeys, t, self.length, self.loop, 4))
+        extra = [0.0, 0.0, 0.0]
+        for fn in self.waves:
+            e = fn(t).get(bone)
+            if e:
+                extra = [a + b for a, b in zip(extra, e)]
+        if any(extra):
+            q = q_mul(q_from_pyr(*extra), q)
+        return q
+
     def sample_root(self, t):
         if not self.root_keys:
             return (0.0, 0.0)
@@ -153,6 +177,11 @@ def _curve(keys, t, length, loop, dims):
             u = (t - t1) / (t2 - t1) if t2 > t1 else 0.0
             return tuple(_catmull(p0[k], p1[k], p2[k], p3[k], u) for k in range(dims))
     return pts[-1][1]
+
+
+def _normalized(q):
+    n = math.sqrt(sum(c * c for c in q)) or 1.0
+    return tuple(c / n for c in q)
 
 
 def _catmull(p0, p1, p2, p3, u):
@@ -187,7 +216,7 @@ def write_eca(path, clips, bone_order):
         for bone in bone_order:
             qs, prev = [], None
             for t in frames:
-                q = q_from_pyr(*c.sample(bone, t))
+                q = c.sample_q(bone, t)
                 if prev is not None and sum(a * b for a, b in zip(q, prev)) < 0:
                     q = tuple(-v for v in q)  # stay on one hemisphere so frames interpolate
                 qs.append(q)

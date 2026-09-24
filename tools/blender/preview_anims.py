@@ -19,7 +19,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(HERE, "..", "anim"))
 import dragon_model as dm  # noqa: E402
 import clips as clip_lib  # noqa: E402
-from eca import FPS, q_from_pyr  # noqa: E402
+from eca import FPS  # noqa: E402
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 
@@ -40,7 +40,7 @@ def lowest_body_z(d):
 def apply_frame(d, clip, t, idle, rest, scale):
     arm = d["arm"]
     for pb in arm.pose.bones:
-        q = Quaternion(q_from_pyr(*clip.sample(pb.name, t)))
+        q = Quaternion(clip.sample_q(pb.name, t))
         local = rest[pb.name].conjugated() @ q @ rest[pb.name]
         pb.rotation_mode = "QUATERNION"
         pb.rotation_quaternion = idle[pb.name] @ local

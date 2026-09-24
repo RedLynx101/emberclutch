@@ -51,7 +51,23 @@ VARIANTS["zfold_low"] = {  # the same, the hand angled down along the flank
     "wing_arm": ((0.25, 0.50, 0.83), None), "wing_fore": ((0.14, -0.45, -0.88), None),
     "wing_f1": ((0.12, 0.96, -0.05), None), "wing_f2": ((0.12, 0.94, -0.20), None),
     "wing_f3": ((0.11, 0.90, -0.34), None), "wing_f4": ((0.10, 0.84, -0.48), None)}
+VARIANTS["zfold2"] = {  # the elbow lower, near the back line: no strut sticking up
+    "wing_arm": ((0.30, 0.75, 0.59), None), "wing_fore": ((0.10, -0.75, -0.65), None),
+    "wing_f1": ((0.10, 0.98, 0.15), None), "wing_f2": ((0.10, 0.99, 0.02), None),
+    "wing_f3": ((0.10, 0.97, -0.12), None), "wing_f4": ((0.10, 0.94, -0.30), None)}
+VARIANTS["zfold3"] = {  # lower still: the upper arm lies back along the shoulder
+    "wing_arm": ((0.35, 0.85, 0.40), None), "wing_fore": ((0.10, -0.80, -0.59), None),
+    "wing_f1": ((0.10, 0.98, 0.18), None), "wing_f2": ((0.10, 0.99, 0.05), None),
+    "wing_f3": ((0.10, 0.98, -0.08), None), "wing_f4": ((0.10, 0.95, -0.24), None)}
+VARIANTS["zfold4"] = {  # zfold3 with the elbow in close to the back, so no panel juts out
+    "wing_arm": ((0.15, 0.90, 0.41), None), "wing_fore": ((0.06, -0.80, -0.60), None),
+    "wing_f1": ((0.10, 0.98, 0.18), None), "wing_f2": ((0.10, 0.99, 0.05), None),
+    "wing_f3": ((0.10, 0.98, -0.08), None), "wing_f4": ((0.10, 0.95, -0.24), None)}
 FOLD = VARIANTS[arg("--variant", "cape")]
+# Which way the folded membrane faces (right wing; its top side, up when spread): out from
+# the flank, tipped a little up. Every wing bone is twisted to match, so the panels between
+# the fingers stay flat instead of warping between differently twisted bones.
+FOLD_NORMAL = (0.97, 0.0, 0.25)
 ORDER = ["wing_arm", "wing_fore", "wing_f1", "wing_f2", "wing_f3", "wing_f4"]
 
 
@@ -76,6 +92,11 @@ def solve(d, targets, side, idle):
     rest = {b.name: b.matrix_local.to_quaternion() for b in arm.data.bones}
     keys = {}
     mirror = Vector((-1, 1, 1)) if side == "L" else Vector((1, 1, 1))
+    w = dm.wing_points(side)  # the spread wing's plane, in rest space
+    n_rest = (w["f1"] - w["root"]).cross(w["body"] - w["root"]).normalized()
+    if n_rest.z < 0:
+        n_rest = -n_rest
+    n_fold = (arm.matrix_world.to_quaternion() @ (Vector(FOLD_NORMAL) * mirror)).normalized()
     for base in ORDER:
         name = f"{base}_{side}"
         pb = arm.pose.bones.get(name)
@@ -89,6 +110,11 @@ def solve(d, targets, side, idle):
         want = Vector(direction) * mirror
         want = (arm.matrix_world.to_quaternion() @ want).normalized()
         turn = current.rotation_difference(want)
+        # twist about the bone so the membrane faces n_fold
+        n_now = (turn @ world) @ (rest[name].inverted() @ n_rest)
+        a = (n_now - want * n_now.dot(want)).normalized()
+        b = (n_fold - want * n_fold.dot(want)).normalized()
+        turn = Quaternion(want, math.atan2(want.dot(a.cross(b)), a.dot(b))) @ turn
         q = frame.inverted() @ turn @ frame
         pb.rotation_quaternion = idle[name] @ (rest[name].inverted() @ q @ rest[name])
         keys[name] = pyr_from_q(q)

@@ -16,7 +16,7 @@ effects come from Suno (own license notice). AI concept images are reference onl
   shape keys (snout length, belly roundness) blended by `growth01`.
 - Stage shapes: hatchling, juvenile, adolescent, adult. (The egg is its own model.)
 - LOD0 (close-up, petting) and LOD1 (den with 3 dragons, valley distance).
-- Budgets: adult LOD0 ≤ 3,000 tris, hatchling ≤ 1,800, LOD1 ≤ 1,200; ≤ 24 bones per draw.
+- Budgets: LOD0 ≤ 3,000 tris for every stage (one mesh), LOD1 ≤ 1,200; ≤ 24 bones per draw.
 
 ### 1.2 Parts library
 | Part | Variants | Milestone |

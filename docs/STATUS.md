@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-23 · **Milestone:** Foundations ✅ → **Alpha 1 ready to start**
+**Updated:** 2026-09-23 · **Milestone:** **Alpha 1 in progress** (WP2 sculpt → R1 sent; WP1 next)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -36,7 +36,8 @@
   items and storage screens. Tell Noah when to switch.
 
 ## Waiting on Noah
-- Nothing right now. Next ask will be review **R1** (sculpt renders).
+- **Review R1 (sculpt)**, sent 2026-09-23: [docs/art/reviews/R1-sculpt.md](art/reviews/R1-sculpt.md).
+  Texturing waits for it. Everything else continues.
 
 ## How to work
 - Build: `tools\build.ps1` · Tests: `tools\test.ps1` · Emulator: `tools\emu.ps1`

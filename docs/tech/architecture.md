@@ -18,7 +18,7 @@ Status: **v0.2** (2026-09-23)
 |---|---|
 | Target frame rate | **30 fps locked** in 3D scenes, 60 fps in menus |
 | Skinned dragons on screen | ≤ 3 (den), 1 up close (petting, riding) |
-| Dragon triangles | Adult LOD0 ≤ 3,000 · LOD1 ≤ 1,200 · hatchling ≤ 1,800 |
+| Dragon triangles | LOD0 ≤ 3,000 (body ~2,000 + parts; the same mesh serves every stage) · LOD1 ≤ 1,200 |
 | Bones per draw | ≤ 24 (vertex shader constant limit, see §4) |
 | Dragon texture | One shared 128×128 ETC1A4 mask set per body part family |
 | Environment | Vertex-colored, ≤ 8k visible triangles, fog-limited |

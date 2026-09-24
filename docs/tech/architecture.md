@@ -20,7 +20,7 @@ Status: **v0.2** (2026-09-23)
 | Skinned dragons on screen | ≤ 3 (den), 1 up close (petting, riding) |
 | Dragon triangles | LOD0 ≤ 3,000 (body ~2,000 + parts; the same mesh serves every stage) · LOD1 ≤ 1,200 |
 | Bones per draw | ≤ 24 (vertex shader constant limit, see §4) |
-| Dragon texture | One shared 128×128 ETC1A4 mask set per body part family |
+| Dragon colour | Per-vertex palette paint (no texture per variant); a shared scale-detail texture comes with texturing |
 | Environment | Vertex-colored, ≤ 8k visible triangles, fog-limited |
 | Audio | Music streamed from romfs, sound effects preloaded, ≤ 8 voices |
 
@@ -70,24 +70,28 @@ the whole simulation deterministic and testable without hardware (`make -C tests
   so after the projection and model-view matrices there is room for about 28 bones per
   draw call. The rig targets **≤ 24 bones per draw**. The body and wings are separate
   draw calls with their own bone sets if the full rig grows past that.
-- Skinning happens in a picasso vertex shader (`shaders/skinned.v.pica`), with up to 2
-  bone weights per vertex.
-- Parts (horns, frill, wings, tail tip) are rigid or lightly skinned meshes attached to
-  fixed bones. Only the selected ones are drawn.
+- Skinning happens in a picasso vertex shader (`src/app/dragon.v.pica`), with 2 bone
+  weights per vertex (limited in Blender, so the parity test matches exactly).
+- **Pose math** (`src/core/skeleton.cpp`) copies Blender's rule for bones with scale
+  inheritance off: a child's joint follows the parent's full, scaled matrix, but its
+  orientation ignores the parent's scale.
+- Parts (eyes, horns, frill, spikes, tail tip, heartglow) are rigid meshes attached to
+  fixed bones, re-baked into one per-dragon buffer when growth changes. Only the genome's
+  variants (and the dragon's sex, D23) are drawn. Three draws per dragon: body, parts, wings.
 
-### Coloring (no texture per variant)
+### Coloring (no texture per variant) — as built in WP3/WP4
 
-The mask texture's channels are **R = base weight, G = accent weight, B = pattern
-weight, A = heartglow region**. Painted shading lives in the base value. The texture
-combiner (TEV) stages:
+Every vertex carries **paint**: two palette slots, a mix amount and an emissive weight
+(`src/core/model.hpp`, `Palette`). Each dragon uploads its own palette (base, accent,
+pattern, horn, membrane, iris, pupil, glint, heartglow) as vertex-shader uniforms; the
+shader mixes the two slots, so the belly/throat accent and every colour variant cost no
+texture memory and no UVs. The accent weight comes from the model's painted mask.
 
-1. `tex.r × baseColor` (constant color)
-2. `+ tex.g × accentColor` (multiply-add)
-3. `+ tex.b × patternColor` (multiply-add; pattern type selects which mask texture)
-4. `× fragment lighting` (toon lookup table plus warm rim)
-5. `+ tex.a × heartglowColor × pulse` (emissive heartglow)
+Fragment stage (TEV): `vertex colour x toon lighting` (lighting = ambient + a stepped
+L.N lookup table) `+ vertex colour x emissive` (heartglow, eye glints). Scale detail
+arrives later as a grayscale texture multiplied in (after the R2 texturing review).
 
-Rare traits change the constants or add a specular lookup table (Iridescent).
+Rare traits change the palette constants or add a lookup table (Iridescent).
 
 ### Environment and effects
 
@@ -107,21 +111,30 @@ dragon only, so it fits the budget) with body-zone hitboxes projected from its b
 ## 5. Assets pipeline
 
 ```
-Blender (.blend) ──headless export──▶ glTF ──tools/asset/convert_model.py──▶ .ecm (model)
-                                                                         └─▶ .eca (animations)
-PNG masks ──tex3ds──▶ .t3x          Fonts ──mkbcfnt──▶ .bcfnt
-Suno WAV ──tools/audio/make_loop.py (ffmpeg)──▶ .ogg with LOOPSTART/LOOPLENGTH
+tools/blender/dragon_model.py  (the model: skin-modifier body, rig, parts, growth tables)
+        |  imported by
+tools/blender/export_dragon.py --out romfs/models/dragon.ecm --reference tests/data/dragon_reference.ecr
+Suno WAV --tools/audio/make_loop.py (ffmpeg)--> romfs/music/*.ogg (LOOPSTART/LOOPLENGTH tags)
+tools/audio/make_placeholder_sfx.py         --> romfs/sfx/*.wav
 ```
 
-- **Blender runs headless:** `blender.exe -b -P tools/blender/<script>.py`. Models,
-  rigs and animations are produced by version-controlled Python scripts where practical,
-  so they can be regenerated and reviewed.
-- **.ecm** (Emberclutch model): little-endian binary. Header, vertex buffer
-  (position as int16 ×3 with scale, UV as int16 ×2, normal as int8 ×3, bone indices as
-  u8 ×2, weights as u8 ×2), index buffer (u16), and a list of submeshes, each with its own
-  bone set.
-- **.eca** (Emberclutch animation): per-bone quaternion (int16 ×4) plus optional
-  translation at 30 Hz, looping flag, event markers (footstep, chomp, flap).
+- **Blender runs headless** (`blender -b -P ...`). Everything is a version-controlled
+  script, so the model can be regenerated and reviewed.
+- **Why not glTF:** the growth tables, the per-stage surface-snapped part offsets, part
+  variants and sex differences live in the Blender scene and have no glTF equivalent, so
+  the exporter writes the game format directly.
+- **`.ecm` v1** (little-endian, read by `src/core/model.cpp`):
+  header `ECM1`, version, bone count; bones (name, parent, flags, 3x4 rest matrix);
+  growth tables (hatchling bone scales, build multipliers, idle pose Euler XYZ, hatchling
+  neck lift); meshes (name, kind body/wings/part, group, variant, sex, bone palette,
+  growth keys, then per key positions + normals, per vertex 2 bones + 2 weights and
+  paint, and u16 triangle indices). Parts are baked at growth t = 0, .35, .7, 1 in
+  armature rest space and bound rigidly to one bone; the runtime blends two keys.
+- **Parity test:** the exporter also writes Blender-deformed vertex positions for three
+  poses/growth/build cases; `tests/test_model.cpp` checks the C++ rig
+  (`src/core/skeleton.cpp`, `rig.cpp`) reproduces them (body < 0.001, wings < 0.003,
+  parts exact, on a ~6-unit dragon).
+- **`.eca` animations** follow in WP5 (per-bone quaternions at 30 Hz + events).
 - Everything ships in **romfs**. Music is streamed and never loaded whole.
 
 ## 6. Audio

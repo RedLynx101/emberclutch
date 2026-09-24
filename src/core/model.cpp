@@ -1,0 +1,123 @@
+#include "core/model.hpp"
+
+#include <cstring>
+
+namespace ec {
+namespace {
+
+// Bounds-checked little-endian reader (the .ecm comes from romfs, but never trust files).
+class Cursor {
+public:
+    Cursor(const u8* p, std::size_t n) : p_(p), n_(n) {}
+    bool ok() const { return ok_; }
+    void bytes(void* out, std::size_t len) {
+        if (!ok_ || at_ + len > n_) {
+            ok_ = false;
+            std::memset(out, 0, len);
+            return;
+        }
+        std::memcpy(out, p_ + at_, len);
+        at_ += len;
+    }
+    u8 u8v() { u8 v; bytes(&v, 1); return v; }
+    s8 s8v() { return static_cast<s8>(u8v()); }
+    u16 u16v() { u8 b[2]; bytes(b, 2); return static_cast<u16>(b[0] | (b[1] << 8)); }
+    u32 u32v() { u8 b[4]; bytes(b, 4); return u32(b[0]) | (u32(b[1]) << 8) | (u32(b[2]) << 16) | (u32(b[3]) << 24); }
+    float f32() { const u32 bits = u32v(); float f; std::memcpy(&f, &bits, 4); return f; }
+    Vec3 vec3() { const float x = f32(), y = f32(); return {x, y, f32()}; }
+    void skip(std::size_t len) { if (at_ + len > n_) ok_ = false; else at_ += len; }
+
+private:
+    const u8* p_;
+    std::size_t n_, at_ = 0;
+    bool ok_ = true;
+};
+
+}  // namespace
+
+const MeshData* ModelData::findMesh(u8 kind, u8 group, u8 variant, u8 sex) const {
+    for (const MeshData& m : meshes)
+        if (m.kind == kind && m.group == group && m.variant == variant &&
+            (m.sex == kSexAny || sex == kSexAny || m.sex == sex))
+            return &m;
+    return nullptr;
+}
+
+bool loadModel(const u8* data, std::size_t size, ModelData& out) {
+    Cursor c(data, size);
+    char magic[4];
+    c.bytes(magic, 4);
+    if (!c.ok() || std::memcmp(magic, "ECM1", 4) != 0) return false;
+    if (c.u16v() != 1) return false;  // version
+    const u16 boneCount = c.u16v();
+    if (boneCount == 0 || boneCount > kMaxBones) return false;
+
+    Skeleton& s = out.skel;
+    s.count = boneCount;
+    for (int i = 0; i < boneCount; ++i) {
+        c.bytes(s.name[i], 16);
+        s.name[i][15] = '\0';
+        s.parent[i] = c.s8v();
+        s.flags[i] = c.u8v();
+        c.skip(2);
+        for (int r = 0; r < 3; ++r)
+            for (int k = 0; k < 4; ++k) s.rest[i].m[r][k] = c.f32();
+        if (s.parent[i] >= i) return false;  // parents must come first
+    }
+    finalizeSkeleton(s);
+
+    for (int i = 0; i < boneCount; ++i) out.hatchScale[i] = c.vec3();
+    for (int b = 0; b < kModelBuilds; ++b)
+        for (int i = 0; i < boneCount; ++i) {
+            out.build[b][i][0] = c.f32();
+            out.build[b][i][1] = c.f32();
+        }
+    for (int i = 0; i < boneCount; ++i) out.poseEulerDeg[i] = c.vec3();
+    for (int i = 0; i < boneCount; ++i) out.hatchPoseXDeg[i] = c.f32();
+
+    const u16 meshCount = c.u16v();
+    out.meshes.clear();
+    out.meshes.resize(meshCount);
+    for (MeshData& m : out.meshes) {
+        c.bytes(m.name, 16);
+        m.name[15] = '\0';
+        m.kind = c.u8v();
+        m.group = c.u8v();
+        m.variant = c.u8v();
+        m.sex = c.u8v();
+        m.paletteCount = c.u8v();
+        c.bytes(m.palette, kMaxPalette);
+        m.keyCount = c.u8v();
+        c.skip(3);
+        for (float& t : m.keyT) t = c.f32();
+        m.vertexCount = c.u16v();
+        const u16 indexCount = c.u16v();
+        if (!c.ok() || m.paletteCount > kMaxPalette || m.keyCount == 0 || m.keyCount > kMaxKeys ||
+            indexCount % 3 != 0)
+            return false;
+        for (int i = 0; i < m.paletteCount; ++i)
+            if (m.palette[i] >= boneCount) return false;
+
+        const std::size_t n = std::size_t(m.keyCount) * m.vertexCount;
+        m.pos.resize(n);
+        m.nrm.resize(n);
+        for (int k = 0; k < m.keyCount; ++k) {
+            for (int v = 0; v < m.vertexCount; ++v) m.pos[std::size_t(k) * m.vertexCount + v] = c.vec3();
+            for (int v = 0; v < m.vertexCount; ++v) m.nrm[std::size_t(k) * m.vertexCount + v] = c.vec3();
+        }
+        m.skin.resize(std::size_t(m.vertexCount) * 4);
+        c.bytes(m.skin.data(), m.skin.size());
+        m.paint.resize(std::size_t(m.vertexCount) * 4);
+        c.bytes(m.paint.data(), m.paint.size());
+        m.indices.resize(indexCount);
+        for (u16& ix : m.indices) ix = c.u16v();
+        if (!c.ok()) return false;
+        for (int v = 0; v < m.vertexCount; ++v)
+            if (m.skin[v * 4] >= m.paletteCount || m.skin[v * 4 + 1] >= m.paletteCount) return false;
+        for (u16 ix : m.indices)
+            if (ix >= m.vertexCount) return false;
+    }
+    return c.ok();
+}
+
+}  // namespace ec

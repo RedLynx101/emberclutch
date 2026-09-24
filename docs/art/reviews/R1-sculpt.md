@@ -36,4 +36,8 @@ ridges.
 - Parts are over the triangle budget: fewer segments on the eyes and spikes.
 
 ## Noah's verdict
-*(pending)*
+1. **Adult silhouette.** Looks good for now.
+2. **Hatchling.** It's super ugly lol. The wungs are off the bdy, and it looks like it has a massive chest. Redo the hatchlings. 
+3. **Breed identities.** Yes, but more so in color. The design differences exist, but are subtle.
+4. **Wings.** In the first two shown in image (red and blue), the wings have a top bit that shows spines, then a non-spined bottom part of the wing, which looks odd. Fix that with larger generic dragon wings for all. More of what you'd expect.
+5. The babies. And maybe the breeds need more differentiation.

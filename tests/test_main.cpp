@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 
+#include "check.hpp"
 #include "core/breeding.hpp"
 #include "core/clock.hpp"
 #include "core/dragon.hpp"
@@ -15,24 +16,8 @@
 
 using namespace ec;
 
-static int g_failures = 0;
-static int g_checks = 0;
-
-#define CHECK(cond)                                                          \
-    do {                                                                     \
-        ++g_checks;                                                          \
-        if (!(cond)) {                                                       \
-            ++g_failures;                                                    \
-            std::printf("  FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond);    \
-        }                                                                    \
-    } while (0)
-
-#define TEST(name) static void name()
-#define RUN(name)                            \
-    do {                                     \
-        std::printf("%s\n", #name);          \
-        name();                              \
-    } while (0)
+int g_failures = 0;
+int g_checks = 0;
 
 // 2026-01-05 00:00 "local unix"; a Monday, so nothing depends on it except the hour.
 static constexpr s64 kT0 = 1767571200;
@@ -436,6 +421,7 @@ int main() {
     RUN(save_rejects_out_of_range_data);
     RUN(save_picks_newest_valid_slot);
     RUN(save_full_capacity_fits);
+    runModelTests();
     std::printf("\n%d checks, %d failures\n", g_checks, g_failures);
     return g_failures == 0 ? 0 : 1;
 }

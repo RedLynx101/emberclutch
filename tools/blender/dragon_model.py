@@ -137,7 +137,8 @@ HATCHLING = {
 }
 STAGE_T = {"hatchling": 0.0, "juvenile": 0.35, "adolescent": 0.70, "adult": 1.0}
 
-BUILDS = {  # multiplies (girth, length) on top of the stage
+BUILDS = {  # multiplies (girth, length) on top of the stage; "neutral" = no build (exports)
+    "neutral": {},
     "sturdy": {"chest": (1.10, 1.0), "belly": (1.10, 1.0), "arm_up": (1.10, 0.95), "leg_up": (1.10, 0.95),
                "neck1": (1.08, 0.95), "neck2": (1.08, 0.95), "neck3": (1.08, 0.95)},
     "sleek": {"chest": (0.92, 1.05), "belly": (0.88, 1.05), "neck1": (0.9, 1.08), "neck2": (0.9, 1.1),
@@ -154,7 +155,12 @@ def lerp(a, b, t):
 
 def stage_scales(stage, build):
     """Bone scales (girth, length) and part scales for a stage + build."""
-    t = STAGE_T[stage]
+    return scales_for_t(STAGE_T[stage], build)
+
+
+def scales_for_t(t, build):
+    """Bone scales (girth_x, length, girth_z) and part scales at growth t (0 hatchling .. 1 adult).
+    The runtime computes exactly this from the tables exported in dragon.ecm."""
     bones = {}
     for name, *_ in BONES:
         key = name.rsplit("_", 1)[0] if name.endswith(("_L", "_R")) else name
@@ -419,6 +425,8 @@ def bind(mesh_obj, arm, keep):
     bpy.context.view_layer.objects.active = mesh_obj
     mesh_obj.select_set(True)
     bpy.ops.object.mode_set(mode="WEIGHT_PAINT")
+    bpy.ops.object.vertex_group_normalize_all(lock_active=False)
+    bpy.ops.object.vertex_group_limit_total(group_select_mode="ALL", limit=2)  # shader blends 2 bones
     bpy.ops.object.vertex_group_normalize_all(lock_active=False)
     bpy.ops.object.mode_set(mode="OBJECT")
     mesh_obj.select_set(False)
@@ -713,23 +721,27 @@ def build_dragon(breed):
         parent_to_bone(h, arm, "chest")
         groups["heart"].append(h)
     snap["heart"].append((hearts[0], hearts))
-    return dict(body=body, arm=arm, wings=wings, groups=groups, snap=snap, breed=b)
+    return dict(body=body, arm=arm, wings=wings, groups=groups, snap=snap, breed=b, mats=mats)
 
 
 HATCH_POSE = {"neck1": float(arg("--hn1", "-46")), "neck2": float(arg("--hn2", "-12")),
               "neck3": float(arg("--hn3", "8")), "head": float(arg("--hh", "46"))}
 
 
-def rest_pose(d, stage="adult"):
+# The proud idle pose (Euler XYZ degrees per bone): neck S-curve, level head, wings half-folded.
+BASE_POSE = {"neck1": (-4, 0, 0), "neck2": (6, 0, 0), "neck3": (10, 0, 0), "head": (-6, 0, 0),
+             "tail1": (6, 0, 0), "tail2": (-4, 0, 6), "tail3": (-6, 0, 10), "tail4": (-4, 0, 12)}
+for _side, _s in (("L", 1), ("R", -1)):
+    BASE_POSE[f"wing_arm_{_side}"] = (18, 0, _s * -25)
+    BASE_POSE[f"wing_fore_{_side}"] = (0, 0, _s * 35)
+
+
+def rest_pose(d, stage="adult", t=None):
     """A proud idle: neck S-curve, head level, wings half-folded. Babies hold their big heads
     up over the body (HATCH_POSE), blending toward the adult pose as they grow."""
-    t = STAGE_T[stage]
+    t = STAGE_T[stage] if t is None else t
     pb = d["arm"].pose.bones
-    rot = {"neck1": (-4, 0, 0), "neck2": (6, 0, 0), "neck3": (10, 0, 0), "head": (-6, 0, 0),
-           "tail1": (6, 0, 0), "tail2": (-4, 0, 6), "tail3": (-6, 0, 10), "tail4": (-4, 0, 12)}
-    for side, s in (("L", 1), ("R", -1)):
-        rot[f"wing_arm_{side}"] = (18, 0, s * -25)
-        rot[f"wing_fore_{side}"] = (0, 0, s * 35)
+    rot = dict(BASE_POSE)
     for name, extra in HATCH_POSE.items():
         x, y, z = rot.get(name, (0, 0, 0))
         rot[name] = (x + extra * (1 - t), y, z)
@@ -760,7 +772,13 @@ def sit_pose(d, amount=1.0):
 
 
 def apply_stage(d, stage):
-    bones, parts = stage_scales(stage, d["breed"]["build"])
+    apply_t(d, STAGE_T[stage], d["breed"]["build"])
+    ground(d)
+
+
+def apply_t(d, t, build):
+    """Bone and part scales for growth t, then seat the parts on the body surface."""
+    bones, parts = scales_for_t(t, build)
     pb = d["arm"].pose.bones
     for name, (gx, l, gz) in bones.items():
         pb[name].scale = (gx, l, gz)
@@ -776,7 +794,6 @@ def apply_stage(d, stage):
                 o["base_scale"] = list(o.scale)
             o.scale = Vector(o["base_scale"]) * s
     snap_parts(d)
-    ground(d)
 
 
 SNAP_INSET = {"eyes": 0.04, "horns": 0.03, "spikes": 0.02, "frill": 0.03, "heart": -0.012}
@@ -919,4 +936,5 @@ def main():
         bpy.ops.export_scene.gltf(filepath=bpy.path.abspath(f"{OUT}_{BREED}.glb"), export_apply=False)
 
 
-main()
+if __name__ == "__main__":
+    main()

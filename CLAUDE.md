@@ -29,6 +29,13 @@ session, and add new decisions to the log.
 - Music: `python tools/audio/make_loop.py assets/audio/music/source/<slug>.wav --bpm <bpm> --preview`
   (set `FFMPEG_DIR` if ffmpeg isn't on PATH)
 
+## Gotchas
+- The Bash tool mangles backslashes inside heredocs (`\n`, line-continuation `\`).
+  Make edits that contain backslashes with the Edit/Write tools, not heredoc Python.
+- Model changes: edit `tools/blender/dragon_model.py`, then re-run
+  `blender -b -P tools/blender/export_dragon.py -- --out romfs/models/dragon.ecm --reference tests/data/dragon_reference.ecr`
+  and `tools\test.ps1` (the parity test must stay green).
+
 ## Conventions
 - Match the existing style: 4-space indent, `ec` namespace, `kConstant` names, short
   comments that explain *why*.

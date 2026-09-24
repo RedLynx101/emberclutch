@@ -9,7 +9,16 @@ float clamp01(float v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
 
 }  // namespace
 
-float growthT(float bodyScale) { return clamp01((bodyScale - 0.25f) / 0.75f); }
+Growth growthFor(Stage stage, float progress) {
+    progress = clamp01(progress);
+    switch (stage) {
+        case Stage::Egg: return {kFormHatchling, 0.0f};
+        case Stage::Hatchling: return {kFormHatchling, progress};
+        case Stage::Juvenile: return {kFormGrown, kAdolescentT * progress};
+        case Stage::Adolescent: return {kFormGrown, kAdolescentT + (1.0f - kAdolescentT) * progress};
+        default: return {kFormGrown, 1.0f};
+    }
+}
 
 void boneScales(const ModelData& m, float t, int build, Vec3* out) {
     t = clamp01(t);

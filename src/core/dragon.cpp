@@ -241,22 +241,25 @@ int daysSinceHatch(const Dragon& d, s64 now) {
     return static_cast<int>((now - d.hatchedAt) / kDay);
 }
 
-float bodyScale(const Dragon& d, s64 now) {
-    struct Range {
-        float lo, hi;
-    };
-    static constexpr Range kRanges[] = {{0.20f, 0.20f}, {0.25f, 0.45f}, {0.45f, 0.70f}, {0.70f, 1.00f}, {1.0f, 1.0f}};
-    if (d.stage == Stage::Egg) return kRanges[0].lo;
+float stageProgress(const Dragon& d, s64 now) {
+    if (d.stage == Stage::Egg) return 0.0f;
     if (d.stage == Stage::Adult) return 1.0f;
-
     const Stage next = static_cast<Stage>(static_cast<int>(d.stage) + 1);
     const float span = static_cast<float>(stageMinDay(next) - stageMinDay(d.stage));
     const float days = now > d.hatchedAt ? static_cast<float>(now - d.hatchedAt) / kDay : 0.0f;
     float p = (days - stageMinDay(d.stage)) / span;
     if (p < 0) p = 0;
     if (p > 0.95f) p = 0.95f;  // the last step waits for promotion
+    return p;
+}
+
+float bodyScale(const Dragon& d, s64 now) {
+    struct Range {
+        float lo, hi;
+    };
+    static constexpr Range kRanges[] = {{0.20f, 0.20f}, {0.25f, 0.45f}, {0.45f, 0.70f}, {0.70f, 1.00f}, {1.0f, 1.0f}};
     const Range& r = kRanges[static_cast<int>(d.stage)];
-    return r.lo + (r.hi - r.lo) * p;
+    return r.lo + (r.hi - r.lo) * stageProgress(d, now);
 }
 
 }  // namespace ec

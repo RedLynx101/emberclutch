@@ -81,6 +81,9 @@ void makeUp(Dragon& d);
 
 Mood moodOf(const Dragon& d);
 int daysSinceHatch(const Dragon& d, s64 now);
+// How far through its current stage the dragon is: 0 at the stage-up, capped at 0.95 until
+// the next promotion; 1 for adults. Drives in-stage growth of the model (rig.hpp growthFor).
+float stageProgress(const Dragon& d, s64 now);
 // Overall body scale (0.25 hatchling .. 1.0 adult), continuous within a stage.
 float bodyScale(const Dragon& d, s64 now);
 

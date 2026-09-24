@@ -32,9 +32,10 @@ session, and add new decisions to the log.
 ## Gotchas
 - The Bash tool mangles backslashes inside heredocs (`\n`, line-continuation `\`).
   Make edits that contain backslashes with the Edit/Write tools, not heredoc Python.
-- Model changes: edit `tools/blender/dragon_model.py`, then re-run
-  `blender -b -P tools/blender/export_dragon.py -- --out romfs/models/dragon.ecm --reference tests/data/dragon_reference.ecr`
-  and `tools\test.ps1` (the parity test must stay green).
+- Model changes: edit `tools/blender/dragon_model.py` (two forms: hatchling + grown), then re-run
+  `blender -b -P tools/blender/export_dragon.py -- --out-dir romfs/models --reference-dir tests/data`
+  and `tools\test.ps1` (the parity and triangle-budget tests must stay green).
+- Headless Blender resolves relative output paths unpredictably: pass absolute `--out` paths.
 
 ## Conventions
 - Match the existing style: 4-space indent, `ec` namespace, `kConstant` names, short

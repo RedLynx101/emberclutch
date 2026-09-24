@@ -43,7 +43,9 @@ competitions lean **cool** (sky-teal) with warm accents. Never pure black or pur
 ## 4. Shape language
 
 - **Cute → majestic.** Babies are round, big-headed and soft-cornered. Adults are long,
-  tapered and elegant with swept lines. Growth is continuous.
+  tapered and elegant with swept lines. Hatchlings have their own baby model; the
+  stage-up to juvenile is **the first molt** (a glow hides the model swap, D36). From
+  then on growth is continuous.
 
   | Stage | Head : body length | Eye height / head | Neck | Wingspan / body |
   |---|---|---|---|---|

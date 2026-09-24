@@ -15,22 +15,22 @@ struct BreedProfile {
 // Hue bytes: 0..255 == 0..360 degrees.
 constexpr BreedProfile kProfiles[kElementCount] = {
     // Ember: ember-orange, cream-gold accents, swept horns, spade tail.
-    {13, 9, 205, 228, 30, 8, 240, 30, kBuildSturdy, kHornsSwept, kFrillNone, kWingsMembrane, kTailSpade,
+    {13, 9, 205, 228, 30, 8, 240, 30, kBuildSturdy, kHornsSwept, kFrillNone, kWingsClassic, kTailSpade,
      {kPatternStripes, kPatternSolid}},
-    // Tide: sea-teal, fin frills and fin-wings, long build.
-    {128, 10, 170, 195, 138, 8, 232, 110, kBuildLong, kHornsNubs, kFrillFin, kWingsFin, kTailFan,
+    // Tide: sea-teal, fin frills and sail wings, long build.
+    {128, 10, 170, 195, 138, 8, 232, 110, kBuildLong, kHornsNubs, kFrillFin, kWingsSail, kTailFan,
      {kPatternSpots, kPatternDapple}},
-    // Gale: pale sky-blue, feathered wings, sleek.
-    {146, 10, 120, 238, 152, 8, 252, 160, kBuildSleek, kHornsSwept, kFrillFeather, kWingsFeathered, kTailTuft,
+    // Gale: pale sky-blue, feather frill and plumed wings, sleek.
+    {146, 10, 120, 238, 152, 8, 252, 160, kBuildSleek, kHornsSwept, kFrillFeather, kWingsPlumed, kTailTuft,
      {kPatternDapple, kPatternSolid}},
     // Grove: moss green, leafy frill, antler horns.
-    {66, 10, 150, 172, 45, 8, 215, 30, kBuildSturdy, kHornsAntler, kFrillLeaf, kWingsMembrane, kTailFan,
+    {66, 10, 150, 172, 45, 8, 215, 30, kBuildSturdy, kHornsAntler, kFrillLeaf, kWingsClassic, kTailFan,
      {kPatternDapple, kPatternSpots}},
     // Frost: white-lavender, crystal horns, runes.
-    {185, 10, 62, 240, 180, 8, 255, 190, kBuildSleek, kHornsCrystal, kFrillNone, kWingsMembrane, kTailSpade,
+    {185, 10, 62, 240, 180, 8, 255, 190, kBuildSleek, kHornsCrystal, kFrillNone, kWingsClassic, kTailSpade,
      {kPatternRunes, kPatternSolid}},
-    // Lumen: gold-white, crown horns, feathered wings.
-    {34, 8, 72, 250, 36, 8, 255, 40, kBuildSleek, kHornsCrown, kFrillFeather, kWingsFeathered, kTailTuft,
+    // Lumen: gold-white, crown horns, plumed wings.
+    {34, 8, 72, 250, 36, 8, 255, 40, kBuildSleek, kHornsCrown, kFrillFeather, kWingsPlumed, kTailTuft,
      {kPatternRunes, kPatternSolid}},
 };
 

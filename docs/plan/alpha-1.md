@@ -51,11 +51,13 @@ While waiting on a review, work continues on the non-art packages (engine, save,
 - **R1, then R2.**
 - *Verify:* script prints tris/bones per part vs budget; renders saved to `docs/art/`.
 
-### WP3 — Converter and formats ⟂ WP2
-- `tools/asset/convert_model.py`: glTF → `.ecm` (quantized verts, submeshes with bone
-  sets) and `.eca` (int16 quaternion tracks at 30 Hz + events). Textures via tex3ds
-  (ETC1A4). A round-trip test (export → convert → re-read → compare).
-- *Verify:* PC-side tests for the converter; `.ecm` sizes logged.
+### WP3 — Converter and formats ⟂ WP2 ✅
+- As built: `tools/blender/export_dragon.py` writes `.ecm` directly from the Blender scene
+  (no glTF step; growth tables, snapped part keys and variants have no glTF equivalent),
+  one file per body form (D36). `.eca` (int16 quaternion tracks at 30 Hz + events) comes
+  with WP5; textures via tex3ds after R2.
+- *Verify:* PC parity test (the C++ rig reproduces Blender's deformation), triangle-budget
+  test; `.ecm` sizes logged by the exporter.
 
 ### WP4 — Renderer
 - `shaders/skinned.v.pica` (2 weights, ≤ 24 bones); mask-color TEV setup

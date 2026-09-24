@@ -1,8 +1,9 @@
-// Model + skeleton tests. The key one: the C++ rig reproduces Blender's deformation of the
-// exported dragon (tests/data/dragon_reference.ecr, written by tools/blender/export_dragon.py).
+// Model + skeleton tests. The key one: the C++ rig reproduces Blender's deformation of both
+// exported dragon forms (tests/data/<form>_reference.ecr, written by tools/blender/export_dragon.py).
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <vector>
 
 #include "check.hpp"
@@ -25,14 +26,16 @@ std::vector<u8> readFile(const char* path) {
     return data;
 }
 
-ModelData& model() {
-    static ModelData m;
-    static bool loaded = false;
-    if (!loaded) {
-        const std::vector<u8> bytes = readFile("../romfs/models/dragon.ecm");
-        loaded = !bytes.empty() && loadModel(bytes.data(), bytes.size(), m);
+const char* const kFormNames[kFormCount] = {"hatchling", "grown"};
+
+ModelData& model(int form) {
+    static ModelData m[kFormCount];
+    static bool loaded[kFormCount] = {};
+    if (!loaded[form]) {
+        const std::vector<u8> bytes = readFile((std::string("../romfs/models/") + kFormNames[form] + ".ecm").c_str());
+        loaded[form] = !bytes.empty() && loadModel(bytes.data(), bytes.size(), m[form]);
     }
-    return m;
+    return m[form];
 }
 
 struct RefReader {
@@ -48,28 +51,61 @@ struct RefReader {
 };
 
 TEST(model_loads_and_is_well_formed) {
-    const ModelData& m = model();
-    CHECK(m.skel.count == 34);
-    CHECK(!m.meshes.empty());
-    int wingBones = 0;
-    for (int i = 0; i < m.skel.count; ++i) wingBones += m.skel.flags[i] & 1;
-    CHECK(wingBones == 10);
-    for (int i = 0; i < 24; ++i) CHECK((m.skel.flags[i] & 1) == 0);  // body bones first: one draw
-    const MeshData* body = m.findMesh(kMeshBody, kGroupBody, 0);
-    CHECK(body && body->paletteCount == 24 && body->keyCount == 1);
-    CHECK(m.findMesh(kMeshWings, kGroupWings, 0) && m.findMesh(kMeshWings, kGroupWings, 1) &&
-          m.findMesh(kMeshWings, kGroupWings, 2));
-    CHECK(m.findMesh(kMeshPart, kGroupHorns, 1, kSexMale) != m.findMesh(kMeshPart, kGroupHorns, 1, kSexFemale));
-    for (const MeshData& mesh : m.meshes) {
-        CHECK(mesh.paletteCount <= kMaxPalette);
-        CHECK(!mesh.indices.empty() && mesh.indices.size() % 3 == 0);
-        for (int v = 0; v < mesh.vertexCount; ++v) CHECK(mesh.skin[v * 4 + 2] + mesh.skin[v * 4 + 3] == 255);
+    for (int form = 0; form < kFormCount; ++form) {
+        const ModelData& m = model(form);
+        CHECK(m.skel.count == 36);
+        CHECK(!m.meshes.empty());
+        int wingBones = 0;
+        for (int i = 0; i < m.skel.count; ++i) wingBones += m.skel.flags[i] & 1;
+        CHECK(wingBones == 12);
+        for (int i = 0; i < 24; ++i) CHECK((m.skel.flags[i] & 1) == 0);  // body bones first: one draw
+        const MeshData* body = m.findMesh(kMeshBody, kGroupBody, 0);
+        CHECK(body && body->paletteCount == 24 && body->keyCount == 1);
+        for (u8 w = 0; w < kWingsCount; ++w) CHECK(m.findMesh(kMeshWings, kGroupWings, w) != nullptr);
+        CHECK(m.findMesh(kMeshPart, kGroupHorns, kHornsSwept, kSexMale) !=
+              m.findMesh(kMeshPart, kGroupHorns, kHornsSwept, kSexFemale));
+        // The dorsal ridge follows the frill gene (leaf falls back to spikes at runtime).
+        for (u8 f : {kFrillNone, kFrillFin, kFrillFeather}) CHECK(m.findMesh(kMeshPart, kGroupSpikes, f) != nullptr);
+        for (const MeshData& mesh : m.meshes) {
+            CHECK(mesh.paletteCount <= kMaxPalette);
+            CHECK(!mesh.indices.empty() && mesh.indices.size() % 3 == 0);
+            for (int v = 0; v < mesh.vertexCount; ++v) CHECK(mesh.skin[v * 4 + 2] + mesh.skin[v * 4 + 3] == 255);
+        }
+        // Rest matrices are pure rotation + translation.
+        for (int i = 0; i < m.skel.count; ++i) {
+            const Mat34 id = mul(m.skel.rest[i], m.skel.invRest[i]);
+            CHECK(std::fabs(id.m[0][0] - 1) < 1e-4f && std::fabs(id.m[1][1] - 1) < 1e-4f &&
+                  std::fabs(id.m[0][3]) < 1e-4f);
+        }
     }
-    // Rest matrices are pure rotation + translation.
-    for (int i = 0; i < m.skel.count; ++i) {
-        const Mat34 id = mul(m.skel.rest[i], m.skel.invRest[i]);
-        CHECK(std::fabs(id.m[0][0] - 1) < 1e-4f && std::fabs(id.m[1][1] - 1) < 1e-4f && std::fabs(id.m[0][3]) < 1e-4f);
+}
+
+TEST(dragon_fits_triangle_budget) {
+    // Architecture section 1: LOD0 <= 3,000 triangles, even for the heaviest gene combination.
+    for (int form = 0; form < kFormCount; ++form) {
+        const ModelData& m = model(form);
+        int worst[8] = {};  // heaviest variant per part group; slot 7 = body
+        for (const MeshData& mesh : m.meshes) {
+            const int g = mesh.group == kGroupBody ? 7 : mesh.group;
+            const int tris = static_cast<int>(mesh.indices.size() / 3);
+            if (g < 8 && tris > worst[g]) worst[g] = tris;
+        }
+        int total = 0;
+        for (int w : worst) total += w;
+        std::printf("  %s: worst case %d triangles\n", kFormNames[form], total);
+        CHECK(total <= 3000);
     }
+}
+
+TEST(growth_maps_stages_to_forms) {
+    const Growth hatch = growthFor(Stage::Hatchling, 0.5f);
+    CHECK(hatch.form == kFormHatchling && std::fabs(hatch.t - 0.5f) < 1e-6f);
+    const Growth juv0 = growthFor(Stage::Juvenile, 0.0f);
+    CHECK(juv0.form == kFormGrown && juv0.t == 0.0f);  // the molt: a new juvenile starts the grown form
+    const Growth juv1 = growthFor(Stage::Juvenile, 1.0f), ado0 = growthFor(Stage::Adolescent, 0.0f);
+    CHECK(std::fabs(juv1.t - ado0.t) < 1e-6f);  // continuous across juvenile -> adolescent
+    CHECK(growthFor(Stage::Adult, 0.3f).t == 1.0f);
+    CHECK(growthFor(Stage::Adolescent, 2.0f).t <= 1.0f);
 }
 
 TEST(euler_matches_blender_convention) {
@@ -79,9 +115,9 @@ TEST(euler_matches_blender_convention) {
     CHECK(std::fabs(q.y + 0.02421f) < 1e-4f && std::fabs(q.z - 0.44137f) < 1e-4f);
 }
 
-TEST(rig_matches_blender_deformation) {
-    const ModelData& m = model();
-    const std::vector<u8> ref = readFile("data/dragon_reference.ecr");
+void checkRigParity(int form) {
+    const ModelData& m = model(form);
+    const std::vector<u8> ref = readFile((std::string("data/") + kFormNames[form] + "_reference.ecr").c_str());
     CHECK(ref.size() > 16 && std::memcmp(ref.data(), "ECR1", 4) == 0);
     if (ref.size() < 16 || m.skel.count == 0) return;
     RefReader r{ref, 4};
@@ -145,16 +181,20 @@ TEST(rig_matches_blender_deformation) {
             const Vec3 got = skinPoint(mesh, vi, keyPos[vi], skin);
             maxErr[mesh.kind] = std::fmax(maxErr[mesh.kind], length(got - want));
         }
-        std::printf("  case %d (t=%.2f build=%d): %u samples, max error body %.5f wings %.5f parts %.5f\n", c, t,
-                    build, samples, maxErr[0], maxErr[1], maxErr[2]);
-        // The dragon is ~6 units long; 0.01 allows for 8-bit weight quantization.
+        std::printf("  %s case %d (t=%.2f build=%d): %u samples, max error body %.5f wings %.5f parts %.5f\n",
+                    kFormNames[form], c, t, build, samples, maxErr[0], maxErr[1], maxErr[2]);
+        // The adult is ~6 units long; 0.01 allows for 8-bit weight quantization.
         CHECK(maxErr[0] < 0.01f && maxErr[1] < 0.01f && maxErr[2] < 0.01f);
     }
 }
 
+TEST(rig_matches_blender_deformation) {
+    for (int form = 0; form < kFormCount; ++form) checkRigParity(form);
+}
+
 TEST(part_keys_blend_between_stages) {
-    const ModelData& m = model();
-    const MeshData* horns = m.findMesh(kMeshPart, kGroupHorns, 1, kSexFemale);
+    const ModelData& m = model(kFormGrown);
+    const MeshData* horns = m.findMesh(kMeshPart, kGroupHorns, kHornsSwept, kSexFemale);
     CHECK(horns && horns->keyCount == 4);
     if (!horns) return;
     static Vec3 p0[512], p1[512], pm[512], n[512];
@@ -170,6 +210,8 @@ TEST(part_keys_blend_between_stages) {
 
 void runModelTests() {
     RUN(model_loads_and_is_well_formed);
+    RUN(dragon_fits_triangle_budget);
+    RUN(growth_maps_stages_to_forms);
     RUN(euler_matches_blender_convention);
     RUN(rig_matches_blender_deformation);
     RUN(part_keys_blend_between_stages);

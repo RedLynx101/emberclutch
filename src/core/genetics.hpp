@@ -9,7 +9,7 @@ namespace ec {
 enum Build : u8 { kBuildSturdy, kBuildSleek, kBuildLong, kBuildCount };
 enum Horns : u8 { kHornsNubs, kHornsSwept, kHornsCrown, kHornsCrystal, kHornsAntler, kHornsCount };
 enum Frill : u8 { kFrillNone, kFrillFin, kFrillLeaf, kFrillFeather, kFrillCount };
-enum Wings : u8 { kWingsMembrane, kWingsFeathered, kWingsFin, kWingsCount };
+enum Wings : u8 { kWingsClassic, kWingsPlumed, kWingsSail, kWingsCount };
 enum TailTip : u8 { kTailPlain, kTailSpade, kTailTuft, kTailFan, kTailCount };
 enum Pattern : u8 { kPatternSolid, kPatternStripes, kPatternSpots, kPatternDapple, kPatternRunes, kPatternCount };
 

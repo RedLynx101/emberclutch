@@ -11,8 +11,8 @@ swappable parts, proportion presets, and colors painted by the GPU from a mask t
 | Breed | Element | Look | Heartglow | Breath | Aptitude | Favorite foods |
 |---|---|---|---|---|---|---|
 | **Ember** | Fire | Ember-orange, golden horn tips, sturdy | Orange | Flame | +Spark | Firepeppers |
-| **Tide** | Water | Sea-teal, fin frills, webbed wing-fins, long | Aqua | Mist jet | +Wit | River fish |
-| **Gale** | Wind | Sky-blue, feathered wing tips, sleek | Pale cyan | Gust | +Wing | Skyberries |
+| **Tide** | Water | Sea-teal, fin frills and dorsal fin, sail wings, long | Aqua | Mist jet | +Wit | River fish |
+| **Gale** | Wind | Sky-blue, feather crest and plumes, plumed wings, sleek | Pale cyan | Gust | +Wing | Skyberries |
 | **Grove** | Earth / plant | Moss green, leafy frill, bark horns, sturdy | Leaf green | Spore bloom | +Wit | Honeyroot |
 | **Frost** | Ice | White-lavender, crystal horns, sleek | Ice violet | Frost breath | +Wing | Frostmelon |
 | **Lumen** | Light | Gold-white, halo crest, radiant | Sun gold | Sunbeam | +Spark | Starfruit |
@@ -58,8 +58,8 @@ All traits other than elements use one simple rule so the system stays easy to e
 |---|---|---|
 | **Build** | Sturdy · Sleek · Long | Proportion presets (bone scales). Long = serpentine neck/tail. |
 | **Horns** | Nubs · Swept · Crown · Crystal · Antler | Mesh parts on head bone. |
-| **Frill** | None · Fin · Leaf · Feather | Mesh parts on neck/cheek. |
-| **Wings** | Membrane · Feathered · Fin | Mesh part + shared wing bones. |
+| **Frill** | None · Fin · Leaf · Feather | Mesh parts on the head. Also picks the dorsal ridge (D38): none/leaf → spikes, fin → fin sail, feather → plumes. |
+| **Wings** | Classic · Plumed · Sail | Everyone has the same classic wing (arm, thumb, four fingers); the gene picks the trailing edge: scalloped, frilled or smooth (D37). |
 | **Tail tip** | Plain · Spade · Tuft · Fan | Mesh part on last tail bone. |
 | **Pattern** | Solid · Stripes · Spots · Dapple · Runes | Channel of the mask texture set. |
 

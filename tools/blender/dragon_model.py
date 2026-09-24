@@ -1,28 +1,29 @@
-"""Emberclutch dragon model — organic base mesh, rig, starter parts and growth stages.
+"""Emberclutch dragon model: two body forms, rig, parts and growth.
 
 Run headless:
-  blender -b -P tools/blender/dragon_model.py -- --breed ember --stages hatchling,adult --out tools/blender/out/r1
-  blender -b -P tools/blender/dragon_model.py -- --sheet --out tools/blender/out/r1     (all starters x stages)
+  blender -b -P tools/blender/dragon_model.py -- --breed ember --stages hatchling,adult --out tools/blender/out/r1b
+  blender -b -P tools/blender/dragon_model.py -- --breed tide --stages hatchling --views three_quarter,front,side
+  blender -b -P tools/blender/dragon_model.py -- --breed gale --lineup --out tools/blender/out/r1b     (growth lineup)
 
-How it works (docs/plan/alpha-1.md WP2):
-  * The body is ONE mesh: a Skin modifier wraps a skeleton graph (nodes with radii), then
-    subdivision smooths it and a decimate brings it to the triangle budget.
-  * One armature (<= 24 bones for the body draw; wings are a second draw with their own set).
-  * The mesh is modelled as an ADULT. Younger stages are pose-space bone scales
-    (girth, length) with scale inheritance turned off, exactly what the runtime does
-    (architecture section 4): big head, short thick neck, round belly, stubby legs, tiny wings.
-  * Parts (horns, frills, wings, tail tips, spikes, eyes, heartglow) are separate meshes
-    bound to fixed bones, chosen by the genome.
-  * Preview shading is a toon ramp + warm rim to approximate the in-game look. The mask
-    colours (base / accent) come from a per-vertex attribute that later bakes into the
-    mask texture's R/G channels.
+How it works (docs/plan/alpha-1.md WP2; decisions D36-D38):
+  * Two FORMS share one skeleton layout (same bone names and hierarchy):
+      hatchling  a metaball-sculpted baby: round head, big eyes, short snout, chubby body,
+                 stubby legs, tiny wings. Used for the whole hatchling stage.
+      grown      the skin-modifier body used from juvenile to adult.
+    The stage-up to juvenile swaps forms behind a glow (the first molt).
+  * Within a form, growth is pose-space bone scales (girth, length, girth) with scale
+    inheritance off, exactly what the runtime does (architecture section 4).
+  * Parts (eyes, horns, frills, dorsal ridge, tail tips, heartglow) are separate meshes bound
+    to one bone each and chosen by the genome. Wings are a second skinned draw.
+  * Preview shading is a toon ramp + warm rim to approximate the in-game look. The belly
+    accent is a per-vertex mask that the exporter turns into vertex paint.
 """
 import math
 import sys
 
 import bmesh
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
 # ------------------------------------------------------------------------------ arguments
@@ -36,66 +37,27 @@ def arg(name, default=None):
 BREED = arg("--breed", "ember")
 STAGES = arg("--stages", "hatchling,adolescent,adult").split(",")
 OUT = arg("--out", "//dragon")
-SHEET = "--sheet" in argv
-EXPORT = "--export" in argv
 RES = int(arg("--res", "560"))
-
-# Body triangle budgets (architecture section 1): body mesh share of the adult LOD0 budget.
-BODY_TRIS = 2000
 
 # ------------------------------------------------------------------------------ breeds
 # Starter defaults (src/core/genetics.cpp): build, horns, frill, wings, tail, colours.
+# The frill gene also picks the dorsal ridge: none -> spikes, fin -> fin sail, feather -> plumes.
 BREEDS = {
-    "ember": dict(build="sturdy", horns="swept", frill="none", wings="membrane", tail="spade",
+    "ember": dict(build="sturdy", horns="swept", frill="none", wings="classic", tail="spade",
                   base=(0.86, 0.30, 0.10), accent=(0.98, 0.84, 0.55), horn=(0.96, 0.74, 0.30),
                   glow=(1.0, 0.55, 0.16), eye=(0.95, 0.62, 0.15)),
-    "tide": dict(build="long", horns="nubs", frill="fin", wings="fin", tail="fan",
+    "tide": dict(build="long", horns="nubs", frill="fin", wings="sail", tail="fan",
                  base=(0.10, 0.60, 0.62), accent=(0.70, 0.93, 0.86), horn=(0.62, 0.90, 0.85),
                  glow=(0.35, 0.95, 0.85), eye=(0.20, 0.55, 0.85)),
-    "gale": dict(build="sleek", horns="swept", frill="feather", wings="feathered", tail="tuft",
+    "gale": dict(build="sleek", horns="swept", frill="feather", wings="plumed", tail="tuft",
                  base=(0.55, 0.72, 0.95), accent=(0.95, 0.97, 1.00), horn=(0.85, 0.92, 1.00),
                  glow=(0.62, 0.92, 1.00), eye=(0.25, 0.45, 0.90)),
 }
+RIDGE_OF_FRILL = {"none": "spikes", "leaf": "spikes", "fin": "fin", "feather": "feather"}
 
-# ------------------------------------------------------------------------------ skeleton graph
-# Adult proportions. Dragon faces -Y, Z up, units ~ metres. radius = (side, vertical).
-NODES = {
-    "tail_tip": ((0, 3.55, 0.26), (0.03, 0.03)),
-    "tail4": ((0, 2.95, 0.34), (0.11, 0.10)),
-    "tail3": ((0, 2.30, 0.50), (0.19, 0.18)),
-    "tail2": ((0, 1.62, 0.74), (0.30, 0.29)),
-    "hips": ((0, 0.92, 0.98), (0.44, 0.46)),
-    "belly": ((0, 0.20, 1.00), (0.52, 0.58)),
-    "chest": ((0, -0.50, 1.10), (0.50, 0.62)),
-    "neck1": ((0, -0.98, 1.52), (0.31, 0.33)),
-    "neck2": ((0, -1.28, 1.92), (0.23, 0.25)),
-    "neck3": ((0, -1.42, 2.32), (0.20, 0.21)),
-    "head": ((0, -1.58, 2.62), (0.28, 0.26)),
-    "muzzle": ((0, -1.84, 2.55), (0.19, 0.16)),
-    "snout": ((0, -2.12, 2.47), (0.12, 0.10)),
-}
-for side, s in (("L", -1), ("R", 1)):
-    NODES.update({
-        f"shoulder_{side}": ((s * 0.38, -0.50, 0.86), (0.24, 0.27)),
-        f"elbow_{side}": ((s * 0.46, -0.62, 0.46), (0.16, 0.16)),
-        f"wrist_{side}": ((s * 0.46, -0.70, 0.15), (0.12, 0.12)),
-        f"toe_f_{side}": ((s * 0.48, -0.96, 0.07), (0.13, 0.07)),
-        f"hipj_{side}": ((s * 0.42, 0.98, 0.78), (0.31, 0.35)),
-        f"knee_{side}": ((s * 0.52, 0.64, 0.44), (0.20, 0.20)),
-        f"ankle_{side}": ((s * 0.52, 1.04, 0.18), (0.13, 0.13)),
-        f"toe_b_{side}": ((s * 0.54, 0.78, 0.07), (0.14, 0.07)),
-    })
-
-EDGES = [("tail_tip", "tail4"), ("tail4", "tail3"), ("tail3", "tail2"), ("tail2", "hips"),
-         ("hips", "belly"), ("belly", "chest"), ("chest", "neck1"), ("neck1", "neck2"),
-         ("neck2", "neck3"), ("neck3", "head"), ("head", "muzzle"), ("muzzle", "snout")]
-for side in ("L", "R"):
-    EDGES += [("chest", f"shoulder_{side}"), (f"shoulder_{side}", f"elbow_{side}"),
-              (f"elbow_{side}", f"wrist_{side}"), (f"wrist_{side}", f"toe_f_{side}"),
-              ("hips", f"hipj_{side}"), (f"hipj_{side}", f"knee_{side}"),
-              (f"knee_{side}", f"ankle_{side}"), (f"ankle_{side}", f"toe_b_{side}")]
-
-# Bones: (name, head node, tail node, parent). 24 bones -> one body draw call.
+# ------------------------------------------------------------------------------ skeleton
+# Bones: (name, head node, tail node, parent). 24 body bones -> one body draw call. Both
+# forms use this list with their own node positions.
 BONES = [
     ("hips", "hips", "belly", None),
     ("belly", "belly", "chest", "hips"),
@@ -110,67 +72,280 @@ BONES = [
     ("tail3", "tail3", "tail4", "tail2"),
     ("tail4", "tail4", "tail_tip", "tail3"),
 ]
-for side in ("L", "R"):
+for _side in ("L", "R"):
     BONES += [
-        (f"arm_up_{side}", f"shoulder_{side}", f"elbow_{side}", "chest"),
-        (f"arm_lo_{side}", f"elbow_{side}", f"wrist_{side}", f"arm_up_{side}"),
-        (f"hand_{side}", f"wrist_{side}", f"toe_f_{side}", f"arm_lo_{side}"),
-        (f"leg_up_{side}", f"hipj_{side}", f"knee_{side}", "hips"),
-        (f"leg_lo_{side}", f"knee_{side}", f"ankle_{side}", f"leg_up_{side}"),
-        (f"foot_{side}", f"ankle_{side}", f"toe_b_{side}", f"leg_lo_{side}"),
+        (f"arm_up_{_side}", f"shoulder_{_side}", f"elbow_{_side}", "chest"),
+        (f"arm_lo_{_side}", f"elbow_{_side}", f"wrist_{_side}", f"arm_up_{_side}"),
+        (f"hand_{_side}", f"wrist_{_side}", f"toe_f_{_side}", f"arm_lo_{_side}"),
+        (f"leg_up_{_side}", f"hipj_{_side}", f"knee_{_side}", "hips"),
+        (f"leg_lo_{_side}", f"knee_{_side}", f"ankle_{_side}", f"leg_up_{_side}"),
+        (f"foot_{_side}", f"ankle_{_side}", f"toe_b_{_side}", f"leg_lo_{_side}"),
+    ]
+# Wing bones (second draw): arm, forearm and four fingers per side.
+WING_CHAIN = [("wing_arm", "root", "elbow", "chest"), ("wing_fore", "elbow", "wrist", "wing_arm"),
+              ("wing_f1", "wrist", "f1", "wing_fore"), ("wing_f2", "wrist", "f2", "wing_fore"),
+              ("wing_f3", "wrist", "f3", "wing_fore"), ("wing_f4", "wrist", "f4", "wing_fore")]
+WING_BONES = [f"{n}_{side}" for side in ("L", "R") for n, *_ in WING_CHAIN]
+WING_DRAW_BODY_BONES = ("chest", "belly", "hips")  # the membrane's flank edge follows these
+# Classic bat-style wing in its own plane: u = out along the span, v = back along the chord.
+# Four fingers fan across the whole membrane down to the flank ("body"), so no panel is bare.
+WING_LAYOUT = {"root": (0.0, 0.0), "elbow": (0.95, 0.35), "wrist": (1.75, -0.15), "thumb": (1.82, -0.42),
+               "f1": (3.40, 0.15), "f2": (3.30, 1.20), "f3": (2.65, 2.05), "f4": (1.60, 2.45),
+               "body": (0.0, 1.40)}
+
+
+def mirrored_nodes(center, sides):
+    """Node table from centre-line nodes + right-side nodes (x > 0), mirrored to L (x < 0)."""
+    nodes = dict(center)
+    for name, (p, r) in sides.items():
+        nodes[f"{name}_R"] = ((p[0], p[1], p[2]), r)
+        nodes[f"{name}_L"] = ((-p[0], p[1], p[2]), r)
+    return nodes
+
+
+# ------------------------------------------------------------------------------ grown form
+# Adult proportions. Faces -Y, Z up, units ~ metres. radius = (side, vertical).
+GROWN_NODES = mirrored_nodes({
+    "tail_tip": ((0, 3.55, 0.26), (0.03, 0.03)),
+    "tail4": ((0, 2.95, 0.34), (0.11, 0.10)),
+    "tail3": ((0, 2.30, 0.50), (0.19, 0.18)),
+    "tail2": ((0, 1.62, 0.74), (0.30, 0.29)),
+    "hips": ((0, 0.92, 0.98), (0.44, 0.46)),
+    "belly": ((0, 0.20, 1.00), (0.52, 0.58)),
+    "chest": ((0, -0.50, 1.10), (0.50, 0.62)),
+    "neck1": ((0, -0.98, 1.52), (0.31, 0.33)),
+    "neck2": ((0, -1.28, 1.92), (0.23, 0.25)),
+    "neck3": ((0, -1.42, 2.32), (0.20, 0.21)),
+    "head": ((0, -1.58, 2.62), (0.28, 0.26)),
+    "muzzle": ((0, -1.84, 2.55), (0.19, 0.16)),
+    "snout": ((0, -2.12, 2.47), (0.12, 0.10)),
+}, {
+    "shoulder": ((0.38, -0.50, 0.86), (0.24, 0.27)),
+    "elbow": ((0.46, -0.62, 0.46), (0.16, 0.16)),
+    "wrist": ((0.46, -0.70, 0.15), (0.12, 0.12)),
+    "toe_f": ((0.48, -0.96, 0.07), (0.13, 0.07)),
+    "hipj": ((0.42, 0.98, 0.78), (0.31, 0.35)),
+    "knee": ((0.52, 0.64, 0.44), (0.20, 0.20)),
+    "ankle": ((0.52, 1.04, 0.18), (0.13, 0.13)),
+    "toe_b": ((0.54, 0.78, 0.07), (0.14, 0.07)),
+})
+GROWN_EDGES = [("tail_tip", "tail4"), ("tail4", "tail3"), ("tail3", "tail2"), ("tail2", "hips"),
+               ("hips", "belly"), ("belly", "chest"), ("chest", "neck1"), ("neck1", "neck2"),
+               ("neck2", "neck3"), ("neck3", "head"), ("head", "muzzle"), ("muzzle", "snout")]
+for _side in ("L", "R"):
+    GROWN_EDGES += [("chest", f"shoulder_{_side}"), (f"shoulder_{_side}", f"elbow_{_side}"),
+                    (f"elbow_{_side}", f"wrist_{_side}"), (f"wrist_{_side}", f"toe_f_{_side}"),
+                    ("hips", f"hipj_{_side}"), (f"hipj_{_side}", f"knee_{_side}"),
+                    (f"knee_{_side}", f"ankle_{_side}"), (f"ankle_{_side}", f"toe_b_{_side}")]
+
+# Build multipliers (girth, length) on top of growth. Strong on purpose (R1: breeds must read
+# as different silhouettes, not just colours).
+GROWN_BUILDS = {
+    "neutral": {},
+    "sturdy": {"chest": (1.22, 0.95), "belly": (1.18, 0.95), "hips": (1.12, 1.0),
+               "neck1": (1.18, 0.88), "neck2": (1.16, 0.88), "neck3": (1.14, 0.88),
+               "head": (1.10, 0.98), "snout": (1.15, 0.85),
+               "arm_up": (1.2, 0.92), "arm_lo": (1.2, 0.92), "hand": (1.15, 1.0),
+               "leg_up": (1.2, 0.92), "leg_lo": (1.2, 0.92), "foot": (1.15, 1.0),
+               "tail1": (1.12, 0.9), "tail2": (1.1, 0.88), "tail3": (1.08, 0.88), "tail4": (1.05, 0.88)},
+    "sleek": {"chest": (0.86, 1.05), "belly": (0.80, 1.08), "hips": (0.86, 1.0),
+              "neck1": (0.84, 1.12), "neck2": (0.84, 1.14), "neck3": (0.84, 1.14),
+              "head": (0.94, 1.06), "snout": (0.86, 1.2),
+              "arm_up": (0.86, 1.14), "arm_lo": (0.86, 1.16), "hand": (0.9, 1.05),
+              "leg_up": (0.86, 1.14), "leg_lo": (0.86, 1.16), "foot": (0.9, 1.05),
+              "tail1": (0.86, 1.1), "tail2": (0.86, 1.1), "tail3": (0.86, 1.1), "tail4": (0.86, 1.1)},
+    "long": {"neck1": (0.9, 1.4), "neck2": (0.9, 1.45), "neck3": (0.9, 1.45),
+             "head": (0.96, 1.08), "snout": (0.92, 1.12),
+             "chest": (0.95, 1.12), "belly": (0.9, 1.3), "hips": (0.95, 1.1),
+             "tail1": (0.92, 1.3), "tail2": (0.9, 1.45), "tail3": (0.9, 1.5), "tail4": (0.9, 1.55),
+             "arm_up": (0.95, 0.82), "arm_lo": (0.95, 0.8), "leg_up": (0.95, 0.82), "leg_lo": (0.95, 0.8)},
+}
+
+GROWN_BASE_POSE = {"neck1": (-4, 0, 0), "neck2": (6, 0, 0), "neck3": (10, 0, 0), "head": (-6, 0, 0),
+                   "tail1": (6, 0, 0), "tail2": (-4, 0, 6), "tail3": (-6, 0, 10), "tail4": (-4, 0, 12)}
+
+GROWN = dict(
+    name="grown",
+    nodes=GROWN_NODES,
+    edges=GROWN_EDGES,
+    body="skin",
+    body_tris=1800,
+    export_scale=1.0,
+    # Bone (girth_x, length[, girth_z]) and part scales at t = 0: the juvenile. Lerps to 1 (adult).
+    young={
+        "bones": {
+            "head": (0.9, 0.85, 1.0), "snout": (0.9, 0.65, 0.95),
+            "neck1": (0.72, 0.48), "neck2": (0.74, 0.46), "neck3": (0.78, 0.46),
+            "chest": (0.64, 0.5), "belly": (0.62, 0.48), "hips": (0.66, 0.5),
+            "tail1": (0.64, 0.48), "tail2": (0.66, 0.46), "tail3": (0.7, 0.46), "tail4": (0.78, 0.5),
+            "arm_up": (0.66, 0.55), "arm_lo": (0.68, 0.55), "hand": (0.78, 0.68),
+            "leg_up": (0.66, 0.55), "leg_lo": (0.68, 0.53), "foot": (0.78, 0.68),
+        },
+        "parts": {"eyes": 1.3, "horns": 0.45, "frill": 0.6, "wings": 0.38, "spikes": 0.55,
+                  "tail_tip": 0.65, "heart": 0.85},
+    },
+    young_pose={"neck1": -20, "neck2": -6, "neck3": 4, "head": 20},  # juveniles hold heads high
+    base_pose=GROWN_BASE_POSE,
+    builds=GROWN_BUILDS,
+    key_ts=(0.0, 0.35, 0.70, 1.0),
+    eyes=dict(at=(0.155, -1.78, 2.62), out=(0.55, -0.83, 0.08), iris=(0.066, 0.074, 0.040),
+              pupil=(0.022, 0.058, 0.016), glints=((-0.018, 0.030, 0.014), (0.014, -0.030, 0.007)),
+              seg=(12, 2, 8, 2)),
+    # Horns and frills are laid out relative to a head frame: origin + offsets * k.
+    head=dict(origin=(0, -1.58, 2.62), k=1.0, horn_len=1.0, horn_r=1.0, horn_curve=1.0, buds=False,
+              frill_k=1.0, feather_w=1.0),
+    ridge=dict(path=[("neck3", 0.19), ("neck2", 0.23), ("neck1", 0.30), ("chest", 0.57), ("belly", 0.53),
+                     ("hips", 0.42), ("tail2", 0.27), ("tail3", 0.17), ("tail4", 0.09)],
+               size=(0.08, 0.06, 0.3), spike=(1.9, 0.7, 40), fin=(2.2, 1.9, 0.02), plume=(3.2, 1.1, 0.012)),
+    tail_k=1.25,
+    heart=dict(at=(0, -1.06, 1.18), size=0.11),
+    # The rest pose IS the idle: wings half-raised in a V (dihedral), leading edge on top.
+    wing=dict(root=(0.36, -0.40, 1.52), scale=1.0, dihedral=50, droop=10,
+              radii={"root": 0.10, "elbow": 0.075, "wrist": 0.06, "finger": 0.022, "tip": 0.008},
+              arm_tris=180, thickness=0.014),
+    mask=dict(max_x=0.34, max_z=2.35, min_z=-1.0, tail_cut=(1.2, 0.3)),
+    inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.02, "frill": 0.03, "heart": -0.012},
+)
+
+# ------------------------------------------------------------------------------ hatchling form
+# Designed at a comfortable scale (head radius ~0.32); the exporter scales it by
+# export_scale so a fresh hatchling is ~1/4 of the adult's length.
+HATCH_NODES = mirrored_nodes({
+    "tail_tip": ((0, 1.28, 0.28), None),
+    "tail4": ((0, 1.06, 0.30), None),
+    "tail3": ((0, 0.86, 0.34), None),
+    "tail2": ((0, 0.62, 0.42), None),
+    "hips": ((0, 0.34, 0.50), None),
+    "belly": ((0, 0.08, 0.50), None),
+    "chest": ((0, -0.18, 0.56), None),
+    "neck1": ((0, -0.30, 0.68), None),
+    "neck2": ((0, -0.39, 0.80), None),
+    "neck3": ((0, -0.45, 0.92), None),
+    "head": ((0, -0.50, 1.04), None),
+    "muzzle": ((0, -0.80, 1.00), None),
+    "snout": ((0, -1.00, 0.96), None),
+}, {
+    "shoulder": ((0.21, -0.16, 0.42), None),
+    "elbow": ((0.22, -0.21, 0.25), None),
+    "wrist": ((0.23, -0.25, 0.10), None),
+    "toe_f": ((0.23, -0.40, 0.05), None),
+    "hipj": ((0.21, 0.36, 0.44), None),
+    "knee": ((0.23, 0.30, 0.26), None),
+    "ankle": ((0.24, 0.41, 0.12), None),
+    "toe_b": ((0.24, 0.24, 0.05), None),
+})
+
+# Metaball body: (kind, centre, size). Sizes are visible radii (see build_meta_body).
+HATCH_META = [
+    ("ell", (0, -0.55, 1.14), (0.325, 0.30, 0.29)),   # round cranium
+    ("ell", (0, -0.85, 0.97), (0.19, 0.18, 0.13)),    # short muzzle
+    ("ell", (0, -0.79, 0.90), (0.15, 0.14, 0.07)),    # chin
+    ("chain", [(0, -0.30, 0.66), (0, -0.40, 0.80), (0, -0.47, 0.92)], [0.18, 0.165, 0.16]),  # neck
+    ("ell", (0, -0.16, 0.56), (0.28, 0.25, 0.27)),    # chest
+    ("ell", (0, 0.10, 0.50), (0.31, 0.30, 0.29)),     # round belly
+    ("ell", (0, 0.34, 0.52), (0.25, 0.22, 0.24)),     # hips
+    ("ell", (0, 0.02, 0.40), (0.24, 0.26, 0.18)),     # belly underside
+    ("chain", [(0, 0.52, 0.46), (0, 0.72, 0.38), (0, 0.92, 0.32), (0, 1.10, 0.29), (0, 1.26, 0.28)],
+     [0.14, 0.11, 0.085, 0.06, 0.04]),                # tail
+]
+for _s in (-1, 1):
+    HATCH_META += [
+        ("ball", (_s * 0.16, -0.75, 0.96), 0.14),     # chubby cheeks
+        ("chain", [(_s * 0.21, -0.16, 0.42), (_s * 0.22, -0.21, 0.25), (_s * 0.23, -0.25, 0.10)],
+         [0.11, 0.095, 0.09]),                        # front leg
+        ("ell", (_s * 0.23, -0.32, 0.06), (0.095, 0.125, 0.06)),   # front paw
+        ("ell", (_s * 0.21, 0.34, 0.38), (0.13, 0.18, 0.18)),      # thigh
+        ("chain", [(_s * 0.23, 0.40, 0.26), (_s * 0.24, 0.41, 0.12)], [0.095, 0.085]),
+        ("ell", (_s * 0.24, 0.30, 0.06), (0.095, 0.135, 0.06)),    # hind foot
     ]
 
-# ------------------------------------------------------------------------------ growth tables
-# Pose-space scales per bone: (girth, length). Unlisted bones = (1, 1). "parts" scales the
-# attached part meshes. Juvenile/adolescent interpolate toward the adult.
-HATCHLING = {
-    "bones": {
-        "head": (1.9, 1.5, 2.25), "snout": (1.8, 0.38, 1.9),
-        "neck1": (1.30, 0.28), "neck2": (1.45, 0.22), "neck3": (1.55, 0.22),
-        "chest": (1.12, 0.45), "belly": (1.16, 0.34), "hips": (1.10, 0.40),
-        "tail1": (1.00, 0.50), "tail2": (1.05, 0.42), "tail3": (1.15, 0.42), "tail4": (1.30, 0.48),
-        "arm_up": (1.25, 0.55), "arm_lo": (1.35, 0.55), "hand": (1.45, 0.85),
-        "leg_up": (1.20, 0.55), "leg_lo": (1.35, 0.50), "foot": (1.45, 0.85),
-    },
-    "parts": {"eyes": 1.45, "horns": 0.35, "frill": 0.55, "wings": 0.28, "spikes": 0.45,
-              "tail_tip": 0.85, "heart": 1.2},
-}
-STAGE_T = {"hatchling": 0.0, "juvenile": 0.35, "adolescent": 0.70, "adult": 1.0}
 
-BUILDS = {  # multiplies (girth, length) on top of the stage; "neutral" = no build (exports)
-    "neutral": {},
-    "sturdy": {"chest": (1.10, 1.0), "belly": (1.10, 1.0), "arm_up": (1.10, 0.95), "leg_up": (1.10, 0.95),
-               "neck1": (1.08, 0.95), "neck2": (1.08, 0.95), "neck3": (1.08, 0.95)},
-    "sleek": {"chest": (0.92, 1.05), "belly": (0.88, 1.05), "neck1": (0.9, 1.08), "neck2": (0.9, 1.1),
-              "neck3": (0.9, 1.1), "arm_lo": (0.95, 1.05), "leg_lo": (0.95, 1.05)},
-    "long": {"neck1": (0.88, 1.25), "neck2": (0.88, 1.3), "neck3": (0.88, 1.3), "tail1": (0.9, 1.2),
-             "tail2": (0.9, 1.3), "tail3": (0.9, 1.35), "tail4": (0.9, 1.4), "belly": (0.9, 1.1),
-             "leg_up": (0.95, 0.9), "leg_lo": (0.95, 0.9)},
-}
+def softened(builds, amount):
+    """Hatchlings show their build, but gently."""
+    return {name: {bone: tuple(1 + (v - 1) * amount for v in gl) for bone, gl in table.items()}
+            for name, table in builds.items()}
+
+
+HATCH_BASE_POSE = {"head": (4, 0, 0), "tail1": (4, 0, 0), "tail2": (-4, 0, 10), "tail3": (-4, 0, 14),
+                   "tail4": (-2, 0, 18)}
+
+HATCH = dict(
+    name="hatchling",
+    nodes=HATCH_NODES,
+    edges=None,
+    meta=HATCH_META,
+    body="meta",
+    body_tris=1600,
+    export_scale=0.8,
+    young={  # t = 0 is hatch day, t = 1 the end of the hatchling stage
+        "bones": {name: ((0.92, 0.92) if name in ("head", "snout") else (0.84, 0.84))
+                  for name in ("hips", "belly", "chest", "neck1", "neck2", "neck3", "head", "snout", "tail1",
+                               "tail2", "tail3", "tail4", "arm_up", "arm_lo", "hand", "leg_up", "leg_lo", "foot")},
+        "parts": {"eyes": 1.04, "horns": 0.8, "frill": 0.85, "wings": 0.78, "spikes": 0.85,
+                  "tail_tip": 0.9, "heart": 1.0},
+    },
+    young_pose={},
+    base_pose=HATCH_BASE_POSE,
+    builds=softened(GROWN_BUILDS, 0.4),
+    key_ts=(0.0, 0.35, 0.70, 1.0),
+    eyes=dict(at=(0.165, -0.80, 1.08), out=(0.38, -0.92, 0.05), iris=(0.105, 0.12, 0.06),
+              pupil=(0.07, 0.088, 0.03), glints=((-0.024, 0.040, 0.026), (0.022, -0.040, 0.012)),
+              seg=(14, 3, 12, 2)),
+    head=dict(origin=(0, -0.51, 1.236), k=0.9, horn_len=0.3, horn_r=0.75, horn_curve=0.6, buds=True,
+              frill_k=0.5, feather_w=1.9),  # baby frills: small ear fins, a fluffy tuft
+    ridge=dict(path=[("neck3", 0.15), ("neck2", 0.16), ("neck1", 0.18), ("chest", 0.26), ("belly", 0.29),
+                     ("hips", 0.24), ("tail2", 0.13), ("tail3", 0.10), ("tail4", 0.07)],
+               size=(0.035, 0.02, 0.2), spike=(1.3, 0.8, 20), fin=(1.8, 1.5, 0.012), plume=(2.4, 1.0, 0.008)),
+    tail_k=0.42,
+    heart=dict(at=(0, -0.40, 0.60), size=0.075),
+    wing=dict(root=(0.13, -0.10, 0.77), scale=0.19, dihedral=35, droop=5,
+              radii={"root": 0.045, "elbow": 0.035, "wrist": 0.03, "finger": 0.011, "tip": 0.005},
+              arm_tris=120, thickness=0.008),
+    mask=dict(max_x=0.22, max_z=1.06, min_z=0.13, tail_cut=None),
+    inset={"eyes": 0.032, "horns": 0.02, "spikes": 0.012, "frill": 0.02, "heart": -0.008},
+)
+
+FORMS = {"grown": GROWN, "hatchling": HATCH}
+# Review stages -> (form, growth t within the form).
+STAGE = {"newborn": ("hatchling", 0.0), "hatchling": ("hatchling", 0.5), "juvenile": ("grown", 0.0),
+         "adolescent": ("grown", 0.45), "adult": ("grown", 1.0)}
+F = GROWN  # the form being built
+
+
+def use_form(name):
+    global F
+    F = FORMS[name]
+    return F
 
 
 def lerp(a, b, t):
     return a + (b - a) * t
 
 
-def stage_scales(stage, build):
-    """Bone scales (girth, length) and part scales for a stage + build."""
-    return scales_for_t(STAGE_T[stage], build)
+def base_key(name):
+    return name.rsplit("_", 1)[0] if name.endswith(("_L", "_R")) else name
 
 
 def scales_for_t(t, build):
-    """Bone scales (girth_x, length, girth_z) and part scales at growth t (0 hatchling .. 1 adult).
-    The runtime computes exactly this from the tables exported in dragon.ecm."""
+    """Bone scales (girth_x, length, girth_z) and part scales at growth t within the current
+    form. The runtime computes exactly this from the tables exported in the .ecm."""
     bones = {}
     for name, *_ in BONES:
-        key = name.rsplit("_", 1)[0] if name.endswith(("_L", "_R")) else name
-        h = HATCHLING["bones"].get(key, (1.0, 1.0))
+        h = F["young"]["bones"].get(base_key(name), (1.0, 1.0))
         gx, l, gz = (h[0], h[1], h[0]) if len(h) == 2 else h
         gx, l, gz = lerp(gx, 1.0, t), lerp(l, 1.0, t), lerp(gz, 1.0, t)
-        bg, bl = BUILDS[build].get(key, (1.0, 1.0))
+        bg, bl = F["builds"][build].get(base_key(name), (1.0, 1.0))
         bones[name] = (gx * bg, l * bl, gz * bg)
-    parts = {k: lerp(v, 1.0, t) for k, v in HATCHLING["parts"].items()}
+    parts = {k: lerp(v, 1.0, t) for k, v in F["young"]["parts"].items()}
+    for name in WING_BONES:
+        bones[name] = (parts["wings"],) * 3
     return bones, parts
+
+
+def young_tables():
+    """(bone name -> t = 0 scale triple) for the exporter, wings included."""
+    bones, _ = scales_for_t(0.0, "neutral")
+    return bones
 
 
 # ------------------------------------------------------------------------------ helpers
@@ -216,6 +391,15 @@ def decimate_to(obj, target):
         m.ratio = target / cur
         m.use_collapse_triangulate = True
         apply_modifiers(obj)
+
+
+def mesh_object(name, bm, location=(0, 0, 0)):
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    obj = link(bpy.data.objects.new(name, me))
+    obj.location = location
+    return obj
 
 
 # ------------------------------------------------------------------------------ materials
@@ -289,17 +473,26 @@ def toon_material(name, color, accent=None, emission=0.0, rim=(1.0, 0.72, 0.45))
 
 # ------------------------------------------------------------------------------ body
 def build_body():
-    names = list(NODES)
+    obj = build_skin_body() if F["body"] == "skin" else build_meta_body()
+    decimate_to(obj, F["body_tris"])
+    smooth(obj)
+    paint_mask(obj)
+    return obj
+
+
+def build_skin_body():
+    nodes = F["nodes"]
+    names = list(nodes)
     idx = {n: i for i, n in enumerate(names)}
     me = bpy.data.meshes.new("body")
-    me.from_pydata([NODES[n][0] for n in names], [(idx[a], idx[b]) for a, b in EDGES], [])
+    me.from_pydata([nodes[n][0] for n in names], [(idx[a], idx[b]) for a, b in F["edges"]], [])
     obj = link(bpy.data.objects.new("body", me))
     skin = obj.modifiers.new("skin", "SKIN")
     skin.use_smooth_shade = True
     skin.branch_smoothing = 0.6
     for i, n in enumerate(names):
         sv = me.skin_vertices[0].data[i]
-        sv.radius = NODES[n][1]
+        sv.radius = nodes[n][1]
         sv.use_root = n == "hips"
     sub = obj.modifiers.new("sub", "SUBSURF")
     sub.levels = sub.render_levels = int(arg("--subd", "2"))
@@ -308,15 +501,58 @@ def build_body():
     sm.iterations = 6
     apply_modifiers(obj)
     sculpt_details(obj)
-    decimate_to(obj, BODY_TRIS)
-    smooth(obj)
-    paint_mask(obj)
+    return obj
+
+
+# A lone metaball of radius 1 (stiffness 2, threshold 0.6) is visible out to 0.575.
+META_VISIBLE = 0.575
+
+
+def build_meta_body():
+    """Metaballs blend soft round volumes: ideal for a chubby baby. Voxel remesh evens the
+    topology for decimation and weighting."""
+    mb = bpy.data.metaballs.new("body")
+    mb.resolution = mb.render_resolution = 0.018
+
+    def ball(c, r):
+        e = mb.elements.new(type="BALL")
+        e.co, e.radius = c, r / META_VISIBLE
+
+    for kind, c, size in F["meta"]:
+        if kind == "ball":
+            ball(c, size)
+        elif kind == "ell":
+            e = mb.elements.new(type="ELLIPSOID")
+            m = max(size)
+            e.co, e.radius = c, m / META_VISIBLE
+            e.size_x, e.size_y, e.size_z = (r / m for r in size)
+        else:  # chain of balls with linearly tapering radii
+            pts, radii = [V(p) for p in c], size
+            for (a, ra), (b, rb) in zip(zip(pts, radii), zip(pts[1:], radii[1:])):
+                n = max(1, int((b - a).length / (0.35 * min(ra, rb))))
+                for k in range(n):
+                    ball(a.lerp(b, k / n), ra + (rb - ra) * k / n)
+            ball(pts[-1], radii[-1])
+    obj = link(bpy.data.objects.new("body", mb))
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    bpy.ops.object.convert(target="MESH")
+    obj = bpy.context.view_layer.objects.active
+    obj.select_set(False)
+    rm = obj.modifiers.new("remesh", "REMESH")
+    rm.mode = "VOXEL"
+    rm.voxel_size = 0.03
+    sm = obj.modifiers.new("relax", "SMOOTH")
+    sm.factor, sm.iterations = 0.5, 6
+    apply_modifiers(obj)
+    obj.name = obj.data.name = "body"
     return obj
 
 
 def sculpt_details(obj):
-    """Procedural shaping the skin graph can't do: deep chest keel, brow, cheeks, jaw line,
-    tapered snout, slimmer ankles."""
+    """Grown form only. Procedural shaping the skin graph can't do: deep chest keel, brow,
+    cheeks, tapered snout."""
     bm = bmesh.new()
     bm.from_mesh(obj.data)
     for v in bm.verts:
@@ -342,83 +578,74 @@ def sculpt_details(obj):
 
 
 def paint_mask(obj):
-    """Per-vertex mask colour: R = base weight, G = accent (belly plates, throat, under-tail)."""
+    """Per-vertex mask colour: R = base weight, G = accent (belly, throat, under-tail)."""
     me = obj.data
+    mk = F["mask"]
     attr = me.color_attributes.new("mask", "FLOAT_COLOR", "POINT")
     down = Vector((0, -0.45, -0.89)).normalized()
     for v in me.vertices:
-        n = v.normal
         x, y, z = v.co
-        a = max(0.0, (n.dot(down) - 0.25) / 0.45)
-        a = min(1.0, a)
-        # only the torso/neck/tail underside, not legs or head top
-        if abs(x) > 0.34 or z > 2.35 or (y > 1.2 and z < 0.3):
+        a = min(1.0, max(0.0, (v.normal.dot(down) - 0.25) / 0.45))
+        if abs(x) > mk["max_x"] or z > mk["max_z"] or z < mk["min_z"]:
+            a = 0.0
+        if mk["tail_cut"] and y > mk["tail_cut"][0] and z < mk["tail_cut"][1]:
             a = 0.0
         attr.data[v.index].color = (1.0 - a, a, 0.0, 1.0)
 
 
 # ------------------------------------------------------------------------------ armature
+def wing_points(side):
+    """WING_LAYOUT placed in 3D: the span axis rises by the dihedral, the chord axis droops."""
+    w = F["wing"]
+    s = -1 if side == "L" else 1
+    th, ph = math.radians(w["dihedral"]), math.radians(w["droop"])
+    span = Vector((s * math.cos(th), 0, math.sin(th)))
+    chord = Vector((0, math.cos(ph), -math.sin(ph)))
+    root = mirror(w["root"], s)
+    return {k: root + (span * u + chord * v) * w["scale"] for k, (u, v) in WING_LAYOUT.items()}
+
+
 def build_armature():
     arm_data = bpy.data.armatures.new("rig")
     arm = link(bpy.data.objects.new("rig", arm_data))
     bpy.context.view_layer.objects.active = arm
     bpy.ops.object.mode_set(mode="EDIT")
     eb = {}
-    for name, h, t, parent in BONES:
+    nodes = F["nodes"]
+
+    def add(name, head, tail, parent):
         b = arm_data.edit_bones.new(name)
-        b.head, b.tail = V(NODES[h][0]), V(NODES[t][0])
+        b.head, b.tail = head, tail
         b.roll = 0
         if parent:
             b.parent = eb[parent]
             b.use_connect = (b.head - eb[parent].tail).length < 1e-4
         b.inherit_scale = "NONE"
         eb[name] = b
-    add_wing_bones(arm_data, eb)
+
+    for name, h, t, parent in BONES:
+        add(name, V(nodes[h][0]), V(nodes[t][0]), parent)
+    for side in ("L", "R"):
+        w = wing_points(side)
+        for name, h, t, parent in WING_CHAIN:
+            add(f"{name}_{side}", w[h], w[t], parent if parent == "chest" else f"{parent}_{side}")
     bpy.ops.object.mode_set(mode="OBJECT")
     return arm
 
 
-WING_ROOT = (0.36, -0.40, 1.52)
-
-
-def wing_points(side):
-    s = -1 if side == "L" else 1
-    P = lambda x, y, z: Vector((s * x, y, z))  # noqa: E731
-    return {
-        "root": P(*WING_ROOT),
-        "elbow": P(1.05, -0.05, 2.10),
-        "wrist": P(1.85, -0.40, 2.42),
-        "f1": P(3.10, 0.15, 2.85),
-        "f2": P(3.05, 1.05, 2.10),
-        "f3": P(2.25, 1.55, 1.55),
-        "body": P(0.32, 0.85, 1.42),
-    }
-
-
-def add_wing_bones(arm_data, eb):
-    for side in ("L", "R"):
-        w = wing_points(side)
-        chain = [("wing_arm", "root", "elbow", "chest"), ("wing_fore", "elbow", "wrist", "wing_arm"),
-                 ("wing_f1", "wrist", "f1", "wing_fore"), ("wing_f2", "wrist", "f2", "wing_fore"),
-                 ("wing_f3", "wrist", "f3", "wing_fore")]
-        for name, h, t, parent in chain:
-            b = arm_data.edit_bones.new(f"{name}_{side}")
-            b.head, b.tail = w[h], w[t]
-            p = eb[parent] if parent == "chest" else eb[f"{parent}_{side}"]
-            b.parent = p
-            b.use_connect = (b.head - p.tail).length < 1e-4
-            b.inherit_scale = "NONE"
-            eb[f"{name}_{side}"] = b
-
-
 def bind(mesh_obj, arm, keep):
-    """Automatic weights, then keep only the bones this draw may use (body or wing set)."""
+    """Automatic (heat) weights from the bones this draw may use, at most 2 per vertex."""
+    saved = {b.name: b.use_deform for b in arm.data.bones}
+    for b in arm.data.bones:
+        b.use_deform = keep(b.name)
     bpy.ops.object.select_all(action="DESELECT")
     mesh_obj.select_set(True)
     arm.select_set(True)
     bpy.context.view_layer.objects.active = arm
     bpy.ops.object.parent_set(type="ARMATURE_AUTO")
     bpy.ops.object.select_all(action="DESELECT")
+    for b in arm.data.bones:
+        b.use_deform = saved[b.name]
     for vg in list(mesh_obj.vertex_groups):
         if not keep(vg.name):
             mesh_obj.vertex_groups.remove(vg)
@@ -430,6 +657,8 @@ def bind(mesh_obj, arm, keep):
     bpy.ops.object.vertex_group_normalize_all(lock_active=False)
     bpy.ops.object.mode_set(mode="OBJECT")
     mesh_obj.select_set(False)
+    unweighted = sum(1 for v in mesh_obj.data.vertices if not any(g.weight > 0 for g in v.groups))
+    assert unweighted == 0, f"{mesh_obj.name}: {unweighted} vertices without bone weights"
 
 
 def parent_to_bone(obj, arm, bone):
@@ -444,21 +673,8 @@ def parent_to_bone(obj, arm, bone):
     obj["base_loc"] = list(obj.location)
 
 
-# ------------------------------------------------------------------------------ parts
-def sphere(name, loc, scale, seg=16, rings=10):
-    bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=seg, v_segments=rings, radius=1.0)
-    me = bpy.data.meshes.new(name)
-    bm.to_mesh(me)
-    bm.free()
-    obj = link(bpy.data.objects.new(name, me))
-    obj.location = loc
-    obj.scale = scale
-    smooth(obj)
-    return obj
-
-
-def horn_mesh(name, length, radius, curve, segments=7, ring=6):
+# ------------------------------------------------------------------------------ part shapes
+def horn_mesh(name, length, radius, curve, segments=6, ring=5):
     """A tapered horn swept backward along a curve (in local +Y back, +Z up)."""
     bm = bmesh.new()
     rings = []
@@ -466,17 +682,14 @@ def horn_mesh(name, length, radius, curve, segments=7, ring=6):
         t = i / segments
         ang = curve * t
         c = Vector((0, math.sin(ang) * length * t * 0.9, math.cos(ang) * length * t))
-        r = radius * (1 - t) ** 0.9 + 0.004
+        r = radius * (1 - t) ** 0.9 + radius * 0.06
         rings.append([bm.verts.new(c + Vector((math.cos(a) * r, math.sin(a) * r * 0.8, 0)))
                       for a in (2 * math.pi * k / ring for k in range(ring))])
     for a, b in zip(rings, rings[1:]):
         for k in range(ring):
             bm.faces.new((a[k], a[(k + 1) % ring], b[(k + 1) % ring], b[k]))
     bm.faces.new(list(reversed(rings[0])))
-    me = bpy.data.meshes.new(name)
-    bm.to_mesh(me)
-    bm.free()
-    obj = link(bpy.data.objects.new(name, me))
+    obj = mesh_object(name, bm)
     smooth(obj)
     return obj
 
@@ -488,199 +701,343 @@ def flat_fan(name, pts, thickness=0.015):
     vs = [bm.verts.new(Vector(p) - origin) for p in pts]
     for i in range(1, len(vs) - 1):
         bm.faces.new((vs[0], vs[i], vs[i + 1]))
-    me = bpy.data.meshes.new(name)
-    bm.to_mesh(me)
-    bm.free()
-    obj = link(bpy.data.objects.new(name, me))
-    obj.location = origin
+    obj = mesh_object(name, bm, origin)
     m = obj.modifiers.new("thick", "SOLIDIFY")
     m.thickness = thickness
     m.offset = 0
+    m.use_rim = False  # two sheets; a rim on something this thin costs triangles nobody sees
     apply_modifiers(obj)
     return obj
 
 
+def blade(name, base, direction, side, length, width, thickness=0.01):
+    """A feather / leaf blade from base along direction: widest a third of the way out, with a
+    rounded tip (a sharp diamond read as ice shards in R1b drafts)."""
+    d = Vector(direction).normalized()
+    s = (Vector(side) - d * Vector(side).dot(d)).normalized()
+    b = Vector(base)
+    return flat_fan(name, [b, b + d * length * 0.3 + s * width * 0.5, b + d * length * 0.75 + s * width * 0.38,
+                           b + d * length * 0.95 + s * width * 0.14, b + d * length,
+                           b + d * length * 0.95 - s * width * 0.14, b + d * length * 0.75 - s * width * 0.38,
+                           b + d * length * 0.3 - s * width * 0.5], thickness)
+
+
+def lobed_fin(name, base, out, up, radius, a0, a1, lobes, thickness, n=10):
+    """A rounded fin fanning from base between angles a0..a1 (degrees, in the out/up plane)
+    with a gently lobed edge."""
+    base, out, up = Vector(base), Vector(out).normalized(), Vector(up).normalized()
+    pts = [base]
+    for j in range(n + 1):
+        f = j / n
+        a = math.radians(a0 + (a1 - a0) * f)
+        r = radius * (1 - 0.14 * abs(math.sin(math.pi * lobes * f))) * (0.75 + 0.25 * math.sin(math.pi * f))
+        pts.append(base + (out * math.cos(a) + up * math.sin(a)) * r)
+    return flat_fan(name, pts, thickness)
+
+
+def add_dome(bm, center, out, up, rx, ry, depth, seg, rings, material):
+    """Front hemisphere (the back is buried in the head), faces pointing along `out`."""
+    out = Vector(out).normalized()
+    right = Vector(up).cross(out).normalized()
+    up = out.cross(right).normalized()
+    center = Vector(center)
+    layers = []
+    for k in range(rings):
+        phi = 0.5 * math.pi * k / rings
+        layers.append([bm.verts.new(center + right * math.cos(a) * rx * math.cos(phi) +
+                                    up * math.sin(a) * ry * math.cos(phi) + out * depth * math.sin(phi))
+                       for a in (2 * math.pi * j / seg for j in range(seg))])
+    pole = bm.verts.new(center + out * depth)
+    faces = []
+    for a, b in zip(layers, layers[1:]):
+        faces += [bm.faces.new((a[j], a[(j + 1) % seg], b[(j + 1) % seg], b[j])) for j in range(seg)]
+    faces += [bm.faces.new((layers[-1][j], layers[-1][(j + 1) % seg], pole)) for j in range(seg)]
+    for f in faces:
+        f.material_index = material
+        f.normal_update()
+        if f.normal.dot(f.calc_center_median() - center) < 0:
+            f.normal_flip()
+
+
+# ------------------------------------------------------------------------------ parts
+def mirror(p, s):
+    return Vector((s * p[0], p[1], p[2]))
+
+
+def head_point(off, s=1):
+    h = F["head"]
+    return V(h["origin"]) + mirror(off, s) * h["k"]
+
+
 def build_eyes(mats):
-    """Cute-but-noble eyes: a large amber iris dome, a big dark pupil and two glints, set
-    into the face with a thin lid rim in the body colour. No white eyeball (that read as frog)."""
+    """Big glossy eyes: an iris dome, a pupil dome on it and two glints, one object per eye
+    (origin at the iris centre, so growth scaling keeps the pieces together). No white
+    eyeball: that read as a frog."""
+    e = F["eyes"]
+    iseg, irings, pseg, prings = e["seg"]
+    irx, iry, idepth = e["iris"]
+    prx, pry, pdepth = e["pupil"]
+    # The pupil's rim sits on the iris surface.
+    poff = idepth * math.sqrt(max(0.0, 1 - (prx / irx) ** 2)) - 0.1 * pdepth
     eyes = []
-    hx, hy, hz = NODES["head"][0]
     for s in (-1, 1):
-        out = Vector((s * 0.55, -0.83, 0.08)).normalized()
-        c = Vector((s * 0.155, hy - 0.20, hz + 0.0))
-        lid = sphere(f"lid_{s}", c - out * 0.018, (0.068, 0.068, 0.074), 10, 6)
-        lid.data.materials.append(mats["body_plain"])
-        iris = sphere(f"iris_{s}", c, (0.060, 0.060, 0.066), 10, 7)
-        iris.data.materials.append(mats["iris"])
-        pupil = sphere(f"pupil_{s}", c + out * 0.036, (0.036, 0.036, 0.046), 8, 5)
-        pupil.data.materials.append(mats["pupil"])
-        up = Vector((0, 0, 1))
-        g1 = sphere(f"glint_{s}", c + out * 0.074 + up * 0.022 - Vector((s * 0.012, 0, 0)), (0.013,) * 3, 6, 4)
-        g2 = sphere(f"glint2_{s}", c + out * 0.074 - up * 0.02 + Vector((s * 0.01, 0, 0)), (0.006,) * 3, 6, 4)
-        for g in (g1, g2):
-            g.data.materials.append(mats["glint"])
-        for o in (lid, iris, pupil, g1, g2):
-            eyes.append(o)
+        at, out = mirror(e["at"], s), mirror(e["out"], s).normalized()
+        right = Vector((0, 0, 1)).cross(out).normalized()
+        up = out.cross(right).normalized()
+        bm = bmesh.new()
+        add_dome(bm, (0, 0, 0), out, up, irx, iry, idepth, iseg, irings, 0)
+        add_dome(bm, out * poff, out, up, prx, pry, pdepth, pseg, prings, 1)
+        for gx, gy, gr in e["glints"]:
+            gx *= -s  # glints sit toward the nose on both eyes
+            h = poff + pdepth * math.sqrt(max(0.0, 1 - (gx / prx) ** 2 - (gy / pry) ** 2))
+            add_dome(bm, out * (h + 0.003) + right * gx + up * gy, out, up, gr, gr, gr * 0.3, 8, 1, 2)
+        obj = mesh_object(f"eye_{s}", bm, at)
+        for m in ("iris", "pupil", "glint"):
+            obj.data.materials.append(mats[m])
+        smooth(obj)
+        eyes.append(obj)
     return eyes
 
 
+HORN_KINDS = {  # offsets in the head frame; rot = (x, y mirrored, z) degrees
+    "swept": [dict(len=0.62, r=0.085, curve=55, seg=5, ring=5, at=(0.13, 0.10, 0.16), rot=(-18, 12, 0)),
+              dict(len=0.28, r=0.042, curve=70, seg=4, ring=4, at=(0.22, 0.02, 0.02), rot=(-40, 55, 0),
+                   minor=True)],
+    "nubs": [dict(len=0.22, r=0.075, curve=35, seg=4, ring=5, at=(0.12, 0.08, 0.17), rot=(-20, 15, 0))],
+}
+
+
 def build_horns(kind, mats):
-    hx, hy, hz = NODES["head"][0]
+    h = F["head"]
     horns = []
     for s in (-1, 1):
-        if kind == "swept":
-            h = horn_mesh(f"horn_{s}", 0.56, 0.075, math.radians(55))
-            h.location = (s * 0.13, hy + 0.10, hz + 0.16)
-            h.rotation_euler = (math.radians(-18), s * math.radians(12), 0)
-            h2 = horn_mesh(f"hornlet_{s}", 0.26, 0.04, math.radians(70))
-            h2.location = (s * 0.22, hy + 0.02, hz + 0.02)
-            h2.rotation_euler = (math.radians(-40), s * math.radians(55), 0)
-            horns += [h, h2]
-        elif kind == "nubs":
-            h = horn_mesh(f"horn_{s}", 0.20, 0.07, math.radians(35))
-            h.location = (s * 0.12, hy + 0.08, hz + 0.17)
-            h.rotation_euler = (math.radians(-20), s * math.radians(15), 0)
-            horns.append(h)
-    for h in horns:
-        h.data.materials.append(mats["horn"])
+        for spec in HORN_KINDS[kind]:
+            if h["buds"] and spec.get("minor"):
+                continue  # hatchlings only have the main horn buds
+            seg = max(3, spec["seg"] - (2 if h["buds"] else 0))
+            o = horn_mesh(f"horn_{s}", spec["len"] * h["k"] * h["horn_len"], spec["r"] * h["k"] * h["horn_r"],
+                          math.radians(spec["curve"]) * h["horn_curve"], seg, spec["ring"])
+            o.location = head_point(spec["at"], s)
+            rx, ry, rz = spec["rot"]
+            o.rotation_euler = (math.radians(rx), s * math.radians(ry), math.radians(rz))
+            o.data.materials.append(mats["horn"])
+            horns.append(o)
     return horns
 
 
 def build_frill(kind, mats):
-    hx, hy, hz = NODES["head"][0]
+    """Head frills. Fin: big ear fins + cheek fins. Feather: a crest of long plumes sweeping
+    back from the crown + cheek feathers."""
+    h = F["head"]
+    k, wk = h["frill_k"], h["feather_w"]
     parts = []
-    for s in (-1, 1):
-        if kind == "fin":
-            f = flat_fan(f"fin_{s}", [Vector((s * 0.2, hy + 0.06, hz - 0.02)),
-                                      Vector((s * 0.46, hy + 0.20, hz + 0.18)),
-                                      Vector((s * 0.52, hy + 0.34, hz + 0.02)),
-                                      Vector((s * 0.44, hy + 0.36, hz - 0.14)),
-                                      Vector((s * 0.2, hy + 0.20, hz - 0.12))])
-            parts.append(f)
-        elif kind == "feather":
-            for k in range(3):
-                f = flat_fan(f"feather_{s}_{k}", [Vector((s * 0.18, hy + 0.10, hz - 0.02 - k * 0.06)),
-                                                  Vector((s * 0.40, hy + 0.28 + k * 0.05, hz + 0.08 - k * 0.1)),
-                                                  Vector((s * 0.46, hy + 0.42 + k * 0.05, hz - 0.02 - k * 0.1)),
-                                                  Vector((s * 0.22, hy + 0.20, hz - 0.08 - k * 0.06))])
-                parts.append(f)
+
+    def hp(off, s=1):  # frills scale about the head frame's side anchor, not its origin
+        return head_point((off[0] * k + 0.20 * (1 - k), off[1] * k, off[2] * k), s)
+
+    if kind == "fin":  # rounded, lobed ear fins sweeping back + small cheek fins
+        for s in (-1, 1):
+            out = Vector((s * 0.5, 0.86, 0.0))
+            parts.append(lobed_fin(f"fin_{s}", hp((0.20, 0.06, 0.0), s), out, (0, 0, 1),
+                                   0.56 * k * h["k"], 70, -45, 3, 0.016 * h["k"]))
+            parts.append(lobed_fin(f"cheekfin_{s}", hp((0.18, -0.08, -0.14), s), Vector((s * 0.6, 0.8, 0.0)),
+                                   (0, 0, 1), 0.3 * k * h["k"], 10, -60, 2, 0.014 * h["k"]))
+    elif kind == "feather":
+        for x, length, spread in ((0.0, 0.80, 0.0), (0.07, 0.66, 0.28), (-0.07, 0.66, -0.28)):
+            base = head_point((x, 0.04, 0.22))
+            d = Vector((spread, 0.82, 0.55))
+            parts.append(blade(f"crest_{x:+.2f}", base, d, Vector((1, 0, -0.3)), length * k * h["k"],
+                               0.16 * wk * k * h["k"]))
+        for s in (-1, 1):
+            for j, (dz, length) in enumerate(((0.02, 0.46), (-0.12, 0.36))):
+                base = head_point((0.18, 0.02, dz), s)
+                d = Vector((s * 0.45, 0.88, 0.12 - j * 0.1))
+                parts.append(blade(f"cheekfeather_{s}_{j}", base, d, Vector((0, -0.2, 1)), length * k * h["k"],
+                                   0.12 * wk * k * h["k"]))
     for p in parts:
         p.data.materials.append(mats["accent_flat"])
     return parts
 
 
-def build_spikes(mats):
-    spikes = []
-    path = [("neck3", 0.16), ("neck2", 0.2), ("neck1", 0.26), ("chest", 0.5), ("belly", 0.52),
-            ("hips", 0.44), ("tail2", 0.27), ("tail3", 0.17), ("tail4", 0.1)]
+def spine_up(node, nxt):
+    """Direction perpendicular to the spine at a node, pointing up/back."""
+    d = (V(F["nodes"][nxt][0]) - V(F["nodes"][node][0])).normalized()
+    n = Vector((0, -d.z, d.y))
+    return n if n.z + 0.3 * n.y > 0 else -n
+
+
+def build_ridge(kind, mats):
+    """Dorsal ridge along the spine (group 'spikes'; the variant follows the frill gene).
+    Returns [(object, bone)]. Every piece is rigid on one spine bone."""
+    r = F["ridge"]
+    path, nodes = r["path"], F["nodes"]
+    s0, s1, top_ref = r["size"]
+    pieces = []
     for i, (node, top) in enumerate(path):
-        x, y, z = NODES[node][0]
-        size = 0.07 + 0.05 * min(1.0, top / 0.3)
-        h = horn_mesh(f"spike_{i}", size * 1.8, size * 0.7, math.radians(40), 3, 5)
-        h.location = (0, y + 0.05, z + top * 0.92)
-        h.rotation_euler = (math.radians(-10), 0, 0)
-        h.data.materials.append(mats["horn"])
-        spikes.append((h, node))
-    return spikes
+        nxt = path[i + 1][0] if i + 1 < len(path) else "tail_tip"
+        up = spine_up(node, nxt)
+        c = V(nodes[node][0])
+        base = c + up * top * 0.92
+        size = s0 + s1 * min(1.0, top / top_ref)
+        if kind == "spikes":
+            lf, rf, curve = r["spike"]
+            o = horn_mesh(f"spike_{i}", size * lf, size * rf, math.radians(curve), 3, 4)
+            o.location = base
+            o.rotation_euler = (-math.atan2(up.y, up.z) - math.radians(10), 0, 0)
+            o.data.materials.append(mats["horn"])
+            pieces.append((o, node))
+        elif kind == "fin":
+            h0f, h1f, thick = r["fin"]
+            ntop = path[i + 1][1] if i + 1 < len(path) else top * 0.5
+            nbase = V(nodes[nxt][0]) + up * ntop * 0.92
+            nsize = s0 + s1 * min(1.0, ntop / top_ref)
+            h0, h1 = size * h0f, nsize * h1f
+            end = base.lerp(nbase, 1.12)  # overlap the next panel so bends don't open gaps
+            pts = [base, base + up * h0, base.lerp(end, 0.5) + up * (h0 + h1) * 0.55, end + up * h1, end]
+            o = flat_fan(f"finridge_{i}", pts, thick)
+            o.data.materials.append(mats["membrane"])
+            pieces.append((o, node))
+        else:  # feather plumes: a mane on the neck, single plumes down the back
+            lf, wf, thick = r["plume"]
+            back = (V(nodes[nxt][0]) - c).normalized()
+            d = (back * 0.8 + up * 0.6).normalized()
+            for j, xo in enumerate((-1, 1) if node.startswith("neck") else (0,)):
+                o = blade(f"plume_{i}_{j}", base + Vector((xo * size * 0.35, 0, 0)),
+                          d + Vector((xo * 0.25, 0, 0)), Vector((1, 0, 0)), size * lf, size * wf, thick)
+                o.data.materials.append(mats["accent_flat"])
+                pieces.append((o, node))
+    return pieces
 
 
 def build_tail_tip(kind, mats):
-    x, y, z = NODES["tail_tip"][0]
+    x, y, z = F["nodes"]["tail_tip"][0]
+    k = F["tail_k"]
     if kind == "spade":
-        obj = flat_fan("tail_tip", [Vector((0, y - 0.05, z)), Vector((-0.2, y + 0.12, z)),
-                                    Vector((0, y + 0.42, z)), Vector((0.2, y + 0.12, z))], 0.04)
+        obj = flat_fan("tail_tip", [Vector((0, y - 0.05 * k, z)), Vector((-0.24 * k, y + 0.14 * k, z)),
+                                    Vector((0, y + 0.5 * k, z)), Vector((0.24 * k, y + 0.14 * k, z))], 0.04 * k)
+        obj.data.materials.append(mats["horn"])
     elif kind == "fan":
-        pts = [Vector((0, y - 0.05, z))]
-        for k in range(7):
-            a = math.radians(-65 + k * 21.6)
-            pts.append(Vector((math.sin(a) * 0.36, y + math.cos(a) * 0.40, z + 0.02)))
-        obj = flat_fan("tail_tip", pts, 0.02)
-    else:  # tuft
-        obj = sphere("tail_tip", (0, y + 0.18, z + 0.02), (0.14, 0.24, 0.12), 10, 7)
-    obj.data.materials.append(mats["horn" if kind == "spade" else "accent_flat"])
+        pts = [Vector((0, y - 0.05 * k, z))]
+        for j in range(7):
+            a = math.radians(-65 + j * 21.6)
+            pts.append(Vector((math.sin(a) * 0.40 * k, y + math.cos(a) * 0.46 * k, z + 0.02 * k)))
+        obj = flat_fan("tail_tip", pts, 0.02 * k)
+        obj.data.materials.append(mats["membrane"])
+    else:  # tuft: a plume of feathers fanning from the tip
+        blades = []
+        base = Vector((0, y - 0.03 * k, z))
+        for j, (ax, az) in enumerate(((0, 0), (-32, 8), (32, 8), (-16, -14), (16, -14))):
+            d = Vector((math.sin(math.radians(ax)), math.cos(math.radians(ax)), math.sin(math.radians(az))))
+            side = Vector((math.cos(math.radians(ax)), -math.sin(math.radians(ax)), 0.3))
+            blades.append(blade(f"tuft_{j}", base, d, side, (0.5 if j == 0 else 0.42) * k, 0.16 * k, 0.012 * k))
+        bpy.ops.object.select_all(action="DESELECT")
+        for b in blades:
+            b.select_set(True)
+        bpy.context.view_layer.objects.active = blades[0]
+        bpy.ops.object.join()
+        obj = bpy.context.view_layer.objects.active
+        obj.select_set(False)
+        obj.name = "tail_tip"
+        obj.data.materials.clear()
+        obj.data.materials.append(mats["accent_flat"])
     return obj
 
 
-def build_wings(kind, mats):
-    """Wing arm (skinned tube) + membrane/fin/feathers, bound to the wing bones."""
+def build_heart(mats):
+    """The heartglow: a flat heart emblem on the chest (emissive)."""
+    c = V(F["heart"]["at"])
+    size = F["heart"]["size"]
+    pts = [c]
+    for j in range(17):
+        t = 2 * math.pi * j / 16
+        x = 16 * math.sin(t) ** 3
+        zz = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)
+        pts.append(c + Vector((x, 0, zz + 2)) * (size / 17))
+    obj = flat_fan("heart", pts, 0.2 * size)
+    obj.data.materials.append(mats["heart"])
+    return [obj]
+
+
+def wing_edge(w, style):
+    """Trailing edge from the flank to the leading finger tip. Every membrane panel is bounded
+    by fingers, so there is no bare stretch (R1). classic: scalloped; sail: smooth and
+    rounded; plumed: frilled into feather points."""
+    def sag(a, b, depths):
+        n = len(depths)
+        return [a.lerp(b, j / (n + 1)).lerp(w["wrist"], depths[j - 1]) for j in range(1, n + 1)]
+
+    edge = [w["body"]]
+    for a, b, depth in (("body", "f4", 0.20), ("f4", "f3", 0.26), ("f3", "f2", 0.26), ("f2", "f1", 0.22)):
+        if style == "sail":
+            depths = [-0.05 * math.sin(math.pi * j / 4) for j in range(1, 4)]
+        elif style == "plumed":
+            depths = [depth * math.sin(math.pi * j / 6) * (1.0 if j % 2 else 0.35) for j in range(1, 6)]
+        else:
+            depths = [depth * math.sin(math.pi * j / 4) for j in range(1, 4)]
+        edge += sag(w[a], w[b], depths) + [w[b]]
+    return edge
+
+
+def build_wings(style, mats):
+    """Classic dragon wings for every breed: arm, forearm, a thumb claw and four long fingers
+    spread across the whole membrane, which reaches back along the flank."""
+    wr = F["wing"]["radii"]
     objs = []
     for side in ("L", "R"):
         w = wing_points(side)
-        # arm and finger bones as a thin skin mesh
-        names = ["root", "elbow", "wrist", "f1", "f2", "f3"]
-        rad = {"root": 0.09, "elbow": 0.065, "wrist": 0.05, "f1": 0.012, "f2": 0.012, "f3": 0.012}
+        names = ["root", "elbow", "wrist", "thumb", "f1", "f2", "f3", "f4"]
+        pos = [w[n] for n in names]
+        rad = [wr["root"], wr["elbow"], wr["wrist"], wr["tip"] * 2.5] + [wr["finger"]] * 4
+        edges = [(0, 1), (1, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7)]
+        for fi in range(4, 8):  # claw tips poke past the membrane
+            pos.append(pos[fi] + (pos[fi] - w["wrist"]) * 0.07)
+            rad.append(wr["tip"])
+            edges.append((fi, len(pos) - 1))
         me = bpy.data.meshes.new(f"wingarm_{side}")
-        me.from_pydata([w[n] for n in names], [(0, 1), (1, 2), (2, 3), (2, 4), (2, 5)], [])
+        me.from_pydata(pos, edges, [])
         arm = link(bpy.data.objects.new(f"wingarm_{side}", me))
-        sk = arm.modifiers.new("skin", "SKIN")
-        for i, n in enumerate(names):
-            me.skin_vertices[0].data[i].radius = (rad[n], rad[n])
+        arm.modifiers.new("skin", "SKIN")
+        for i, r in enumerate(rad):
+            me.skin_vertices[0].data[i].radius = (r, r)
             me.skin_vertices[0].data[i].use_root = i == 0
         sub = arm.modifiers.new("sub", "SUBSURF")
         sub.levels = 1
         apply_modifiers(arm)
-        decimate_to(arm, 260)
+        decimate_to(arm, F["wing"]["arm_tris"])
         smooth(arm)
         arm.data.materials.append(mats["body_plain"])
         objs.append(arm)
 
-        if kind in ("membrane", "fin"):
-            def scallop(a, b, depth, n=3):
-                """Points along a trailing edge that sags toward the wrist between two tips."""
-                return [a.lerp(b, k / (n + 1)).lerp(w["wrist"], depth * math.sin(math.pi * k / (n + 1)))
-                        for k in range(1, n + 1)]
-            if kind == "membrane":
-                edge = [w["body"]] + scallop(w["body"], w["f3"], 0.22) + [w["f3"]] +                        scallop(w["f3"], w["f2"], 0.30) + [w["f2"]] + scallop(w["f2"], w["f1"], 0.30) + [w["f1"]]
-            else:  # fin: shorter, rounded, webbed
-                f3, f2, f1 = (w[k].lerp(w["wrist"], 0.2) for k in ("f3", "f2", "f1"))
-                edge = [w["body"]] + scallop(w["body"], f3, 0.12) + [f3] + scallop(f3, f2, 0.1) + [f2] +                        scallop(f2, f1, 0.1) + [f1]
-            pts = [w["wrist"], w["elbow"], w["root"]] + edge
-            mem = flat_fan(f"membrane_{side}", pts, 0.012)
-            mem.data.materials.append(mats["membrane"])
-            objs.append(mem)
-        else:  # feathered: overlapping feather blades along the arm and fingers
-            anchors = [w["wrist"].lerp(w["f1"], t) for t in (0.2, 0.5, 0.8)] + \
-                      [w["elbow"].lerp(w["wrist"], t) for t in (0.2, 0.6, 1.0)] + \
-                      [w["root"].lerp(w["elbow"], t) for t in (0.5, 1.0)]
-            for k, a in enumerate(anchors):
-                length = 1.1 - 0.07 * k
-                tip = a + Vector((0, 0.9, -0.55)).normalized() * length
-                s = -1 if side == "L" else 1
-                side_off = Vector((s * 0.12, 0, 0))
-                f = flat_fan(f"feather_{side}_{k}", [a, a + side_off, tip + side_off * 0.5, tip], 0.01)
-                f.data.materials.append(mats["membrane"])
-                objs.append(f)
+        pts = [w["wrist"], w["elbow"], w["root"]] + wing_edge(w, style)
+        mem = flat_fan(f"membrane_{side}", pts, F["wing"]["thickness"])
+        mem.data.materials.append(mats["membrane"])
+        objs.append(mem)
     return objs
 
 
-def build_heart(mats, color):
-    x, y, z = NODES["chest"][0]
-    c = Vector((0, y - 0.55, z + 0.05))
-    parts = []
-    for s in (-1, 1):
-        parts.append(sphere(f"heart_lobe_{s}", c + Vector((s * 0.05, 0, 0.03)), (0.06, 0.02, 0.06), 8, 5))
-    tip = flat_fan("heart_tip", [c + Vector((-0.1, 0, 0.02)), c + Vector((0.1, 0, 0.02)), c + Vector((0, 0, -0.11))], 0.03)
-    parts.append(tip)
-    for p in parts:
-        p.data.materials.append(mats["heart"])
-    return parts
-
-
 # ------------------------------------------------------------------------------ assembly
-def build_dragon(breed):
-    b = BREEDS[breed]
-    mats = {
+def make_materials(b):
+    return {
         "body": toon_material("body", b["base"], accent=b["accent"]),
         "body_plain": toon_material("body_plain", b["base"]),
         "accent_flat": toon_material("accent_flat", b["accent"]),
         "membrane": toon_material("membrane", tuple(0.55 * c + 0.45 * a for c, a in zip(b["base"], b["accent"]))),
         "horn": toon_material("horn", b["horn"]),
-        "eye_white": toon_material("eye_white", (1.0, 0.97, 0.9)),
         "iris": toon_material("iris", b["eye"]),
         "pupil": toon_material("pupil", (0.06, 0.03, 0.05)),
         "glint": toon_material("glint", (1, 1, 1), emission=2.0),
         "heart": toon_material("heart", b["glow"], emission=1.4),
     }
+
+
+def wing_keep(name):
+    return name.startswith("wing") or name in WING_DRAW_BODY_BONES
+
+
+def build_dragon(breed, form="grown"):
+    use_form(form)
+    b = BREEDS[breed]
+    mats = make_materials(b)
     body = build_body()
     body.data.materials.append(mats["body"])
     arm = build_armature()
@@ -688,66 +1045,42 @@ def build_dragon(breed):
 
     wings = build_wings(b["wings"], mats)
     for wobj in wings:
-        bind(wobj, arm, lambda n: n.startswith("wing") or n == "chest")
+        bind(wobj, arm, wing_keep)
 
     groups = {"eyes": [], "horns": [], "frill": [], "spikes": [], "tail_tip": [], "heart": []}
     snap = {"eyes": [], "horns": [], "frill": [], "spikes": [], "heart": []}
-    eyes = build_eyes(mats)
-    for e in eyes:
-        parent_to_bone(e, arm, "head")
-        groups["eyes"].append(e)
-    for s in (-1, 1):
-        members = [e for e in eyes if e.name.endswith(f"_{s}")]
-        snap["eyes"].append((next(e for e in members if e.name.startswith("iris")), members))
+    d = dict(body=body, arm=arm, wings=wings, groups=groups, snap=snap, breed=b, mats=mats, form=form)
+    for e in build_eyes(mats):
+        attach(d, "eyes", e, "head")
     for h in build_horns(b["horns"], mats):
-        parent_to_bone(h, arm, "head")
-        groups["horns"].append(h)
-        snap["horns"].append((h, [h]))
+        attach(d, "horns", h, "head")
     for f in build_frill(b["frill"], mats):
-        parent_to_bone(f, arm, "head")
-        groups["frill"].append(f)
-        snap["frill"].append((f, [f]))
-    for s, node in build_spikes(mats):
-        bone = {"neck3": "neck3", "neck2": "neck2", "neck1": "neck1", "chest": "chest", "belly": "belly",
-                "hips": "hips", "tail2": "tail2", "tail3": "tail3", "tail4": "tail4"}[node]
-        parent_to_bone(s, arm, bone)
-        groups["spikes"].append(s)
-        snap["spikes"].append((s, [s]))
-    tip = build_tail_tip(b["tail"], mats)
-    parent_to_bone(tip, arm, "tail4")
-    groups["tail_tip"].append(tip)
-    hearts = build_heart(mats, b["glow"])
-    for h in hearts:
-        parent_to_bone(h, arm, "chest")
-        groups["heart"].append(h)
-    snap["heart"].append((hearts[0], hearts))
-    return dict(body=body, arm=arm, wings=wings, groups=groups, snap=snap, breed=b, mats=mats)
+        attach(d, "frill", f, "head")
+    for o, bone in build_ridge(RIDGE_OF_FRILL[b["frill"]], mats):
+        attach(d, "spikes", o, bone)
+    attach(d, "tail_tip", build_tail_tip(b["tail"], mats), "tail4")
+    for h in build_heart(mats):
+        attach(d, "heart", h, "chest")
+    return d
 
 
-HATCH_POSE = {"neck1": float(arg("--hn1", "-46")), "neck2": float(arg("--hn2", "-12")),
-              "neck3": float(arg("--hn3", "8")), "head": float(arg("--hh", "46"))}
+def attach(d, group, obj, bone):
+    parent_to_bone(obj, d["arm"], bone)
+    d["groups"][group].append(obj)
+    if group in d["snap"]:
+        d["snap"][group].append((obj, [obj]))
 
 
-# The proud idle pose (Euler XYZ degrees per bone): neck S-curve, level head, wings half-folded.
-BASE_POSE = {"neck1": (-4, 0, 0), "neck2": (6, 0, 0), "neck3": (10, 0, 0), "head": (-6, 0, 0),
-             "tail1": (6, 0, 0), "tail2": (-4, 0, 6), "tail3": (-6, 0, 10), "tail4": (-4, 0, 12)}
-for _side, _s in (("L", 1), ("R", -1)):
-    BASE_POSE[f"wing_arm_{_side}"] = (18, 0, _s * -25)
-    BASE_POSE[f"wing_fore_{_side}"] = (0, 0, _s * 35)
-
-
-def rest_pose(d, stage="adult", t=None):
-    """A proud idle: neck S-curve, head level, wings half-folded. Babies hold their big heads
-    up over the body (HATCH_POSE), blending toward the adult pose as they grow."""
-    t = STAGE_T[stage] if t is None else t
+def rest_pose(d, t):
+    """The idle pose: the form's Euler table plus the young-pose lift fading out with growth."""
     pb = d["arm"].pose.bones
-    rot = dict(BASE_POSE)
-    for name, extra in HATCH_POSE.items():
+    rot = dict(F["base_pose"])
+    for name, extra in F["young_pose"].items():
         x, y, z = rot.get(name, (0, 0, 0))
         rot[name] = (x + extra * (1 - t), y, z)
-    for name, (x, y, z) in rot.items():
-        b = pb[name]
+    for b in pb:
         b.rotation_mode = "XYZ"
+        x, y, z = rot.get(b.name, (0, 0, 0))
         b.rotation_euler = (math.radians(x), math.radians(y), math.radians(z))
 
 
@@ -771,21 +1104,12 @@ def sit_pose(d, amount=1.0):
         pb[n].rotation_euler.x += math.radians(extra * amount)
 
 
-def apply_stage(d, stage):
-    apply_t(d, STAGE_T[stage], d["breed"]["build"])
-    ground(d)
-
-
 def apply_t(d, t, build):
     """Bone and part scales for growth t, then seat the parts on the body surface."""
     bones, parts = scales_for_t(t, build)
     pb = d["arm"].pose.bones
-    for name, (gx, l, gz) in bones.items():
-        pb[name].scale = (gx, l, gz)
-    wscale = parts["wings"]
-    for side in ("L", "R"):
-        for n in ("wing_arm", "wing_fore", "wing_f1", "wing_f2", "wing_f3"):
-            pb[f"{n}_{side}"].scale = (wscale,) * 3
+    for name, sc in bones.items():
+        pb[name].scale = sc
     bpy.context.view_layer.update()
     for key, objs in d["groups"].items():
         s = parts.get(key, 1.0)
@@ -796,21 +1120,17 @@ def apply_t(d, t, build):
     snap_parts(d)
 
 
-SNAP_INSET = {"eyes": 0.04, "horns": 0.03, "spikes": 0.02, "frill": 0.03, "heart": -0.012}
-
-
 def snap_parts(d):
     """Seat each part on the body surface for the current stage: ray from the bone joint
-    toward the part's anchor, place the anchor at the hit (minus a small inset). Eye pieces
-    move together (anchored on the iris). The converter exports these per-stage offsets."""
+    toward the part's anchor, place the anchor at the hit (minus a small inset). The
+    exporter bakes these per-key offsets."""
     bpy.context.view_layer.update()
     dg = bpy.context.evaluated_depsgraph_get()
     body = d["body"].evaluated_get(dg)
     bvh = BVHTree.FromObject(body, dg)
     inv_body = body.matrix_world.inverted()
-    for key, inset in SNAP_INSET.items():
-        for unit in d["snap"].get(key, []):
-            anchor, members = unit
+    for key, inset in F["inset"].items():
+        for anchor, members in d["snap"].get(key, []):
             c = anchor.constraints[0]
             joint = (d["arm"].matrix_world @ d["arm"].pose.bones[c.subtarget].matrix).translation
             for o in members:  # reset last stage's snap offset
@@ -819,8 +1139,8 @@ def snap_parts(d):
             bpy.context.view_layer.update()
             here = anchor.matrix_world.translation.copy()
             direction = (here - joint).normalized()
-            # Outermost hit: compressed growth stages fold some surface inside (e.g. a very
-            # short neck inside a big head), so keep casting past each hit.
+            # Outermost hit: compressed growth stages fold some surface inside, so keep
+            # casting past each hit.
             origin, ldir, hit = inv_body @ joint, (inv_body.to_3x3() @ direction).normalized(), None
             for _ in range(8):
                 h, _, _, _ = bvh.ray_cast(origin, ldir, 10.0)
@@ -830,8 +1150,6 @@ def snap_parts(d):
             if hit is None:
                 continue
             target = body.matrix_world @ hit - direction * inset
-            if key == "eyes" and "--debug" in argv:
-                print(f"[snap] {anchor.name} joint={tuple(round(v,3) for v in joint)} here={tuple(round(v,3) for v in here)} hit={tuple(round(v,3) for v in body.matrix_world @ hit)} dist_here={(here-joint).length:.3f} dist_hit={(body.matrix_world @ hit - joint).length:.3f}")
             delta_world = target - here
             m = d["arm"].matrix_world @ d["arm"].pose.bones[c.subtarget].matrix @ c.inverse_matrix
             delta = m.to_3x3().inverted() @ delta_world
@@ -850,8 +1168,17 @@ def ground(d):
     me = ev.to_mesh()
     low = min((ev.matrix_world @ v.co).z for v in me.vertices)
     ev.to_mesh_clear()
-    d["arm"].location.z = -low
+    d["arm"].location.z -= low
     bpy.context.view_layer.update()
+
+
+def pose_stage(d, t, build, sit=False):
+    d["arm"].rotation_euler = (0, 0, 0)
+    rest_pose(d, t)
+    if sit:
+        sit_pose(d)
+    apply_t(d, t, build)
+    ground(d)
 
 
 # ------------------------------------------------------------------------------ scene & render
@@ -871,8 +1198,9 @@ def setup_scene():
     scene.view_settings.view_transform = "Standard"
     bpy.ops.object.light_add(type="SUN", rotation=(math.radians(48), math.radians(12), math.radians(-38)))
     bpy.context.object.data.energy = 4.0
-    bpy.ops.mesh.primitive_circle_add(vertices=48, radius=3.4, fill_type="NGON", location=(0, 0.8, 0))
+    bpy.ops.mesh.primitive_circle_add(vertices=64, radius=10, fill_type="NGON", location=(0, 0.8, 0))
     floor = bpy.context.object
+    floor.name = "floor"
     floor.data.materials.append(toon_material("floor", (0.30, 0.20, 0.34)))
     cam_data = bpy.data.cameras.new("cam")
     cam = link(bpy.data.objects.new("cam", cam_data))
@@ -880,25 +1208,57 @@ def setup_scene():
     return scene, cam
 
 
-def frame_camera(cam, d, view):
-    """Frame the visible dragon from a three-quarter, side or front view."""
+def visible_points(ds):
     bpy.context.view_layer.update()
-    pts = []
     dg = bpy.context.evaluated_depsgraph_get()
-    for o in [d["body"]] + d["wings"]:
+    pts = []
+    for d in ds:
+        for o in [d["body"]] + d["wings"] + [p for objs in d["groups"].values() for p in objs]:
+            ev = o.evaluated_get(dg)
+            me = ev.to_mesh()
+            pts += [ev.matrix_world @ v.co for v in me.vertices]
+            ev.to_mesh_clear()
+    return pts
+
+
+VIEWS = {"three_quarter": Vector((-0.75, -0.95, 0.38)), "side": Vector((-1, 0, 0.12)),
+         "front": Vector((-0.15, -1, 0.2)), "top": Vector((-0.2, 0.3, 1.0)),
+         "back_quarter": Vector((-0.8, 0.9, 0.5))}
+
+
+def head_points(d):
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    pts = []
+    for o in d["groups"]["eyes"] + d["groups"]["horns"] + d["groups"]["frill"]:
         ev = o.evaluated_get(dg)
         me = ev.to_mesh()
         pts += [ev.matrix_world @ v.co for v in me.vertices]
         ev.to_mesh_clear()
+    arm = d["arm"]
+    for b in ("head", "snout", "neck3"):
+        pb = arm.pose.bones[b]
+        pts += [arm.matrix_world @ pb.head, arm.matrix_world @ pb.tail]
+    return pts
+
+
+def frame_camera(cam, ds, view, lens=55, margin=1.55):
+    """Frame the visible dragon(s) from a named view direction ('portrait' = head close-up)."""
+    if view == "portrait":
+        pts, view, margin = head_points(ds[0]), "three_quarter", 1.3
+    else:
+        pts = visible_points(ds)
     lo = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
     hi = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
     center = (lo + hi) / 2
     size = (hi - lo).length
-    dirs = {"three_quarter": Vector((-0.75, -0.95, 0.38)), "side": Vector((-1, 0, 0.12)),
-            "front": Vector((-0.15, -1, 0.2))}
-    dvec = dirs[view].normalized()
-    cam.data.lens = 55
-    cam.location = center + dvec * size * 1.55
+    dvec = VIEWS[view].normalized()
+    floor = bpy.data.objects.get("floor")
+    if floor:
+        floor.location = (center.x, center.y, 0)
+        floor.scale = (size * 0.06,) * 3
+    cam.data.lens = lens
+    cam.location = center + dvec * size * margin
     cam.rotation_euler = (center - cam.location).to_track_quat("-Z", "Y").to_euler()
 
 
@@ -908,32 +1268,57 @@ def render(path):
     bpy.ops.render.render(write_still=True)
 
 
-def report(d, stage):
-    body = tri_count(d["body"])
-    parts = sum(tri_count(o) for objs in d["groups"].values() for o in objs)
-    wings = sum(tri_count(o) for o in d["wings"])
-    bones = len([b for b in d["arm"].data.bones if not b.name.startswith("wing")])
-    print(f"[model] {BREED} {stage}: body {body} + parts {parts} tris; wings {wings} tris; "
-          f"body bones {bones}, wing bones {len(d['arm'].data.bones) - bones}")
+def report(d, label):
+    def tris(objs):
+        return sum(tri_count(o) for o in objs)
+    parts = {k: tris(v) for k, v in d["groups"].items()}
+    body, wings = tri_count(d["body"]), tris(d["wings"])
+    total = body + wings + sum(parts.values())
+    print(f"[model] {BREED} {label}: total {total} tris = body {body} + wings {wings} + parts {parts}")
 
 
 def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene, cam = setup_scene()
-    d = build_dragon(BREED)
     views = arg("--views", "three_quarter").split(",")
+    if "--lineup" in argv:
+        return lineup(cam)
+    built = None
     for stage in STAGES:
-        d["arm"].rotation_euler = (0, 0, 0)
-        rest_pose(d, stage)
-        if "--sit" in argv:
-            sit_pose(d)
-        apply_stage(d, stage)
-        report(d, stage)
+        form, t = STAGE[stage]
+        if built is None or built["form"] != form:
+            if built is not None:
+                for o in list(bpy.data.objects):
+                    if o.name not in ("floor", "cam") and o.type != "LIGHT":
+                        bpy.data.objects.remove(o, do_unlink=True)
+            built = build_dragon(BREED, form)
+        pose_stage(built, t, built["breed"]["build"], sit="--sit" in argv)
+        report(built, stage)
         for view in views:
-            frame_camera(cam, d, view)
+            frame_camera(cam, [built], view)
             render(f"{OUT}_{BREED}_{stage}_{view}.png")
-    if EXPORT:
-        bpy.ops.export_scene.gltf(filepath=bpy.path.abspath(f"{OUT}_{BREED}.glb"), export_apply=False)
+
+
+def lineup(cam):
+    """Growth lineup at true relative size: hatch day, late hatchling, juvenile, adolescent,
+    adult (side view)."""
+    ds, front = [], 0.0
+    for stage in ("newborn", "hatchling", "juvenile", "adolescent", "adult"):
+        form, t = STAGE[stage]
+        d = build_dragon(BREED, form)
+        pose_stage(d, t, d["breed"]["build"])
+        k = F["export_scale"]
+        d["arm"].scale = (k, k, k)
+        d["arm"].location.z *= k
+        bpy.context.view_layer.update()
+        ys = [p.y for p in visible_points([d])]
+        d["arm"].location.y += front - 0.3 - max(ys)  # tail just ahead of the previous snout
+        bpy.context.view_layer.update()
+        front = min(p.y for p in visible_points([d]))
+        ds.append(d)
+    frame_camera(cam, ds, "side", lens=50, margin=1.45)
+    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1400, 560
+    render(f"{OUT}_{BREED}_lineup.png")
 
 
 if __name__ == "__main__":

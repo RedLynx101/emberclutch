@@ -2,14 +2,28 @@
 // CPU skinning (for tests and for the ground offset). Mirrors tools/blender/dragon_model.py.
 #pragma once
 
+#include "core/dragon.hpp"
 #include "core/model.hpp"
 
 namespace ec {
 
 constexpr int kBuildNeutral = -1;
 
-// core bodyScale (0.25 hatchling .. 1 adult) -> rig growth t (0 .. 1).
-float growthT(float bodyScale);
+// Two body forms (D36): the baby form for the hatchling stage (romfs/models/hatchling.ecm)
+// and the grown form from juvenile to adult (grown.ecm). The stage-up to juvenile swaps
+// them behind a glow: the first molt.
+enum ModelForm : u8 { kFormHatchling, kFormGrown, kFormCount };
+
+struct Growth {
+    ModelForm form;
+    float t;  // growth within the form, 0 .. 1
+};
+
+// Grown-form t where adolescence starts (tools/blender/dragon_model.py STAGE table).
+constexpr float kAdolescentT = 0.45f;
+
+// Stage + progress through it (dragon.hpp stageProgress) -> form and growth t.
+Growth growthFor(Stage stage, float progress);
 
 // Per-bone pose scales at growth t for a build (kBuildNeutral or genome Build 0..2).
 void boneScales(const ModelData& m, float t, int build, Vec3* out);

@@ -18,7 +18,7 @@ Status: **v0.2** (2026-09-23)
 |---|---|
 | Target frame rate | **30 fps locked** in 3D scenes, 60 fps in menus |
 | Skinned dragons on screen | ≤ 3 (den), 1 up close (petting, riding) |
-| Dragon triangles | LOD0 ≤ 3,000 (body ~2,000 + parts; the same mesh serves every stage) · LOD1 ≤ 1,200 |
+| Dragon triangles | LOD0 ≤ 3,000 for the heaviest gene mix (grown: body 1,800 + wings ≤ 464 + parts; hatchling ≤ 2,700), checked by a PC test · LOD1 ≤ 1,200 |
 | Bones per draw | ≤ 24 (vertex shader constant limit, see §4) |
 | Dragon colour | Per-vertex palette paint (no texture per variant); a shared scale-detail texture comes with texturing |
 | Environment | Vertex-colored, ≤ 8k visible triangles, fog-limited |
@@ -64,8 +64,12 @@ the whole simulation deterministic and testable without hardware (`make -C tests
 
 ### Skinned dragons
 
-- One shared skeleton for all dragons. **Builds** (Sturdy/Sleek/Long) and **growth
-  stages** are per-bone scale tables blended on the CPU each frame.
+- **Two body forms** (D36), each a `.ecm` with the same 36-bone layout (24 body + 12 wing):
+  `hatchling.ecm` for the hatchling stage and `grown.ecm` from juvenile to adult. The
+  stage-up to juvenile swaps forms behind a glow (the first molt). `rig.hpp growthFor()`
+  maps stage + in-stage progress to (form, growth t).
+- Within a form, **builds** (Sturdy/Sleek/Long) and **growth** are per-bone scale tables
+  blended on the CPU each frame.
 - The PICA200 vertex shader has 96 float constant registers. A 3×4 bone matrix takes 3,
   so after the projection and model-view matrices there is room for about 28 bones per
   draw call. The rig targets **≤ 24 bones per draw**. The body and wings are separate
@@ -75,9 +79,11 @@ the whole simulation deterministic and testable without hardware (`make -C tests
 - **Pose math** (`src/core/skeleton.cpp`) copies Blender's rule for bones with scale
   inheritance off: a child's joint follows the parent's full, scaled matrix, but its
   orientation ignores the parent's scale.
-- Parts (eyes, horns, frill, spikes, tail tip, heartglow) are rigid meshes attached to
+- Parts (eyes, horns, frill, dorsal ridge, tail tip, heartglow) are rigid meshes attached to
   fixed bones, re-baked into one per-dragon buffer when growth changes. Only the genome's
-  variants (and the dragon's sex, D23) are drawn. Three draws per dragon: body, parts, wings.
+  variants (and the dragon's sex, D23) are drawn; the ridge variant follows the Frill gene
+  (D38), falling back to spikes. Three draws per dragon: body, parts, wings (the wing draw
+  also uses chest/belly/hips so the membrane's flank edge follows the body).
 
 ### Coloring (no texture per variant) — as built in WP3/WP4
 
@@ -111,9 +117,11 @@ dragon only, so it fits the budget) with body-zone hitboxes projected from its b
 ## 5. Assets pipeline
 
 ```
-tools/blender/dragon_model.py  (the model: skin-modifier body, rig, parts, growth tables)
+tools/blender/dragon_model.py  (two forms: metaball hatchling + skin-modifier grown body, rig, parts, growth)
         |  imported by
-tools/blender/export_dragon.py --out romfs/models/dragon.ecm --reference tests/data/dragon_reference.ecr
+tools/blender/export_dragon.py --out-dir romfs/models --reference-dir tests/data
+        -> romfs/models/{hatchling,grown}.ecm + tests/data/{hatchling,grown}_reference.ecr
+tools/blender/sheet.py          (tiles review renders into docs/art/reviews/*.png)
 Suno WAV --tools/audio/make_loop.py (ffmpeg)--> romfs/music/*.ogg (LOOPSTART/LOOPLENGTH tags)
 tools/audio/make_placeholder_sfx.py         --> romfs/sfx/*.wav
 ```
@@ -125,15 +133,17 @@ tools/audio/make_placeholder_sfx.py         --> romfs/sfx/*.wav
   the exporter writes the game format directly.
 - **`.ecm` v1** (little-endian, read by `src/core/model.cpp`):
   header `ECM1`, version, bone count; bones (name, parent, flags, 3x4 rest matrix);
-  growth tables (hatchling bone scales, build multipliers, idle pose Euler XYZ, hatchling
-  neck lift); meshes (name, kind body/wings/part, group, variant, sex, bone palette,
+  growth tables (bone scales at the form's t = 0, build multipliers, idle pose Euler XYZ,
+  young head lift); meshes (name, kind body/wings/part, group, variant, sex, bone palette,
   growth keys, then per key positions + normals, per vertex 2 bones + 2 weights and
   paint, and u16 triangle indices). Parts are baked at growth t = 0, .35, .7, 1 in
   armature rest space and bound rigidly to one bone; the runtime blends two keys.
+- The hatchling is modelled at a comfortable scale and written scaled by its
+  `export_scale` (uniform scaling commutes with skinning, so parity is unaffected).
 - **Parity test:** the exporter also writes Blender-deformed vertex positions for three
-  poses/growth/build cases; `tests/test_model.cpp` checks the C++ rig
-  (`src/core/skeleton.cpp`, `rig.cpp`) reproduces them (body < 0.001, wings < 0.003,
-  parts exact, on a ~6-unit dragon).
+  poses/growth/build cases per form; `tests/test_model.cpp` checks the C++ rig
+  (`src/core/skeleton.cpp`, `rig.cpp`) reproduces them (body < 0.001, wings < 0.006,
+  parts exact, on a ~6-unit adult).
 - **`.eca` animations** follow in WP5 (per-bone quaternions at 30 Hz + events).
 - Everything ships in **romfs**. Music is streamed and never loaded whole.
 

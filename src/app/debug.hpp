@@ -13,6 +13,8 @@ constexpr u32 kBudgetDraws = 40;
 constexpr u32 kBudgetBones = 25;
 
 void debugDrawOverlay(App& app);
+// "" when everything's drawn, else what the GPU probe leaves out (app.gpuProbe).
+const char* gpuProbeName(u8 probe);
 // Draws and runs the dev menu if open. Returns true when it consumed the bottom screen.
 bool debugMenu(App& app, const Input& in);
 

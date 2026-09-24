@@ -40,32 +40,47 @@ void nextBreed(Dragon& d, Rng& rng) {
 
 }  // namespace
 
+const char* gpuProbeName(u8 probe) {
+    static const char* const kNames[] = {"", "no room", "no den dragons", "no close-up", "no particles"};
+    return probe < sizeof(kNames) / sizeof(kNames[0]) ? kNames[probe] : "";
+}
+
 void debugDrawOverlay(App& app) {
     if (!EC_DEV || !app.overlay) return;
-    const RenderStats& s = app.stats;
-    char buf[96];
+    // The numbers are written out four times a second, not every frame: the overlay is on
+    // when the frame is measured, and new text every frame was a cost of its own (WP11d).
+    constexpr int kLines = 5;
+    static char lines[kLines][112];
+    static u32 colours[kLines];
+    static float wait = 0;
+    if ((wait -= app.dt) <= 0) {
+        wait = 0.25f;
+        const RenderStats& s = app.stats;
+        std::snprintf(lines[0], sizeof(lines[0]), "%4.1fms  CPU %.1f  GPU %.1f  CMD %d%%  %s", app.frameMs,
+                      C3D_GetProcessingTime(), C3D_GetDrawingTime(), static_cast<int>(C3D_GetCmdBufUsage() * 100),
+                      gpuProbeName(app.gpuProbe));
+        colours[0] = okOr(app.frameMs <= kBudgetFrameMs);
+        std::snprintf(lines[1], sizeof(lines[1]), "TRI %lu/%lu +%lu/%lu  DRAW %lu/%lu  BONE %lu/%lu",
+                      static_cast<unsigned long>(s.tris), static_cast<unsigned long>(kBudgetTris),
+                      static_cast<unsigned long>(app.bottomTris), static_cast<unsigned long>(kBudgetCloseTris),
+                      static_cast<unsigned long>(s.draws), static_cast<unsigned long>(kBudgetDraws),
+                      static_cast<unsigned long>(s.maxBonesPerDraw), static_cast<unsigned long>(kBudgetBones));
+        colours[1] = okOr(s.tris <= kBudgetTris && app.bottomTris <= kBudgetCloseTris && s.draws <= kBudgetDraws &&
+                          s.maxBonesPerDraw <= kBudgetBones);
+        // (No application memory: libctru gives the heap all of it at start, so it reads 0 on the 3DS.)
+        std::snprintf(lines[2], sizeof(lines[2]), "LIN %.1fMB  VRAM %.2fMB  romfs %s", linearSpaceFree() / 1048576.0f,
+                      vramSpaceFree() / 1048576.0f, app.romfsOk ? "ok" : "MISSING");
+        colours[2] = okOr(app.romfsOk);
+        const audio::DebugInfo ai = audio::debugInfo();
+        std::snprintf(lines[3], sizeof(lines[3]), "AUDIO %s  %s  L%lu S%lu st%d g%.2f",
+                      audio::ok() ? "ok" : "OFF (no DSP fw?)", audio::currentMusic()[0] ? audio::currentMusic() : "-",
+                      static_cast<unsigned long>(ai.loops), static_cast<unsigned long>(ai.switches), ai.stage, ai.gain);
+        colours[3] = okOr(audio::ok());
+        std::snprintf(lines[4], sizeof(lines[4]), "%s", perf::line());  // where the CPU time goes (WP11d)
+        colours[4] = theme::kShell;
+    }
     C2D_DrawRectSolid(0, 0, 0, 262, 70, withAlpha(theme::kDenPlum, 0.75f));
-    std::snprintf(buf, sizeof(buf), "%4.1fms  CPU %.1f  GPU %.1f  CMD %d%%", app.frameMs, C3D_GetProcessingTime(),
-                  C3D_GetDrawingTime(), static_cast<int>(C3D_GetCmdBufUsage() * 100));
-    line(app, 2, buf, okOr(app.frameMs <= kBudgetFrameMs));
-    std::snprintf(buf, sizeof(buf), "TRI %lu/%lu +%lu/%lu  DRAW %lu/%lu  BONE %lu/%lu", static_cast<unsigned long>(s.tris),
-                  static_cast<unsigned long>(kBudgetTris), static_cast<unsigned long>(app.bottomTris),
-                  static_cast<unsigned long>(kBudgetCloseTris), static_cast<unsigned long>(s.draws),
-                  static_cast<unsigned long>(kBudgetDraws), static_cast<unsigned long>(s.maxBonesPerDraw),
-                  static_cast<unsigned long>(kBudgetBones));
-    line(app, 15, buf,
-         okOr(s.tris <= kBudgetTris && app.bottomTris <= kBudgetCloseTris && s.draws <= kBudgetDraws &&
-              s.maxBonesPerDraw <= kBudgetBones));
-    std::snprintf(buf, sizeof(buf), "LIN %.1fMB  VRAM %.2fMB  APP %.1fMB  romfs %s", linearSpaceFree() / 1048576.0f,
-                  vramSpaceFree() / 1048576.0f, osGetMemRegionFree(MEMREGION_APPLICATION) / 1048576.0f,
-                  app.romfsOk ? "ok" : "MISSING");
-    line(app, 28, buf, okOr(app.romfsOk));
-    const audio::DebugInfo ai = audio::debugInfo();
-    std::snprintf(buf, sizeof(buf), "AUDIO %s  %s  L%lu S%lu st%d g%.2f", audio::ok() ? "ok" : "OFF (no DSP fw?)",
-                  audio::currentMusic()[0] ? audio::currentMusic() : "-", static_cast<unsigned long>(ai.loops),
-                  static_cast<unsigned long>(ai.switches), ai.stage, ai.gain);
-    line(app, 41, buf, okOr(audio::ok()));
-    line(app, 54, perf::line(), theme::kShell);  // where the CPU time goes (WP11d)
+    for (int i = 0; i < kLines; ++i) line(app, 2 + 13 * i, lines[i], colours[i]);
 }
 
 // Alpha 2 WP1 before breeding and the Market: a random starter dragon into a free bed (or an
@@ -156,7 +171,7 @@ bool debugMenu(App& app, const Input& in) {
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
         {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26}, {"Next style (R5)", 27},
-        {"Probe: all looks", 28},
+        {"Probe: all looks", 28}, {"GPU probe", 29},
     };
     const Entry* items = app.devPage ? kPage2 : kPage1;
     const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
@@ -200,6 +215,10 @@ bool debugMenu(App& app, const Input& in) {
                 }
                 break;
             case 26: devAddFamily(app); break;
+            case 29:  // WP11d: each part's share of the GPU's time, one left out at a time
+                app.gpuProbe = static_cast<u8>((app.gpuProbe + 1) % 5);
+                showToastf(app, "GPU probe: %s", app.gpuProbe ? gpuProbeName(app.gpuProbe) : "everything drawn");
+                break;
             case 28: {  // before WP12 (D54): every look's models in memory at once, measured
                 const float before = linearSpaceFree() / 1048576.0f;
                 const bool on = r3d::probeAllLooks();

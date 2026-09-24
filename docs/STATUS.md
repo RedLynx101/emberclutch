@@ -2,13 +2,13 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · 3DS runs 1–7: the game runs on the old 3DS; the 3D banner shows (sparkles, a hidden triangle, D63); 0.1.7 plays (a new title ID, beds lent by wanderers, a stacking bowl, posing ahead, D64) · a design sit-down opens every milestone from Beta on (D65) · the performance pass (WP11d) is next · waiting on run 8 (the banner's sound)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · 3DS runs 1–7: the game runs on the old 3DS; the 3D banner shows (sparkles, a hidden triangle, D63); 0.1.7 plays (a new title ID, beds lent by wanderers, a stacking bowl, posing ahead, D64) · a design sit-down opens every milestone from Beta on (D65) · the boot logo is ours (WP11c) · the performance pass (WP11d) under way · waiting on run 9 (lab 5: the banner's flag and sound; the GPU probe)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D65 recorded ([log](plan/decisions.md)); open: the grooming design (Beta).
+  Decisions D1–D67 recorded ([log](plan/decisions.md)); open: the grooming design (Beta).
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
   [Alpha 1 plan](plan/alpha-1.md), [Alpha 2 plan](plan/alpha-2.md) (draft: the style review
   R5, the emblem icon and a 3D HOME Menu banner, D47–D50). New specs (2026-09-24): [hands-on care](design/care-interactions.md)
@@ -141,8 +141,8 @@ after each. Stops:
   haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
-- **Run 8 on the old 3DS** ([steps](plan/hardware-check-1.md)): banner lab M, N, O (the cute
-  sounds; pick one), and whether the banner turns while it sits or only as it comes in.
+- **Run 9 on the old 3DS** ([steps](plan/hardware-check-1.md)): lab 5 (P, Q, R: the flag and
+  the sound), 0.1.8 (the EMBERCLUTCH boot logo), and the GPU probe's five screenshots.
   [What's left for Alpha 2](plan/alpha-2.md); after Alpha 2, the Beta sit-down (D65),
   check the banner, sound and icon fixes, read the budget with a full den and with every
   look in memory, pressing **Y** for a screenshot at each number and anything odd (pulled

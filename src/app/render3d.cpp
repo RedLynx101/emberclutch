@@ -987,6 +987,7 @@ float flicker(float t) { return 0.84f + 0.1f * std::sin(t * 13.0f) + 0.06f * std
 // its additive glows (sunbeam, flames), lit by the two lighting sets of the time of day.
 void drawRoom(App& app, const C3D_Mtx& projection, const C3D_Mtx& view, const DayBlend& blend, bool glows) {
     perf::Scope timed(perf::Room);
+    if (app.gpuProbe == 1) return;
     if (!g_room.ok) return;
     C3D_BindProgram(&g_staticProgram);
     C3D_SetAttrInfo(&g_staticAttr);
@@ -1221,6 +1222,7 @@ C3D_Mtx spanMatrix(Vec3 a, Vec3 b) {
 // The toys, the bowl's food and the decor (WP7).
 void drawThings(App& app, const C3D_Mtx& view, const DenThings& t) {
     perf::Scope timed(perf::Room);
+    if (app.gpuProbe == 1) return;
     const Mat34 identity[1] = {Mat34::identity()};
     const float night = 1.0f - t.daylight;
     for (int s = 0; s < kDecorSpots; ++s) {
@@ -1377,6 +1379,8 @@ bool projectWith(const C3D_Mtx& view, Vec3 p, float& x, float& y, float& ppu) {
 // Particles of one layer: the ambient ones between the room and the dragons, the care
 // effects over them.
 void drawParticles(App& app, const Particles& fx, bool foreground) {
+    perf::Scope timed(perf::Fx);
+    if (app.gpuProbe == 4) return;
     static const u32 kHeart = theme::rgba(0xF2, 0x6D, 0x85), kZ = theme::rgba(0xE8, 0xEE, 0xFF),
                      kCrumb = theme::rgba(0x9A, 0x62, 0x34), kSpark = theme::rgba(0xFF, 0xF4, 0xC8),
                      kPuff = theme::rgba(0xD8, 0xC2, 0xA4), kMote = theme::rgba(0xFF, 0xEC, 0xB0),
@@ -1494,7 +1498,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
     bindDragons(projection);
     for (int i = 0; i < kDenShown; ++i) g_headSet[i] = g_mouthSet[i] = false;
     for (int i = 0; i < count; ++i) {
-        if (!drawn[i]) continue;
+        if (!drawn[i] || app.gpuProbe == 2) continue;
         if (dragons[i].dragon->stage == Stage::Egg) {
             float local[3];
             localLight(at[i], blend, local);
@@ -1649,7 +1653,7 @@ void poseAhead(App& app, const DenDragon* dragons, int count, s64 now) {
 }
 
 void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMotion* egg, s64 now, CloseUpView mode) {
-    if (!g_ready) return;
+    if (!g_ready || app.gpuProbe == 3) return;
     ++g_frame;
     if (d.stage == Stage::Egg) {  // the egg you rub, filling the view from the front-left
         if (!g_egg.ok || !egg) return;

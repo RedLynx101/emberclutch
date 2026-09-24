@@ -199,6 +199,13 @@ struct App {
 
     // Debug
     bool overlay = EC_DEV;
+    // Dev (WP11d): leave out one part of the drawing (1 the room and its things, 2 the den's
+    // dragons and eggs, 3 the close-up, 4 particles) to see its share of the GPU's time on the
+    // 3DS; debug.hpp gpuProbeName. 0: everything drawn.
+    u8 gpuProbe = 0;
+    // The top screen's clear colour this frame (a scene's prepare can set it: the den's
+    // backdrop, instead of a full-screen quad drawn over the clear). Reset after each frame.
+    u32 topClear = 0;
     bool devMenu = false;
     u8 devPage = 0;
     u32 devSteps = 0;  // dev: steps added to the pedometer (the emulator's never counts)

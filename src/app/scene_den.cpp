@@ -595,6 +595,7 @@ bool profileShown(App& app) {
 // Before the frame: the den's dragons posed while the GPU finishes the last one (WP11d).
 void prepare(App& app) {
     if (!r3d::ready() || profileShown(app)) return;
+    if (r3d::roomReady()) app.topClear = r3d::backdrop(nowLocal(app));
     const DenRoster r = denRoster(app.game);
     int order[r3d::kDenShown];
     const int count = denOrder(app, r, order);
@@ -609,11 +610,10 @@ void drawTop(App& app) {
         drawProfileTop(app, d, now);
         return;
     }
+    // With the room, the dark beyond its cutaway is the screen's clear colour (prepare), not a
+    // full-screen quad over it (WP11d: a whole screen's fill saved).
     const bool room = r3d::ready() && r3d::roomReady();
-    if (room) {
-        const u32 dark = r3d::backdrop(now);  // the dark beyond the cutaway room
-        verticalGradient(0, 0, kTopW, kScreenH, dark, dark);
-    } else {
+    if (!room) {
         const bool night = isNight(now);
         verticalGradient(0, 0, kTopW, kScreenH, night ? theme::kDenPlum : theme::kDusk,
                          night ? theme::rgba(20, 14, 28) : theme::kDenPlum);

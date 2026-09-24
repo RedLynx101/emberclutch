@@ -1,8 +1,10 @@
 #include "app/ui_draw.hpp"
 
 #include <cmath>
+#include <cstring>
 
 #include "app/audio.hpp"
+#include "app/perf.hpp"
 #include "app/theme.hpp"
 #include "core/clock.hpp"
 #include "core/genetics.hpp"
@@ -21,11 +23,63 @@ namespace {
 C2D_Font g_fonts[2] = {nullptr, nullptr};
 float g_norm[2] = {1.0f, 1.0f};  // font scale that matches the system font's line height
 
-// Parses s in a face; returns the scale that draws it at `scale` (shrunk to maxWidth).
+// Laid-out text kept from frame to frame (WP11d): parsing and optimising every string again
+// each frame was the biggest part of the 2D's CPU time. A string seen before reuses its
+// layout; when the cache's glyph buffer runs out it's emptied and refilled. Long strings use
+// the frame's own buffer, as before.
+constexpr int kCacheEntries = 96, kCacheChars = 80, kCacheGlyphs = 4096;
+struct CachedText {
+    u32 hash = 0;
+    u8 face = 0;
+    bool used = false;
+    C2D_Text text;
+    char s[kCacheChars] = {};
+};
+C2D_TextBuf g_cacheBuf = nullptr;
+CachedText g_cache[kCacheEntries];
+int g_cacheNext = 0;
+
+u32 hashOf(const char* s, int face) {
+    u32 h = 2166136261u ^ static_cast<u32>(face);
+    for (; *s; ++s) h = (h ^ static_cast<u8>(*s)) * 16777619u;
+    return h;
+}
+
+// The layout of s in a face: from the cache, or parsed now (into the cache if it fits).
+void layout(App& app, C2D_Text& t, const char* s, int f) {
+    const std::size_t len = std::strlen(s);
+    if (!g_cacheBuf || len >= static_cast<std::size_t>(kCacheChars)) {
+        C2D_TextFontParse(&t, g_fonts[f], app.textBuf, s);
+        C2D_TextOptimize(&t);
+        return;
+    }
+    const u32 h = hashOf(s, f);
+    for (const CachedText& c : g_cache) {
+        if (c.used && c.hash == h && c.face == f && std::strcmp(c.s, s) == 0) {
+            t = c.text;
+            return;
+        }
+    }
+    if (C2D_TextBufGetNumGlyphs(g_cacheBuf) + len + 1 > static_cast<std::size_t>(kCacheGlyphs)) {  // full: start again
+        C2D_TextBufClear(g_cacheBuf);
+        for (CachedText& c : g_cache) c.used = false;
+        g_cacheNext = 0;
+    }
+    CachedText& c = g_cache[g_cacheNext];
+    g_cacheNext = (g_cacheNext + 1) % kCacheEntries;
+    C2D_TextFontParse(&c.text, g_fonts[f], g_cacheBuf, s);
+    C2D_TextOptimize(&c.text);
+    std::memcpy(c.s, s, len + 1);
+    c.hash = h;
+    c.face = static_cast<u8>(f);
+    c.used = true;
+    t = c.text;
+}
+
+// Lays out s in a face; returns the scale that draws it at `scale` (shrunk to maxWidth).
 float prepare(App& app, C2D_Text& t, const char* s, float scale, Face face, float maxWidth) {
     const int f = static_cast<int>(face);
-    C2D_TextFontParse(&t, g_fonts[f], app.textBuf, s);
-    C2D_TextOptimize(&t);
+    layout(app, t, s, f);
     float k = scale * g_norm[f];
     if (maxWidth > 0) {
         float w = 0;
@@ -38,6 +92,7 @@ float prepare(App& app, C2D_Text& t, const char* s, float scale, Face face, floa
 }  // namespace
 
 void loadFonts() {
+    if (!g_cacheBuf) g_cacheBuf = C2D_TextBufNew(kCacheGlyphs);
     const FINF_s* sys = C2D_FontGetInfo(nullptr);
     const float sysLine = sys && sys->lineFeed ? sys->lineFeed : 30.0f;
     static const char* const kFiles[2] = {"romfs:/fonts/ui.bcfnt", "romfs:/fonts/title.bcfnt"};
@@ -53,15 +108,20 @@ void freeFonts() {
         if (f) C2D_FontFree(f);
         f = nullptr;
     }
+    if (g_cacheBuf) C2D_TextBufDelete(g_cacheBuf);
+    g_cacheBuf = nullptr;
+    for (CachedText& c : g_cache) c.used = false;
 }
 
 void text(App& app, const char* s, float x, float y, float scale, u32 color, u32 flags, float maxWidth, Face face) {
+    perf::Scope timed(perf::Text);
     C2D_Text t;
     const float k = prepare(app, t, s, scale, face, maxWidth);
     C2D_DrawText(&t, C2D_WithColor | flags, x, y, 0.5f, k, k, color);
 }
 
 void textCentered(App& app, const char* s, float cx, float cy, float scale, u32 color, float maxWidth, Face face) {
+    perf::Scope timed(perf::Text);
     C2D_Text t;
     const float k = prepare(app, t, s, scale, face, maxWidth);
     float h = 0;

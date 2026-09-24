@@ -14,6 +14,17 @@ game crashed at its first 3D frame (a null texture read the emulator hides). Bot
 WP11b); both 3D-banner CIAs froze the HOME Menu, which also turned out to keep an old banner
 per title; Next style froze the 3DS (fixed in 0.1.4).
 
+**Run 8:** everything turned and played the old sound (cached by product code). **Run 9:**
+1. Lab 5 in `/cias/lab/`: P, Q, R. Each: does it turn, and what does it play (P and Q a
+   sparkle and a baby's chirp, R the theme's bar)? Q and R have no extendedbanner flag: if
+   they freeze, hold POWER and carry on. Delete them after.
+2. `emberclutch-2d.cia` (0.1.8) over the game: the startup logo should read EMBERCLUTCH
+   (if the game stops with an error instead, reinstall 0.1.7 and tell me). Ignore the 0.1.7
+   3D CIA still in `/cias/`.
+3. With the overlay on, in the full den with the close-up: press Y; then dev menu page 2,
+   "GPU probe", and Y after each press (four times: no room, no den dragons, no close-up, no
+   particles). Five screenshots show where the GPU's time goes.
+
 **Run 7:** 0.1.7 plays (the waiting egg hatched); the full den averages ~19 ms. **Run 8:** lab
 M, N, O in `/cias/lab/`: the banner without turning, with three cute sounds (sparkle-chirp,
 chirp-chirp, hello). Pick one; tell whether the banner still turns while it sits there or

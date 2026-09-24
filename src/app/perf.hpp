@@ -14,7 +14,9 @@ enum Section : u8 {
     Pose,    // dragons posed: animation, look-at, the floor contact, skinning matrices
     Submit,  // dragons' draw calls (uniforms, buffers)
     Room,    // the den room, its props and toys
-    Top,     // the rest of the top screen (2D, text, particles)
+    Text,    // laying out and drawing text (both screens)
+    Fx,      // particles
+    Top,     // the rest of the top screen (2D shapes, sprites)
     Bottom,  // the rest of the bottom screen
     Count
 };
@@ -35,7 +37,7 @@ private:
 };
 
 float ms(Section s);  // last frames', smoothed
-// "upd 1.2 aud 0.4 pose 3.1 sub 1.0 room 0.8 top 1.9 bot 2.2" (the overlay, the screenshot log)
+// "upd 1.2 aud 0.4 pose 3.1 sub 1.0 room 0.8 txt 0.9 fx 0.3 top 1.9 bot 2.2" (the overlay, the log)
 const char* line();
 
 }  // namespace ec::perf

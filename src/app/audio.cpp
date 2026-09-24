@@ -225,12 +225,22 @@ void startStinger(const char* slug) {
     }
     char* dst = reinterpret_cast<char*>(g_stingerData);
     const long want = static_cast<long>(total * channels * 2);
-    long got = 0;
+    long got = 0, sinceRest = 0;
     int bitstream = 0;
     while (got < want) {
         const long r = ov_read(&vf, dst + got, static_cast<int>(want - got), &bitstream);
         if (r == 0) break;
-        if (r > 0) got += r;
+        if (r > 0) {
+            got += r;
+            sinceRest += r;
+        }
+        // This thread runs above the game's priority (music mustn't starve): decoding a whole
+        // stinger at once froze the game ~100 ms as an egg began to hatch (3DS run 7). A short
+        // rest every 16 KB lets the game's frames through; the stinger starts a little later.
+        if (sinceRest >= 16 * 1024) {
+            sinceRest = 0;
+            svcSleepThread(1000000);
+        }
     }
     setupChannel(kStingerCh, channels, vi->rate);
     ov_clear(&vf);

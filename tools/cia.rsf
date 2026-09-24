@@ -8,7 +8,8 @@
 BasicInfo:
   Title                   : "Emberclutch"
   CompanyCode             : "00"
-  ProductCode             : "CTR-P-EMBC"
+  # EMB2 (was EMBC): the HOME Menu kept 0.1.1's banner sound across title IDs sharing EMBC (run 8)
+  ProductCode             : "CTR-P-EMB2"
   ContentType             : Application
   Logo                    : Homebrew
 

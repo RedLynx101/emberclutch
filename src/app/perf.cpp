@@ -7,12 +7,12 @@
 namespace ec::perf {
 namespace {
 
-constexpr const char* kNames[Count] = {"upd", "aud", "pose", "sub", "room", "top", "bot"};
+constexpr const char* kNames[Count] = {"upd", "aud", "pose", "sub", "room", "txt", "fx", "top", "bot"};
 
 u64 g_ticks[Count] = {};  // this frame so far
 float g_ms[Count] = {};   // shown: smoothed over the last frames
 Section g_current = Count;
-char g_line[96] = {};
+char g_line[112] = {};
 
 float toMs(u64 ticks) { return static_cast<float>(ticks) / (SYSCLOCK_ARM11 / 1000.0f); }
 

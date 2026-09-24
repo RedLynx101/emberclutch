@@ -6,6 +6,7 @@
 #include <cstdio>
 
 #include "app/audio.hpp"
+#include "app/perf.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
@@ -107,6 +108,8 @@ void stepFx(App& app) {
 }
 
 void drawFx(App& app) {
+    perf::Scope timed(perf::Fx);
+    if (app.gpuProbe == 4) return;
     static const u32 kHeartC = theme::rgba(0xF2, 0x6D, 0x85), kDustC = theme::rgba(0xC8, 0xB4, 0x96),
                      kSparkC = theme::rgba(0xFF, 0xF6, 0xD0), kSudsC = theme::rgba(0xF4, 0xFA, 0xFF),
                      kDropC = theme::rgba(0x8C, 0xC8, 0xF0), kCrumbC = theme::rgba(0x9A, 0x62, 0x34),

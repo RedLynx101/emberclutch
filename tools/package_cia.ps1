@@ -16,6 +16,7 @@ param(
     [switch]$NoBuild,
     [switch]$Banner3D,
     [switch]$Banner2D,
+    [switch]$HomebrewLogo,
     [string]$ToolsDir = "",
     [string]$Version = "0.1.0"
 )
@@ -65,10 +66,22 @@ if ($LASTEXITCODE -ne 0) { throw "bannertool makesmdh failed ($LASTEXITCODE)" }
 & $bannertool makebanner @bannerArgs -a (Join-Path $root "assets\audio\banner.wav") -o $bnr
 if ($LASTEXITCODE -ne 0) { throw "bannertool makebanner failed ($LASTEXITCODE)" }
 
+# The boot logo (WP11c, D66): makerom's homebrew logo with the EMBERCLUTCH wordmark
+# (tools\logo\make_logo.py, built here if it's missing); -HomebrewLogo keeps makerom's own.
+$logoArgs = @()
+if (-not $HomebrewLogo) {
+    $logo = Join-Path $root "build\logo\emberclutch.bcma.lz"
+    if (-not (Test-Path $logo)) {
+        & py -3.12 (Join-Path $PSScriptRoot "logo\make_logo.py") --makerom $makerom
+        if ($LASTEXITCODE -ne 0) { throw "make_logo.py failed ($LASTEXITCODE)" }
+    }
+    $logoArgs = @("-logo", $logo)
+}
+
 $v = $Version.Split(".")
 Push-Location $root  # the RSF's RomFs path is relative to here
 try {
-    & $makerom -f cia -o $cia -elf $elf -icon $smdh -banner $bnr -rsf (Join-Path $PSScriptRoot "cia.rsf") `
+    & $makerom -f cia -o $cia -elf $elf -icon $smdh -banner $bnr -rsf (Join-Path $PSScriptRoot "cia.rsf") @logoArgs `
         -target t -DAPP_ENCRYPTED=false -major $v[0] -minor $v[1] -micro $v[2]
     if ($LASTEXITCODE -ne 0) { throw "makerom failed ($LASTEXITCODE)" }
 } finally {

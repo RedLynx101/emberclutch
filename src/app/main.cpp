@@ -131,7 +131,8 @@ int main() {
         autotest::afterFrameBegin();  // last frame's picture is finished now
         screenshot::afterFrameBegin(app);
 
-        C2D_TargetClear(app.top, theme::kDenPlum);
+        C2D_TargetClear(app.top, app.topClear ? app.topClear : theme::kDenPlum);
+        app.topClear = 0;  // a scene's prepare sets it again
         C2D_SceneBegin(app.top);
         {
             perf::Scope timed(perf::Top);

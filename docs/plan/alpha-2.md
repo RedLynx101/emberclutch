@@ -388,6 +388,19 @@ HOME Menu's extdata, which also resets its layout). So banners are chosen on lab
 the game takes a new title ID when its banner changes, until the public release fixes one.
 **Lab 4:** M, N, O: the banner without turning, with each cute sound.
 
+**Run 8 (lab 4):** all three looked the same, **turned constantly**, and played **the old
+sound** (a high chirp of about 3 s), and so did the game's own title. Two findings:
+- **The turning is the HOME Menu's, not the banner's:** pycgfx's own demo recordings (the
+  CompareNormal spheres, which don't move, and Cesium Man, who only walks) turn constantly
+  too, and our banner has no turning in it. Likely tied to the SMDH's extendedbanner flag,
+  which all of them carry (0.1.2 froze without it, but that was the three-mesh scene).
+- **The sound is cached by product code:** every lab title shared `CTR-P-EMBL` and played lab
+  A's sound (0.1.1's, ending in a high trill); the game kept `CTR-P-EMBC` through its new
+  title ID and played 0.1.1's. **Lab 5:** P (the flag, sparkle-chirp), Q (no flag,
+  sparkle-chirp), R (no flag, the theme's bar), each with its own product code
+  (`banner_lab.ps1` now gives every title one, and `;noflag` drops the flag). The game's
+  product code is now `CTR-P-EMB2` (0.1.8).
+
 ### WP11d — Hardware performance pass (after run 3; before WP12a, Noah agreed)
 The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 8.3). Target:
 16.7 ms with three dragons, their toys and decor, and the close-up.
@@ -402,6 +415,14 @@ The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 
   reuses the cared-for dragon's pose instead of posing it again. On 0.1.6 the full den spent
   2.5–3.9 ms posing inside the frame: that should come off the frame time. Next, from the
   hardware profile: the rest of the top screen (3–4 ms), then the GPU (~7.9 ms).
+- **After run 7 (0.1.8):** ✅ laid-out text kept between frames (a 96-entry cache over a
+  persistent glyph buffer: text's time fell 0.8 → 0.3 ms in the emulator, the frame's CPU part
+  2.8 → 2.0); the dev overlay rewrites its numbers four times a second; the den's backdrop is
+  the screen's clear colour, not a full-screen quad; the stinger decoder rests every 16 KB
+  (it runs above the game's priority and froze it ~100 ms as an egg began to hatch). New
+  profiler sections (text, particles), and a **GPU probe** (dev menu page 2): each press
+  leaves out one part (the room, the den's dragons, the close-up, particles), named on the
+  overlay and in the screenshot log, to see each one's share of the GPU's 7.9 ms.
 - **Run 7's numbers:** the frame's CPU part fell to 6.6–6.8 ms; the frame averages ~19 ms
   because 6.7 (CPU) + 7.9 (GPU) + the screens' copies sit at the 16.7 ms limit. Next: the
   top screen's text laid out once instead of every frame, fewer 2D draws; the close-up's GPU
@@ -423,7 +444,12 @@ showcases, the map and the title, with the UI at screen depth and the dragons ju
 it. It draws the top screen's 3D twice, so it waits for WP11d; in 3D it runs at 30 fps on the
 old 3DS (Noah: fine), 60 without. The bottom screen can't be 3D.
 
-### WP11c — An Emberclutch boot logo (D58)
+### WP11c — An Emberclutch boot logo (D58) ✅ built (0.1.8), to see on the 3DS
+Done 2026-09-24: `tools/logo/make_logo.py` takes makerom's homebrew logo from its own output,
+draws EMBERCLUTCH (Cinzel Decorative, white on black, a touch bold) in place of "homebrew",
+ETC1-encodes it (our encoder; a round trip reads 37.8 dB PSNR), recompresses (6.6 KB of the
+8 KB region) and `package_cia.ps1` passes it with `-logo` (`-HomebrewLogo` for makerom's).
+Checked in the built CIA (the logo region is ours byte for byte). The plan it followed:
 The logo the HOME Menu plays as a title starts (the NCCH's logo region; the emulator never
 shows it). Since 0.1.2 that's makerom's *homebrew* logo: a small layout (an LZ11-compressed
 darc of `blyt/*.bclyt`, `anim/*.bclan` and `timg/*.bclim`: the word "homebrew" on a

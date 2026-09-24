@@ -2,8 +2,10 @@
 # game's own title (the HOME Menu caches a title's banner, and a banner that freezes it costs a
 # restart). Each variant is its own title ("Banner lab A", "B", ...; unique IDs 0xEC0D1 up),
 # holding the game's code but no romfs: select them on the HOME Menu, never start them.
-#   tools\banner_lab.ps1 -Variants "A=<cgfx>;<wav>", "B=..." [-FirstId 0xEC0D1] [-Deploy <3ds-ip>]
-# Each round takes fresh IDs (-FirstId): the HOME Menu may keep a deleted title's banner.
+#   tools\banner_lab.ps1 -Variants "A=<cgfx>;<wav>[;noflag]", "B=..." [-FirstId 0xEC0D1] [-Deploy <3ds-ip>]
+# Each round takes fresh IDs (-FirstId), and each title its own product code (CTR-P-Lxxx):
+# the HOME Menu kept a banner's sound across titles that shared one (run 8). "noflag" leaves
+# out the SMDH's extendedbanner flag (every one of these banners turned constantly with it).
 # A variant's banner is a CGFX (3D) or a PNG (flat) and a WAV. The CIAs land in build/lab/;
 # -Deploy uploads them to sdmc:/cias/lab/ (FBI can install a whole folder at once). Remove
 # them afterwards in FBI: Titles, "Banner lab ...", Delete Title.
@@ -30,7 +32,7 @@ $rsf = Join-Path $lab "lab.rsf"
 $text = Get-Content (Join-Path $PSScriptRoot "cia.rsf") -Raw
 $text = $text -replace '(?ms)^RomFs:\r?\n  RootPath[^\n]*\n', ''
 $text = $text -replace 'Title                   : "Emberclutch"', 'Title                   : "$(LAB_TITLE)"'
-$text = $text -replace 'ProductCode             : "CTR-P-EMBC"', 'ProductCode             : "CTR-P-EMBL"'
+$text = $text -replace 'ProductCode(\s*): "CTR-P-[A-Z0-9]+"', 'ProductCode$1: "$(LAB_PRODUCT)"'
 $text = $text -replace 'UniqueId(\s*): 0x[0-9A-Fa-f]+', 'UniqueId$1: $(LAB_ID)'
 $text = $text -replace 'JumpId(\s*): 0x[0-9A-Fa-f]+', 'JumpId$1: $(LAB_JUMP)'
 Set-Content -Path $rsf -Value $text -Encoding ascii -NoNewline
@@ -39,22 +41,23 @@ $id = $FirstId
 $built = @()
 foreach ($v in $Variants) {
     $name, $spec = $v -split "=", 2
-    $banner, $wav = $spec -split ";", 2
+    $banner, $wav, $opt = $spec -split ";", 3
+    $flags = if ($opt -eq "noflag") { "visible,allow3d,recordusage" } else { "visible,allow3d,recordusage,extendedbanner" }
     $title = "Banner lab $name"
     $smdh = Join-Path $lab "$name.smdh"
     $bnr = Join-Path $lab "$name.bnr"
     & $bannertool makesmdh -s $title -l "Emberclutch banner test $name (don't start it)" -p "Noah Hicks" `
-        -i (Join-Path $root "assets\icon.png") -f "visible,allow3d,recordusage,extendedbanner" -o $smdh | Out-Null
+        -i (Join-Path $root "assets\icon.png") -f $flags -o $smdh | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "makesmdh failed for $name" }
     $kind = if ($banner -like "*.png") { "-i" } else { "-ci" }
     & $bannertool makebanner $kind $banner -a $wav -o $bnr | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "makebanner failed for $name" }
     $cia = Join-Path $lab ("banner-lab-{0}.cia" -f $name.ToLower())
     & $makerom -f cia -o $cia -elf $elf -icon $smdh -banner $bnr -rsf $rsf -target t -DAPP_ENCRYPTED=false `
-        ("-DLAB_TITLE=$title") ("-DLAB_ID=0x{0:X}" -f $id) ("-DLAB_JUMP=0x00040000{0:X6}00" -f $id) -major 0 -minor 0 -micro 1
+        ("-DLAB_TITLE=$title") ("-DLAB_PRODUCT=CTR-P-L{0:X3}" -f ($id -band 0xFFF)) ("-DLAB_ID=0x{0:X}" -f $id) ("-DLAB_JUMP=0x00040000{0:X6}00" -f $id) -major 0 -minor 0 -micro 1
     if ($LASTEXITCODE -ne 0) { throw "makerom failed for $name" }
     $built += Get-Item $cia
-    "{0}: {1} ({2:N1} MB, title 00040000{3:X6}00) <- {4} + {5}" -f $title, (Split-Path $cia -Leaf), ((Get-Item $cia).Length / 1MB), $id, (Split-Path $banner -Leaf), (Split-Path $wav -Leaf)
+    "{0}: {1} ({2:N1} MB, title 00040000{3:X6}00, CTR-P-L{6:X3}, {7}) <- {4} + {5}" -f $title, (Split-Path $cia -Leaf), ((Get-Item $cia).Length / 1MB), $id, (Split-Path $banner -Leaf), (Split-Path $wav -Leaf), ($id -band 0xFFF), $flags
     $id++
 }
 

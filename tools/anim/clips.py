@@ -275,9 +275,33 @@ clip("shake", 1.0).pose(0.0, WINGS_FOLDED).pose(1.0, WINGS_FOLDED).wave(shake_wa
  .wave(lambda t: {"hips": (0, 6 * sin01(t, 0.15), 0) if 0.35 < t < 0.65 else (0, 0, 0)})
  .root(0.0).root(0.65).root(0.85, up=0.45).root(1.05).root(1.4)  # the den behavior moves it forward
  .event(1.05, "land"))
-(clip("tail_wag", 0.5, loop=True).pose(0.0, merge(WINGS_FOLDED, {"tail1": (8, 0, 0)}))
- .wave(lambda t: {f"tail{k}": (0, (8 + 5 * k) * sin01(t, 0.5, -0.08 * k), 0) for k in range(1, 5)})
- .wave(lambda t: {"hips": (0, 3 * sin01(t, 0.5, 0.5), 0)}))
+
+
+def happy_wag(t):
+    """A puppy's happy wiggle (Noah: the old wag pivoted on the hips, the root, which swung
+    the whole dragon from its back end). The rear and the front sway against each other
+    around the middle of the body, so it stays in place; the raised tail wags hard, the
+    head tilts, and the front paws do little alternating tippy-taps (a lifted paw bends at
+    the wrist) while the hind knees give with each step."""
+    s = sin01(t, 0.5)
+    out = {"hips": (0, 5 * s, 2 * s), "belly": (0, -8 * s, 0), "chest": (1.5 * sin01(t, 0.25), 3 * s, -2 * s),
+           "neck1": (0, -1.5 * s, 0), "head": (0, 1.5 * s, 7 * sin01(t, 1.0, 0.25))}
+    for k in range(1, 5):
+        out[f"tail{k}"] = (0, (10 + 6 * k) * sin01(t, 0.5, -0.08 * k), 0)
+    for side, phase in (("L", 0.0), ("R", 0.5)):
+        lift = max(0.0, sin01(t, 1.0, -phase)) ** 1.5
+        out[f"arm_up_{side}"] = (16 * lift, 0, 0)
+        out[f"arm_lo_{side}"] = (-34 * lift, 0, 0)
+        out[f"hand_{side}"] = (-18 * lift, 0, 0)
+        out[f"leg_lo_{side}"] = (-5 * max(0.0, sin01(t, 1.0, 0.5 - phase)), 0, 0)
+        out[f"leg_up_{side}"] = (0, -5 * s, -2 * s)  # undo the hips' sway: the hind feet stay put
+    return out
+
+
+(clip("tail_wag", 1.0, loop=True)
+ .pose(0.0, merge(WINGS_FOLDED, {"tail1": (16, 0, 0), "tail2": (6, 0, 0), "neck1": (4, 0, 0), "head": (6, 0, 0),
+                                 "jaw": (-8, 0, 0)}))
+ .wave(happy_wag))
 (clip("wing_flutter", 1.2).pose(0.0, WINGS_FOLDED).pose(0.25, WINGS_OPEN)
  .pose(0.45, WINGS_HALF).pose(0.65, WINGS_OPEN).pose(1.2, WINGS_FOLDED)
  .event(0.25, "flap").event(0.65, "flap"))

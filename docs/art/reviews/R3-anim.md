@@ -40,5 +40,7 @@ shows the same motion. The camera stays put, so a hop or a pounce moves through 
 ## Noah's verdict
 - 2026-09-24: folded wings clipped into the back and weren't cute: redone as a bird-like
   fold with the membrane following the fingers (done). The **tail wag** pivots near the
-  back of the dragon: redo it centred on the body with cute leg movement (planned, see the
-  Alpha 1 plan's cuteness pass).
+  back of the dragon: redo it centred on the body with cute leg movement (done: a centred
+  puppy wiggle with front-paw tippy-taps).
+- 2026-09-24: the **walk has a limp**: the dragon pops up every couple of steps (planned,
+  see the Alpha 1 plan's cuteness pass for the suspected cause).

@@ -60,9 +60,17 @@ While waiting on a review, work continues on the non-art packages (engine, save,
     little pant when trotting. Little teeth line both lips (two tiny fangs peek out when
     it's closed), with a pink tongue and a dark rosy mouth. Previews:
     `dragon_model.py -- --views mouth --jaw 28`.
-  - Redo the **tail wag** (Noah): it pivots near the back of the dragon. Centre the wiggle
-    on the body (hips and shoulders swaying against each other) and add cute leg movement
-    (little paddling steps).
+  - ✅ Redo the **tail wag** (Noah): it pivoted on the hips (the root), swinging the whole
+    dragon from its back end. Now the rear and front sway against each other around the
+    middle of the body (the head's side-to-side travel went from 0.28 to 0.03 on an adult),
+    the raised tail wags hard, the head tilts, the front paws do alternating tippy-taps
+    and the hind legs counter the sway so the feet stay planted.
+  - Fix the **walking limp** (Noah, 2026-09-24): the dragon pops up every couple of steps.
+    Suspect: on a hind leg's forward swing `leg_cycle` pitches the foot toes-down, the
+    swinging toe dips below the planted feet, and grounding (lowest body vertex on the
+    floor, runtime and previews alike) lifts the whole dragon. Check by tracking the
+    ground offset over the walk and trot cycles; fix by keeping swinging feet above the
+    planted ones (or grounding on planted feet only).
   - "A bit more cute" in general (candidates: blinking, softer expressions).
   - Then texturing (the Pattern gene, scale detail) → R2.
 - *Verify:* script prints tris/bones per part vs budget; renders saved to `docs/art/`.

@@ -94,4 +94,8 @@ struct Animator {
 // Applies deltas after the idle pose, in each bone's local frame: rot = rot * delta.
 void applyDeltas(BonePose* pose, const Quat* delta, int count);
 
+// Turns the neck and head toward `target` (armature space) on top of the pose, within
+// comfortable limits (yaw 55 degrees, pitch -30..25); weight 0..1 fades it in and out.
+void applyLookAt(const Skeleton& skel, const AnimBinding& bind, BonePose* pose, Vec3 target, float weight);
+
 }  // namespace ec

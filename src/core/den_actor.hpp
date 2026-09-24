@@ -21,6 +21,7 @@ struct DenActor {
     u16 playedSerial = 0xFFFF;
     int speedForm = -1;  // the body the walking speeds were measured on
     float speedT = -1;
+    float look = 0;      // smoothed look-at-the-player weight
 
     void reset(const DenLayout& den, u32 seed);
     // Re-measures walk/trot speeds when the body changes (form, growth, build, size).

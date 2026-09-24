@@ -51,6 +51,20 @@ inline Quat nlerp(Quat a, Quat b, float t) {
                       a.w + (b.w * s - a.w * t)});
 }
 
+inline Quat quatAxisAngle(Vec3 axis, float radians) {
+    const float s = std::sin(radians * 0.5f);
+    return {axis.x * s, axis.y * s, axis.z * s, std::cos(radians * 0.5f)};
+}
+
+// The animation convention (tools/anim/eca.py): pitch + tips a bone up/forward (about -X),
+// yaw + turns it to the dragon's left (about +Z), roll + leans it right (about -Y); roll is
+// applied first, then pitch, then yaw. Radians, armature axes.
+inline Quat quatFromPitchYawRoll(float pitch, float yaw, float roll) {
+    Quat q = quatAxisAngle({0, -1, 0}, roll);
+    q = mul(quatAxisAngle({-1, 0, 0}, pitch), q);
+    return mul(quatAxisAngle({0, 0, 1}, yaw), q);
+}
+
 inline Vec3 rotate(Quat q, Vec3 v) {
     const Vec3 u{q.x, q.y, q.z};
     const Vec3 t = cross(u, v) * 2.0f;

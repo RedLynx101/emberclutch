@@ -331,6 +331,26 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
     clipDone = false;  // consumed
 }
 
+float DenBehavior::lookWeight() const {
+    switch (activity) {
+        case Activity::Idle:
+        case Activity::Sit:
+        case Activity::TailWag:
+        case Activity::Greet:
+        case Activity::Favorite:
+            return 1.0f;
+        case Activity::Lie:
+        case Activity::MakeUp:
+        case Activity::PetHead:
+            return 0.7f;
+        case Activity::Wander:
+        case Activity::BellyRub:
+            return 0.3f;
+        default:
+            return 0.0f;  // eating, sleeping, sulking, its own business
+    }
+}
+
 void DenBehavior::care(Care c, const Dragon& d, PetZone zone) {
     if (asleep(*this) || activity == Activity::Wake) return;
     if (d.upset || sulking(activity)) {

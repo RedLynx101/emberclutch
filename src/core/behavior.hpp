@@ -72,6 +72,9 @@ struct DenBehavior {
     void care(Care c, const Dragon& d, PetZone zone = PetZone::Head);
     // Dev menu: jump straight into an activity.
     void force(Activity a) { start(a); }
+    // How much the dragon looks at the player right now (0..1): full when idle or greeting,
+    // none while eating, sleeping or sulking.
+    float lookWeight() const;
 
 private:
     void start(Activity a);

@@ -67,6 +67,8 @@ int DenActor::update(const Dragon& d, bool night, float moveScale, float dt, con
                      const int* clipIndex, u8* events, int maxEvents) {
     behavior.clipDone = playedSerial == behavior.clipSerial && anim.finished(lib);
     behavior.update(d, night, moveScale, dt);
+    const float k = dt * 3.0f < 1.0f ? dt * 3.0f : 1.0f;
+    look += (behavior.lookWeight() - look) * k;
     if (behavior.clipSerial != playedSerial) {
         const int index = clipIndex[static_cast<int>(behavior.clip)];
         if (index >= 0) anim.play(index, behavior.blend, true);

@@ -210,6 +210,37 @@ TEST(locomotion_speeds_follow_the_body) {
     CHECK(walk[kFormHatchling] < walk[kFormGrown] && trot[kFormHatchling] < trot[kFormGrown]);
 }
 
+TEST(look_at_turns_the_head_within_limits) {
+    const ModelData& m = form(kFormGrown);
+    AnimBinding bind;
+    bindAnims(anims(), m.skel, bind);
+    const int head = m.skel.find("head");
+    BonePose idle[kMaxBones], pose[kMaxBones];
+    idlePose(m, 1.0f, kBuildNeutral, idle);
+    Mat34 poseMat[kMaxBones], skin[kMaxBones];
+    evaluatePose(m.skel, idle, poseMat, skin);
+    const Vec3 headPos = poseMat[head].translation();
+    const Vec3 rest = boneDir(m, idle, head);
+    auto yawOf = [](Vec3 d) { return std::atan2(d.x, -d.y); };
+    auto lookAt = [&](Vec3 target, float weight) {
+        for (int i = 0; i < m.skel.count; ++i) pose[i] = idle[i];
+        applyLookAt(m.skel, bind, pose, target, weight);
+        return boneDir(m, pose, head);
+    };
+    // To its left (+X) and ahead: the head turns left.
+    CHECK(yawOf(lookAt(headPos + Vec3{3, -3, 0}, 1.0f)) > yawOf(rest) + 0.3f);
+    // Up high in front: the head tips up.
+    CHECK(lookAt(headPos + Vec3{0, -2, 3}, 1.0f).z > rest.z + 0.2f);
+    // Weight 0 changes nothing; half weight turns about half as far.
+    CHECK(std::fabs(dot(lookAt(headPos + Vec3{3, -3, 0}, 0.0f), rest) - 1.0f) < 1e-5f);
+    const float full = yawOf(lookAt(headPos + Vec3{3, -3, 0}, 1.0f)) - yawOf(rest);
+    const float half = yawOf(lookAt(headPos + Vec3{3, -3, 0}, 0.5f)) - yawOf(rest);
+    CHECK(std::fabs(half - full * 0.5f) < 0.1f);
+    // Right behind it: the turn stops at the limit instead of wrapping the neck around.
+    const float behind = yawOf(lookAt(headPos + Vec3{0.3f, 5, 0}, 1.0f)) - yawOf(rest);
+    CHECK(std::fabs(behind) < 60.0f * 3.14159f / 180.0f);
+}
+
 TEST(anim_loader_rejects_bad_files) {
     const std::vector<u8> good = readAll("../romfs/anims/dragon.eca");
     AnimLibrary lib;
@@ -228,5 +259,6 @@ void runAnimTests() {
     RUN(animator_crossfades_between_clips);
     RUN(animator_reports_event_markers);
     RUN(locomotion_speeds_follow_the_body);
+    RUN(look_at_turns_the_head_within_limits);
     RUN(anim_loader_rejects_bad_files);
 }

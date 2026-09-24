@@ -191,4 +191,28 @@ void applyDeltas(BonePose* pose, const Quat* delta, int count) {
     for (int i = 0; i < count; ++i) pose[i].rot = mul(pose[i].rot, delta[i]);
 }
 
+void applyLookAt(const Skeleton& skel, const AnimBinding& bind, BonePose* pose, Vec3 target, float weight) {
+    constexpr float kDeg = 3.14159265f / 180.0f;
+    const int bones[3] = {skel.find("neck2"), skel.find("neck3"), skel.find("head")};
+    constexpr float kShare[3] = {0.2f, 0.3f, 0.5f};  // the head turns most, the neck follows
+    if (weight <= 0.001f || bones[0] < 0 || bones[1] < 0 || bones[2] < 0) return;
+    Mat34 poseMat[kMaxBones], skin[kMaxBones];
+    evaluatePose(skel, pose, poseMat, skin);
+    const Mat34& h = poseMat[bones[2]];
+    const Vec3 facing = normalize(Vec3{h.m[0][1], h.m[1][1], h.m[2][1]});  // along the head bone
+    const Vec3 want = normalize(target - h.translation());
+    float yaw = std::atan2(want.x, -want.y) - std::atan2(facing.x, -facing.y);
+    while (yaw > 3.14159265f) yaw -= 6.2831853f;
+    while (yaw < -3.14159265f) yaw += 6.2831853f;
+    auto clampf = [](float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); };
+    float pitch = std::asin(clampf(want.z, -1, 1)) - std::asin(clampf(facing.z, -1, 1));
+    yaw = clampf(yaw, -55 * kDeg, 55 * kDeg) * weight;
+    pitch = clampf(pitch, -30 * kDeg, 25 * kDeg) * weight;
+    for (int k = 0; k < 3; ++k) {
+        const int b = bones[k];
+        const Quat q = quatFromPitchYawRoll(pitch * kShare[k], yaw * kShare[k], 0);
+        pose[b].rot = mul(pose[b].rot, mul(mul(conjugate(bind.rest[b]), q), bind.rest[b]));
+    }
+}
+
 }  // namespace ec

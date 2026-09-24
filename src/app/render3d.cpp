@@ -145,6 +145,7 @@ bool g_animsOk = false;
 AnimBinding g_bind[kFormCount];  // LOD1 shares its form's skeleton
 Vec3 g_camTarget;                // smoothed den camera target
 float g_camRadius = 0;           // smoothed den framing radius (0: not set yet)
+Vec3 g_camEye;                   // last den camera position: where "the player" is
 
 // Toon ramp on L.N (signed): plum shadow, a mid band, full light.
 float toonRamp(float x, float) { return x < 0.12f ? 0.0f : (x < 0.45f ? 0.62f : 1.0f); }
@@ -259,6 +260,10 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
     Cache* c = cacheFor(d, now, lod);
     if (!c) return false;
     const Form& f = g_forms[c->form][lod];
+    out.size = sizeScale(d.genome);
+    out.scale = growthScale(growthFor(d.stage, stageProgress(d, now))) * out.size;
+    out.pos = actor ? actor->behavior.pos : Vec2{};
+    out.heading = actor ? actor->behavior.heading : 0.0f;
     BonePose bones[kMaxBones];
     idlePose(f.model, c->t, buildOf(d), bones);
     out.root[0] = out.root[1] = 0;
@@ -266,6 +271,17 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
         Quat delta[kMaxBones];
         actor->anim.sample(g_anims, g_bind[c->form], f.model.skel.count, delta, out.root);
         applyDeltas(bones, delta, f.model.skel.count);
+        // Look at the player: the den camera, brought into the dragon's armature space
+        // (the inverse of modelMatrix, with last frame's floor contact).
+        if (actor->look > 0.01f && g_camRadius > 0) {
+            const float ch = std::cos(out.heading), sh = std::sin(out.heading);
+            const Vec3 rel{g_camEye.x - out.pos.x, g_camEye.y - out.pos.y, g_camEye.z - out.root[1] * out.scale};
+            Vec3 local{rel.x * ch + rel.y * sh, -rel.x * sh + rel.y * ch, rel.z};
+            local.y += out.root[0] * out.scale;
+            local = local * (1.0f / out.size);
+            local.z += c->groundNow;
+            applyLookAt(f.model.skel, g_bind[c->form], bones, local, actor->look);
+        }
     }
     evaluatePose(f.model.skel, bones, out.poseMat, out.skin);
     // Floor contact follows the pose (sitting, lying, rolling over), smoothed so a swinging
@@ -281,10 +297,6 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
     out.form = &f;
     out.cache = c;
     out.dragon = &d;
-    out.size = sizeScale(d.genome);
-    out.scale = growthScale(growthFor(d.stage, stageProgress(d, now))) * out.size;
-    out.pos = actor ? actor->behavior.pos : Vec2{};
-    out.heading = actor ? actor->behavior.heading : 0.0f;
     out.ground = c->groundNow;
     return true;
 }
@@ -518,7 +530,8 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now) {
     const float dist = g_camRadius / std::tan(kFovY * 0.5f) * 0.95f;
     C3D_Mtx projection, view, model;
     Mtx_PerspTilt(&projection, kFovY, C3D_AspectRatioTop, 0.05f, dist * 4.0f, false);
-    lookAt(view, g_camTarget + dir * dist, g_camTarget);
+    g_camEye = g_camTarget + dir * dist;
+    lookAt(view, g_camEye, g_camTarget);
 
     begin3D(projection);
     for (int i = 0; i < count; ++i) {

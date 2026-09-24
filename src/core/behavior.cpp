@@ -232,7 +232,7 @@ void DenBehavior::start(Activity a) {
             trot = distance(pos, target) > 3.0f;
             break;
         case Activity::Hatch:
-            pos = den.eggNest;
+            pos = hatchAt;
             heading = headingTo(pos, den.player);
             setClip(ClipId::Shake, 0.1f, true);
             break;
@@ -651,7 +651,7 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
     // Stay on the floor, and out of the solid things on it (a hatchling starts in the nest).
     const bool inNest = activity == Activity::Hatch;
     const float r = distance(pos, den.home);
-    if (r > den.radius) {
+    if (r > den.radius && !inNest) {
         pos.x = den.home.x + (pos.x - den.home.x) * den.radius / r;
         pos.y = den.home.y + (pos.y - den.home.y) * den.radius / r;
     }
@@ -777,7 +777,7 @@ void DenBehavior::care(Care c, const Dragon& d, PetZone zone) {
                     const float dx = den.home.x - pos.x, dy = den.home.y - pos.y, len = std::hypot(dx, dy);
                     float out = kClearance * size + 0.15f;  // clear of the egg nest's rim
                     for (const DenObstacle& o : den.obstacles)
-                        if (distance(o.at, den.eggNest) < 0.1f) out += o.radius;
+                        if (distance(o.at, hatchAt) < 0.1f) out += o.radius;
                     target = len > 1e-4f ? Vec2{pos.x + dx / len * out, pos.y + dy / len * out} : den.home;
                     step = 2;
                 }

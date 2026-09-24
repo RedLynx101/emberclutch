@@ -1,0 +1,58 @@
+# A full den (Alpha 2 WP1): three dragons and two eggs, the budget with everyone in it, and
+# switching who the bottom screen cares for (the D-pad).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+# Two more dragons and two eggs (dev menu: Add dragon, Add egg).
+key SELECT
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+tap 82 206
+wait 0.3
+tap 82 206
+wait 0.3
+shot f01-dev-status
+key SELECT
+wait 5
+overlay on
+shot f02-full-den
+overlay off
+wait 4
+shot f03-full-den-later
+# Switching: the next dragon, the next, then an egg.
+key RIGHT
+wait 1.5
+shot f04-second
+key RIGHT
+wait 1.5
+shot f05-third
+key RIGHT
+wait 1.5
+shot f06-first-egg
+key RIGHT
+wait 1.5
+shot f07-second-egg
+key RIGHT
+wait 1.5
+shot f08-back-to-first
+# The profile card's arrows.
+tap 298 16
+wait 0.5
+shot f09-profile
+tap 273 56
+wait 0.8
+shot f10-profile-next
+quit

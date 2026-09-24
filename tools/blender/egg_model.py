@@ -1,6 +1,7 @@
 """Emberclutch egg: a speckled shell with light inside and three stages of glowing cracks.
 
   python tools/blender/egg_model.py --out romfs/models/egg.ecm
+  python tools/blender/egg_model.py --lod 1 --out romfs/models/egg_lod1.ecm   (~300 triangles, for the den)
   blender -b -P tools/blender/egg_model.py -- --render C:/abs/prefix     (preview renders)
 
 Writes romfs/models/egg.ecm (the dragons' format, src/core/model.cpp) with two bones:
@@ -32,13 +33,14 @@ def arg(name, default=None):
 
 OUT = arg("--out")
 RENDER = arg("--render")
+LOD = int(arg("--lod", "0"))  # 1: the den's egg (small on the top screen, two of them in a full den)
 
 H = 1.0          # egg height (adult units: a newborn hatchling is about this tall curled up)
 R = 0.37         # widest radius (low on the egg)
 SEAM = 0.63      # where the cap splits off (fraction of the height)
 ZIG = 0.04       # zigzag of the seam
 THICK = 0.022    # shell thickness
-SEGS = 16
+SEGS = 16 if LOD == 0 else 10  # even: the seam zigzags
 LIFT = 0.004     # decals float this far off the shell
 FRONT = math.radians(-105)  # cracks face the den and close-up cameras (-Y, a little left)
 
@@ -100,8 +102,8 @@ def seam_u(k):
 
 def build():
     m = Mesh()
-    lower_us = [0.04, 0.1, 0.18, 0.27, 0.37, 0.47, 0.55]
-    upper_us = [0.71, 0.79, 0.87, 0.94]
+    lower_us = [0.04, 0.1, 0.18, 0.27, 0.37, 0.47, 0.55] if LOD == 0 else [0.06, 0.2, 0.4]
+    upper_us = [0.71, 0.79, 0.87, 0.94] if LOD == 0 else [0.78, 0.91]
     thetas = [2 * math.pi * k / SEGS for k in range(SEGS)]
 
     def ring(us_of_k, bone, inset=0.0, paint=None, inward=False):
@@ -166,7 +168,7 @@ def build():
     # speckles: small hexagons scattered over the shell, clear of the seam
     rng = random.Random(7)
     placed = 0
-    while placed < 22:
+    while placed < (22 if LOD == 0 else 6):
         u, th = 0.12 + 0.78 * rng.random(), rng.random() * 2 * math.pi
         if abs(u - SEAM) < ZIG + 0.06:
             continue

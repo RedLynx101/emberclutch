@@ -244,16 +244,17 @@ int g_clipIndex[kFormCount][static_cast<int>(ClipId::Count)];
 bool g_animsOk = false;
 AnimBinding g_bind[kFormCount];  // LOD1 shares its form's skeleton
 Room g_room;
-EggForm g_egg;
+EggForm g_egg;      // full detail: the close-up, and a lone egg in the den
+EggForm g_eggLod1;  // the den's egg when there's more to draw (tools/blender/egg_model.py --lod 1)
 Vec3 g_camTarget;                // smoothed den camera target
 float g_camRadius = 0;           // smoothed den framing radius (0: not set yet)
 Vec3 g_camEye;                   // last den camera position: where "the player" is
 C3D_Mtx g_denView;               // last den camera, for projecting particles and the egg
 bool g_denViewSet = false;
-Vec3 g_heads[3];                 // den dragons' heads in the last drawDen
-bool g_headSet[3] = {};
-Vec3 g_mouths[3];                // ...and their mouths (a carried ball rides there)
-bool g_mouthSet[3] = {};
+Vec3 g_heads[kDenShown];         // den dragons' heads in the last drawDen (an egg's top)
+bool g_headSet[kDenShown] = {};
+Vec3 g_mouths[kDenShown];        // ...and their mouths (a carried ball rides there)
+bool g_mouthSet[kDenShown] = {};
 
 // The last close-up: hands-on care picks against what it showed (WP7).
 struct CloseUpState {
@@ -333,12 +334,12 @@ bool loadForm(const char* path, const char* skinPath, Form& f) {
     return true;
 }
 
-bool loadEgg(const char* path) {
+bool loadEgg(const char* path, EggForm& egg) {
     std::vector<u8> bytes;
-    if (!readFile(path, bytes) || !loadModel(bytes.data(), bytes.size(), g_egg.model)) return false;
-    const MeshData* shell = g_egg.model.findMesh(kMeshBody, kGroupBody, 0);
-    g_egg.ok = shell && g_egg.model.skel.count == 2 && fillStatic(g_egg.shell, *shell);
-    return g_egg.ok;
+    if (!readFile(path, bytes) || !loadModel(bytes.data(), bytes.size(), egg.model)) return false;
+    const MeshData* shell = egg.model.findMesh(kMeshBody, kGroupBody, 0);
+    egg.ok = shell && egg.model.skel.count == 2 && fillStatic(egg.shell, *shell);
+    return egg.ok;
 }
 
 bool loadRoom(const char* path) {
@@ -796,7 +797,8 @@ bool init() {
                     resolveClips(g_anims, kFormGrown, g_clipIndex[kFormGrown]);
         for (int f = 0; f < kFormCount; ++f) bindAnims(g_anims, g_forms[f][0].model.skel, g_bind[f]);
         loadRoom("romfs:/models/den.esm");  // without it, dragons stand on the 2D backdrop
-        loadEgg("romfs:/models/egg.ecm");   // without it, eggs stay 2D
+        loadEgg("romfs:/models/egg.ecm", g_egg);  // without it, eggs stay 2D
+        loadEgg("romfs:/models/egg_lod1.ecm", g_eggLod1);
     }
     return g_ready;
 }
@@ -823,9 +825,10 @@ void shutdown() {
     }
     g_room.release();
     g_egg.shell.release();
+    g_eggLod1.shell.release();
     g_ballMesh.release();
     g_tubMesh.release();
-    g_egg.ok = false;
+    g_egg.ok = g_eggLod1.ok = false;
     if (g_staticDvlb) {
         shaderProgramFree(&g_staticProgram);
         DVLB_Free(g_staticDvlb);
@@ -933,12 +936,12 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
 
 // An egg: its palette with each slot's glow in the alpha, rocking and cap from its motion,
 // resting on the floor (z = 0 in model space) at `at`.
-void submitEgg(App& app, const Dragon& d, const EggMotion& motion, const C3D_Mtx& view, Vec3 at) {
+void submitEgg(App& app, const EggForm& egg, const Dragon& d, const EggMotion& motion, const C3D_Mtx& view, Vec3 at) {
     Mat34 skin[2];
-    eggSkin(g_egg.model, motion, skin);
+    eggSkin(egg.model, motion, skin);
     C3D_Mtx model, modelView;
     Mtx_Identity(&model);
-    Mtx_Translate(&model, at.x, at.y, at.z - groundOffset(g_egg.model, skin), true);
+    Mtx_Translate(&model, at.x, at.y, at.z - groundOffset(egg.model, skin), true);
     Mtx_Multiply(&modelView, &view, &model);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &modelView);
     Rgb pal[kPalCount];
@@ -949,7 +952,7 @@ void submitEgg(App& app, const Dragon& d, const EggMotion& motion, const C3D_Mtx
                       glow[i]);
     bindSkin(nullptr);  // the shell sits on the clean corner: no pattern, no dust
     dragonPattern(kPatternSolid, {0, 0, 0});
-    drawMesh(app, g_egg.shell, skin);
+    drawMesh(app, egg.shell, skin);
 }
 
 // ------------------------------------------------------------------------------ props (WP7)
@@ -1194,14 +1197,17 @@ void drawParticles(App& app, const Particles& fx, bool foreground) {
 void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Particles* fx) {
     if (!g_ready) return;
     ++g_frame;
-    if (count > 3) count = 3;
+    if (count > kDenShown) count = kDenShown;
+    // A lone egg fills the view in full detail; with more in the den, eggs are small: LOD1.
+    const EggForm& denEgg = count > 1 && g_eggLod1.ok ? g_eggLod1 : g_egg;
     const DenLayout den;
+    auto nestAt = [&](s8 n) { return den.eggNests[n >= 0 && n < DenLayout::kNests ? n : 0]; };
     // Frame everyone: the centre of the dragons' positions, wide enough for the biggest one
     // and the spread between them. The camera follows smoothly as they wander. With no
     // dragon out yet (an egg), it looks at the egg nest.
     float maxRadius = 0, spread = 0;
-    Vec2 mid{0, 0}, at[3];
-    bool drawn[3] = {};
+    Vec2 mid{0, 0}, at[kDenShown];
+    bool drawn[kDenShown] = {};
     int shown = 0;
     for (int i = 0; i < count; ++i) {
         const Dragon& d = *dragons[i].dragon;
@@ -1209,7 +1215,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         if (d.stage == Stage::Egg) {  // eggs sit in the egg nest
             if (!g_egg.ok || !dragons[i].egg) continue;
             r = 1.2f;
-            at[i] = den.eggNest;
+            at[i] = nestAt(dragons[i].nest);
         } else {
             const Cache* c = cacheFor(d, now, i == 0 ? 0 : 1);
             if (!c) continue;
@@ -1228,7 +1234,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         for (int i = 0; i < count; ++i)
             if (drawn[i]) spread = std::fmax(spread, std::hypot(at[i].x - mid.x, at[i].y - mid.y));
     } else if (g_room.ok) {
-        mid = den.eggNest;
+        mid = den.eggNests[0];
         maxRadius = 1.5f;
     } else {
         return;
@@ -1264,14 +1270,14 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         C2D_Flush();
     }
     bindDragons(projection);
-    for (int i = 0; i < 3; ++i) g_headSet[i] = g_mouthSet[i] = false;
+    for (int i = 0; i < kDenShown; ++i) g_headSet[i] = g_mouthSet[i] = false;
     for (int i = 0; i < count; ++i) {
         if (!drawn[i]) continue;
         if (dragons[i].dragon->stage == Stage::Egg) {
             float local[3];
             localLight(at[i], blend, local);
             lightDragon(light, local);
-            submitEgg(app, *dragons[i].dragon, *dragons[i].egg, view, {at[i].x, at[i].y, kNestFloor});
+            submitEgg(app, denEgg, *dragons[i].dragon, *dragons[i].egg, view, {at[i].x, at[i].y, kNestFloor});
             g_heads[i] = {at[i].x, at[i].y, kNestFloor + 0.8f};  // effects rise from its top
             g_headSet[i] = true;
             continue;
@@ -1284,10 +1290,11 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         lightDragon(light, local);
         submit(app, g_posed, view, model);
         if (dragons[i].egg && g_egg.ok) {  // just hatched: the empty shell is still in the nest
+            const Vec2 n = nestAt(dragons[i].nest);
             float nest[3];
-            localLight(den.eggNest, blend, nest);
+            localLight(n, blend, nest);
             lightDragon(light, nest);
-            submitEgg(app, *dragons[i].dragon, *dragons[i].egg, view, {den.eggNest.x, den.eggNest.y, kNestFloor});
+            submitEgg(app, denEgg, *dragons[i].dragon, *dragons[i].egg, view, {n.x, n.y, kNestFloor});
         }
         if (g_posed.form->headBone >= 0) {
             g_heads[i] = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
@@ -1323,7 +1330,7 @@ void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMoti
         bindDragons(projection);
         const float plain[3] = {1, 1, 1};
         lightDragon(dragonLight(dayBlend(now)), plain);
-        submitEgg(app, d, *egg, view, {0, 0, 0});
+        submitEgg(app, g_egg, d, *egg, view, {0, 0, 0});
         end3D();
         return;
     }
@@ -1454,7 +1461,7 @@ Vec3 closeUpLocal(Vec2 touch) {
 }
 
 bool mouthOf(int i, Vec3& out) {
-    if (i < 0 || i >= 3 || !g_mouthSet[i]) return false;
+    if (i < 0 || i >= kDenShown || !g_mouthSet[i]) return false;
     out = g_mouths[i];
     return true;
 }
@@ -1476,7 +1483,7 @@ bool project(Vec3 p, float& x, float& y, float& pixelsPerUnit) {
 }
 
 bool headOf(int i, Vec3& out) {
-    if (i < 0 || i >= 3 || !g_headSet[i]) return false;
+    if (i < 0 || i >= kDenShown || !g_headSet[i]) return false;
     out = g_heads[i];
     return true;
 }

@@ -10,6 +10,7 @@
 #include "core/clock.hpp"
 #include "core/dragon.hpp"
 #include "core/genetics.hpp"
+#include "core/den_roster.hpp"
 #include "core/save.hpp"
 
 #include <vector>
@@ -312,6 +313,7 @@ static SaveData& sampleSave() {
         }
         std::snprintf(d.name, sizeof(d.name), "Drake%d", i);
         d.eggTurns = static_cast<u8>(i % 3);
+        d.denSlot = static_cast<u8>(i % 3);
         d.lastTurnedAt = kT0 + i * kHour;
         d.motherId = i;
         d.location = static_cast<Location>(i % 2);
@@ -328,7 +330,7 @@ static bool sameDragon(const Dragon& a, const Dragon& b) {
            a.personality == b.personality && a.warmth == b.warmth && a.dayLowestSum == b.dayLowestSum &&
            a.upset == b.upset && a.napping == b.napping &&
            std::memcmp(a.dirt, b.dirt, sizeof(a.dirt)) == 0 && a.eggTurns == b.eggTurns &&
-           a.lastTurnedAt == b.lastTurnedAt;
+           a.lastTurnedAt == b.lastTurnedAt && a.denSlot == b.denSlot;
 }
 
 // Dust settles over a day or two, faster on the belly than the wings; grooming, brushing a
@@ -357,12 +359,49 @@ TEST(dirt_settles_and_grooming_clears_it) {
     CHECK(d.dirt[kRegionBelly] < 10.0f);
 }
 
+// The den (Alpha 2 WP1): three dragons, one to a bed, and two eggs, one to a nest; places are
+// kept; whoever doesn't fit moves out; a ready egg waits for a free bed.
+TEST(the_den_has_three_beds_and_two_nests) {
+    static SaveData s;
+    s = SaveData{};
+    Rng rng(8);
+    for (int i = 0; i < 7; ++i) {
+        Dragon d = makeEgg(100 + i, makePurebred(Element::Ember, rng), Sex::Female, kT0);
+        if (i < 4) {
+            d.incubationSeconds = kIncubationSeconds;
+            tryHatch(d, kT0 + kHour, rng);
+        }
+        d.denSlot = static_cast<u8>(i == 2 ? 1 : 0);  // clashes on purpose
+        s.dragons[s.dragonCount++] = d;
+    }
+    CHECK(settleDen(s) == 2);  // one dragon to the Sanctuary, one egg to the Vault
+    const DenRoster r = denRoster(s);
+    CHECK(r.dragonCount == 3 && r.eggCount == 2);
+    CHECK(r.freeBed() == -1 && r.freeNest() == -1 && bedForHatchling(s) == -1);
+    CHECK(r.dragon[1] == 2);  // it kept the bed it had
+    int sanctuary = 0, vault = 0;
+    for (int i = 0; i < s.dragonCount; ++i) {
+        sanctuary += s.dragons[i].location == Location::Sanctuary;
+        vault += s.dragons[i].location == Location::Vault;
+    }
+    CHECK(sanctuary == 1 && vault == 1);
+    CHECK(settleDen(s) == 0);  // settled stays settled
+
+    Dragon extra = makeEgg(200, makePurebred(Element::Tide, rng), Sex::Male, kT0);
+    CHECK(!placeEgg(s, extra) && extra.location == Location::Vault);  // the nests are full
+    s.dragons[r.dragon[0]].location = Location::Sanctuary;  // a bed comes free
+    CHECK(bedForHatchling(s) == 0);
+    s.dragons[r.egg[1]].location = Location::Vault;
+    Dragon egg = makeEgg(201, makePurebred(Element::Gale, rng), Sex::Male, kT0);
+    CHECK(placeEgg(s, egg) && egg.location == Location::Den && egg.denSlot == 1);
+}
+
 TEST(save_round_trip) {
     const SaveData& s = sampleSave();
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 2));  // v1 + dirt + egg care
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 1 + 2));  // v1 + dirt + egg care + den slot
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
@@ -449,6 +488,7 @@ int main() {
     RUN(breeding_needs_one_male_and_one_female);
     RUN(breeding_requirements);
     RUN(egg_sexes_are_roughly_even);
+    RUN(the_den_has_three_beds_and_two_nests);
     RUN(save_round_trip);
     RUN(save_detects_corruption_and_truncation);
     RUN(save_rejects_out_of_range_data);

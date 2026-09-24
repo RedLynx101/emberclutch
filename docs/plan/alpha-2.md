@@ -1,7 +1,7 @@
 # Alpha 2 — *A den*: Work Plan
 
-Status: **Draft v1** (2026-09-24), written early so the order is fixed; detailed further
-when Alpha 1 closes. Goal (D31): complete through Alpha 2. Scope and assets:
+Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 part 1 done: the den of three
+dragons and two eggs (D53). Goal (D31): complete through Alpha 2. Scope and assets:
 [content & assets](content-and-assets.md) (A2 rows); screens: [screens & flow](../design/screens-and-flow.md).
 
 **The order matters** (Noah, 2026-09-24): everything that doesn't depend on how the
@@ -32,11 +32,16 @@ Worked through alone, package by package (D49).
 
 ### WP1 — Several dragons
 - A den of 3 active dragons plus 2 egg nests; pick which one the care screen is for.
+  *Done (D53):* `src/core/den_roster.*` (beds, nests, who moves out, a ready egg waits for a
+  bed; PC-tested), a second egg nest in the room, an actor per bed, the D-pad and the
+  profile card's arrows to switch, a heart over the one you're with; dev menu "Add dragon"
+  and "Add egg"; `tests/autotest/den3.txt`. Full den measured 7,740 top + 2,752 bottom
+  triangles, 15 draws.
 - Dragon-to-dragon life: play-chase, nuzzle, curling up together, sharing the sunbeam
   (the crowd avoidance and three beds exist).
 - LOD1 for background dragons (exists); the 3-dragon budget confirmed in the emulator.
-- An egg LOD (~450 triangles, the egg is 948): three dragons and an egg in the nest
-  measured 8,247 top-screen triangles against the 8,000 budget (Alpha 1 checklist).
+- *Done:* an egg LOD (312 triangles, `egg_model.py --lod 1`) and a lighter room (1,975):
+  three dragons and two eggs fit the 8,000 frame.
 
 ### WP2 — Sanctuary and Cold Vault
 - Illustrated screens with grids; move dragons and eggs in and out (needs drain slowly

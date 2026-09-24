@@ -9,7 +9,7 @@ tap 160 120
 wait 2
 key SELECT
 wait 0.3
-tap 238 92
+tap 238 81
 key SELECT
 name Rill
 wait 11
@@ -23,7 +23,7 @@ shot c1-hatchling-body
 tap 30 221
 key SELECT
 wait 0.3
-tap 82 121
+tap 82 106
 key SELECT
 wait 3
 shot c2-juvenile-face
@@ -33,14 +33,14 @@ shot c2-juvenile-feed
 tap 30 221
 key SELECT
 wait 0.3
-tap 82 121
+tap 82 106
 key SELECT
 wait 3
 shot c3-adolescent-face
 key SELECT
 wait 0.3
-tap 82 121
-tap 238 63
+tap 82 106
+tap 238 56
 key SELECT
 wait 3
 shot c4-adult-face

@@ -112,13 +112,16 @@ void drawFx(App& app) {
                 break;
             case kFxDrop: C2D_DrawEllipseSolid(f.pos.x - f.size * 0.4f, f.pos.y - f.size * 0.6f, 0.5f, f.size * 0.8f, f.size * 1.2f, withAlpha(kDropC, a * 0.8f)); break;
             case kFxCrumb: C2D_DrawCircleSolid(f.pos.x, f.pos.y, 0.5f, f.size, withAlpha(kCrumbC, a)); break;
-            default: C2D_DrawCircleSolid(f.pos.x, f.pos.y, 0.5f, f.size * (1.8f - a * 0.8f), withAlpha(kSteamC, a * 0.35f)); break;
+            default: C2D_DrawCircleSolid(f.pos.x, f.pos.y, 0.5f, f.size * (1.8f - a * 0.8f), withAlpha(kSteamC, a * 0.2f)); break;
         }
     }
 }
 
 // ------------------------------------------------------------------------------ tools
-DenActor& actor(App& app) { return app.actors[0]; }
+DenActor& actor(App& app) {  // the dragon you're caring for (care::update runs once it's set up)
+    DenActor* a = careActor(app);
+    return a ? *a : app.actors[0];
+}
 
 void noteSample(CareState& c, Vec2 p, float t) {
     if (c.sampleCount == 6) {
@@ -335,7 +338,11 @@ void selectTool(App& app, Dragon& d, Tool t) {
 void drawProfile(App& app, const Input& in, const Dragon& d, s64 now) {
     CareState& c = app.care;
     panel({22, 34, 276, 166}, withAlpha(theme::kDenPlum, 0.94f));
-    text(app, d.name, 160, 42, 0.85f, theme::kClutchGold);
+    text(app, d.name, 160, 42, 0.85f, theme::kClutchGold, C2D_AlignCenter, 200);
+    if (denRoster(app.game).dragonCount + denRoster(app.game).eggCount > 1) {  // the others in the den
+        if (button(app, {30, 42, 34, 28}, "<", in)) cycleCare(app, -1);
+        if (button(app, {256, 42, 34, 28}, ">", in)) cycleCare(app, 1);
+    }
     char line[80];
     std::snprintf(line, sizeof(line), "%s %s %s", sexName(d.sex), breedName(d.genome), stageName(d.stage));
     text(app, line, 160, 74, 0.5f, theme::kShell);
@@ -377,9 +384,8 @@ void freeSprites() {
 }
 
 r3d::CloseUpView view(const App& app) {
-    if (app.actorsReady) {  // asleep, curled up: its face is tucked away, so the whole of it
-        const DenBehavior& b = app.actors[0].behavior;
-        if (b.activity == Activity::Sleep) return r3d::CloseUpView::Body;
+    if (const DenActor* a = careActor(const_cast<App&>(app))) {  // asleep, curled up: its face is tucked away
+        if (a->behavior.activity == Activity::Sleep) return r3d::CloseUpView::Body;
     }
     switch (app.care.tool) {
         case Tool::Brush:
@@ -425,7 +431,7 @@ void update(App& app, Dragon& d) {
     r3d::setProps(&app.ball, c.bathOut, b.tubAt, b.tubSize);
     // An Ember dragon in the bath steams a little.
     if (b.activity == Activity::Bath && b.step == 2 && bathMoodOf(d) == BathMood::Grudging && app.rng.chance(1, 20))
-        emit(app, kFxSteam, {frand(app, 120, 200), frand(app, 70, 110)}, 1);
+        emit(app, kFxSteam, {frand(app, 110, 210), frand(app, 34, 62)}, 1);  // above its head
     stepFx(app);
 }
 

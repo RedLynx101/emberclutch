@@ -3,6 +3,10 @@
 #include <cstdio>
 
 #include "app/audio.hpp"
+#include "app/strings.hpp"
+#include "core/den_roster.hpp"
+#include "core/genetics.hpp"
+#include "core/names.hpp"
 #include "app/theme.hpp"
 #include "app/storage.hpp"
 #include "app/ui_draw.hpp"
@@ -60,6 +64,30 @@ void debugDrawOverlay(App& app) {
     line(app, 41, buf, okOr(audio::ok()));
 }
 
+// Alpha 2 WP1 before breeding and the Market: a random starter dragon into a free bed (or an
+// egg into a free nest, else the Vault), to fill the den.
+void devAddDragon(App& app, bool asEgg) {
+    SaveData& s = app.game;
+    if (s.dragonCount >= kMaxDragons) return;
+    if (!asEgg && bedForHatchling(s) < 0) {
+        showToast(app, str::kDenFull);
+        return;
+    }
+    const s64 now = nowLocal(app);
+    Rng& rng = app.rng;
+    Dragon d = makeEgg(s.nextId++, makePurebred(static_cast<Element>(rng.below(3)), rng), rollSex(rng), now);
+    if (asEgg) {
+        if (!placeEgg(s, d)) showToast(app, str::kEggToVault);
+    } else {
+        d.incubationSeconds = kIncubationSeconds;
+        tryHatch(d, now, rng);
+        d.denSlot = static_cast<u8>(bedForHatchling(s));
+        suggestName(d, rng.next(), d.name, sizeof(d.name));
+    }
+    s.dragons[s.dragonCount++] = d;
+    saveNow(app);
+}
+
 bool debugMenu(App& app, const Input& in) {
     if (!EC_DEV) return false;
     if (in.down & KEY_SELECT) app.devMenu = !app.devMenu;
@@ -77,12 +105,12 @@ bool debugMenu(App& app, const Input& in) {
     static constexpr Item kItems[] = {
         {"+1 hour", 0},   {"+1 day", 1},     {"+7 days", 2},      {"Fill needs", 3},
         {"Drain needs", 4}, {"Hatch now", 5}, {"Next stage", 6},   {"Next breed", 10},
-        {"Next activity", 12}, {"3-dragon test", 11}, {"Overlay", 7}, {"Save now", 8},
-        {"Reset save", 9}, {"Dusty / bath", 13},
+        {"Next activity", 12}, {"Add dragon", 11}, {"Overlay", 7}, {"Save now", 8},
+        {"Reset save", 9}, {"Dusty / bath", 13}, {"Add egg", 14},
     };
     constexpr int kCount = sizeof(kItems) / sizeof(kItems[0]);
     for (int i = 0; i < kCount; ++i) {
-        const Rect r{8.0f + (i % 2) * 156.0f, 22.0f + (i / 2) * 29.0f, 148, 25};
+        const Rect r{8.0f + (i % 2) * 156.0f, 20.0f + (i / 2) * 25.0f, 148, 22};
         if (!button(app, r, kItems[i].label, in)) continue;
         switch (kItems[i].id) {
             case 0: app.game.devOffset += kHour; break;
@@ -94,9 +122,10 @@ bool debugMenu(App& app, const Input& in) {
             case 6: forceNextStage(d, now); break;
             case 7: app.overlay = !app.overlay; break;
             case 8: saveNow(app); showToast(app, "Saved."); audio::playSfx(audio::Sfx::Save); break;
-            case 9: deleteGame(); app.game = SaveData{}; app.slots = SaveSlots{}; app.scene = SceneId::Title; app.devMenu = false; app.actorsReady = false; app.hatch = HatchState{}; app.eggCare = EggCare{}; break;
+            case 9: deleteGame(); resetForNewGame(app); app.slots = SaveSlots{}; app.scene = SceneId::Title; app.devMenu = false; break;
             case 10: nextBreed(d, app.rng); break;
-            case 11: app.denTest = !app.denTest; break;
+            case 11: devAddDragon(app, false); break;
+            case 14: devAddDragon(app, true); break;
             case 13: {  // see the dust (D46) without waiting a day: all dusty, then a bath
                 const bool dusty = d.dirt[kRegionBack] > 50.0f;
                 if (dusty) bathe(d);
@@ -104,7 +133,7 @@ bool debugMenu(App& app, const Input& in) {
                 break;
             }
             case 12: {  // every behavior state is reachable from here (WP5)
-                DenBehavior& b = app.actors[0].behavior;
+                DenBehavior& b = (careActor(app) ? *careActor(app) : app.actors[0]).behavior;
                 int next = (static_cast<int>(b.activity) + 1) % static_cast<int>(Activity::Count);
                 if (static_cast<Activity>(next) == Activity::Hatch) next = 0;  // only the hatching starts there
                 b.force(static_cast<Activity>(next));
@@ -113,9 +142,9 @@ bool debugMenu(App& app, const Input& in) {
         }
     }
     char buf[80];
-    const DenBehavior& b = app.actors[0].behavior;
+    const DenBehavior& b = (careActor(app) ? *careActor(app) : app.actors[0]).behavior;
     std::snprintf(buf, sizeof(buf), "+%lldh  stars %d  %s  %s/%d  (%.1f, %.1f)  v%.2f", static_cast<long long>(app.game.devOffset / kHour),
-                  d.careStars, stageName(d.stage), app.actorsReady ? activityName(b.activity) : "-", b.step, b.pos.x,
+                  d.careStars, stageName(d.stage), careActor(app) ? activityName(b.activity) : "-", b.step, b.pos.x,
                   b.pos.y, b.speed);
     text(app, buf, 160, 226, 0.4f, theme::kAsh);
     return true;

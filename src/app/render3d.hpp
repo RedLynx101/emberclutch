@@ -33,7 +33,9 @@ struct DenDragon {
     const Dragon* dragon;
     const DenActor* actor;
     const EggMotion* egg = nullptr;
+    s8 nest = 0;  // the egg nest an egg (or a hatchling's empty shell) sits in
 };
+constexpr int kDenShown = 5;  // three dragons and two eggs
 
 // Draws the den on the current top-screen target: the room lit for the time of day, up to
 // three dragons, and the particles (fx may be null): ambient ones behind the dragons, care

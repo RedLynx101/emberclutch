@@ -15,7 +15,7 @@ wait 2.5
 shot a02-tide-egg
 key SELECT
 wait 0.3
-tap 238 92
+tap 238 81
 key SELECT
 name Ripple
 wait 12
@@ -37,19 +37,19 @@ shot a05-fetch-back
 overlay on
 key SELECT
 wait 0.3
-tap 82 121
+tap 82 106
 key SELECT
 wait 3
 shot a06-juvenile
 key SELECT
 wait 0.3
-tap 82 121
+tap 82 106
 key SELECT
 wait 3
 shot a07-adolescent
 key SELECT
 wait 0.3
-tap 82 121
+tap 82 106
 key SELECT
 wait 3
 shot a08-adult
@@ -61,7 +61,7 @@ overlay off
 # Neglect: needs drained, a day and more alone, it sulks in the nook; then making up.
 key SELECT
 wait 0.3
-tap 82 92
+tap 82 81
 key SELECT
 skip 26
 wait 10

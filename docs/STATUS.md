@@ -2,13 +2,13 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 1 done** (tagged `v0.1.0-alpha1`, 2026-09-24; [checklist](plan/alpha-1-checklist.md)) · **next: Alpha 2**
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 part 1 ✅ (a den of three dragons and two eggs)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D52 recorded ([log](plan/decisions.md)); nothing open.
+  Decisions D1–D53 recorded ([log](plan/decisions.md)); nothing open.
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
   [Alpha 1 plan](plan/alpha-1.md), [Alpha 2 plan](plan/alpha-2.md) (draft: the style review
   R5, the emblem icon and a 3D HOME Menu banner, D47–D50). New specs (2026-09-24): [hands-on care](design/care-interactions.md)
@@ -98,8 +98,9 @@ menu and settings, toasts, save icon) and the CIA (WP11: an interim icon and ban
 our own model). New tool: `tools/autotest.ps1` plays a script in Azahar with nobody at the
 controls and saves screenshots of every step (`tests/autotest/`).
 
-1. **Alpha 2** ([plan](plan/alpha-2.md)), the style-independent systems first: several
-   dragons (with an egg LOD so three dragons and an egg stay under 8k triangles),
+1. **Alpha 2** ([plan](plan/alpha-2.md)), the style-independent systems first. WP1 part 1
+   ✅ (2026-09-24, D53): three dragons and two eggs in the den, switching who you care for,
+   the room and egg trimmed to fit the frame. Next: dragons playing with each other, then
    Sanctuary and Vault, breeding, Wanderings, the Market, the world map with fast travel,
    more toys, the profile.
 2. Then the emblem icon and the animated 3D HOME Menu banner (D48, D50).

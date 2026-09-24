@@ -116,6 +116,7 @@ void writeDragon(Writer& w, const Dragon& d) {
     for (float dust : d.dirt) w.u16v(static_cast<u16>(dust * 100.0f + 0.5f));  // hundredths (added 2026-09-24)
     w.u8v(d.eggTurns);  // egg care (added 2026-09-24)
     w.s64v(d.lastTurnedAt);
+    w.u8v(d.denSlot);  // Alpha 2: its bed or nest in the den
     w.patchU16(sizeAt, static_cast<u16>(w.pos() - start));
 }
 
@@ -169,6 +170,7 @@ bool readDragon(Reader& r, Dragon& d) {
         if (d.eggTurns > kMaxEggTurns) d.eggTurns = kMaxEggTurns;
         d.lastTurnedAt = r.s64v();
     }
+    if (r.pos() + 1 <= start + size) d.denSlot = r.u8v();  // older records: slot 0 (den_roster sorts it out)
     r.seek(start + size);  // skip fields from newer builds
 
     if (!inRange(plan, 2) || !inRange(sex, 2) || !inRange(personality, static_cast<u8>(Personality::Count)) ||

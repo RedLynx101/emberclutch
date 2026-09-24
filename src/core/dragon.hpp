@@ -42,6 +42,7 @@ struct Dragon {
 
     Stage stage = Stage::Egg;
     Location location = Location::Den;
+    u8 denSlot = 0;  // in the den: its bed (0-2, hatched) or egg nest (0-1); see core/den_roster
     s64 laidAt = 0;     // local unix
     s64 hatchedAt = 0;  // 0 while still an egg
     s64 lastVisitAt = 0;

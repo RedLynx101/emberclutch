@@ -52,6 +52,7 @@ HOME = Vector((0.0, 0.6, 0))         # the rug (the walkable circle, radius 6, i
 NEST = Vector((4.4, 3.6, 0))         # beds[0], the big nest
 BEDS = [Vector((-0.6, 5.4, 0)), Vector((2.8, -3.2, 0))]  # beds[1], beds[2]: straw beds
 EGG_NEST = Vector((5.4, -1.6, 0))
+EGG_NEST_2 = Vector((6.5, -3.7, 0))  # Alpha 2: a second egg (DenLayout::eggNests)
 NOOK = Vector((-4.6, 3.0, 0))        # sulkSpots[0] (a sulking dragon faces +Y: its nose is ~2.2 ahead)
 HEARTH = Vector((7.9, 0.8, 0))
 HOARD = Vector((2.4, 7.4, 0))
@@ -137,12 +138,13 @@ def ring_disc(bm, centre, radii, segs, z, sy=1.0):
 
 def floor():
     bm = bmesh.new()
-    ring_disc(bm, Vector((0, 0, 0)), [1.5, 3.0, 4.5, 6.0, 7.5, 8.6, R, 12.5, 16.0], 32, 0.0)
+    ring_disc(bm, Vector((0, 0, 0)), [3.0, 4.5, 6.0, 7.5, 8.6, R, 16.0], 24, 0.0)  # the rug covers the middle
 
     def albedo(p, n):
         base = (0.64, 0.50, 0.38)  # warm sandstone
         straw = (0.80, 0.68, 0.40)
-        near = max(0.0, 1.0 - min([(p - NEST).length / 2.8, (p - EGG_NEST).length / 2.0] +
+        near = max(0.0, 1.0 - min([(p - NEST).length / 2.8, (p - EGG_NEST).length / 2.0,
+                                   (p - EGG_NEST_2).length / 2.0] +
                                   [(p - b).length / 2.4 for b in BEDS]))
         c = mix(base, straw, near * 0.7)
         c = mix(c, (0.40, 0.33, 0.30), max(0.0, 1.0 - (p - HEARTH).length / 2.2) * 0.6)  # soot
@@ -152,7 +154,7 @@ def floor():
 
 WALL_H = [-0.3, 1.4, 3.3, 5.5, 7.8, 10.2, 12.4]
 WALL_R = [R - 0.2, R + 0.1, R + 0.05, R - 0.3, R - 1.1, R - 2.6, R - 4.8]
-WALL_SEGS = 36
+WALL_SEGS = 28  # Alpha 2 trimmed the room to <= 2,000 triangles for a full den
 WALL_TOP = 13.6
 WALL_GRID = []  # rows of vertex positions, for wall_point()
 
@@ -250,7 +252,7 @@ def skylight():
 # ------------------------------------------------------------------------------ props
 def rug():
     bm = bmesh.new()
-    ring_disc(bm, HOME, [0.9, 1.6, 2.2, 2.6], 28, 0.02, sy=0.9)
+    ring_disc(bm, HOME, [0.9, 1.6, 2.2, 2.6], 20, 0.02, sy=0.9)
 
     def albedo(p, n):
         d = p - HOME
@@ -288,16 +290,20 @@ def nests():
     def straw(p, n):
         return jitter((0.84, 0.70, 0.40), 0.2, p, 4.0)
     bm = bmesh.new()
-    torus(bm, NEST, 1.5, 0.45)
-    ring_disc(bm, NEST, [1.45], 14, 0.06)
+    torus(bm, NEST, 1.5, 0.45, 12, 5)
+    ring_disc(bm, NEST, [1.45], 12, 0.06)
     add("nest", bm, straw)
     bm = bmesh.new()
-    torus(bm, EGG_NEST, 0.85, 0.28, 14, 5)
+    torus(bm, EGG_NEST, 0.85, 0.28, 10, 4)
     ring_disc(bm, EGG_NEST, [0.85], 10, 0.05)
     add("egg_nest", bm, straw)
+    bm = bmesh.new()
+    torus(bm, EGG_NEST_2, 0.85, 0.28, 10, 4)
+    ring_disc(bm, EGG_NEST_2, [0.85], 10, 0.05)
+    add("egg_nest_2", bm, straw)
     for i, at in enumerate(BEDS, 1):  # a bed for each of the other den dragons
         bm = bmesh.new()
-        torus(bm, at, 1.25, 0.36, 12, 5)
+        torus(bm, at, 1.25, 0.36, 10, 4)
         ring_disc(bm, at, [1.2], 10, 0.05)
         add(f"bed_{i}", bm, straw)
 

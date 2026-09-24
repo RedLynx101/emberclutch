@@ -26,24 +26,6 @@ float voicePitch(const Dragon& d, s64 now) {
     return (1.45f - 0.55f * bodyScale(d, now)) * (1.08f - 0.16f * (d.genome.size / 255.0f));
 }
 
-// Dev "3-dragon test": the other two starters at the same stage stand beside the dragon, so
-// the budget overlay shows a full Alpha 2 den (architecture section 1).
-int standIns(const Dragon& d, const Dragon** out) {
-    static Dragon extra[2];
-    for (int i = 0; i < 2; ++i) {
-        Rng rng(40 + i);
-        extra[i] = d;  // same stage, but content and awake by day: they get on with their own lives
-        extra[i].id = 0xFFFFFF01u + i;
-        extra[i].upset = false;
-        extra[i].napping = false;
-        extra[i].needs = Needs{80, 80, 80, 80};
-        extra[i].genome = makePurebred(static_cast<Element>((d.genome.elementA + 1 + i) % 3), rng);
-        extra[i].sex = i == 0 ? Sex::Female : Sex::Male;
-        out[i] = &extra[i];
-    }
-    return 2;
-}
-
 // The dragon's size relative to an adult, for walking speed and hop height.
 float moveScaleOf(const Dragon& d, s64 now) {
     return growthScale(growthFor(d.stage, stageProgress(d, now))) * sizeScale(d.genome);
@@ -51,47 +33,74 @@ float moveScaleOf(const Dragon& d, s64 now) {
 
 // Animation markers become sounds. Voices are pitched per dragon (up for babies, down for
 // grown-ups); a sniff around sometimes brings a curious chirp, sometimes a sneeze.
-void playEventSound(App& app, u8 event, const Dragon& d, s64 now) {
+// The other den dragons are a little quieter than the one you're with (gain).
+void playEventSound(App& app, u8 event, const Dragon& d, s64 now, float gain = 1.0f) {
     const float voice = voicePitch(d, now);
+    auto play = [&](audio::Sfx s, float pitch) { audio::playSfx(s, pitch, gain); };
     switch (event) {
-        case kAnimFootstep: audio::playSfx(audio::Sfx::Step, 0.95f + 0.1f * (d.genome.size / 255.0f)); break;
-        case kAnimChomp: audio::playSfx(audio::Sfx::Munch); break;
-        case kAnimSwallow: audio::playSfx(audio::Sfx::Gulp, voice); break;
-        case kAnimPurr: audio::playSfx(audio::Sfx::Purr, voice); break;
+        case kAnimFootstep: play(audio::Sfx::Step, 0.95f + 0.1f * (d.genome.size / 255.0f)); break;
+        case kAnimChomp: play(audio::Sfx::Munch, 1.0f); break;
+        case kAnimSwallow: play(audio::Sfx::Gulp, voice); break;
+        case kAnimPurr: play(audio::Sfx::Purr, voice); break;
         case kAnimThump:
-        case kAnimLand: audio::playSfx(audio::Sfx::Thump); break;
-        case kAnimFlap: audio::playSfx(audio::Sfx::Flap); break;
-        case kAnimYawn: audio::playSfx(audio::Sfx::Yawn, voice); break;
-        case kAnimShake: audio::playSfx(audio::Sfx::Brush, 1.3f); break;
+        case kAnimLand: play(audio::Sfx::Thump, 1.0f); break;
+        case kAnimFlap: play(audio::Sfx::Flap, 1.0f); break;
+        case kAnimYawn: play(audio::Sfx::Yawn, voice); break;
+        case kAnimShake: play(audio::Sfx::Brush, 1.3f); break;
         case kAnimSniff:
             switch (app.rng.below(4)) {
-                case 0: audio::playSfx(audio::Sfx::Sneeze, voice); break;
-                case 1: audio::playSfx(audio::Sfx::Chirp, voice); break;
+                case 0: play(audio::Sfx::Sneeze, voice); break;
+                case 1: play(audio::Sfx::Chirp, voice); break;
                 default: break;
             }
             break;
-        case kAnimCall:
-            audio::playSfx(d.stage >= Stage::Adolescent ? audio::Sfx::Rumble : audio::Sfx::Trill, voice);
-            break;
-        case kAnimWhimper: audio::playSfx(audio::Sfx::Whimper, voice); break;
-        case kAnimSqueak: audio::playSfx(audio::Sfx::Squeak, voice); break;
-        case kAnimSneeze: audio::playSfx(audio::Sfx::Sneeze, voice); break;
+        case kAnimCall: play(d.stage >= Stage::Adolescent ? audio::Sfx::Rumble : audio::Sfx::Trill, voice); break;
+        case kAnimWhimper: play(audio::Sfx::Whimper, voice); break;
+        case kAnimSqueak: play(audio::Sfx::Squeak, voice); break;
+        case kAnimSneeze: play(audio::Sfx::Sneeze, voice); break;
         default: break;
     }
 }
 
 // The den's sound beds under the music: the hearth always, the night outside after dark,
-// and the egg's warm hum (louder the warmer it is).
-void denBeds(const Dragon& d, s64 now) {
+// and the eggs' warm hum (louder the warmer the warmest one is).
+void denBeds(const App& app, const DenRoster& r, s64 now) {
     const DayBlend light = dayBlend(now);
     audio::setBed(audio::Bed::Hearth, 1.0f);
     audio::setBed(audio::Bed::Night, light.weight(kLightNight) + 0.3f * light.weight(kLightEvening));
-    if (d.stage == Stage::Egg) audio::setBed(audio::Bed::EggHum, 0.35f + 0.65f * d.warmth / 100.0f);
+    float warmth = -1;
+    for (int e = 0; e < kDenEggs; ++e)
+        if (r.egg[e] >= 0) warmth = std::fmax(warmth, app.game.dragons[r.egg[e]].warmth);
+    if (warmth >= 0) audio::setBed(audio::Bed::EggHum, 0.35f + 0.65f * warmth / 100.0f);
+}
+
+// The den in drawing order: the one you care for first (full detail; the close-up and the
+// care tools use drawing index 0), then the other dragons by bed, then the eggs by nest.
+// Fills `order` with SaveData::dragons indices; returns how many.
+int denOrder(const App& app, const DenRoster& r, int* order) {
+    int n = 0;
+    auto add = [&](int i) {
+        if (i < 0) return;
+        for (int k = 0; k < n; ++k)
+            if (order[k] == i) return;
+        order[n++] = i;
+    };
+    if (careBed(app) >= 0 || careNest(app) >= 0) add(app.careIndex);
+    for (int b = 0; b < kDenDragons; ++b) add(r.dragon[b]);
+    for (int e = 0; e < kDenEggs; ++e) add(r.egg[e]);
+    return n;
+}
+
+int drawIndexOf(const int* order, int n, int index) {
+    for (int k = 0; k < n; ++k)
+        if (order[k] == index) return k;
+    return -1;
 }
 
 // Particles for what a den dragon just did: dust at its feet, crumbs when it chomps, hearts
-// when it purrs, and a "z" now and then while it sleeps. i: its place in the den (0 = yours).
-void effectsFor(App& app, int i, const Dragon& d, const DenActor& a, const u8* events, int n, s64 now) {
+// when it purrs, and a "z" now and then while it sleeps. i: its drawing index (its head);
+// bed: its bed (its "z" timer).
+void effectsFor(App& app, int i, int bed, const Dragon& d, const DenActor& a, const u8* events, int n, s64 now) {
     const float s = moveScaleOf(d, now);
     const Vec3 feet{a.behavior.pos.x, a.behavior.pos.y, 0};
     Vec3 head;
@@ -111,12 +120,12 @@ void effectsFor(App& app, int i, const Dragon& d, const DenActor& a, const u8* e
         }
     }
     if (a.behavior.activity == Activity::Sleep && haveHead) {
-        if ((app.zzz[i] -= app.dt) <= 0) {
+        if ((app.zzz[bed] -= app.dt) <= 0) {
             app.fx.emit(Fx::Zzz, head, 1, s);
-            app.zzz[i] = 1.6f;
+            app.zzz[bed] = 1.6f;
         }
     } else {
-        app.zzz[i] = 0.6f;
+        app.zzz[bed] = 0.6f;
     }
 }
 
@@ -133,56 +142,70 @@ void matchSpeeds(DenActor& actor, const Dragon& d, s64 now) {
     actor.updateSpeeds(*m, *bind, *r3d::anims(), r3d::clipIndex(g.form), g.form, g.t, build, sizeScale(d.genome));
 }
 
-// Moves the den's dragons along: behavior decides, animation follows (core/den_actor).
-void denLife(App& app, s64 now) {
+// Moves the den's dragons along: behavior decides, animation follows (core/den_actor). Each
+// bed's actor is set up for the dragon that sleeps there when it arrives.
+void denLife(App& app, const DenRoster& r, s64 now) {
     const AnimLibrary* lib = r3d::anims();
-    Dragon& d = activeDragon(app);
-    if (!lib || d.stage == Stage::Egg) return;
+    if (!lib) return;
     const DenLayout den;
-    if (!app.actorsReady) {
-        app.actors[0].reset(den, d.id * 2654435761u + 17, 0);  // yours: the big nest, the nook
-        app.actors[1].reset(den, 101, 1);
-        app.actors[2].reset(den, 202, 2);
-        app.actors[1].behavior.pos = {-1.9f, 1.0f};
-        app.actors[2].behavior.pos = {2.0f, 1.3f};
-        app.actors[0].behavior.care(Care::Greet, d);  // hello!
-        app.actorsReady = true;
-    }
-    const bool night = isNight(now);
-    u8 events[8];
-    DenBehavior* crowd[3] = {&app.actors[0].behavior, &app.actors[1].behavior, &app.actors[2].behavior};
-    shareCrowd(crowd, app.denTest ? 3 : 1);  // they walk around each other
-    matchSpeeds(app.actors[0], d, now);
-    const int n = app.actors[0].update(d, night, moveScaleOf(d, now), app.dt, *lib, clipsFor(d, now), events, 8);
-    for (int i = 0; i < n; ++i) playEventSound(app, events[i], d, now);
-    // A gulp when a meal is finished.
-    static Activity lastActivity = Activity::Idle;
-    const Activity activity = app.actors[0].behavior.activity;
-    if (lastActivity == Activity::Eat && activity != Activity::Eat) audio::playSfx(audio::Sfx::Gulp, voicePitch(d, now));
-    lastActivity = activity;
-    effectsFor(app, 0, d, app.actors[0], events, n, now);
-    if (app.denTest) {
-        const Dragon* extra[2];
-        standIns(d, extra);
-        for (int i = 0; i < 2; ++i) {
-            matchSpeeds(app.actors[i + 1], *extra[i], now);
-            const int m = app.actors[i + 1].update(*extra[i], night, moveScaleOf(*extra[i], now), app.dt, *lib,
-                                                   clipsFor(*extra[i], now), events, 8);
-            effectsFor(app, i + 1, *extra[i], app.actors[i + 1], events, m, now);
+    int order[r3d::kDenShown], shown = denOrder(app, r, order);
+    DenBehavior* crowd[kDenDragons];
+    int crowdCount = 0;
+    for (int b = 0; b < kDenDragons; ++b) {
+        if (r.dragon[b] < 0) {
+            app.actorId[b] = 0;
+            continue;
         }
+        const Dragon& d = app.game.dragons[r.dragon[b]];
+        DenActor& a = app.actors[b];
+        if (app.actorId[b] != d.id) {  // a new arrival (or a new session): into the den
+            a.reset(den, d.id * 2654435761u + 17, b);
+            a.behavior.pos = {den.home.x + (b - 1) * 1.8f, den.home.y + (b == 1 ? 0.6f : -0.2f)};
+            if (r.dragon[b] == app.careIndex) a.behavior.care(Care::Greet, d);  // hello!
+            app.actorId[b] = d.id;
+        }
+        if (r.dragon[b] != app.careIndex) a.behavior.ball = nullptr;  // the ball is for yours
+        crowd[crowdCount++] = &a.behavior;
+    }
+    shareCrowd(crowd, crowdCount);  // they walk around each other
+    const bool night = isNight(now);
+    static Activity lastActivity[kDenDragons] = {};
+    for (int b = 0; b < kDenDragons; ++b) {
+        if (r.dragon[b] < 0 || (app.hatch.active && !app.hatch.popped && r.dragon[b] == app.hatch.index)) continue;
+        const Dragon& d = app.game.dragons[r.dragon[b]];
+        DenActor& a = app.actors[b];
+        const bool yours = r.dragon[b] == app.careIndex;
+        u8 events[8];
+        matchSpeeds(a, d, now);
+        const int n = a.update(d, night, moveScaleOf(d, now), app.dt, *lib, clipsFor(d, now), events, 8);
+        for (int i = 0; i < n; ++i) playEventSound(app, events[i], d, now, yours ? 1.0f : 0.6f);
+        // A gulp when a meal is finished.
+        const Activity activity = a.behavior.activity;
+        if (lastActivity[b] == Activity::Eat && activity != Activity::Eat)
+            audio::playSfx(audio::Sfx::Gulp, voicePitch(d, now), yours ? 1.0f : 0.6f);
+        lastActivity[b] = activity;
+        effectsFor(app, drawIndexOf(order, shown, r.dragon[b]), b, d, a, events, n, now);
     }
 }
 
-// The egg between rubs: it settles, the dragon inside knocks as hatching nears, and it
+// Each egg between rubs: it settles, the dragon inside knocks as hatching nears, and it
 // cracks open in stages, each with a crackle.
-void eggLife(App& app, const Dragon& d) {
-    if (app.egg.update(app.dt, eggProgress(d), app.rng)) audio::playSfx(audio::Sfx::EggKnock);
-    const int cracks = eggCracks(d);
-    if (app.eggCracks >= 0 && cracks > app.eggCracks) {  // not for cracks it had when loaded
-        audio::playSfx(audio::Sfx::EggCrack);
-        app.egg.knock(0.2f, 0);
+void eggLife(App& app, const DenRoster& r) {
+    for (int e = 0; e < kDenEggs; ++e) {
+        if (r.egg[e] < 0) {
+            app.eggCracks[e] = -1;
+            continue;
+        }
+        const Dragon& d = app.game.dragons[r.egg[e]];
+        const float gain = r.egg[e] == app.careIndex ? 1.0f : 0.6f;
+        if (app.eggs[e].update(app.dt, eggProgress(d), app.rng)) audio::playSfx(audio::Sfx::EggKnock, 1.0f, gain);
+        const int cracks = eggCracks(d);
+        if (app.eggCracks[e] >= 0 && cracks > app.eggCracks[e]) {  // not for cracks it had when loaded
+            audio::playSfx(audio::Sfx::EggCrack, 1.0f, gain);
+            app.eggs[e].knock(0.2f, 0);
+        }
+        app.eggCracks[e] = cracks;
     }
-    app.eggCracks = cracks;
 }
 
 // ------------------------------------------------------------------ egg care and the hatching
@@ -219,7 +242,7 @@ void heartbeat(App& app, const Dragon& d) {
             e.beatIn *= 0.75f + 0.5f * (app.rng.below(100) / 100.0f);
         audio::playSfx(audio::Sfx::Thump, 0.5f, gain);
         e.dubIn = 14.0f / h.bpm;
-        app.egg.knock(0.012f * h.strength, 0.0f);  // a flutter you can see
+        if (careNest(app) >= 0) app.eggs[careNest(app)].knock(0.012f * h.strength, 0.0f);  // a flutter you can see
     }
     if (e.dubIn >= 0 && (e.dubIn -= app.dt) < 0) audio::playSfx(audio::Sfx::Thump, 0.6f, gain * 0.7f);
 }
@@ -227,7 +250,7 @@ void heartbeat(App& app, const Dragon& d) {
 // A quarter turn in the nest. Turns a few hours apart count (up to four): the hatchling
 // starts out fonder of you.
 void turnTheEgg(App& app, Dragon& d, s64 now) {
-    app.egg.turn();
+    if (careNest(app) >= 0) app.eggs[careNest(app)].turn();
     audio::playSfx(audio::Sfx::Brush, 0.7f, 0.6f);  // the shell on straw
     if (turnEgg(d, now)) {
         audio::playSfx(audio::Sfx::Toast);
@@ -239,9 +262,12 @@ void turnTheEgg(App& app, Dragon& d, s64 now) {
     }
 }
 
-void startHatch(App& app) {
+void startHatch(App& app, int index, int nest) {
     app.hatch = HatchState{};
     app.hatch.active = true;
+    app.hatch.index = index;
+    app.hatch.nest = nest;
+    app.careIndex = index;  // everyone gathers round: the bottom screen shows this one
     app.hatch.skippable = app.game.settings.seenHatch != 0;
     app.eggCare = EggCare{};
     audio::playStinger("hatching");
@@ -251,25 +277,29 @@ void startHatch(App& app) {
 // The cap comes off: it has hatched, and its den life begins in the nest.
 void pop(App& app, Dragon& d, s64 now) {
     HatchState& h = app.hatch;
+    const DenLayout den;
+    const Vec2 nest = den.eggNests[h.nest];
+    const int bed = bedForHatchling(app.game);  // checked free before the hatching began
     h.popped = true;
     h.t = std::fmax(h.t, kPopAt);
-    h.shell = app.egg;  // the empty shell keeps its spin
+    h.shell = app.eggs[h.nest];  // the empty shell keeps its spin
     h.shell.capLift = 0;
     h.shellTime = kShellStays;
     tryHatch(d, now, app.rng);  // incubation is complete: it hatches
+    d.denSlot = static_cast<u8>(bed >= 0 ? bed : 0);
     markVisit(d, now);
-    app.egg = EggMotion{};
-    app.eggCracks = -1;
+    app.eggs[h.nest] = EggMotion{};
+    app.eggCracks[h.nest] = -1;
     audio::playSfx(audio::Sfx::EggCrack);
     audio::playSfx(audio::Sfx::EggHatch);
-    const DenLayout den;
-    app.fx.emit(Fx::Sparkle, {den.eggNest.x, den.eggNest.y, 0.9f}, 16, 0.7f);
-    app.fx.emit(Fx::Puff, {den.eggNest.x, den.eggNest.y, 0.3f}, 8, 0.7f);
-    DenActor& a = app.actors[0];
-    a.reset(den, d.id * 2654435761u + 17, 0);
+    app.fx.emit(Fx::Sparkle, {nest.x, nest.y, 0.9f}, 16, 0.7f);
+    app.fx.emit(Fx::Puff, {nest.x, nest.y, 0.3f}, 8, 0.7f);
+    DenActor& a = app.actors[d.denSlot];
+    a.reset(den, d.id * 2654435761u + 17, d.denSlot);
+    a.behavior.hatchAt = nest;
     a.behavior.force(Activity::Hatch);
     a.lift = -kSink;
-    app.actorsReady = true;
+    app.actorId[d.denSlot] = d.id;
     saveNow(app);
 }
 
@@ -278,7 +308,11 @@ void pop(App& app, Dragon& d, s64 now) {
 // keyboard names it. Skippable (A, B or a tap) once it has been seen.
 void hatchLife(App& app, const Input& in, s64 now) {
     HatchState& h = app.hatch;
-    Dragon& d = activeDragon(app);
+    if (h.index < 0 || h.index >= app.game.dragonCount) {
+        h.active = false;
+        return;
+    }
+    Dragon& d = app.game.dragons[h.index];
     h.t += app.dt;
     const bool skip = h.skippable && ((in.down & (KEY_A | KEY_B)) || in.tapped);
     const DenLayout den;
@@ -286,15 +320,15 @@ void hatchLife(App& app, const Input& in, s64 now) {
         if ((h.nextKnock -= app.dt) <= 0) {  // shaking harder and harder
             const float k = std::fmin(1.0f, h.t / kPopAt);
             h.nextKnock = 0.5f - 0.3f * k;
-            app.egg.knock(0.06f + 0.2f * k, app.rng.below(628) * 0.01f);
+            app.eggs[h.nest].knock(0.06f + 0.2f * k, app.rng.below(628) * 0.01f);
             audio::playSfx(k > 0.6f && app.rng.chance(1, 2) ? audio::Sfx::EggCrack : audio::Sfx::EggKnock,
                            0.9f + 0.3f * k);
-            app.fx.emit(Fx::Puff, {den.eggNest.x, den.eggNest.y, 0.1f}, 1, 0.5f);
+            app.fx.emit(Fx::Puff, {den.eggNests[h.nest].x, den.eggNests[h.nest].y, 0.1f}, 1, 0.5f);
         }
         if (h.t >= kPopAt || skip) pop(app, d, now);
         return;
     }
-    DenActor& a = app.actors[0];
+    DenActor& a = app.actors[d.denSlot < kDenDragons ? d.denSlot : 0];
     if (skip && h.t < kNameAt) h.t = kNameAt;
     h.shell.capLift = std::fmin(2.0f, h.shell.capLift + app.dt / 0.35f);  // pops, flies up, gone
     const float rise = std::fmin(1.0f, std::fmax(0.0f, (h.t - kRiseFrom) / kRiseTime));
@@ -340,24 +374,34 @@ void update(App& app, const Input& in) {
     app.saveAccum += app.dt;
     if (app.simAccum >= 1.0f || (in.held & KEY_R)) {
         const s64 now = nowLocal(app);
-        simulate(activeDragon(app), app.game.lastSim, now);
+        for (int i = 0; i < app.game.dragonCount; ++i) simulate(app.game.dragons[i], app.game.lastSim, now);
         app.game.lastSim = now;
         app.simAccum = 0;
+        settleDen(app.game);
     }
     if (app.saveAccum >= 60.0f) {
         saveNow(app);
         app.saveAccum = 0;
     }
+    fixCare(app);
+    // The D-pad moves the care between the den's dragons and eggs.
+    if (!app.hatch.active && (in.down & (KEY_DLEFT | KEY_DRIGHT))) cycleCare(app, (in.down & KEY_DRIGHT) ? 1 : -1);
+    const DenRoster r = denRoster(app.game);
     Dragon& d = activeDragon(app);
-    if (d.stage != Stage::Egg && app.actorsReady) care::update(app, d);
-    denLife(app, nowLocal(app));
+    if (d.stage != Stage::Egg && careActor(app)) care::update(app, d);
+    denLife(app, r, nowLocal(app));
     denEffects(app, nowLocal(app));
-    denBeds(d, nowLocal(app));
-    if (d.stage == Stage::Egg) {
-        eggLife(app, d);
-        heartbeat(app, d);
-        if (!app.hatch.active && d.incubationSeconds >= kIncubationSeconds) startHatch(app);
-    }
+    denBeds(app, r, nowLocal(app));
+    eggLife(app, r);
+    if (d.stage == Stage::Egg) heartbeat(app, d);
+    // A ready egg hatches as soon as there's a bed for the hatchling.
+    if (!app.hatch.active)
+        for (int e = 0; e < kDenEggs; ++e)
+            if (r.egg[e] >= 0 && app.game.dragons[r.egg[e]].incubationSeconds >= kIncubationSeconds &&
+                bedForHatchling(app.game) >= 0) {
+                startHatch(app, r.egg[e], e);
+                break;
+            }
     if (app.hatch.active) hatchLife(app, in, nowLocal(app));
     if (app.hatch.shellTime > 0) {  // the empty shell settles in the nest, then is cleared away
         app.hatch.shellTime -= app.dt;
@@ -380,37 +424,51 @@ void drawTop(App& app) {
         embers(app.t, kTopW);
     }
 
+    // Everyone in the den, the one you care for first (full detail).
+    const DenRoster r = denRoster(app.game);
+    int order[r3d::kDenShown];
+    const int count = denOrder(app, r, order);
+    if (r3d::ready()) {
+        r3d::DenDragon shown[r3d::kDenShown];
+        int n = 0;
+        for (int k = 0; k < count; ++k) {
+            const Dragon& o = app.game.dragons[order[k]];
+            if (o.stage == Stage::Egg) {
+                if (!r3d::eggReady()) continue;
+                shown[n++] = {&o, nullptr, &app.eggs[o.denSlot], static_cast<s8>(o.denSlot)};
+            } else {
+                const int bed = o.denSlot;
+                const bool justHatched = order[k] == app.hatch.index && app.hatch.shellTime > 0;
+                shown[n++] = {&o, app.actorId[bed] == o.id ? &app.actors[bed] : nullptr,
+                              justHatched ? &app.hatch.shell : nullptr, static_cast<s8>(app.hatch.nest)};
+            }
+        }
+        r3d::drawDen(app, shown, n, now, &app.fx);
+        // With company in the den, a little heart floats over the one you're caring for.
+        Vec3 head;
+        float hx, hy, ppu;
+        if (count > 1 && r3d::headOf(0, head) && r3d::project({head.x, head.y, head.z + 0.35f}, hx, hy, ppu)) {
+            const float bob = 2.0f * std::sin(app.t * 3.0f);
+            heart(hx, hy - 6 + bob, 9, withAlpha(theme::kClutchGold, 0.9f));
+        }
+    }
+
     char line[96];
     if (d.stage == Stage::Egg) {
         const float progress = static_cast<float>(d.incubationSeconds) / kIncubationSeconds;
-        // The egg rests in the egg nest by the hearth (the 2D egg if its model is missing).
-        float ex = 200, ey = 130, ppu = 84;
-        if (room) {
-            const r3d::DenDragon inNest[1] = {{&d, nullptr, &app.egg}};
-            r3d::drawDen(app, inNest, r3d::eggReady() ? 1 : 0, now, &app.fx);
+        if (!room || !r3d::eggReady()) {  // the 2D egg if its model is missing
+            float ex = 200, ey = 130, ppu = 84;
             const DenLayout den;
-            r3d::project({den.eggNest.x, den.eggNest.y, 0.55f}, ex, ey, ppu);  // unchanged if it fails
-        }
-        if (!room || !r3d::eggReady())
+            const Vec2 nest = den.eggNests[careNest(app) > 0 ? careNest(app) : 0];
+            if (room) r3d::project({nest.x, nest.y, 0.55f}, ex, ey, ppu);  // unchanged if it fails
             egg(ex, ey, 0.8f * ppu, 1.05f * ppu, {250, 240, 225}, glowOf(d), 0.3f + 0.7f * d.warmth / 100.0f);
+        }
         std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", breedName(d.genome), str::kEggSuffix,
-                      static_cast<int>(progress * 100), str::kIncubated);
+                      static_cast<int>(progress * 100 > 100 ? 100 : progress * 100), str::kIncubated);
         text(app, line, 200, 14, 0.6f, theme::kShell);
         if (d.warmth <= 20) text(app, str::kGettingCold, 200, 184, 0.5f, theme::kRose);
     } else {
-        if (r3d::ready()) {
-            r3d::DenDragon shown[3] = {
-                {&d, app.actorsReady ? &app.actors[0] : nullptr, app.hatch.shellTime > 0 ? &app.hatch.shell : nullptr}};
-            int count = 1;
-            if (app.denTest) {
-                const Dragon* extra[2];
-                standIns(d, extra);
-                for (int i = 0; i < 2; ++i) shown[count++] = {extra[i], app.actorsReady ? &app.actors[i + 1] : nullptr};
-            }
-            r3d::drawDen(app, shown, count, now, &app.fx);
-        } else {
-            dragonPlaceholder(d, 200, 205, bodyScale(d, now), app.t);
-        }
+        if (!r3d::ready()) dragonPlaceholder(d, 200, 205, bodyScale(d, now), app.t);
         if (app.hatch.active)  // no name yet
             std::snprintf(line, sizeof(line), "%s  -  %s %s", str::kHatching, sexName(d.sex), breedName(d.genome));
         else
@@ -422,19 +480,24 @@ void drawTop(App& app) {
                       d.napping ? str::kNapping : "");
         text(app, line, 200, 26, 0.45f, theme::kClutchGold);
     }
+    if (count > 1 && !app.hatch.active)  // how to switch
+        text(app, str::kSwitchHint, 392, 226, 0.4f, withAlpha(theme::kShell, 0.6f), C2D_AlignRight);
 }
 
 void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {
-    text(app, str::kHintEgg, 160, 10, 0.5f, theme::kShell);
+    const bool waiting = d.incubationSeconds >= kIncubationSeconds && bedForHatchling(app.game) < 0;
+    text(app, waiting ? str::kNoBed : str::kHintEgg, 160, 10, 0.5f, waiting ? theme::kClutchGold : theme::kShell,
+         C2D_AlignCenter, 300);
     if (!r3d::ready() || !r3d::eggReady())  // otherwise the 3D egg is already drawn (drawCloseUp)
         egg(160, 120, 80, 104, {250, 240, 225}, glowOf(d), 0.3f + 0.7f * d.warmth / 100.0f);
     EggCare& e = app.eggCare;
-    if (in.touching && kEggArea.contains(in.tx, in.ty)) {
+    const int nest = careNest(app);
+    if (in.touching && kEggArea.contains(in.tx, in.ty) && nest >= 0) {
         if (app.lastTouchX >= 0) {
             const float dx = in.tx - app.lastTouchX, dy = in.ty - app.lastTouchY;
             const float stroke = std::sqrt(dx * dx + dy * dy);
             warmEgg(d, stroke * 0.05f);
-            app.egg.rub(stroke / 100.0f, dx, dy);  // it rocks under your hand
+            app.eggs[nest].rub(stroke / 100.0f, dx, dy);  // it rocks under your hand
             // A hand resting on the shell listens.
             e.still = stroke < 1.5f ? e.still + app.dt : 0.0f;
             if (e.still > 0.8f && e.listening <= 0) listen(app, d);
@@ -457,11 +520,13 @@ void drawHatchBottom(App& app, const Dragon& d) {
 }
 
 void drawBottom(App& app, const Input& in) {
+    fixCare(app);
     Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
+    const int nest = careNest(app);
     if (r3d::ready())  // pet the dragon itself, or rub the egg
-        r3d::drawCloseUp(app, d, app.actorsReady ? &app.actors[0] : nullptr, &app.egg, now,
+        r3d::drawCloseUp(app, d, careActor(app), nest >= 0 ? &app.eggs[nest] : nullptr, now,
                          app.hatch.active ? r3d::CloseUpView::Face : care::view(app));
     if (app.hatch.active) {
         drawHatchBottom(app, d);

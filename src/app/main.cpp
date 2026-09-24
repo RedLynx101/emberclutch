@@ -81,6 +81,8 @@ int main() {
         for (u16 i = 0; i < app.game.dragonCount; ++i)
             simulate(app.game.dragons[i], app.game.lastSim, now);  // catch up on time away
         app.game.lastSim = now;
+        settleDen(app.game);  // everyone in the den has a bed or a nest (Alpha 2)
+        fixCare(app);
         markVisit(activeDragon(app), now);
     }
 

@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-24 — The den with several dragons (Alpha 2 WP1)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D53 | **The den holds three hatched dragons (a bed each) and two eggs (a nest each)**; everyone keeps their place (saved). Whoever doesn't fit goes to the Sanctuary or the Cold Vault. **A ready egg waits to hatch** until a bed is free (a hint says so) rather than sending a newborn away. The bottom screen **cares for one at a time**: the D-pad (or the profile card's arrows) moves between the den's dragons and eggs, and a gold heart floats over the one you're with. For now only that one plays fetch. To stay in the 8k frame with everyone in, the room was trimmed to under 2,000 triangles and eggs in a busy den use a 312-triangle LOD | The GDD's den of three; the player decides who moves out; one hand, one dragon, like *Nintendogs* | Default (owner can change) |
+
 ## 2026-09-24 — Egg care, hatching and naming (WP7)
 
 | # | Decision | Why | Status |

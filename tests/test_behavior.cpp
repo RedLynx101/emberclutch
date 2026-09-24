@@ -345,7 +345,7 @@ TEST(dragons_walk_around_the_hearth_and_hoard) {
     tired.napping = true;
     float nearest = 1e9f;
     const bool slept = run(a, tired, false, 60, [&](const DenBehavior& b) {
-        nearest = std::fmin(nearest, dist(b.pos, den.eggNest));
+        nearest = std::fmin(nearest, dist(b.pos, den.eggNests[0]));
         return b.activity == Activity::Sleep;
     });
     CHECK(slept && dist(a.behavior.pos, den.beds[0]) < 0.4f);
@@ -435,12 +435,12 @@ TEST(every_activity_is_reachable_and_settles) {
         a.behavior.petTimer = 0.5f;
         if (static_cast<Activity>(i) == Activity::Hatch) {  // it waits in the nest for its name
             CHECK(!run(a, d, false, 8, [](const DenBehavior& b) { return b.activity != Activity::Hatch; }));
-            CHECK(a.behavior.step == 1 && dist(a.behavior.pos, den.eggNest) < 0.01f);
+            CHECK(a.behavior.step == 1 && dist(a.behavior.pos, den.eggNests[0]) < 0.01f);
             a.behavior.care(Care::Pet, d);  // not now
             CHECK(a.behavior.activity == Activity::Hatch);
             a.behavior.care(Care::Greet, d);  // named: out of the nest, then hello
             CHECK(run(a, d, false, 20, [](const DenBehavior& b) { return b.activity == Activity::Greet; }));
-            CHECK(dist(a.behavior.pos, den.eggNest) > den.obstacles[1].radius + 0.5f);
+            CHECK(dist(a.behavior.pos, den.eggNests[0]) > den.obstacles[1].radius + 0.5f);
         }
         // Everything returns to everyday life on a content, rested dragon by day.
         const bool settled = run(a, d, false, 60, [](const DenBehavior& b) {

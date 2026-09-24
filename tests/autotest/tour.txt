@@ -24,7 +24,7 @@ shot 05-egg-listen
 key SELECT
 wait 0.4
 shot 06-dev-menu
-tap 238 92
+tap 238 81
 key SELECT
 wait 1.2
 shot 07-hatch-shaking

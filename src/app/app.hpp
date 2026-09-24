@@ -7,6 +7,7 @@
 #include "app/storage.hpp"
 #include "core/care.hpp"
 #include "core/den_actor.hpp"
+#include "core/den_roster.hpp"
 #include "core/dragon.hpp"
 #include "core/egg.hpp"
 #include "core/particles.hpp"
@@ -84,6 +85,8 @@ struct EggCare {
 // out of the shell, blinks at its first light, looks at you; then it's named.
 struct HatchState {
     bool active = false;
+    int index = -1;         // the hatching egg (SaveData::dragons)
+    int nest = 0;           // its egg nest
     float t = 0;            // seconds into it
     float nextKnock = 0;
     bool skippable = false; // seen once before (settings.seenHatch)
@@ -120,19 +123,22 @@ struct App {
     float petCooldown = 0;
     float simAccum = 0, saveAccum = 0;
 
-    // Den life (WP5): the dragon's actor (behavior + animation), plus two stand-ins for the
-    // dev 3-dragon test.
-    DenActor actors[3];
-    bool actorsReady = false;
-    // Den effects (WP6): the particle pool, the room's own emitters, and when each den
+    // Den life (WP5; several dragons since Alpha 2 WP1, core/den_roster): an actor
+    // (behavior + animation) for the dragon in each bed, set up for that dragon (actorId: 0
+    // until it is), and the egg in each egg nest, how it rocks and how many cracks it had last
+    // frame (-1: not seen yet, so cracks it already had make no sound).
+    DenActor actors[kDenDragons];
+    u32 actorId[kDenDragons] = {};
+    EggMotion eggs[kDenEggs];
+    int eggCracks[kDenEggs] = {-1, -1};
+    // The one the bottom screen cares for (a dragon or an egg in the den): a SaveData::dragons
+    // index, kept valid by fixCare.
+    int careIndex = -1;
+    // Den effects (WP6): the particle pool, the room's own emitters, and when each bed's
     // dragon next breathes out a "z" while asleep.
     Particles fx;
     DenAmbience ambience;
-    float zzz[3] = {};
-    // The egg before hatching: how it rocks, and how many cracks it had last frame (-1:
-    // not seen yet, so cracks it already had make no sound).
-    EggMotion egg;
-    int eggCracks = -1;
+    float zzz[kDenDragons] = {};
     // Hands-on care (WP7): the tool in hand, and the den's ball.
     CareState care;
     Ball ball;
@@ -152,7 +158,6 @@ struct App {
     // Debug
     bool overlay = EC_DEV;
     bool devMenu = false;
-    bool denTest = false;  // dev: two stand-in dragons join the den (3-dragon budget check)
     RenderStats stats;
     u32 bottomTris = 0;  // last frame's bottom screen (the overlay is drawn before it)
     float frameMs = 16.7f;
@@ -162,10 +167,19 @@ s64 nowLocal(const App& app);
 void showToast(App& app, const char* msg);
 void showToastf(App& app, const char* fmt, const char* arg);  // one %s
 
-// Alpha 1 keeps one dragon; the den with several arrives in Alpha 2.
 inline bool hasDragon(const App& app) { return app.game.dragonCount > 0; }
-inline Dragon& activeDragon(App& app) { return app.game.dragons[0]; }
-inline const Dragon& activeDragon(const App& app) { return app.game.dragons[0]; }
+// The dragon (or egg) the bottom screen cares for.
+inline Dragon& activeDragon(App& app) { return app.game.dragons[app.careIndex > 0 ? app.careIndex : 0]; }
+inline const Dragon& activeDragon(const App& app) { return app.game.dragons[app.careIndex > 0 ? app.careIndex : 0]; }
+// Keeps careIndex on someone in the den (the first bed's dragon, else the first egg).
+void fixCare(App& app);
+// Its bed (a hatched dragon in the den), or -1; its actor once set up, or nullptr.
+int careBed(const App& app);
+DenActor* careActor(App& app);
+// Its egg nest (an egg in the den), or -1.
+int careNest(const App& app);
+// Moves the care to the next (+1) or previous (-1) one in the den: beds, then nests.
+void cycleCare(App& app, int dir);
 
 // Saves to the next A/B slot; shows a toast if the SD card write fails.
 void saveNow(App& app);

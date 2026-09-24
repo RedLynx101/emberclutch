@@ -88,6 +88,10 @@ inline constexpr const char* kAnotherName = "Another";
 inline constexpr const char* kOk = "OK";
 inline constexpr const char* kCancel = "Cancel";
 inline constexpr const char* kSayHello = "Say hello to %s!";
+inline constexpr const char* kNoBed = "Ready to hatch, but all three beds are taken.";
+inline constexpr const char* kSwitchHint = "< > : switch";
+inline constexpr const char* kDenFull = "The den is full (three beds).";
+inline constexpr const char* kEggToVault = "The nests are full: it went to the Vault.";
 
 // Title, system menu and settings (WP10)
 inline constexpr const char* kContinue = "Continue";

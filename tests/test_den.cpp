@@ -66,10 +66,11 @@ constexpr s64 kMidnight = 1767571200;  // 2026-01-05 00:00 local
 TEST(den_file_loads_and_fits_the_frame_budget) {
     const StaticScene& s = den();
     CHECK(s.sets == kLightSets && s.backdrop.size() == std::size_t(kLightSets) * 4);
-    // The den frame is <= 8k triangles with three dragons: 3,000 (LOD0) + 2 x 1,200 (LOD1).
+    // The den frame is <= 8k triangles with a full den: three dragons, 3,000 (LOD0) + 2 x 1,200
+    // (LOD1), and two eggs in the nests at 300 (the egg's LOD1).
     std::printf("  den: %d parts, %d triangles, %d vertices, %zu bytes\n", static_cast<int>(s.parts.size()),
                 s.triangles(), s.vertexCount, denBytes().size());
-    CHECK(s.triangles() > 1000 && s.triangles() <= 8000 - 3000 - 2 * 1200);
+    CHECK(s.triangles() > 1000 && s.triangles() <= 8000 - 3000 - 2 * 1200 - 2 * 300);
     for (const char* name : {"floor", "walls", "sky", "rug", "nest", "bed_1", "bed_2", "egg_nest", "nook_moss",
                              "embers", "hoard", "hearth_stones", "shelves", "sunbeam", "flames"})
         CHECK(s.find(name) != nullptr);
@@ -101,7 +102,7 @@ TEST(den_room_matches_the_behavior_layout) {
     const DenLayout lay;
     const struct { const char* part; Vec2 spot; } spots[] = {
         {"nest", lay.beds[0]}, {"bed_1", lay.beds[1]},  {"bed_2", lay.beds[2]}, {"nook_moss", lay.sulkSpots[0]},
-        {"egg_nest", lay.eggNest}, {"rug", lay.home}, {"embers", lay.hearth}, {"hoard", lay.hoard},
+        {"egg_nest", lay.eggNests[0]}, {"egg_nest_2", lay.eggNests[1]}, {"rug", lay.home}, {"embers", lay.hearth}, {"hoard", lay.hoard},
     };
     for (const auto& sp : spots) {
         const StaticPart* p = s.find(sp.part);
@@ -137,7 +138,7 @@ TEST(den_room_matches_the_behavior_layout) {
     CHECK(floorMax > 12.0f);
 
     // The obstacles cover the solid props they stand for.
-    const struct { const char* part; int obstacle; } solid[] = {{"hearth_stones", 0}, {"egg_nest", 1}, {"hoard", 2}};
+    const struct { const char* part; int obstacle; } solid[] = {{"hearth_stones", 0}, {"egg_nest", 1}, {"hoard", 2}, {"egg_nest_2", 3}};
     for (const auto& sd : solid) {
         const StaticPart* p = s.find(sd.part);
         const DenObstacle& o = lay.obstacles[sd.obstacle];

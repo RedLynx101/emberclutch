@@ -149,6 +149,32 @@ TEST(the_dragon_inside_knocks_near_hatching) {
     }
 }
 
+// The den's egg (Alpha 2): the same egg in ~300 triangles, so a full den (the room, three
+// dragons and two eggs) fits the 8k frame: 8,000 - 2,000 room - 3,000 - 2 x 1,200 = 2 x 300.
+TEST(the_den_egg_is_light) {
+    std::vector<u8> data;
+    if (FILE* f = std::fopen("../romfs/models/egg_lod1.ecm", "rb")) {
+        std::fseek(f, 0, SEEK_END);
+        data.resize(static_cast<std::size_t>(std::ftell(f)));
+        std::fseek(f, 0, SEEK_SET);
+        if (std::fread(data.data(), 1, data.size(), f) != data.size()) data.clear();
+        std::fclose(f);
+    }
+    ModelData m;
+    CHECK(loadModel(data.data(), data.size(), m));
+    CHECK(m.skel.count == 2 && m.skel.find("cap") == 1);
+    const MeshData* shell = m.findMesh(kMeshBody, kGroupBody, 0);
+    CHECK(shell != nullptr);
+    if (!shell) return;
+    const int tris = static_cast<int>(shell->indices.size() / 3);
+    std::printf("  den egg: %d triangles\n", tris);
+    CHECK(tris <= 312);
+    bool cracks[3] = {};
+    for (int v = 0; v < shell->vertexCount; ++v)
+        for (int k = 0; k < 3; ++k) cracks[k] |= shell->paint[v * 4] == (k == 0 ? kPalPattern : k == 1 ? kPalHorn : kPalMembrane);
+    CHECK(cracks[0] && cracks[1] && cracks[2]);
+}
+
 // Turning counts a few hours apart, up to four times; the turns become bond at hatching.
 // The egg spins a quarter turn each time and settles.
 TEST(turning_the_egg) {
@@ -230,6 +256,7 @@ void runEggTests() {
     RUN(egg_rests_rocks_and_opens);
     RUN(egg_cracks_open_on_schedule);
     RUN(the_dragon_inside_knocks_near_hatching);
+    RUN(the_den_egg_is_light);
     RUN(turning_the_egg);
     RUN(listening_to_the_egg);
     RUN(hatchlings_get_name_suggestions);

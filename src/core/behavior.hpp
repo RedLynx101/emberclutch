@@ -22,15 +22,18 @@ struct DenObstacle {
 // tools/blender/den_model.py builds the room (romfs/models/den.esm) around the same spots:
 // keep them in sync (tests/test_den.cpp checks the two against each other).
 struct DenLayout {
-    static constexpr int kObstacles = 3;
+    static constexpr int kObstacles = 4;
     static constexpr int kSpots = 3;  // a bed and a sulking spot for each den dragon
+    static constexpr int kNests = 2;  // egg nests (Alpha 2: two eggs in the den)
     float radius = 6.0f;              // walkable circle around home (the room's walls stand at 9.5)
     // Beds: [0] the big nest by the hearth, then two straw beds. Sulking spots: [0] the nook,
     // a shadowy alcove among rocks (a sulking dragon faces +Y, back to the player), then
     // two quiet corners.
     Vec2 beds[kSpots] = {{4.4f, 3.6f}, {-0.6f, 5.4f}, {2.8f, -3.2f}};
     Vec2 sulkSpots[kSpots] = {{-4.6f, 3.0f}, {-5.6f, 0.0f}, {-4.0f, -3.0f}};
-    Vec2 eggNest{5.4f, -1.6f};    // the egg nest, warm by the hearth
+    // The egg nests, warm by the hearth ([1] sits just beyond the walkable floor: eggs don't
+    // walk, and a hatchling climbing out of it is let through).
+    Vec2 eggNests[kNests] = {{5.4f, -1.6f}, {6.5f, -3.7f}};
     Vec2 home{0.0f, 0.6f};        // the rug: where it greets you and eats
     Vec2 player{0.0f, -2.6f};     // where "you" are: fetched toys come back here, called dragons come
     Vec2 tub{0.0f, -1.6f};        // where the bath tub is set down (WP7)
@@ -38,7 +41,9 @@ struct DenLayout {
     Vec2 hoard{2.4f, 7.4f};
     Vec2 sunSpot{1.0f, 4.6f};     // where the skylight's beam meets the floor
     Vec3 skylight{1.91f, 8.97f, 4.8f};
-    DenObstacle obstacles[kObstacles] = {{{7.9f, 0.8f}, 1.5f}, {{5.4f, -1.6f}, 1.2f}, {{2.4f, 7.4f}, 1.6f}};
+    // The hearth, egg nest 0, the hoard, egg nest 1.
+    DenObstacle obstacles[kObstacles] = {
+        {{7.9f, 0.8f}, 1.5f}, {{5.4f, -1.6f}, 1.2f}, {{2.4f, 7.4f}, 1.6f}, {{6.5f, -3.7f}, 1.2f}};
 };
 
 enum class Activity : u8 {
@@ -107,6 +112,7 @@ struct DenBehavior {
     // its mouth while holdingBall (the scene places it at the jaw) and sets dropBall when it
     // lets go (the scene releases it and clears the flag).
     Ball* ball = nullptr;
+    Vec2 hatchAt{5.4f, -1.6f};  // the nest a Hatch starts in (the scene sets it)
     // The bath tub is set down just in front of the dragon, sized to it (the scene draws it).
     Vec2 tubAt;
     float tubSize = 0.95f;  // its radius, den units

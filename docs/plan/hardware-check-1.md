@@ -21,7 +21,8 @@ off; Claude copies them off over FTP afterwards (`tools\pull_shots.ps1`).
 Both are dev builds: SELECT opens the dev menu, L/R turn its pages.
 
 ## 1. Install
-The CIAs go to `/cias/` on the SD card (over FTP, while ftpd runs). In **FBI**: SD → cias →
+Both 0.1.2 CIAs are on the SD card in `/cias/` (uploaded over FTP on 2026-09-24, sizes
+checked). In **FBI**: SD → cias →
 `emberclutch-3dbanner.cia` → Install CIA. It installs over 0.1.1 (same title, newer
 version). Sound needs your console's own DSP firmware at `sdmc:/3ds/dspfirm.cdc` (from the
 DSP1 homebrew); if other homebrew has sound, it's there already. The save goes to

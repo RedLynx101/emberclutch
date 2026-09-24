@@ -8,7 +8,7 @@
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D57 recorded ([log](plan/decisions.md)); nothing open.
+  Decisions D1–D58 recorded ([log](plan/decisions.md)); nothing open.
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
   [Alpha 1 plan](plan/alpha-1.md), [Alpha 2 plan](plan/alpha-2.md) (draft: the style review
   R5, the emblem icon and a 3D HOME Menu banner, D47–D50). New specs (2026-09-24): [hands-on care](design/care-interactions.md)
@@ -135,12 +135,12 @@ after each. Stops:
   haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
-- **Run 2 on the old 3DS** ([steps](plan/hardware-check-1.md), D55): install 0.1.2
-  (`build/cia-test/emberclutch-3dbanner.cia`; it goes to `/cias/` over FTP once ftpd runs),
+- **Run 2 on the old 3DS** ([steps](plan/hardware-check-1.md), D55): install 0.1.2 with
+  FBI (`emberclutch-3dbanner.cia`, already in `/cias/` on the SD card, uploaded 2026-09-24),
   check the banner, sound and icon fixes, read the budget with a full den and with every
   look in memory, pressing **Y** for a screenshot at each number and anything odd (pulled
   with `tools\pull_shots.ps1`). Run 1 (0.1.1) stopped before the game started: no boot logo
-  in the CIA (D56). Then the hatching rework (WP12a: the newborn starts
+  in the CIA (D56). Meanwhile, or next: our own boot logo (WP11c, D58). Then the hatching rework (WP12a: the newborn starts
   curled up inside, the shell breaks into shards that fall away, no more clipping), WP12
   (looks per dragon, the Dragondex, the parts library, all 21 breeds, photo mode), the full
   hardware run (D34) and the Alpha 2 tag.

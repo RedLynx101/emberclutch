@@ -233,7 +233,7 @@ while every other title runs. Fixed in 0.1.2 (D56):
 - **No boot logo.** The RSF said `Logo: None`, so the CIA had no logo region at all. Azahar
   never looks at it; the HOME Menu reads it before starting a title (3D-Claw's CIA, which
   runs, has one). Now makerom's own *homebrew* logo: the word "homebrew" and a few floating
-  squares, no Nintendo branding. An Emberclutch logo of our own is proposed in WP14.
+  squares, no Nintendo branding. An Emberclutch logo of our own follows (WP11c, D58).
 - **The SMDH's "extendedbanner" flag** (set with `-Banner3D`) is for a banner kept in
   extdata, not for a 3D one: dropped.
 - **The wordmark showed only from behind.** pycgfx draws a two-sided material as two copies,
@@ -261,6 +261,29 @@ while every other title runs. Fixed in 0.1.2 (D56):
 number and at anything odd. If it still won't start: `emberclutch.3dsx` from the Homebrew
 Launcher tells the game apart from its packaging, and the error's full text (a result code,
 if Luma shows one) says more.
+
+### WP11c — An Emberclutch boot logo (D58)
+The logo the HOME Menu plays as a title starts (the NCCH's logo region; the emulator never
+shows it). Since 0.1.2 that's makerom's *homebrew* logo: a small layout (an LZ11-compressed
+darc of `blyt/*.bclyt`, `anim/*.bclan` and `timg/*.bclim`: the word "homebrew" on a
+256 × 64 ETC1 texture, floating squares, a mask and waves) that animates in and out.
+- **Keep its layout and animation; swap the picture.** `tools/logo/make_logo.py` builds a
+  CXI with `Logo: Homebrew`, reads the logo region, unpacks the darc, and replaces
+  `timg/logo.bclim` with the Emberclutch wordmark (the banner's Cinzel gold with its dark
+  edge, rendered by Blender at the same 225 × 40 in a 256 × 64 texture, ETC1-encoded). Then
+  it repacks and recompresses to `build/logo/emberclutch.bcma.lz`. Built from makerom's
+  output each time: nothing of makerom's is committed.
+- **Maybe (tried, then judged on the 3DS):** the floating squares as ember specks (the
+  `bubbles` texture in warm gold, or the layout's material colour tinted).
+- **The limits:** the logo region stays within makerom's 0x2000 bytes (the homebrew logo's
+  size), and the ETC1 texture keeps its size and format so the layout needs no changes. The
+  ETC1 encoder is ours (numpy, per 4 × 4 block, the best of the 8 tables × both modes), and
+  it's checked by a round trip: decoded again and compared with the source picture (PSNR),
+  plus a review sheet of every texture.
+- **Packing:** `package_cia.ps1` passes `-logo build/logo/emberclutch.bcma.lz` when it exists
+  and falls back to `Logo: Homebrew` otherwise (a `-HomebrewLogo` switch forces the fallback).
+- **Checked on the 3DS** in the next run: the logo shows and the game starts. If the HOME
+  Menu rejects it, the fallback ships and the logo waits.
 
 ### WP12a — The hatching, reworked (proposed; Noah 2026-09-24)
 **The problem:** the hatchling appears whole inside an intact shell. A newborn is 0.79 wide
@@ -323,12 +346,8 @@ hatchling sits in it. It also "just hatches": no moment where it breaks out.
 ### WP14 — Wrap-up
 - The playthrough checklist (`docs/plan/alpha-2-checklist.md`), docs sync, tag
   `v0.2.0-alpha2`.
-- The 3D banner becomes `package_cia.ps1`'s default once run 2 confirms the fixes (the flat
-  one stays behind a switch).
-- **An Emberclutch boot logo (proposed, D56):** makerom's homebrew logo is a small layout
-  (a darc of CLYT/CLAN/CLIM). Keep its animation and swap its "homebrew" texture (ETC1,
-  256 × 64) for the Emberclutch wordmark, then pack it with makerom's `-logo`. Needs an ETC1
-  encoder for the texture; it's checked on the 3DS, since the emulator never shows it.
+- The 3D banner becomes `package_cia.ps1`'s default once run 2 confirms the fixes, with
+  the flat one behind a switch (agreed with Noah 2026-09-24, D58).
 
 ## Review gates (D47, D49)
 | Review | What | Blocks? |

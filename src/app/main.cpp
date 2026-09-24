@@ -8,6 +8,7 @@
 #include "app/app.hpp"
 #include "app/audio.hpp"
 #include "app/debug.hpp"
+#include "app/render3d.hpp"
 #include "app/scenes.hpp"
 #include "app/theme.hpp"
 #include "core/clock.hpp"
@@ -53,12 +54,14 @@ int main() {
     C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
     C2D_Init(C2D_DEFAULT_MAX_OBJECTS * 2);
     C2D_Prepare();
+    r3d::prepare2D();
 
     static App app;  // holds the whole save (200 dragons): keep it off the stack
     app.top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
     app.bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     app.textBuf = C2D_TextBufNew(4096);
     app.romfsOk = romfsMounted && romfsReady();
+    if (app.romfsOk) r3d::init();  // otherwise the den keeps its 2D placeholder
 
     audio::init();  // silent if the DSP firmware is missing
     if (loadGame(app.game, app.slots) && hasDragon(app)) {
@@ -107,6 +110,7 @@ int main() {
 
     if (hasDragon(app)) saveNow(app);
     audio::shutdown();
+    r3d::shutdown();
     C2D_TextBufDelete(app.textBuf);
     C2D_Fini();
     C3D_Fini();

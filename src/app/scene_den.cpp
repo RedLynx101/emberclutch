@@ -1,8 +1,10 @@
-// The den: egg care, then the hatchling's care loop. 2D placeholder art until WP4-WP6.
+// The den: egg care, then the dragon's care loop. The dragon is 3D (render3d); the room
+// is still 2D until WP6.
 #include <cmath>
 #include <cstdio>
 
 #include "app/audio.hpp"
+#include "app/render3d.hpp"
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
@@ -18,6 +20,21 @@ Rgb glowOf(const Dragon& d) { return heartglowColor(static_cast<Element>(d.genom
 // Babies squeak high; voices deepen with growth and vary a little per dragon (size gene).
 float voicePitch(const Dragon& d, s64 now) {
     return (1.45f - 0.55f * bodyScale(d, now)) * (1.08f - 0.16f * (d.genome.size / 255.0f));
+}
+
+// Dev "3-dragon test": the other two starters at the same stage stand beside the dragon, so
+// the budget overlay shows a full Alpha 2 den (architecture section 1).
+int standIns(const Dragon& d, const Dragon** out) {
+    static Dragon extra[2];
+    for (int i = 0; i < 2; ++i) {
+        Rng rng(40 + i);
+        extra[i] = d;
+        extra[i].id = 0xFFFFFF01u + i;
+        extra[i].genome = makePurebred(static_cast<Element>((d.genome.elementA + 1 + i) % 3), rng);
+        extra[i].sex = i == 0 ? Sex::Female : Sex::Male;
+        out[i] = &extra[i];
+    }
+    return 2;
 }
 
 void update(App& app, const Input& in) {
@@ -57,7 +74,14 @@ void drawTop(App& app) {
         text(app, line, 200, 14, 0.6f, theme::kShell);
         if (d.warmth <= 20) text(app, str::kGettingCold, 200, 205, 0.5f, theme::kRose);
     } else {
-        dragonPlaceholder(d, 200, 205, bodyScale(d, now), app.t);
+        if (r3d::ready()) {
+            const Dragon* shown[3] = {&d, nullptr, nullptr};
+            int count = 1;
+            if (app.denTest) count += standIns(d, shown + 1);
+            r3d::drawDen(app, shown, count, now);
+        } else {
+            dragonPlaceholder(d, 200, 205, bodyScale(d, now), app.t);
+        }
         std::snprintf(line, sizeof(line), "%s  -  %s %s %s", d.name, sexName(d.sex), breedName(d.genome),
                       stageName(d.stage));
         text(app, line, 200, 8, 0.6f, theme::kShell);
@@ -162,6 +186,7 @@ void drawBottom(App& app, const Input& in) {
     Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
+    if (d.stage != Stage::Egg && r3d::ready()) r3d::drawCloseUp(app, d, now);  // pet the dragon itself
     if (d.stage == Stage::Egg) {
         drawEggBottom(app, in, d, now);
     } else {

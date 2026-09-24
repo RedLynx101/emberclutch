@@ -60,8 +60,9 @@ MATERIAL_PAINT = {  # material name -> (palette A, palette B, emissive 0..255)
     "body": (PAL_BASE, PAL_ACCENT, 0), "body_plain": (PAL_BASE, PAL_BASE, 0),
     "accent_flat": (PAL_ACCENT, PAL_ACCENT, 0), "membrane": (PAL_MEMBRANE, PAL_MEMBRANE, 0),
     "horn": (PAL_HORN, PAL_HORN, 0), "iris": (PAL_IRIS, PAL_IRIS, 0), "pupil": (PAL_PUPIL, PAL_PUPIL, 0),
-    "glint": (PAL_GLINT, PAL_GLINT, 200), "heart": (PAL_GLOW, PAL_GLOW, 255),
+    "glint": (PAL_GLINT, PAL_GLINT, 200), "heart": (PAL_GLINT, PAL_GLOW, 255),
 }
+HEART_CORE = 0.55  # the heartglow is white-hot inside this fraction of its radius, glow-coloured at the rim
 SEX_SCALE = {"horns": {SEX_MALE: 1.15, SEX_FEMALE: 1.0}, "frill": {SEX_MALE: 1.12, SEX_FEMALE: 1.0},
              "tail_tip": {SEX_MALE: 1.0, SEX_FEMALE: 1.15}}
 
@@ -143,13 +144,17 @@ def mesh_arrays(objs, palette_of, matrix_of, scale):
             for v in p.vertices:
                 vmat[v] = names[min(p.material_index, len(names) - 1)]
         mask = me.color_attributes.get("mask")
+        reach = max((v.co.length for v in me.vertices), default=1.0) or 1.0
         base = len(positions)
         for v in me.vertices:
             pa, pb, emissive = MATERIAL_PAINT[vmat[v.index]]
             positions.append((m @ v.co) * scale)
             normals.append((nm @ v.normal).normalized())
             skin.append(palette_of(o, v))
-            mix = int(round(mask.data[v.index].color[1] * 255)) if (mask and pa != pb) else 0
+            if vmat[v.index] == "heart":  # radial white-hot core (the object origin is the heart's centre)
+                mix = int(round(255 * min(1.0, v.co.length / (reach * HEART_CORE))))
+            else:
+                mix = int(round(mask.data[v.index].color[1] * 255)) if (mask and pa != pb) else 0
             paint.append((pa, pb, mix, emissive))
         for tri in me.loop_triangles:
             indices += [base + tri.vertices[0], base + tri.vertices[1], base + tri.vertices[2]]

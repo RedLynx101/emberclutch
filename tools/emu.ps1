@@ -16,7 +16,10 @@ if (-not (Test-Path $azahar)) { throw "Azahar not found. Install it: winget inst
 
 if (-not $NoBuild) { & (Join-Path $PSScriptRoot "build.ps1") }
 if ($ResetSave) {
-    Remove-Item (Join-Path $env:APPDATA "Azahar\sdmc\3ds\emberclutch\dev-save.bin") -ErrorAction SilentlyContinue
+    $saves = Join-Path $env:APPDATA "Azahar\sdmc\3ds\emberclutch"
+    foreach ($f in "save.a", "save.b", "dev-save.bin") {  # A/B slots + the pre-WP8 file
+        Remove-Item (Join-Path $saves $f) -ErrorAction SilentlyContinue
+    }
 }
 Get-Process azahar -ErrorAction SilentlyContinue | Stop-Process
 Start-Process $azahar -ArgumentList ('"' + (Join-Path $root "emberclutch.3dsx") + '"')

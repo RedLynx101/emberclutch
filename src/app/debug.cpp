@@ -24,6 +24,13 @@ void forceNextStage(Dragon& d, s64 now) {
     simulate(d, now, now);  // re-evaluates the stage
 }
 
+// Swap the dragon to the next starter breed (keeps sex, stage and care): for checking
+// every breed's parts in the renderer.
+void nextBreed(Dragon& d, Rng& rng) {
+    const u8 next = static_cast<u8>((d.genome.elementA + 1) % 3);  // Ember -> Tide -> Gale
+    d.genome = makePurebred(static_cast<Element>(next), rng);
+}
+
 }  // namespace
 
 void debugDrawOverlay(App& app) {
@@ -66,11 +73,13 @@ bool debugMenu(App& app, const Input& in) {
         int id;
     };
     static constexpr Item kItems[] = {
-        {"+1 hour", 0}, {"+1 day", 1},        {"+7 days", 2},     {"Fill needs", 3}, {"Drain needs", 4},
-        {"Hatch now", 5}, {"Next stage", 6}, {"Overlay", 7},     {"Save now", 8},   {"Reset save", 9},
+        {"+1 hour", 0},   {"+1 day", 1},     {"+7 days", 2},      {"Fill needs", 3},
+        {"Drain needs", 4}, {"Hatch now", 5}, {"Next stage", 6},   {"Next breed", 10},
+        {"3-dragon test", 11}, {"Overlay", 7}, {"Save now", 8},    {"Reset save", 9},
     };
-    for (int i = 0; i < 10; ++i) {
-        const Rect r{8.0f + (i % 2) * 156.0f, 26.0f + (i / 2) * 38.0f, 148, 32};
+    constexpr int kCount = sizeof(kItems) / sizeof(kItems[0]);
+    for (int i = 0; i < kCount; ++i) {
+        const Rect r{8.0f + (i % 2) * 156.0f, 24.0f + (i / 2) * 32.0f, 148, 28};
         if (!button(app, r, kItems[i].label, in)) continue;
         switch (kItems[i].id) {
             case 0: app.game.devOffset += kHour; break;
@@ -83,6 +92,8 @@ bool debugMenu(App& app, const Input& in) {
             case 7: app.overlay = !app.overlay; break;
             case 8: saveNow(app); showToast(app, "Saved."); break;
             case 9: deleteGame(); app.game = SaveData{}; app.slots = SaveSlots{}; app.scene = SceneId::Title; app.devMenu = false; break;
+            case 10: nextBreed(d, app.rng); break;
+            case 11: app.denTest = !app.denTest; break;
         }
     }
     char buf[80];

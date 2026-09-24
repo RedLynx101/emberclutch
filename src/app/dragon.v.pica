@@ -1,0 +1,106 @@
+; Emberclutch skinned dragon (docs/tech/architecture.md section 4).
+;   * 2-bone linear blend skinning: bone rows come from `bones` by relative addressing
+;     (a0 = bone index * 3), weights are bytes (sum 255).
+;   * Vertex paint picks two per-dragon palette colours and mixes them; the emissive weight
+;     goes to the colour alpha (the TEV adds colour x alpha: heartglow, eye glints).
+;   * Outputs the view-space normal as a quaternion + the view vector for fragment
+;     lighting (toon ramp LUT on L.N, rim from a Fresnel LUT on N.V).
+; Uniform budget: 4 + 4 + 72 + 9 + 2 constants = 91 of 96 float registers.
+
+.fvec projection[4], modelView[4]
+.fvec bones[72]
+.fvec palette[9]
+
+.constf consts(0.0, 1.0, 0.5, 3.0)
+.constf consts2(0.00392156862745, 0.0, 0.0, 0.0)
+.alias  zeros  consts.xxxx
+.alias  ones   consts.yyyy
+.alias  half   consts.zzzz
+.alias  three  consts.wwww
+.alias  inv255 consts2.xxxx
+
+.out outpos  position
+.out outnq   normalquat
+.out outview view
+.out outclr  color
+
+.alias inpos   v0  ; float x3, model (armature) space
+.alias innrm   v1  ; float x3
+.alias inskin  v2  ; ubyte x4: bone0, bone1 (palette-local), w0, w1
+.alias inpaint v3  ; ubyte x4: palette A, palette B, mix, emissive
+
+.proc main
+	; a0.x = bone0 * 3, a0.y = bone1 * 3 (rows of the 3x4 bone matrices)
+	mul r0.xy, three, inskin.xy
+	mova a0.xy, r0.xy
+	mul r1.xy, inv255, inskin.zw
+
+	mov r2.xyz, inpos
+	mov r2.w, ones
+
+	; skinned position = w0 * (B0 p) + w1 * (B1 p)
+	dp4 r3.x, bones[a0.x], r2
+	dp4 r3.y, bones[a0.x+1], r2
+	dp4 r3.z, bones[a0.x+2], r2
+	dp4 r4.x, bones[a0.y], r2
+	dp4 r4.y, bones[a0.y+1], r2
+	dp4 r4.z, bones[a0.y+2], r2
+	mul r3.xyz, r1.xxxx, r3.xyz
+	mad r3.xyz, r1.yyyy, r4.xyz, r3.xyz
+	mov r3.w, ones
+
+	; skinned normal (rotation part only; renormalised below)
+	dp3 r5.x, bones[a0.x], innrm
+	dp3 r5.y, bones[a0.x+1], innrm
+	dp3 r5.z, bones[a0.x+2], innrm
+	dp3 r6.x, bones[a0.y], innrm
+	dp3 r6.y, bones[a0.y+1], innrm
+	dp3 r6.z, bones[a0.y+2], innrm
+	mul r5.xyz, r1.xxxx, r5.xyz
+	mad r5.xyz, r1.yyyy, r6.xyz, r5.xyz
+
+	; view space
+	dp4 r7.x, modelView[0], r3
+	dp4 r7.y, modelView[1], r3
+	dp4 r7.z, modelView[2], r3
+	dp4 r7.w, modelView[3], r3
+	mov outview, -r7
+
+	dp4 outpos.x, projection[0], r7
+	dp4 outpos.y, projection[1], r7
+	dp4 outpos.z, projection[2], r7
+	dp4 outpos.w, projection[3], r7
+
+	; colour: mix the two palette slots, emissive weight in alpha
+	mova a0.xy, inpaint.xy
+	mov r8, palette[a0.x]
+	mov r9, palette[a0.y]
+	add r9, r9, -r8
+	mul r10.x, inv255, inpaint.z
+	mad r8, r10.xxxx, r9, r8
+	mul r8.w, inv255, inpaint.w
+	mov outclr, r8
+
+	; view-space normal -> quaternion (as in the devkitPro fragment_light example)
+	dp3 r14.x, modelView[0], r5
+	dp3 r14.y, modelView[1], r5
+	dp3 r14.z, modelView[2], r5
+	dp3 r6.x, r14, r14
+	rsq r6.x, r6.x
+	mul r14.xyz, r14.xyz, r6.x
+
+	mov r0, consts.yxxx
+	add r4, ones, r14.z
+	mul r4, half, r4
+	cmp zeros, ge, ge, r4.x
+	rsq r4, r4.x
+	mul r5, half, r14
+	jmpc cmp.x, degenerate
+
+	rcp r0.z, r4.x
+	mul r0.xy, r5, r4
+
+degenerate:
+	mov outnq, r0
+	end
+.end

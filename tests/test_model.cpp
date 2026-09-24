@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "check.hpp"
+#include "core/dragon_mesh.hpp"
 #include "core/model.hpp"
 #include "core/rig.hpp"
 
@@ -206,6 +207,68 @@ TEST(part_keys_blend_between_stages) {
     CHECK(std::fabs(length(n[5]) - 1.0f) < 1e-4f);
 }
 
+TEST(parts_follow_the_genome_and_merge_into_one_draw) {
+    Rng rng(11);
+    for (int form = 0; form < kFormCount; ++form) {
+        const ModelData& m = model(form);
+        for (Element e : {Element::Ember, Element::Tide, Element::Gale}) {
+            const Genome g = makePurebred(e, rng);
+            for (Sex sex : {Sex::Female, Sex::Male}) {
+                PartsMesh parts;
+                CHECK(buildParts(m, g, sex, 0.4f, parts));
+                CHECK(parts.paletteCount > 0 && parts.paletteCount <= kMaxPalette);
+                CHECK(!parts.indices.empty() && parts.indices.size() % 3 == 0);
+                CHECK(parts.skin.size() == parts.pos.size() * 4 && parts.paint.size() == parts.pos.size() * 4);
+                bool indicesOk = true, skinOk = true;
+                for (u16 ix : parts.indices) indicesOk &= ix < parts.pos.size();
+                for (std::size_t v = 0; v < parts.pos.size(); ++v)
+                    skinOk &= parts.skin[v * 4] < parts.paletteCount && parts.skin[v * 4 + 1] < parts.paletteCount;
+                CHECK(indicesOk && skinOk);
+                CHECK(selectWings(m, g) && selectWings(m, g)->variant == g.wings);
+            }
+        }
+        // Variants not modelled yet fall back; None/Plain draw nothing.
+        Genome g = makePurebred(Element::Ember, rng);
+        g.horns = kHornsCrown;
+        g.frill = kFrillLeaf;
+        g.tailTip = kTailPlain;
+        const MeshData* sel[8];
+        const int n = selectParts(m, g, Sex::Male, sel);
+        int horns = 0, ridge = 0, frill = 0, tail = 0;
+        for (int i = 0; i < n; ++i) {
+            horns += sel[i]->group == kGroupHorns && sel[i]->variant == kHornsSwept;
+            ridge += sel[i]->group == kGroupSpikes && sel[i]->variant == kFrillNone;
+            frill += sel[i]->group == kGroupFrill;
+            tail += sel[i]->group == kGroupTailTip;
+        }
+        CHECK(horns == 1 && ridge == 1 && frill == 0 && tail == 0);
+    }
+}
+
+TEST(palette_and_ground_offset) {
+    Rng rng(5);
+    Rgb pal[kPalCount];
+    dragonPalette(makePurebred(Element::Ember, rng), pal);
+    CHECK(pal[kPalBase].r > pal[kPalBase].g && pal[kPalBase].g > pal[kPalBase].b);  // ember orange
+    dragonPalette(makePurebred(Element::Tide, rng), pal);
+    CHECK(pal[kPalBase].g > pal[kPalBase].r && pal[kPalBase].b > pal[kPalBase].r);  // sea teal
+    CHECK(pal[kPalGlint].r == 255 && pal[kPalPupil].r < 40);
+
+    // The adult is modelled standing near z = 0 (the idle pose's tail curl dips a little
+    // lower); the juvenile's shorter legs leave its lowest vertex higher, so the renderer
+    // shifts every dragon by -groundOffset.
+    const ModelData& m = model(kFormGrown);
+    BonePose pose[kMaxBones];
+    Mat34 poseMat[kMaxBones], skin[kMaxBones];
+    idlePose(m, 1.0f, kBuildNeutral, pose);
+    evaluatePose(m.skel, pose, poseMat, skin);
+    const float low = groundOffset(m, skin);
+    CHECK(low > -0.5f && low < 0.2f);
+    idlePose(m, 0.0f, kBuildNeutral, pose);
+    evaluatePose(m.skel, pose, poseMat, skin);
+    CHECK(groundOffset(m, skin) > low);  // shorter juvenile legs leave it floating until lifted
+}
+
 }  // namespace
 
 void runModelTests() {
@@ -215,4 +278,6 @@ void runModelTests() {
     RUN(euler_matches_blender_convention);
     RUN(rig_matches_blender_deformation);
     RUN(part_keys_blend_between_stages);
+    RUN(parts_follow_the_genome_and_merge_into_one_draw);
+    RUN(palette_and_ground_offset);
 }

@@ -488,9 +488,24 @@ def toon_material(name, color, accent=None, emission=0.0, rim=(1.0, 0.72, 0.45))
 def build_body():
     obj = build_skin_body() if F["body"] == "skin" else build_meta_body()
     decimate_to(obj, lod(F["body_tris"], F["body_tris_lod1"]))
+    remove_loose(obj)
     smooth(obj)
     paint_mask(obj)
     return obj
+
+
+def remove_loose(obj):
+    """Drop vertices that belong to no face. Decimation can leave one behind; it never
+    shows, but it still gets skinned (to whatever bone is nearest) and the floor contact
+    counts it: a loose vertex under the grown body swung with the left foreleg and lifted
+    the dragon every stride (Noah's "limp", 2026-09-24)."""
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    loose = [v for v in bm.verts if not v.link_faces]
+    if loose:
+        bmesh.ops.delete(bm, geom=loose, context="VERTS")
+        bm.to_mesh(obj.data)
+    bm.free()
 
 
 def build_skin_body():

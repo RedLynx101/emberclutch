@@ -69,12 +69,11 @@ While waiting on a review, work continues on the non-art packages (engine, save,
     middle of the body (the head's side-to-side travel went from 0.28 to 0.03 on an adult),
     the raised tail wags hard, the head tilts, the front paws do alternating tippy-taps
     and the hind legs counter the sway so the feet stay planted.
-  - Fix the **walking limp** (Noah, 2026-09-24): the dragon pops up every couple of steps.
-    Suspect: on a hind leg's forward swing `leg_cycle` pitches the foot toes-down, the
-    swinging toe dips below the planted feet, and grounding (lowest body vertex on the
-    floor, runtime and previews alike) lifts the whole dragon. Check by tracking the
-    ground offset over the walk and trot cycles; fix by keeping swinging feet above the
-    planted ones (or grounding on planted feet only).
+  - ✅ Fixed the **walking limp** (Noah, 2026-09-24): not the feet after all. Decimation
+    left one loose vertex under the grown body (no faces, so never drawn), skinned to the
+    left foreleg; it swung below the floor every stride and the floor contact lifted the
+    whole dragon by ~0.27. Loose vertices are now removed; the walk's contact moves 0.025
+    (was 0.295). PC tests guard both (no loose vertices; walk and trot stay level).
   - "A bit more cute" in general: ✅ blinking (D42): a blink every few seconds, eyes shut
     in sleep, a content squint while petted, a sleepy one while yawning, and a smile in
     the tail wag. Still open: softer expressions if R3 asks for them.

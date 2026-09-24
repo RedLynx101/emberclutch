@@ -42,5 +42,5 @@ shows the same motion. The camera stays put, so a hop or a pounce moves through 
   fold with the membrane following the fingers (done). The **tail wag** pivots near the
   back of the dragon: redo it centred on the body with cute leg movement (done: a centred
   puppy wiggle with front-paw tippy-taps).
-- 2026-09-24: the **walk has a limp**: the dragon pops up every couple of steps (planned,
-  see the Alpha 1 plan's cuteness pass for the suspected cause).
+- 2026-09-24: the **walk has a limp**: the dragon pops up every couple of steps (fixed: a
+  stray vertex under the body swung with the left foreleg and lifted the dragon).

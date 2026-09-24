@@ -241,6 +241,43 @@ TEST(look_at_turns_the_head_within_limits) {
     CHECK(std::fabs(behind) < 60.0f * 3.14159f / 180.0f);
 }
 
+// The floor contact (the lowest body point, which the renderer puts on the floor) stays
+// nearly level through the walk and trot cycles: a stray vertex swinging with one leg once
+// lifted the adult every stride (Noah's "limp", 2026-09-24).
+TEST(walking_keeps_the_body_level) {
+    const AnimLibrary& lib = anims();
+    for (int f = 0; f < kFormCount; ++f) {
+        const ModelData& m = form(f);
+        const MeshData* body = m.findMesh(kMeshBody, kGroupBody, 0);
+        CHECK(body != nullptr);
+        if (!body) continue;
+        AnimBinding bind;
+        bindAnims(lib, m.skel, bind);
+        BonePose idle[kMaxBones];
+        idlePose(m, 1.0f, kBuildNeutral, idle);
+        for (const char* name : {"walk", "trot"}) {
+            const AnimClip& clip = lib.clips[lib.find(name)];
+            float lo = 1e9f, hi = -1e9f;
+            for (int k = 0; k < 30; ++k) {
+                Quat delta[kMaxBones];
+                float root[2];
+                sampleClip(clip, bind, m.skel.count, clip.duration() * k / 30.0f, delta, root);
+                BonePose pose[kMaxBones];
+                for (int i = 0; i < m.skel.count; ++i) pose[i] = idle[i];
+                applyDeltas(pose, delta, m.skel.count);
+                Mat34 poseMat[kMaxBones], skin[kMaxBones];
+                evaluatePose(m.skel, pose, poseMat, skin);
+                float low = 1e9f;
+                for (int v = 0; v < body->vertexCount; ++v) low = std::fmin(low, skinPoint(*body, v, body->pos[v], skin).z);
+                lo = std::fmin(lo, low);
+                hi = std::fmax(hi, low);
+            }
+            std::printf("  %s %s: floor contact moves %.3f\n", f == kFormHatchling ? "hatchling" : "grown", name, hi - lo);
+            CHECK(hi - lo < 0.08f);
+        }
+    }
+}
+
 TEST(anim_loader_rejects_bad_files) {
     const std::vector<u8> good = readAll("../romfs/anims/dragon.eca");
     AnimLibrary lib;
@@ -260,5 +297,6 @@ void runAnimTests() {
     RUN(animator_reports_event_markers);
     RUN(locomotion_speeds_follow_the_body);
     RUN(look_at_turns_the_head_within_limits);
+    RUN(walking_keeps_the_body_level);
     RUN(anim_loader_rejects_bad_files);
 }

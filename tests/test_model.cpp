@@ -75,6 +75,12 @@ TEST(model_loads_and_is_well_formed) {
         for (const MeshData& mesh : m.meshes) {
             CHECK(mesh.paletteCount <= kMaxPalette);
             CHECK(!mesh.indices.empty() && mesh.indices.size() % 3 == 0);
+            // Every vertex belongs to a triangle: a loose one still counts for floor contact.
+            std::vector<bool> used(mesh.vertexCount, false);
+            for (u16 ix : mesh.indices) used[ix] = true;
+            int loose = 0;
+            for (int v = 0; v < mesh.vertexCount; ++v) loose += !used[v];
+            CHECK(loose == 0);
             for (int v = 0; v < mesh.vertexCount; ++v) CHECK(mesh.skin[v * 4 + 2] + mesh.skin[v * 4 + 3] == 255);
         }
         // Rest matrices are pure rotation + translation.

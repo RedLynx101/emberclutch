@@ -16,7 +16,7 @@
   (fast travel in Alpha 2, free flight in 1.0).
 - **Code:** `src/core` (genetics, needs, mood, growth, eggs, clock, breeding, save, model
   format, skeleton/rig, per-dragon mesh assembly, animation, den behavior, den room,
-  daylight, particles) with PC tests (60,664 checks). `src/app` draws the dragons in 3D
+  daylight, particles) with PC tests (60,764 checks). `src/app` draws the dragons in 3D
   (skinned toon shader) in a 3D den room lit for the time of day, inside themed citro2d
   screens. Runs in Azahar at 60 fps in the den (2026-09-24), sounds and all.
 - **Art:** two dragon forms built by script (`tools/blender/dragon_model.py`): a metaball
@@ -41,7 +41,7 @@
   each). **Cuteness pass** (Noah, 2026-09-24): bird-like folded wings with membranes that
   follow the fingers, the chest heart clear of the body, an opening mouth with teeth and a
   tongue (D41), a centred puppy tail wag, blinking eyes that shut in sleep (D42). Still to
-  do: the walking limp, texturing (review R2, not blocking).
+  do: texturing (review R2, not blocking).
 - ✅ **WP4 renderer:** `dragon.v.pica` (2-bone skinning, palette colours, fragment-light
   outputs) and `render3d` (toon ramp + rim + emissive heartglow with a white-hot core;
   citro3d inside citro2d scenes). Den camera, a bottom-screen petting close-up, per-dragon
@@ -87,8 +87,7 @@
   Note: the emulator needs `sdmc:/3ds/dspfirm.cdc`; a local dummy file works in Azahar (never commit it).
 
 ## Next actions
-1. **The walking limp** (Noah): the dragon pops up every couple of steps (suspected cause
-   in the Alpha 1 plan's cuteness pass). Small.
+1. ✅ **The walking limp** (fixed 2026-09-24: a stray vertex under the grown body).
 2. **WP2 texturing** → review R2 (the Pattern gene, scale detail). Not blocking.
 3. **WP7 hands-on care**, the big one: [care interactions](design/care-interactions.md)
    (petting with the hand and a sweet spot, brushing and polishing with shine regions,

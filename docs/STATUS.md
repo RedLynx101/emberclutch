@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -104,8 +104,9 @@ controls and saves screenshots of every step (`tests/autotest/`).
    nuzzles, the sunbeam, two curled up in the big nest at night. WP2 ✅: the Sanctuary and
    the Cold Vault, reached through a first world map (X in the den). WP3 ✅: breeding at
    the Nesting Stone (the pair's egg comes the next day). WP4 ✅: the Wanderings (walk with
-   a dragon, the pedometer counts, it finds Gleam, trinkets and sometimes a wild egg). Next:
-   the Market, the rest of the world map, more toys, the profile.
+   a dragon, the pedometer counts, it finds Gleam, trinkets and sometimes a wild egg). WP5
+   ✅: the Market (food for Gleam into the pouch, selling trinkets, the egg of the day). Next:
+   the rest of the world map, more toys, the profile.
 2. Then the emblem icon and the animated 3D HOME Menu banner (D48, D50).
 3. Then **R5**, three Ember style variants for Noah (blocks, D47); the dragons update in
    the chosen style; the run on Noah's old 3DS (D34).

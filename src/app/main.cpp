@@ -44,6 +44,7 @@ Input readInput() {
 
 // Which loop fits the moment (docs/audio/suno-music-brief.md).
 const char* musicFor(const App& app) {
+    if (app.scene == SceneId::Market) return "market-bustle";
     if (app.scene != SceneId::Den || !hasDragon(app)) return "title-theme";
     const Dragon& d = activeDragon(app);
     return (d.stage == Stage::Egg || isNight(nowLocal(app))) ? "nestsong" : "den-hearth";

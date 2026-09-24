@@ -141,6 +141,24 @@ inline constexpr const char* kFoundNothing = "Nothing this time: a longer walk f
 inline constexpr const char* kFoundWildEgg = "A wild %s egg!";
 inline constexpr const char* kToTheHoard = "The trinkets go on the hoard.";
 inline constexpr const char* kLovely = "Lovely";
+// The Market, Gleam and the pouch (Alpha 2 WP5)
+inline constexpr const char* kMarket = "The Market";
+inline constexpr const char* kNoneLeft = "None left: the Market has more.";
+inline constexpr const char* kTabFood = "Food";
+inline constexpr const char* kTabSell = "Sell";
+inline constexpr const char* kTabEgg = "Egg of the day";
+inline constexpr const char* kTapToBuy = "Tap a food to buy one.";
+inline constexpr const char* kNotEnoughGleam = "Not enough Gleam.";
+inline constexpr const char* kBought = "Into the pouch!";
+inline constexpr const char* kTapToSell = "Tap a trinket to sell one.";
+inline constexpr const char* kHoardEmpty = "The hoard is empty: the Wanderings find trinkets.";
+inline constexpr const char* kSold = "Sold!";
+inline constexpr const char* kTodaysEgg = "A %s %s egg";
+inline constexpr const char* kBuyEgg = "Buy it";
+inline constexpr const char* kEggBought = "Yours! It's in a nest (or the Cold Vault).";
+inline constexpr const char* kEggTomorrowMarket = "Today's egg is sold. Another tomorrow!";
+inline constexpr const char* kMarketLocked = "Opens when a dragon grows to Juvenile.";
+inline constexpr const char* kPrice = "%lu Gleam";
 inline constexpr const char* kDenFull = "The den is full (three beds).";
 inline constexpr const char* kEggToVault = "The nests are full: it went to the Vault.";
 

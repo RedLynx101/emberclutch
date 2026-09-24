@@ -231,6 +231,8 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
     w.s32v(data.nestDay);
     w.u32v(data.gleam);  // Alpha 2: Gleam and the hoard
     for (u16 n : data.hoard) w.u16v(n);
+    for (u16 n : data.pouch) w.u16v(n);  // Alpha 2: the pouch and the Market's egg of the day
+    w.s32v(data.eggBoughtDay);
     w.patchU16(at, static_cast<u16>(w.pos() - start));
 
     // Settings section
@@ -320,6 +322,10 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
     if (sectionSize >= 16 + 8 + 8 + 4 + 12 + 4 + 12) {  // older saves: no Gleam, an empty hoard
         tmp.gleam = r.u32v();
         for (u16& n : tmp.hoard) n = r.u16v();
+    }
+    if (sectionSize >= 16 + 8 + 8 + 4 + 12 + 16 + 24) {  // older saves: the starting pouch
+        for (u16& n : tmp.pouch) n = r.u16v();
+        tmp.eggBoughtDay = r.s32v();
     }
     r.seek(start + sectionSize);
 

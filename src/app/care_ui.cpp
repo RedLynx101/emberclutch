@@ -10,6 +10,7 @@
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
 #include "core/genetics.hpp"
+#include "core/market.hpp"
 #include "care.h"      // sprite indices (gfx/care.t3s, tools/blender/care_sprites.py)
 #include "care_t3x.h"  // the sprite atlas, linked into the program
 
@@ -216,6 +217,7 @@ void useFood(App& app, const Input& in, Dragon& d) {
     if (c.bitesLeft <= 0) {
         c.holdingFood = false;
         feed(d, info.belly, favourite);
+        useFood(app.game, c.food);  // eaten: one less in the pouch
         markVisit(d, nowLocal(app));
         a.behavior.feedBite(false, true, favourite);
         audio::playSfx(audio::Sfx::Gulp);
@@ -385,6 +387,8 @@ const char* hintFor(Tool t) {
 
 }  // namespace
 
+void drawFood(Food f, float x, float y, float scale) { sprite(foodSprite(f), x, y, scale); }
+
 bool loadSprites() {
     if (!g_sheet) g_sheet = C2D_SpriteSheetLoadFromMem(care_t3x, care_t3x_size);
     return g_sheet != nullptr;
@@ -487,8 +491,18 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
         panel({2, kFoodRowY, 316, 36}, withAlpha(theme::kDenPlum, 0.7f));
         for (int f = 0; f < static_cast<int>(Food::Count); ++f) {
             const Rect r{5.0f + f * 31.0f, kFoodRowY + 2, 30, 32};
+            const int have = pouchCount(app.game, static_cast<Food>(f));  // the pouch (WP5)
             sprite(foodSprite(static_cast<Food>(f)), r.x + 15, r.y + 16, 0.44f);
+            if (have == 0) C2D_DrawRectSolid(r.x, r.y, 0.5f, r.w, r.h, withAlpha(theme::kDenPlum, 0.6f));
+            char count[8];
+            std::snprintf(count, sizeof(count), "%d", have);
+            text(app, count, r.x + r.w - 2, r.y + r.h - 12, 0.34f, have ? theme::kShell : withAlpha(theme::kShell, 0.5f),
+                 C2D_AlignRight);
             if (in.touching && !c.holdingFood && r.contains(in.tx, in.ty) && !c.stroke.down) {
+                if (have == 0) {
+                    if (in.tapped) showToast(app, str::kNoneLeft);
+                    continue;
+                }
                 c.holdingFood = true;  // picked up: it follows the stylus until let go
                 c.food = static_cast<Food>(f);
                 c.bitesLeft = foodInfo(c.food).bites;

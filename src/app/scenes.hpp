@@ -22,5 +22,6 @@ extern const SceneFns kSanctuaryScene;
 extern const SceneFns kVaultScene;
 extern const SceneFns kNestingStoneScene;
 extern const SceneFns kWanderingsScene;
+extern const SceneFns kMarketScene;
 
 }  // namespace ec

@@ -2,7 +2,8 @@
 
 Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 done: the den of three dragons
 and two eggs (D53), and their life together. WP2 done (the Sanctuary and Cold Vault), with
-a first world map. WP3 done (breeding at the Nesting Stone). WP4 done (the Wanderings). Goal (D31): complete through Alpha 2. Scope and assets:
+a first world map. WP3 done (breeding at the Nesting Stone). WP4 done (the Wanderings).
+WP5 done (the Market, Gleam and the pouch). Goal (D31): complete through Alpha 2. Scope and assets:
 [content & assets](content-and-assets.md) (A2 rows); screens: [screens & flow](../design/screens-and-flow.md).
 
 **The order matters** (Noah, 2026-09-24): everything that doesn't depend on how the
@@ -85,6 +86,13 @@ Worked through alone, package by package (D49).
 - The Market scene and shop UI (buy and sell), the pouch, Gleam; the daily egg.
 - Items from the [catalogue](content-and-assets.md#7-items-catalogue); food stops being
   free.
+- *Done:* `src/core/market.*` (prices, the pouch, selling trinkets, the egg of the day:
+  labelled, the same all day, mostly Grove/Frost/Lumen, one a day; PC-tested) and
+  `src/app/scene_market.cpp` (stalls under bunting; Food, Sell and Egg-of-the-day tabs; the
+  egg shown on the stall). It opens on the map once a dragon is Juvenile. The care screen's
+  food row shows the pouch (a food is used when eaten; none left sends you to the Market);
+  a new game starts with 50 Gleam, bread, drumsticks, a candy and the starter's favourite.
+  Toys and den decor for sale come with WP7. `tests/autotest/market.txt`.
 
 ### WP6 — World map and fast travel
 - [Map & travel](../design/world-map-and-travel.md): the illustrated map, place pins that

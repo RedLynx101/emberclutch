@@ -10,6 +10,7 @@
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
+#include "core/market.hpp"
 
 namespace ec {
 namespace {
@@ -30,11 +31,15 @@ constexpr Place kPlaces[] = {
     {"The Cold Vault", "Eggs keep here, cool and waiting, until a nest is free.", 262, 62, SceneId::Vault, true},
     {"The Nesting Stone", "Where a pair of adults settles, and an egg comes the next day.", 214, 176,
      SceneId::NestingStone, true},
-    {"The Market", "Food, toys and treasures, and an egg of the day.", 92, 182, SceneId::Den, false},
+    {"The Market", "Food and treasures, and an egg of the day.", 92, 182, SceneId::Market, true},
     {"The Wanderings", "Take a dragon along on your walks: it finds things on the way.", 276, 138,
      SceneId::Wanderings, true},
 };
 constexpr int kPlaceCount = sizeof(kPlaces) / sizeof(kPlaces[0]);
+constexpr int kMarketPlace = 4;
+
+// Built, and unlocked: the Market waits until a dragon is grown to Juvenile.
+bool isOpen(const App& app, int p) { return kPlaces[p].open && (p != kMarketPlace || marketOpen(app.game)); }
 
 u32 col(u8 r, u8 g, u8 b, float a = 1.0f) { return withAlpha(theme::rgba(r, g, b), a); }
 
@@ -98,13 +103,13 @@ void drawPins(App& app) {
         const Place& pl = kPlaces[p];
         const bool picked = p == app.mapPick;
         const float r = picked ? 12.0f + std::sin(app.t * 4.0f) : 10.0f;
-        const u32 fill = pl.open ? (p == 0 ? theme::kEmber : theme::kSkyTeal) : col(150, 144, 150);
+        const u32 fill = isOpen(app, p) ? (p == 0 ? theme::kEmber : theme::kSkyTeal) : col(150, 144, 150);
         if (picked) C2D_DrawCircleSolid(pl.x, pl.y, 0, r + 5, withAlpha(theme::kClutchGold, 0.45f));
         C2D_DrawCircleSolid(pl.x, pl.y, 0, r + 2, theme::kShell);
         C2D_DrawCircleSolid(pl.x, pl.y, 0, r, fill);
         if (p == 0) heart(pl.x, pl.y, r * 0.9f, theme::kShell);  // home
         else C2D_DrawCircleSolid(pl.x, pl.y, 0, r * 0.35f, theme::kShell);
-        textCentered(app, pl.name + 4, pl.x, pl.y + r + 9, 0.38f, pl.open ? theme::kDenPlum : col(120, 110, 120), 110);
+        textCentered(app, pl.name + 4, pl.x, pl.y + r + 9, 0.38f, isOpen(app, p) ? theme::kDenPlum : col(120, 110, 120), 110);
     }
 }
 
@@ -134,6 +139,17 @@ void drawPlaceView(App& app, int p) {
             C2D_DrawCircleSolid(210, 170, 0, 26, col(96, 120, 160));
             C2D_DrawCircleSolid(210, 170, 0, 20, col(70, 90, 130));
             break;
+        case 4:  // the market: striped stalls under bunting
+            for (int i = 0; i < 4; ++i) {
+                const float x = 40.0f + i * 90;
+                C2D_DrawRectSolid(x, 150, 0, 70, 50, col(210, 180, 140));
+                for (int s = 0; s < 5; ++s)
+                    C2D_DrawRectSolid(x - 4 + s * 16, 132, 0, 8, 20, s % 2 ? col(250, 240, 220) : col(214, 86, 70));
+            }
+            for (int i = 0; i < 20; ++i)
+                C2D_DrawTriangle(10.0f + i * 20, 100, col(245, 196, 81), 26.0f + i * 20, 100, col(245, 196, 81),
+                                 18.0f + i * 20, 112, col(232, 102, 43), 0);
+            break;
         case 5:  // the trailhead: a signpost and the path into the hills
             for (int i = 0; i < 26; ++i) {
                 const float t = i / 25.0f;
@@ -153,7 +169,12 @@ void drawPlaceView(App& app, int p) {
     }
     const Place& pl = kPlaces[p];
     textCentered(app, pl.name, 200, 28, 1.0f, theme::kDenPlum, 380, Face::Title);
-    textCentered(app, pl.open ? pl.blurb : str::kNotOpenYet, 200, 222, 0.5f, theme::kDenPlum, 380);
+    textCentered(app, isOpen(app, p) ? pl.blurb : (p == kMarketPlace ? str::kMarketLocked : str::kNotOpenYet), 200, 222,
+                 0.5f, theme::kDenPlum, 380);
+    char gleam[32];  // what's in your purse
+    std::snprintf(gleam, sizeof(gleam), "%lu", static_cast<unsigned long>(app.game.gleam));
+    C2D_DrawCircleSolid(372, 16, 0, 7, theme::kClutchGold);
+    text(app, gleam, 362, 9, 0.5f, theme::kDenPlum, C2D_AlignRight);
 }
 
 void update(App& app, const Input& in) {
@@ -175,9 +196,9 @@ void update(App& app, const Input& in) {
 
 void travel(App& app) {
     const Place& pl = kPlaces[app.mapPick];
-    if (!pl.open) {
+    if (!isOpen(app, app.mapPick)) {
         audio::playSfx(audio::Sfx::Error);
-        showToast(app, str::kNotOpenYet);
+        showToast(app, app.mapPick == kMarketPlace ? str::kMarketLocked : str::kNotOpenYet);
         return;
     }
     audio::playSfx(audio::Sfx::Flap);

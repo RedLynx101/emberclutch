@@ -39,8 +39,12 @@ struct SaveData {
     u32 nestA = 0, nestB = 0;
     s32 nestDay = 0;
     // Alpha 2: Gleam (the valley's money) and the den's hoard of trinkets (core/wanderings Trinket).
-    u32 gleam = 0;
+    u32 gleam = 50;
     u16 hoard[6] = {};
+    // The pouch (WP5): food by core/care Food. Everyone starts with some bread, a drumstick
+    // or two and a candy (and the starter's favourite, scene_starter); older saves get the same.
+    u16 pouch[10] = {0, 0, 0, 0, 0, 0, 8, 2, 1, 0};
+    s32 eggBoughtDay = -1000000;  // the day the Market's egg was last bought (one a day)
     Settings settings{};
     u16 dragonCount = 0;
     Dragon dragons[kMaxDragons];

@@ -34,6 +34,7 @@ void chooseStarter(App& app, int i) {
     app.game.dragons[0] = makeEgg(app.game.nextId++, makePurebred(kStarters[i], app.rng), rollSex(app.rng), now);
     std::snprintf(app.game.dragons[0].name, sizeof(app.game.dragons[0].name), "%s", str::kDefaultName);
     app.game.dragonCount = 1;
+    app.game.pouch[static_cast<int>(kStarters[i])] = 3;  // a few of the breed's favourite food
     app.game.lastSim = now;
     app.scene = SceneId::Den;
     audio::playSfx(audio::Sfx::Confirm);

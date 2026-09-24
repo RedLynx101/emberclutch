@@ -9,6 +9,8 @@ namespace ec::care {
 
 bool loadSprites();
 void freeSprites();
+// A food's sprite centred at (x, y) (the Market draws them too).
+void drawFood(Food f, float x, float y, float scale);
 
 // Which close-up the tool in hand wants (the face for petting, feeding and play; the whole
 // body for grooming and the bath).

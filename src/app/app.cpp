@@ -151,6 +151,7 @@ const SceneFns& sceneFns(SceneId id) {
         case SceneId::Vault: return kVaultScene;
         case SceneId::NestingStone: return kNestingStoneScene;
         case SceneId::Wanderings: return kWanderingsScene;
+        case SceneId::Market: return kMarketScene;
         default: return kTitleScene;
     }
 }

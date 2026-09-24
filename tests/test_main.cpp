@@ -11,6 +11,7 @@
 #include "core/dragon.hpp"
 #include "core/genetics.hpp"
 #include "core/den_roster.hpp"
+#include "core/market.hpp"
 #include "core/wanderings.hpp"
 #include "core/save.hpp"
 
@@ -355,7 +356,7 @@ TEST(the_wanderings) {
         trinkets += f.trinkets[k];
         CHECK(s.hoard[k] == f.trinkets[k]);
     }
-    CHECK(s.gleam == f.gleam && f.gleam + trinkets > 0);
+    CHECK(s.gleam == 50 + f.gleam && f.gleam + trinkets > 0);  // on top of the starting 50
     CHECK(s.dragons[1].dirt[kRegionBelly] > 50 && s.dragons[1].dirt[kRegionBelly] > s.dragons[1].dirt[kRegionBack]);
 
     // Long trips sometimes bring a wild egg, mostly Grove, Frost or Lumen.
@@ -372,6 +373,46 @@ TEST(the_wanderings) {
     }
     std::printf("  80 long trips: %d wild eggs, %d of the other breeds\n", eggs, newBreeds);
     CHECK(eggs >= 3 && eggs <= 40 && newBreeds * 2 > eggs);
+}
+
+// The Market (Alpha 2 WP5): it opens at Juvenile; food for Gleam into the pouch and eaten
+// from it; trinkets sold; one egg of the day, labelled, the same all day.
+TEST(the_market) {
+    static SaveData s;
+    s = SaveData{};
+    Rng rng(41);
+    Dragon d = readyAdult(1, Element::Ember, Sex::Male, rng);
+    d.stage = Stage::Hatchling;
+    s.dragons[s.dragonCount++] = d;
+    s.nextId = 2;
+    CHECK(!marketOpen(s));
+    s.dragons[0].stage = Stage::Juvenile;
+    CHECK(marketOpen(s));
+
+    CHECK(s.gleam == 50 && pouchCount(s, Food::HearthBread) == 8);  // the starting pouch
+    CHECK(buyFood(s, Food::RoastDrumstick) && s.gleam == 50 - foodPrice(Food::RoastDrumstick));
+    CHECK(pouchCount(s, Food::RoastDrumstick) == 3);
+    s.gleam = 3;
+    CHECK(!buyFood(s, Food::HearthBread) && pouchCount(s, Food::HearthBread) == 8);  // not enough Gleam
+    CHECK(useFood(s, Food::HearthBread) && pouchCount(s, Food::HearthBread) == 7);
+    CHECK(!useFood(s, Food::Starfruit));  // none in the pouch
+
+    s.hoard[static_cast<int>(Trinket::Pearl)] = 1;
+    CHECK(sellTrinket(s, Trinket::Pearl) && s.gleam == 3 + trinketValue(Trinket::Pearl));
+    CHECK(!sellTrinket(s, Trinket::Pearl));
+
+    const s32 day = dayIndex(kT0);
+    const DailyEgg a = dailyEgg(s, day), b = dailyEgg(s, day);
+    CHECK(std::memcmp(&a.genome, &b.genome, sizeof(Genome)) == 0 && a.sex == b.sex);  // the same all day
+    int others = 0;
+    for (int k = 0; k < 60; ++k) others += dailyEgg(s, day + k).genome.elementA >= 3;
+    CHECK(others > 25);  // mostly Grove, Frost and Lumen
+    s.gleam = 1000;
+    const int e = buyDailyEgg(s, kT0);
+    CHECK(e >= 0 && s.dragons[e].stage == Stage::Egg && s.dragons[e].sex == a.sex && s.gleam == 1000 - a.price);
+    CHECK(s.dragons[e].location == Location::Den);  // into a nest
+    CHECK(buyDailyEgg(s, kT0 + kHour) == -1);  // one a day
+    CHECK(buyDailyEgg(s, kT0 + kDay) >= 0);
 }
 
 TEST(egg_sexes_are_roughly_even) {
@@ -397,6 +438,8 @@ static SaveData& sampleSave() {
     s.nestDay = 77;
     s.gleam = 1234;
     s.hoard[2] = 5;
+    s.pouch[4] = 9;
+    s.eggBoughtDay = 321;
     Rng rng(123);
     s.dragonCount = 5;
     for (int i = 0; i < 5; ++i) {
@@ -548,7 +591,7 @@ TEST(save_round_trip) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 1 + 12 + 2));
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 1 + 12 + 2));
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
@@ -556,6 +599,7 @@ TEST(save_round_trip) {
     CHECK(std::strcmp(out.playerName, "Noah") == 0);
     CHECK(out.lastSim == s.lastSim && out.devOffset == s.devOffset && out.nextId == 42);
     CHECK(out.nestA == 11 && out.nestB == 12 && out.nestDay == 77 && out.gleam == 1234 && out.hoard[2] == 5);
+    CHECK(out.pouch[4] == 9 && out.pouch[6] == 8 && out.eggBoughtDay == 321);
     CHECK(out.settings.musicVolume == 55 && out.settings.seenHatch == 1);
     CHECK(out.dragonCount == 5);
     for (int i = 0; i < 5; ++i) CHECK(sameDragon(out.dragons[i], s.dragons[i]));
@@ -637,6 +681,7 @@ int main() {
     RUN(breeding_requirements);
     RUN(the_nesting_stone);
     RUN(the_wanderings);
+    RUN(the_market);
     RUN(egg_sexes_are_roughly_even);
     RUN(the_den_has_three_beds_and_two_nests);
     RUN(the_sanctuary_and_the_vault);

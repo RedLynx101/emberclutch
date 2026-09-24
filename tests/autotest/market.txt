@@ -1,0 +1,83 @@
+# The Market (Alpha 2 WP5): locked until a dragon is Juvenile; then food for Gleam, selling
+# trinkets from the Wanderings, the egg of the day; the pouch in the care screen's food row.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+# The food row shows the pouch.
+tap 82 221
+wait 0.8
+shot m01-pouch
+# Locked on the map for a hatchling.
+key X
+wait 0.8
+tap 92 182
+wait 0.5
+shot m02-locked
+tap 58 221
+wait 1
+# Grown (dev), Gleam (dev page 2, which stays open on page 2), a walk for trinkets.
+key SELECT
+wait 0.3
+tap 82 106
+key R
+wait 0.3
+tap 82 56
+wait 0.3
+tap 82 56
+wait 0.3
+tap 82 56
+wait 0.3
+key SELECT
+key X
+wait 0.8
+tap 276 138
+wait 0.4
+tap 276 138
+wait 2.5
+tap 91 217
+wait 1
+key SELECT
+wait 0.3
+tap 238 31
+wait 0.3
+key SELECT
+wait 0.5
+tap 91 217
+wait 1
+tap 160 217
+wait 0.5
+tap 240 217
+wait 0.8
+tap 92 182
+wait 0.4
+tap 92 182
+wait 2.5
+shot m03-market-food
+tap 37 88
+wait 0.3
+tap 98 88
+wait 0.5
+shot m04-bought
+tap 160 21
+wait 0.5
+shot m05-sell
+tap 85 77
+wait 0.5
+shot m06-sold
+tap 264 21
+wait 1.5
+shot m07-egg
+tap 160 184
+wait 1
+shot m08-egg-bought
+quit

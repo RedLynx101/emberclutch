@@ -34,7 +34,7 @@ struct Input {
     float rx = 0, ry = 0;
 };
 
-enum class SceneId : u8 { Title, PickStarter, Den, Map, Sanctuary, Vault, NestingStone, Wanderings, Count };
+enum class SceneId : u8 { Title, PickStarter, Den, Map, Sanctuary, Vault, NestingStone, Wanderings, Market, Count };
 
 // Per-frame counters the renderer fills in; the debug overlay checks them against the
 // budgets in docs/tech/architecture.md section 1.
@@ -173,6 +173,7 @@ struct App {
     int wanderPick = -1;
     WanderFinds finds;
     int findsFrom = -1;  // who found them (SaveData index), -1: nothing to show
+    u8 marketTab = 0;    // the Market: food, sell, the egg of the day
 
     // Debug
     bool overlay = EC_DEV;

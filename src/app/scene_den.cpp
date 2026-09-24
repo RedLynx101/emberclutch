@@ -16,25 +16,25 @@ Rgb glowOf(const Dragon& d) { return heartglowColor(static_cast<Element>(d.genom
 
 void update(App& app, const Input& in) {
     // Dev time skip (also in the dev menu): R+A = +1 hour, R+X = +1 day.
-    if ((in.held & KEY_R) && (in.down & KEY_A)) app.save.devOffset += kHour;
-    if ((in.held & KEY_R) && (in.down & KEY_X)) app.save.devOffset += kDay;
+    if ((in.held & KEY_R) && (in.down & KEY_A)) app.game.devOffset += kHour;
+    if ((in.held & KEY_R) && (in.down & KEY_X)) app.game.devOffset += kDay;
 
     app.simAccum += app.dt;
     app.saveAccum += app.dt;
     if (app.simAccum >= 1.0f || (in.held & KEY_R)) {
         const s64 now = nowLocal(app);
-        simulate(app.save.dragon, app.save.lastSim, now);
-        app.save.lastSim = now;
+        simulate(activeDragon(app), app.game.lastSim, now);
+        app.game.lastSim = now;
         app.simAccum = 0;
     }
     if (app.saveAccum >= 60.0f) {
-        writeDevSave(app.save);
+        saveNow(app);
         app.saveAccum = 0;
     }
 }
 
 void drawTop(App& app) {
-    const Dragon& d = app.save.dragon;
+    const Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
     const bool night = isNight(now);
     verticalGradient(0, 0, kTopW, kScreenH, night ? theme::kDenPlum : theme::kDusk,
@@ -78,7 +78,7 @@ void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {
     if (tryHatch(d, now, app.rng)) {
         markVisit(d, now);
         showToast(app, str::kHatched);
-        writeDevSave(app.save);
+        saveNow(app);
     }
 }
 
@@ -140,7 +140,7 @@ void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
 }
 
 void drawBottom(App& app, const Input& in) {
-    Dragon& d = app.save.dragon;
+    Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
     if (d.stage == Stage::Egg) {

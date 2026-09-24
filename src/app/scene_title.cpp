@@ -24,7 +24,7 @@ void drawBottom(App& app, const Input& in) {
     const float a = 0.6f + 0.4f * std::sin(app.t * 3.0f);
     text(app, str::kTouchToBegin, 160, 108, 0.7f, withAlpha(theme::kDenPlum, a));
     text(app, str::kBuildLabel, 160, 212, 0.4f, theme::kAsh);
-    if (in.tapped || (in.down & KEY_A)) app.scene = app.save.hasDragon ? SceneId::Den : SceneId::PickStarter;
+    if (in.tapped || (in.down & KEY_A)) app.scene = hasDragon(app) ? SceneId::Den : SceneId::PickStarter;
 }
 
 }  // namespace

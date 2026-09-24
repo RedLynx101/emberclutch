@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-23 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP2 sculpt → R1 sent; WP8 next)
+**Updated:** 2026-09-23 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP8 ✅, WP2 sculpt → R1 sent; WP9 next)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -27,11 +27,14 @@
 - ⏸ **WP2 dragon model:** organic mesh, rig and growth stages done
   (`tools/blender/dragon_model.py`); **R1 sent**, texturing waits for it.
 
+- ✅ **WP8 save system:** versioned A/B slots, CRC32, per-record sizes, validation,
+  legacy dev-save import; 5 new PC tests (22 total, 11,383 checks). In Azahar: slots
+  alternate, a corrupted newest slot falls back to the older one and is then rewritten.
+
 ## Next actions
-1. WP8 save system (versioned A/B + CRC + migrations), with PC tests.
-2. WP9 audio: Ogg streaming with loop points; Suno briefs for the hatching stinger and
+1. WP9 audio: Ogg streaming with loop points; Suno briefs for the hatching stinger and
    the A1 sound-effect set.
-3. WP3 converter + WP4 renderer (**ask Noah for extra-high effort**).
+2. WP3 converter + WP4 renderer (**ask Noah for extra-high effort**).
 
 ## Current goal (D31)
 **Complete through Alpha 2.** Gates that stop the run:

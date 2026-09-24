@@ -9,6 +9,9 @@
 #include "core/clock.hpp"
 #include "core/dragon.hpp"
 #include "core/genetics.hpp"
+#include "core/save.hpp"
+
+#include <vector>
 
 using namespace ec;
 
@@ -300,6 +303,116 @@ TEST(egg_sexes_are_roughly_even) {
     CHECK(std::fabs(males / 20000.0 - 0.5) < 0.02);
 }
 
+// ---------------------------------------------------------------- save format (WP8)
+
+static SaveData& sampleSave() {
+    static SaveData s;
+    s = SaveData{};
+    std::snprintf(s.playerName, sizeof(s.playerName), "Noah");
+    s.lastSim = kT0 + 12345;
+    s.devOffset = 3 * kDay;
+    s.nextId = 42;
+    s.settings.musicVolume = 55;
+    Rng rng(123);
+    s.dragonCount = 5;
+    for (int i = 0; i < 5; ++i) {
+        Dragon d = makeEgg(10 + i, makePurebred(static_cast<Element>(i % kElementCount), rng), rollSex(rng), kT0);
+        if (i > 0) {
+            d.incubationSeconds = kIncubationSeconds;
+            tryHatch(d, kT0 + kHour, rng);
+            simulate(d, kT0 + kHour, kT0 + (i + 1) * kDay);
+            pet(d, 5);
+        }
+        std::snprintf(d.name, sizeof(d.name), "Drake%d", i);
+        d.motherId = i;
+        d.location = static_cast<Location>(i % 2);
+        s.dragons[i] = d;
+    }
+    return s;
+}
+
+static bool sameDragon(const Dragon& a, const Dragon& b) {
+    return a.id == b.id && std::memcmp(&a.genome, &b.genome, sizeof(Genome)) == 0 && a.sex == b.sex &&
+           a.motherId == b.motherId && std::strcmp(a.name, b.name) == 0 && a.stage == b.stage &&
+           a.location == b.location && a.hatchedAt == b.hatchedAt && a.needs.belly == b.needs.belly &&
+           a.needs.play == b.needs.play && a.bond == b.bond && a.careStars == b.careStars &&
+           a.personality == b.personality && a.warmth == b.warmth && a.dayLowestSum == b.dayLowestSum &&
+           a.upset == b.upset && a.napping == b.napping;
+}
+
+TEST(save_round_trip) {
+    const SaveData& s = sampleSave();
+    std::vector<u8> buf(maxEncodedSize());
+    const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
+    CHECK(n > kSaveHeaderSize);
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 2 + 4 + 2 + 2 + 5 * (132 + 2));  // exact v1 layout
+    static SaveData out;
+    SaveHeaderInfo info;
+    CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
+    CHECK(info.seq == 7 && info.savedAt == kT0 + 99 && info.version == kSaveVersion);
+    CHECK(std::strcmp(out.playerName, "Noah") == 0);
+    CHECK(out.lastSim == s.lastSim && out.devOffset == s.devOffset && out.nextId == 42);
+    CHECK(out.settings.musicVolume == 55);
+    CHECK(out.dragonCount == 5);
+    for (int i = 0; i < 5; ++i) CHECK(sameDragon(out.dragons[i], s.dragons[i]));
+}
+
+TEST(save_detects_corruption_and_truncation) {
+    const SaveData& s = sampleSave();
+    std::vector<u8> buf(maxEncodedSize());
+    const std::size_t n = encodeSave(s, 1, kT0, buf.data(), buf.size());
+    static SaveData out;
+    out.nextId = 777;
+    std::vector<u8> bad(buf.begin(), buf.begin() + n);
+    bad[n / 2] ^= 0x40;
+    CHECK(decodeSave(bad.data(), n, out) == LoadResult::BadCrc);
+    CHECK(out.nextId == 777);  // untouched on failure
+    CHECK(decodeSave(buf.data(), n - 10, out) == LoadResult::Truncated);
+    CHECK(decodeSave(buf.data(), 10, out) == LoadResult::Truncated);
+    CHECK(decodeSave(nullptr, 0, out) == LoadResult::Empty);
+    std::vector<u8> notSave(n, 0x11);
+    CHECK(decodeSave(notSave.data(), n, out) == LoadResult::BadMagic);
+    std::vector<u8> newer(buf.begin(), buf.begin() + n);
+    newer[4] = static_cast<u8>(kSaveVersion + 1);  // version field
+    CHECK(decodeSave(newer.data(), n, out) == LoadResult::TooNew);
+}
+
+TEST(save_rejects_out_of_range_data) {
+    SaveData& s = sampleSave();
+    s.dragons[2].stage = static_cast<Stage>(9);
+    std::vector<u8> buf(maxEncodedSize());
+    const std::size_t n = encodeSave(s, 1, kT0, buf.data(), buf.size());
+    static SaveData out;
+    CHECK(decodeSave(buf.data(), n, out) == LoadResult::BadData);
+}
+
+TEST(save_picks_newest_valid_slot) {
+    const SaveData& s = sampleSave();
+    std::vector<u8> a(maxEncodedSize()), b(maxEncodedSize());
+    const std::size_t na = encodeSave(s, 5, kT0, a.data(), a.size());
+    const std::size_t nb = encodeSave(s, 6, kT0 + 60, b.data(), b.size());
+    CHECK(pickNewestSlot(a.data(), na, b.data(), nb) == 1);
+    b[nb - 1] ^= 1;  // interrupted write corrupted the newer slot
+    CHECK(pickNewestSlot(a.data(), na, b.data(), nb) == 0);
+    CHECK(pickNewestSlot(nullptr, 0, b.data(), nb) == -1);
+    CHECK(pickNewestSlot(nullptr, 0, a.data(), na) == 1);
+}
+
+TEST(save_full_capacity_fits) {
+    static SaveData s;
+    s = SaveData{};
+    Rng rng(5);
+    s.dragonCount = kMaxDragons;
+    for (u32 i = 0; i < kMaxDragons; ++i)
+        s.dragons[i] = makeEgg(i + 1, makePurebred(static_cast<Element>(i % kElementCount), rng), rollSex(rng), kT0);
+    std::vector<u8> buf(maxEncodedSize());
+    const std::size_t n = encodeSave(s, 1, kT0, buf.data(), buf.size());
+    CHECK(n > 0 && n <= maxEncodedSize());
+    std::printf("  full save (200 dragons): %zu bytes\n", n);
+    static SaveData out;
+    CHECK(decodeSave(buf.data(), n, out) == LoadResult::Ok && out.dragonCount == kMaxDragons);
+}
+
 int main() {
     RUN(breed_names_are_symmetric_and_complete);
     RUN(purebreds_look_like_their_breed);
@@ -318,6 +431,11 @@ int main() {
     RUN(breeding_needs_one_male_and_one_female);
     RUN(breeding_requirements);
     RUN(egg_sexes_are_roughly_even);
+    RUN(save_round_trip);
+    RUN(save_detects_corruption_and_truncation);
+    RUN(save_rejects_out_of_range_data);
+    RUN(save_picks_newest_valid_slot);
+    RUN(save_full_capacity_fits);
     std::printf("\n%d checks, %d failures\n", g_checks, g_failures);
     return g_failures == 0 ? 0 : 1;
 }

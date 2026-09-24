@@ -1,0 +1,65 @@
+// Save format — see docs/tech/architecture.md section 8.
+//
+// File = header + payload, little-endian, every field written explicitly (never a raw
+// struct dump), so saves survive compiler, padding and struct-layout changes.
+//
+//   header (32 bytes): "EMBC" | u16 version | u16 flags | u32 seq | u32 payloadSize |
+//                      u32 crc32(payload) | s64 savedAt | u32 reserved
+//   payload:           player block | settings | u16 dragonCount | dragon records...
+//
+// Two slots (save.a / save.b) are written alternately; the valid one with the higher
+// `seq` wins, so an interrupted write can only ever damage the older copy.
+#pragma once
+
+#include <cstddef>
+
+#include "core/dragon.hpp"
+
+namespace ec {
+
+constexpr u16 kSaveVersion = 1;
+constexpr u32 kMaxDragons = 200;
+constexpr std::size_t kSaveHeaderSize = 32;
+
+struct Settings {
+    u8 musicVolume = 80;  // 0..100
+    u8 sfxVolume = 90;
+    u8 voiceEnabled = 1;
+    u8 stereo3d = 1;
+};
+
+struct SaveData {
+    char playerName[16] = {};
+    s64 lastSim = 0;    // local unix time the simulation last advanced to
+    s64 devOffset = 0;  // dev-build clock offset (0 in release)
+    u32 nextId = 1;     // next creature id
+    Settings settings{};
+    u16 dragonCount = 0;
+    Dragon dragons[kMaxDragons];
+};
+
+// Upper bound for an encoded save; callers size their buffers with it.
+std::size_t maxEncodedSize();
+
+// Encodes into `out` (capacity `cap`). Returns the byte count, or 0 if it doesn't fit.
+std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std::size_t cap);
+
+enum class LoadResult : u8 { Ok, Empty, BadMagic, TooNew, Truncated, BadCrc, BadData };
+const char* loadResultName(LoadResult r);
+
+struct SaveHeaderInfo {
+    u16 version = 0;
+    u32 seq = 0;
+    s64 savedAt = 0;
+};
+
+// Decodes and migrates older versions. `out` is only modified on success.
+LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeaderInfo* info = nullptr);
+
+// Given the two slots' bytes, returns 0 or 1 for the newest valid slot, or -1 if neither
+// is valid.
+int pickNewestSlot(const u8* a, std::size_t aSize, const u8* b, std::size_t bSize);
+
+u32 crc32(const u8* data, std::size_t size);
+
+}  // namespace ec

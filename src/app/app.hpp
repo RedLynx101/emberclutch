@@ -4,8 +4,10 @@
 #include <3ds.h>
 #include <citro2d.h>
 
+#include "app/storage.hpp"
 #include "core/dragon.hpp"
 #include "core/rng.hpp"
+#include "core/save.hpp"
 
 #ifndef EC_DEV
 #define EC_DEV 1  // dev builds show the budget overlay and the dev menu (SELECT)
@@ -19,17 +21,6 @@ struct Input {
     u32 down = 0, held = 0;
     float tx = 0, ty = 0;
     bool touching = false, tapped = false;
-};
-
-// Dev-only save: a raw struct dump. Replaced by the versioned A/B format in WP8.
-struct DevSave {
-    char magic[4] = {'E', 'M', 'B', 'd'};
-    u32 version = 2;  // bump whenever Dragon changes shape
-    u32 dragonSize = sizeof(Dragon);
-    s64 lastSim = 0;
-    s64 devOffset = 0;
-    u8 hasDragon = 0;
-    Dragon dragon{};
 };
 
 enum class SceneId : u8 { Title, PickStarter, Den, Count };
@@ -46,7 +37,8 @@ struct App {
     C3D_RenderTarget* top = nullptr;
     C3D_RenderTarget* bottom = nullptr;
     C2D_TextBuf textBuf = nullptr;
-    DevSave save{};
+    SaveData game;  // large: App lives in static storage (see main.cpp)
+    SaveSlots slots;
     Rng rng{1};
     float t = 0;   // seconds since boot, for animation
     float dt = 0;  // seconds since the last frame
@@ -70,7 +62,13 @@ struct App {
 
 s64 nowLocal(const App& app);
 void showToast(App& app, const char* msg);
-bool loadDevSave(DevSave& out);
-void writeDevSave(const DevSave& s);
+
+// Alpha 1 keeps one dragon; the den with several arrives in Alpha 2.
+inline bool hasDragon(const App& app) { return app.game.dragonCount > 0; }
+inline Dragon& activeDragon(App& app) { return app.game.dragons[0]; }
+inline const Dragon& activeDragon(const App& app) { return app.game.dragons[0]; }
+
+// Saves to the next A/B slot; shows a toast if the SD card write fails.
+void saveNow(App& app);
 
 }  // namespace ec

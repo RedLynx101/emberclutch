@@ -146,14 +146,23 @@ Suno WAV ──tools/audio/make_loop.py (ffmpeg)──▶ .ogg with LOOPSTART/LO
 
 ## 8. Save data
 
-- Location: `sdmc:/3ds/emberclutch/save.a` and `save.b`, written alternately. The newest
-  valid slot wins, so a save is never overwritten in place.
-- Format: header (`"EMBC"`, version, CRC32, timestamp) followed by records. Every
-  creature record carries a `species`, `bodyPlan` and `modules` field so the equine line
-  fits without a format break.
-- Capacity: 200 creatures (~128 bytes each) + 50 vault eggs + inventory ≈ 40 KB.
-- Versioned migrations live in `core/save.cpp`. Old saves are always upgraded, never
-  rejected.
+Implemented in `src/core/save.*` (format, PC-tested) and `src/app/storage.*` (SD card).
+
+- Location: `sdmc:/3ds/emberclutch/save.a` and `save.b`, written alternately. On load the
+  valid slot with the higher sequence number wins; if it fails to decode, the other slot
+  is used. An interrupted write can only ever damage the older copy.
+- Format: a 32-byte header (`"EMBC"`, version, flags, sequence, payload size, CRC32,
+  saved-at time) followed by the payload: player section, settings section, dragon
+  count, dragon records. Every field is written explicitly in little-endian order (never a
+  raw struct dump), and every section and dragon record carries its byte size. Newer
+  builds can add fields (older records get defaults), and unknown trailing fields are
+  skipped.
+- Validation: CRC, bounds, and every enum/element checked; bad data is rejected, never
+  loaded half-way.
+- Capacity: 200 creatures at 134 bytes each; a full save is ~27 KB.
+- Versioned migrations go in `decodeSave` (`if (info.version < N) ...`). Old saves are
+  always upgraded, never rejected; a save from a *newer* build is refused, not damaged.
+- The pre-WP8 dev save (`dev-save.bin`) is imported once if no slots exist.
 
 ## 9. Multiplayer (later)
 

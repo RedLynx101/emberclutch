@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "app/theme.hpp"
+#include "app/storage.hpp"
 #include "app/ui_draw.hpp"
 #include "core/clock.hpp"
 
@@ -49,7 +50,7 @@ bool debugMenu(App& app, const Input& in) {
     if (in.down & KEY_SELECT) app.devMenu = !app.devMenu;
     if (!app.devMenu) return false;
 
-    Dragon& d = app.save.dragon;
+    Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDenPlum, theme::rgba(20, 14, 28));
     text(app, "DEV MENU  (SELECT to close)", 160, 4, 0.5f, theme::kClutchGold);
@@ -66,20 +67,20 @@ bool debugMenu(App& app, const Input& in) {
         const Rect r{8.0f + (i % 2) * 156.0f, 26.0f + (i / 2) * 38.0f, 148, 32};
         if (!button(app, r, kItems[i].label, in)) continue;
         switch (kItems[i].id) {
-            case 0: app.save.devOffset += kHour; break;
-            case 1: app.save.devOffset += kDay; break;
-            case 2: app.save.devOffset += 7 * kDay; break;
+            case 0: app.game.devOffset += kHour; break;
+            case 1: app.game.devOffset += kDay; break;
+            case 2: app.game.devOffset += 7 * kDay; break;
             case 3: d.needs = Needs{100, 100, 100, 100}; d.upset = false; break;
             case 4: d.needs = Needs{5, 5, 5, 5}; break;
             case 5: if (d.stage == Stage::Egg) d.incubationSeconds = kIncubationSeconds; break;
             case 6: forceNextStage(d, now); break;
             case 7: app.overlay = !app.overlay; break;
-            case 8: writeDevSave(app.save); showToast(app, "Saved."); break;
-            case 9: app.save = DevSave{}; app.scene = SceneId::Title; app.devMenu = false; writeDevSave(app.save); break;
+            case 8: saveNow(app); showToast(app, "Saved."); break;
+            case 9: deleteGame(); app.game = SaveData{}; app.slots = SaveSlots{}; app.scene = SceneId::Title; app.devMenu = false; break;
         }
     }
     char buf[80];
-    std::snprintf(buf, sizeof(buf), "clock offset +%lldh  stars %d  stage %s", static_cast<long long>(app.save.devOffset / kHour),
+    std::snprintf(buf, sizeof(buf), "clock offset +%lldh  stars %d  stage %s", static_cast<long long>(app.game.devOffset / kHour),
                   d.careStars, stageName(d.stage));
     text(app, buf, 160, 222, 0.4f, theme::kAsh);
     return true;

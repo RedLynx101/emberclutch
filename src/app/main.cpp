@@ -45,17 +45,18 @@ int main() {
     C2D_Init(C2D_DEFAULT_MAX_OBJECTS * 2);
     C2D_Prepare();
 
-    App app;
+    static App app;  // holds the whole save (200 dragons): keep it off the stack
     app.top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
     app.bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     app.textBuf = C2D_TextBufNew(4096);
     app.romfsOk = romfsMounted && romfsReady();
 
-    if (loadDevSave(app.save) && app.save.hasDragon) {
+    if (loadGame(app.game, app.slots) && hasDragon(app)) {
         const s64 now = nowLocal(app);
-        simulate(app.save.dragon, app.save.lastSim, now);  // catch up on time away
-        app.save.lastSim = now;
-        markVisit(app.save.dragon, now);
+        for (u16 i = 0; i < app.game.dragonCount; ++i)
+            simulate(app.game.dragons[i], app.game.lastSim, now);  // catch up on time away
+        app.game.lastSim = now;
+        markVisit(activeDragon(app), now);
     }
 
     u64 lastTick = svcGetSystemTick();
@@ -90,7 +91,7 @@ int main() {
         C3D_FrameEnd(0);
     }
 
-    if (app.save.hasDragon) writeDevSave(app.save);
+    if (hasDragon(app)) saveNow(app);
     C2D_TextBufDelete(app.textBuf);
     C2D_Fini();
     C3D_Fini();

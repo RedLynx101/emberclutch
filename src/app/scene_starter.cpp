@@ -28,12 +28,12 @@ void drawTop(App& app) {
 void chooseStarter(App& app, int i) {
     const s64 now = nowLocal(app);
     app.rng = Rng(static_cast<std::uint64_t>(osGetTime()) ^ 0xEC0DDull);
-    app.save.dragon = makeEgg(1, makePurebred(kStarters[i], app.rng), rollSex(app.rng), now);
-    std::snprintf(app.save.dragon.name, sizeof(app.save.dragon.name), "%s", str::kDefaultName);
-    app.save.hasDragon = 1;
-    app.save.lastSim = now;
+    app.game.dragons[0] = makeEgg(app.game.nextId++, makePurebred(kStarters[i], app.rng), rollSex(app.rng), now);
+    std::snprintf(app.game.dragons[0].name, sizeof(app.game.dragons[0].name), "%s", str::kDefaultName);
+    app.game.dragonCount = 1;
+    app.game.lastSim = now;
     app.scene = SceneId::Den;
-    writeDevSave(app.save);
+    saveNow(app);
 }
 
 void drawBottom(App& app, const Input& in) {

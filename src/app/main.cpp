@@ -151,6 +151,7 @@ int main() {
 
     if (hasDragon(app) && !app.quit) saveNow(app);  // (Save & quit has just saved)
     autotest::finish();
+    screenshot::finish();
     audio::shutdown();
     ptmuExit();
     r3d::shutdown();

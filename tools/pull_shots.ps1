@@ -39,7 +39,8 @@ try {
     throw
 }
 $reader = New-Object System.IO.StreamReader($resp.GetResponseStream())
-$names = @($reader.ReadToEnd() -split "`r?`n" | ForEach-Object { Split-Path $_ -Leaf } | Where-Object { $_ -match '^(shot_\d+\.bmp|log\.txt)$' })
+$names = @($reader.ReadToEnd() -split "`r?`n" | Where-Object { $_ } | ForEach-Object { Split-Path $_ -Leaf } |
+    Where-Object { $_ -match '^(shot_\d+\.bmp|log\.txt)$' })
 $reader.Close()
 $resp.Close()
 

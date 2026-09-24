@@ -2,7 +2,7 @@
 // whatever is on them (the dev overlay too), as sdmc:/3ds/emberclutch/screenshots/shot_NNNN.bmp
 // (400 x 480: the top screen above the bottom one, centred), and adds a line to
 // screenshots/log.txt with what was going on: the scene, the frame time, triangles, free
-// memory and the build. Pulled off the SD card after a test (FTP or a card reader), so what
+// linear memory and the build. Pulled off the SD card after a test (FTP or a card reader), so what
 // looked off on the 3DS can be seen here. (The den's photo mode, D55, is a separate thing.)
 #pragma once
 
@@ -14,8 +14,10 @@ namespace ec::screenshot {
 void request();
 // Around each frame, like the autotest's shots: after both screens are drawn, which
 // framebuffers the picture lands in (and the numbers for the log); once the next frame has
-// begun (the transfer is done), saving it. The toast comes after, so it's never in the picture.
+// begun (the transfer is done), copying it and starting a thread to write it to the SD card
+// (the game doesn't wait). The toast comes once it's written, so it's never in the picture.
 void beforeFrameEnd(const App& app);
 void afterFrameBegin(App& app);
+void finish();  // on the way out: waits for a picture still being written
 
 }  // namespace ec::screenshot

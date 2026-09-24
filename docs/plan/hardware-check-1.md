@@ -5,13 +5,19 @@ four sets of dragon models in memory. About 15 minutes. The full hardware run (W
 still closes Alpha 2.
 
 **Run 1 (2026-09-24, 0.1.1):** the 3D banner played, but the game stopped before it
-started ("The SD card was removed"): the CIA had no boot logo. Fixed in **0.1.2**, with the
-banner, sound and icon changes Noah asked for ([alpha-2.md](alpha-2.md), WP11b).
+started ("The SD card was removed"): the CIA had no boot logo. **Run 2 (0.1.2):** the game
+started, but the 3D-banner CIA froze the HOME Menu (a flag it needs was dropped) and the
+game crashed at its first 3D frame (a null texture read the emulator hides). Both fixed in
+**0.1.3** ([alpha-2.md](alpha-2.md), WP11b).
 
-The builds are in `build/cia-test/` (not in git; rebuild with `tools\package_cia.ps1
--Version 0.1.2`, add `-Banner3D` for the second one):
+The builds are in `build/cia-test/` (not in git; `tools\package_cia.ps1 -Version 0.1.3`,
+add `-Banner3D` for the 3D one), all uploaded with `tools\deploy_ftp.ps1 -FtpHost <ip> -Cia`:
 - `emberclutch-3dbanner.cia`: the game with the animated 3D banner. **Install this one.**
-- `emberclutch-2d.cia`: the same game with the flat banner, if the 3D one ever misbehaves.
+- `emberclutch-3dbanner-diag.cia`: the same, its banner's wordmark as in 0.1.1. Only if the
+  first one freezes the HOME Menu: it tells whether the wordmark change is to blame.
+- `emberclutch-2d.cia`: the same game with the flat banner, if the 3D ones misbehave.
+- `sdmc:/3ds/emberclutch/emberclutch.3dsx`: the same game for the **Homebrew Launcher**
+  (no install; it shares the save).
 
 **Screenshots (new):** press **Y** anywhere in the game. Both screens (and the overlay, when
 it's on) go to `sdmc:/3ds/emberclutch/screenshots/` with a line of numbers in `log.txt`, and
@@ -21,10 +27,10 @@ off; Claude copies them off over FTP afterwards (`tools\pull_shots.ps1`).
 Both are dev builds: SELECT opens the dev menu, L/R turn its pages.
 
 ## 1. Install
-Both 0.1.2 CIAs are on the SD card in `/cias/` (uploaded over FTP on 2026-09-24, sizes
+The 0.1.3 CIAs are on the SD card in `/cias/` (uploaded over FTP on 2026-09-24, sizes
 checked). In **FBI**: SD → cias →
-`emberclutch-3dbanner.cia` → Install CIA. It installs over 0.1.1 (same title, newer
-version). Sound needs your console's own DSP firmware at `sdmc:/3ds/dspfirm.cdc` (from the
+`emberclutch-3dbanner.cia` → Install CIA. It installs over the last one (same title, newer
+version; the save stays). Sound needs your console's own DSP firmware at `sdmc:/3ds/dspfirm.cdc` (from the
 DSP1 homebrew); if other homebrew has sound, it's there already. The save goes to
 `sdmc:/3ds/emberclutch/`.
 
@@ -47,14 +53,15 @@ DSP1 homebrew); if other homebrew has sound, it's there already. The save goes t
 4. **Probe: all looks** again releases them.
 
 ## 4. The 3D HOME Menu banner
-It ran on run 1. On 0.1.2, check the fixes:
+It ran on run 1 (0.1.1) and froze the HOME Menu on run 2 (0.1.2). On 0.1.3, check the fixes:
 1. The icon is square: no black corners.
 2. Selected, the top screen shows the baby Ember in its cracked egg with no wall behind it,
    the gold EMBERCLUTCH readable from the front (mirrored from behind, as the banner turns),
    and nothing of the dragon through the back of the egg.
 3. The sound is a bar of the title theme.
-4. If the HOME Menu freezes or shows nothing: hold POWER to turn off, and install
-   `emberclutch-2d.cia` with FBI (don't select Emberclutch first). Tell me what you saw.
+4. If the HOME Menu freezes or shows nothing: hold POWER to turn off, install
+   `emberclutch-3dbanner-diag.cia` with FBI (don't select Emberclutch first) and try it; if
+   that freezes too, `emberclutch-2d.cia`. Tell me which froze.
 
 ## What to send back
 - The numbers from 2.4 and 3.2: press Y there (or a photo of the top screen).

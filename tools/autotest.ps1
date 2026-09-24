@@ -107,3 +107,13 @@ for ($s = 0; $s -lt $names.Count; $s += 4) {
     $sheet.Dispose()
 }
 if ($finished) { "finished: $count screenshots in $out" } else { "TIMED OUT after $TimeoutSec s: $count screenshots in $out" }
+# Reads and writes where no memory is mapped: the emulator logs them and carries on (a null
+# read gives 0), the 3DS faults. That's how the first hardware crash hid (2026-09-24).
+$emuLog = Join-Path $env:APPDATA "Azahar\log\azahar_log.txt"
+if (Test-Path $emuLog) {
+    $bad = @(Select-String -Path $emuLog -Pattern "unmapped" -SimpleMatch)
+    if ($bad.Count) {
+        "WARNING: $($bad.Count) unmapped memory accesses (a crash on the 3DS). First ones:"
+        $bad | Select-Object -First 5 | ForEach-Object { "  " + ($_.Line -replace '^\[\s*[\d.]+\]\s*', '') }
+    } else { "memory: no unmapped accesses" }
+}

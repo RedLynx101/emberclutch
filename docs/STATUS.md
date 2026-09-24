@@ -2,13 +2,13 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · first 3DS run: the banner works, the game didn't start (no boot logo: fixed in 0.1.2, D56) · waiting on run 2
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · 3DS runs 1–2: the game starts since 0.1.2 (a boot logo); run 2 found a HOME Menu freeze (a banner flag) and a crash at the first 3D frame (a null read the emulator hides), both fixed in 0.1.3 · waiting on run 3
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D58 recorded ([log](plan/decisions.md)); nothing open.
+  Decisions D1–D59 recorded ([log](plan/decisions.md)); nothing open.
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
   [Alpha 1 plan](plan/alpha-1.md), [Alpha 2 plan](plan/alpha-2.md) (draft: the style review
   R5, the emblem icon and a 3D HOME Menu banner, D47–D50). New specs (2026-09-24): [hands-on care](design/care-interactions.md)
@@ -26,9 +26,12 @@
   Wanderings stingers, the Market loop) and the full Alpha 1 sound-effect set (ElevenLabs,
   2–4 takes per sound) processed on 2026-09-24. The den has hearth and night beds and an
   egg hum under the music.
-- **Hardware:** first run on Noah's old 3DS 2026-09-24 (0.1.1): the 3D banner plays; the
-  game didn't start, because the CIA had no boot logo. Fixed in 0.1.2 with the banner, sound
-  and icon changes (D56) and screenshots on Y (D57); run 2 next.
+- **Hardware:** run 1 on Noah's old 3DS (2026-09-24, 0.1.1): the 3D banner plays; the game
+  didn't start (no boot logo in the CIA). Run 2 (0.1.2): it starts, the stylus is accurate,
+  screenshots work; the 3D-banner CIA froze the HOME Menu (a flag 0.1.2 dropped), and the
+  game crashed at its first 3D frame (`C3D_TexBind(1, nullptr)`: a null read that Azahar
+  lets pass). Both fixed in 0.1.3; every scripted run now checks for unmapped accesses (D59).
+  Run 3 next.
 
 ## Alpha 1 progress
 - ✅ **WP1 engine foundation:** scenes split into `src/app/scene_*.cpp`, string table,
@@ -135,13 +138,13 @@ after each. Stops:
   haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
-- **Run 2 on the old 3DS** ([steps](plan/hardware-check-1.md), D55): install 0.1.2 with
-  FBI (`emberclutch-3dbanner.cia`, already in `/cias/` on the SD card, uploaded 2026-09-24),
+- **Run 3 on the old 3DS** ([steps](plan/hardware-check-1.md), D55): install 0.1.3 with
+  FBI (`emberclutch-3dbanner.cia`, already in `/cias/` on the SD card; the `.3dsx` is in
+  `/3ds/emberclutch/` for the Homebrew Launcher),
   check the banner, sound and icon fixes, read the budget with a full den and with every
   look in memory, pressing **Y** for a screenshot at each number and anything odd (pulled
-  with `tools\pull_shots.ps1`). Run 1 (0.1.1) stopped before the game started: no boot logo
-  in the CIA (D56). Meanwhile, or next: our own boot logo (WP11c, D58). Then the hatching rework (WP12a: the newborn starts
-  curled up inside, the shell breaks into shards that fall away, no more clipping), WP12
+  with `tools\pull_shots.ps1`). Runs 1 and 2: [what they found](plan/alpha-2.md) (WP11b). Meanwhile, or next: our own boot logo (WP11c, D58). Then the hatching rework (WP12a: the egg bursts
+  into bits that fall to the floor, and the hatchling grows out of a small white blob), WP12
   (looks per dragon, the Dragondex, the parts library, all 21 breeds, photo mode), the full
   hardware run (D34) and the Alpha 2 tag.
 - Sound brief 2 (`docs/audio/sfx-batch-2.md`): nothing waits on it (stand-ins play).
@@ -150,7 +153,8 @@ after each. Stops:
   (`assets/audio/music/previews/market-bustle.seam-preview.wav`).
 ## How to work
 - Build: `tools\build.ps1` · Tests: `tools\test.ps1` · Emulator: `tools\emu.ps1`
-- 3DS: `tools\package_cia.ps1 -Banner3D -Version x.y.z` · screenshots off the 3DS:
+- 3DS: `tools\package_cia.ps1 -Banner3D -Version x.y.z` · to the 3DS (the .3dsx, and the CIAs
+  in `build/cia-test/` with `-Cia`): `tools\deploy_ftp.ps1 -FtpHost <3ds-ip> -Cia` · screenshots off the 3DS:
   `tools\pull_shots.ps1 -FtpHost <3ds-ip>` (Y in the game takes them)
 - Music: `python tools/audio/make_loop.py <wav> --bpm <hint> --preview`
 - Blender (headless): `blender -b -P tools/blender/<script>.py -- <args>`; model export:

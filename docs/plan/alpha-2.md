@@ -257,10 +257,33 @@ while every other title runs. Fixed in 0.1.2 (D56):
 - **Screenshots (D57):** Y anywhere saves both screens and a log line to the SD card;
   `tools\pull_shots.ps1` copies them off.
 
-**Run 2:** install 0.1.2 (the 3D-banner CIA), then the same steps, pressing Y at each
-number and at anything odd. If it still won't start: `emberclutch.3dsx` from the Homebrew
-Launcher tells the game apart from its packaging, and the error's full text (a result code,
-if Luma shows one) says more.
+**Run 2 (2026-09-24, 0.1.2):**
+- **The 3D-banner CIA froze the HOME Menu** as Noah opened the new title's present, both
+  times, and never showed the banner. 0.1.2 had dropped the SMDH's *extendedbanner* flag
+  (D56's reasoning was wrong: homebrew 3D banners all set it, and 0.1.1's banner showed with
+  it). 0.1.3 sets it again. In case the wordmark change is at fault instead, a second
+  diagnostic CIA carries the 0.1.3 banner with the wordmark as 0.1.1 had it.
+- **The flat-banner CIA started:** the *homebrew* logo, the title screen, the music. A
+  screenshot worked but stalled the game while it saved, so 0.1.3 writes it on a thread of
+  its own. The stylus reticle is accurate.
+- **It crashed after choosing Tide** (Luma: data abort, a read at 0x0000000C): the first
+  frame with 3D in it. `end3D()` unbound texture unit 1 with `C3D_TexBind(1, nullptr)`, and
+  citro3d 1.7.1 reads the null texture's type for units 1 and 2 before binding. Azahar
+  reads 0 there and carries on; the 3DS faults. Fixed: the unit stays bound (citro2d never
+  samples it).
+- **Hunting the rest of that kind:** every scripted run's Azahar log is searched for
+  unmapped memory accesses (`tools/autotest.ps1` now warns after each run, D59).
+  All 16 scripts ran clean with the fix; the build before it logs that very read (at the
+  crash's PC, 0x0014B748), so the check sees what the 3DS would.
+- **Also in 0.1.3 (Noah):** the footsteps quieter and muffled, babies walking 30% faster
+  with their steps unchanged (D60); the hatching plan follows his direction (WP12a).
+- The screenshot showed the title at 16.6 ms, 23.0 MB of linear memory free. (Application
+  memory reads 0 MB on the 3DS, because libctru gives the heap everything at start, so the
+  log line no longer shows it.)
+
+**Run 3:** 0.1.3, the 3D-banner CIA first (if the HOME Menu freezes: hold POWER, install
+the diagnostic CIA and try again, then the flat one), and the game also as a `.3dsx` for the
+Homebrew Launcher (D59).
 
 ### WP11c — An Emberclutch boot logo (D58)
 The logo the HOME Menu plays as a title starts (the NCCH's logo region; the emulator never
@@ -285,32 +308,37 @@ darc of `blyt/*.bclyt`, `anim/*.bclan` and `timg/*.bclim`: the word "homebrew" o
 - **Checked on the 3DS** in the next run: the logo shows and the game starts. If the HOME
   Menu rejects it, the fallback ships and the logo waits.
 
-### WP12a — The hatching, reworked (proposed; Noah 2026-09-24)
+### WP12a — The hatching, reworked (Noah 2026-09-24; his direction after run 2)
 **The problem:** the hatchling appears whole inside an intact shell. A newborn is 0.79 wide
 and 1.34–1.47 long; the egg is 0.74 wide and 1.0 tall. So the body, wings and tail poke
 through the shell walls, and the shell stays in the nest (for three minutes) while the
 hatchling sits in it. It also "just hatches": no moment where it breaks out.
 
-**The fix:**
-- **It starts curled up inside.** A new clip, `hatch_emerge`: from the curl pose (head
-  tucked, tail wrapped round) it pushes up, the snout breaks through first, then the head
-  comes out wearing the cap, then it stands and stretches. An egg sized to hold the curled
-  newborn (about 1.2 tall instead of 1.0; the nests have room).
-- **The shell breaks apart instead of staying whole.** A shattering egg model: the cap and
-  four or five lower shards, each a rigid piece on its own bone. As the hatchling stands,
-  the shards tip outward about their bottom edges and fall onto the straw with a small
-  bounce, settling in a ring clear of its body; the cap rides on its head until it shakes
-  it off. The shards fade once it's named and walks out.
+**The fix (Noah's direction):**
+- **The egg bursts into bits.** At the moment of hatching the shell breaks into a couple of
+  dozen small pieces (cream outside, glowing inside), flung a little up and outward. They
+  fall to the nest and the floor, bounce once, settle, and fade once the hatchling is
+  named. The pieces are simulated in `src/core` (small rigid bits like the ball: gravity,
+  the floor and the nest's rim, a bounce, friction) and drawn as one mesh with the static
+  program: one draw call for the lot.
+- **The dragon grows out of a small white blob.** Where the egg was, a small glowing white
+  blob swells and shapes itself into the baby dragon over about 1.5 s. It's made from the
+  hatchling's own mesh: each vertex moves from its place on a small sphere round the body's
+  centre to its real place (one morph value in the dragon shader, eased with a little
+  overshoot), and the white fades into its colours as it takes shape. No shell is ever
+  round the dragon, so nothing can clip, and no second model is needed.
 - **The moment:** the cracks glow brighter and the egg wobbles harder (as now), a pause, a
-  flash of warm light from inside, then the break. Shell crumbs and dust, the first cry
-  (`hatch-first-cry`, stand-in until it arrives), the first blink, and the look's name
-  (D54: "It's a Cinderveined Ember!"); a wild egg's glowing crack pattern pays off here.
-- **The bottom screen follows it:** the close-up shows the egg breaking and then the
-  hatchling's face for the first blink, instead of cutting away.
-- **Checked, not eyeballed:** a PC test that the curled newborn fits inside the egg at the
-  start (every body vertex inside the shell's inner surface), that no shard passes through
-  the hatchling's body capsules at sampled moments of the sequence, and that the shards'
-  resting ring clears its footprint; an autotest run capturing the sequence frame by frame.
+  flash of warm light, the burst, sparkles as the blob takes shape. Then the first blink,
+  the first cry (`hatch-first-cry`, a stand-in until it arrives) and the look's name (D54:
+  "It's a Cinderveined Ember!"); a wild egg's glowing crack pattern pays off here.
+- **The bottom screen follows it:** the close-up shows the burst and the blob becoming the
+  hatchling, then its face for the first blink, instead of cutting away.
+- **Checked, not eyeballed:** PC tests that every bit comes to rest on the floor or in the
+  nest (none through it, none outside the room), that the blob starts inside where the egg
+  stood, and that the morph ends exactly on the hatchling's pose; an autotest run capturing
+  the sequence frame by frame.
+- This replaces the first plan (the newborn curled up inside, an egg of four or five
+  shards, the cap riding on its head): simpler, and closer to what Noah pictures.
 
 ### WP12 — The dragons update: every look, every breed (D54)
 - **Looks per dragon (D54):** the current look and V1–V3 all ship. A look gene per dragon

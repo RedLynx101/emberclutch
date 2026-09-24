@@ -6,6 +6,11 @@
 #include "core/rig.hpp"
 
 namespace ec {
+namespace {
+
+constexpr float kBabyHaste = 1.3f;  // hatchlings walk 30% faster than their steps (Noah, 2026-09-24)
+
+}  // namespace
 
 bool resolveClips(const AnimLibrary& lib, int form, int out[static_cast<int>(ClipId::Count)]) {
     bool all = true;
@@ -105,6 +110,7 @@ int DenActor::update(const Dragon& d, bool night, float moveScale, float dt, con
     // Smaller legs step faster (stride frequency goes about as 1 / sqrt(size)): a hatchling
     // scampers instead of creeping. Up to twice as quick.
     behavior.gait = moveScale < 1.0f ? std::fmin(2.0f, 1.0f / std::sqrt(std::fmax(moveScale, 0.05f))) : 1.0f;
+    behavior.haste = d.stage == Stage::Hatchling ? kBabyHaste : 1.0f;
     behavior.update(d, night, moveScale, dt);
     const float k = dt * 3.0f < 1.0f ? dt * 3.0f : 1.0f;
     look += (behavior.lookWeight() - look) * k;

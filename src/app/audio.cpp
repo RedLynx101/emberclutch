@@ -56,6 +56,14 @@ constexpr StandIn kStandIns[] = {
 };
 static_assert(sizeof(kStandIns) / sizeof(kStandIns[0]) == static_cast<int>(Sfx::Count) - kFirstBrief2,
               "a stand-in for every brief 2 sound");
+// Sounds with a place in the mix of their own, whoever plays them: the footsteps quiet and
+// muffled, soft paws on the den floor rather than clicks (Noah, after the 3DS run 2026-09-24).
+struct Tone {
+    Sfx sfx;
+    float gain;
+    float lowpassHz;  // 0: as recorded
+};
+constexpr Tone kTones[] = {{Sfx::Step, 0.3f, 650.0f}};
 const char* const kBedFiles[] = {"amb-hearth", "amb-night", "egg-hum", "amb-market"};
 const float kBedGain[] = {0.55f, 0.5f, 0.6f, 0.45f};  // under the music and the voices
 static_assert(sizeof(kBedFiles) / sizeof(kBedFiles[0]) == static_cast<int>(Bed::Count), "one file per Bed");
@@ -425,6 +433,17 @@ void playSfx(Sfx s, float pitch, float gain) {
     g_nextSfx = (slot + 1) % kSfxCount;
     ndspChnWaveBufClear(ch);
     setupChannel(ch, c.stereo ? 2 : 1, static_cast<long>(c.rate * pitch));
+    float lowpass = 0.0f;
+    for (const Tone& t : kTones) {
+        if (t.sfx == s) {
+            gain *= t.gain;
+            lowpass = t.lowpassHz;
+        }
+    }
+    if (lowpass > 0.0f)
+        ndspChnIirBiquadSetParamsLowPassFilter(ch, lowpass, 0.707f);  // turns the channel's filter on
+    else
+        ndspChnIirBiquadSetEnable(ch, false);  // the channel may have played a muffled sound last
     setMix(ch, g_sfxVol * gain);
     queueSlices(ch, c.data, c.stereo ? 2 : 1, c.frames, g_sfxBufs[slot], kSfxSlices);
 }

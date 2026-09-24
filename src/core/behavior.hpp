@@ -163,6 +163,9 @@ struct DenBehavior {
     // Small dragons step quicker (DenActor sets it from their size): walking and trotting play
     // this much faster, and cover ground this much faster, so the feet still stay planted.
     float gait = 1.0f;
+    // Walking covers this much more ground than its steps would (the steps play as ever):
+    // babies get about with 30% more pep (Noah, 2026-09-24), their feet sliding a touch.
+    float haste = 1.0f;
     float size = 1.0f;  // the last moveScale: how much room the body needs around obstacles
     u8 spot = 0;        // which bed and sulking spot are its own (its place in the den)
     // Life together (denSocial): its partner in a game or a nuzzle (an index into the den's

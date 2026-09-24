@@ -910,7 +910,9 @@ void bindDragons(const C3D_Mtx& projection) {
 // Hands the GPU back to citro2d.
 void end3D() {
     C3D_LightEnvBind(nullptr);
-    C3D_TexBind(1, nullptr);
+    // Texture unit 1 (the dust ramp) stays bound: citro2d's stages never sample it, and
+    // citro3d can't unbind units 1-2. C3D_TexBind(1, nullptr) reads the null texture's type
+    // first: the emulator reads 0 there, the 3DS faults (the first hardware crash, 2026-09-24).
     for (int i = 0; i < 6; ++i) C3D_TexEnvInit(C3D_GetTexEnv(i));
     C2D_Prepare();
     prepare2D();

@@ -161,7 +161,7 @@ bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
     }
     heading = wrapAngle(heading + clampf(err, -kSteerRate * dt, kSteerRate * dt));
     setClip(trotting ? ClipId::Trot : walkClip, 0.3f);
-    speed = (trotting ? trotSpeed : walkSpeed) * gait;
+    speed = (trotting ? trotSpeed : walkSpeed * haste) * gait;
     const float step = std::fmin(speed * dt, dist);
     pos.x += std::sin(heading) * step;
     pos.y -= std::cos(heading) * step;
@@ -794,11 +794,11 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
                     start(Activity::Greet);
                 } else {
                     if (clipDone) setClip(walkClip, 0.3f);
-                    const float stepLen = std::fmin(walkSpeed * gait * dt, left);
+                    speed = walkSpeed * haste * gait;
+                    const float stepLen = std::fmin(speed * dt, left);
                     heading = headingTo(pos, target);
                     pos.x += std::sin(heading) * stepLen;
                     pos.y -= std::cos(heading) * stepLen;
-                    speed = walkSpeed * gait;
                 }
             }
             break;

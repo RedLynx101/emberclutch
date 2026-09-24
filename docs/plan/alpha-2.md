@@ -91,7 +91,8 @@ Worked through alone, package by package (D49).
     the 3D banner is proven on the old 3DS (WP13). Until then, and as the fallback, the
     same scene rendered flat makes a 2D banner.
   - Tools: bannertool and makerom are already on disk (from 3D-Claw); pycgfx and its two
-    Python libraries (gltflib, pillow) are a download that needs Noah's OK (D50).
+    Python libraries (gltflib, pillow) are downloaded at this step (approved, D50) and
+    never committed.
 - Both are shown to Noah at R5 (the banner as renders and a turntable).
 
 ## Phase B — the style review (R5, blocks)
@@ -125,7 +126,8 @@ budgets and animated by the same clips.
 - Review sheets of every breed (R6, not blocking).
 
 ### WP13 — The run on the old 3DS (D34)
-- Install the CIA; check the **3D banner** in the real HOME Menu (select it, let it
+- Install the CIA with FBI (Noah's old 3DS runs Luma3DS + FBI); check the **3D banner**
+  in the real HOME Menu (select it, let it
   animate, launch; fall back to the 2D banner if it misbehaves).
 - Play through the checklist on the hardware: the 3-dragon den, the petting close-up,
   fetch, Wanderings, the Market, saves, sound, touch accuracy.

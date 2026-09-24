@@ -2,13 +2,13 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · 3DS runs 1–4: the game runs on the old 3DS since 0.1.3 (full den 22–23 ms); the banner lab showed the new 3D scene (not the sound) freezes the HOME Menu, lab 2 narrows it; 0.1.5 carries the section profiler for the performance pass (WP11d, next, D62) · waiting on run 5
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · 3DS runs 1–5: the game runs on the old 3DS since 0.1.3 (full den 22–23 ms); banner labs 1–2 found the freeze's way round (a mesh more than dragon, egg and wordmark), and the new banner has sparkles instead of a background (D63); 0.1.5/0.1.6 carry the section profiler for the performance pass (WP11d, next, D62) · waiting on run 6
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D62 recorded ([log](plan/decisions.md)); open: WP12b's grooming design (later).
+  Decisions D1–D63 recorded ([log](plan/decisions.md)); open: WP12b's grooming design (later).
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
   [Alpha 1 plan](plan/alpha-1.md), [Alpha 2 plan](plan/alpha-2.md) (draft: the style review
   R5, the emblem icon and a 3D HOME Menu banner, D47–D50). New specs (2026-09-24): [hands-on care](design/care-interactions.md)
@@ -141,9 +141,10 @@ after each. Stops:
   haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
-- **Run 5 on the old 3DS** ([steps](plan/hardware-check-1.md), D55): banner lab 2 (F–I in
-  `/cias/lab/`), then 0.1.5 (`emberclutch-2d.cia` or the `.3dsx`): screenshots with Y in the
-  full den and the close-up bring back the profiler's numbers,
+- **Run 6 on the old 3DS** ([steps](plan/hardware-check-1.md), D55): banner lab 3 (J, K in
+  `/cias/lab/`), then 0.1.6 with the 3D banner if J passed (`emberclutch-3dbanner.cia`, after
+  deleting the title) or the flat one; screenshots with Y in the full den and the close-up
+  bring back the profiler's numbers,
   check the banner, sound and icon fixes, read the budget with a full den and with every
   look in memory, pressing **Y** for a screenshot at each number and anything odd (pulled
   with `tools\pull_shots.ps1`). Runs 1 and 2: [what they found](plan/alpha-2.md) (WP11b). Meanwhile, or next: our own boot logo (WP11c, D58). Then the hatching rework (WP12a: the egg bursts

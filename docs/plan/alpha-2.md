@@ -333,8 +333,20 @@ hidden in the egg; H = the new scene with the dragon not moved; I = the new scen
 glow disc only. First bone static: F and G pass. The move: H passes, F, G, I freeze. The flat
 meshes themselves: F and I pass, G freezes.
 
+**Lab 2:** F, G and I passed, H froze. Not the dragon's move (G and I have it), not the
+first bone (I starts with the animated body). Every scene that froze (C, D, E, H) is made of
+exactly the dragon, its egg and the wordmark; every one that passed has at least one mesh
+more, even a small hidden triangle (G). The HOME Menu's rule isn't known, but the way round
+it is proven: **the banner (D63) keeps a small still triangle hidden in the egg** and, as
+Noah asked ("no background thing... some sparkles... make it nice"), **ten gold sparkles**
+round the egg and the dragon: four-pointed stars, unlit, faint specks that glint in turn (two
+or three at a time) and turn a quarter turn a loop. No backdrop, no glow disc: the HOME
+Menu's own background shows. 340 KB of 512. **Lab 3:** J = that banner, K = the same without
+the hidden triangle (whether the sparkles alone are enough).
+
 **0.1.5** (on the 3DS with the .3dsx): 0.1.4 plus the section profiler (WP11d): the baseline
-to measure the performance pass against.
+to measure the performance pass against. **0.1.6:** the new banner (a 3D CIA and a flat one)
+and the look-at's head-chain evaluation.
 
 ### WP11d — Hardware performance pass (after run 3; before WP12a, Noah agreed)
 The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 8.3). Target:

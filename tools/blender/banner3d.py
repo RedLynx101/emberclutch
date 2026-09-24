@@ -1,8 +1,9 @@
 """The animated 3D HOME Menu banner (Alpha 2 WP10, D50) and its flat 2D fallback.
 
 The textured baby Ember peeks out of its cracked, ember-lit egg (the cap sits on its head),
-the Emberclutch wordmark behind it. Over a 4 second loop it tilts its head, wags its tail,
-blinks twice and its heart pulses (scale, and a diffuse-colour animation).
+the Emberclutch wordmark behind it, gold sparkles twinkling round them, over the HOME Menu's
+own background. Over a 4 second loop it tilts its head, wags its tail, blinks twice and its
+heart pulses (scale, and a diffuse-colour animation); the sparkles glint in turn.
 
 The HOME Menu rules (docs/plan/alpha-2.md WP10): the model and its animation are named
 COMMON (pycgfx does that), the CGFX stays under 512 KB, and every moving thing is a rigid
@@ -10,7 +11,7 @@ piece animated by node transforms, never skinning. So the posed dragon is frozen
 into pieces at its joints (body, head, eyes, tail, heart), each with its pivot at the joint.
 
   blender -b -P tools/blender/banner3d.py -- [--out build/banner] [--assets assets] [--review build/review] [--debug-rig]
-    [--no-fit] [--keep-glow] [--keep-backdrop] [--anchor]   (banner-lab variants, tools/banner_lab.ps1)
+    [--no-fit] [--keep-glow] [--keep-backdrop] [--no-anchor] [--no-sparkles]   (banner-lab variants, tools/banner_lab.ps1)
   py -3.12 build/tools/pycgfx/main.py build/banner/banner.gltf build/banner/banner.cgfx
 
 Writes <out>/banner.gltf (+ .bin, the skin texture), <assets>/banner.png (the 2D banner,
@@ -52,6 +53,17 @@ GLOW = (1.0, 0.52, 0.18)
 GOLD = (0.96, 0.72, 0.26)
 PLUM = (0.16, 0.08, 0.19)
 HEART_DIM, HEART_BRIGHT = (1.0, 0.45, 0.12, 1.0), (1.0, 0.86, 0.45, 1.0)
+SPARKLE = (1.0, 0.86, 0.45)   # the heart's bright gold
+# The sparkles, in banner units (x across, y depth, + away from you; z up): where, how big,
+# and the frame their glint peaks. Round the egg and the dragon, clear of its face and of the
+# wordmark; about two or three glinting at any moment, the rest faint specks.
+SPARKLES = [
+    ((-13.5, -2.0, -8.0), 1.0, 12), ((8.5, 0.0, -3.0), 1.0, 19), ((-10.0, -3.0, 3.5), 0.7, 26),
+    ((14.0, 2.0, -7.0), 0.7, 33), ((-14.5, 1.0, -1.0), 1.2, 40), ((4.0, -2.0, 2.0), 0.8, 47),
+    ((1.5, -4.0, -11.0), 0.6, 54), ((11.5, -1.0, 2.5), 0.9, 61), ((6.5, -2.0, -9.5), 0.8, 68),
+    ((-17.0, 0.0, 6.0), 0.7, 75),
+]
+SPARKLE_REST = 0.2            # a faint speck between glints (never 0: a zero scale can't invert)
 
 
 # ------------------------------------------------------------------------------ helpers
@@ -474,8 +486,11 @@ def glow_disc(radius, colour, at):
 
 
 def anchor():
-    """A small still triangle, first of the scene's objects (glTF lists them by name): the
-    skeleton's first bone is then a static one, as 0.1.1's backdrop was. Hidden in the egg."""
+    """A small still triangle hidden in the egg, first of the scene's objects (glTF lists them
+    by name). On the 3DS the HOME Menu froze on every scene made of just the dragon, its egg
+    and the wordmark, and showed every one with one more mesh (banner lab 2, 2026-09-24: a
+    backdrop, the glow disc or this triangle). The rule inside it isn't known; this keeps the
+    scene on the side that works whatever else changes."""
     bm = bmesh.new()
     vs = [bm.verts.new(p) for p in ((-0.2, 0.0, 0.0), (0.2, 0.0, 0.0), (0.0, 0.0, 0.3))]
     bm.faces.new(vs)
@@ -486,6 +501,41 @@ def anchor():
     o.location = (-3.0, 0.0, -10.0)  # inside the egg's cup
     o.data.materials.append(principled("anchor", SHELL, 0.9))
     return o
+
+
+def star_mesh(name, size):
+    """A four-pointed star (long points up, down and to the sides, short ones between), flat,
+    facing the camera."""
+    bm = bmesh.new()
+    centre = bm.verts.new((0, 0, 0))
+    ring = []
+    for k in range(8):
+        a = math.pi / 4 * k
+        r = size if k % 2 == 0 else size * 0.32
+        ring.append(bm.verts.new((r * math.sin(a), 0, r * math.cos(a))))
+    for k in range(8):
+        bm.faces.new((centre, ring[k], ring[(k + 1) % 8]))
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    return me
+
+
+def sparkles():
+    """Gold stars round the egg (unlit in the CGFX: make_unlit); animate() makes them glint."""
+    mat = principled("sparkle", SPARKLE, 0.5)
+    bsdf = mat.node_tree.nodes["Principled BSDF"]
+    key = "Emission Color" if "Emission Color" in bsdf.inputs else "Emission"
+    bsdf.inputs[key].default_value = (*SPARKLE, 1)  # bright in the review renders too
+    bsdf.inputs["Emission Strength"].default_value = 0.8
+    stars = []
+    for i, (at, size, _) in enumerate(SPARKLES):
+        o = link(bpy.data.objects.new(f"sparkle_{i}", star_mesh(f"sparkle_{i}", size * 1.6)))
+        o.location = at
+        o.scale = (SPARKLE_REST,) * 3
+        o.data.materials.append(mat)
+        stars.append(o)
+    return stars
 
 
 def backdrop(width, height, y):
@@ -587,9 +637,10 @@ def build():
         glow_disc(9.8, (0.55, 0.22, 0.12), (-3.0, 16.0, -1.0))
     if "--keep-backdrop" in sys.argv:
         backdrop(90, 50, 20.0)
-    if "--anchor" in sys.argv:
+    if "--no-anchor" not in sys.argv:
         anchor()
-    return pieces, egg, cap, heart_mat, word
+    stars = sparkles() if "--no-sparkles" not in sys.argv else []
+    return pieces, egg, cap, heart_mat, word, stars
 
 
 def parent(child, par):
@@ -598,7 +649,7 @@ def parent(child, par):
     child.matrix_world = m
 
 
-def animate(pieces, cap, heart_mat):
+def animate(pieces, cap, heart_mat, stars=()):
     """Rigid node animation only (the HOME Menu freezes on skinned banners)."""
     body, head, tail = pieces["body"], pieces["head"], pieces["tail"]
     for p in ("head", "tail", "heart"):
@@ -645,6 +696,14 @@ def animate(pieces, cap, heart_mat):
             key(hp, f + 4, scale=(1.22, 1.22, 1.22))
             key(hp, f + 12, scale=(1, 1, 1))
         key(hp, FRAMES, scale=(1, 1, 1))
+    # The sparkles glint in turn (a quick swell and a slower fade) and turn a quarter turn a
+    # loop (a four-pointed star looks the same after it, so the loop is seamless).
+    for o, (_, _, peak) in zip(stars, SPARKLES):
+        rest, full = (SPARKLE_REST,) * 3, (1.0, 1.0, 1.0)
+        for f, s in ((0, rest), (peak - 10, rest), (peak, full), (peak + 14, rest), (FRAMES, rest)):
+            key(o, f, scale=s)
+        for f, spin in ((0, 0), (FRAMES, 90)):
+            key(o, f, rot=(0, spin, 0))
     # A gentle bob.
     b0 = body.location.copy()
     for f, dz in ((0, 0.0), (48, 0.35), (96, 0.0)):
@@ -712,7 +771,7 @@ def add_heart_colour(path, heart_name="heart_glow"):
     print(f"[banner] heart colour pulse on material {mi}")
 
 
-def make_unlit(path, names=("wordmark",)):
+def make_unlit(path, names=("wordmark", "sparkle")):
     """Marks materials unlit (KHR_materials_unlit, which tools/banner_cgfx.py honours: their
     texture's own colours, however they face the light) and alpha-tested rather than blended,
     so they write depth and the nearer copy of a two-sided quad wins. Seen from the back the
@@ -761,8 +820,8 @@ def render(path, width, height, frame, final=None):
 
 
 def main():
-    pieces, egg, cap, heart_mat, word = build()
-    animate(pieces, cap, heart_mat)
+    pieces, egg, cap, heart_mat, word, stars = build()
+    animate(pieces, cap, heart_mat, stars)
     tris = 0
     for o in bpy.context.scene.objects:
         if o.type == "MESH":

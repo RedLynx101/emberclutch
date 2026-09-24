@@ -1,0 +1,52 @@
+# The Wanderings (Alpha 2 WP4): set off with a grown dragon, walk (the dev menu adds steps:
+# the emulator's pedometer never counts), call it back and see the finds; home muddy.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 206
+key SELECT
+wait 1
+key X
+wait 0.8
+tap 276 138
+wait 0.4
+tap 276 138
+wait 2.5
+shot w01-trailhead
+tap 91 217
+wait 1.5
+shot w02-out
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 238 31
+wait 0.3
+key SELECT
+wait 1.5
+shot w03-walked
+tap 91 217
+wait 1.5
+shot w04-finds
+tap 160 217
+wait 0.5
+tap 240 217
+wait 0.8
+tap 58 221
+wait 3
+shot w05-home-muddy
+quit

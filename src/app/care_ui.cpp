@@ -339,7 +339,7 @@ void drawProfile(App& app, const Input& in, const Dragon& d, s64 now) {
     CareState& c = app.care;
     panel({22, 34, 276, 166}, withAlpha(theme::kDenPlum, 0.94f));
     text(app, d.name, 160, 42, 0.85f, theme::kClutchGold, C2D_AlignCenter, 200);
-    if (denRoster(app.game).dragonCount + denRoster(app.game).eggCount > 1) {  // the others in the den
+    if (denRoster(app.game).presentCount() + denRoster(app.game).eggCount > 1) {  // the others in the den
         if (button(app, {30, 42, 34, 28}, "<", in)) cycleCare(app, -1);
         if (button(app, {256, 42, 34, 28}, ">", in)) cycleCare(app, 1);
     }
@@ -356,7 +356,7 @@ void drawProfile(App& app, const Input& in, const Dragon& d, s64 now) {
     }
     if (button(app, {118, 150, 84, 36}, str::kToSanctuary, in)) {  // off to the keepers
         const DenRoster r = denRoster(app.game);
-        if (r.dragonCount + r.eggCount <= 1) {
+        if (r.presentCount() + r.eggCount <= 1) {
             showToast(app, str::kStayHome);
         } else if (storeAway(app.game, app.careIndex)) {
             showToastf(app, str::kSentAway, d.name);

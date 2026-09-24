@@ -87,7 +87,8 @@ int denOrder(const App& app, const DenRoster& r, int* order) {
         order[n++] = i;
     };
     if (careBed(app) >= 0 || careNest(app) >= 0) add(app.careIndex);
-    for (int b = 0; b < kDenDragons; ++b) add(r.dragon[b]);
+    for (int b = 0; b < kDenDragons; ++b)
+        if (!r.away[b]) add(r.dragon[b]);  // one out on the Wanderings isn't here
     for (int e = 0; e < kDenEggs; ++e) add(r.egg[e]);
     return n;
 }
@@ -154,7 +155,7 @@ void denLife(App& app, const DenRoster& r, s64 now) {
     const Dragon* who[kDenDragons];
     int crowdCount = 0;
     for (int b = 0; b < kDenDragons; ++b) {
-        if (r.dragon[b] < 0) {
+        if (r.dragon[b] < 0 || r.away[b]) {
             app.actorId[b] = 0;
             continue;
         }
@@ -177,7 +178,8 @@ void denLife(App& app, const DenRoster& r, s64 now) {
               app.dt, app.rng);  // games of chase, nuzzles, the sunbeam, snuggling at night
     static Activity lastActivity[kDenDragons] = {};
     for (int b = 0; b < kDenDragons; ++b) {
-        if (r.dragon[b] < 0 || (app.hatch.active && !app.hatch.popped && r.dragon[b] == app.hatch.index)) continue;
+        if (r.dragon[b] < 0 || r.away[b] || (app.hatch.active && !app.hatch.popped && r.dragon[b] == app.hatch.index))
+            continue;
         const Dragon& d = app.game.dragons[r.dragon[b]];
         DenActor& a = app.actors[b];
         const bool yours = r.dragon[b] == app.careIndex;
@@ -528,7 +530,7 @@ void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {
     gauge(app, 20, 196, str::kWarmth, d.warmth);
     if (button(app, {236, 30, 76, 26}, str::kToVault, in)) {  // off to the Cold Vault
         const DenRoster r = denRoster(app.game);
-        if (r.dragonCount + r.eggCount <= 1) {
+        if (r.presentCount() + r.eggCount <= 1) {
             showToast(app, str::kStayHome);
         } else if (storeAway(app.game, app.careIndex)) {
             showToast(app, str::kEggAway);

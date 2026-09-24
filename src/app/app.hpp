@@ -14,6 +14,7 @@
 #include "core/props.hpp"
 #include "core/rng.hpp"
 #include "core/save.hpp"
+#include "core/wanderings.hpp"
 
 #ifndef EC_DEV
 #define EC_DEV 1  // dev builds show the budget overlay and the dev menu (SELECT)
@@ -33,7 +34,7 @@ struct Input {
     float rx = 0, ry = 0;
 };
 
-enum class SceneId : u8 { Title, PickStarter, Den, Map, Sanctuary, Vault, NestingStone, Count };
+enum class SceneId : u8 { Title, PickStarter, Den, Map, Sanctuary, Vault, NestingStone, Wanderings, Count };
 
 // Per-frame counters the renderer fills in; the debug overlay checks them against the
 // budgets in docs/tech/architecture.md section 1.
@@ -167,10 +168,17 @@ struct App {
     DenActor stoneActors[2];
     u32 stoneIds[2] = {};
     float stoneCourt = 0;
+    // The Wanderings: the dragon picked to go, and what the last one found (shown until it's
+    // been looked at).
+    int wanderPick = -1;
+    WanderFinds finds;
+    int findsFrom = -1;  // who found them (SaveData index), -1: nothing to show
 
     // Debug
     bool overlay = EC_DEV;
     bool devMenu = false;
+    u8 devPage = 0;
+    u32 devSteps = 0;  // dev: steps added to the pedometer (the emulator's never counts)
     RenderStats stats;
     u32 bottomTris = 0;  // last frame's bottom screen (the overlay is drawn before it)
     float frameMs = 16.7f;
@@ -198,6 +206,8 @@ void openMap(App& app);
 // Once a second from any scene where time runs: everyone's simulation, and the nesting pair's
 // egg when its day comes (with a toast).
 void tickWorld(App& app);
+// The 3DS pedometer's total step count (0 where there's none), plus the dev menu's steps.
+u32 stepCount(const App& app);
 
 // Saves to the next A/B slot; shows a toast if the SD card write fails.
 void saveNow(App& app);

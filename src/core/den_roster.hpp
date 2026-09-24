@@ -13,7 +13,9 @@ constexpr int kDenEggs = 2;     // DenLayout::kNests
 struct DenRoster {
     int dragon[kDenDragons];  // SaveData::dragons index by bed, -1: an empty bed
     int egg[kDenEggs];        // by egg nest
+    bool away[kDenDragons];   // its dragon is out on the Wanderings (the bed is kept for it)
     int dragonCount = 0, eggCount = 0;
+    int presentCount() const;  // dragons in the den right now (not away)
     int freeBed() const;   // the first empty bed, or -1
     int freeNest() const;  // the first empty nest, or -1
 };

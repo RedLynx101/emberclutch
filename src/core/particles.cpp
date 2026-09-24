@@ -148,7 +148,7 @@ void DenAmbience::update(Particles& fx, const DenLayout& den, float daylight, fl
         fx.emit(Fx::Mote, at + Vec3{(unit() - 0.5f) * 1.6f, (unit() - 0.5f) * 0.8f, 0}, 1);
     }
     // Glints: the hoard catches the light now and then.
-    glint += dt * (0.8f + 1.2f * daylight);
+    glint += dt * (0.8f + 1.2f * daylight) * (1.0f + hoard);
     for (; glint >= 1; glint -= 1) {
         const float a = unit() * 6.2832f, r = std::sqrt(unit());
         fx.emit(Fx::Glint, {den.hoard.x + std::cos(a) * r * 1.2f, den.hoard.y + std::sin(a) * r * 0.8f, 0.3f + 0.25f * (1 - r)}, 1);

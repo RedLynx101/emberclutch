@@ -38,6 +38,9 @@ struct SaveData {
     // settled; the egg comes the next day (core/breeding layDueEgg).
     u32 nestA = 0, nestB = 0;
     s32 nestDay = 0;
+    // Alpha 2: Gleam (the valley's money) and the den's hoard of trinkets (core/wanderings Trinket).
+    u32 gleam = 0;
+    u16 hoard[6] = {};
     Settings settings{};
     u16 dragonCount = 0;
     Dragon dragons[kMaxDragons];

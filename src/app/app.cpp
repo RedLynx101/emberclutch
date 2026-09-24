@@ -53,11 +53,21 @@ void resetForNewGame(App& app) {
     app.nameRoll = 0;
 }
 
+u32 stepCount(const App& app) {
+    u32 steps = 0;
+    if (R_FAILED(PTMU_GetTotalStepCount(&steps))) steps = 0;  // no pedometer (the emulator)
+    return steps + app.devSteps;
+}
+
 void tickWorld(App& app) {
     const s64 now = nowLocal(app);
     for (int i = 0; i < app.game.dragonCount; ++i) simulate(app.game.dragons[i], app.game.lastSim, now);
     app.game.lastSim = now;
     settleDen(app.game);
+    // The hoard glints more as it grows.
+    u32 trinkets = 0;
+    for (u16 n : app.game.hoard) trinkets += n;
+    app.ambience.hoard = trinkets > 60 ? 3.0f : trinkets / 20.0f;
     const int egg = layDueEgg(app.game, now, app.rng);  // the pair's egg, the day after they nested
     if (egg >= 0) {
         showToast(app, app.game.dragons[egg].location == Location::Den ? str::kNewEggNest : str::kNewEggVault);
@@ -76,10 +86,11 @@ void openMap(App& app) {
 void fixCare(App& app) {
     const SaveData& s = app.game;
     const int i = app.careIndex;
-    if (i >= 0 && i < s.dragonCount && s.dragons[i].location == Location::Den) return;
+    if (i >= 0 && i < s.dragonCount && s.dragons[i].location == Location::Den && s.dragons[i].wanderSince == 0) return;
     const DenRoster r = denRoster(s);
     app.careIndex = -1;
-    for (int b = 0; b < kDenDragons && app.careIndex < 0; ++b) app.careIndex = r.dragon[b];
+    for (int b = 0; b < kDenDragons && app.careIndex < 0; ++b)
+        if (!r.away[b]) app.careIndex = r.dragon[b];
     for (int n = 0; n < kDenEggs && app.careIndex < 0; ++n) app.careIndex = r.egg[n];
     if (app.careIndex < 0 && s.dragonCount > 0) app.careIndex = 0;
 }
@@ -87,7 +98,9 @@ void fixCare(App& app) {
 int careBed(const App& app) {
     if (app.careIndex < 0 || app.careIndex >= app.game.dragonCount) return -1;
     const Dragon& d = app.game.dragons[app.careIndex];
-    return d.location == Location::Den && d.stage != Stage::Egg && d.denSlot < kDenDragons ? d.denSlot : -1;
+    return d.location == Location::Den && d.stage != Stage::Egg && d.wanderSince == 0 && d.denSlot < kDenDragons
+               ? d.denSlot
+               : -1;
 }
 
 DenActor* careActor(App& app) {
@@ -105,7 +118,7 @@ void cycleCare(App& app, int dir) {
     const DenRoster r = denRoster(app.game);
     int order[kDenDragons + kDenEggs], n = 0, at = -1;
     for (int b = 0; b < kDenDragons; ++b)
-        if (r.dragon[b] >= 0) order[n++] = r.dragon[b];
+        if (r.dragon[b] >= 0 && !r.away[b]) order[n++] = r.dragon[b];
     for (int e = 0; e < kDenEggs; ++e)
         if (r.egg[e] >= 0) order[n++] = r.egg[e];
     if (n < 2) return;
@@ -137,6 +150,7 @@ const SceneFns& sceneFns(SceneId id) {
         case SceneId::Sanctuary: return kSanctuaryScene;
         case SceneId::Vault: return kVaultScene;
         case SceneId::NestingStone: return kNestingStoneScene;
+        case SceneId::Wanderings: return kWanderingsScene;
         default: return kTitleScene;
     }
 }

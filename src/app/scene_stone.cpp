@@ -26,7 +26,7 @@ int denOf(const App& app, Sex sex, int* out) {
     const DenRoster r = denRoster(app.game);
     int n = 0;
     for (int b = 0; b < kDenDragons; ++b)
-        if (r.dragon[b] >= 0 && app.game.dragons[r.dragon[b]].sex == sex) out[n++] = r.dragon[b];
+        if (r.dragon[b] >= 0 && !r.away[b] && app.game.dragons[r.dragon[b]].sex == sex) out[n++] = r.dragon[b];
     return n;
 }
 

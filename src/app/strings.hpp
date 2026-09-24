@@ -124,6 +124,23 @@ inline constexpr const char* kNestTogether = "Nest together";
 inline constexpr const char* kEggTomorrow = "They settle on the stone. An egg by tomorrow!";
 inline constexpr const char* kNewEggNest = "A new egg, warm in the nest!";
 inline constexpr const char* kNewEggVault = "A new egg! The nests are full: it's in the Cold Vault.";
+// The Wanderings (Alpha 2 WP4)
+inline constexpr const char* kWanderings = "The Wanderings";
+inline constexpr const char* kWhoComes = "Who comes along?";
+inline constexpr const char* kNoOneToWander = "Juveniles and older can come along: there's no one old enough in the den.";
+inline constexpr const char* kSetOff = "Set off";
+inline constexpr const char* kSetOffHint = "Close your 3DS and walk: your steps are counted.";
+inline constexpr const char* kOffWeGo = "Off you go together!";
+inline constexpr const char* kOutWandering = "%s is out on the trails.";
+inline constexpr const char* kStepsSoFar = "%lu steps so far";
+inline constexpr const char* kCallBack = "Call back";
+inline constexpr const char* kIsBack = "%s is back!";
+inline constexpr const char* kWalked = "%lu steps together";
+inline constexpr const char* kFoundGleam = "Gleam: +%lu";
+inline constexpr const char* kFoundNothing = "Nothing this time: a longer walk finds more.";
+inline constexpr const char* kFoundWildEgg = "A wild %s egg!";
+inline constexpr const char* kToTheHoard = "The trinkets go on the hoard.";
+inline constexpr const char* kLovely = "Lovely";
 inline constexpr const char* kDenFull = "The den is full (three beds).";
 inline constexpr const char* kEggToVault = "The nests are full: it went to the Vault.";
 

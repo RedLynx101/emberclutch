@@ -14,6 +14,12 @@ int DenRoster::freeBed() const {
     return -1;
 }
 
+int DenRoster::presentCount() const {
+    int n = 0;
+    for (int b = 0; b < kDenDragons; ++b) n += dragon[b] >= 0 && !away[b];
+    return n;
+}
+
 int DenRoster::freeNest() const {
     for (int n = 0; n < kDenEggs; ++n)
         if (egg[n] < 0) return n;
@@ -24,6 +30,7 @@ DenRoster denRoster(const SaveData& s) {
     DenRoster r;
     for (int& i : r.dragon) i = -1;
     for (int& i : r.egg) i = -1;
+    for (bool& a : r.away) a = false;
     for (int i = 0; i < s.dragonCount; ++i) {
         const Dragon& d = s.dragons[i];
         if (!inDen(d)) continue;
@@ -34,6 +41,7 @@ DenRoster denRoster(const SaveData& s) {
             }
         } else if (d.denSlot < kDenDragons && r.dragon[d.denSlot] < 0) {
             r.dragon[d.denSlot] = i;
+            r.away[d.denSlot] = d.wanderSince != 0;
             ++r.dragonCount;
         }
     }
@@ -99,7 +107,7 @@ int vaultCount(const SaveData& s) {
 bool storeAway(SaveData& s, int index) {
     if (index < 0 || index >= s.dragonCount) return false;
     Dragon& d = s.dragons[index];
-    if (!inDen(d)) return false;
+    if (!inDen(d) || d.wanderSince != 0) return false;
     if (isEgg(d)) {
         if (vaultCount(s) >= kVaultEggs) return false;
         d.location = Location::Vault;

@@ -92,11 +92,13 @@ bool debugMenu(App& app, const Input& in) {
     if (!EC_DEV) return false;
     if (in.down & KEY_SELECT) app.devMenu = !app.devMenu;
     if (!app.devMenu) return false;
+    if (in.down & (KEY_L | KEY_R)) app.devPage = static_cast<u8>(app.devPage ^ 1);
 
     Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDenPlum, theme::rgba(20, 14, 28));
-    text(app, "DEV MENU  (SELECT to close)", 160, 4, 0.5f, theme::kClutchGold);
+    text(app, app.devPage ? "DEV MENU 2/2  (L/R page, SELECT close)" : "DEV MENU 1/2  (L/R page, SELECT close)", 160,
+         4, 0.5f, theme::kClutchGold);
 
     struct Item {
         const char* label;
@@ -108,11 +110,16 @@ bool debugMenu(App& app, const Input& in) {
         {"Next activity", 12}, {"Add dragon", 11}, {"Overlay", 7}, {"Save now", 8},
         {"Reset save", 9}, {"Dusty / bath", 13}, {"Add egg", 14}, {"Breed-ready", 15},
     };
-    constexpr int kCount = sizeof(kItems) / sizeof(kItems[0]);
+    static constexpr Item kItems2[] = {
+        {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22},
+    };
+    const Item* items = app.devPage ? kItems2 : kItems;
+    const int kCount = app.devPage ? static_cast<int>(sizeof(kItems2) / sizeof(kItems2[0]))
+                                   : static_cast<int>(sizeof(kItems) / sizeof(kItems[0]));
     for (int i = 0; i < kCount; ++i) {
         const Rect r{8.0f + (i % 2) * 156.0f, 20.0f + (i / 2) * 25.0f, 148, 22};
-        if (!button(app, r, kItems[i].label, in)) continue;
-        switch (kItems[i].id) {
+        if (!button(app, r, items[i].label, in)) continue;
+        switch (items[i].id) {
             case 0: app.game.devOffset += kHour; break;
             case 1: app.game.devOffset += kDay; break;
             case 2: app.game.devOffset += 7 * kDay; break;
@@ -126,6 +133,9 @@ bool debugMenu(App& app, const Input& in) {
             case 10: nextBreed(d, app.rng); break;
             case 11: devAddDragon(app, false); break;
             case 14: devAddDragon(app, true); break;
+            case 20: app.devSteps += 1000; break;
+            case 21: app.devSteps += 10000; break;
+            case 22: app.game.gleam += 100; break;
             case 15:  // an adult ready for the Nesting Stone: grown, trusting, content, rested
                 while (d.stage != Stage::Egg && d.stage != Stage::Adult) forceNextStage(d, now);
                 if (d.bond < 400) d.bond = 400;

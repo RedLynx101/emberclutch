@@ -31,7 +31,8 @@ constexpr Place kPlaces[] = {
     {"The Nesting Stone", "Where a pair of adults settles, and an egg comes the next day.", 214, 176,
      SceneId::NestingStone, true},
     {"The Market", "Food, toys and treasures, and an egg of the day.", 92, 182, SceneId::Den, false},
-    {"The Wanderings", "Trails to walk with your dragon, and what you find.", 276, 138, SceneId::Den, false},
+    {"The Wanderings", "Take a dragon along on your walks: it finds things on the way.", 276, 138,
+     SceneId::Wanderings, true},
 };
 constexpr int kPlaceCount = sizeof(kPlaces) / sizeof(kPlaces[0]);
 
@@ -132,6 +133,14 @@ void drawPlaceView(App& app, int p) {
             C2D_DrawTriangle(90, 210, col(170, 200, 230), 330, 210, col(150, 180, 214), 220, 30, col(230, 244, 255), 0);
             C2D_DrawCircleSolid(210, 170, 0, 26, col(96, 120, 160));
             C2D_DrawCircleSolid(210, 170, 0, 20, col(70, 90, 130));
+            break;
+        case 5:  // the trailhead: a signpost and the path into the hills
+            for (int i = 0; i < 26; ++i) {
+                const float t = i / 25.0f;
+                C2D_DrawCircleSolid(60 + 300 * t, 214 - 90 * t + 14 * std::sin(t * 9), 0, 5 - 3 * t, col(196, 164, 116));
+            }
+            C2D_DrawRectSolid(96, 150, 0, 6, 56, col(120, 86, 60));
+            C2D_DrawRectSolid(78, 152, 0, 48, 14, col(170, 124, 80));
             break;
         case 3:  // the nesting stone on its hill
             C2D_DrawEllipseSolid(90, 150, 0, 220, 50, col(120, 116, 124));

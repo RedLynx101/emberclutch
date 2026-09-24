@@ -49,6 +49,7 @@ private:
 // and glints twinkling on the hoard.
 struct DenAmbience {
     float ember = 0, mote = 0, glint = 0;  // emission accumulators
+    float hoard = 0;  // how big the hoard has grown (0..3): it glints more often
     Rng rng{0xA1B2u};
     // daylight: 1 at noon .. 0 at night (the day set's weight, core/daylight).
     void update(Particles& fx, const DenLayout& den, float daylight, float dt);

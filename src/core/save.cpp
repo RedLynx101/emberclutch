@@ -117,6 +117,8 @@ void writeDragon(Writer& w, const Dragon& d) {
     w.u8v(d.eggTurns);  // egg care (added 2026-09-24)
     w.s64v(d.lastTurnedAt);
     w.u8v(d.denSlot);  // Alpha 2: its bed or nest in the den
+    w.s64v(d.wanderSince);  // Alpha 2: out on the Wanderings
+    w.u32v(d.wanderSteps);
     w.patchU16(sizeAt, static_cast<u16>(w.pos() - start));
 }
 
@@ -171,6 +173,10 @@ bool readDragon(Reader& r, Dragon& d) {
         d.lastTurnedAt = r.s64v();
     }
     if (r.pos() + 1 <= start + size) d.denSlot = r.u8v();  // older records: slot 0 (den_roster sorts it out)
+    if (r.pos() + 12 <= start + size) {  // older records: at home
+        d.wanderSince = r.s64v();
+        d.wanderSteps = r.u32v();
+    }
     r.seek(start + size);  // skip fields from newer builds
 
     if (!inRange(plan, 2) || !inRange(sex, 2) || !inRange(personality, static_cast<u8>(Personality::Count)) ||
@@ -223,6 +229,8 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
     w.u32v(data.nestA);  // Alpha 2: the pair at the Nesting Stone
     w.u32v(data.nestB);
     w.s32v(data.nestDay);
+    w.u32v(data.gleam);  // Alpha 2: Gleam and the hoard
+    for (u16 n : data.hoard) w.u16v(n);
     w.patchU16(at, static_cast<u16>(w.pos() - start));
 
     // Settings section
@@ -308,6 +316,10 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
         tmp.nestA = r.u32v();
         tmp.nestB = r.u32v();
         tmp.nestDay = r.s32v();
+    }
+    if (sectionSize >= 16 + 8 + 8 + 4 + 12 + 4 + 12) {  // older saves: no Gleam, an empty hoard
+        tmp.gleam = r.u32v();
+        for (u16& n : tmp.hoard) n = r.u16v();
     }
     r.seek(start + sectionSize);
 

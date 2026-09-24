@@ -1335,7 +1335,23 @@ void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, floa
         end3D();
         return;
     }
-    if (!pose(app, d, nullptr, now, 0, g_posed)) return;
+    // Standing at ease: the idle clip (not the rest pose, whose wings are spread), blinking.
+    static DenActor show;
+    static u32 showId = 0;
+    static int showForm = -1;
+    const int form = growthFor(d.stage, stageProgress(d, now)).form;
+    const int* clips = clipIndex(form);
+    if (g_animsOk && (showId != d.id || showForm != form)) {
+        show = DenActor{};
+        show.anim.play(clips[static_cast<int>(ClipId::Idle)], 0.0f, true);
+        showId = d.id;
+        showForm = form;
+    }
+    if (g_animsOk) {
+        show.anim.update(g_anims, app.dt, nullptr, 0);
+        show.eyes.update(0.0f, app.dt);
+    }
+    if (!pose(app, d, g_animsOk ? &show : nullptr, now, 0, g_posed)) return;
     C3D_Mtx model;
     modelMatrix(g_posed, model);
     const Vec3 hips = apply(model, g_posed.poseMat[0].translation());

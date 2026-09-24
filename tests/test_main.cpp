@@ -11,6 +11,7 @@
 #include "core/dragon.hpp"
 #include "core/genetics.hpp"
 #include "core/den_roster.hpp"
+#include "core/wanderings.hpp"
 #include "core/save.hpp"
 
 #include <vector>
@@ -305,6 +306,74 @@ TEST(the_nesting_stone) {
     CHECK(!settleToNest(s, 0, 1, tomorrow));  // they rest for three days
 }
 
+// The Wanderings (Alpha 2 WP4, GDD 11): one juvenile-or-older dragon at a time; finds grow
+// with the steps (more for adults and the curious); Gleam and trinkets go home; now and then a
+// wild egg, mostly the breeds you can't start with; muddy paws after.
+TEST(the_wanderings) {
+    static SaveData s;
+    s = SaveData{};
+    Rng rng(31);
+    Dragon baby = readyAdult(1, Element::Ember, Sex::Male, rng);
+    baby.stage = Stage::Hatchling;
+    Dragon young = readyAdult(2, Element::Tide, Sex::Female, rng);
+    young.stage = Stage::Juvenile;
+    young.denSlot = 1;
+    s.dragons[s.dragonCount++] = baby;
+    s.dragons[s.dragonCount++] = young;
+    s.nextId = 3;
+    CHECK(cantWander(s, 0) != nullptr && !setOff(s, 0, 1000, kT0));  // too little
+    CHECK(cantWander(s, 1) == nullptr && setOff(s, 1, 1000, kT0));
+    CHECK(wandererIndex(s) == 1 && cantWander(s, 0) != nullptr);  // one at a time
+    const DenRoster r = denRoster(s);
+    CHECK(r.dragonCount == 2 && r.presentCount() == 1 && r.away[1]);  // it keeps its bed
+    CHECK(!storeAway(s, 1));
+    CHECK(stepsSince(s.dragons[1], 4000) == 3000 && stepsSince(s.dragons[1], 200) == 200);  // a reset counter
+
+    CHECK(rollFinds(young, 0, rng).gleam == 0);
+    // More steps, more finds; the curious and the grown find more.
+    auto worth = [&](const Dragon& d, u32 steps) {
+        u32 total = 0;
+        for (int i = 0; i < 200; ++i) {
+            const WanderFinds f = rollFinds(d, steps, rng);
+            total += f.gleam;
+            for (int k = 0; k < kTrinkets; ++k) total += f.trinkets[k] * trinketValue(static_cast<Trinket>(k));
+        }
+        return total;
+    };
+    Dragon curious = young;
+    curious.personality = Personality::Curious;
+    curious.stage = Stage::Adult;
+    Dragon plain = young;
+    plain.personality = Personality::Brave;
+    CHECK(worth(plain, 4000) > worth(plain, 1000) * 3);
+    CHECK(worth(curious, 4000) > worth(plain, 4000) * 1.3f);
+
+    const WanderFinds f = comeBack(s, 1, 1000 + 5000, kT0 + 3 * kHour, rng);
+    CHECK(f.steps == 5000 && wandererIndex(s) == -1 && s.dragons[1].wanderSince == 0);
+    u32 trinkets = 0;
+    for (int k = 0; k < kTrinkets; ++k) {
+        trinkets += f.trinkets[k];
+        CHECK(s.hoard[k] == f.trinkets[k]);
+    }
+    CHECK(s.gleam == f.gleam && f.gleam + trinkets > 0);
+    CHECK(s.dragons[1].dirt[kRegionBelly] > 50 && s.dragons[1].dirt[kRegionBelly] > s.dragons[1].dirt[kRegionBack]);
+
+    // Long trips sometimes bring a wild egg, mostly Grove, Frost or Lumen.
+    int eggs = 0, newBreeds = 0;
+    for (int trip = 0; trip < 80; ++trip) {
+        s.dragons[1].wanderSince = 0;
+        CHECK(setOff(s, 1, 0, kT0));
+        const WanderFinds w = comeBack(s, 1, 10000, kT0 + kHour, rng);
+        if (w.wildEgg >= 0) {
+            ++eggs;
+            newBreeds += s.dragons[w.wildEgg].genome.elementA >= 3;
+            CHECK(s.dragons[w.wildEgg].stage == Stage::Egg);
+        }
+    }
+    std::printf("  80 long trips: %d wild eggs, %d of the other breeds\n", eggs, newBreeds);
+    CHECK(eggs >= 3 && eggs <= 40 && newBreeds * 2 > eggs);
+}
+
 TEST(egg_sexes_are_roughly_even) {
     Rng rng(10);
     int males = 0;
@@ -326,6 +395,8 @@ static SaveData& sampleSave() {
     s.nestA = 11;
     s.nestB = 12;
     s.nestDay = 77;
+    s.gleam = 1234;
+    s.hoard[2] = 5;
     Rng rng(123);
     s.dragonCount = 5;
     for (int i = 0; i < 5; ++i) {
@@ -340,6 +411,8 @@ static SaveData& sampleSave() {
         std::snprintf(d.name, sizeof(d.name), "Drake%d", i);
         d.eggTurns = static_cast<u8>(i % 3);
         d.denSlot = static_cast<u8>(i % 3);
+        d.wanderSince = i == 2 ? kT0 + 5 : 0;
+        d.wanderSteps = static_cast<u32>(i * 100);
         d.lastTurnedAt = kT0 + i * kHour;
         d.motherId = i;
         d.location = static_cast<Location>(i % 2);
@@ -356,7 +429,8 @@ static bool sameDragon(const Dragon& a, const Dragon& b) {
            a.personality == b.personality && a.warmth == b.warmth && a.dayLowestSum == b.dayLowestSum &&
            a.upset == b.upset && a.napping == b.napping &&
            std::memcmp(a.dirt, b.dirt, sizeof(a.dirt)) == 0 && a.eggTurns == b.eggTurns &&
-           a.lastTurnedAt == b.lastTurnedAt && a.denSlot == b.denSlot;
+           a.lastTurnedAt == b.lastTurnedAt && a.denSlot == b.denSlot && a.wanderSince == b.wanderSince &&
+           a.wanderSteps == b.wanderSteps;
 }
 
 // Dust settles over a day or two, faster on the belly than the wings; grooming, brushing a
@@ -474,14 +548,14 @@ TEST(save_round_trip) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 1 + 2));  // + the nesting pair
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 1 + 12 + 2));
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
     CHECK(info.seq == 7 && info.savedAt == kT0 + 99 && info.version == kSaveVersion);
     CHECK(std::strcmp(out.playerName, "Noah") == 0);
     CHECK(out.lastSim == s.lastSim && out.devOffset == s.devOffset && out.nextId == 42);
-    CHECK(out.nestA == 11 && out.nestB == 12 && out.nestDay == 77);
+    CHECK(out.nestA == 11 && out.nestB == 12 && out.nestDay == 77 && out.gleam == 1234 && out.hoard[2] == 5);
     CHECK(out.settings.musicVolume == 55 && out.settings.seenHatch == 1);
     CHECK(out.dragonCount == 5);
     for (int i = 0; i < 5; ++i) CHECK(sameDragon(out.dragons[i], s.dragons[i]));
@@ -562,6 +636,7 @@ int main() {
     RUN(breeding_needs_one_male_and_one_female);
     RUN(breeding_requirements);
     RUN(the_nesting_stone);
+    RUN(the_wanderings);
     RUN(egg_sexes_are_roughly_even);
     RUN(the_den_has_three_beds_and_two_nests);
     RUN(the_sanctuary_and_the_vault);

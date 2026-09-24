@@ -2,7 +2,7 @@
 
 Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 done: the den of three dragons
 and two eggs (D53), and their life together. WP2 done (the Sanctuary and Cold Vault), with
-a first world map. WP3 done (breeding at the Nesting Stone). Goal (D31): complete through Alpha 2. Scope and assets:
+a first world map. WP3 done (breeding at the Nesting Stone). WP4 done (the Wanderings). Goal (D31): complete through Alpha 2. Scope and assets:
 [content & assets](content-and-assets.md) (A2 rows); screens: [screens & flow](../design/screens-and-flow.md).
 
 **The order matters** (Noah, 2026-09-24): everything that doesn't depend on how the
@@ -73,6 +73,13 @@ Worked through alone, package by package (D49).
 - The step counter (PTMU), a trail map with progress, departure and return scenes.
 - Finds (trinkets, Gleam), the hoard pile growing in the den, rare wild eggs, and mud
   spots on the dragon afterwards (cleaned in the bath, D46).
+- *Done:* `src/core/wanderings.*` (one juvenile-or-older dragon at a time, keeping its bed;
+  a chance of a find every 400 steps, more for adults and the curious; Gleam and six
+  trinkets to the hoard; a wild egg now and then on long walks, mostly Grove, Frost and
+  Lumen; muddy legs, belly and tail; PC-tested) and `src/app/scene_wander.cpp` (the
+  trailhead, the trail map with your steps, the finds). The 3DS pedometer (`ptmu`); the
+  dev menu's second page adds steps (the emulator's never counts). The hoard glints more as
+  it grows; the showcase now plays the idle clip. `tests/autotest/wander.txt`.
 
 ### WP5 — Market, Gleam and the pouch
 - The Market scene and shop UI (buy and sell), the pouch, Gleam; the daily egg.

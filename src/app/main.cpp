@@ -76,6 +76,7 @@ int main() {
     care::loadSprites();            // the care tray's tools and foods (built into the program)
 
     audio::init();  // silent if the DSP firmware is missing
+    ptmuInit();     // the pedometer, for the Wanderings
     if (loadGame(app.game, app.slots) && hasDragon(app)) {
         const s64 now = nowLocal(app);
         for (u16 i = 0; i < app.game.dragonCount; ++i)
@@ -144,6 +145,7 @@ int main() {
     if (hasDragon(app) && !app.quit) saveNow(app);  // (Save & quit has just saved)
     autotest::finish();
     audio::shutdown();
+    ptmuExit();
     r3d::shutdown();
     care::freeSprites();
     freeFonts();

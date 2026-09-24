@@ -59,7 +59,7 @@ While waiting on a review, work continues on the non-art packages (engine, save,
 - *Verify:* PC parity test (the C++ rig reproduces Blender's deformation), triangle-budget
   test; `.ecm` sizes logged by the exporter.
 
-### WP4 — Renderer
+### WP4 — Renderer ✅ (LOD1 triangle count to confirm in the emulator)
 - `shaders/skinned.v.pica` (2 weights, ≤ 24 bones); mask-color TEV setup
   (architecture §4); toon LUT + rim; heartglow emissive with white-hot core and pulse;
   static-mesh path for the den and props.
@@ -73,7 +73,7 @@ While waiting on a review, work continues on the non-art packages (engine, save,
 - ~25 A1 clips authored in Blender scripts (content inventory §1.4). **R3.**
 - *Verify:* every state reachable from the dev menu; no foot-sliding in walk/trot.
 
-### WP6 — Den scene ⟂ WP4
+### WP6 — Den scene ⟂ WP4 ✅ (review R4 sent; emulator check queued)
 - Den model (Blender script): cave room, sky opening, 2 nests, rug, hearth, hoard pile,
   shelves, sulk nook; vertex-color lighting sets for day / evening / night.
 - Particles: embers, sparkles, hearts, crumbs, Zzz, dust.

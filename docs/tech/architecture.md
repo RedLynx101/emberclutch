@@ -21,7 +21,7 @@ Status: **v0.2** (2026-09-23)
 | Dragon triangles | LOD0 ≤ 3,000 for the heaviest gene mix (grown 2,994, hatchling 2,778) · LOD1 ≤ 1,200 (1,123 / 1,047), both checked by a PC test. A full den draws the cared-for dragon at LOD0 and the others at LOD1 (~4,850 for three adults) |
 | Bones per draw | ≤ 24 (vertex shader constant limit, see §4) |
 | Dragon colour | Per-vertex palette paint (no texture per variant); a shared scale-detail texture comes with texturing |
-| Environment | Vertex-colored, ≤ 8k visible triangles, fog-limited |
+| Environment | Vertex-coloured. The den room is 2,251 triangles (a PC test holds it to 8,000 − 3,000 − 2 × 1,200 = 2,600, so a full den frame stays under 8k) |
 | Audio | Music streamed from romfs, sound effects preloaded, ≤ 8 voices |
 
 ## 2. Layers
@@ -112,7 +112,9 @@ the whole simulation deterministic and testable without hardware (`make -C tests
   animation together. Walk/trot speeds are **measured from each body's stride**
   (`locomotionSpeed`), so feet never skate.
 - `tools/blender/preview_anims.py` renders clips on the Blender rig with the same math
-  (review R3). The den layout (nest, nook, radius) lives in `DenLayout` until WP6's room.
+  (review R3). The den's spots (nest, nook, rug, hearth, hoard) and its solid obstacles live
+  in `DenLayout`; dragons pick wander targets clear of the obstacles, steer around one in
+  the way, and are pushed out if a leap lands them in one.
 
 ### Coloring (no texture per variant) — as built in WP3/WP4
 
@@ -142,7 +144,32 @@ multiplied in (after the R2 texturing review).
   blends each dragon's framing (80%) with the adult's (20%): babies read smaller than
   adults but still fill the screen. The bottom screen draws a head-and-chest close-up
   under the pet pad (the petting view WP7 builds on).
-- A static-mesh path (den props, environment) comes with the den scene (WP6).
+- The den room draws first with its own program (see below); the dragons follow in the
+  same pass.
+
+### The den room (as built in WP6)
+
+- **A cutaway diorama** (`tools/blender/den_model.py` → `romfs/models/den.esm`, D40): a
+  round cave (radius 9.5) whose walls go all the way round and face inward. The den camera
+  (always from the front-left, following the dragons) is often outside the wall; back-face
+  culling hides the near side, and the floor runs on past the walls, fading into the
+  backdrop colour, so the frame never shows an edge. Solid props stand in the back two
+  thirds, where they cannot hide a dragon. A PC test checks the room against `DenLayout`.
+- **Baked light, three sets.** Every vertex stores its colour for day, evening and night
+  (ambient + sky fill + the pool under the skylight + the hearth, with a little occlusion).
+  `core/daylight` picks two sets and a blend from the clock (dawn 05:30–08:00, dusk
+  17:30–21:30); `static.v.pica` mixes them per vertex (no lighting on the GPU). Each set's
+  colour array is its own linear buffer, so the blend is just two buffer pointers and a
+  uniform.
+- **Draw order:** room (one draw) → ambient particles (2D) → dragons → the additive glows
+  (sunbeam and flames: camera-facing ribbons, depth-tested without depth writes; the flames
+  flicker through a tint uniform) → care particles (2D). Three extra draws in all.
+- **Dragons follow the light:** the material ambient and key colour come from
+  `dragonLight(blend)` (midday = the look the dragons were designed in), scaled per channel
+  by the room's floor light where the dragon stands relative to the rug's
+  (`StaticScene::lightNear`): darker in the nook, warmer by the hearth, brighter in the sun.
+- With no dragon out yet (an egg), the camera frames the egg nest and the 2D egg is drawn
+  at its projected position (until the egg model).
 
 Rare traits change the palette constants or add a lookup table (Iridescent).
 
@@ -151,7 +178,11 @@ Rare traits change the palette constants or add a lookup table (Iridescent).
 - Vertex-colored meshes with baked lighting. Gradient sky dome, linear fog.
 - Skyreach Valley: height-field chunks (32×32 quads), about 9 visible, culled against the
   view, with fog hiding the edge.
-- Particles: pooled camera-facing sprites through citro2d-style batching on the top screen.
+- Particles (as built in WP6): `core/particles` simulates a fixed pool of 96 in den space
+  (embers, sunbeam motes, hoard glints, hearts, Zzz, crumbs, sparkles, dust puffs); the
+  renderer projects them with the den camera and draws them with citro2d, ambient ones
+  behind the dragons and care effects over them. When the pool is full, care effects
+  replace ambient ones.
 - Stereoscopic 3D: optional second eye render. Can be switched off per scene if it
   doesn't fit the budget.
 
@@ -168,6 +199,7 @@ tools/blender/dragon_model.py  (two forms: metaball hatchling + skin-modifier gr
         |  imported by
 tools/blender/export_dragon.py --out-dir romfs/models --reference-dir tests/data
         -> romfs/models/{hatchling,grown}.ecm + tests/data/{hatchling,grown}_reference.ecr
+tools/blender/den_model.py --out romfs/models/den.esm   (the den room, baked lighting sets)
 tools/blender/sheet.py          (tiles review renders into docs/art/reviews/*.png)
 Suno WAV --tools/audio/make_loop.py (ffmpeg)--> romfs/music/*.ogg (LOOPSTART/LOOPLENGTH tags)
 tools/audio/make_placeholder_sfx.py         --> romfs/sfx/*.wav
@@ -191,6 +223,10 @@ tools/audio/make_placeholder_sfx.py         --> romfs/sfx/*.wav
   poses/growth/build cases per form; `tests/test_model.cpp` checks the C++ rig
   (`src/core/skeleton.cpp`, `rig.cpp`) reproduces them (body < 0.001, wings < 0.006,
   parts exact, on a ~6-unit adult).
+- **`.esm` v1** (`tools/blender/den_model.py` → `src/core/static_mesh.cpp`): `ESM1`,
+  version, part count, lighting-set count; a backdrop colour per set; per part a name,
+  flags (additive, flicker), float3 positions, RGBA8 colours per set and u16 indices.
+  Opaque parts come first so the room is one draw.
 - **`.eca` v1** (`tools/anim/eca.py` → `src/core/anim.cpp`): bone names; per clip name,
   fps, frames, loop/root flags, locomotion speed; per bone a mode (none / constant /
   animated) and int16 quaternions; optional root track; event markers. Built by

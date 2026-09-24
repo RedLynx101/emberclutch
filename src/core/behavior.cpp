@@ -11,6 +11,8 @@ constexpr float kSteerRate = 150.0f * kPi / 180.0f;  // steering while walking, 
 constexpr float kPounceLength = 1.3f;                // leap distance, adult units
 constexpr float kPounceFrom = 0.65f, kPounceTo = 1.05f;  // airborne part of the "pounce" clip, seconds
 constexpr float kPetHold = 1.2f;                     // a petting reaction outlasts the last stroke by this
+constexpr float kClearance = 0.8f;                   // body room around obstacles (adult units, x size)
+constexpr float kWanderClearance = 1.6f;             // wander targets keep further off
 
 constexpr const char* kActivityNames[] = {
     "Idle", "LookAround", "Scratch", "Wander", "Sit", "Lie", "Yawn", "TailWag", "Flutter",
@@ -43,6 +45,14 @@ float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : 
 float headingTo(Vec2 from, Vec2 to) { return std::atan2(to.x - from.x, -(to.y - from.y)); }
 
 float distance(Vec2 a, Vec2 b) { return std::hypot(a.x - b.x, a.y - b.y); }
+
+// Distance from p to the segment a-b.
+float segmentDistance(Vec2 a, Vec2 b, Vec2 p) {
+    const float dx = b.x - a.x, dy = b.y - a.y;
+    const float len2 = dx * dx + dy * dy;
+    const float t = len2 > 1e-6f ? clampf(((p.x - a.x) * dx + (p.y - a.y) * dy) / len2, 0.0f, 1.0f) : 0.0f;
+    return distance(p, {a.x + dx * t, a.y + dy * t});
+}
 
 bool ambient(Activity a) { return a <= Activity::Flutter; }
 bool sulking(Activity a) { return a == Activity::GoSulk || a == Activity::Sulk || a == Activity::MakeUp; }
@@ -82,12 +92,41 @@ bool DenBehavior::turnTo(float goal, float dt) {
     return false;
 }
 
+bool DenBehavior::clearAt(Vec2 p, float margin) const {
+    for (const DenObstacle& o : den.obstacles)
+        if (distance(p, o.at) < o.radius + margin) return false;
+    return true;
+}
+
+bool DenBehavior::clearPath(Vec2 a, Vec2 b, float margin) const {
+    for (const DenObstacle& o : den.obstacles)
+        if (segmentDistance(a, b, o.at) < o.radius + margin) return false;
+    return true;
+}
+
+Vec2 DenBehavior::steerTarget(Vec2 goal) const {
+    const float margin = kClearance * size;
+    for (const DenObstacle& o : den.obstacles) {
+        const float r = o.radius + margin;
+        if (distance(goal, o.at) < r || segmentDistance(pos, goal, o.at) >= r) continue;
+        const float dx = goal.x - pos.x, dy = goal.y - pos.y;
+        const float len = std::hypot(dx, dy);
+        if (len < 1e-4f) continue;
+        // Pass just outside it, on the side of the path the dragon is already on.
+        const Vec2 left{-dy / len, dx / len};
+        const float s = (o.at.x - pos.x) * left.x + (o.at.y - pos.y) * left.y > 0 ? -1.0f : 1.0f;
+        return {o.at.x + left.x * s * (r + 0.3f), o.at.y + left.y * s * (r + 0.3f)};
+    }
+    return goal;
+}
+
 bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
     const float dist = distance(pos, goal);
     if (dist < 0.2f * moveScale + 0.05f) return true;
-    const float err = wrapAngle(headingTo(pos, goal) - heading);
-    if (std::fabs(err) > 0.7f) {  // face the goal first
-        turnTo(headingTo(pos, goal), dt);
+    const Vec2 via = steerTarget(goal);
+    const float err = wrapAngle(headingTo(pos, via) - heading);
+    if (std::fabs(err) > 0.7f) {  // face the way first
+        turnTo(headingTo(pos, via), dt);
         return false;
     }
     heading = wrapAngle(heading + clampf(err, -kSteerRate * dt, kSteerRate * dt));
@@ -108,12 +147,14 @@ void DenBehavior::start(Activity a) {
         case Activity::LookAround: setClip(ClipId::LookAround, 0.3f, true); break;
         case Activity::Scratch: setClip(ClipId::Scratch, 0.3f, true); break;
         case Activity::Wander: {
-            // Somewhere else on the floor, not too near.
-            for (int tries = 0; tries < 8; ++tries) {
+            // Somewhere else on the floor, not too near, clear of the hearth and the hoard.
+            bool found = false;
+            for (int tries = 0; tries < 12 && !found; ++tries) {
                 const float ang = between(rng, -kPi, kPi), r = den.radius * std::sqrt(unit(rng)) * 0.8f;
                 target = {den.home.x + std::sin(ang) * r, den.home.y + std::cos(ang) * r};
-                if (distance(target, pos) > den.radius * 0.35f) break;
+                found = distance(target, pos) > den.radius * 0.35f && clearAt(target, kWanderClearance * size);
             }
+            if (!found) start(Activity::LookAround);
             break;
         }
         case Activity::Sit: setClip(ClipId::Sit, 0.3f, true); timer = between(rng, 6.0f, 14.0f); break;
@@ -192,6 +233,7 @@ void DenBehavior::chooseAmbient(const Dragon& d, float moveScale) {
 
 void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt) {
     speed = 0;
+    size = moveScale;
     if (petTimer > 0) petTimer -= dt;
     const bool bedtime = d.napping || night;
 
@@ -322,11 +364,18 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
             break;
     }
 
-    // Stay on the floor.
+    // Stay on the floor, and out of the solid things on it.
     const float r = distance(pos, den.home);
     if (r > den.radius) {
         pos.x = den.home.x + (pos.x - den.home.x) * den.radius / r;
         pos.y = den.home.y + (pos.y - den.home.y) * den.radius / r;
+    }
+    for (const DenObstacle& o : den.obstacles) {
+        const float room = o.radius + kClearance * size, d = distance(pos, o.at);
+        if (d < room && d > 1e-4f) {
+            pos.x = o.at.x + (pos.x - o.at.x) * room / d;
+            pos.y = o.at.y + (pos.y - o.at.y) * room / d;
+        }
     }
     clipDone = false;  // consumed
 }

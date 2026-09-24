@@ -25,3 +25,4 @@ extern int g_checks;
 void runModelTests();  // tests/test_model.cpp
 void runAnimTests();   // tests/test_anim.cpp
 void runBehaviorTests();  // tests/test_behavior.cpp
+void runDenTests();       // tests/test_den.cpp

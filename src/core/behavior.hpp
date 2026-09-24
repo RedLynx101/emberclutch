@@ -10,12 +10,27 @@
 
 namespace ec {
 
-// The den floor in adult units, around the origin (the room model in WP6 uses these spots).
+// Something solid on the den floor (hearth, egg nest, hoard): dragons walk around it.
+struct DenObstacle {
+    Vec2 at;
+    float radius;
+};
+
+// The den floor in adult units, around the origin; the camera looks in from -Y.
+// tools/blender/den_model.py builds the room (romfs/models/den.esm) around the same spots:
+// keep them in sync (tests/test_den.cpp checks the two against each other).
 struct DenLayout {
-    float radius = 4.2f;        // walkable circle
-    Vec2 napSpot{2.4f, 1.8f};   // the nest
-    Vec2 sulkNook{-3.0f, 2.3f}; // a shadowy corner
-    Vec2 home{0.0f, 0.0f};      // where it comes to greet you and to eat
+    static constexpr int kObstacles = 3;
+    float radius = 6.0f;          // walkable circle around home (the room's walls stand at 9.5)
+    Vec2 napSpot{4.4f, 3.6f};     // the sleeping nest
+    Vec2 eggNest{5.4f, -1.6f};    // the egg nest, warm by the hearth
+    Vec2 sulkNook{-4.6f, 3.0f};   // a shadowy alcove (a sulking dragon faces the rocks, +Y)
+    Vec2 home{0.0f, 0.6f};        // the rug: where it greets you and eats
+    Vec2 hearth{7.9f, 0.8f};
+    Vec2 hoard{2.4f, 7.4f};
+    Vec2 sunSpot{1.0f, 4.6f};     // where the skylight's beam meets the floor
+    Vec3 skylight{1.91f, 8.97f, 4.8f};
+    DenObstacle obstacles[kObstacles] = {{{7.9f, 0.8f}, 1.5f}, {{5.4f, -1.6f}, 1.2f}, {{2.4f, 7.4f}, 1.6f}};
 };
 
 enum class Activity : u8 {
@@ -61,6 +76,7 @@ struct DenBehavior {
     // Ground speeds (den units per second) that match the walk and trot cycles for this
     // dragon's body, so its feet stay planted (see locomotionSpeed in core/den_actor).
     float walkSpeed = 0.55f, trotSpeed = 1.8f;
+    float size = 1.0f;  // the last moveScale: how much room the body needs around obstacles
     DenLayout den;
     Rng rng{1};
 
@@ -75,11 +91,16 @@ struct DenBehavior {
     // How much the dragon looks at the player right now (0..1): full when idle or greeting,
     // none while eating, sleeping or sulking.
     float lookWeight() const;
+    // True if a dragon of this size can stand at p / walk straight from a to b without
+    // touching an obstacle.
+    bool clearAt(Vec2 p, float margin) const;
+    bool clearPath(Vec2 a, Vec2 b, float margin) const;
 
 private:
     void start(Activity a);
     void chooseAmbient(const Dragon& d, float moveScale);
     bool walkTo(Vec2 goal, bool trot, float moveScale, float dt);  // true on arrival
+    Vec2 steerTarget(Vec2 goal) const;  // the goal, or a point beside an obstacle in the way
     bool turnTo(float goal, float dt);  // shuffles in place; true when facing it
     void setClip(ClipId c, float crossfade = 0.25f, bool restart = false);
 };

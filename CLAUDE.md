@@ -27,6 +27,11 @@ session, and add new decisions to the log.
 - Push to 3DS: `tools\run.ps1 -Address <ip>` (Homebrew Launcher, press Y) or
   `tools\deploy_ftp.ps1 -FtpHost <ip>` (ftpd, port 5000)
 - Music: `python tools/audio/make_loop.py assets/audio/music/source/<slug>.wav --bpm <bpm> --preview`
+- Den room: edit `tools/blender/den_model.py` (keep its spots in sync with `DenLayout` in
+  `src/core/behavior.hpp`), then
+  `blender -b -P tools/blender/den_model.py -- --out <abs>/romfs/models/den.esm` and
+  `tools\test.ps1`. Previews from the game camera: `-- --render <abs prefix> --dragons --shot home`
+  (one shot per Blender run: building several dragons in one session is less reliable).
 - Animations: edit `tools/anim/clips.py`, then `python tools/anim/build_anims.py` (writes
   `romfs/anims/dragon.eca`) and `tools\test.ps1`. Preview on the rig:
   `blender -b -P tools/blender/preview_anims.py -- --clips walk,sit --form grown --out <abs prefix>`

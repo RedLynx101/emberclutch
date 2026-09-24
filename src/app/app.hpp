@@ -7,6 +7,7 @@
 #include "app/storage.hpp"
 #include "core/den_actor.hpp"
 #include "core/dragon.hpp"
+#include "core/particles.hpp"
 #include "core/rng.hpp"
 #include "core/save.hpp"
 
@@ -55,6 +56,11 @@ struct App {
     // dev 3-dragon test.
     DenActor actors[3];
     bool actorsReady = false;
+    // Den effects (WP6): the particle pool, the room's own emitters, and when each den
+    // dragon next breathes out a "z" while asleep.
+    Particles fx;
+    DenAmbience ambience;
+    float zzz[3] = {};
 
     const char* toast = nullptr;
     float toastTime = 0;

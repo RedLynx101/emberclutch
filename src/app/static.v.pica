@@ -1,0 +1,42 @@
+; Emberclutch static den geometry (docs/tech/architecture.md section 4).
+;   * Positions and two of the room's baked vertex-colour sets (day, evening, night:
+;     tools/blender/den_model.py), blended for the time of day: A + (B - A) * blend.x.
+;   * No lighting: the light is in the colours. `tint` scales the result (already divided
+;     by 255): 1 for the room, a flicker for the hearth flames.
+; Uniform budget: 4 + 4 + 1 + 1 + 1 constant = 11 of 96 float registers.
+
+.fvec projection[4], modelView[4]
+.fvec blend  ; x: weight of set B
+.fvec tint   ; rgba multiplier / 255
+
+.constf consts(1.0, 0.0, 0.0, 0.0)
+.alias  ones consts.xxxx
+
+.out outpos position
+.out outclr color
+
+.alias inpos v0  ; float x3, den space
+.alias inA   v1  ; ubyte x4: colour in lighting set A
+.alias inB   v2  ; ubyte x4: colour in lighting set B
+
+.proc main
+	mov r0.xyz, inpos
+	mov r0.w, ones
+
+	dp4 r1.x, modelView[0], r0
+	dp4 r1.y, modelView[1], r0
+	dp4 r1.z, modelView[2], r0
+	dp4 r1.w, modelView[3], r0
+
+	dp4 outpos.x, projection[0], r1
+	dp4 outpos.y, projection[1], r1
+	dp4 outpos.z, projection[2], r1
+	dp4 outpos.w, projection[3], r1
+
+	; one instruction reads at most one input register
+	mov r3, inA
+	add r2, inB, -r3
+	mad r2, r2, blend.xxxx, r3
+	mul outclr, tint, r2
+	end
+.end

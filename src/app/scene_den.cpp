@@ -1,5 +1,5 @@
-// The den: egg care, then the dragon's care loop. The dragon is 3D (render3d); the room
-// is still 2D until WP6.
+// The den: egg care, then the dragon's care loop, in the 3D den room (render3d): the room
+// lit for the time of day, the dragons' life, and the particles that go with it.
 #include <cmath>
 #include <cstdio>
 
@@ -10,6 +10,7 @@
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
 #include "core/clock.hpp"
+#include "core/daylight.hpp"
 #include "core/genetics.hpp"
 #include "core/rig.hpp"
 
@@ -58,6 +59,46 @@ void playEventSound(u8 event, const Dragon& d, s64 now) {
     }
 }
 
+// Particles for what a den dragon just did: dust at its feet, crumbs when it chomps, hearts
+// when it purrs, and a "z" now and then while it sleeps. i: its place in the den (0 = yours).
+void effectsFor(App& app, int i, const Dragon& d, const DenActor& a, const u8* events, int n, s64 now) {
+    const float s = moveScaleOf(d, now);
+    const Vec3 feet{a.behavior.pos.x, a.behavior.pos.y, 0};
+    Vec3 head;
+    const bool haveHead = r3d::headOf(i, head);
+    for (int e = 0; e < n; ++e) {
+        switch (events[e]) {
+            case kAnimFootstep: app.fx.emit(Fx::Puff, feet, 1, s * 0.6f); break;
+            case kAnimThump:
+            case kAnimLand: app.fx.emit(Fx::Puff, feet, 4, s); break;
+            case kAnimChomp:
+                if (haveHead) app.fx.emit(Fx::Crumb, head, 4, s);
+                break;
+            case kAnimPurr:
+                if (haveHead) app.fx.emit(Fx::Heart, head, 1, s);
+                break;
+            default: break;
+        }
+    }
+    if (a.behavior.activity == Activity::Sleep && haveHead) {
+        if ((app.zzz[i] -= app.dt) <= 0) {
+            app.fx.emit(Fx::Zzz, head, 1, s);
+            app.zzz[i] = 1.6f;
+        }
+    } else {
+        app.zzz[i] = 0.6f;
+    }
+}
+
+// A burst of an effect at your dragon's head (or its middle, before it has been drawn).
+void burst(App& app, Fx kind, int count, s64 now) {
+    const Dragon& d = activeDragon(app);
+    const float s = moveScaleOf(d, now);
+    Vec3 at{app.actors[0].behavior.pos.x, app.actors[0].behavior.pos.y, 1.2f * s};
+    if (kind != Fx::Sparkle) r3d::headOf(0, at);
+    app.fx.emit(kind, at, count, s);
+}
+
 // The clips for this dragon's current body (hatchlings have a few of their own).
 const int* clipsFor(const Dragon& d, s64 now) { return r3d::clipIndex(growthFor(d.stage, stageProgress(d, now)).form); }
 
@@ -91,15 +132,28 @@ void denLife(App& app, s64 now) {
     matchSpeeds(app.actors[0], d, now);
     const int n = app.actors[0].update(d, night, moveScaleOf(d, now), app.dt, *lib, clipsFor(d, now), events, 8);
     for (int i = 0; i < n; ++i) playEventSound(events[i], d, now);
+    effectsFor(app, 0, d, app.actors[0], events, n, now);
     if (app.denTest) {
         const Dragon* extra[2];
         standIns(d, extra);
         for (int i = 0; i < 2; ++i) {
             matchSpeeds(app.actors[i + 1], *extra[i], now);
-            app.actors[i + 1].update(*extra[i], night, moveScaleOf(*extra[i], now), app.dt, *lib,
-                                     clipsFor(*extra[i], now), events, 8);
+            const int m = app.actors[i + 1].update(*extra[i], night, moveScaleOf(*extra[i], now), app.dt, *lib,
+                                                   clipsFor(*extra[i], now), events, 8);
+            effectsFor(app, i + 1, *extra[i], app.actors[i + 1], events, m, now);
         }
     }
+}
+
+// Particles move on; the room adds its own life: embers over the hearth, motes in the
+// sunbeam, glints on the hoard.
+void denEffects(App& app, s64 now) {
+    if (r3d::roomReady()) {
+        const DayBlend light = dayBlend(now);
+        const float daylight = light.weight(kLightDay) + 0.4f * light.weight(kLightEvening);
+        app.ambience.update(app.fx, DenLayout{}, daylight, app.dt);
+    }
+    app.fx.update(app.dt);
 }
 
 void update(App& app, const Input& in) {
@@ -120,21 +174,35 @@ void update(App& app, const Input& in) {
         app.saveAccum = 0;
     }
     denLife(app, nowLocal(app));
+    denEffects(app, nowLocal(app));
 }
 
 void drawTop(App& app) {
     const Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
-    const bool night = isNight(now);
-    verticalGradient(0, 0, kTopW, kScreenH, night ? theme::kDenPlum : theme::kDusk,
-                     night ? theme::rgba(20, 14, 28) : theme::kDenPlum);
-    C2D_DrawEllipseSolid(40, 190, 0, 320, 50, withAlpha(theme::kEmber, 0.18f));  // nest rug
-    embers(app.t, kTopW);
+    const bool room = r3d::ready() && r3d::roomReady();
+    if (room) {
+        const u32 dark = r3d::backdrop(now);  // the dark beyond the cutaway room
+        verticalGradient(0, 0, kTopW, kScreenH, dark, dark);
+    } else {
+        const bool night = isNight(now);
+        verticalGradient(0, 0, kTopW, kScreenH, night ? theme::kDenPlum : theme::kDusk,
+                         night ? theme::rgba(20, 14, 28) : theme::kDenPlum);
+        C2D_DrawEllipseSolid(40, 190, 0, 320, 50, withAlpha(theme::kEmber, 0.18f));  // nest rug
+        embers(app.t, kTopW);
+    }
 
     char line[96];
     if (d.stage == Stage::Egg) {
         const float progress = static_cast<float>(d.incubationSeconds) / kIncubationSeconds;
-        egg(200, 130, 70, 92, {250, 240, 225}, glowOf(d), 0.3f + 0.7f * d.warmth / 100.0f);
+        // The egg rests in the egg nest by the hearth (a 2D egg until the egg model, WP2).
+        float ex = 200, ey = 130, ppu = 84;
+        if (room) {
+            r3d::drawDen(app, nullptr, 0, now, &app.fx);
+            const DenLayout den;
+            r3d::project({den.eggNest.x, den.eggNest.y, 0.55f}, ex, ey, ppu);  // unchanged if it fails
+        }
+        egg(ex, ey, 0.8f * ppu, 1.05f * ppu, {250, 240, 225}, glowOf(d), 0.3f + 0.7f * d.warmth / 100.0f);
         std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", breedName(d.genome), str::kEggSuffix,
                       static_cast<int>(progress * 100), str::kIncubated);
         text(app, line, 200, 14, 0.6f, theme::kShell);
@@ -148,7 +216,7 @@ void drawTop(App& app) {
                 standIns(d, extra);
                 for (int i = 0; i < 2; ++i) shown[count++] = {extra[i], app.actorsReady ? &app.actors[i + 1] : nullptr};
             }
-            r3d::drawDen(app, shown, count, now);
+            r3d::drawDen(app, shown, count, now, &app.fx);
         } else {
             dragonPlaceholder(d, 200, 205, bodyScale(d, now), app.t);
         }
@@ -231,7 +299,10 @@ void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
         markVisit(d, now);
         app.actors[0].behavior.care(fav ? Care::FeedFavorite : Care::Feed, d);
         audio::playSfx(audio::Sfx::Munch);
-        if (fav) audio::playSfx(audio::Sfx::Chirp, voicePitch(d, now));
+        if (fav) {
+            audio::playSfx(audio::Sfx::Chirp, voicePitch(d, now));
+            burst(app, Fx::Heart, 3, now);
+        }
         showToast(app, fav ? str::kFedFavorite : str::kFed);
     }
     if (button(app, {88, by, 70, 36}, str::kGroom, in)) {
@@ -239,6 +310,7 @@ void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
         markVisit(d, now);
         app.actors[0].behavior.care(Care::Groom, d);
         audio::playSfx(audio::Sfx::Brush);
+        burst(app, Fx::Sparkle, 10, now);
         showToast(app, str::kGroomed);
     }
     if (button(app, {164, by, 70, 36}, str::kPlayBtn, in)) {
@@ -254,6 +326,7 @@ void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
         markVisit(d, now);
         app.actors[0].behavior.care(Care::MakeUp, d);
         audio::playSfx(audio::Sfx::Purr, voicePitch(d, now));
+        burst(app, Fx::Heart, 6, now);
         showToast(app, str::kMadeUp);
     }
 }

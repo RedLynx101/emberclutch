@@ -171,6 +171,36 @@ TEST(care_interrupts_everyday_life) {
     CHECK(a.behavior.pos.y < before.y);              // forward is -Y at heading 0
 }
 
+TEST(dragons_walk_around_the_hearth_and_hoard) {
+    const DenLayout den;
+    // A day of everyday life never puts the body inside an obstacle.
+    DenActor a;
+    a.reset(den, 13);
+    const Dragon d = contentDragon();
+    float closest = 1e9f;
+    for (int f = 0; f < 20 * 60 * 30; ++f) {
+        a.update(d, false, 1.0f, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+        for (const DenObstacle& o : den.obstacles) closest = std::fmin(closest, dist(a.behavior.pos, o.at) - o.radius);
+    }
+    std::printf("  closest approach to an obstacle's edge: %.2f\n", closest);
+    CHECK(closest >= 0.8f - 1e-3f);
+
+    // Bedtime from the far side of the egg nest: walks round it to the nest, not through it.
+    a.reset(den, 14);
+    a.behavior.pos = {4.2f, -3.4f};
+    a.behavior.heading = 3.14159f;  // facing +Y, the nest beyond the egg nest
+    CHECK(!a.behavior.clearPath(a.behavior.pos, den.napSpot, 0.8f));
+    Dragon tired = contentDragon();
+    tired.napping = true;
+    float nearest = 1e9f;
+    const bool slept = run(a, tired, false, 60, [&](const DenBehavior& b) {
+        nearest = std::fmin(nearest, dist(b.pos, den.eggNest));
+        return b.activity == Activity::Sleep;
+    });
+    CHECK(slept && dist(a.behavior.pos, den.napSpot) < 0.4f);
+    CHECK(nearest >= den.obstacles[1].radius + 0.8f - 1e-3f);
+}
+
 TEST(every_activity_is_reachable_and_settles) {
     const DenLayout den;
     const Dragon d = contentDragon();
@@ -198,5 +228,6 @@ void runBehaviorTests() {
     RUN(an_upset_dragon_sulks_in_the_nook_until_you_make_up);
     RUN(tired_dragons_nap_in_the_nest_and_wake_up);
     RUN(care_interrupts_everyday_life);
+    RUN(dragons_walk_around_the_hearth_and_hoard);
     RUN(every_activity_is_reachable_and_settles);
 }

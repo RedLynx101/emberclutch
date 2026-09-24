@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-24 — Den scene (WP6)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D40 | **The den is a round cave seen as a cutaway diorama.** Walls all the way round face inward, so back-face culling hides whichever part stands between the camera and the dragons; the floor runs on into the dark. Room radius 9.5 (the walkable circle stays 6 around the rug), props in the back two thirds, a skylight in the back wall. Lighting is baked into vertex colours for day, evening and night and blended by the clock; the dragons' light follows, picking up the room's light where they stand | The den camera follows the dragons from the front-left and often sits outside the room; three adults (nose ~2.3 ahead of their origin) need the room to be well past the walkable circle. Baked vertex colours cost nothing per frame on an old 3DS | Default (review sent, owner can change) |
+
 ## 2026-09-23 — Sculpt reviews R1 and R1b
 
 | # | Decision | Why | Status |

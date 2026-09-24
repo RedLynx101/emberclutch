@@ -2,19 +2,20 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-23 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP5 ✅, WP8 ✅, WP9 ✅; WP2 sculpt approved; WP6 next)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP5 ✅, WP6 ✅, WP8 ✅, WP9 ✅; WP2 sculpt approved; WP2 rest / WP7 next)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D39 recorded ([log](plan/decisions.md)); nothing open.
+  Decisions D1–D40 recorded ([log](plan/decisions.md)); nothing open.
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
   [Alpha 1 plan](plan/alpha-1.md).
 - **Code:** `src/core` (genetics, needs, mood, growth, eggs, clock, breeding, save, model
-  format, skeleton/rig, per-dragon mesh assembly) with PC tests (21,164 checks). `src/app`
-  draws the dragon in 3D (skinned toon shader) inside themed citro2d screens; the room is
-  still 2D. Runs in Azahar at 60 fps.
+  format, skeleton/rig, per-dragon mesh assembly, animation, den behavior, den room,
+  daylight, particles) with PC tests (60,126 checks). `src/app` draws the dragons in 3D
+  (skinned toon shader) in a 3D den room lit for the time of day, inside themed citro2d
+  screens. Last seen running in Azahar at 60 fps (before WP5/WP6).
 - **Art:** two dragon forms built by script (`tools/blender/dragon_model.py`): a metaball
   hatchling and the skin-modifier grown body, classic wings, part variants. Exported to
   `romfs/models/{hatchling,grown}.ecm`.
@@ -34,7 +35,7 @@
   citro3d inside citro2d scenes). Den camera, a bottom-screen petting close-up, per-dragon
   caches, LOD1 for background dragons. Verified in Azahar: hatchling, juvenile, adult;
   three adults at LOD0 were 8,368 triangles, so LOD1 was added (~4,850 expected;
-  **confirm in the emulator**). The static-mesh path moves to WP6 with the den model.
+  **confirm in the emulator**). The static-mesh path came with WP6.
 - ✅ **WP3 model pipeline:** `export_dragon.py` writes `.ecm` (skeleton, growth/build tables,
   body, wing and part variants baked at 4 growth keys, vertex paint). `src/core/model.cpp`
   loads it; `skeleton.cpp` + `rig.cpp` reproduce Blender's deformation. PC tests: parity for
@@ -50,6 +51,15 @@
   state. PC tests: 57,381 checks. **R3 sent** (contact sheets). Not yet seen in the
   emulator (paused).
 
+- ✅ **WP6 den scene:** a round cave built by `tools/blender/den_model.py` (2,251 triangles:
+  rug, sleeping nest, egg nest, hearth with flames, hoard, shelves, sulk nook, skylight
+  with a sunbeam) as a cutaway diorama (D40), with vertex lighting baked for day, evening
+  and night and blended by the clock; the dragons' light follows the time of day and the
+  room's light where they stand. `static.v.pica` + `.esm` loader; particles (embers, motes,
+  glints, hearts, Zzz, crumbs, sparkles, dust). Dragons now walk around the hearth, egg nest
+  and hoard. The egg sits in the egg nest. **Review R4 sent**
+  ([den](art/reviews/R4-den.md)). Builds clean; **not yet seen in the emulator** (paused).
+
 - ✅ **WP8 save system:** versioned A/B slots, CRC32, per-record sizes, validation,
   legacy dev-save import; 5 new PC tests (22 total, 11,383 checks). In Azahar: slots
   alternate, a corrupted newest slot falls back to the older one and is then rewritten.
@@ -63,16 +73,18 @@
   Note: the emulator needs `sdmc:/3ds/dspfirm.cdc`; a local dummy file works in Azahar (never commit it).
 
 ## Next actions
-1. **WP6 den scene:** the room model (Blender script), a static-mesh render path, day /
-   evening / night lighting, particles. The behavior's `DenLayout` spots move into it.
-2. **WP2 rest:** egg model (+ hatching clips); texturing (UVs, scale detail, the Pattern
-   gene) → R2.
-3. WP7 interactions, WP10 UI/fonts, WP11 CIA packaging, WP12 wrap-up.
+1. **WP2 rest:** egg model (+ hatching clips, the egg in its nest); texturing (UVs, scale
+   detail, the Pattern gene) → R2.
+2. **WP7 interactions:** touch zones from bone capsules, feeding from a tray, grooming,
+   play with a ball, egg rubbing and the hatching cinematic, naming.
+3. WP10 UI/fonts, WP11 CIA packaging, WP12 wrap-up.
 
 **Emulator checks are paused** (Noah asked for no computer use until he says so). Queued
 for the next session: 3-dragon test triangle count with LOD1, the petting close-up, the
 heartglow core, den life (walking, sitting, sleeping, sulking, reactions, sounds, look-at),
-then everything built since.
+the den room (cutaway from every camera position, day/evening/night via the dev time skip,
+sunbeam and flames, particles, the egg in its nest, triangle count ≤ 8k with the 3-dragon
+test), then everything built since.
 
 ## Current goal (D31)
 **Complete through Alpha 2.** Gates that stop the run:
@@ -87,8 +99,8 @@ then everything built since.
 ## Waiting on Noah
 - Optional, non-blocking: Suno [music batch 2](audio/suno-music-batch-2.md) and the
   [sound effects](audio/suno-sfx-alpha1.md).
-- Nothing blocking. Comments welcome on R1c (faces, growth) and
-  **[R3 animation](art/reviews/R3-anim.md)** (`R3-anim-grown-1/2.png`, `R3-anim-hatchling.png`).
+- Nothing blocking. Comments welcome on R1c (faces, growth),
+  **[R3 animation](art/reviews/R3-anim.md)** and **[R4 den](art/reviews/R4-den.md)**.
 
 ## How to work
 - Build: `tools\build.ps1` · Tests: `tools\test.ps1` · Emulator: `tools\emu.ps1`

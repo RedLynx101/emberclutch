@@ -11,6 +11,7 @@
 #include "core/dragon.hpp"
 #include "core/genetics.hpp"
 #include "core/den_roster.hpp"
+#include "core/items.hpp"
 #include "core/market.hpp"
 #include "core/wanderings.hpp"
 #include "core/save.hpp"
@@ -377,6 +378,73 @@ TEST(the_wanderings) {
 
 // The Market (Alpha 2 WP5): it opens at Juvenile; food for Gleam into the pouch and eaten
 // from it; trinkets sold; one egg of the day, labelled, the same all day.
+// Things to keep (Alpha 2 WP7): bought once; toys set down on the den floor; decor up in its
+// spot at once if it's free, swapped later; the food bowl feeds the hungry; warm stones.
+TEST(things_to_keep) {
+    static SaveData s;
+    s = SaveData{};
+    Rng rng(43);
+    s.dragons[s.dragonCount++] = readyAdult(1, Element::Ember, Sex::Male, rng);
+    s.dragons[0].location = Location::Den;
+    s.gleam = 1000;
+
+    CHECK(!owns(s, Item::TugRope) && buyItem(s, Item::TugRope) && owns(s, Item::TugRope));
+    CHECK(s.gleam == 1000 - itemInfo(Item::TugRope).price);
+    CHECK(!buyItem(s, Item::TugRope));  // once: things last
+    const Vec2 rope = toyAt(s, static_cast<int>(Item::TugRope)), spot = defaultToySpot(static_cast<int>(Item::TugRope));
+    CHECK(std::fabs(rope.x - spot.x) < 0.01f && std::fabs(rope.y - spot.y) < 0.01f);
+    setToyAt(s, 1, {3.21f, -4.5f});
+    CHECK(std::fabs(toyAt(s, 1).x - 3.21f) < 0.01f && std::fabs(toyAt(s, 1).y + 4.5f) < 0.01f);
+
+    // Decor: the first of a kind goes up; the next waits in the chest until swapped in.
+    CHECK(decorAt(s, decorSpot(ItemKind::Rug)) == Item::Count);
+    CHECK(buyItem(s, Item::RugTide) && decorAt(s, decorSpot(ItemKind::Rug)) == Item::RugTide);
+    CHECK(buyItem(s, Item::RugGrove) && isUp(s, Item::RugTide) && !isUp(s, Item::RugGrove));
+    CHECK(putUp(s, Item::RugGrove) && isUp(s, Item::RugGrove) && !isUp(s, Item::RugTide));
+    CHECK(!putUp(s, Item::RugLumen) && !putUp(s, Item::TugRope));  // not owned; not decor
+    takeDown(s, decorSpot(ItemKind::Rug));
+    CHECK(decorAt(s, decorSpot(ItemKind::Rug)) == Item::Count);
+    for (int k = 0; k < kItems; ++k) {  // every item has a name, a price and a sensible spot
+        const ItemInfo& info = itemInfo(static_cast<Item>(k));
+        CHECK(info.name && info.price > 0);
+        CHECK((decorSpot(info.kind) >= 0) == (info.kind >= ItemKind::Rug));
+        CHECK(decorSpot(info.kind) < kDecorSpots);
+    }
+    s.gleam = 5;
+    CHECK(!buyItem(s, Item::PlantFern));  // not enough Gleam
+
+    // The food bowl: filled from the pouch, one food at a time; the hungry eat from it.
+    CHECK(!fillBowl(s, Food::HearthBread));  // no bowl yet
+    s.gleam = 500;
+    CHECK(buyItem(s, Item::FoodBowl));
+    const int bread = s.pouch[static_cast<int>(Food::HearthBread)];
+    CHECK(fillBowl(s, Food::HearthBread) && fillBowl(s, Food::HearthBread));
+    CHECK(s.pouch[static_cast<int>(Food::HearthBread)] == bread - 2 && s.bowlLeft == 2);
+    CHECK(!fillBowl(s, Food::RoastDrumstick));  // one food at a time
+    CHECK(fillBowl(s, Food::HearthBread) && !fillBowl(s, Food::HearthBread));  // full
+    s.dragons[0].needs.belly = 60;
+    CHECK(feedFromBowl(s, kT0) == 0);  // not hungry
+    s.dragons[0].needs.belly = 20;
+    CHECK(feedFromBowl(s, kT0) == 1 && s.dragons[0].needs.belly > 20 && s.bowlLeft == 2);
+    s.dragons[0].location = Location::Sanctuary;
+    s.dragons[0].needs.belly = 20;
+    CHECK(feedFromBowl(s, kT0) == 0);  // the keepers feed that one
+    s.dragons[0].location = Location::Den;
+    CHECK(eatFromBowl(s, 0, kT0) && eatFromBowl(s, 0, kT0) && s.bowlLeft == 0 && bowlFood(s) == Food::Count);
+    CHECK(!eatFromBowl(s, 0, kT0));  // empty
+
+    // Warm stones: eggs cool half as fast.
+    Dragon a = makeEgg(9, makePurebred(Element::Tide, rng), Sex::Female, kT0), b = a;
+    a.warmth = b.warmth = 90;
+    simulate(a, kT0, kT0 + 10 * kHour);
+    simulate(b, kT0, kT0 + 10 * kHour, eggCooling(s));
+    CHECK(eggCooling(s) == 1.0f && std::fabs(a.warmth - b.warmth) < 0.01f);
+    CHECK(buyItem(s, Item::WarmStones) && eggCooling(s) == 0.5f);
+    b.warmth = 90;
+    simulate(b, kT0, kT0 + 10 * kHour, eggCooling(s));
+    CHECK(std::fabs((90 - b.warmth) * 2 - (90 - a.warmth)) < 0.01f);
+}
+
 TEST(the_market) {
     static SaveData s;
     s = SaveData{};
@@ -440,6 +508,11 @@ static SaveData& sampleSave() {
     s.hoard[2] = 5;
     s.pouch[4] = 9;
     s.eggBoughtDay = 321;
+    s.owned = 0x5u;
+    s.decor[1] = 12;
+    s.toyPos[2][1] = -345;
+    s.bowlFood = 6;
+    s.bowlLeft = 2;
     Rng rng(123);
     s.dragonCount = 5;
     for (int i = 0; i < 5; ++i) {
@@ -591,7 +664,7 @@ TEST(save_round_trip) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 1 + 12 + 2));
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 1 + 12 + 2));
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
@@ -600,6 +673,8 @@ TEST(save_round_trip) {
     CHECK(out.lastSim == s.lastSim && out.devOffset == s.devOffset && out.nextId == 42);
     CHECK(out.nestA == 11 && out.nestB == 12 && out.nestDay == 77 && out.gleam == 1234 && out.hoard[2] == 5);
     CHECK(out.pouch[4] == 9 && out.pouch[6] == 8 && out.eggBoughtDay == 321);
+    CHECK(out.owned == 0x5u && out.decor[1] == 12 && out.decor[0] == 0xFF && out.toyPos[2][1] == -345);
+    CHECK(out.bowlFood == 6 && out.bowlLeft == 2);
     CHECK(out.settings.musicVolume == 55 && out.settings.seenHatch == 1);
     CHECK(out.dragonCount == 5);
     for (int i = 0; i < 5; ++i) CHECK(sameDragon(out.dragons[i], s.dragons[i]));
@@ -681,6 +756,7 @@ int main() {
     RUN(breeding_requirements);
     RUN(the_nesting_stone);
     RUN(the_wanderings);
+    RUN(things_to_keep);
     RUN(the_market);
     RUN(egg_sexes_are_roughly_even);
     RUN(the_den_has_three_beds_and_two_nests);

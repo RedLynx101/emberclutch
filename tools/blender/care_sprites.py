@@ -246,6 +246,199 @@ def glimmer_cookie():
     star((0.3, -0.12, 0.3), 0.14, 0.03, mat("glint", (1, 1, 1), emission=2.0))
 
 
+# ------------------------------------------------------------------------------ things to keep (WP7)
+# The Market's toys, grooming things, warm stones and decor, in core/items.hpp Item order.
+# Colours follow core/prop_mesh.cpp propLook, so an icon matches the thing in the den.
+def rgb(r, g, b):
+    return (r / 255, g / 255, b / 255)
+
+
+def feather_wand():
+    cylinder((-0.1, 0, -0.1), 0.035, 1.2, mat("stick", rgb(150, 98, 56)), rot=(0, math.radians(40), 0))
+    cylinder((0.3, 0, 0.22), 0.012, 0.36, mat("string", CREAM), rot=(0, math.radians(-15), 0))
+    feather = mat("feather", rgb(232, 102, 43))
+    sphere((0.38, 0, -0.12), (0.12, 0.04, 0.3), feather).rotation_euler = (0, math.radians(-20), 0)
+    sphere((0.5, 0, -0.08), (0.07, 0.03, 0.2), mat("tip", rgb(63, 167, 168))).rotation_euler = (0, math.radians(18), 0)
+
+
+def tug_rope():
+    rope = mat("rope", rgb(238, 222, 186))
+    knot = mat("knot", rgb(214, 86, 70))
+    for k in range(13):
+        t = k / 12
+        x = -0.6 + 1.2 * t
+        z = 0.18 * math.sin(t * math.pi * 1.5)
+        sphere((x, 0, z), (0.09, 0.09, 0.09), rope, seg=10, rings=6)
+    for x in (-0.66, 0.66):
+        sphere((x, 0, 0.18 * math.sin((x + 0.6) / 1.2 * math.pi * 1.5)), (0.17, 0.17, 0.17), knot)
+
+
+def puzzle_orb():
+    sphere((0, 0, 0), (0.55, 0.55, 0.55), mat("orb", rgb(63, 167, 168)), seg=24, rings=16)
+    gold = mat("gold", rgb(245, 196, 81))
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.55, minor_radius=0.06, location=(0, 0, 0))
+    add(bpy.context.object, gold)
+    cylinder((0, 0, 0.52), 0.18, 0.1, gold)
+    hole = mat("hole", rgb(50, 36, 52))
+    for x, z in ((-0.25, 0.25), (0.22, -0.28)):
+        sphere((x, -0.48, z), (0.08, 0.04, 0.08), hole)
+
+
+def food_bowl():
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, location=(0, 0, 0.1))
+    cup = bpy.context.object
+    cup.scale = (0.62, 0.62, 0.42)
+    bm = bmesh.new()
+    bm.from_mesh(cup.data)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.z > 0.05], context="VERTS")
+    bm.to_mesh(cup.data)
+    bm.free()
+    m = cup.modifiers.new("thick", "SOLIDIFY")
+    m.thickness = 0.1
+    add(cup, mat("bowl", rgb(178, 74, 56)))
+    food = mat("kibble", rgb(170, 110, 60))
+    for x, z in ((-0.25, 0.14), (0.0, 0.2), (0.24, 0.14), (-0.12, 0.26), (0.13, 0.27)):
+        sphere((x, -0.05, z), (0.13, 0.13, 0.11), food, seg=10, rings=6)
+
+
+def silver_brush():
+    box((0, 0, 0.42), (0.14, 0.12, 0.5), mat("silver", rgb(196, 204, 214)))
+    box((0, 0, -0.22), (0.38, 0.2, 0.16), mat("silver2", rgb(150, 160, 176)))
+    box((0, 0, -0.48), (0.36, 0.18, 0.13), mat("bristle", CREAM), bevel=0.15)
+    star((0.3, -0.25, 0.55), 0.14, 0.03, mat("glint", (1, 1, 1), emission=2.0))
+
+
+def bubble_soap():
+    box((0, 0, -0.1), (0.55, 0.3, 0.3), mat("soap", rgb(246, 170, 196)), bevel=0.5)
+    bub = mat("bubble", (0.9, 0.97, 1.0))
+    for x, z, r in ((-0.35, 0.35, 0.16), (0.05, 0.45, 0.12), (0.38, 0.32, 0.14), (0.2, 0.62, 0.08)):
+        sphere((x, -0.1, z), (r, r, r), bub)
+
+
+def warm_stones():
+    glow = mat("ember", rgb(250, 140, 60), emission=0.6)
+    for x, z, s in ((-0.36, -0.1, 0.3), (0.3, -0.12, 0.34), (0.0, 0.2, 0.28)):
+        sphere((x, 0, z), (s, s * 0.8, s * 0.62), mat(f"stone{x}", rgb(120, 104, 110)))
+        sphere((x, -s * 0.5, z + s * 0.2), (s * 0.35, 0.04, s * 0.15), glow)
+
+
+RUGS = ((rgb(130, 40, 34), rgb(214, 86, 70), rgb(245, 196, 81)),
+        (rgb(40, 70, 120), rgb(80, 150, 200), rgb(220, 240, 250)),
+        (rgb(60, 90, 50), rgb(110, 160, 90), rgb(220, 230, 170)),
+        (rgb(200, 170, 110), rgb(247, 234, 200), rgb(245, 196, 81)))
+
+
+def rug(variant):
+    edge, band, centre = RUGS[variant]
+    tilt = (math.radians(62), 0, 0)  # lying on the floor, seen from above and in front
+    cylinder((0, 0, 0), 0.72, 0.04, mat("edge", edge), rot=tilt, verts=32)
+    cylinder((0, -0.03, 0.01), 0.56, 0.04, mat("band", band), rot=tilt, verts=32)
+    if variant == 3:
+        star((0, -0.07, 0.03), 0.34, 0.03, mat("centre", centre), points=6, rot=(math.radians(62 - 90), 0, 0))
+    else:
+        cylinder((0, -0.06, 0.02), 0.3, 0.04, mat("centre", centre), rot=tilt, verts=32)
+
+
+def lantern(variant):
+    frame = mat("frame", (rgb(184, 140, 60), rgb(170, 180, 190), rgb(70, 45, 35))[variant])
+    light = mat("light", (rgb(255, 206, 120), rgb(150, 210, 255), rgb(245, 120, 90))[variant], emission=1.2)
+    bpy.ops.mesh.primitive_torus_add(major_radius=0.12, minor_radius=0.03, location=(0, 0, 0.72),
+                                     rotation=(math.radians(90), 0, 0))
+    add(bpy.context.object, frame)
+    if variant == 2:
+        sphere((0, 0, 0.0), (0.46, 0.46, 0.52), light)
+        cylinder((0, 0, 0.55), 0.14, 0.1, frame)
+        cylinder((0, 0, -0.55), 0.12, 0.08, frame)
+        return
+    cone((0, 0, 0.5), 0.36, 0.08, 0.26, frame, verts=6)
+    cylinder((0, 0, 0.02), 0.27, 0.7, light, verts=6)
+    for k in range(3):
+        a = math.radians(30 + 120 * k)
+        cylinder((math.cos(a) * 0.28, math.sin(a) * 0.28, 0.02), 0.03, 0.72, frame)
+    cylinder((0, 0, -0.4), 0.33, 0.12, frame, verts=6)
+
+
+def perch(variant):
+    if variant == 1:
+        stone = mat("stone", rgb(150, 140, 152))
+        box((0, 0, -0.85), (0.34, 0.3, 0.1), mat("base", rgb(110, 100, 116)), bevel=0.2)
+        box((0, 0, -0.05), (0.1, 0.1, 0.75), stone, bevel=0.2)
+        box((0, 0, 0.72), (0.62, 0.1, 0.07), stone, bevel=0.3)
+        return
+    wood = mat("drift", rgb(176, 156, 134))
+    cylinder((0, 0, -0.85), 0.3, 0.12, mat("base", rgb(120, 100, 80)), verts=12)
+    cylinder((0.02, 0, -0.05), 0.07, 1.55, wood, rot=(0, math.radians(3), 0))
+    cylinder((0, 0, 0.74), 0.05, 1.3, wood, rot=(0, math.radians(92), 0))
+    cylinder((0.15, 0, 0.1), 0.03, 0.4, mat("moss", rgb(90, 140, 80)), rot=(0, math.radians(40), 0))
+
+
+def plant(variant):
+    cone((0, 0, -0.55), 0.26, 0.36, 0.5, mat("pot", (rgb(190, 100, 60), rgb(170, 160, 184), rgb(190, 100, 60))[variant]))
+    cylinder((0, 0, -0.29), 0.34, 0.04, mat("soil", rgb(80, 55, 40)))
+    leaf = mat("leaf", (rgb(80, 150, 70), rgb(70, 124, 96), rgb(96, 124, 60))[variant])
+    count = 7 if variant == 0 else 5
+    for k in range(count):
+        a = math.radians(-70 + 140 * k / (count - 1))
+        length = 0.62 if variant == 0 else 0.44
+        o = sphere((math.sin(a) * length * 0.55, 0, -0.2 + math.cos(a) * length * 0.8), (0.1, 0.03, length * 0.55), leaf)
+        o.rotation_euler = (0, a, 0)
+    if variant == 0:
+        return
+    bloom = mat("bloom", (None, rgb(235, 240, 255), rgb(250, 96, 50))[variant], emission=1.6)
+    heart = mat("heart", rgb(245, 196, 81))
+    for x, z in ((-0.22, 0.42), (0.2, 0.5), (0.0, 0.18)):
+        star((x, -0.2, z), 0.21, 0.05, bloom, points=5, inner=0.55)
+        sphere((x, -0.25, z), (0.06, 0.03, 0.06), heart)
+
+
+def banner(variant):
+    cloth = mat("cloth", (rgb(170, 40, 40), rgb(40, 70, 130), rgb(240, 230, 200))[variant])
+    crest = mat("crest", (rgb(245, 140, 50), rgb(120, 200, 230), rgb(245, 196, 81))[variant])
+    cylinder((0, 0, 0.78), 0.04, 1.1, mat("rod", rgb(184, 140, 60)), rot=(0, math.radians(90), 0))
+    bm = bmesh.new()
+    pts = [(-0.4, 0.75), (0.4, 0.75), (0.4, -0.8), (0.0, -0.55), (-0.4, -0.8)]
+    front = [bm.verts.new((x, -0.02, z)) for x, z in pts]
+    back = [bm.verts.new((x, 0.02, z)) for x, z in pts]
+    bm.faces.new(list(reversed(front)))
+    bm.faces.new(back)
+    for i in range(len(pts)):
+        j = (i + 1) % len(pts)
+        bm.faces.new((front[i], front[j], back[j], back[i]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    me = bpy.data.meshes.new("cloth")
+    bm.to_mesh(me)
+    bm.free()
+    o = bpy.data.objects.new("cloth", me)
+    bpy.context.collection.objects.link(o)
+    o.data.materials.append(cloth)
+    if variant == 0:  # a flame
+        cone((0, -0.06, 0.1), 0.2, 0.0, 0.5, crest, verts=12)
+        sphere((0, -0.08, -0.05), (0.14, 0.03, 0.14), mat("core", rgb(255, 222, 120)))
+    elif variant == 1:  # waves
+        for z in (0.2, -0.1):
+            for x in (-0.18, 0.18):
+                bpy.ops.mesh.primitive_torus_add(major_radius=0.14, minor_radius=0.035, location=(x, -0.05, z),
+                                                 rotation=(math.radians(90), 0, 0))
+                add(bpy.context.object, crest)
+    else:  # a star
+        star((0, -0.06, 0.05), 0.3, 0.05, crest)
+
+
+ITEM_SPRITES = [
+    ("item_featherwand", feather_wand), ("item_tugrope", tug_rope), ("item_puzzleorb", puzzle_orb),
+    ("item_foodbowl", food_bowl), ("item_silverbrush", silver_brush), ("item_bubblesoap", bubble_soap),
+    ("item_warmstones", warm_stones),
+    ("item_rugember", lambda: rug(0)), ("item_rugtide", lambda: rug(1)), ("item_ruggrove", lambda: rug(2)),
+    ("item_ruglumen", lambda: rug(3)),
+    ("item_lanternbrass", lambda: lantern(0)), ("item_lanternglass", lambda: lantern(1)),
+    ("item_lanternpaper", lambda: lantern(2)),
+    ("item_perchdriftwood", lambda: perch(0)), ("item_perchstone", lambda: perch(1)),
+    ("item_plantfern", lambda: plant(0)), ("item_plantmoonflower", lambda: plant(1)),
+    ("item_plantemberbloom", lambda: plant(2)),
+    ("item_bannerflame", lambda: banner(0)), ("item_bannerwave", lambda: banner(1)), ("item_bannerstar", lambda: banner(2)),
+]
+
+
 SPRITES = [
     ("hand", hand), ("hand_press", lambda: hand(pressing=True)), ("brush", brush), ("cloth", cloth),
     ("sponge", sponge), ("ladle", ladle), ("ball", ball),
@@ -254,7 +447,7 @@ SPRITES = [
     ("food_honeyroot", honeyroot), ("food_frostmelon", frostmelon), ("food_starfruit", starfruit),
     ("food_hearthbread", hearth_bread), ("food_drumstick", roast_drumstick), ("food_embercandy", ember_candy),
     ("food_glimmercookie", glimmer_cookie),
-]
+] + ITEM_SPRITES
 
 
 # ------------------------------------------------------------------------------ render
@@ -311,7 +504,10 @@ def frame(cam):
 
 def main():
     os.makedirs(OUT, exist_ok=True)
+    only = argv[argv.index("--only") + 1].split(",") if "--only" in argv else None  # e.g. item_ (a prefix)
     for name, build in SPRITES:
+        if only and not any(name.startswith(p) for p in only):
+            continue
         scene, cam = setup()
         build()
         frame(cam)

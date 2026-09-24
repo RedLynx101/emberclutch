@@ -45,9 +45,9 @@ void promote(Dragon& d, s64 now) {
     if (s > d.stage) d.stage = s;  // never regress
 }
 
-void stepEgg(Dragon& d, float hours, s32 dt) {
+void stepEgg(Dragon& d, float hours, s32 dt, float cooling) {
     if (d.location == Location::Vault) return;  // incubation paused
-    d.warmth = clamp100(d.warmth - 4.0f * hours);
+    d.warmth = clamp100(d.warmth - 4.0f * cooling * hours);
     if (d.warmth > 20) d.incubationSeconds += dt;
 }
 
@@ -172,7 +172,7 @@ bool tryHatch(Dragon& d, s64 now, Rng& rng) {
     return true;
 }
 
-void simulate(Dragon& d, s64 from, s64 now) {
+void simulate(Dragon& d, s64 from, s64 now, float eggCooling) {
     const s64 elapsed = safeElapsed(from, now);
     s64 t = now - elapsed;
     s64 remaining = elapsed;
@@ -183,7 +183,7 @@ void simulate(Dragon& d, s64 from, s64 now) {
         const float hours = static_cast<float>(step) / kHour;
 
         if (d.stage == Stage::Egg) {
-            stepEgg(d, hours, static_cast<s32>(step));
+            stepEgg(d, hours, static_cast<s32>(step), eggCooling);
         } else {
             stepHatched(d, t, hours);
             if (d.location == Location::Sanctuary) d.hatchedAt += step;  // growth pauses there (GDD 8)

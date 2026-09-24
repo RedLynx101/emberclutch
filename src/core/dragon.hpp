@@ -90,7 +90,8 @@ Personality temperamentOf(const Dragon& d);
 
 // Advance the simulation from d's last update time to `now`, in <= 1 hour steps.
 // `from` is the last time this dragon was simulated (the save's timestamp).
-void simulate(Dragon& d, s64 from, s64 now);
+// eggCooling: how fast an egg's warmth drains (core/items: warm stones in the nests halve it).
+void simulate(Dragon& d, s64 from, s64 now, float eggCooling = 1.0f);
 
 // Called whenever the player interacts with the dragon.
 void markVisit(Dragon& d, s64 now);

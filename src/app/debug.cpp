@@ -6,6 +6,7 @@
 #include "app/strings.hpp"
 #include "core/den_roster.hpp"
 #include "core/genetics.hpp"
+#include "core/items.hpp"
 #include "core/names.hpp"
 #include "app/theme.hpp"
 #include "app/storage.hpp"
@@ -100,22 +101,23 @@ bool debugMenu(App& app, const Input& in) {
     text(app, app.devPage ? "DEV MENU 2/2  (L/R page, SELECT close)" : "DEV MENU 1/2  (L/R page, SELECT close)", 160,
          4, 0.5f, theme::kClutchGold);
 
-    struct Item {
+    struct Entry {
         const char* label;
         int id;
     };
-    static constexpr Item kItems[] = {
+    static constexpr Entry kPage1[] = {
         {"+1 hour", 0},   {"+1 day", 1},     {"+7 days", 2},      {"Fill needs", 3},
         {"Drain needs", 4}, {"Hatch now", 5}, {"Next stage", 6},   {"Next breed", 10},
         {"Next activity", 12}, {"Add dragon", 11}, {"Overlay", 7}, {"Save now", 8},
         {"Reset save", 9}, {"Dusty / bath", 13}, {"Add egg", 14}, {"Breed-ready", 15},
     };
-    static constexpr Item kItems2[] = {
-        {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22},
+    static constexpr Entry kPage2[] = {
+        {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
+        {"Next decor", 24}, {"Fill bowl", 25},
     };
-    const Item* items = app.devPage ? kItems2 : kItems;
-    const int kCount = app.devPage ? static_cast<int>(sizeof(kItems2) / sizeof(kItems2[0]))
-                                   : static_cast<int>(sizeof(kItems) / sizeof(kItems[0]));
+    const Entry* items = app.devPage ? kPage2 : kPage1;
+    const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
+                                   : static_cast<int>(sizeof(kPage1) / sizeof(kPage1[0]));
     for (int i = 0; i < kCount; ++i) {
         const Rect r{8.0f + (i % 2) * 156.0f, 20.0f + (i / 2) * 25.0f, 148, 22};
         if (!button(app, r, items[i].label, in)) continue;
@@ -136,6 +138,29 @@ bool debugMenu(App& app, const Input& in) {
             case 20: app.devSteps += 1000; break;
             case 21: app.devSteps += 10000; break;
             case 22: app.game.gleam += 100; break;
+            case 23:  // everything from the Market's stalls (WP7), toys set down, decor up
+                for (int k = 0; k < kItems; ++k) {
+                    app.game.gleam += itemInfo(static_cast<ec::Item>(k)).price;
+                    buyItem(app.game, static_cast<ec::Item>(k));
+                }
+                break;
+            case 24:  // every spot to its next piece (see each look in turn)
+                for (int spot = 0; spot < kDecorSpots; ++spot) {
+                    const int now = static_cast<int>(decorAt(app.game, spot));
+                    for (int step = 1; step <= kItems; ++step) {
+                        const ec::Item next = static_cast<ec::Item>((now + step) % kItems);
+                        if (decorSpot(itemInfo(next).kind) == spot && owns(app.game, next)) {
+                            putUp(app.game, next);
+                            break;
+                        }
+                    }
+                }
+                break;
+            case 25:
+                app.game.owned |= 1u << static_cast<int>(ec::Item::FoodBowl);
+                app.game.bowlFood = static_cast<u8>(Food::HearthBread);
+                app.game.bowlLeft = kBowlPortions;
+                break;
             case 15:  // an adult ready for the Nesting Stone: grown, trusting, content, rested
                 while (d.stage != Stage::Egg && d.stage != Stage::Adult) forceNextStage(d, now);
                 if (d.bond < 400) d.bond = 400;

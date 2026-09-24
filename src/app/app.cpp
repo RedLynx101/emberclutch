@@ -6,6 +6,7 @@
 #include "app/scenes.hpp"
 #include "core/breeding.hpp"
 #include "core/genetics.hpp"
+#include "core/items.hpp"
 #include "app/strings.hpp"
 
 namespace ec {
@@ -61,9 +62,11 @@ u32 stepCount(const App& app) {
 
 void tickWorld(App& app) {
     const s64 now = nowLocal(app);
-    for (int i = 0; i < app.game.dragonCount; ++i) simulate(app.game.dragons[i], app.game.lastSim, now);
+    const float cooling = eggCooling(app.game);
+    for (int i = 0; i < app.game.dragonCount; ++i) simulate(app.game.dragons[i], app.game.lastSim, now, cooling);
     app.game.lastSim = now;
     settleDen(app.game);
+    if (app.scene != SceneId::Den) feedFromBowl(app.game, now);  // in the den they walk over to it
     // The hoard glints more as it grows.
     u32 trinkets = 0;
     for (u16 n : app.game.hoard) trinkets += n;

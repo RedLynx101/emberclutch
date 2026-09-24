@@ -15,6 +15,8 @@
 #include "core/daylight.hpp"
 #include "core/egg.hpp"
 #include "core/genetics.hpp"
+#include "core/items.hpp"
+#include "core/prop_mesh.hpp"
 #include "core/rig.hpp"
 
 namespace ec {
@@ -383,6 +385,24 @@ void denEffects(App& app, s64 now) {
     app.fx.update(app.dt);
 }
 
+// What's been bought for the den (WP7): the toys where they lie, the bowl's food, the decor.
+void denThings(App& app, s64 now) {
+    static r3d::DenThings t;
+    static constexpr float kYaw[kToys] = {0.7f, -0.5f, 0.0f, 0.3f};
+    const SaveData& s = app.game;
+    for (int k = 0; k < kToys; ++k) {
+        t.toy[k] = owns(s, static_cast<Item>(k));
+        const Vec2 at = toyAt(s, k);
+        t.toyAt[k] = {at.x, at.y, k == 2 ? kOrbRadius : 0.0f};
+        t.toyYaw[k] = kYaw[k];
+    }
+    t.bowlFood = bowlFood(s);
+    for (int p = 0; p < kDecorSpots; ++p) t.decor[p] = decorAt(s, p);
+    const DayBlend light = dayBlend(now);
+    t.daylight = light.weight(kLightDay) + 0.4f * light.weight(kLightEvening);
+    r3d::setDenThings(&t);
+}
+
 void update(App& app, const Input& in) {
     // Dev time skip (also in the dev menu): R+A = +1 hour, R+X = +1 day.
     if ((in.held & KEY_R) && (in.down & KEY_A)) app.game.devOffset += kHour;
@@ -410,6 +430,7 @@ void update(App& app, const Input& in) {
     if (d.stage != Stage::Egg && careActor(app)) care::update(app, d);
     denLife(app, r, nowLocal(app));
     denEffects(app, nowLocal(app));
+    denThings(app, nowLocal(app));
     denBeds(app, r, nowLocal(app));
     eggLife(app, r);
     if (d.stage == Stage::Egg) heartbeat(app, d);

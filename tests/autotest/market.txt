@@ -68,16 +68,30 @@ wait 0.3
 tap 98 88
 wait 0.5
 shot m04-bought
-tap 160 21
+tap 199 21
 wait 0.5
 shot m05-sell
 tap 85 77
 wait 0.5
 shot m06-sold
-tap 264 21
+tap 277 21
 wait 1.5
 shot m07-egg
 tap 160 184
 wait 1
 shot m08-egg-bought
+# Goods (WP7): pick the feather wand and buy it; a rug, bought and up in the den.
+tap 121 21
+wait 0.8
+shot m09-goods
+tap 36 66
+wait 0.3
+tap 160 188
+wait 0.8
+shot m10-bought-wand
+tap 280 188
+wait 0.5
+tap 36 132
+wait 0.5
+shot m11-goods-page2
 quit

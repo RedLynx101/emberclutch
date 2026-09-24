@@ -7,6 +7,7 @@
 #include "core/behavior.hpp"
 #include "core/den_actor.hpp"
 #include "core/egg.hpp"
+#include "core/items.hpp"
 #include "core/particles.hpp"
 #include "core/props.hpp"
 
@@ -70,6 +71,21 @@ bool mouthOf(int i, Vec3& out);
 // Props drawn with the dragons, in the den and up close: the ball (nullptr or inactive: none)
 // and the bath tub.
 void setProps(const Ball* ball, bool tubOut, Vec2 tubAt = {}, float tubSize = 0.95f);
+// The den's bought things (WP7): toys on the floor (the rope may hang between two points
+// instead: a tug-of-war, or carried crosswise in a mouth), the food in the bowl, and the
+// decor in its five spots. Drawn with the dragons, in the den and up close (nullptr: none).
+struct DenThings {
+    bool toy[kToys] = {};
+    Vec3 toyAt[kToys] = {};  // on the floor (the orb: its centre)
+    float toyYaw[kToys] = {};
+    Quat orbSpin{0, 0, 0, 1};
+    bool ropeSpan = false;  // the rope runs from ropeA to ropeB
+    Vec3 ropeA, ropeB;
+    Food bowlFood = Food::Count;  // Count: the bowl is empty
+    Item decor[kDecorSpots] = {Item::Count, Item::Count, Item::Count, Item::Count, Item::Count};
+    float daylight = 1;  // 0 night .. 1 day: lanterns and moonflowers glow brighter at night
+};
+void setDenThings(const DenThings* things);
 // The den camera watches this point too (a thrown ball) while `weight` > 0.
 void followInDen(Vec3 at, float weight);
 

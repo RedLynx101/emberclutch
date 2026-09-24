@@ -18,6 +18,7 @@
 #include "app/ui_draw.hpp"
 #include "core/clock.hpp"
 #include "core/dragon.hpp"
+#include "core/items.hpp"
 
 using namespace ec;
 
@@ -80,10 +81,11 @@ int main() {
     ptmuInit();     // the pedometer, for the Wanderings
     if (loadGame(app.game, app.slots) && hasDragon(app)) {
         const s64 now = nowLocal(app);
-        for (u16 i = 0; i < app.game.dragonCount; ++i)
-            simulate(app.game.dragons[i], app.game.lastSim, now);  // catch up on time away
+        for (u16 i = 0; i < app.game.dragonCount; ++i)  // catch up on time away
+            simulate(app.game.dragons[i], app.game.lastSim, now, eggCooling(app.game));
         app.game.lastSim = now;
         settleDen(app.game);  // everyone in the den has a bed or a nest (Alpha 2)
+        feedFromBowl(app.game, now);  // the hungry ate from the bowl while you were away
         fixCare(app);
         markVisit(activeDragon(app), now);
     }

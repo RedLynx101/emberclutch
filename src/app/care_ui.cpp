@@ -242,7 +242,7 @@ void useGroomTool(App& app, const Input& in, Dragon& d, bool hit, const TouchHit
         const Vec2 dir = c.stroke.dir;
         const bool withGrain = dir.x * h.grain.x + dir.y * h.grain.y > 0.2f;
         const float dusty = d.dirt[h.region];
-        if (c.groom.brush(d, h.region, moved / 520.0f, withGrain)) {
+        if (c.groom.brush(d, h.region, moved / 520.0f * brushRate(app.game), withGrain)) {  // the silver brush: faster
             emit(app, kFxSparkle, at, 6);
             audio::playSfx(audio::Sfx::Toast);
         }
@@ -289,6 +289,10 @@ void rinse(App& app, Dragon& d) {
     for (int i = 0; i < 10; ++i) emit(app, kFxDrop, {frand(app, 80, 240), frand(app, 40, 90)}, 1);
     if (c.suds > 0.3f) {
         bathe(d);
+        if (bathShine(app.game) > 0) {  // bubble soap: a lasting sparkle
+            groom(d, bathShine(app.game));
+            for (int i = 0; i < 3; ++i) emit(app, kFxSparkle, {frand(app, 100, 220), frand(app, 50, 120)}, 4);
+        }
         markVisit(d, nowLocal(app));
         showToast(app, str::kSplash);
     }
@@ -388,6 +392,10 @@ const char* hintFor(Tool t) {
 }  // namespace
 
 void drawFood(Food f, float x, float y, float scale) { sprite(foodSprite(f), x, y, scale); }
+
+void drawItem(Item i, float x, float y, float scale) {
+    if (i < Item::Count) sprite(care_item_featherwand_idx + static_cast<std::size_t>(i), x, y, scale);
+}
 
 bool loadSprites() {
     if (!g_sheet) g_sheet = C2D_SpriteSheetLoadFromMem(care_t3x, care_t3x_size);

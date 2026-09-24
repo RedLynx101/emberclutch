@@ -45,6 +45,12 @@ struct SaveData {
     // or two and a candy (and the starter's favourite, scene_starter); older saves get the same.
     u16 pouch[10] = {0, 0, 0, 0, 0, 0, 8, 2, 1, 0};
     s32 eggBoughtDay = -1000000;  // the day the Market's egg was last bought (one a day)
+    // Things bought to keep (WP7, core/items): a bit per Item; the decor in each of the five
+    // spots (0xFF: none); where the toys lie on the den floor (hundredths); the food bowl.
+    u32 owned = 0;
+    u8 decor[5] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    s16 toyPos[4][2] = {};
+    u8 bowlFood = 0xFF, bowlLeft = 0;
     Settings settings{};
     u16 dragonCount = 0;
     Dragon dragons[kMaxDragons];

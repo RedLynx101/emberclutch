@@ -11,6 +11,8 @@ bool loadSprites();
 void freeSprites();
 // A food's sprite centred at (x, y) (the Market draws them too).
 void drawFood(Food f, float x, float y, float scale);
+// A thing from the Market (core/items), its icon centred at (x, y).
+void drawItem(Item i, float x, float y, float scale);
 
 // Which close-up the tool in hand wants (the face for petting, feeding and play; the whole
 // body for grooming and the bath).

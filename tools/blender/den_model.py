@@ -138,7 +138,7 @@ def ring_disc(bm, centre, radii, segs, z, sy=1.0):
 
 def floor():
     bm = bmesh.new()
-    ring_disc(bm, Vector((0, 0, 0)), [3.0, 4.5, 6.0, 7.5, 8.6, R, 16.0], 24, 0.0)  # the rug covers the middle
+    ring_disc(bm, Vector((0, 0, 0)), [3.0, 4.5, 6.0, 7.5, 8.6, R, 16.0], 20, 0.0)  # the rug covers the middle
 
     def albedo(p, n):
         base = (0.64, 0.50, 0.38)  # warm sandstone
@@ -154,7 +154,7 @@ def floor():
 
 WALL_H = [-0.3, 1.4, 3.3, 5.5, 7.8, 10.2, 12.4]
 WALL_R = [R - 0.2, R + 0.1, R + 0.05, R - 0.3, R - 1.1, R - 2.6, R - 4.8]
-WALL_SEGS = 28  # Alpha 2 trimmed the room to <= 2,000 triangles for a full den
+WALL_SEGS = 24  # Alpha 2 trimmed the room for a full den and its toys and decor (<= 2,000 with them)
 WALL_TOP = 13.6
 WALL_GRID = []  # rows of vertex positions, for wall_point()
 
@@ -221,7 +221,7 @@ def wall_point(a, h, inset):
 
 def skylight():
     """The round opening in the back wall: the sky (emissive) inside a stone rim."""
-    segs = 16
+    segs = 12
     r_wall = wall_point(SKY_A, SKY_Z, 0).to_2d().length
 
     def on_wall(rad, theta, inset):
@@ -250,23 +250,6 @@ def skylight():
 
 
 # ------------------------------------------------------------------------------ props
-def rug():
-    bm = bmesh.new()
-    ring_disc(bm, HOME, [0.9, 1.6, 2.2, 2.6], 20, 0.02, sy=0.9)
-
-    def albedo(p, n):
-        d = p - HOME
-        r = math.hypot(d.x, d.y / 0.9)
-        a = math.atan2(d.y, d.x)
-        bands = [(0.95, (0.93, 0.78, 0.46)), (1.65, (0.80, 0.30, 0.16)), (2.25, (0.95, 0.72, 0.30)),
-                 (9.0, (0.62, 0.22, 0.16))]
-        c = next(col for lim, col in bands if r <= lim)
-        if 1.65 < r <= 2.25 and math.sin(a * 12) > 0.3:  # a woven zigzag in the gold band
-            c = (0.86, 0.40, 0.18)
-        return jitter(c, 0.06, p, 3.0)
-    add("rug", bm, albedo)
-
-
 def torus(bm, centre, major, minor, segs=16, sides=6, squash=0.6, lumpy=0.12):
     rings = []
     for i in range(segs):
@@ -290,8 +273,8 @@ def nests():
     def straw(p, n):
         return jitter((0.84, 0.70, 0.40), 0.2, p, 4.0)
     bm = bmesh.new()
-    torus(bm, NEST, 1.5, 0.45, 12, 5)
-    ring_disc(bm, NEST, [1.45], 12, 0.06)
+    torus(bm, NEST, 1.5, 0.45, 10, 5)
+    ring_disc(bm, NEST, [1.45], 10, 0.06)
     add("nest", bm, straw)
     bm = bmesh.new()
     torus(bm, EGG_NEST, 0.85, 0.28, 10, 4)
@@ -335,8 +318,8 @@ def rock(bm, centre, radius, stretch=(1.0, 1.0, 0.8), seed=0.0):
 
 def hearth():
     bm = bmesh.new()
-    for k in range(9):
-        a = 2 * math.pi * k / 9
+    for k in range(8):
+        a = 2 * math.pi * k / 8
         rock(bm, HEARTH + Vector((math.cos(a) * 1.05, math.sin(a) * 1.05, 0.16)), 0.34, (1.0, 1.0, 0.8), k)
     add("hearth_stones", bm, lambda p, n: jitter((0.40, 0.36, 0.40), 0.2, p, 2.0))
     bm = bmesh.new()
@@ -383,7 +366,7 @@ def shelves():
     jars = ((-0.9, 1.62, 0.18, 0.45), (-0.3, 1.62, 0.22, 0.34), (0.5, 1.62, 0.16, 0.5),
             (-0.6, 2.72, 0.2, 0.4), (0.4, 2.72, 0.24, 0.3))
     for dx, z, r, h in jars:
-        cylinder(bm, Vector((dx, 0, z)), r, h, 7)
+        cylinder(bm, Vector((dx, 0, z)), r, h, 5)
     place(bm)
     colours = [(0.30, 0.56, 0.58), (0.72, 0.48, 0.30), (0.52, 0.40, 0.66), (0.80, 0.68, 0.42), (0.36, 0.50, 0.36)]
     centres = [offset + face @ Vector((dx, 0, z + h * 0.5)) for dx, z, _, h in jars]
@@ -708,7 +691,7 @@ def main():
     floor()
     walls()
     SKY_CENTRE = skylight()
-    rug()
+    # the rug is a prop now (core/prop_mesh: lit like the dragons, and swapped for a bought one)
     nests()
     hearth()
     hoard()

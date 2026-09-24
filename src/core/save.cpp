@@ -233,6 +233,12 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
     for (u16 n : data.hoard) w.u16v(n);
     for (u16 n : data.pouch) w.u16v(n);  // Alpha 2: the pouch and the Market's egg of the day
     w.s32v(data.eggBoughtDay);
+    w.u32v(data.owned);  // Alpha 2: things bought to keep, the decor, the toys, the food bowl
+    for (u8 k : data.decor) w.u8v(k);
+    for (const auto& p : data.toyPos)
+        for (s16 v : p) w.u16v(static_cast<u16>(v));
+    w.u8v(data.bowlFood);
+    w.u8v(data.bowlLeft);
     w.patchU16(at, static_cast<u16>(w.pos() - start));
 
     // Settings section
@@ -326,6 +332,14 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
     if (sectionSize >= 16 + 8 + 8 + 4 + 12 + 16 + 24) {  // older saves: the starting pouch
         for (u16& n : tmp.pouch) n = r.u16v();
         tmp.eggBoughtDay = r.s32v();
+    }
+    if (sectionSize >= 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27) {  // older saves: nothing bought yet
+        tmp.owned = r.u32v();
+        for (u8& k : tmp.decor) k = r.u8v();
+        for (auto& p : tmp.toyPos)
+            for (s16& v : p) v = static_cast<s16>(r.u16v());
+        tmp.bowlFood = r.u8v();
+        tmp.bowlLeft = r.u8v();
     }
     r.seek(start + sectionSize);
 

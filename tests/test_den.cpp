@@ -1,6 +1,7 @@
 // Den scene tests (WP6): the room file (romfs/models/den.esm, tools/blender/den_model.py)
 // loads, fits the frame budget and matches the behavior's layout; the lighting sets and the
 // time-of-day blend read right; particles live, fall and die within their pool.
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -11,6 +12,7 @@
 #include "core/clock.hpp"
 #include "core/daylight.hpp"
 #include "core/particles.hpp"
+#include "core/prop_mesh.hpp"
 #include "core/static_mesh.hpp"
 
 using namespace ec;
@@ -71,7 +73,7 @@ TEST(den_file_loads_and_fits_the_frame_budget) {
     std::printf("  den: %d parts, %d triangles, %d vertices, %zu bytes\n", static_cast<int>(s.parts.size()),
                 s.triangles(), s.vertexCount, denBytes().size());
     CHECK(s.triangles() > 1000 && s.triangles() <= 8000 - 3000 - 2 * 1200 - 2 * 300);
-    for (const char* name : {"floor", "walls", "sky", "rug", "nest", "bed_1", "bed_2", "egg_nest", "nook_moss",
+    for (const char* name : {"floor", "walls", "sky", "nest", "bed_1", "bed_2", "egg_nest", "nook_moss",
                              "embers", "hoard", "hearth_stones", "shelves", "sunbeam", "flames"})
         CHECK(s.find(name) != nullptr);
     bool additiveSeen = false, orderOk = true;
@@ -97,12 +99,48 @@ TEST(den_file_loads_and_fits_the_frame_budget) {
     CHECK(!loadStaticScene(broken.data(), broken.size(), bad));
 }
 
+// The den's bought things (WP7) fit the frame with the room and a full den: every toy out
+// and the biggest piece of decor in each spot (a bought rug hides the room's own).
+TEST(den_things_fit_the_frame_budget) {
+    int toys = bowlFoodMesh().triangles();
+    for (int k = 0; k < kToys; ++k) {
+        const PropMesh m = toyMesh(k);
+        CHECK(m.triangles() > 0 && m.pos.size() == m.nrm.size() && m.paint.size() == m.pos.size() * 4);
+        for (u16 i : m.idx) CHECK(i < m.pos.size());
+        toys += m.triangles();
+    }
+    int decor[kDecorSpots] = {}, cheapestRug = 1 << 30;
+    for (int i = 0; i < kItems; ++i) {
+        const Item it = static_cast<Item>(i);
+        const int spot = decorSpot(itemInfo(it).kind);
+        if (spot < 0) continue;
+        const PropMesh m = decorMesh(it);
+        CHECK(m.triangles() > 0 && m.paint.size() == m.pos.size() * 4);
+        for (u16 v : m.idx) CHECK(v < m.pos.size());
+        for (std::size_t v = 0; v < m.paint.size(); v += 4) CHECK(m.paint[v] < 4);  // four colours each
+        decor[spot] = std::max(decor[spot], m.triangles());
+        if (spot == 0) cheapestRug = std::min(cheapestRug, m.triangles());
+    }
+    const StaticScene& s = den();
+    int decorSum = 0;
+    for (int n : decor) decorSum += n;
+    const int homeRug = homeRugMesh().triangles();
+    std::printf("  den things: toys %d, decor %d (rug %d, lantern %d, perch %d, plant %d, banner %d)\n", toys,
+                decorSum, decor[0], decor[1], decor[2], decor[3], decor[4]);
+    CHECK(s.find("rug") == nullptr && homeRug > 0 && homeRug <= cheapestRug);  // the rug is a prop
+    // The room, every toy out and the biggest decor in every spot fit the room's share.
+    CHECK(s.triangles() + toys + decorSum <= 8000 - 3000 - 2 * 1200 - 2 * 300);
+    const DecorPlace rugAt = decorPlace(0);
+    const DenLayout lay;
+    CHECK(std::fabs(rugAt.at.x - lay.home.x) < 0.01f && std::fabs(rugAt.at.y - lay.home.y) < 0.01f);
+}
+
 TEST(den_room_matches_the_behavior_layout) {
     const StaticScene& s = den();
     const DenLayout lay;
     const struct { const char* part; Vec2 spot; } spots[] = {
         {"nest", lay.beds[0]}, {"bed_1", lay.beds[1]},  {"bed_2", lay.beds[2]}, {"nook_moss", lay.sulkSpots[0]},
-        {"egg_nest", lay.eggNests[0]}, {"egg_nest_2", lay.eggNests[1]}, {"rug", lay.home}, {"embers", lay.hearth}, {"hoard", lay.hoard},
+        {"egg_nest", lay.eggNests[0]}, {"egg_nest_2", lay.eggNests[1]}, {"embers", lay.hearth}, {"hoard", lay.hoard},
     };
     for (const auto& sp : spots) {
         const StaticPart* p = s.find(sp.part);
@@ -280,6 +318,7 @@ TEST(particles_live_fall_and_die) {
 
 void runDenTests() {
     RUN(den_file_loads_and_fits_the_frame_budget);
+    RUN(den_things_fit_the_frame_budget);
     RUN(den_room_matches_the_behavior_layout);
     RUN(den_lighting_sets_read_right);
     RUN(daylight_blends_smoothly_through_the_day);

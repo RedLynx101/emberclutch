@@ -18,6 +18,7 @@
 #include "core/daylight.hpp"
 #include "core/dragon_mesh.hpp"
 #include "core/egg.hpp"
+#include "core/prop_mesh.hpp"
 #include "core/rig.hpp"
 #include "core/static_mesh.hpp"
 #include "dragon_shbin.h"
@@ -273,6 +274,9 @@ Vec2 g_tubAt;
 float g_tubSize = 0.95f;
 Quat g_ballSpin{0, 0, 0, 1};
 Vec3 g_follow;          // the den camera also watches this (a thrown ball)
+// The den's bought things (WP7): meshes built on first use, one per toy and decor item.
+const DenThings* g_things = nullptr;
+GpuMesh g_toyMeshes[kToys], g_bowlFoodMesh, g_decorMeshes[kItems], g_homeRugMesh;
 float g_followWeight = 0;
 
 // Toon ramp on L.N (signed): plum shadow, a mid band, full light.
@@ -828,6 +832,10 @@ void shutdown() {
     g_eggLod1.shell.release();
     g_ballMesh.release();
     g_tubMesh.release();
+    for (GpuMesh& m : g_toyMeshes) m.release();
+    for (GpuMesh& m : g_decorMeshes) m.release();
+    g_bowlFoodMesh.release();
+    g_homeRugMesh.release();
     g_egg.ok = g_eggLod1.ok = false;
     if (g_staticDvlb) {
         shaderProgramFree(&g_staticProgram);
@@ -1048,7 +1056,110 @@ void propModelView(const C3D_Mtx& view, Vec3 at, float scale, const Quat* rot) {
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &modelView);
 }
 
-// Draws the ball and the tub (after bindDragons and a lightDragon).
+bool uploadProp(GpuMesh& g, const PropMesh& m) {
+    const std::size_t n = m.pos.size();
+    std::vector<u8> skin;
+    std::vector<float> uv;
+    for (std::size_t v = 0; v < n; ++v) {
+        skin.insert(skin.end(), {0, 0, 255, 0});
+        uv.insert(uv.end(), {kCleanUv, kCleanUv});
+    }
+    const u8 palette[1] = {0};
+    return fill(g, static_cast<int>(n), m.pos.data(), m.nrm.data(), skin.data(), m.paint.data(), uv.data(),
+                m.idx.data(), static_cast<int>(m.idx.size()), palette, 1);
+}
+
+// An item's four colours; `glow` is how much its emissive parts shine (the palette alpha).
+void setLook(const PropLook& look, float glow) {
+    for (int i = 0; i < 4; ++i)
+        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, look.colour[i].r / 255.0f, look.colour[i].g / 255.0f,
+                      look.colour[i].b / 255.0f, glow);
+}
+
+void modelView(const C3D_Mtx& view, const C3D_Mtx& model) {
+    C3D_Mtx modelView;
+    Mtx_Multiply(&modelView, &view, &model);
+    C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &modelView);
+}
+
+// Stands at `at`, turned `yaw` about +Z, scaled (and sx more along its own X).
+C3D_Mtx placeMatrix(Vec3 at, float yaw, float sx = 1.0f, float scale = 1.0f) {
+    C3D_Mtx model;
+    Mtx_Identity(&model);
+    Mtx_Translate(&model, at.x, at.y, at.z, true);
+    Mtx_RotateZ(&model, yaw, true);
+    Mtx_Scale(&model, sx * scale, scale, scale);
+    return model;
+}
+
+// The rope's unit length along X, stretched from a to b (it stays level across).
+C3D_Mtx spanMatrix(Vec3 a, Vec3 b) {
+    const Vec3 x = b - a;
+    const float len = std::fmax(1e-3f, length(x));
+    const Vec3 dir = x * (1.0f / len);
+    Vec3 side = cross(Vec3{0, 0, 1}, dir);
+    side = length(side) < 1e-3f ? Vec3{0, 1, 0} : normalize(side);
+    const Vec3 up = cross(dir, side);
+    const Vec3 mid = (a + b) * 0.5f;
+    C3D_Mtx m;
+    Mtx_Zeros(&m);
+    // citro3d rows: r[i].x/y/z/w = row i (w, z, y, x in memory; the accessors name them)
+    m.r[0].x = x.x, m.r[0].y = side.x, m.r[0].z = up.x, m.r[0].w = mid.x;
+    m.r[1].x = x.y, m.r[1].y = side.y, m.r[1].z = up.y, m.r[1].w = mid.y;
+    m.r[2].x = x.z, m.r[2].y = side.z, m.r[2].z = up.z, m.r[2].w = mid.z;
+    m.r[3].w = 1.0f;
+    return m;
+}
+
+// The toys, the bowl's food and the decor (WP7).
+void drawThings(App& app, const C3D_Mtx& view, const DenThings& t) {
+    const Mat34 identity[1] = {Mat34::identity()};
+    const float night = 1.0f - t.daylight;
+    for (int s = 0; s < kDecorSpots; ++s) {
+        const Item it = t.decor[s];
+        if (it >= Item::Count && s != 0) continue;  // an empty spot (the rug's has the den's own)
+        GpuMesh& g = it < Item::Count ? g_decorMeshes[static_cast<int>(it)] : g_homeRugMesh;
+        if (!g.vbo && !uploadProp(g, it < Item::Count ? decorMesh(it) : homeRugMesh())) continue;
+        const PropLook look = propLook(it);
+        setLook(look, look.glow * (0.3f + 0.7f * night));
+        const DecorPlace p = decorPlace(s);
+        modelView(view, placeMatrix(p.at, p.yaw, 1.0f, p.scale));
+        drawMesh(app, g, identity);
+    }
+    for (int k = 0; k < kToys; ++k) {
+        if (!t.toy[k]) continue;
+        GpuMesh& g = g_toyMeshes[k];
+        if (!g.vbo && !uploadProp(g, toyMesh(k))) continue;
+        PropLook look = propLook(static_cast<Item>(k));
+        setLook(look, 0);
+        if (k == 1 && t.ropeSpan) {
+            modelView(view, spanMatrix(t.ropeA, t.ropeB));
+        } else if (k == 1) {
+            modelView(view, placeMatrix(t.toyAt[k] + Vec3{0, 0, 0.05f}, t.toyYaw[k], kRopeLength));
+        } else if (k == 2) {
+            C3D_Mtx model, r, out;
+            Mtx_Identity(&model);
+            Mtx_Translate(&model, t.toyAt[k].x, t.toyAt[k].y, t.toyAt[k].z, true);
+            Mtx_FromQuat(&r, Quat_New(t.orbSpin.x, t.orbSpin.y, t.orbSpin.z, t.orbSpin.w));
+            Mtx_Multiply(&out, &model, &r);
+            modelView(view, out);
+        } else {
+            modelView(view, placeMatrix(t.toyAt[k], t.toyYaw[k]));
+        }
+        drawMesh(app, g, identity);
+        if (k == 3 && t.bowlFood < Food::Count) {  // the food heaped in the bowl
+            if (!g_bowlFoodMesh.vbo && !uploadProp(g_bowlFoodMesh, bowlFoodMesh())) continue;
+            static constexpr Rgb kFoodColour[static_cast<int>(Food::Count)] = {
+                {214, 60, 40}, {170, 190, 210}, {110, 110, 210}, {214, 170, 80}, {190, 230, 170},
+                {250, 214, 80}, {214, 170, 110}, {150, 90, 50}, {240, 110, 60}, {200, 150, 100}};
+            look.colour[3] = kFoodColour[static_cast<int>(t.bowlFood)];
+            setLook(look, 0);
+            drawMesh(app, g_bowlFoodMesh, identity);
+        }
+    }
+}
+
+// Draws the ball and the tub (after bindDragons and a lightDragon), and the den's things.
 void drawProps(App& app, const C3D_Mtx& view) {
     if (!g_ballMesh.vbo) makeBallMesh(g_ballMesh);
     if (!g_tubMesh.vbo) makeTubMesh(g_tubMesh);
@@ -1069,6 +1180,8 @@ void drawProps(App& app, const C3D_Mtx& view) {
         propModelView(view, g_ball->pos, g_ball->radius, &g_ballSpin);
         drawMesh(app, g_ballMesh, identity);
     }
+    static const DenThings kBare;  // scenes that set nothing still have the den's own rug
+    drawThings(app, view, g_things ? *g_things : kBare);
 }
 
 // ------------------------------------------------------------------------------ picking (WP7)
@@ -1564,6 +1677,8 @@ void setProps(const Ball* ball, bool tubOut, Vec2 tubAt, float tubSize) {
     g_tubAt = tubAt;
     g_tubSize = tubSize;
 }
+
+void setDenThings(const DenThings* things) { g_things = things; }
 
 void followInDen(Vec3 at, float weight) {
     g_follow = at;

@@ -13,12 +13,17 @@
 #include "core/clock.hpp"
 #include "core/egg.hpp"
 #include "core/genetics.hpp"
+#include "core/items.hpp"
 #include "core/market.hpp"
 
 namespace ec {
 namespace {
 
 u32 col(u8 r, u8 g, u8 b, float a = 1.0f) { return withAlpha(theme::rgba(r, g, b), a); }
+
+enum Tab : u8 { kFood, kGoods, kSell, kEgg, kTabs };
+constexpr int kGoodsPerPage = 10;
+constexpr int kGoodsPages = (kItems + kGoodsPerPage - 1) / kGoodsPerPage;
 
 // Today's egg as a dragon record (for drawing it; nothing is saved).
 Dragon todaysEgg(const App& app) {
@@ -34,8 +39,8 @@ void update(App& app, const Input& in) {
         tickWorld(app);
         app.simAccum = 0;
     }
-    if (in.down & KEY_L) app.marketTab = static_cast<u8>((app.marketTab + 2) % 3);
-    if (in.down & KEY_R) app.marketTab = static_cast<u8>((app.marketTab + 1) % 3);
+    if (in.down & KEY_L) app.marketTab = static_cast<u8>((app.marketTab + kTabs - 1) % kTabs);
+    if (in.down & KEY_R) app.marketTab = static_cast<u8>((app.marketTab + 1) % kTabs);
     if (in.down & KEY_B) {
         openMap(app);
         audio::playSfx(audio::Sfx::Back);
@@ -56,7 +61,16 @@ void drawTop(App& app) {
     for (int i = 0; i < 21; ++i)
         C2D_DrawTriangle(i * 20.0f - 4, 70, col(245, 196, 81), i * 20.0f + 12, 70, col(245, 196, 81), i * 20.0f + 4, 84,
                          i % 2 ? col(63, 167, 168) : col(232, 102, 43), 0);
-    if (app.marketTab == 2 && r3d::ready()) {  // the egg of the day, on the middle stall
+    if (app.marketTab == kGoods) {  // the thing picked, on the middle stall
+        const Item it = static_cast<Item>(app.goodsPick);
+        const ItemInfo& info = itemInfo(it);
+        C2D_DrawEllipseSolid(160, 150, 0, 80, 14, col(120, 84, 56, 0.35f));
+        care::drawItem(it, 200, 118 + 3 * std::sin(app.t * 1.6f), 1.2f);
+        panel({30, 160, 340, 40}, col(250, 240, 220, 0.88f));
+        textCentered(app, info.name, 200, 170, 0.6f, theme::kDenPlum, 320, Face::Title);
+        textCentered(app, info.blurb, 200, 189, 0.42f, theme::kDenPlum, 330);
+    }
+    if (app.marketTab == kEgg && r3d::ready()) {  // the egg of the day, on the middle stall
         static EggMotion rock;
         rock.update(app.dt, 0.0f, app.rng);
         if (rock.rock < 0.02f) rock.knock(0.04f, 0);
@@ -92,6 +106,69 @@ void foodTab(App& app, const Input& in) {
         }
     }
     textCentered(app, str::kTapToBuy, 160, 192, 0.4f, withAlpha(theme::kShell, 0.75f), 300);
+}
+
+// Things to keep (WP7): toys, grooming things, warm stones and decor, a page at a time. Tap
+// one to see it on the stall; then buy it, or put it up in the den (or take it down).
+void goodsTab(App& app, const Input& in) {
+    SaveData& s = app.game;
+    for (int k = 0; k < kGoodsPerPage; ++k) {
+        const int i = app.goodsPage * kGoodsPerPage + k;
+        if (i >= kItems) break;
+        const Item it = static_cast<Item>(i);
+        const Rect r{8.0f + (k % 5) * 61.0f, 42.0f + (k / 5) * 66.0f, 57, 62};
+        const bool picked = app.goodsPick == i;
+        panel(r, picked ? withAlpha(theme::kClutchGold, 0.5f) : withAlpha(theme::kShell, 0.18f));
+        care::drawItem(it, r.x + r.w / 2, r.y + 24, 0.62f);
+        char line[32];
+        if (owns(s, it)) std::snprintf(line, sizeof(line), "%s", isUp(s, it) || i < kToys ? str::kInTheDen : str::kYours);
+        else std::snprintf(line, sizeof(line), str::kPrice, static_cast<unsigned long>(itemInfo(it).price));
+        textCentered(app, line, r.x + r.w / 2, r.y + 52, 0.32f, owns(s, it) ? theme::kShell : theme::kClutchGold, r.w - 4);
+        if (in.released && r.contains(in.rx, in.ry) && !picked) {
+            app.goodsPick = static_cast<u8>(i);
+            audio::playSfx(audio::Sfx::Tap);
+        }
+    }
+    // What can be done with the one picked.
+    const Item it = static_cast<Item>(app.goodsPick);
+    const ItemInfo& info = itemInfo(it);
+    const bool decor = decorSpot(info.kind) >= 0;
+    const Rect act{90, 176, 140, 24};
+    char label[32];
+    if (!owns(s, it)) {
+        std::snprintf(label, sizeof(label), str::kBuyFor, static_cast<unsigned long>(info.price));
+        if (button(app, act, label, in)) {
+            if (buyItem(s, it)) {
+                audio::playSfx(audio::Sfx::Confirm);
+                showToast(app, decor || static_cast<int>(it) < kToys ? str::kBoughtThing : str::kBoughtKeep);
+                saveNow(app);
+            } else {
+                audio::playSfx(audio::Sfx::Error);
+                showToast(app, str::kNotEnoughGleam);
+            }
+        }
+    } else if (decor && !isUp(s, it)) {
+        if (button(app, act, str::kPutUp, in)) {
+            putUp(s, it);
+            audio::playSfx(audio::Sfx::Confirm);
+            showToast(app, str::kUpInDen);
+            saveNow(app);
+        }
+    } else if (decor) {
+        if (button(app, act, str::kTakeDown, in)) {
+            takeDown(s, decorSpot(info.kind));
+            audio::playSfx(audio::Sfx::Back);
+            showToast(app, str::kBackInChest);
+            saveNow(app);
+        }
+    } else {
+        textCentered(app, static_cast<int>(it) < kToys ? str::kInTheDen : str::kYours, 160, 188, 0.45f,
+                     withAlpha(theme::kShell, 0.8f), 200);
+    }
+    // The stall's pages.
+    if (app.goodsPage > 0 && button(app, {8, 176, 40, 24}, "<", in)) app.goodsPage = static_cast<u8>(app.goodsPage - 1);
+    if (app.goodsPage + 1 < kGoodsPages && button(app, {272, 176, 40, 24}, ">", in))
+        app.goodsPage = static_cast<u8>(app.goodsPage + 1);
 }
 
 void sellTab(App& app, const Input& in) {
@@ -143,20 +220,21 @@ void eggTab(App& app, const Input& in) {
 void drawBottom(App& app, const Input& in) {
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
     // Tabs along the top (L / R too).
-    static const char* const kTabs[3] = {str::kTabFood, str::kTabSell, str::kTabEgg};
-    for (int k = 0; k < 3; ++k) {
-        const Rect r{6.0f + k * 104.0f, 6, 100, 30};
+    static const char* const kTabNames[kTabs] = {str::kTabFood, str::kTabGoods, str::kTabSell, str::kTabEgg};
+    for (int k = 0; k < kTabs; ++k) {
+        const Rect r{6.0f + k * 78.0f, 6, 74, 30};
         const bool on = app.marketTab == k;
         panel(r, on ? theme::kClutchGold : withAlpha(theme::kShell, 0.2f));
-        textCentered(app, kTabs[k], r.x + r.w / 2, r.y + r.h / 2, 0.45f, on ? theme::kDenPlum : theme::kShell, r.w - 8);
+        textCentered(app, kTabNames[k], r.x + r.w / 2, r.y + r.h / 2, 0.42f, on ? theme::kDenPlum : theme::kShell, r.w - 6);
         if (in.released && r.contains(in.rx, in.ry) && !on) {
             app.marketTab = static_cast<u8>(k);
             audio::playSfx(audio::Sfx::Tap);
         }
     }
     switch (app.marketTab) {
-        case 0: foodTab(app, in); break;
-        case 1: sellTab(app, in); break;
+        case kFood: foodTab(app, in); break;
+        case kGoods: goodsTab(app, in); break;
+        case kSell: sellTab(app, in); break;
         default: eggTab(app, in); break;
     }
     if (button(app, {96, 204, 128, 32}, str::kMap, in)) openMap(app);

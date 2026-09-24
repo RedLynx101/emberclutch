@@ -1,0 +1,75 @@
+# The den's things (Alpha 2 WP7): every toy and piece of decor from the Market in the den,
+# each decor look in turn, by day and by night, and the budget with a full den.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+# Dev menu page 2: all things, and food in the bowl.
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 238 56
+wait 0.3
+tap 238 81
+wait 0.3
+key SELECT
+wait 2
+shot t01-den-things
+# Each spot's next look (the page stays on 2).
+key SELECT
+wait 0.3
+tap 82 81
+key SELECT
+wait 1.5
+shot t02-decor-2
+key SELECT
+wait 0.3
+tap 82 81
+key SELECT
+wait 1.5
+shot t03-decor-3
+key SELECT
+wait 0.3
+tap 82 81
+key SELECT
+wait 1.5
+shot t04-decor-4
+# Round the clock: one of these is night (the lanterns glow).
+skip 6
+wait 2
+shot t05-plus6h
+skip 6
+wait 2
+shot t06-plus12h
+skip 6
+wait 2
+shot t07-plus18h
+# A full den with everything out: the budget.
+key SELECT
+wait 0.3
+key L
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+tap 82 206
+wait 0.3
+tap 82 206
+wait 0.3
+key SELECT
+wait 4
+overlay on
+shot t08-full-den-budget
+overlay off
+quit

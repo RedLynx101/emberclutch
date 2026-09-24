@@ -159,6 +159,18 @@ inline constexpr const char* kEggBought = "Yours! It's in a nest (or the Cold Va
 inline constexpr const char* kEggTomorrowMarket = "Today's egg is sold. Another tomorrow!";
 inline constexpr const char* kMarketLocked = "Opens when a dragon grows to Juvenile.";
 inline constexpr const char* kPrice = "%lu Gleam";
+// Things to keep (WP7): the Market's goods
+inline constexpr const char* kTabGoods = "Goods";
+inline constexpr const char* kBuyFor = "Buy: %lu Gleam";
+inline constexpr const char* kPutUp = "Put it up";
+inline constexpr const char* kTakeDown = "Take it down";
+inline constexpr const char* kInTheDen = "In the den";
+inline constexpr const char* kYours = "Yours";
+inline constexpr const char* kUpInDen = "Up in the den!";
+inline constexpr const char* kBackInChest = "Back in the chest.";
+inline constexpr const char* kBoughtThing = "Yours! It's waiting in the den.";
+inline constexpr const char* kBoughtKeep = "Yours to keep!";
+inline constexpr const char* kTapToPick = "Tap a thing to see it.";
 inline constexpr const char* kDenFull = "The den is full (three beds).";
 inline constexpr const char* kEggToVault = "The nests are full: it went to the Vault.";
 

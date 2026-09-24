@@ -174,7 +174,9 @@ struct App {
     int wanderPick = -1;
     WanderFinds finds;
     int findsFrom = -1;  // who found them (SaveData index), -1: nothing to show
-    u8 marketTab = 0;    // the Market: food, sell, the egg of the day
+    u8 marketTab = 0;    // the Market: food, goods, sell, the egg of the day
+    u8 goodsPick = 0;    // the Market's goods (WP7): the item picked (core/items Item)...
+    u8 goodsPage = 0;    // ...and the page of the stall
 
     // Debug
     bool overlay = EC_DEV;

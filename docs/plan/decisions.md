@@ -2,13 +2,14 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
-## 2026-09-23 — Sculpt review R1 fixes
+## 2026-09-23 — Sculpt reviews R1 and R1b
 
 | # | Decision | Why | Status |
 |---|---|---|---|
-| D36 | **Two body forms.** Hatchlings use their own baby model (metaball-sculpted: round head, big eyes, short snout, chubby body, stubby legs, tiny wings). The stage-up to juvenile swaps to the grown model behind a glow, **the first molt**. Within each form, growth is still bone scaling. Both forms share one skeleton layout, so animations carry over | R1: the hatchling made by shrinking the adult mesh was "super ugly" (floating wings, massive chest). A baby needs its own proportions and head detail | Proposed in R1b |
-| D37 | **Classic dragon wings for every breed:** arm, forearm, thumb claw and four long fingers spread across the whole membrane, which reaches back along the flank (12 wing bones). The Wings gene now only picks the **trailing edge**: Classic (scalloped, was Membrane), Plumed (frilled, was Feathered), Sail (smooth and rounded, was Fin). Enum values are unchanged, so saves are unaffected | R1: "larger generic dragon wings for all", no spined top over a bare bottom | Proposed in R1b |
-| D38 | **Stronger breed silhouettes:** builds change proportions by 15–55% (sturdy = heavy chest and thick limbs, sleek = slender with long legs, long = serpentine neck and tail with short legs), and the **Frill gene also picks the dorsal ridge** (none/leaf: spikes, fin: a fin sail, feather: plumes along the neck and back). Frills and tail tips are bigger | R1: breeds differed "more so in color"; shape differences were too subtle | Proposed in R1b |
+| D36 | **Two body forms.** Hatchlings use their own baby model (metaball-sculpted: round head, big eyes, short snout, chubby body, stubby legs, tiny wings). The stage-up to juvenile swaps to the grown model behind a glow, **the first molt**. Within each form, growth is still bone scaling. Both forms share one skeleton layout, so animations carry over | R1: the hatchling made by shrinking the adult mesh was "super ugly" (floating wings, massive chest). A baby needs its own proportions and head detail | Approved (R1b) |
+| D37 | **Classic dragon wings for every breed:** arm, forearm, thumb claw and four long fingers spread across the whole membrane, which reaches back along the flank (12 wing bones). The Wings gene now only picks the **trailing edge**: Classic (scalloped, was Membrane), Plumed (frilled, was Feathered), Sail (smooth and rounded, was Fin). Enum values are unchanged, so saves are unaffected | R1: "larger generic dragon wings for all", no spined top over a bare bottom | Approved (R1b) |
+| D38 | **Stronger breed silhouettes:** builds change proportions by 15–55% (sturdy = heavy chest and thick limbs, sleek = slender with long legs, long = serpentine neck and tail with short legs), and the **Frill gene also picks the dorsal ridge** (none/leaf: spikes, fin: a fin sail, feather: plumes along the neck and back). Frills and tail tips are bigger | R1: breeds differed "more so in color"; shape differences were too subtle | Approved (R1b) |
+| D39 | **Faces and growth after R1b:** every dragon gets nostrils and a thin mouth line, projected onto the body and joined into its mesh (so they deform with the skin). Hatchlings grow about 1.6x within their stage, so the late hatchling sits halfway between the newborn and the juvenile. Frill bases sit deeper in the skull | Noah's R1b verdict: "certainly a nose", "consider a mouth", stage 2 looked like stage 1, the blue baby's head bits floated | Approved (R1b follow-up) |
 
 ## 2026-09-23 — Design review rounds 1–3
 

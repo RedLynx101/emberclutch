@@ -59,4 +59,19 @@ or scale detail yet; those come with texturing.
 - A mouth line, belly-plate ridges and scale detail come with texturing (R2).
 
 ## Noah's verdict
-*(pending)*
+1. **Hatchlings:** The blue baby needs its head bits attached to the skull better, they're slightly floating. Add nostrils to them and all the other models. Consider a mouth.
+2. **Wings:** Yes. They look good.
+3. **Breeds:** Yes, better.
+4. **The first molt:** Second stage looks like first stage. Please make stage 2 a little larger and nicely fir between stages 1 and 3.
+5. Again, consider a mouth, but certainly a nose. But they're looking good.
+
+**Result:** sculpt approved (wings and breeds as shown). The fixes below are done; the R1 gate is
+passed and texturing (R2) can start.
+
+## After the verdict (R1c, not blocking)
+- **Nostrils on every dragon, and a mouth line** (D39). Both are projected onto the body and joined
+  into its mesh, so they move with the skin. See `R1c-faces.png`.
+- **Floating head bits:** Tide's fins and Gale's crest now start inside the skull.
+- **Stage 2:** hatchlings now grow about 1.6x during their stage. The late hatchling sits halfway
+  between the newborn and the juvenile, so the molt is a small step. See `R1c-growth.png`.
+- Budget still holds: at most 2,994 triangles (grown) and 2,778 (hatchling), including the face.

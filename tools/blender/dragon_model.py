@@ -169,7 +169,7 @@ GROWN = dict(
     nodes=GROWN_NODES,
     edges=GROWN_EDGES,
     body="skin",
-    body_tris=1800,
+    body_tris=1680,  # + ~110 for the nostrils and mouth joined into the body
     export_scale=1.0,
     # Bone (girth_x, length[, girth_z]) and part scales at t = 0: the juvenile. Lerps to 1 (adult).
     young={
@@ -204,7 +204,10 @@ GROWN = dict(
               radii={"root": 0.10, "elbow": 0.075, "wrist": 0.06, "finger": 0.022, "tip": 0.008},
               arm_tris=180, thickness=0.014),
     mask=dict(max_x=0.34, max_z=2.35, min_z=-1.0, tail_cut=(1.2, 0.3)),
-    inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.02, "frill": 0.03, "heart": -0.012},
+    inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.02, "frill": 0.09, "heart": -0.012},
+    # Face details (R1b): nostrils on the snout tip and a jaw line, projected onto the body.
+    face=dict(nostril=(0.05, -2.20, 2.52), nostril_r=(0.024, 0.015, 0.008), mouth_r=0.012,
+              mouth=lambda side, a: (side * 0.15 * a ** 0.7, -2.25 + 0.47 * a ** 1.5, 2.41 + 0.06 * a * a)),
 )
 
 # ------------------------------------------------------------------------------ hatchling form
@@ -276,12 +279,12 @@ HATCH = dict(
     meta=HATCH_META,
     body="meta",
     body_tris=1600,
-    export_scale=0.8,
+    export_scale=1.0,
     young={  # t = 0 is hatch day, t = 1 the end of the hatchling stage
-        "bones": {name: ((0.92, 0.92) if name in ("head", "snout") else (0.84, 0.84))
+        "bones": {name: ((0.72, 0.72) if name in ("head", "snout") else (0.62, 0.62))
                   for name in ("hips", "belly", "chest", "neck1", "neck2", "neck3", "head", "snout", "tail1",
                                "tail2", "tail3", "tail4", "arm_up", "arm_lo", "hand", "leg_up", "leg_lo", "foot")},
-        "parts": {"eyes": 1.04, "horns": 0.8, "frill": 0.85, "wings": 0.78, "spikes": 0.85,
+        "parts": {"eyes": 1.15, "horns": 0.6, "frill": 0.9, "wings": 0.56, "spikes": 0.85,
                   "tail_tip": 0.9, "heart": 1.0},
     },
     young_pose={},
@@ -302,12 +305,14 @@ HATCH = dict(
               radii={"root": 0.045, "elbow": 0.035, "wrist": 0.03, "finger": 0.011, "tip": 0.005},
               arm_tris=120, thickness=0.008),
     mask=dict(max_x=0.22, max_z=1.06, min_z=0.13, tail_cut=None),
-    inset={"eyes": 0.032, "horns": 0.02, "spikes": 0.012, "frill": 0.02, "heart": -0.008},
+    inset={"eyes": 0.032, "horns": 0.02, "spikes": 0.012, "frill": 0.06, "heart": -0.008},
+    face=dict(nostril=(0.05, -1.00, 1.03), nostril_r=(0.026, 0.017, 0.009), mouth_r=0.011,
+              mouth=lambda side, a: (side * 0.15 * a ** 0.8, -1.03 + 0.2 * a ** 1.6, 0.915 + 0.035 * a * a)),
 )
 
 FORMS = {"grown": GROWN, "hatchling": HATCH}
 # Review stages -> (form, growth t within the form).
-STAGE = {"newborn": ("hatchling", 0.0), "hatchling": ("hatchling", 0.5), "juvenile": ("grown", 0.0),
+STAGE = {"newborn": ("hatchling", 0.0), "hatchling": ("hatchling", 0.75), "juvenile": ("grown", 0.0),
          "adolescent": ("grown", 0.45), "adult": ("grown", 1.0)}
 F = GROWN  # the form being built
 
@@ -1030,6 +1035,53 @@ def make_materials(b):
     }
 
 
+def add_face_details(body):
+    """Nostrils and a mouth line (R1b: "certainly a nose", "consider a mouth"). They are
+    projected onto the finished body and joined into it, so they deform exactly like the
+    skin around them. Material slot 1 is the dark pupil colour."""
+    f = F["face"]
+    bpy.context.view_layer.update()
+    bvh = BVHTree.FromObject(body, bpy.context.evaluated_depsgraph_get())
+    bm = bmesh.new()
+    bm.from_mesh(body.data)
+    rx, ry, depth = f["nostril_r"]
+    for s in (-1, 1):
+        loc, nrm, _, _ = bvh.find_nearest(mirror(f["nostril"], s))
+        hint = Vector((0, 0, 1)) if abs(nrm.z) < 0.8 else Vector((0, -1, 0))
+        add_dome(bm, loc - nrm * depth * 0.6, nrm, hint, rx, ry, depth, 8, 1, 1)
+    # Mouth: a thin three-sided tube along the jaw, half sunk into the skin.
+    r, n = f["mouth_r"], 16
+    path = []
+    for k in range(n + 1):
+        u = -1 + 2 * k / n
+        loc, nrm, _, _ = bvh.find_nearest(Vector(f["mouth"](1 if u >= 0 else -1, abs(u))))
+        path.append((loc - nrm * r * 0.35, nrm))
+    rings = []
+    for k, (p, nrm) in enumerate(path):
+        tangent = (path[min(k + 1, n)][0] - path[max(k - 1, 0)][0]).normalized()
+        side = tangent.cross(nrm).normalized()
+        up = side.cross(tangent).normalized()
+        rings.append([bm.verts.new(p + (up * math.cos(a) + side * math.sin(a)) * r)
+                      for a in (0.0, 2.0944, 4.1888)])
+    for a, b in zip(rings, rings[1:]):
+        for j in range(3):
+            face = bm.faces.new((a[j], a[(j + 1) % 3], b[(j + 1) % 3], b[j]))
+            face.material_index = 1
+    for ring in (rings[0], rings[-1]):
+        face = bm.faces.new(ring)
+        face.material_index = 1
+    bm.normal_update()
+    for face in bm.faces:  # the tube's faces point away from its centre line
+        if face.material_index == 1 and len(face.verts) == 4:
+            mid = sum((v.co for v in face.verts), Vector()) / 4
+            k = min(range(len(path)), key=lambda i: (path[i][0] - mid).length)
+            if face.normal.dot(mid - path[k][0]) < 0:
+                face.normal_flip()
+    bm.to_mesh(body.data)
+    bm.free()
+    smooth(body)
+
+
 def wing_keep(name):
     return name.startswith("wing") or name in WING_DRAW_BODY_BONES
 
@@ -1040,6 +1092,8 @@ def build_dragon(breed, form="grown"):
     mats = make_materials(b)
     body = build_body()
     body.data.materials.append(mats["body"])
+    body.data.materials.append(mats["pupil"])
+    add_face_details(body)
     arm = build_armature()
     bind(body, arm, lambda n: not n.startswith("wing"))
 

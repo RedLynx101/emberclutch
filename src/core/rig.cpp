@@ -20,6 +20,11 @@ Growth growthFor(Stage stage, float progress) {
     }
 }
 
+float growthScale(const Growth& g) {
+    const float t = clamp01(g.t);
+    return g.form == kFormHatchling ? 0.4f * (0.62f + 0.38f * t) : 0.5f + 0.5f * t;
+}
+
 void boneScales(const ModelData& m, float t, int build, Vec3* out) {
     t = clamp01(t);
     for (int i = 0; i < m.skel.count; ++i) {

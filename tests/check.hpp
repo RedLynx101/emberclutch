@@ -23,3 +23,5 @@ extern int g_checks;
     } while (0)
 
 void runModelTests();  // tests/test_model.cpp
+void runAnimTests();   // tests/test_anim.cpp
+void runBehaviorTests();  // tests/test_behavior.cpp

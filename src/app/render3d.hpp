@@ -3,6 +3,7 @@
 #pragma once
 
 #include "app/app.hpp"
+#include "core/den_actor.hpp"
 
 namespace ec::r3d {
 
@@ -17,11 +18,26 @@ bool ready();
 // C2D_Prepare().
 void prepare2D();
 
+// A dragon in the den and the actor animating it (nullptr: stands in its idle pose).
+struct DenDragon {
+    const Dragon* dragon;
+    const DenActor* actor;
+};
+
 // Draws up to three dragons in the den on the current top-screen target: flushes pending
 // 2D, renders in 3D, then hands the GPU back to citro2d. Eggs are skipped. Fills app.stats.
-void drawDen(App& app, const Dragon* const* dragons, int count, s64 now);
+// The first dragon is the one being cared for (full detail); the camera follows them.
+void drawDen(App& app, const DenDragon* dragons, int count, s64 now);
 
 // Bottom-screen close-up of the dragon's head and chest (petting), same hand-over.
-void drawCloseUp(App& app, const Dragon& d, s64 now);
+void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, s64 now);
+
+// The dragon animation clips (romfs:/anims/dragon.eca), or nullptr if they failed to load,
+// and the library index of each behavior clip.
+const AnimLibrary* anims();
+const int* clipIndex();
+// A body form's model (LOD0) and its clip binding, for measuring walking speeds.
+const ModelData* model(int form);
+const AnimBinding* binding(int form);
 
 }  // namespace ec::r3d

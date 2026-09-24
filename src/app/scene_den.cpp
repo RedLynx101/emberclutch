@@ -11,6 +11,7 @@
 #include "app/ui_draw.hpp"
 #include "core/clock.hpp"
 #include "core/genetics.hpp"
+#include "core/rig.hpp"
 
 namespace ec {
 namespace {
@@ -37,6 +38,67 @@ int standIns(const Dragon& d, const Dragon** out) {
     return 2;
 }
 
+// The dragon's size relative to an adult, for walking speed and hop height.
+float moveScaleOf(const Dragon& d, s64 now) {
+    return growthScale(growthFor(d.stage, stageProgress(d, now))) * sizeScale(d.genome);
+}
+
+// Animation markers become sounds (placeholders until the Suno set arrives, D35).
+void playEventSound(u8 event, const Dragon& d, s64 now) {
+    switch (event) {
+        case kAnimFootstep: audio::playSfx(audio::Sfx::Step, 0.95f + 0.1f * (d.genome.size / 255.0f)); break;
+        case kAnimChomp: audio::playSfx(audio::Sfx::Munch); break;
+        case kAnimPurr: audio::playSfx(audio::Sfx::Purr, voicePitch(d, now)); break;
+        case kAnimThump:
+        case kAnimLand: audio::playSfx(audio::Sfx::Thump); break;
+        case kAnimFlap: audio::playSfx(audio::Sfx::Flap); break;
+        case kAnimYawn: audio::playSfx(audio::Sfx::Yawn, voicePitch(d, now)); break;
+        case kAnimShake: audio::playSfx(audio::Sfx::Brush, 1.3f); break;
+        default: break;
+    }
+}
+
+// Walk and trot at the speed this dragon's feet actually move (no skating).
+void matchSpeeds(DenActor& actor, const Dragon& d, s64 now) {
+    const Growth g = growthFor(d.stage, stageProgress(d, now));
+    const ModelData* m = r3d::model(g.form);
+    const AnimBinding* bind = r3d::binding(g.form);
+    if (!m || !bind) return;
+    const int build = d.genome.build < kModelBuilds ? d.genome.build : kBuildNeutral;
+    actor.updateSpeeds(*m, *bind, *r3d::anims(), r3d::clipIndex(), g.form, g.t, build, sizeScale(d.genome));
+}
+
+// Moves the den's dragons along: behavior decides, animation follows (core/den_actor).
+void denLife(App& app, s64 now) {
+    const AnimLibrary* lib = r3d::anims();
+    Dragon& d = activeDragon(app);
+    if (!lib || d.stage == Stage::Egg) return;
+    const DenLayout den;
+    if (!app.actorsReady) {
+        app.actors[0].reset(den, d.id * 2654435761u + 17);
+        app.actors[1].reset(den, 101);
+        app.actors[2].reset(den, 202);
+        app.actors[1].behavior.pos = {-1.9f, 1.0f};
+        app.actors[2].behavior.pos = {2.0f, 1.3f};
+        app.actors[0].behavior.care(Care::Greet, d);  // hello!
+        app.actorsReady = true;
+    }
+    const bool night = isNight(now);
+    u8 events[8];
+    matchSpeeds(app.actors[0], d, now);
+    const int n = app.actors[0].update(d, night, moveScaleOf(d, now), app.dt, *lib, r3d::clipIndex(), events, 8);
+    for (int i = 0; i < n; ++i) playEventSound(events[i], d, now);
+    if (app.denTest) {
+        const Dragon* extra[2];
+        standIns(d, extra);
+        for (int i = 0; i < 2; ++i) {
+            matchSpeeds(app.actors[i + 1], *extra[i], now);
+            app.actors[i + 1].update(*extra[i], night, moveScaleOf(*extra[i], now), app.dt, *lib, r3d::clipIndex(),
+                                     events, 8);
+        }
+    }
+}
+
 void update(App& app, const Input& in) {
     // Dev time skip (also in the dev menu): R+A = +1 hour, R+X = +1 day.
     if ((in.held & KEY_R) && (in.down & KEY_A)) app.game.devOffset += kHour;
@@ -54,6 +116,7 @@ void update(App& app, const Input& in) {
         saveNow(app);
         app.saveAccum = 0;
     }
+    denLife(app, nowLocal(app));
 }
 
 void drawTop(App& app) {
@@ -75,9 +138,13 @@ void drawTop(App& app) {
         if (d.warmth <= 20) text(app, str::kGettingCold, 200, 205, 0.5f, theme::kRose);
     } else {
         if (r3d::ready()) {
-            const Dragon* shown[3] = {&d, nullptr, nullptr};
+            r3d::DenDragon shown[3] = {{&d, app.actorsReady ? &app.actors[0] : nullptr}};
             int count = 1;
-            if (app.denTest) count += standIns(d, shown + 1);
+            if (app.denTest) {
+                const Dragon* extra[2];
+                standIns(d, extra);
+                for (int i = 0; i < 2; ++i) shown[count++] = {extra[i], app.actorsReady ? &app.actors[i + 1] : nullptr};
+            }
             r3d::drawDen(app, shown, count, now);
         } else {
             dragonPlaceholder(d, 200, 205, bodyScale(d, now), app.t);
@@ -110,6 +177,7 @@ void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {
         audio::playSfx(audio::Sfx::Crack);
         audio::playSfx(audio::Sfx::HatchPop, voicePitch(d, now));
         audio::playStinger("hatching");  // silent until the Suno stinger exists
+        app.actorsReady = false;          // the new hatchling starts its den life with a hello
         showToast(app, str::kHatched);
         saveNow(app);
     }
@@ -140,11 +208,12 @@ void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
             pet(d, 3);
             markVisit(d, now);
             app.petCooldown = 0.25f;
-            app.purrCooldown -= 0.25f;
-            if (app.purrCooldown <= 0) {
-                audio::playSfx(audio::Sfx::Purr, voicePitch(d, now));
-                app.purrCooldown = 1.0f;
-            }
+            // The close-up shows the head above the chin; hold L for a belly rub (WP7 maps
+            // strokes onto the body properly). The reaction clips purr on their own.
+            const PetZone zone = (in.held & KEY_L) ? PetZone::Belly
+                                 : in.ty < pad.y + pad.h * 0.5f ? PetZone::Head
+                                                                 : PetZone::Chin;
+            app.actors[0].behavior.care(Care::Pet, d, zone);
         }
     }
     if (in.touching) {
@@ -157,6 +226,7 @@ void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
         const bool fav = d.favoriteFood == d.genome.elementA;
         feed(d, 35, fav);
         markVisit(d, now);
+        app.actors[0].behavior.care(fav ? Care::FeedFavorite : Care::Feed, d);
         audio::playSfx(audio::Sfx::Munch);
         if (fav) audio::playSfx(audio::Sfx::Chirp, voicePitch(d, now));
         showToast(app, fav ? str::kFedFavorite : str::kFed);
@@ -164,12 +234,14 @@ void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
     if (button(app, {88, by, 70, 36}, str::kGroom, in)) {
         groom(d, 40);
         markVisit(d, now);
+        app.actors[0].behavior.care(Care::Groom, d);
         audio::playSfx(audio::Sfx::Brush);
         showToast(app, str::kGroomed);
     }
     if (button(app, {164, by, 70, 36}, str::kPlayBtn, in)) {
         play(d, 35);
         markVisit(d, now);
+        app.actors[0].behavior.care(Care::Play, d);
         audio::playSfx(audio::Sfx::Chirp, voicePitch(d, now));
         showToast(app, str::kPlayed);
     }
@@ -177,6 +249,7 @@ void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
         makeUp(d);
         feed(d, 20, true);
         markVisit(d, now);
+        app.actors[0].behavior.care(Care::MakeUp, d);
         audio::playSfx(audio::Sfx::Purr, voicePitch(d, now));
         showToast(app, str::kMadeUp);
     }
@@ -186,7 +259,8 @@ void drawBottom(App& app, const Input& in) {
     Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
-    if (d.stage != Stage::Egg && r3d::ready()) r3d::drawCloseUp(app, d, now);  // pet the dragon itself
+    if (d.stage != Stage::Egg && r3d::ready())  // pet the dragon itself
+        r3d::drawCloseUp(app, d, app.actorsReady ? &app.actors[0] : nullptr, now);
     if (d.stage == Stage::Egg) {
         drawEggBottom(app, in, d, now);
     } else {

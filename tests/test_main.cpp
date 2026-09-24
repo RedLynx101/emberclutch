@@ -422,6 +422,8 @@ int main() {
     RUN(save_picks_newest_valid_slot);
     RUN(save_full_capacity_fits);
     runModelTests();
+    runAnimTests();
+    runBehaviorTests();
     std::printf("\n%d checks, %d failures\n", g_checks, g_failures);
     return g_failures == 0 ? 0 : 1;
 }

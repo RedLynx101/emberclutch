@@ -27,6 +27,11 @@ SOUNDS = {
     "chirp": (0.2, "sin(2*PI*(900*t+2500*t*t))*sin(PI*t/0.2)*0.5", None),
     "crack": (0.12, "(random(0)*2-1)*exp(-t*45)*0.7", "highpass=f=800"),
     "hatch_pop": (0.55, "sin(2*PI*(300*t+1200*t*t))*exp(-t*6)*0.5+gt(t,0.15)*sin(2*PI*2400*t)*exp(-mod(t,0.12)*30)*0.15", None),
+    # Animation events (WP5): footsteps, lying down / landing, wing flaps, yawns.
+    "step": (0.12, "sin(2*PI*90*t)*exp(-t*40)*0.45+(random(0)*2-1)*exp(-t*60)*0.12", "lowpass=f=500"),
+    "thump": (0.35, "sin(2*PI*60*t)*exp(-t*14)*0.7+(random(0)*2-1)*exp(-t*30)*0.2", "lowpass=f=400"),
+    "flap": (0.3, "(random(0)*2-1)*sin(PI*t/0.3)*0.5", "bandpass=f=600:width_type=o:w=1.2"),
+    "yawn": (0.9, "sin(2*PI*(420*t-260*t*t))*(0.8+0.2*sin(2*PI*6*t))*sin(PI*t/0.9)*0.35", "lowpass=f=1200"),
 }
 
 

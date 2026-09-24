@@ -5,6 +5,7 @@
 #include <citro2d.h>
 
 #include "app/storage.hpp"
+#include "core/den_actor.hpp"
 #include "core/dragon.hpp"
 #include "core/rng.hpp"
 #include "core/save.hpp"
@@ -48,8 +49,12 @@ struct App {
     int starterHover = 0;
     float lastTouchX = -1, lastTouchY = -1;
     float petCooldown = 0;
-    float purrCooldown = 0;
     float simAccum = 0, saveAccum = 0;
+
+    // Den life (WP5): the dragon's actor (behavior + animation), plus two stand-ins for the
+    // dev 3-dragon test.
+    DenActor actors[3];
+    bool actorsReady = false;
 
     const char* toast = nullptr;
     float toastTime = 0;

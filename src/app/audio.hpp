@@ -6,7 +6,7 @@
 
 namespace ec::audio {
 
-enum class Sfx : u8 { Tap, Confirm, Back, Munch, Brush, Purr, Chirp, Crack, HatchPop, Count };
+enum class Sfx : u8 { Tap, Confirm, Back, Munch, Brush, Purr, Chirp, Crack, HatchPop, Step, Thump, Flap, Yawn, Count };
 
 // Returns false (and stays silent) if the DSP can't start, e.g. no sdmc:/3ds/dspfirm.cdc.
 bool init();

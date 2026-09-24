@@ -19,6 +19,7 @@ How it works (docs/plan/alpha-1.md WP2; decisions D36-D38):
     accent is a per-vertex mask that the exporter turns into vertex paint.
 """
 import math
+import os
 import sys
 
 import bmesh
@@ -27,6 +28,7 @@ from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
 # ------------------------------------------------------------------------------ arguments
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
 
 
@@ -56,36 +58,10 @@ BREEDS = {
 RIDGE_OF_FRILL = {"none": "spikes", "leaf": "spikes", "fin": "fin", "feather": "feather"}
 
 # ------------------------------------------------------------------------------ skeleton
-# Bones: (name, head node, tail node, parent). 24 body bones -> one body draw call. Both
-# forms use this list with their own node positions.
-BONES = [
-    ("hips", "hips", "belly", None),
-    ("belly", "belly", "chest", "hips"),
-    ("chest", "chest", "neck1", "belly"),
-    ("neck1", "neck1", "neck2", "chest"),
-    ("neck2", "neck2", "neck3", "neck1"),
-    ("neck3", "neck3", "head", "neck2"),
-    ("head", "head", "muzzle", "neck3"),
-    ("snout", "muzzle", "snout", "head"),
-    ("tail1", "hips", "tail2", "hips"),
-    ("tail2", "tail2", "tail3", "tail1"),
-    ("tail3", "tail3", "tail4", "tail2"),
-    ("tail4", "tail4", "tail_tip", "tail3"),
-]
-for _side in ("L", "R"):
-    BONES += [
-        (f"arm_up_{_side}", f"shoulder_{_side}", f"elbow_{_side}", "chest"),
-        (f"arm_lo_{_side}", f"elbow_{_side}", f"wrist_{_side}", f"arm_up_{_side}"),
-        (f"hand_{_side}", f"wrist_{_side}", f"toe_f_{_side}", f"arm_lo_{_side}"),
-        (f"leg_up_{_side}", f"hipj_{_side}", f"knee_{_side}", "hips"),
-        (f"leg_lo_{_side}", f"knee_{_side}", f"ankle_{_side}", f"leg_up_{_side}"),
-        (f"foot_{_side}", f"ankle_{_side}", f"toe_b_{_side}", f"leg_lo_{_side}"),
-    ]
-# Wing bones (second draw): arm, forearm and four fingers per side.
-WING_CHAIN = [("wing_arm", "root", "elbow", "chest"), ("wing_fore", "elbow", "wrist", "wing_arm"),
-              ("wing_f1", "wrist", "f1", "wing_fore"), ("wing_f2", "wrist", "f2", "wing_fore"),
-              ("wing_f3", "wrist", "f3", "wing_fore"), ("wing_f4", "wrist", "f4", "wing_fore")]
-WING_BONES = [f"{n}_{side}" for side in ("L", "R") for n, *_ in WING_CHAIN]
+# The bone layout (names, hierarchy, export order) lives in rig_layout.py, shared with the
+# animation tools, which run without Blender.
+from rig_layout import BONES, WING_BONES, WING_CHAIN  # noqa: E402
+
 WING_DRAW_BODY_BONES = ("chest", "belly", "hips")  # the membrane's flank edge follows these
 # Classic bat-style wing in its own plane: u = out along the span, v = back along the chord.
 # Four fingers fan across the whole membrane down to the flank ("body"), so no panel is bare.

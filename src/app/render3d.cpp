@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "app/ui_draw.hpp"
+#include "core/anim.hpp"
 #include "core/dragon_mesh.hpp"
 #include "core/rig.hpp"
 #include "dragon_shbin.h"
@@ -82,23 +83,10 @@ bool fillStatic(GpuMesh& g, const MeshData& m) {
                 static_cast<int>(m.indices.size()), m.palette, m.paletteCount);
 }
 
-// A little life until the animation system (WP5): breathing, a slow tail sway.
-struct Wiggle {
-    const char* bone;
-    float x, z, speed, phase;  // degrees, degrees, rad/s, rad
-};
-constexpr Wiggle kWiggles[] = {
-    {"chest", 0.8f, 0, 1.4f, 0}, {"neck1", 1.6f, 0, 1.4f, 0.4f}, {"head", -1.4f, 0, 1.4f, 0.9f},
-    {"tail2", 0, 4, 0.8f, 0}, {"tail3", 0, 5, 0.8f, 0.6f}, {"tail4", 0, 7, 0.8f, 1.2f},
-    {"wing_arm_L", 0, 2, 1.4f, 0.2f}, {"wing_arm_R", 0, -2, 1.4f, 0.2f},
-};
-constexpr int kWiggleCount = sizeof(kWiggles) / sizeof(kWiggles[0]);
-
 struct Form {
     ModelData model;
     GpuMesh body;
     GpuMesh wings[kWingsCount];
-    int wiggleBone[kWiggleCount];
     int headBone = -1, chestBone = -1;
     bool ok = false;
 };
@@ -117,6 +105,8 @@ struct Cache {
     float ground = 0;          // lowest body vertex in the idle pose (armature space)
     Vec3 center{0, 0, 0};      // camera framing, armature space
     float radius = 1;
+    float groundNow = 0;       // this frame's (smoothed) floor contact under the animated pose
+    bool groundSet = false;
 };
 
 DVLB_s* g_dvlb = nullptr;
@@ -133,7 +123,12 @@ struct Posed {
     const Form* form = nullptr;
     const Cache* cache = nullptr;
     const Dragon* dragon = nullptr;
-    float size = 1;  // genome size scale
+    float size = 1;             // genome size scale
+    float scale = 1;            // size relative to an adult (root motion)
+    Vec2 pos;                   // den floor position (adult units)
+    float heading = 0;          // 0 faces -Y
+    float root[2] = {0, 0};     // clip root offset (forward, up), adult units
+    float ground = 0;           // floor contact, armature space
     Mat34 poseMat[kMaxBones], skin[kMaxBones];
 };
 
@@ -144,6 +139,12 @@ Posed g_posed;
 float g_adultRadius = 1;  // framing radius of a neutral adult: the camera's reference size
 PartsMesh g_parts;
 bool g_ready = false;
+AnimLibrary g_anims;
+int g_clipIndex[static_cast<int>(ClipId::Count)];
+bool g_animsOk = false;
+AnimBinding g_bind[kFormCount];  // LOD1 shares its form's skeleton
+Vec3 g_camTarget;                // smoothed den camera target
+float g_camRadius = 0;           // smoothed den framing radius (0: not set yet)
 
 // Toon ramp on L.N (signed): plum shadow, a mid band, full light.
 float toonRamp(float x, float) { return x < 0.12f ? 0.0f : (x < 0.45f ? 0.62f : 1.0f); }
@@ -163,7 +164,6 @@ bool loadForm(const char* path, Form& f) {
     if (!body || !fillStatic(f.body, *body)) return false;
     for (const MeshData& m : f.model.meshes)
         if (m.kind == kMeshWings && m.variant < kWingsCount && !fillStatic(f.wings[m.variant], m)) return false;
-    for (int i = 0; i < kWiggleCount; ++i) f.wiggleBone[i] = f.model.skel.find(kWiggles[i].bone);
     f.headBone = f.model.skel.find("head");
     f.chestBone = f.model.skel.find("chest");
     f.ok = true;
@@ -187,16 +187,6 @@ float framingRadius(const ModelData& m, float t, int build, Vec3* center, float*
     if (center) *center = (lo + hi) * 0.5f;
     if (ground) *ground = lo.z;
     return length(hi - lo) * 0.5f * 1.25f;
-}
-
-void idleMotion(const Form& f, float time, BonePose* pose) {
-    for (int i = 0; i < kWiggleCount; ++i) {
-        const int b = f.wiggleBone[i];
-        if (b < 0) continue;
-        const Wiggle& w = kWiggles[i];
-        const float s = std::sin(time * w.speed + w.phase);
-        pose[b].rot = mul(pose[b].rot, quatFromEulerXYZ(w.x * s * kDegToRad, 0, w.z * s * kDegToRad));
-    }
 }
 
 // Rebuilds the merged part mesh, ground offset and framing when the dragon, its growth or
@@ -252,28 +242,62 @@ Cache* cacheFor(const Dragon& d, s64 now, int lod) {
 // as big while a hatchling still fills a good part of the screen.
 float viewRadius(const Cache& c, float size) { return (0.8f * c.radius + 0.2f * g_adultRadius) * size; }
 
-bool pose(App& app, const Dragon& d, s64 now, int lod, Posed& out) {
+// Lowest point of the animated body, so the feet (or belly, or back) rest on the floor.
+float animatedGround(const ModelData& m, const Mat34* skin) {
+    const MeshData* body = m.findMesh(kMeshBody, kGroupBody, 0);
+    if (!body) return 0;
+    float low = 1e9f;
+    for (int v = 0; v < body->vertexCount; v += 3) {
+        const Vec3 p = skinPoint(*body, v, body->pos[v], skin);
+        if (p.z < low) low = p.z;
+    }
+    return low;
+}
+
+// Poses a dragon: idle pose + its actor's animation, placed where its behavior stands.
+bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Posed& out) {
     Cache* c = cacheFor(d, now, lod);
     if (!c) return false;
     const Form& f = g_forms[c->form][lod];
     BonePose bones[kMaxBones];
     idlePose(f.model, c->t, buildOf(d), bones);
-    idleMotion(f, app.t + (d.id % 7) * 0.9f, bones);  // dragons breathe out of step
+    out.root[0] = out.root[1] = 0;
+    if (actor && g_animsOk) {
+        Quat delta[kMaxBones];
+        actor->anim.sample(g_anims, g_bind[c->form], f.model.skel.count, delta, out.root);
+        applyDeltas(bones, delta, f.model.skel.count);
+    }
     evaluatePose(f.model.skel, bones, out.poseMat, out.skin);
+    // Floor contact follows the pose (sitting, lying, rolling over), smoothed so a swinging
+    // foot does not make the body bob.
+    const float low = animatedGround(f.model, out.skin);
+    if (!c->groundSet) {
+        c->groundNow = low;
+        c->groundSet = true;
+    } else {
+        const float k = std::fmin(1.0f, app.dt * 14.0f);
+        c->groundNow += (low - c->groundNow) * k;
+    }
     out.form = &f;
     out.cache = c;
     out.dragon = &d;
     out.size = sizeScale(d.genome);
+    out.scale = growthScale(growthFor(d.stage, stageProgress(d, now))) * out.size;
+    out.pos = actor ? actor->behavior.pos : Vec2{};
+    out.heading = actor ? actor->behavior.heading : 0.0f;
+    out.ground = c->groundNow;
     return true;
 }
 
-// Model matrix: stand at pos, turned by yaw, genome size, feet on the floor.
-void modelMatrix(const Posed& p, Vec3 pos, float yaw, C3D_Mtx& out) {
+// Model matrix: at its den position, turned to its heading, lifted/leaping by the clip's root
+// offset, genome size, feet on the floor.
+void modelMatrix(const Posed& p, C3D_Mtx& out) {
     Mtx_Identity(&out);
-    Mtx_Translate(&out, pos.x, pos.y, pos.z, true);
-    Mtx_RotateZ(&out, yaw, true);
+    Mtx_Translate(&out, p.pos.x, p.pos.y, p.root[1] * p.scale, true);
+    Mtx_RotateZ(&out, p.heading, true);
+    Mtx_Translate(&out, 0, -p.root[0] * p.scale, 0, true);  // forward is -Y
     Mtx_Scale(&out, p.size, p.size, p.size);
-    Mtx_Translate(&out, 0, 0, -p.cache->ground, true);
+    Mtx_Translate(&out, 0, 0, -p.ground, true);
 }
 
 Vec3 apply(const C3D_Mtx& m, Vec3 v) {
@@ -375,6 +399,17 @@ bool init() {
               loadForm("romfs:/models/grown.ecm", g_forms[kFormGrown][0]) &&
               loadForm("romfs:/models/grown_lod1.ecm", g_forms[kFormGrown][1]);
     if (g_ready) g_adultRadius = framingRadius(g_forms[kFormGrown][0].model, 1.0f, kBuildNeutral, nullptr, nullptr);
+    if (g_ready) {
+        if (FILE* file = std::fopen("romfs:/anims/dragon.eca", "rb")) {
+            std::fseek(file, 0, SEEK_END);
+            std::vector<u8> bytes(static_cast<std::size_t>(std::ftell(file)));
+            std::fseek(file, 0, SEEK_SET);
+            const bool read = std::fread(bytes.data(), 1, bytes.size(), file) == bytes.size();
+            std::fclose(file);
+            g_animsOk = read && loadAnims(bytes.data(), bytes.size(), g_anims) && resolveClips(g_anims, g_clipIndex);
+        }
+        for (int f = 0; f < kFormCount; ++f) bindAnims(g_anims, g_forms[f][0].model.skel, g_bind[f]);
+    }
     return g_ready;
 }
 
@@ -448,70 +483,67 @@ void lookAt(C3D_Mtx& view, Vec3 eye, Vec3 target) {
 
 }  // namespace
 
-void drawDen(App& app, const Dragon* const* dragons, int count, s64 now) {
+void drawDen(App& app, const DenDragon* dragons, int count, s64 now) {
     if (!g_ready) return;
     ++g_frame;
     if (count > 3) count = 3;
-    // Den layout: one dragon in the middle; two side by side; three with the middle one in front.
-    static constexpr float kSlotX[3][3] = {{0, 0, 0}, {-0.55f, 0.55f, 0}, {-1.0f, 0.0f, 1.0f}};
-    static constexpr float kSlotY[3][3] = {{0, 0, 0}, {0.2f, 0.0f, 0}, {0.45f, 0.0f, 0.6f}};
-    float maxRadius = 0;
-    const Cache* first = nullptr;
+    // Frame everyone: the centre of the dragons' positions, wide enough for the biggest one
+    // and the spread between them. The camera follows smoothly as they wander.
+    float maxRadius = 0, spread = 0;
+    Vec2 mid{0, 0};
     int shown = 0;
     for (int i = 0; i < count; ++i) {
-        const Cache* c = cacheFor(*dragons[i], now, i == 0 ? 0 : 1);
+        const Cache* c = cacheFor(*dragons[i].dragon, now, i == 0 ? 0 : 1);
         if (!c) continue;
-        if (!first) first = c;
-        const float r = viewRadius(*c, sizeScale(dragons[i]->genome));
-        if (r > maxRadius) maxRadius = r;
+        maxRadius = std::fmax(maxRadius, viewRadius(*c, sizeScale(dragons[i].dragon->genome)));
+        const Vec2 p = dragons[i].actor ? dragons[i].actor->behavior.pos : Vec2{};
+        mid.x += p.x;
+        mid.y += p.y;
         ++shown;
     }
-    if (!first) return;
-
-    // Camera: in front and a little to the left, looking slightly down, aimed 0.62 radii
-    // above the floor so the feet always land on the rug.
-    const float yaw = 20.0f * kDegToRad;  // dragons turn their heads a touch toward us
-    const float cy = std::cos(yaw), sy = std::sin(yaw);
-    const float radius = maxRadius * (1.0f + 0.7f * (shown - 1));
-    const float spacing = maxRadius * 1.5f;
-    Vec3 target{0, 0, radius * 0.62f};
-    if (shown == 1) {  // centre the single dragon's body, not its origin
-        const Vec3 c = first->center;
-        const float size = sizeScale(dragons[0]->genome);
-        target.x = (c.x * cy - c.y * sy) * size;
-        target.y = (c.x * sy + c.y * cy) * size;
+    if (!shown) return;
+    mid.x /= shown;
+    mid.y /= shown;
+    for (int i = 0; i < count; ++i) {
+        const Vec2 p = dragons[i].actor ? dragons[i].actor->behavior.pos : Vec2{};
+        spread = std::fmax(spread, std::hypot(p.x - mid.x, p.y - mid.y));
     }
+    const float radius = maxRadius + spread * 0.9f;
+    const Vec3 want{mid.x, mid.y, radius * 0.62f};  // feet land low on the screen
+    const float k = g_camRadius > 0 ? std::fmin(1.0f, app.dt * 2.5f) : 1.0f;
+    g_camTarget = lerp(g_camTarget, want, k);
+    g_camRadius += (radius - g_camRadius) * k;
+
     const Vec3 dir = normalize(Vec3{-0.35f, -0.9f, 0.32f});
-    const float dist = radius / std::tan(kFovY * 0.5f) * 0.95f;
+    const float dist = g_camRadius / std::tan(kFovY * 0.5f) * 0.95f;
     C3D_Mtx projection, view, model;
     Mtx_PerspTilt(&projection, kFovY, C3D_AspectRatioTop, 0.05f, dist * 4.0f, false);
-    lookAt(view, target + dir * dist, target);
+    lookAt(view, g_camTarget + dir * dist, g_camTarget);
 
     begin3D(projection);
-    for (int i = 0, slot = 0; i < count; ++i) {
+    for (int i = 0; i < count; ++i) {
         // The first dragon is the one you're caring for: full detail. Others use LOD1.
-        if (!pose(app, *dragons[i], now, i == 0 ? 0 : 1, g_posed)) continue;
-        const Vec3 pos{kSlotX[shown - 1][slot] * spacing, kSlotY[shown - 1][slot] * spacing, 0};
-        modelMatrix(g_posed, pos, yaw, model);
+        if (!pose(app, *dragons[i].dragon, dragons[i].actor, now, i == 0 ? 0 : 1, g_posed)) continue;
+        modelMatrix(g_posed, model);
         submit(app, g_posed, view, model);
-        ++slot;
     }
     end3D();
 }
 
-void drawCloseUp(App& app, const Dragon& d, s64 now) {
+void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, s64 now) {
     if (!g_ready) return;
     ++g_frame;
-    if (!pose(app, d, now, 0, g_posed) || g_posed.form->headBone < 0 || g_posed.form->chestBone < 0) return;
+    if (!pose(app, d, actor, now, 0, g_posed) || g_posed.form->headBone < 0 || g_posed.form->chestBone < 0) return;
     C3D_Mtx projection, view, model;
-    const float yaw = 30.0f * kDegToRad;
-    modelMatrix(g_posed, Vec3{0, 0, 0}, yaw, model);
-    // Head and chest: the parts you pet. The heartglow stays in frame.
+    modelMatrix(g_posed, model);
+    // Head and chest, seen from in front of the dragon wherever it stands: the parts you pet.
     const Vec3 head = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
     const Vec3 chest = apply(model, g_posed.poseMat[g_posed.form->chestBone].translation());
     const Vec3 target = lerp(head, chest, 0.3f);
     const float radius = length(head - chest) * 0.75f;
-    const Vec3 dir = normalize(Vec3{-0.3f, -0.95f, 0.18f});
+    const float ch = std::cos(g_posed.heading), sh = std::sin(g_posed.heading);
+    const Vec3 local = normalize(Vec3{-0.3f, -0.95f, 0.18f});  // front-left of the face
+    const Vec3 dir{local.x * ch - local.y * sh, local.x * sh + local.y * ch, local.z};
     const float dist = radius / std::tan(kFovY * 0.5f);
     Mtx_PerspTilt(&projection, kFovY, C3D_AspectRatioBot, 0.05f, dist * 4.0f, false);
     lookAt(view, target + dir * dist, target);
@@ -519,5 +551,10 @@ void drawCloseUp(App& app, const Dragon& d, s64 now) {
     submit(app, g_posed, view, model);
     end3D();
 }
+
+const AnimLibrary* anims() { return g_animsOk ? &g_anims : nullptr; }
+const int* clipIndex() { return g_clipIndex; }
+const ModelData* model(int form) { return g_ready && form >= 0 && form < kFormCount ? &g_forms[form][0].model : nullptr; }
+const AnimBinding* binding(int form) { return g_animsOk && form >= 0 && form < kFormCount ? &g_bind[form] : nullptr; }
 
 }  // namespace ec::r3d

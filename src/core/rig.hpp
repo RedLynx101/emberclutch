@@ -25,6 +25,10 @@ constexpr float kAdolescentT = 0.45f;
 // Stage + progress through it (dragon.hpp stageProgress) -> form and growth t.
 Growth growthFor(Stage stage, float progress);
 
+// The dragon's size relative to an adult (0.25 .. 1): walking speeds, step lengths and hop
+// heights scale with it. A hatchling is ~0.4 of an adult's length at the end of its stage.
+float growthScale(const Growth& g);
+
 // Per-bone pose scales at growth t for a build (kBuildNeutral or genome Build 0..2).
 void boneScales(const ModelData& m, float t, int build, Vec3* out);
 

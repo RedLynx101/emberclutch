@@ -75,11 +75,12 @@ bool debugMenu(App& app, const Input& in) {
     static constexpr Item kItems[] = {
         {"+1 hour", 0},   {"+1 day", 1},     {"+7 days", 2},      {"Fill needs", 3},
         {"Drain needs", 4}, {"Hatch now", 5}, {"Next stage", 6},   {"Next breed", 10},
-        {"3-dragon test", 11}, {"Overlay", 7}, {"Save now", 8},    {"Reset save", 9},
+        {"Next activity", 12}, {"3-dragon test", 11}, {"Overlay", 7}, {"Save now", 8},
+        {"Reset save", 9},
     };
     constexpr int kCount = sizeof(kItems) / sizeof(kItems[0]);
     for (int i = 0; i < kCount; ++i) {
-        const Rect r{8.0f + (i % 2) * 156.0f, 24.0f + (i / 2) * 32.0f, 148, 28};
+        const Rect r{8.0f + (i % 2) * 156.0f, 22.0f + (i / 2) * 29.0f, 148, 25};
         if (!button(app, r, kItems[i].label, in)) continue;
         switch (kItems[i].id) {
             case 0: app.game.devOffset += kHour; break;
@@ -91,15 +92,20 @@ bool debugMenu(App& app, const Input& in) {
             case 6: forceNextStage(d, now); break;
             case 7: app.overlay = !app.overlay; break;
             case 8: saveNow(app); showToast(app, "Saved."); break;
-            case 9: deleteGame(); app.game = SaveData{}; app.slots = SaveSlots{}; app.scene = SceneId::Title; app.devMenu = false; break;
+            case 9: deleteGame(); app.game = SaveData{}; app.slots = SaveSlots{}; app.scene = SceneId::Title; app.devMenu = false; app.actorsReady = false; break;
             case 10: nextBreed(d, app.rng); break;
             case 11: app.denTest = !app.denTest; break;
+            case 12: {  // every behavior state is reachable from here (WP5)
+                DenBehavior& b = app.actors[0].behavior;
+                b.force(static_cast<Activity>((static_cast<int>(b.activity) + 1) % static_cast<int>(Activity::Count)));
+                break;
+            }
         }
     }
     char buf[80];
-    std::snprintf(buf, sizeof(buf), "clock offset +%lldh  stars %d  stage %s", static_cast<long long>(app.game.devOffset / kHour),
-                  d.careStars, stageName(d.stage));
-    text(app, buf, 160, 222, 0.4f, theme::kAsh);
+    std::snprintf(buf, sizeof(buf), "+%lldh  stars %d  %s  %s", static_cast<long long>(app.game.devOffset / kHour),
+                  d.careStars, stageName(d.stage), app.actorsReady ? activityName(app.actors[0].behavior.activity) : "-");
+    text(app, buf, 160, 226, 0.4f, theme::kAsh);
     return true;
 }
 

@@ -16,7 +16,8 @@ constexpr int kBufFrames = 4096;  // per streaming buffer (~128 ms at 32 kHz)
 constexpr int kNumBufs = 3;
 constexpr float kFadeSeconds = 0.7f;
 
-const char* const kSfxFiles[] = {"tap", "confirm", "back", "munch", "brush", "purr", "chirp", "crack", "hatch_pop"};
+const char* const kSfxFiles[] = {"tap", "confirm", "back", "munch", "brush", "purr", "chirp", "crack", "hatch_pop",
+                                 "step", "thump", "flap", "yawn"};
 static_assert(sizeof(kSfxFiles) / sizeof(kSfxFiles[0]) == static_cast<int>(Sfx::Count), "one file per Sfx");
 
 struct Stream {

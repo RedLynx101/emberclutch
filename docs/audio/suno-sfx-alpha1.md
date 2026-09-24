@@ -26,6 +26,13 @@ trim, level, and convert them to small 22 kHz mono WAVs in `romfs/sfx/`.
 | `dragon-sneeze` | Tiny dragon sneeze with a puff of smoke, cute | one-shot | 0.3–0.6 s |
 | `dragon-rumble` | Low friendly dragon rumble, grown-up and calm, like a greeting | one-shot | 0.8–1.5 s |
 
+## Dragon body (animation events)
+| Slug | Prompt | Kind | Length |
+|---|---|---|---|
+| `step` | Single soft padded footstep of a small clawed animal on a stone floor with straw | one-shot | 0.1–0.2 s |
+| `thump` | Small animal flopping down to lie on a rug, soft body thump | one-shot | 0.3–0.5 s |
+| `flap` | One leathery wing flap, a soft whoosh of air | one-shot | 0.3–0.5 s |
+
 ## Egg and hatching
 | Slug | Prompt | Kind | Length |
 |---|---|---|---|

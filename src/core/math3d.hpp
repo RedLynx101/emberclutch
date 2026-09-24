@@ -7,6 +7,10 @@
 
 namespace ec {
 
+struct Vec2 {
+    float x = 0, y = 0;
+};
+
 struct Vec3 {
     float x = 0, y = 0, z = 0;
 };
@@ -31,6 +35,26 @@ struct Quat {
 inline Quat mul(Quat a, Quat b) {
     return {a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y, a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
             a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w, a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z};
+}
+
+inline Quat conjugate(Quat q) { return {-q.x, -q.y, -q.z, q.w}; }
+inline float dot(Quat a, Quat b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
+inline Quat normalize(Quat q) {
+    const float l = std::sqrt(dot(q, q));
+    return l > 1e-12f ? Quat{q.x / l, q.y / l, q.z / l, q.w / l} : Quat{};
+}
+
+// Normalized linear blend along the shorter arc (good enough between close rotations).
+inline Quat nlerp(Quat a, Quat b, float t) {
+    const float s = dot(a, b) < 0 ? -t : t;
+    return normalize({a.x + (b.x * s - a.x * t), a.y + (b.y * s - a.y * t), a.z + (b.z * s - a.z * t),
+                      a.w + (b.w * s - a.w * t)});
+}
+
+inline Vec3 rotate(Quat q, Vec3 v) {
+    const Vec3 u{q.x, q.y, q.z};
+    const Vec3 t = cross(u, v) * 2.0f;
+    return v + t * q.w + cross(u, t);
 }
 
 // Blender's Euler 'XYZ' (X applied first) to quaternion, radians — same formula as eul_to_quat.
@@ -84,6 +108,27 @@ inline Mat34 fromQuatScale(Quat q, Vec3 s, Vec3 t) {
     return {{{(1 - 2 * (yy + zz)) * s.x, 2 * (xy - wz) * s.y, 2 * (xz + wy) * s.z, t.x},
              {2 * (xy + wz) * s.x, (1 - 2 * (xx + zz)) * s.y, 2 * (yz - wx) * s.z, t.y},
              {2 * (xz - wy) * s.x, 2 * (yz + wx) * s.y, (1 - 2 * (xx + yy)) * s.z, t.z}}};
+}
+
+// The rotation of a pure rotation (+ translation) matrix as a quaternion.
+inline Quat quatFromRotation(const Mat34& a) {
+    const float m00 = a.m[0][0], m11 = a.m[1][1], m22 = a.m[2][2];
+    const float trace = m00 + m11 + m22;
+    Quat q;
+    if (trace > 0) {
+        const float s = std::sqrt(trace + 1.0f) * 2.0f;
+        q = {(a.m[2][1] - a.m[1][2]) / s, (a.m[0][2] - a.m[2][0]) / s, (a.m[1][0] - a.m[0][1]) / s, 0.25f * s};
+    } else if (m00 > m11 && m00 > m22) {
+        const float s = std::sqrt(1.0f + m00 - m11 - m22) * 2.0f;
+        q = {0.25f * s, (a.m[0][1] + a.m[1][0]) / s, (a.m[0][2] + a.m[2][0]) / s, (a.m[2][1] - a.m[1][2]) / s};
+    } else if (m11 > m22) {
+        const float s = std::sqrt(1.0f + m11 - m00 - m22) * 2.0f;
+        q = {(a.m[0][1] + a.m[1][0]) / s, 0.25f * s, (a.m[1][2] + a.m[2][1]) / s, (a.m[0][2] - a.m[2][0]) / s};
+    } else {
+        const float s = std::sqrt(1.0f + m22 - m00 - m11) * 2.0f;
+        q = {(a.m[0][2] + a.m[2][0]) / s, (a.m[1][2] + a.m[2][1]) / s, 0.25f * s, (a.m[1][0] - a.m[0][1]) / s};
+    }
+    return normalize(q);
 }
 
 // Inverse of a rotation + translation matrix (no scale).

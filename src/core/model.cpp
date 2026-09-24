@@ -2,38 +2,9 @@
 
 #include <cstring>
 
+#include "core/byte_reader.hpp"
+
 namespace ec {
-namespace {
-
-// Bounds-checked little-endian reader (the .ecm comes from romfs, but never trust files).
-class Cursor {
-public:
-    Cursor(const u8* p, std::size_t n) : p_(p), n_(n) {}
-    bool ok() const { return ok_; }
-    void bytes(void* out, std::size_t len) {
-        if (!ok_ || at_ + len > n_) {
-            ok_ = false;
-            std::memset(out, 0, len);
-            return;
-        }
-        std::memcpy(out, p_ + at_, len);
-        at_ += len;
-    }
-    u8 u8v() { u8 v; bytes(&v, 1); return v; }
-    s8 s8v() { return static_cast<s8>(u8v()); }
-    u16 u16v() { u8 b[2]; bytes(b, 2); return static_cast<u16>(b[0] | (b[1] << 8)); }
-    u32 u32v() { u8 b[4]; bytes(b, 4); return u32(b[0]) | (u32(b[1]) << 8) | (u32(b[2]) << 16) | (u32(b[3]) << 24); }
-    float f32() { const u32 bits = u32v(); float f; std::memcpy(&f, &bits, 4); return f; }
-    Vec3 vec3() { const float x = f32(), y = f32(); return {x, y, f32()}; }
-    void skip(std::size_t len) { if (at_ + len > n_) ok_ = false; else at_ += len; }
-
-private:
-    const u8* p_;
-    std::size_t n_, at_ = 0;
-    bool ok_ = true;
-};
-
-}  // namespace
 
 const MeshData* ModelData::findMesh(u8 kind, u8 group, u8 variant, u8 sex) const {
     for (const MeshData& m : meshes)
@@ -44,7 +15,7 @@ const MeshData* ModelData::findMesh(u8 kind, u8 group, u8 variant, u8 sex) const
 }
 
 bool loadModel(const u8* data, std::size_t size, ModelData& out) {
-    Cursor c(data, size);
+    ByteReader c(data, size);
     char magic[4];
     c.bytes(magic, 4);
     if (!c.ok() || std::memcmp(magic, "ECM1", 4) != 0) return false;

@@ -8,9 +8,10 @@
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D46 recorded ([log](plan/decisions.md)); nothing open.
+  Decisions D1–D50 recorded ([log](plan/decisions.md)); nothing open.
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
-  [Alpha 1 plan](plan/alpha-1.md). New specs (2026-09-24): [hands-on care](design/care-interactions.md)
+  [Alpha 1 plan](plan/alpha-1.md), [Alpha 2 plan](plan/alpha-2.md) (draft: the style review
+  R5, the emblem icon and a 3D HOME Menu banner, D47–D50). New specs (2026-09-24): [hands-on care](design/care-interactions.md)
   (the *Nintendogs*-style polish for WP7) and [world map & travel](design/world-map-and-travel.md)
   (fast travel in Alpha 2, free flight in 1.0).
 - **Code:** `src/core` (genetics, needs, mood, growth, eggs, clock, breeding, save, model
@@ -95,29 +96,29 @@
    and listening, the hatching cinematic, naming with the keyboard.
 4. **WP10 UI** (fonts, title Continue/New, system menu, settings, toasts, save icon),
    **WP11** CIA packaging, **WP12** checklist playthrough and tag → **Alpha 1 done**.
-5. Then the **Alpha 2 plan**: several dragons, breeding, the parts library, Wanderings,
-   the Market, the world map with fast travel, more toys; ending with the run on Noah's
-   old 3DS (D34).
+5. Then **Alpha 2** ([plan](plan/alpha-2.md)): several dragons, Sanctuary and Vault,
+   breeding, Wanderings, the Market, the world map with fast travel, more toys, the emblem
+   icon and a 3D HOME Menu banner; then **R5**, three Ember style variants for Noah (blocks); then the dragons update
+   in the chosen style; then the run on Noah's old 3DS (D34).
 
 Emulator checks resumed on 2026-09-24 (the den, egg, mouth, sounds and speed were checked).
 Still to look at in the emulator: the 3-dragon triangle count with LOD1, a full day/night
 cycle in the den, the tail wag and blinking in motion.
 ## Current goal (D31)
-**Complete through Alpha 2.** Gates that stop the run:
-- **R1 sculpt review blocks** until Noah approves. R2 and R3 are sent but don't block (D32).
-- **Alpha 2's last step is one run on Noah's old 3DS** (D34). Everything before it uses the
-  emulator plus budget counters.
-- Fonts are pre-approved (D33). Missing Suno sounds use placeholders (D35).
-- Effort: **high** for Alpha 1, with extra-high for WP3/WP4 (both done: Noah can switch
-  back to high). Alpha 2: high for breeding/parts/Wanderings, medium for the Market,
-  items and storage screens. Tell Noah when to switch.
+**Complete through Alpha 2.** Noah is hands-off until the style variants are ready (D49):
+work continues package by package, committing, pushing and updating STATUS and RedWiki
+after each. Stops:
+- **R5, the style review** (D47): three Ember dragon variants next to the current textured
+  style, plus the emblem icon. Blocks the dragons update.
+- **The run on Noah's old 3DS** (D34), the last step of Alpha 2.
+- R2, R3, R4 and R6 are sent without blocking. Fonts are pre-approved (D33). Sounds that
+  haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
-- A listen: the new sounds in the den, the two UI chimes (confirm should rise, back fall),
-  and the Market loop seam (`assets/audio/music/previews/market-bustle.seam-preview.wav`).
-- Nothing blocking. Comments welcome on R1c (faces, growth),
-  **[R3 animation](art/reviews/R3-anim.md)** and **[R4 den and egg](art/reviews/R4-den.md)**.
-
+- Nothing blocking until R5.
+- Whenever convenient: the [sound brief 2](audio/sfx-batch-2.md) (hands-on care and
+  Alpha 2 sounds); a listen to the new sounds, the two UI chimes and the Market loop seam
+  (`assets/audio/music/previews/market-bustle.seam-preview.wav`).
 ## How to work
 - Build: `tools\build.ps1` · Tests: `tools\test.ps1` · Emulator: `tools\emu.ps1`
 - Music: `python tools/audio/make_loop.py <wav> --bpm <hint> --preview`

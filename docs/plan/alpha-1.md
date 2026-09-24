@@ -156,7 +156,8 @@ Nintendogs", a full polish of the at-home care). In order:
 
 ### WP11 — Packaging
 - CIA build (makerom + bannertool, reusing the 3D-Claw pattern) as `tools/package_cia.ps1`;
-  original 48×48 icon and HOME banner rendered from the final dragon model; banner sound.
+  an **interim** 48×48 icon and HOME banner rendered from our own dragon model (replacing
+  the AI-concept-derived placeholder), banner sound. The designed emblem comes in Alpha 2 (D48).
 
 ### WP12 — Tuning and wrap-up
 - Emulator playthrough scripts (a checklist in `docs/plan/alpha-1-checklist.md`), balance

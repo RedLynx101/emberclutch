@@ -22,7 +22,7 @@ of Alpha 2 at the latest**, before content volume makes a rendering change expen
 |---|---|---|---|
 | **Foundations** | Design, tools, proof of pipeline | Phase 0 | ✅ Done 2026-09-23 |
 | **Alpha 1** | *A living pet* | Phases 1–2: 3D dragon, care, growth, naming, real saves, music, CIA | ▶ Next |
-| **Alpha 2** | *A den* | Phase 3: several dragons, breeding, eggs, Sanctuary/Vault, Market, Wanderings | Planned |
+| **Alpha 2** | *A den* | Phase 3: several dragons, breeding, eggs, Sanctuary/Vault, Market, Wanderings, map with fast travel; style review R5; first hardware run | Planned ([plan](alpha-2.md)) |
 | **Beta** | *A trainer* | Phase 4 + ground half of Phase 5: tricks, voice, 3 ground competitions, economy | Planned |
 | **1.0** | *The sky* | Phase 6 + air half of Phase 5 + Phase 7 polish: flight, riding, valley, Sky Rings, Lantern Trial, public release | Planned |
 | **1.x** | *Friends* | Sky Visits (local wireless) | Later |
@@ -73,11 +73,18 @@ Full plan: [alpha-1.md](alpha-1.md).
   care action is animated, saves survive restarts, and all budget counters stay green.
 
 ## Alpha 2 — *A den*
+Plan: [alpha-2.md](alpha-2.md). Order: the den grows (style-independent systems below) →
+the new app icon (D48) → **style review R5**: three Ember dragon variants vs the current
+style, the last thing before Noah decides (D47) → the dragons update in the chosen style
+(parts library, all breeds) → the run on Noah's old 3DS (D34).
 - Several dragons: den of 3 + 2 nests; Sanctuary and Cold Vault screens.
 - Breeding at the Nesting Stone (rules already in `src/core/breeding.cpp`), lay-egg
   sequence, egg shells hinting at elements.
-- The full parts library: builds, all horns/frills/wings/tails, patterns, rare traits;
-  6 base breeds + 15 hybrids.
+- **After R5, in the chosen style:** the full parts library: builds, all
+  horns/frills/wings/tails, patterns, rare traits; 6 base breeds + 15 hybrids; dirt and
+  mud (D46).
+- A designed emblem **app icon** (D48) and an animated **3D HOME Menu banner** with the
+  baby dragon (D50).
 - **Wanderings** (pedometer), wild eggs, trinkets and the hoard pile.
 - **Market**: food, grooming, toys, decor, and the daily sex-labeled egg (D24). Gleam.
 - **The world map** with **fast travel** between the Den, Market, Nesting Stone,
@@ -107,7 +114,8 @@ Full plan: [alpha-1.md](alpha-1.md).
   of interest, riding finds.
 - Air competitions: **Sky Rings** and **Lantern Trial** (breath effects for all 6 elements).
 - Release polish: tutorial pass, settings, balance pass, performance pass on hardware.
-- Replace every AI-concept-derived asset (the placeholder icon) with original work.
+- Check that no AI-concept-derived asset ships (the placeholder icon is replaced in
+  Alpha 1 and Alpha 2, D48).
 - **Public open-source release** (repo goes public, CIA + 3DSX on GitHub Releases).
 
 ## 1.x — *Friends*

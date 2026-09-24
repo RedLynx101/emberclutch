@@ -144,12 +144,11 @@ Each batch gets a Suno brief in `docs/audio/` before its milestone starts. Sting
 | Dragon voice | chirp, trill, purr, happy squeak, sad whimper, yawn, sneeze, rumble, roar (each pitch-shifted per dragon and deepened by stage) | A1 (roar B) |
 | Egg | wiggle knock, crack, hatch pop, warm hum | A1 |
 | Care | munch, gulp, brush strokes, polish sparkle, splash, ball bounce (✅ 2026-09-24) | A1 |
-| Hands-on care (next brief) | ball roll on stone, ball pick-up (soft mouth), tub slide / wood knock, suds squish, water pour, happy leg-kick thump, tickle giggle-chirp | A1 |
-| Toys (next brief) | rope creak and tug growl, feather flutter, puzzle orb rattle, treat drop, bowl clink | A2 |
-| Map | map open rustle, fast-travel whoosh | A2 |
+| Hands-on care ([brief 2](../audio/sfx-batch-2.md)) | ball roll, ball pick-up, grumble, sniff, giggle, leg-kick thump, tub slide, suds, water pour, shake spray | A1 |
+| Toys, den, places ([brief 2](../audio/sfx-batch-2.md)) | rope tug, feather flutter, orb rattle, treat drop, bowl clink, nest settle, egg lay, coin, register, map open, travel whoosh, trail depart, market ambience | A2 |
 | UI | tap, confirm, back, error, toast, save chime, Gleam coin | A1 |
 | Den ambience | hearth crackle loop, night crickets loop | A1 |
-| Den life / Market | nest settle, market chatter loop, register ding | A2 |
+| Den life / Market | nest settle, market chatter loop, register ding (in brief 2) | A2 |
 | Competition | whistle, crowd cheer, crowd "aww", ring pass chime, lantern ignite | B / 1.0 |
 | World | wing flap, wind whoosh loop, footsteps (grass, stone), landing thud, water splash, valley birds loop | 1.0 |
 | Breath | flame, mist, gust, spore burst, frost, sunbeam | 1.0 |

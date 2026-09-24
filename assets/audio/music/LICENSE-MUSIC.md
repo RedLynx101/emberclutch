@@ -20,6 +20,7 @@ Tracks (filled in as they are added):
 | Skyreach (take 2) | `romfs/music/skyreach-2.ogg` | 2026-09-23 | Paid (per brief) |
 | Cup Day | `romfs/music/cup-day.ogg` | 2026-09-23 | Paid (per brief) |
 | Market Bustle | `romfs/music/market-bustle.ogg` | 2026-09-24 | Paid (per brief) |
+| The HOME Menu banner's sound: one bar (2.8 s) of the title theme | `assets/audio/banner.wav` (from `tools/audio/make_banner_sound.py`) | 2026-09-24 | as the title theme |
 
 *"Plan" records what the brief required. Confirm the plan actually used before the public release.*
 

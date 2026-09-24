@@ -26,8 +26,8 @@ if (-not $SkipBanner) {
     if (-not (Test-Path $pycgfx)) { throw "pycgfx missing: git clone --depth 1 https://github.com/skyfloogle/pycgfx build\tools\pycgfx" }
     $gltf = Join-Path $root "build\banner\banner.gltf"
     $cgfx = Join-Path $root "build\banner\banner.cgfx"
-    & py -3.12 $pycgfx $gltf $cgfx
-    if ($LASTEXITCODE -ne 0) { throw "pycgfx failed" }
+    & py -3.12 (Join-Path $root "tools\banner_cgfx.py") $gltf $cgfx  # pycgfx, plus unlit materials
+    if ($LASTEXITCODE -ne 0) { throw "banner_cgfx.py (pycgfx) failed" }
     $kb = [math]::Round((Get-Item $cgfx).Length / 1KB)
     if ((Get-Item $cgfx).Length -gt 512KB) { throw "banner.cgfx is $kb KB: the HOME Menu takes at most 512 KB" }
     "3D banner: $cgfx ($kb KB of 512)"

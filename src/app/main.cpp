@@ -13,6 +13,7 @@
 #include "app/debug.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
+#include "app/screenshot.hpp"
 #include "app/system_menu.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
@@ -106,6 +107,7 @@ int main() {
 
         const Input in = autotest::active() ? autotest::next(app) : readInput();
         if (in.down & KEY_START) toggleSystemMenu(app);
+        if (in.down & KEY_Y) screenshot::request();  // anywhere, in every build: both screens to the SD card
         const bool paused = app.menu != MenuPage::Closed;  // the game waits under the menu
 
         const SceneFns& scene = sceneFns(app.scene);
@@ -117,6 +119,7 @@ int main() {
         C2D_TextBufClear(app.textBuf);
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
         autotest::afterFrameBegin();  // last frame's picture is finished now
+        screenshot::afterFrameBegin(app);
 
         C2D_TargetClear(app.top, theme::kDenPlum);
         C2D_SceneBegin(app.top);
@@ -140,6 +143,7 @@ int main() {
 
         app.bottomTris = app.stats.tris - topTris;
         autotest::beforeFrameEnd();
+        screenshot::beforeFrameEnd(app);
         C3D_FrameEnd(0);
         if (app.keyboard != KeyboardFor::None) runKeyboard(app);  // between frames: it takes both screens
         if (app.quit) break;

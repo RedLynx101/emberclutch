@@ -265,7 +265,22 @@ def dragon_pieces(d, skin):
 
 
 # ------------------------------------------------------------------------------ the egg
-def egg_halves(height, width, cut, teeth=8, jag=0.1):
+EGG_TEETH, EGG_JAG = 8, 0.1  # the crack's zigzag: teeth round the egg, and their height (of the egg's)
+EGG_WALL = 0.035             # the shell's thickness (of the egg's height)
+
+
+def egg_taper(zn):
+    """The egg's width at zn (-1 its bottom .. 1 its top), as a share of its widest."""
+    return 1.0 - 0.18 * max(0.0, zn)
+
+
+def crack_height(a, height, cut):
+    """How high the crack runs at angle a round the egg."""
+    saw = abs(((a / (2 * math.pi) * EGG_TEETH) % 1.0) - 0.5) * 2  # 0..1 triangle wave
+    return cut * height + (saw - 0.5) * EGG_JAG * height
+
+
+def egg_halves(height, width, cut):
     """The egg split along a zigzag crack: the bottom cup (cream outside, glowing inside) and
     the cap. Both open at the crack."""
     shell = principled("shell", SHELL, 0.45)
@@ -276,14 +291,11 @@ def egg_halves(height, width, cut, teeth=8, jag=0.1):
         bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=16, radius=1.0)
         for v in bm.verts:
             z = v.co.z
-            taper = 1.0 - 0.18 * max(0.0, z)
-            v.co.x *= width * taper
-            v.co.y *= width * taper
+            v.co.x *= width * egg_taper(z)
+            v.co.y *= width * egg_taper(z)
             v.co.z = (z + 1.0) * height * 0.5  # the bottom on the floor
         def crack(v):
-            a = math.atan2(v.co.y, v.co.x)
-            saw = abs(((a / (2 * math.pi) * teeth) % 1.0) - 0.5) * 2  # 0..1 triangle wave
-            return cut * height + (saw - 0.5) * jag * height
+            return crack_height(math.atan2(v.co.y, v.co.x), height, cut)
         bmesh.ops.delete(bm, geom=[v for v in bm.verts if (v.co.z > crack(v)) != top], context="VERTS")
         for v in bm.verts:  # the open edge follows the crack exactly
             if v.is_boundary:
@@ -297,12 +309,49 @@ def egg_halves(height, width, cut, teeth=8, jag=0.1):
         o.data.materials.append(shell)
         o.data.materials.append(inner)
         sol = o.modifiers.new("thick", "SOLIDIFY")
-        sol.thickness = 0.035 * height
+        sol.thickness = EGG_WALL * height
         sol.material_offset = 1  # the inside of the shell glows
         sol.use_rim = True
         return o
 
     return half("egg", False), half("cap", True)
+
+
+def fit_in_egg(pieces, height, width, cut, floor_z, wag=24.0):
+    """How far to move the dragon along Y (forward, toward the camera, is -Y) so nothing of it
+    below the crack reaches through the shell (the tail through its whole wag). Noah saw its
+    rump poke out of the back of the egg on the 3DS (2026-09-24): measured, not eyeballed."""
+    bpy.context.view_layer.update()
+    pts = []
+    for name, o in pieces.items():
+        if name in ("heart", "eyes"):
+            continue
+        for yaw in ((-wag, 0.0, wag) if name == "tail" else (0.0,)):
+            rot = o.rotation_euler.copy()
+            rot.z += math.radians(yaw)
+            m = Matrix.LocRotScale(o.location, rot, o.scale)
+            pts += [m @ v.co for v in o.data.vertices]
+    top = floor_z + (cut + EGG_JAG) * height
+    pts = [p for p in pts if p.z < top]
+
+    def worst(dy):
+        """How far the worst point reaches past the shell's inside wall (negative: inside)."""
+        w = -1e9
+        for p in pts:
+            x, y, z = p.x, p.y + dy, p.z - floor_z
+            if z > crack_height(math.atan2(y, x), height, cut):
+                continue
+            zn = min(1.0, max(-1.0, z / (0.5 * height) - 1.0))
+            inside = width * egg_taper(zn) * math.sqrt(1.0 - zn * zn) - EGG_WALL * height
+            w = max(w, math.hypot(x, y) - inside)
+        return w
+
+    steps = [-0.005 * height * k for k in range(61)]  # up to 0.3 of the egg's height forward
+    fits = [dy for dy in steps if worst(dy) <= -0.01 * height]
+    dy = fits[0] if fits else min(steps, key=worst)
+    print(f"[banner] fit in the egg: worst {worst(0.0) / height:+.3f} where it was, "
+          f"{worst(dy) / height:+.3f} moved {-dy / height:.3f} forward (of the egg's height)")
+    return dy
 
 
 def apply_modifiers(o):
@@ -368,6 +417,9 @@ def wordmark_texture(path, width=256, height=64):
     scene.world = world
     scene.render.filepath = path
     bpy.ops.render.render(write_still=True, scene=scene.name)
+    for o in (text, top, cam):  # none of it may reach the banner's glTF (it did, in WP10)
+        bpy.data.objects.remove(o, do_unlink=True)
+    bpy.data.scenes.remove(scene, do_unlink=True)
     img = bpy.data.images.load(path)
     return img
 
@@ -385,6 +437,10 @@ def wordmark(width):
     bm.to_mesh(me)
     bm.free()
     o = link(bpy.data.objects.new("wordmark", me))
+    # Unlit and alpha-tested in the CGFX (make_unlit, tools/banner_cgfx.py): on the 3DS the lit,
+    # blended quad came out dark from the front and gold only from behind, because pycgfx
+    # draws a two-sided material as two copies, the second with its normals turned away, and
+    # a blended one writes no depth, so that dark copy covered the gold one.
     m = bpy.data.materials.new("wordmark")
     m.use_nodes = True
     nt = m.node_tree
@@ -493,6 +549,9 @@ def build():
     cap.location = (head_top.x, head_top.y + 0.08 * h, head_top.z - 0.12 * h)
     cap.rotation_euler = (math.radians(-16), math.radians(10), 0)
     cap.scale = (0.5, 0.5, 0.5)
+    dy = fit_in_egg(pieces, egg_h, 0.42 * h, rim / egg_h, lo - 0.1 * h)
+    for o in list(pieces.values()) + [cap]:
+        o.location.y += dy
 
     s = TALL / (hi - lo + 0.2 * h)
     world_objs = list(pieces.values()) + [egg, cap]
@@ -500,13 +559,13 @@ def build():
         o.location = (o.location - Vector((0, 0, lo))) * s
         o.data.transform(Matrix.Scale(s, 4))
     # In the frame: the pair just left of centre and low; the wordmark across the top, behind.
+    # Nothing else: the HOME Menu's own background shows round them (Noah took the wall out;
+    # the flat 2D banner keeps its backdrop, see main()).
     shift = Vector((-3.0, 0.0, -10.8))
     for o in world_objs:
         o.location += shift
     word = wordmark(30.0)
     word.location = (2.0, 5.0, 8.4)
-    glow_disc(9.8, (0.55, 0.22, 0.12), (-3.0, 16.0, -1.0))  # well behind the tail
-    backdrop(90, 50, 20.0)
     return pieces, egg, cap, heart_mat, word
 
 
@@ -583,7 +642,8 @@ def export(path):
                 export_force_sampling=False, export_frame_range=True, export_yup=True, export_apply=True,
                 export_texcoords=True, export_normals=True, export_materials="EXPORT", export_cameras=False,
                 export_lights=False, export_skins=False, export_morph=False, export_vertex_color="NONE",
-                export_colors=False, export_optimize_animation_size=False, export_image_format="AUTO")
+                export_colors=False, export_optimize_animation_size=False, export_image_format="AUTO",
+                use_active_scene=True)
     op(**{k: v for k, v in want.items() if k in props})
 
 
@@ -629,6 +689,28 @@ def add_heart_colour(path, heart_name="heart_glow"):
     print(f"[banner] heart colour pulse on material {mi}")
 
 
+def make_unlit(path, names=("wordmark",)):
+    """Marks materials unlit (KHR_materials_unlit, which tools/banner_cgfx.py honours: their
+    texture's own colours, however they face the light) and alpha-tested rather than blended,
+    so they write depth and the nearer copy of a two-sided quad wins. Seen from the back the
+    wordmark reads mirrored, like a sign in a window, but gold."""
+    with open(path, encoding="utf-8") as f:
+        g = json.load(f)
+    done = []
+    for m in g.get("materials", []):
+        if m.get("name") in names:
+            m["alphaMode"], m["alphaCutoff"] = "MASK", 0.5
+            m.setdefault("extensions", {})["KHR_materials_unlit"] = {}
+            done.append(m["name"])
+    if done:
+        used = g.setdefault("extensionsUsed", [])
+        if "KHR_materials_unlit" not in used:
+            used.append("KHR_materials_unlit")
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(g, f, indent=1)
+    print(f"[banner] unlit, alpha-tested: {', '.join(done) or 'nothing'}")
+
+
 # ------------------------------------------------------------------------------ renders
 def banner_camera():
     cam = bpy.context.scene.camera
@@ -667,6 +749,7 @@ def main():
     gltf = os.path.join(OUT, "banner.gltf")
     export(gltf)
     add_heart_colour(gltf)
+    make_unlit(gltf)
     banner_camera()
     scene = bpy.context.scene
     for o in scene.objects:
@@ -679,6 +762,16 @@ def main():
     for k, f in enumerate((0, 18, 38, 54)):  # the 3D banner through the HOME Menu's camera
         render(os.path.join(REVIEW, f"banner3d_{k}.png"), 400, 240, f)
     render(os.path.join(REVIEW, "banner3d_big.png"), 1000, 600, 0)
+    # The HOME Menu turns the banner round as it swaps titles: the back and the side must hold up too.
+    cam = scene.camera
+    for name, yaw in (("banner3d_back.png", 180.0), ("banner3d_side.png", 90.0)):
+        a = math.radians(yaw)
+        cam.location = Vector((CAM_AT.y * -math.sin(a), CAM_AT.y * math.cos(a), CAM_AT.z))
+        cam.rotation_euler = (math.radians(90), 0, a)
+        render(os.path.join(REVIEW, name), 500, 300, 0)
+    banner_camera()
+    glow_disc(9.8, (0.55, 0.22, 0.12), (-3.0, 16.0, -1.0))  # the 2D banner is a flat picture:
+    backdrop(90, 50, 20.0)                                   # it keeps its hearth glow and dusk wall
     cam = scene.camera  # the 2D banner: the same scene, a little closer (its frame is wider, 2:1)
     cam.data.angle_y = math.radians(24.5)
     cam.location.z -= 0.4

@@ -227,6 +227,41 @@ budgets and animated by the same clips.
   HOME Menu: [hardware-check-1.md](hardware-check-1.md). Emulator: all four looks cost about
   3.4 MB of linear memory (21.4 → 18.0 MB free), the full den holds 16.7 ms.
 
+**Run 1 (2026-09-24, the 3D-banner CIA):** the 3D banner plays in the HOME Menu, in 3D too.
+The game didn't start: "An error occurred (ErrDisp). The SD card was removed." every time,
+while every other title runs. Fixed in 0.1.2 (D56):
+- **No boot logo.** The RSF said `Logo: None`, so the CIA had no logo region at all. Azahar
+  never looks at it; the HOME Menu reads it before starting a title (3D-Claw's CIA, which
+  runs, has one). Now makerom's own *homebrew* logo: the word "homebrew" and a few floating
+  squares, no Nintendo branding. An Emberclutch logo of our own is proposed in WP14.
+- **The SMDH's "extendedbanner" flag** (set with `-Banner3D`) is for a banner kept in
+  extdata, not for a 3D one: dropped.
+- **The wordmark showed only from behind.** pycgfx draws a two-sided material as two copies,
+  the second with its normals turned away, and a blended material writes no depth, so the
+  dark copy covered the gold one. Now it's unlit and alpha-tested (`make_unlit` in
+  `banner3d.py`; `tools/banner_cgfx.py` runs pycgfx and passes unlit colours through):
+  gold from the front and, mirrored like a sign in a window, from behind. The wordmark's own
+  render scene no longer ends up in the glTF.
+- **The wall is gone**, and the glow disc with it: the HOME Menu's own background shows
+  round the egg (the flat 2D banner keeps both).
+- **The rump through the egg.** The banner turns round as the HOME Menu swaps titles. Its
+  rump was 0.165 of the egg's height outside the shell; `fit_in_egg` moves the dragon
+  forward (0.21 of the egg's height) until nothing below the crack is outside, the tail
+  checked through its wag. Review renders from behind and the side: `banner3d_back.png`,
+  `banner3d_side.png`.
+- **The hover sound:** one bar of the title theme (2.8 s from 15.25 s, the brightest early
+  bar) instead of Alpha 1's knock, crack and trill. `make_banner_sound.py --candidates`
+  writes the others to compare (12.55 s, the theme's first bar; 36.82 s, gentler; the old mix).
+- **The icon:** square and full-bleed, the plum and ember glow filling the frame (the round
+  badge left black corners).
+- **Screenshots (D57):** Y anywhere saves both screens and a log line to the SD card;
+  `tools\pull_shots.ps1` copies them off.
+
+**Run 2:** install 0.1.2 (the 3D-banner CIA), then the same steps, pressing Y at each
+number and at anything odd. If it still won't start: `emberclutch.3dsx` from the Homebrew
+Launcher tells the game apart from its packaging, and the error's full text (a result code,
+if Luma shows one) says more.
+
 ### WP12a — The hatching, reworked (proposed; Noah 2026-09-24)
 **The problem:** the hatchling appears whole inside an intact shell. A newborn is 0.79 wide
 and 1.34–1.47 long; the egg is 0.74 wide and 1.0 tall. So the body, wings and tail poke
@@ -266,7 +301,8 @@ hatchling sits in it. It also "just hatches": no moment where it breaks out.
   pattern. The profile shows the look; the dev menu's style switch becomes "force look".
 - **The Dragondex (D55):** every breed × look (84) plus the rare traits, filled in as you
   hatch or meet them; small rewards for completing a breed.
-- **Photo mode (D55):** hide the UI, freeze the den, save a framed picture to the SD card.
+- **Photo mode (D55):** hide the UI, freeze the den, save a framed picture to the SD card
+  (with the capture behind D57's screenshots).
 - Memory and frame budgets measured with mixed looks in the den (three dragons, three looks),
   against the numbers from the first hardware look.
 - The full parts library: horns (Crown, Crystal, Antler), frill (Leaf), tail tip (Plain),
@@ -287,6 +323,12 @@ hatchling sits in it. It also "just hatches": no moment where it breaks out.
 ### WP14 — Wrap-up
 - The playthrough checklist (`docs/plan/alpha-2-checklist.md`), docs sync, tag
   `v0.2.0-alpha2`.
+- The 3D banner becomes `package_cia.ps1`'s default once run 2 confirms the fixes (the flat
+  one stays behind a switch).
+- **An Emberclutch boot logo (proposed, D56):** makerom's homebrew logo is a small layout
+  (a darc of CLYT/CLAN/CLIM). Keep its animation and swap its "homebrew" texture (ETC1,
+  256 × 64) for the Emberclutch wordmark, then pack it with makerom's `-logo`. Needs an ETC1
+  encoder for the texture; it's checked on the 3DS, since the emulator never shows it.
 
 ## Review gates (D47, D49)
 | Review | What | Blocks? |

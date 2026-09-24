@@ -6,7 +6,7 @@ namespace ec::str {
 inline constexpr const char* kGameTitle = "Emberclutch";
 inline constexpr const char* kTagline = "raise, breed and fly with dragons";
 inline constexpr const char* kTouchToBegin = "Touch to begin";
-inline constexpr const char* kBuildLabel = "Alpha 1 in development";
+inline constexpr const char* kBuildLabel = "Alpha 2 in development";
 
 inline constexpr const char* kChooseEgg = "Choose your first egg";
 inline constexpr const char* kTapAgain = "Tap again to choose";
@@ -198,6 +198,8 @@ inline constexpr const char* kBoughtKeep = "Yours to keep!";
 inline constexpr const char* kTapToPick = "Tap a thing to see it.";
 inline constexpr const char* kDenFull = "The den is full (three beds).";
 inline constexpr const char* kEggToVault = "The nests are full: it went to the Vault.";
+inline constexpr const char* kScreenshotSaved = "Screenshot %s saved.";  // Y, anywhere
+inline constexpr const char* kScreenshotFailed = "Couldn't save the screenshot. Is the SD card full?";
 
 // Title, system menu and settings (WP10)
 inline constexpr const char* kContinue = "Continue";

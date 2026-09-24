@@ -2,6 +2,13 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-24 — The first run on the old 3DS (Alpha 2)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D57 | **Screenshots anywhere: Y, in every build.** Both screens as they are (the UI and the dev overlay too) in one 400 × 480 picture, `sdmc:/3ds/emberclutch/screenshots/shot_NNNN.bmp`, and a line in `screenshots/log.txt` (the scene, frame time, CPU and GPU, triangles, free memory, the build). The "saved" toast comes after, never in the picture. `tools\pull_shots.ps1` copies them off over FTP as PNGs and changes nothing on the card. Y is the one button no scene uses. The den's photo mode (D55: the UI hidden, a framed picture) stays a separate feature and reuses this capture | Noah takes a screenshot whenever something looks off or to show the numbers, and Claude pulls them after the test | Approved |
+| D56 | **The first 3DS run's fixes.** The CIA carries makerom's own *homebrew* boot logo: never Nintendo's, and never none, because with no logo the HOME Menu couldn't start the game ("The SD card was removed"). It drops the SMDH's *extendedbanner* flag, which is for a banner kept in extdata. The 3D banner: the wordmark is unlit and alpha-tested (gold from the front and, mirrored, from behind), there's no wall or glow disc behind (the HOME Menu's own background shows), and the dragon moves forward until nothing below the crack is outside the shell (measured, the tail through its wag). The hover sound is one bar of the title theme. The icon is square and full-bleed, with no round badge | Noah's first run (2026-09-24): the game didn't start; the banner worked, but its text showed only from behind, with the wall behind it and the dragon's rump through the egg; he wanted a cuter sound and an icon without black corners | Approved (Noah asked for each; the logo and the bar are Claude's picks, easy to change) |
+
 ## 2026-09-24 — R5: every look ships (Alpha 2)
 
 | # | Decision | Why | Status |

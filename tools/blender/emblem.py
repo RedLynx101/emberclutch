@@ -1,7 +1,8 @@
 """The app icon (Alpha 2 WP10, D48): a designed emblem, independent of the dragons' style. A
-glowing heart inside an ember-lit egg with a curl of wing around it, on a round dusk-plum
-badge with a gold rim, in the game's palette (src/app/theme.hpp). Rendered big and
-averaged down, so it reads at 48x48.
+glowing heart inside an ember-lit egg with a curl of wing around it, on dusk plum lit by an
+ember glow, in the game's palette (src/app/theme.hpp). Square and full-bleed like other 3DS
+icons: the first one, a round badge with a gold rim, left black corners on the HOME Menu
+(Noah, 2026-09-24). Rendered big and averaged down, so it reads at 48x48.
 
   blender -b -P tools/blender/emblem.py -- [--out-dir assets] [--review build/review]
 
@@ -142,6 +143,16 @@ def disc(name, radius, z, mat, segs=96):
     return o
 
 
+def square(name, size, y, mat):
+    bm = bmesh.new()
+    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=size / 2)
+    o = mesh_object(name, bm)
+    o.rotation_euler = (math.radians(90), 0, 0)
+    o.location = (0, y, 0)
+    o.data.materials.append(mat)
+    return o
+
+
 def ring(name, r0, r1, y, mat, segs=96):
     bm = bmesh.new()
     inner = [bm.verts.new((r0 * math.cos(2 * math.pi * k / segs), 0, r0 * math.sin(2 * math.pi * k / segs)))
@@ -256,7 +267,7 @@ def build():
         scene.render.engine = "BLENDER_EEVEE_NEXT"
     except TypeError:
         scene.render.engine = "BLENDER_EEVEE"
-    scene.render.film_transparent = True
+    scene.render.film_transparent = False  # every pixel is the icon's own: no clear corners
     scene.view_settings.view_transform = "Standard"
     scene.eevee.taa_render_samples = 64
     world = bpy.data.worlds.new("w")
@@ -267,9 +278,7 @@ def build():
     bpy.ops.object.light_add(type="SUN", rotation=(math.radians(55), math.radians(-20), math.radians(-25)))
     bpy.context.object.data.energy = 3.0
 
-    disc("badge", 1.5, 0.5, principled("plum", DUSK, 0.8))
-    disc("glow", 1.42, 0.45, halo_material())
-    ring("rim", 1.42, 1.5, 0.4, principled("gold", GOLD, 0.3))
+    square("glow", 4.0, 0.45, halo_material())  # past the frame's edges: the plum fills the corners
     shell = egg("egg", 1.02, 0.74, egg_glow_material())
     shell.location = (0.08, 0, -0.08)
     h = heart("heart", 0.43, 0.12, principled("heart", HEART, 0.35, glow=(1.0, 0.3, 0.04), glow_strength=0.45))
@@ -278,8 +287,8 @@ def build():
 
     cam = link(bpy.data.objects.new("cam", bpy.data.cameras.new("cam")))
     cam.data.type = "ORTHO"
-    cam.data.ortho_scale = 3.12
-    cam.location = (0, -6, 0)
+    cam.data.ortho_scale = 2.8  # the egg and its wing fill the square
+    cam.location = (0, -6, 0.07)
     cam.rotation_euler = (math.radians(90), 0, 0)
     scene.camera = cam
     return scene

@@ -1,21 +1,41 @@
-"""The HOME Menu banner's sound (Alpha 1 WP11): a knock, a crack, the hatch and a baby's
-trill, mixed from the game's own processed sound effects (romfs/sfx) into a clip under three
-seconds, the banner's limit. Writes assets/audio/banner.wav (16-bit mono).
+"""The HOME Menu banner's sound: what plays when the Emberclutch icon is selected. Writes
+assets/audio/banner.wav (16-bit mono, under three seconds, the banner's limit).
 
-  python tools/audio/make_banner_sound.py
+Since 2026-09-24 (Noah, after the first 3DS run: "a cuter sound... or a little music bit from
+the theme"): one bar of the title theme (romfs/music/title-theme.ogg, 89 bpm, so a bar is
+2.7 s), a quick fade in and a soft fade out. The bars are counted from the track's loop point,
+which sits on a bar line. Alpha 1's mix of the game's own effects (a knock, a crack, the hatch
+and a baby's trill) is still there with --sfx.
+
+  python tools/audio/make_banner_sound.py [--start <seconds>] [--candidates] [--sfx]
+
+--candidates also writes each bar in THEME_BARS to build/review/banner-sound/ to compare.
+Needs ffmpeg on PATH (to decode the Ogg Vorbis).
 """
 from __future__ import annotations
 
 import array
 import math
 import os
+import shutil
+import subprocess
+import sys
 import wave
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 SFX = os.path.join(ROOT, "romfs", "sfx")
+THEME = os.path.join(ROOT, "romfs", "music", "title-theme.ogg")
 OUT = os.path.join(ROOT, "assets", "audio", "banner.wav")
+REVIEW = os.path.join(ROOT, "build", "review", "banner-sound")
 RATE = 22050
 LENGTH = 2.8  # seconds
+
+# The title theme's bars worth hearing (seconds; from romfs/music/loops.json: the loop starts
+# at 12.55 s, a bar is 4 x 60 / 88.99 s). Picked by measuring each bar's loudness, brightness
+# (1.5-6 kHz share) and how busy it is: 12.55 the theme's first bar after the intro, 15.25 the
+# brightest early bar (the default), 36.82 bright but gentler.
+THEME_BARS = {"loop-start": 12.55, "bright": 15.25, "gentle": 36.82}
+THEME_START = THEME_BARS["bright"]
 
 # (sound, start in seconds, gain, pitch)
 CUES = [
@@ -48,7 +68,7 @@ def resample(x: list[float], pitch: float) -> list[float]:
     return out
 
 
-def main() -> None:
+def sfx_mix() -> list[float]:
     mix = [0.0] * int(LENGTH * RATE)
     for name, start, gain, pitch in CUES:
         clip = resample(load(name), pitch)
@@ -59,15 +79,48 @@ def main() -> None:
     fade = int(0.25 * RATE)  # a soft tail
     for i in range(fade):
         mix[len(mix) - fade + i] *= 1.0 - i / fade
+    return mix
+
+
+def theme_bar(start: float) -> list[float]:
+    """LENGTH seconds of the title theme from `start`, mono: in over 20 ms, out over the last 0.5 s."""
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        sys.exit("ffmpeg is needed on PATH to decode the title theme")
+    raw = subprocess.run([ffmpeg, "-v", "error", "-ss", f"{start:.3f}", "-t", f"{LENGTH:.3f}", "-i", THEME,
+                          "-ac", "1", "-ar", str(RATE), "-f", "s16le", "-"], check=True, capture_output=True).stdout
+    x = [s / 32768.0 for s in array.array("h", raw)]
+    fade_in, fade_out = int(0.02 * RATE), int(0.5 * RATE)
+    for i in range(min(fade_in, len(x))):
+        x[i] *= i / fade_in
+    for i in range(min(fade_out, len(x))):
+        x[len(x) - 1 - i] *= math.sin(0.5 * math.pi * i / fade_out)  # a gentle curve to silence
+    return x
+
+
+def write(path: str, mix: list[float]) -> None:
     peak = max(abs(s) for s in mix) or 1.0
-    k = min(1.0, 0.89 / peak)  # about -1 dBFS at most
-    os.makedirs(os.path.dirname(OUT), exist_ok=True)
-    with wave.open(OUT, "wb") as w:
+    k = 0.89 / peak  # about -1 dBFS at the peak
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with wave.open(path, "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(RATE)
         w.writeframes(array.array("h", (int(max(-1.0, min(1.0, s * k)) * 32767) for s in mix)).tobytes())
-    print(f"wrote {OUT}: {LENGTH:.1f} s, peak {20 * math.log10(peak * k):.1f} dBFS")
+    print(f"wrote {path}: {len(mix) / RATE:.1f} s, peak {20 * math.log10(peak * k):.1f} dBFS")
+
+
+def main() -> None:
+    args = sys.argv[1:]
+    if "--sfx" in args:
+        write(OUT, sfx_mix())
+        return
+    start = float(args[args.index("--start") + 1]) if "--start" in args else THEME_START
+    if "--candidates" in args:
+        for name, t in THEME_BARS.items():
+            write(os.path.join(REVIEW, f"theme-{name}-{t:.2f}s.wav"), theme_bar(t))
+        write(os.path.join(REVIEW, "sfx-alpha1.wav"), sfx_mix())
+    write(OUT, theme_bar(start))
 
 
 if __name__ == "__main__":

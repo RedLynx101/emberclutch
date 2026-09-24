@@ -1,12 +1,14 @@
 # makerom settings for the Emberclutch CIA (tools/package_cia.ps1). Adapted from the 3D-Claw
 # template: our own title ID (0x000400000EC0C100, unique ID 0xEC0C1 in the homebrew range),
-# the romfs (models, music, sounds, fonts) packed in, and no Nintendo boot logo.
+# the romfs (models, music, sounds, fonts) packed in, and makerom's own "homebrew" boot logo
+# instead of Nintendo's. Never "Logo: None": a title with no logo passes the emulator but on
+# the 3DS the HOME Menu can't start it ("The SD card was removed", 2026-09-24).
 BasicInfo:
   Title                   : "Emberclutch"
   CompanyCode             : "00"
   ProductCode             : "CTR-P-EMBC"
   ContentType             : Application
-  Logo                    : None
+  Logo                    : Homebrew
 
 RomFs:
   RootPath                : romfs

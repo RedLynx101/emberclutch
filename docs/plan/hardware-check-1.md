@@ -4,16 +4,26 @@
 four sets of dragon models in memory. About 15 minutes. The full hardware run (WP13, D34)
 still closes Alpha 2.
 
+**Run 1 (2026-09-24, 0.1.1):** the 3D banner played, but the game stopped before it
+started ("The SD card was removed"): the CIA had no boot logo. Fixed in **0.1.2**, with the
+banner, sound and icon changes Noah asked for ([alpha-2.md](alpha-2.md), WP11b).
+
 The builds are in `build/cia-test/` (not in git; rebuild with `tools\package_cia.ps1
--Version 0.1.1`, add `-Banner3D` for the second one):
-- `emberclutch-2d.cia`: the game with the flat HOME Menu banner. **Install this one first.**
-- `emberclutch-3dbanner.cia`: the same game with the animated 3D banner (step 4).
+-Version 0.1.2`, add `-Banner3D` for the second one):
+- `emberclutch-3dbanner.cia`: the game with the animated 3D banner. **Install this one.**
+- `emberclutch-2d.cia`: the same game with the flat banner, if the 3D one ever misbehaves.
+
+**Screenshots (new):** press **Y** anywhere in the game. Both screens (and the overlay, when
+it's on) go to `sdmc:/3ds/emberclutch/screenshots/` with a line of numbers in `log.txt`, and
+a toast says which one it was. Press it at each number below and at anything that looks
+off; Claude copies them off over FTP afterwards (`tools\pull_shots.ps1`).
 
 Both are dev builds: SELECT opens the dev menu, L/R turn its pages.
 
 ## 1. Install
-Both CIAs are already on the SD card in `/cias/` (uploaded over FTP). In **FBI**: SD → cias →
-`emberclutch-2d.cia` → Install CIA. Sound needs your console's own DSP firmware at `sdmc:/3ds/dspfirm.cdc` (from the
+The CIAs go to `/cias/` on the SD card (over FTP, while ftpd runs). In **FBI**: SD → cias →
+`emberclutch-3dbanner.cia` → Install CIA. It installs over 0.1.1 (same title, newer
+version). Sound needs your console's own DSP firmware at `sdmc:/3ds/dspfirm.cdc` (from the
 DSP1 homebrew); if other homebrew has sound, it's there already. The save goes to
 `sdmc:/3ds/emberclutch/`.
 
@@ -36,14 +46,16 @@ DSP1 homebrew); if other homebrew has sound, it's there already. The save goes t
 4. **Probe: all looks** again releases them.
 
 ## 4. The 3D HOME Menu banner
-The emulator can't show it, so this is its first run anywhere.
-1. Install `emberclutch-3dbanner.cia` with FBI (it replaces the first install; the save stays).
-2. Go to the HOME Menu and select Emberclutch. The top screen should show the baby Ember in
-   its cracked egg: head tilts, a tail wag, blinks, a beating heart.
-3. If the HOME Menu freezes or shows nothing: hold POWER to turn off, and reinstall
+It ran on run 1. On 0.1.2, check the fixes:
+1. The icon is square: no black corners.
+2. Selected, the top screen shows the baby Ember in its cracked egg with no wall behind it,
+   the gold EMBERCLUTCH readable from the front (mirrored from behind, as the banner turns),
+   and nothing of the dragon through the back of the egg.
+3. The sound is a bar of the title theme.
+4. If the HOME Menu freezes or shows nothing: hold POWER to turn off, and install
    `emberclutch-2d.cia` with FBI (don't select Emberclutch first). Tell me what you saw.
 
 ## What to send back
-- The numbers from 2.4 and 3.2 (a photo of the top screen is fine).
+- The numbers from 2.4 and 3.2: press Y there (or a photo of the top screen).
 - Anything slow, glitchy or wrong on the hardware (touch accuracy in the close-up, sound).
 - What the 3D banner did.

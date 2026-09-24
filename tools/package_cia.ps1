@@ -2,9 +2,10 @@
 # the icon (assets/icon.png) and the HOME Menu banner (assets/banner.png with
 # assets/audio/banner.wav). Settings: tools/cia.rsf.
 #   tools\package_cia.ps1 [-NoBuild] [-Banner3D] [-ToolsDir <folder with makerom\ and bannertool\>]
-# -Banner3D: the animated 3D banner (build/banner/banner.cgfx, from tools\make_banner.ps1)
-# with the SMDH's extendedbanner flag. The emulator can't show HOME Menu banners, so it's
-# proven on the old 3DS first (Alpha 2 WP13); the flat banner stays the default until then.
+# -Banner3D: the animated 3D banner (build/banner/banner.cgfx, from tools\make_banner.ps1).
+# The emulator can't show HOME Menu banners; it ran on Noah's old 3DS on 2026-09-24.
+# The SMDH keeps bannertool's default flags: "extendedbanner" is for a banner kept in extdata
+# (ExBanner), not for a 3D one, so it's never set.
 # makerom (3DSGuy/Project_CTR) and bannertool (diasurgical/bannertool) aren't kept in this
 # repo: by default they're taken from the 3D-Claw project next to it (3ds-ai\tools\win64),
 # else from PATH.
@@ -51,7 +52,6 @@ if ($Banner3D) {
     $cgfx = Join-Path $root "build\banner\banner.cgfx"
     if (-not (Test-Path $cgfx)) { & (Join-Path $PSScriptRoot "make_banner.ps1") -SkipIcon }
     if ((Get-Item $cgfx).Length -gt 512KB) { throw "banner.cgfx is over 512 KB" }
-    $smdhArgs += @("-f", "visible,allow3d,recordusage,extendedbanner")
     $bannerArgs = @("-ci", $cgfx)
 }
 & $bannertool makesmdh @smdhArgs

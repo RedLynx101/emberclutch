@@ -1,0 +1,12 @@
+# Y, anywhere: both screens saved as screenshots/shot_NNNN.bmp (400 x 480) with a line in
+# screenshots/log.txt. The toast comes after the picture, so it isn't in it.
+wait 2.5
+key Y
+wait 1
+shot p1-toast-after
+overlay on
+wait 1
+key Y
+wait 1
+shot p2-second
+quit

@@ -60,6 +60,9 @@ enum class Activity : u8 {
     // just hatched: in the egg nest, shaking off the shell, then sitting to meet you; a
     // Greet (after naming) sends it out of the nest
     Hatch,
+    // life together (Alpha 2 WP1, denSocial): a game of chase (one chases, one flees), a
+    // nuzzle, lying in the sunbeam
+    Chase, Flee, Nuzzle, Bask,
     Count,
 };
 const char* activityName(Activity a);
@@ -128,6 +131,15 @@ struct DenBehavior {
     float gait = 1.0f;
     float size = 1.0f;  // the last moveScale: how much room the body needs around obstacles
     u8 spot = 0;        // which bed and sulking spot are its own (its place in the den)
+    // Life together (denSocial): its partner in a game or a nuzzle (an index into the den's
+    // dragons this frame, -1: none) and what the partner is up to; where it sleeps tonight if
+    // it curls up with another in the big nest.
+    s8 partner = -1;
+    Vec2 partnerAt;
+    Activity partnerDoing = Activity::Idle;
+    int partnerStep = 0;
+    bool snuggle = false;
+    Vec2 snuggleAt;
     // The other den dragons, set each frame by shareCrowd: it walks around them too.
     DenObstacle crowd[DenLayout::kSpots - 1];
     int crowdCount = 0;
@@ -145,6 +157,11 @@ struct DenBehavior {
     void feedBite(bool disliked, bool last, bool favourite);
     // Dev menu: jump straight into an activity.
     void force(Activity a) { start(a); }
+    // Starts a shared activity (denSocial calls it): Chase (after `partner`), Flee (from it),
+    // Nuzzle (walks to meet it at `at`), Bask (lies in the sunbeam at `at`, partner -1).
+    void join(Activity a, s8 withPartner, Vec2 at);
+    // True while it's free to start something with another dragon.
+    bool sociable() const;
     // How much the dragon looks at the player right now (0..1): full when idle or greeting,
     // none while eating, sleeping or sulking.
     float lookWeight() const;
@@ -170,5 +187,17 @@ private:
 // Tells each den dragon where the others are, so they walk around each other. Call once a
 // frame before updating them.
 void shareCrowd(DenBehavior* const* dragons, int count);
+
+// Life together (Alpha 2 WP1): now and then two idle dragons start a game of chase or meet
+// for a nuzzle; by bright day one goes to lie in the sunbeam (and another may join it); most
+// nights two curl up together in the big nest. Call once a frame after shareCrowd, before
+// updating them. daylight: 0 (night) .. 1 (full day).
+struct DenSocial {
+    float clock = 6.0f;          // seconds to the next chance of something together
+    bool wasNight = false;
+    bool snuggleTonight = false;
+};
+void denSocial(DenSocial& s, DenBehavior* const* dragons, const Dragon* const* who, int count, bool night,
+               float daylight, float dt, Rng& rng);
 
 }  // namespace ec

@@ -424,6 +424,69 @@ TEST(a_new_hatchling_can_be_bathed) {
     CHECK(inTub);
 }
 
+// Life together (Alpha 2 WP1): over some minutes of a bright day, three dragons play chase
+// (one chases, one flees, it ends in a hop), meet for a nuzzle face to face, and lie in the
+// sunbeam; at night two curl up side by side in the big nest.
+TEST(den_dragons_live_together) {
+    const DenLayout den;
+    DenActor a[3];
+    DenBehavior* bs[3];
+    Dragon d[3] = {contentDragon(), contentDragon(), contentDragon()};
+    d[0].personality = Personality::Playful;
+    d[1].personality = Personality::Curious;
+    d[2].personality = Personality::Shy;
+    const Dragon* ds[3] = {&d[0], &d[1], &d[2]};
+    for (int i = 0; i < 3; ++i) {
+        a[i].reset(den, 71 + i, i);
+        bs[i] = &a[i].behavior;
+    }
+    a[0].behavior.pos = {-1.5f, 0.5f};
+    a[2].behavior.pos = {2.0f, 1.3f};
+    DenSocial social;
+    Rng rng(5);
+    bool chased = false, caught = false, nuzzled = false, basked = false;
+    for (int f = 0; f < 6 * 60 * 30; ++f) {
+        shareCrowd(bs, 3);
+        denSocial(social, bs, ds, 3, false, 1.0f, 1.0f / 30, rng);
+        for (int i = 0; i < 3; ++i) {
+            a[i].update(d[i], false, 1.0f, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+            const DenBehavior& b = *bs[i];
+            if (b.activity == Activity::Chase && b.partner >= 0 && bs[b.partner]->activity == Activity::Flee) chased = true;
+            if (chased && b.activity == Activity::Hop) caught = true;
+            if (b.activity == Activity::Nuzzle && b.step == 2 && b.partner >= 0 &&
+                bs[b.partner]->activity == Activity::Nuzzle && dist(b.pos, bs[b.partner]->pos) < 3.0f)
+                nuzzled = true;
+            if (b.activity == Activity::Bask && b.step == 2 && dist(b.pos, den.sunSpot) < 2.5f) basked = true;
+        }
+    }
+    std::printf("  a bright day: chase %d (ending in a hop %d), nuzzle %d, sunbeam %d\n", chased, caught, nuzzled,
+                basked);
+    CHECK(chased && caught && nuzzled && basked);
+
+    // Night: once two snuggle, they sleep side by side in the big nest.
+    bool together = false;
+    for (int night = 0; night < 5 && !together; ++night) {
+        for (int f = 0; f < 40 * 30; ++f) {  // a spell of day between nights: they wake up
+            shareCrowd(bs, 3);
+            denSocial(social, bs, ds, 3, false, 1.0f, 1.0f / 30, rng);
+            for (int i = 0; i < 3; ++i) a[i].update(d[i], false, 1.0f, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+        }
+        for (int f = 0; f < 90 * 30 && !together; ++f) {
+            shareCrowd(bs, 3);
+            denSocial(social, bs, ds, 3, true, 0.0f, 1.0f / 30, rng);
+            for (int i = 0; i < 3; ++i) a[i].update(d[i], true, 1.0f, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+            int nearNest = 0;
+            for (int i = 0; i < 3; ++i)
+                nearNest += bs[i]->activity == Activity::Sleep && dist(bs[i]->pos, den.beds[0]) < 3.2f;
+            together = nearNest >= 2;
+        }
+        for (int i = 0; i < 3; ++i)
+            std::printf("  night %d: %s snuggle %d at (%.1f %.1f) to nest %.1f\n", night, activityName(bs[i]->activity),
+                        bs[i]->snuggle, bs[i]->pos.x, bs[i]->pos.y, dist(bs[i]->pos, den.beds[0]));
+    }
+    CHECK(together);
+}
+
 TEST(every_activity_is_reachable_and_settles) {
     const DenLayout den;
     const Dragon d = contentDragon();
@@ -465,6 +528,7 @@ void runBehaviorTests() {
     RUN(hands_on_care_reactions);
     RUN(dragons_walk_around_the_hearth_and_hoard);
     RUN(three_dragons_share_the_den);
+    RUN(den_dragons_live_together);
     RUN(a_new_hatchling_can_be_bathed);
     RUN(every_activity_is_reachable_and_settles);
 }

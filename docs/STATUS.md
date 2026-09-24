@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 part 1 ✅ (a den of three dragons and two eggs)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -100,7 +100,8 @@ controls and saves screenshots of every step (`tests/autotest/`).
 
 1. **Alpha 2** ([plan](plan/alpha-2.md)), the style-independent systems first. WP1 part 1
    ✅ (2026-09-24, D53): three dragons and two eggs in the den, switching who you care for,
-   the room and egg trimmed to fit the frame. Next: dragons playing with each other, then
+   the room and egg trimmed to fit the frame; and their life together: games of chase,
+   nuzzles, the sunbeam, two curled up in the big nest at night. Next:
    Sanctuary and Vault, breeding, Wanderings, the Market, the world map with fast travel,
    more toys, the profile.
 2. Then the emblem icon and the animated 3D HOME Menu banner (D48, D50).

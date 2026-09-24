@@ -1,0 +1,49 @@
+# Life together (Alpha 2 WP1): three dragons left to themselves for a minute of daylight, then
+# at night. shots/log.txt says what each is doing at every shot.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+tap 238 56
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+key SELECT
+wait 6
+shot t01
+wait 6
+shot t02
+wait 6
+shot t03
+wait 6
+shot t04
+wait 6
+shot t05
+wait 6
+shot t06
+wait 6
+shot t07
+wait 6
+shot t08
+wait 6
+shot t09
+wait 6
+shot t10
+skip 15
+wait 40
+shot t11-night
+wait 20
+shot t12-night-later
+quit

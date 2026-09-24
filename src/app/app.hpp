@@ -139,6 +139,7 @@ struct App {
     Particles fx;
     DenAmbience ambience;
     float zzz[kDenDragons] = {};
+    DenSocial social;  // the den's dragons' life together (core/behavior denSocial)
     // Hands-on care (WP7): the tool in hand, and the den's ball.
     CareState care;
     Ball ball;

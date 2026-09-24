@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include "app/audio.hpp"
+#include "app/autotest.hpp"
 #include "app/care_ui.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
@@ -150,6 +151,7 @@ void denLife(App& app, const DenRoster& r, s64 now) {
     const DenLayout den;
     int order[r3d::kDenShown], shown = denOrder(app, r, order);
     DenBehavior* crowd[kDenDragons];
+    const Dragon* who[kDenDragons];
     int crowdCount = 0;
     for (int b = 0; b < kDenDragons; ++b) {
         if (r.dragon[b] < 0) {
@@ -165,10 +167,14 @@ void denLife(App& app, const DenRoster& r, s64 now) {
             app.actorId[b] = d.id;
         }
         if (r.dragon[b] != app.careIndex) a.behavior.ball = nullptr;  // the ball is for yours
+        who[crowdCount] = &d;
         crowd[crowdCount++] = &a.behavior;
     }
     shareCrowd(crowd, crowdCount);  // they walk around each other
     const bool night = isNight(now);
+    const DayBlend light = dayBlend(now);
+    denSocial(app.social, crowd, who, crowdCount, night, light.weight(kLightDay) + 0.4f * light.weight(kLightEvening),
+              app.dt, app.rng);  // games of chase, nuzzles, the sunbeam, snuggling at night
     static Activity lastActivity[kDenDragons] = {};
     for (int b = 0; b < kDenDragons; ++b) {
         if (r.dragon[b] < 0 || (app.hatch.active && !app.hatch.popped && r.dragon[b] == app.hatch.index)) continue;
@@ -179,12 +185,22 @@ void denLife(App& app, const DenRoster& r, s64 now) {
         matchSpeeds(a, d, now);
         const int n = a.update(d, night, moveScaleOf(d, now), app.dt, *lib, clipsFor(d, now), events, 8);
         for (int i = 0; i < n; ++i) playEventSound(app, events[i], d, now, yours ? 1.0f : 0.6f);
-        // A gulp when a meal is finished.
+        // A gulp when a meal is finished; a happy squeak when a game of chase ends.
         const Activity activity = a.behavior.activity;
+        const float gain = yours ? 1.0f : 0.6f;
         if (lastActivity[b] == Activity::Eat && activity != Activity::Eat)
-            audio::playSfx(audio::Sfx::Gulp, voicePitch(d, now), yours ? 1.0f : 0.6f);
+            audio::playSfx(audio::Sfx::Gulp, voicePitch(d, now), gain);
+        if ((lastActivity[b] == Activity::Chase || lastActivity[b] == Activity::Flee) && activity == Activity::Hop)
+            audio::playSfx(audio::Sfx::Squeak, voicePitch(d, now), gain);
         lastActivity[b] = activity;
+        Vec3 head;  // hearts while two nuzzle
+        if (activity == Activity::Nuzzle && a.behavior.step == 2 && app.rng.chance(1, 40) &&
+            r3d::headOf(drawIndexOf(order, shown, r.dragon[b]), head))
+            app.fx.emit(Fx::Heart, head, 1, moveScaleOf(d, now));
         effectsFor(app, drawIndexOf(order, shown, r.dragon[b]), b, d, a, events, n, now);
+        if (autotest::shooting())
+            autotest::log("bed %d %s: %s/%d partner %d at (%.1f %.1f)", b, d.name, activityName(a.behavior.activity),
+                          a.behavior.step, a.behavior.partner, a.behavior.pos.x, a.behavior.pos.y);
     }
 }
 

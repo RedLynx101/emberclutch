@@ -26,6 +26,7 @@ constexpr const char* kActivityNames[] = {
     "GoNap", "Sleep", "Wake", "Eat", "Favorite", "PetHead", "PetChin", "BellyRub", "Shake", "Hop", "Pounce",
     "GoSulk", "Sulk", "MakeUp", "Greet",
     "Fetch", "HandFeed", "Refuse", "Bath", "Groomed", "Kick", "Sneeze", "PullAway", "Come", "Hatch",
+    "Chase", "Flee", "Nuzzle", "Bask",
 };
 static_assert(sizeof(kActivityNames) / sizeof(kActivityNames[0]) == static_cast<int>(Activity::Count),
               "one name per activity");
@@ -143,8 +144,8 @@ Vec2 DenBehavior::steerTarget(Vec2 goal) const {
 bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
     const float dist = distance(pos, goal);
     if (dist < 0.2f * moveScale + 0.05f) return true;
-    // Another dragon is standing on the spot: close enough.
-    for (int i = 0; i < crowdCount; ++i)
+    // Another dragon is standing on the spot: close enough (not when curling up beside it).
+    for (int i = 0; i < crowdCount && !(activity == Activity::GoNap && snuggle); ++i)
         if (distance(goal, crowd[i].at) < crowd[i].radius + kBodyRadius * size &&
             dist < crowd[i].radius + kBodyRadius * size + 0.3f)
             return true;
@@ -187,7 +188,7 @@ void DenBehavior::start(Activity a) {
         case Activity::Yawn: setClip(ClipId::Yawn, 0.3f, true); break;
         case Activity::TailWag: setClip(ClipId::TailWag, 0.25f); timer = between(rng, 2.0f, 3.5f); break;
         case Activity::Flutter: setClip(ClipId::WingFlutter, 0.3f, true); break;
-        case Activity::GoNap: target = den.beds[spot]; trot = false; break;
+        case Activity::GoNap: target = snuggle ? snuggleAt : den.beds[spot]; trot = false; break;
         case Activity::Sleep: setClip(ClipId::Sleep, 0.8f); break;
         case Activity::Wake: setClip(ClipId::Wake, 0.6f, true); break;
         case Activity::Eat: setClip(ClipId::Eat, 0.35f); timer = 3.5f; break;
@@ -230,6 +231,16 @@ void DenBehavior::start(Activity a) {
         case Activity::Come:
             target = {den.player.x, den.player.y + 0.8f};
             trot = distance(pos, target) > 3.0f;
+            break;
+        case Activity::Chase:
+        case Activity::Flee:
+            trot = true;
+            target = pos;
+            break;
+        case Activity::Nuzzle:
+        case Activity::Bask:
+            trot = false;
+            timer = activity == Activity::Bask ? between(rng, 15.0f, 30.0f) : 0.0f;
             break;
         case Activity::Hatch:
             pos = hatchAt;
@@ -643,6 +654,77 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
                 }
             }
             break;
+        case Activity::Chase: {  // after the partner; a catch is a happy hop for both
+            timer += dt;
+            const float reach = kBodyRadius * size * 2.0f + 0.3f * size;
+            if (partner < 0 || partnerDoing != Activity::Flee || timer > 8.0f) {
+                partner = -1;
+                start(Activity::TailWag);
+            } else if (distance(pos, partnerAt) < reach) {
+                partner = -1;
+                start(Activity::Hop);
+            } else {
+                walkTo(partnerAt, true, moveScale, dt);
+            }
+            break;
+        }
+        case Activity::Flee:  // darting away from the chaser, never into a corner
+            timer += dt;
+            if (partner < 0 || partnerDoing != Activity::Chase || timer > 8.0f) {
+                partner = -1;
+                start(Activity::Hop);
+                break;
+            }
+            if ((step -= 1) <= 0 || distance(pos, target) < 0.4f * size + 0.1f) {
+                step = 20;  // frames until it thinks again
+                const float dx = pos.x - partnerAt.x, dy = pos.y - partnerAt.y, len = std::hypot(dx, dy);
+                const float away = len > 1e-3f ? std::atan2(dx, -dy) : heading;
+                target = pos;
+                for (int tries = 0; tries < 6; ++tries) {  // straight away, else veer off to the side
+                    const float a = away + (tries == 0 ? 0.0f : (tries % 2 ? 1.0f : -1.0f) * 0.5f * ((tries + 1) / 2));
+                    const Vec2 p{pos.x + std::sin(a) * 2.2f * size, pos.y - std::cos(a) * 2.2f * size};
+                    if (distance(p, den.home) < den.radius * 0.85f && clearAt(p, kClearance * size)) {
+                        target = p;
+                        break;
+                    }
+                }
+            }
+            walkTo(target, true, moveScale, dt);
+            break;
+        case Activity::Nuzzle:  // walk to meet, face each other, nuzzle
+            timer += dt;
+            if (partner < 0 || partnerDoing != Activity::Nuzzle || (step < 2 && timer > 9.0f)) {
+                partner = -1;
+                start(Activity::Idle);
+            } else if (step == 0) {
+                if (walkTo(target, false, moveScale, dt)) step = 1;
+            } else if (step == 1) {
+                if (turnTo(headingTo(pos, partnerAt), dt) && partnerStep >= 1) {
+                    step = 2;
+                    timer = 0;
+                    setClip(ClipId::Nuzzle, 0.35f);
+                }
+            } else if (timer > 3.0f) {
+                partner = -1;
+                start(Activity::TailWag);
+            }
+            break;
+        case Activity::Bask:  // to the sunbeam, lie down, soak it up
+            if (step == 0) {
+                if (walkTo(target, false, moveScale, dt)) {
+                    step = 1;
+                    setClip(ClipId::LieDown, 0.3f, true);
+                }
+            } else if (step == 1) {
+                if (clipDone) {
+                    step = 2;
+                    setClip(ClipId::LieLoop, 0.2f);
+                }
+            } else if ((timer -= dt) <= 0) {
+                start(Activity::Idle);
+                blend = 0.9f;
+            }
+            break;
         case Activity::Count:
             start(Activity::Idle);
             break;
@@ -669,12 +751,126 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
     const bool settled = asleep(*this) || activity == Activity::Sulk || activity == Activity::Eat ||
                          activity == Activity::BellyRub || activity == Activity::MakeUp ||
                          activity == Activity::Groomed || activity == Activity::HandFeed || inNest ||
+                         (activity == Activity::Bask && step > 0) || (activity == Activity::Nuzzle && step > 0) ||
                          (activity == Activity::Bath && step > 0) ||
                          ((activity == Activity::Sit || activity == Activity::Lie) && step == 1);
     if (!settled)
         for (int i = 0; i < crowdCount; ++i) pushOut(crowd[i].at, crowd[i].radius + kBodyRadius * size);
     clipDone = false;  // consumed
 }
+
+void DenBehavior::join(Activity a, s8 withPartner, Vec2 at) {
+    partner = withPartner;
+    start(a);
+    if (a == Activity::Nuzzle || a == Activity::Bask) target = at;
+}
+
+bool DenBehavior::sociable() const {
+    return partner < 0 && (activity == Activity::Idle || activity == Activity::LookAround ||
+                           activity == Activity::Wander || activity == Activity::Scratch ||
+                           activity == Activity::TailWag || (activity == Activity::Sit && step == 1));
+}
+
+namespace {
+
+// Partners see what each other are up to (after anything new has started).
+void sharePartners(DenBehavior* const* bs, int n) {
+    for (int i = 0; i < n; ++i) {
+        DenBehavior& b = *bs[i];
+        if (b.partner >= n || b.partner == i) b.partner = -1;
+        if (b.partner < 0) continue;
+        const DenBehavior& p = *bs[b.partner];
+        b.partnerAt = p.pos;
+        b.partnerDoing = p.activity;
+        b.partnerStep = p.step;
+    }
+}
+
+void startTogether(DenSocial& s, DenBehavior* const* bs, const Dragon* const* ds, int n, bool night, float daylight,
+                   float dt, Rng& rng);
+
+}  // namespace
+
+void denSocial(DenSocial& s, DenBehavior* const* bs, const Dragon* const* ds, int n, bool night, float daylight,
+               float dt, Rng& rng) {
+    startTogether(s, bs, ds, n, night, daylight, dt, rng);
+    sharePartners(bs, n);
+}
+
+namespace {
+
+void startTogether(DenSocial& s, DenBehavior* const* bs, const Dragon* const* ds, int n, bool night, float daylight,
+                   float dt, Rng& rng) {
+    // Most nights two curl up together in the big nest.
+    if (night && !s.wasNight) s.snuggleTonight = n >= 2 && rng.chance(7, 10);
+    s.wasNight = night;
+    int pair[2], paired = 0;
+    for (int i = 0; i < n; ++i) {
+        const bool together = night && s.snuggleTonight && !ds[i]->upset && paired < 2;
+        if (together) pair[paired++] = i;
+        bs[i]->snuggle = together;
+    }
+    if (paired == 2) {
+        // Side by side in the big nest, along the den's edge (both spots on the floor), each
+        // on the side it comes from so they don't cross.
+        DenBehavior& a = *bs[pair[0]];
+        DenBehavior& b = *bs[pair[1]];
+        const Vec2 nest = a.den.beds[0], home = a.den.home;
+        const float ox = nest.x - home.x, oy = nest.y - home.y, len = std::hypot(ox, oy);
+        const Vec2 side{-oy / len, ox / len};
+        const float gap = kBodyRadius * std::fmax(a.size, b.size) * 1.1f;
+        const Vec2 p0{nest.x + side.x * gap, nest.y + side.y * gap}, p1{nest.x - side.x * gap, nest.y - side.y * gap};
+        const bool swap = distance(a.pos, p0) + distance(b.pos, p1) > distance(a.pos, p1) + distance(b.pos, p0);
+        a.snuggleAt = swap ? p1 : p0;
+        b.snuggleAt = swap ? p0 : p1;
+    } else if (paired == 1) {
+        bs[pair[0]]->snuggle = false;
+    }
+    if (night || n < 2 || (s.clock -= dt) > 0) return;
+    s.clock = between(rng, 8.0f, 16.0f);
+
+    int free[DenLayout::kSpots], count = 0;
+    for (int i = 0; i < n && count < DenLayout::kSpots; ++i)
+        if (bs[i]->sociable() && !ds[i]->upset && ds[i]->needs.energy > 25) free[count++] = i;
+    // By bright day, the sunbeam: one goes to lie in it, and another may join.
+    int basking = 0;
+    for (int i = 0; i < n; ++i) basking += bs[i]->activity == Activity::Bask;
+    if (daylight > 0.6f && count > 0 && basking < 2 && rng.chance(1, basking ? 3 : 4)) {
+        const int i = free[rng.below(static_cast<u32>(count))];
+        const Vec2 sun = bs[i]->den.sunSpot;
+        const float off = basking ? 1.1f * bs[i]->size + 0.3f : 0.0f;
+        bs[i]->join(Activity::Bask, -1, {sun.x + off, sun.y - 0.2f * off});
+        return;
+    }
+    if (count < 2) return;
+    int a = free[rng.below(static_cast<u32>(count))], b = a;
+    while (b == a) b = free[rng.below(static_cast<u32>(count))];
+    // Playful ones love a chase; the shy and the sleepy would rather have a nuzzle.
+    auto playful = [&](int i) {
+        const Personality p = ds[i]->personality;
+        return p == Personality::Playful ? 2.0f : (p == Personality::Brave ? 1.3f
+                                                   : (p == Personality::Shy || p == Personality::Sleepy) ? 0.5f : 1.0f);
+    };
+    const float chase = playful(a) + playful(b), nuzzle = 1.6f;
+    if (unit(rng) * (chase + nuzzle) < chase) {
+        if (playful(b) > playful(a)) std::swap(a, b);  // the more playful one does the chasing
+        bs[a]->join(Activity::Chase, static_cast<s8>(b), {});
+        bs[b]->join(Activity::Flee, static_cast<s8>(a), {});
+    } else {
+        // Meet in the middle, face to face, just touching.
+        const Vec2 pa = bs[a]->pos, pb = bs[b]->pos;
+        const Vec2 mid{(pa.x + pb.x) * 0.5f, (pa.y + pb.y) * 0.5f};
+        float dx = pb.x - pa.x, dy = pb.y - pa.y;
+        const float len = std::hypot(dx, dy);
+        dx = len > 1e-3f ? dx / len : 1.0f;
+        dy = len > 1e-3f ? dy / len : 0.0f;
+        const float ra = kBodyRadius * bs[a]->size + 0.05f, rb = kBodyRadius * bs[b]->size + 0.05f;
+        bs[a]->join(Activity::Nuzzle, static_cast<s8>(b), {mid.x - dx * ra, mid.y - dy * ra});
+        bs[b]->join(Activity::Nuzzle, static_cast<s8>(a), {mid.x + dx * rb, mid.y + dy * rb});
+    }
+}
+
+}  // namespace
 
 void shareCrowd(DenBehavior* const* dragons, int count) {
     for (int i = 0; i < count; ++i) {
@@ -708,6 +904,10 @@ float DenBehavior::eyesClosed() const {
             return 0.8f;
         case Activity::Hatch:
             return step == 0 ? 0.6f : 0.0f;  // squinting at its first light
+        case Activity::Bask:
+            return step == 2 ? 0.55f : 0.0f;  // warm and drowsy
+        case Activity::Nuzzle:
+            return step == 2 ? 0.6f : 0.0f;
         default:
             return 0.0f;
     }
@@ -734,6 +934,8 @@ float DenBehavior::lookWeight() const {
             return step == 2 ? 1.0f : 0.4f;
         case Activity::Hatch:
             return step == 1 ? 1.0f : 0.0f;  // meeting you
+        case Activity::Bask:
+            return step == 0 ? 0.2f : 0.35f;
         case Activity::Groomed:
         case Activity::Kick:
             return 0.5f;

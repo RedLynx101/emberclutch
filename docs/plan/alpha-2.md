@@ -1,7 +1,7 @@
 # Alpha 2 — *A den*: Work Plan
 
-Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 part 1 done: the den of three
-dragons and two eggs (D53). Goal (D31): complete through Alpha 2. Scope and assets:
+Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 done: the den of three dragons
+and two eggs (D53), and their life together. Goal (D31): complete through Alpha 2. Scope and assets:
 [content & assets](content-and-assets.md) (A2 rows); screens: [screens & flow](../design/screens-and-flow.md).
 
 **The order matters** (Noah, 2026-09-24): everything that doesn't depend on how the
@@ -38,7 +38,11 @@ Worked through alone, package by package (D49).
   and "Add egg"; `tests/autotest/den3.txt`. Full den measured 7,740 top + 2,752 bottom
   triangles, 15 draws.
 - Dragon-to-dragon life: play-chase, nuzzle, curling up together, sharing the sunbeam
-  (the crowd avoidance and three beds exist).
+  (the crowd avoidance and three beds exist). *Done:* `denSocial` in `src/core/behavior.cpp`
+  pairs idle dragons for a chase (the more playful chases; a catch is a hop and a squeak)
+  or a nuzzle face to face (hearts); by bright day one lies in the sunbeam and another may
+  join; most nights two sleep side by side in the big nest. PC-tested; seen in Azahar
+  (`tests/autotest/together.txt`, which logs everyone's activity per shot).
 - LOD1 for background dragons (exists); the 3-dragon budget confirmed in the emulator.
 - *Done:* an egg LOD (312 triangles, `egg_model.py --lod 1`) and a lighter room (1,975):
   three dragons and two eggs fit the 8,000 frame.

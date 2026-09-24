@@ -167,6 +167,11 @@ Nintendogs", a full polish of the at-home care). In order:
 - CIA build (makerom + bannertool, reusing the 3D-Claw pattern) as `tools/package_cia.ps1`;
   an **interim** 48×48 icon and HOME banner rendered from our own dragon model (replacing
   the AI-concept-derived placeholder), banner sound. The designed emblem comes in Alpha 2 (D48).
+- Done 2026-09-24: `tools/package_cia.ps1` + `tools/cia.rsf` (title ID 0x000400000EC0C100,
+  romfs packed in, no Nintendo boot logo); the icon and banner rendered by
+  `tools/blender/app_icon.py` (the baby Ember on an ember glow; the banner adds the
+  wordmark), the banner sound mixed from our own effects (`tools/audio/make_banner_sound.py`).
+  Installed and run in Azahar from the CIA (`azahar -i`, then the scripted smoke test).
 
 ### WP12 — Tuning and wrap-up
 - Emulator playthrough scripts (a checklist in `docs/plan/alpha-1-checklist.md`), balance

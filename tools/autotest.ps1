@@ -8,7 +8,8 @@ param(
     [Parameter(Mandatory = $true)][string]$Script,
     [switch]$ResetSave,
     [switch]$NoBuild,
-    [int]$TimeoutSec = 180
+    [int]$TimeoutSec = 180,
+    [string]$Game = ""  # what Azahar boots: the .3dsx by default, or an installed CIA's .app
 )
 
 Set-StrictMode -Version Latest
@@ -39,7 +40,8 @@ Copy-Item $scriptPath (Join-Path $sd "autotest.txt")
 
 try {
     Get-Process azahar -ErrorAction SilentlyContinue | Stop-Process
-    Start-Process $azahar -ArgumentList ('"' + (Join-Path $root "emberclutch.3dsx") + '"')
+    if (-not $Game) { $Game = Join-Path $root "emberclutch.3dsx" }
+    Start-Process $azahar -ArgumentList ('"' + $Game + '"')
     $done = Join-Path $shots "done.txt"
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
     while (-not (Test-Path $done) -and (Get-Date) -lt $deadline) { Start-Sleep -Milliseconds 500 }

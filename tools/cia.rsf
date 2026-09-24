@@ -1,0 +1,128 @@
+# makerom settings for the Emberclutch CIA (tools/package_cia.ps1). Adapted from the 3D-Claw
+# template: our own title ID (0x000400000EC0C100, unique ID 0xEC0C1 in the homebrew range),
+# the romfs (models, music, sounds, fonts) packed in, and no Nintendo boot logo.
+BasicInfo:
+  Title                   : "Emberclutch"
+  CompanyCode             : "00"
+  ProductCode             : "CTR-P-EMBC"
+  ContentType             : Application
+  Logo                    : None
+
+RomFs:
+  RootPath                : romfs
+
+TitleInfo:
+  Category                : Application
+  UniqueId                : 0xEC0C1
+  Platform                : CTR
+
+Option:
+  UseOnSD                 : true
+  EnableCompress          : true
+  FreeProductCode         : true
+  EnableCrypt             : false
+
+AccessControlInfo:
+  DisableDebug            : false
+  PermitMainFunctionArgument: true
+  MemoryType              : Application
+  SystemMode              : 64MB
+  IdealProcessor          : 0
+  AffinityMask            : 1
+  Priority                : 16
+  MaxCpu                  : 0x9E
+  HandleTableSize         : 0x200
+  CoreVersion             : 2
+  DescVersion             : 2
+  ReleaseKernelMajor      : "02"
+  ReleaseKernelMinor      : "33"
+
+  FileSystemAccess:
+    - DirectSdmc
+    - DirectSdmcWrite
+
+  IORegisterMapping:
+    - 1ff50000-1ff57fff
+    - 1ff70000-1ff77fff
+
+  MemoryMapping:
+    - 1f000000-1f5fffff:r
+
+  SystemCallAccess:
+    ArbitrateAddress      : 34
+    Break                 : 60
+    CancelTimer           : 28
+    ClearEvent            : 25
+    ClearTimer            : 29
+    CloseHandle           : 35
+    ConnectToPort         : 45
+    ControlMemory         : 1
+    CreateAddressArbiter  : 33
+    CreateEvent           : 23
+    CreateMemoryBlock     : 30
+    CreateMutex           : 19
+    CreateSemaphore       : 21
+    CreateThread          : 8
+    CreateTimer           : 26
+    DuplicateHandle       : 39
+    ExitProcess           : 3
+    ExitThread            : 9
+    GetCurrentProcessorNumber: 17
+    GetHandleInfo         : 41
+    GetProcessId          : 53
+    GetProcessIdOfThread  : 54
+    GetProcessIdealProcessor: 6
+    GetProcessInfo        : 43
+    GetResourceLimit      : 56
+    GetResourceLimitCurrentValues: 58
+    GetResourceLimitLimitValues: 57
+    GetSystemInfo         : 42
+    GetSystemTick         : 40
+    GetThreadContext      : 59
+    GetThreadId           : 55
+    GetThreadIdealProcessor: 15
+    GetThreadInfo         : 44
+    GetThreadPriority     : 11
+    MapMemoryBlock        : 31
+    OutputDebugString     : 61
+    QueryMemory           : 2
+    ReleaseMutex          : 20
+    ReleaseSemaphore      : 22
+    SendSyncRequest1      : 46
+    SendSyncRequest2      : 47
+    SendSyncRequest3      : 48
+    SendSyncRequest4      : 49
+    SendSyncRequest       : 50
+    SetThreadPriority     : 12
+    SetTimer              : 27
+    SignalEvent           : 24
+    SleepThread           : 10
+    UnmapMemoryBlock      : 32
+    WaitSynchronization1  : 36
+    WaitSynchronizationN  : 37
+
+  # What the game uses: applets (the keyboard) and the clock, the DSP for sound, the SD card
+  # and romfs, the GPU and screens, buttons and touch, and the power state (sleep).
+  ServiceAccessControl:
+    - APT:U
+    - cfg:u
+    - dsp::DSP
+    - fs:USER
+    - gsp::Gpu
+    - gsp::Lcd
+    - hid:USER
+    - ir:rst
+    - ptm:u
+
+SystemControlInfo:
+  SaveDataSize            : 0KB
+  RemasterVersion         : 0
+  StackSize               : 0x00080000
+  JumpId                  : 0x000400000EC0C100
+  Dependency:
+    am                    : 0x0004013000001502
+    cfg                   : 0x0004013000001702
+    dsp                   : 0x0004013000001a02
+    gsp                   : 0x0004013000001c02
+    hid                   : 0x0004013000001d02
+    ptm                   : 0x0004013000002202

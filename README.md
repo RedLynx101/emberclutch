@@ -72,6 +72,10 @@ logic and UI, but frame rate must be judged on a real old 3DS.
   `tools\run.ps1 [-Address <3ds-ip>]`.
 - **Install to the SD card:** start **ftpd** on the 3DS, then run
   `tools\deploy_ftp.ps1 -FtpHost <3ds-ip>`. It uploads to `sdmc:/3ds/emberclutch/`.
+- **Install on the HOME Menu (CIA):** `tools\package_cia.ps1` builds `emberclutch.cia`
+  (icon, banner and sound included; makerom and bannertool are taken from the 3D-Claw
+  project next to this one, or PATH). Copy it to the SD card and install it with **FBI**
+  (Luma3DS).
 
 Controls: Continue or New game (your name, then pick an egg: tap twice), rub the egg warm,
 turn it and listen to it, watch it hatch and name it, then care for the hatchling with the

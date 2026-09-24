@@ -17,5 +17,6 @@ Exceptions:
   Reserved Font Name "Cinzel"). `romfs/fonts/ui.bcfnt` and `title.bcfnt` are subsets of them
   converted by `tools/make_fonts.ps1`, released under the same license and, being modified
   versions, not named after the originals.
-- `assets/icon.png` is a **temporary placeholder** cropped from concept art. It will be
-  replaced with an original icon before any public release.
+- `assets/icon.png` and `assets/banner.png` are rendered from the game's own dragon model
+  (`tools/blender/app_icon.py`) and are original art under this license; the wordmark uses
+  Cinzel Decorative (SIL OFL). They are interim: Alpha 2 brings a designed emblem (D48).

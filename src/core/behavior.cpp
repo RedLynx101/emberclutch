@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include "core/props.hpp"
+
 namespace ec {
 namespace {
 
@@ -14,11 +16,16 @@ constexpr float kPetHold = 1.2f;                     // a petting reaction outla
 constexpr float kClearance = 0.8f;                   // body room around obstacles (adult units, x size)
 constexpr float kWanderClearance = 1.6f;             // wander targets keep further off
 constexpr float kBodyRadius = 1.2f;                  // how close two dragons come (adult units, x size)
+constexpr float kGrabAt = 0.35f;                     // into the pick-up and leap clips: the jaw closes on the ball
+constexpr float kDropAt = 0.45f;                     // into "drop_wait": the ball falls from its mouth
+constexpr float kGroomHold = 1.6f;                   // standing for grooming outlasts the last stroke by this
+constexpr float kBathMax = 20.0f;                    // it hops out on its own after this long
 
 constexpr const char* kActivityNames[] = {
     "Idle", "LookAround", "Scratch", "Wander", "Sit", "Lie", "Yawn", "TailWag", "Flutter",
     "GoNap", "Sleep", "Wake", "Eat", "Favorite", "PetHead", "PetChin", "BellyRub", "Shake", "Hop", "Pounce",
     "GoSulk", "Sulk", "MakeUp", "Greet",
+    "Fetch", "HandFeed", "Refuse", "Bath", "Groomed", "Kick", "Sneeze", "PullAway", "Come",
 };
 static_assert(sizeof(kActivityNames) / sizeof(kActivityNames[0]) == static_cast<int>(Activity::Count),
               "one name per activity");
@@ -28,6 +35,7 @@ constexpr const char* kClipNames[] = {
     "lie_loop", "curl_up", "sleep", "wake", "yawn", "nap_flop", "eat", "fav_wiggle", "pet_head", "pet_chin",
     "roll_over", "belly_rub", "shake", "hop", "pounce", "tail_wag", "wing_flutter", "sulk", "sulk_loop",
     "nuzzle", "greet",
+    "pick_up", "drop_wait", "leap_catch", "leg_kick", "sniff_refuse", "lift_wing", "sneeze", "pull_away",
 };
 static_assert(sizeof(kClipNames) / sizeof(kClipNames[0]) == static_cast<int>(ClipId::Count), "one name per clip");
 
@@ -147,7 +155,7 @@ bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
         return false;
     }
     heading = wrapAngle(heading + clampf(err, -kSteerRate * dt, kSteerRate * dt));
-    setClip(trotting ? ClipId::Trot : ClipId::Walk, 0.3f);
+    setClip(trotting ? ClipId::Trot : walkClip, 0.3f);
     speed = trotting ? trotSpeed : walkSpeed;
     const float step = std::fmin(speed * dt, dist);
     pos.x += std::sin(heading) * step;
@@ -194,7 +202,146 @@ void DenBehavior::start(Activity a) {
         case Activity::Sulk: setClip(ClipId::Sulk, 0.4f, true); break;
         case Activity::MakeUp: setClip(ClipId::Nuzzle, 0.5f); timer = 3.0f; break;
         case Activity::Greet: setClip(ClipId::Greet, 0.3f, true); break;
+        case Activity::Fetch:
+            walkClip = ClipId::Walk;
+            holdingBall = false;
+            fumbled = false;
+            setClip(ClipId::Idle, 0.2f);  // no ball in play: fetch() goes back to idle
+            break;
+        case Activity::HandFeed: setClip(ClipId::Idle, 0.3f); timer = 1.5f; break;
+        case Activity::Refuse: setClip(ClipId::SniffRefuse, 0.2f, true); break;
+        case Activity::Bath: target = den.tub; trot = false; timer = 0; break;
+        case Activity::Groomed: setClip(ClipId::Idle, 0.3f); petTimer = kGroomHold; break;
+        case Activity::Kick: setClip(ClipId::LegKick, 0.2f, true); break;
+        case Activity::Sneeze: setClip(ClipId::Sneeze, 0.15f, true); break;
+        case Activity::PullAway: setClip(ClipId::PullAway, 0.15f, true); petTimer = 0; break;
+        case Activity::Come:
+            target = {den.player.x, den.player.y + 0.8f};
+            trot = distance(pos, target) > 3.0f;
+            break;
         case Activity::Count: break;
+    }
+}
+
+void DenBehavior::grab() {
+    holdingBall = true;
+    if (ball) {
+        ball->held = true;
+        ball->resting = true;
+    }
+}
+
+// Fetch (care interactions §7): watch the throw, chase the ball (or leap for it), pick it up,
+// carry it back to the player, drop it at their feet and wait for the next throw.
+void DenBehavior::fetch(const Dragon& d, float moveScale, float dt) {
+    timer += dt;
+    if (!ball || !ball->active) {
+        holdingBall = false;
+        walkClip = ClipId::Walk;
+        start(Activity::Idle);
+        return;
+    }
+    const Vec2 b{ball->pos.x, ball->pos.y};
+    const bool airborne = !ball->held && ball->pos.z > ball->radius + 0.25f;
+    const float reach = 0.9f * size + ball->radius;
+    const bool canLeap = d.stage >= Stage::Juvenile && airborne && distance(pos, b) < reach * 1.6f && ball->vel.z < 0.5f;
+    auto leap = [&] {
+        step = 6;
+        timer = 0;
+        heading = headingTo(pos, b);
+        setClip(ClipId::LeapCatch, 0.15f, true);
+    };
+    switch (step) {
+        case 0:  // watch it fly
+            if (canLeap) {
+                leap();
+                break;
+            }
+            turnTo(headingTo(pos, b), dt);
+            if (timer > 0.45f || !airborne) {
+                step = 1;
+                timer = 0;
+            }
+            break;
+        case 1: {  // chase it: where it rests, or where it's rolling to
+            if (canLeap) {
+                leap();
+                break;
+            }
+            if (distance(pos, b) < reach && !airborne) {
+                step = 2;
+                timer = 0;
+                heading = headingTo(pos, b);
+                setClip(ClipId::PickUp, 0.2f, true);
+                break;
+            }
+            walkTo(ball->resting ? b : ballHeading(*ball, 0.5f), true, moveScale, dt);
+            if (timer > 12.0f) start(Activity::Idle);  // lost interest
+            break;
+        }
+        case 2:  // pick it up
+            if (!holdingBall && timer >= kGrabAt) grab();
+            if (clipDone) {
+                timer = 0;
+                walkClip = ClipId::Carry;
+                if (d.personality == Personality::Playful && rng.chance(1, 4)) {  // keep-away!
+                    step = 7;
+                    const float ang = between(rng, -kPi, kPi);
+                    target = {den.home.x + std::sin(ang) * den.radius * 0.6f, den.home.y + std::cos(ang) * den.radius * 0.5f};
+                } else {
+                    step = 3;
+                }
+            }
+            break;
+        case 3: {  // carry it back; a shy one stops a little further off
+            const Vec2 drop{den.player.x, den.player.y + (d.personality == Personality::Shy ? 1.6f : 0.7f)};
+            walkClip = ClipId::Carry;
+            if (d.stage == Stage::Hatchling && !fumbled && holdingBall && rng.chance(1, 240)) {  // oops
+                fumbled = true;
+                holdingBall = false;
+                dropBall = true;
+                walkClip = ClipId::Walk;
+                step = 1;
+                timer = 0;
+                break;
+            }
+            if (walkTo(drop, false, moveScale, dt)) {
+                step = 4;
+                timer = 0;
+            }
+            break;
+        }
+        case 4:  // face the player
+            if (turnTo(0.0f, dt)) {
+                step = 5;
+                timer = 0;
+                walkClip = ClipId::Walk;
+                setClip(ClipId::DropWait, 0.25f, true);
+            }
+            break;
+        case 5:  // drop it at their feet, wag, and wait for the next throw
+            if (holdingBall && timer >= kDropAt) {
+                holdingBall = false;
+                dropBall = true;
+            }
+            if (timer > 4.5f) start(Activity::Idle);
+            break;
+        case 6:  // leap for it
+            if (!holdingBall && timer >= kGrabAt && distance(pos, b) < reach * 2.0f) grab();
+            if (clipDone) {
+                timer = 0;
+                step = holdingBall ? 3 : 1;
+                walkClip = holdingBall ? ClipId::Carry : ClipId::Walk;
+            }
+            break;
+        case 7:  // keep-away: trot off with it and sit, until called (or it gives up)
+            walkClip = ClipId::Carry;
+            if (walkTo(target, true, moveScale, dt) && clip != ClipId::SitLoop) setClip(ClipId::SitLoop, 0.3f);
+            if (timer > 7.0f) {
+                step = 3;
+                timer = 0;
+            }
+            break;
     }
 }
 
@@ -376,6 +523,82 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
         case Activity::MakeUp:
             if ((timer -= dt) <= 0) start(Activity::Greet);
             break;
+        case Activity::Fetch:
+            fetch(d, moveScale, dt);
+            break;
+        case Activity::HandFeed:  // face the player and wait for the next bite
+            if (turnTo(0.0f, dt) && clip != ClipId::Idle) setClip(ClipId::Idle, 0.25f);
+            if ((timer -= dt) <= 0) start(Activity::Idle);
+            break;
+        case Activity::Refuse:
+        case Activity::Sneeze:
+        case Activity::PullAway:
+            if (clipDone) start(Activity::Idle);
+            break;
+        case Activity::Kick:
+            if (clipDone) {
+                start(Activity::PetHead);
+                petTimer = kPetHold;
+            }
+            break;
+        case Activity::Bath:
+            timer += dt;
+            if (step == 0) {  // walk to the tub, face the player, hop in
+                if (walkTo(target, false, moveScale, dt) && turnTo(0.0f, dt)) {
+                    step = 1;
+                    setClip(ClipId::Hop, 0.2f, true);
+                }
+            } else if (step == 1) {
+                if (clipDone) {
+                    step = 2;
+                    timer = 0;
+                    setClip(ClipId::Sit, 0.25f, true);
+                }
+            } else if (step == 2) {  // sitting in the water
+                if (clipDone && clip == ClipId::Sit) setClip(ClipId::SitLoop, 0.2f);
+                if (timer > kBathMax) {
+                    step = 3;
+                    setClip(ClipId::Hop, 0.25f, true);
+                }
+            } else if (step == 3) {  // hop out...
+                if (clipDone) {
+                    step = 4;
+                    setClip(ClipId::Shake, 0.2f, true);
+                }
+            } else if (clipDone) {  // ...and shake off
+                start(Activity::Idle);
+            }
+            break;
+        case Activity::Groomed:
+            if (step == 0) {  // show a flank to the camera, face half turned toward it
+                if (turnTo(groomSide * 1.25f, dt)) {
+                    step = 1;
+                    setClip(ClipId::Idle, 0.25f);
+                }
+            } else if (step == 1) {
+                if (std::fabs(wrapAngle(groomSide * 1.25f - heading)) > 0.3f) step = 0;  // asked to turn
+            } else if (step == 2) {  // sitting up for the belly
+                if (clipDone && clip == ClipId::Sit) setClip(ClipId::SitLoop, 0.2f);
+            } else if (step == 3 && clipDone) {  // the wing goes back down
+                step = 1;
+                setClip(ClipId::Idle, 0.3f);
+            }
+            if (petTimer <= 0) start(Activity::Shake);  // done: shake off the loose scales
+            break;
+        case Activity::Come:
+            if (step == 0) {
+                if (walkTo(target, trot, moveScale, dt)) step = 1;
+            } else if (step == 1) {
+                if (turnTo(0.0f, dt)) {
+                    step = 2;
+                    timer = 5.0f;
+                    setClip(ClipId::Sit, 0.3f, true);
+                }
+            } else {
+                if (clipDone && clip == ClipId::Sit) setClip(ClipId::SitLoop, 0.2f);
+                if ((timer -= dt) <= 0) start(Activity::Idle);
+            }
+            break;
         case Activity::Count:
             start(Activity::Idle);
             break;
@@ -399,6 +622,8 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
     // others make way around it.
     const bool settled = asleep(*this) || activity == Activity::Sulk || activity == Activity::Eat ||
                          activity == Activity::BellyRub || activity == Activity::MakeUp ||
+                         activity == Activity::Groomed || activity == Activity::HandFeed ||
+                         (activity == Activity::Bath && step > 0) ||
                          ((activity == Activity::Sit || activity == Activity::Lie) && step == 1);
     if (!settled)
         for (int i = 0; i < crowdCount; ++i) pushOut(crowd[i].at, crowd[i].radius + kBodyRadius * size);
@@ -427,6 +652,14 @@ float DenBehavior::eyesClosed() const {
             return step == 1 ? 0.6f : 0.0f;
         case Activity::Yawn:
             return 0.5f;
+        case Activity::Kick:
+            return 0.7f;
+        case Activity::Groomed:
+            return 0.3f;  // content
+        case Activity::Bath:
+            return step == 2 ? 0.35f : 0.0f;
+        case Activity::Sneeze:
+            return 0.8f;
         default:
             return 0.0f;
     }
@@ -447,8 +680,17 @@ float DenBehavior::lookWeight() const {
         case Activity::Wander:
         case Activity::BellyRub:
             return 0.3f;
+        case Activity::Fetch:
+            return step == 5 ? 1.0f : 0.0f;  // waiting for the next throw; otherwise eyes on the ball
+        case Activity::Come:
+            return step == 2 ? 1.0f : 0.4f;
+        case Activity::Groomed:
+        case Activity::Kick:
+            return 0.5f;
+        case Activity::Bath:
+            return step == 2 ? 0.8f : 0.0f;
         default:
-            return 0.0f;  // eating, sleeping, sulking, its own business
+            return 0.0f;  // eating, sleeping, sulking, its own business (hand-feeding looks at the food)
     }
 }
 
@@ -479,6 +721,68 @@ void DenBehavior::care(Care c, const Dragon& d, PetZone zone) {
             break;
         case Care::MakeUp: start(Activity::MakeUp); break;
         case Care::Greet: start(Activity::Greet); break;
+        case Care::Throw:
+            if (!ball) break;
+            // Too tired (or a sleepy dragon, sometimes): it just watches the ball go.
+            if (d.needs.energy < 20 || (d.personality == Personality::Sleepy && d.needs.energy < 45 && rng.chance(1, 2)))
+                start(Activity::LookAround);
+            else
+                start(Activity::Fetch);
+            break;
+        case Care::Call:
+            if (activity == Activity::Fetch && step == 7) {  // playing keep-away: bring it back
+                step = 3;
+                timer = 0;
+            } else if (activity != Activity::Fetch && activity != Activity::Bath) {
+                start(Activity::Come);
+            }
+            break;
+        case Care::OfferFood:
+            if (activity != Activity::HandFeed) start(Activity::HandFeed);
+            timer = 1.5f;
+            break;
+        case Care::Bath:
+            if (activity != Activity::Bath) start(Activity::Bath);
+            break;
+        case Care::BathDone:
+            if (activity == Activity::Bath && step <= 2) {
+                step = 3;
+                setClip(ClipId::Hop, 0.25f, true);
+            }
+            break;
+        case Care::GroomBody:
+        case Care::GroomBelly:
+        case Care::GroomWing:
+            if (activity != Activity::Groomed) start(Activity::Groomed);
+            petTimer = kGroomHold;
+            if (c == Care::GroomBelly && step < 2) {
+                step = 2;
+                setClip(ClipId::Sit, 0.3f, true);
+            } else if (c == Care::GroomWing && step == 1) {
+                step = 3;
+                setClip(ClipId::LiftWing, 0.25f, true);
+            }
+            break;
+        case Care::SweetSpot:
+            if (activity != Activity::Kick) start(Activity::Kick);
+            break;
+        case Care::Poke:
+            start(d.personality == Personality::Shy ? Activity::PullAway : Activity::Sneeze);
+            break;
+        case Care::Rough:
+            if (activity != Activity::PullAway) start(Activity::PullAway);
+            break;
+    }
+}
+
+void DenBehavior::feedBite(bool disliked, bool last, bool favourite) {
+    if (disliked) {
+        start(Activity::Refuse);
+    } else if (last) {
+        favorite = favourite;
+        start(favourite ? Activity::Favorite : Activity::Idle);
+    } else if (activity == Activity::HandFeed) {
+        timer = 1.5f;
     }
 }
 

@@ -22,7 +22,7 @@ import struct
 
 FPS = 30
 EVENTS = {"footstep": 1, "chomp": 2, "swallow": 3, "flap": 4, "yawn": 5, "thump": 6, "land": 7,
-          "sniff": 8, "shake": 9, "purr": 10, "call": 11, "whimper": 12, "squeak": 13}
+          "sniff": 8, "shake": 9, "purr": 10, "call": 11, "whimper": 12, "squeak": 13, "sneeze": 14}
 
 
 # ------------------------------------------------------------------------------ quaternions

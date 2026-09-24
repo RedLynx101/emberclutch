@@ -28,6 +28,7 @@ enum AnimEvent : u8 {
     kAnimCall,     // a happy call: a trill from the young, a rumble from grown-ups
     kAnimWhimper,
     kAnimSqueak,
+    kAnimSneeze,
 };
 
 struct AnimClip {

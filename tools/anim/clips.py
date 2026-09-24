@@ -322,3 +322,61 @@ clip("sulk", 1.5).pose(0.0, WINGS_FOLDED).pose(0.7, CROUCH_FOLDED).pose(1.5, SUL
  .pose(1.6, WINGS_FOLDED)
  .wave(lambda t: {f"tail{k}": (0, 14 * sin01(t, 0.4, -0.08 * k), 0) for k in range(1, 5)})
  .root(0.0).root(0.2).root(0.45, up=0.5).root(0.7).root(1.6).event(0.4, "call").event(0.7, "land"))
+
+# ------------------------------------------------------------------------------ hands-on care (WP7)
+# docs/design/care-interactions.md. The behavior (core/behavior.cpp) times the grab and the
+# drop against these: the jaw closes on the ball 0.35 s into pick_up / leap_catch and opens
+# 0.45 s into drop_wait.
+CARRY_HEAD = {"neck1": (12, 0, 0), "head": (-8, 0, 0)}  # head up, the toy held in front
+PICK = merge(WINGS_FOLDED, {"neck1": (-34, 0, 0), "neck2": (-18, 0, 0), "neck3": (-8, 0, 0), "head": (-22, 0, 0),
+                            "arm_up*": (18, 0, 0), "arm_lo*": (-30, 0, 0), "chest": (-6, 0, 0)})
+PICK_BABY = merge(WINGS_FOLDED, {"neck1": (-16, 0, 0), "neck2": (-8, 0, 0), "head": (-26, 0, 0),
+                                 "arm_up*": (22, 0, 8), "arm_lo*": (-40, 0, 0), "chest": (-6, 0, 0)})
+for name, down in (("pick_up", PICK), ("pick_up_h", PICK_BABY)):
+    (clip(name, 0.8).pose(0.0, WINGS_FOLDED)
+     .pose(0.25, merge(down, {"jaw": (-22, 0, 0)})).pose(0.4, merge(down, {"jaw": (-3, 0, 0)}))
+     .pose(0.8, merge(WINGS_FOLDED, CARRY_HEAD)))
+SIT_UP = merge(SIT, {"neck1": (8, 0, 0), "head": (12, 0, 0)})  # sitting, looking up at you
+for name, down in (("drop_wait", merge(WINGS_FOLDED, {"neck1": (-14, 0, 0), "head": (-16, 0, 0)})),
+                   ("drop_wait_h", merge(WINGS_FOLDED, {"neck1": (-6, 0, 0), "head": (-18, 0, 0)}))):
+    (clip(name, 1.3).pose(0.0, merge(WINGS_FOLDED, CARRY_HEAD))
+     .pose(0.35, merge(down, {"jaw": (-4, 0, 0)})).pose(0.5, merge(down, {"jaw": (-22, 0, 0)}))
+     .pose(0.9, merge(SIT_UP, {"jaw": (-8, 0, 0)})).pose(1.3, merge(SIT_UP, {"jaw": (-6, 0, 0)}))
+     .wave(lambda t: {f"tail{k}": (0, (6 + 4 * k) * sin01(t, 0.4, -0.08 * k) * min(1.0, max(0.0, (t - 0.7) * 3)), 0)
+                      for k in range(1, 5)}))
+(clip("leap_catch", 0.9).pose(0.0, WINGS_FOLDED).pose(0.15, CROUCH)
+ .pose(0.32, merge(WINGS_OPEN, {"arm_up*": (30, 0, 0), "arm_lo*": (-50, 0, 0), "neck1": (16, 0, 0), "head": (14, 0, 0),
+                                "jaw": (-24, 0, 0)}))
+ .pose(0.45, merge(WINGS_OPEN, {"arm_up*": (30, 0, 0), "arm_lo*": (-50, 0, 0), "neck1": (10, 0, 0), "head": (6, 0, 0),
+                                "jaw": (-3, 0, 0)}))
+ .pose(0.7, CROUCH).pose(0.9, merge(WINGS_FOLDED, CARRY_HEAD))
+ .root(0.0).root(0.15).root(0.4, up=0.55).root(0.7).root(0.9).event(0.7, "land"))
+# A hind leg thumps the floor: scratched in just the right spot.
+(clip("leg_kick", 1.4).pose(0.0, WINGS_FOLDED)
+ .pose(0.25, merge(SIT, {"neck1": (4, 0, 0), "head": (6, 8, 14), "leg_up_R": (80, 0, 0), "leg_lo_R": (-70, 0, 0)}))
+ .pose(1.15, merge(SIT, {"neck1": (4, 0, 0), "head": (6, 8, 14), "leg_up_R": (80, 0, 0), "leg_lo_R": (-70, 0, 0)}))
+ .pose(1.4, WINGS_FOLDED)
+ .wave(lambda t: {"leg_up_R": (22 * sin01(t, 0.18) if 0.25 < t < 1.15 else 0.0, 0, 0),
+                  **{f"tail{k}": (0, (8 + 5 * k) * sin01(t, 0.35, -0.08 * k), 0) for k in range(1, 5)}})
+ .event(0.3, "thump").event(0.48, "thump").event(0.66, "thump").event(0.84, "thump"))
+# Food it doesn't like: a sniff, then the nose goes up and away.
+(clip("sniff_refuse", 1.3).pose(0.0, WINGS_FOLDED)
+ .pose(0.35, merge(WINGS_FOLDED, {"neck1": (-8, 0, 0), "head": (-14, 0, 0)}))
+ .pose(0.75, merge(WINGS_FOLDED, {"neck2": (4, 22, 0), "neck3": (2, 18, 0), "head": (10, 26, -8)}))
+ .pose(1.3, WINGS_FOLDED).event(0.35, "sniff").event(0.8, "whimper"))
+# Brushing under a wing: the right one lifts halfway, then settles.
+WING_R_UP = merge(WINGS_FOLDED, {n[:-1] + "_R": v for n, v in WINGS_HALF.items()})
+(clip("lift_wing", 1.4).pose(0.0, WINGS_FOLDED).pose(0.35, merge(WING_R_UP, {"chest": (0, 0, 6)}))
+ .pose(1.05, merge(WING_R_UP, {"chest": (0, 0, 6)})).pose(1.4, WINGS_FOLDED).event(0.35, "flap"))
+# A poke on the nose: breath in, then a tiny sneeze.
+(clip("sneeze", 0.8).pose(0.0, WINGS_FOLDED)
+ .pose(0.28, merge(WINGS_FOLDED, {"neck1": (6, 0, 0), "head": (14, 0, 0), "jaw": (-8, 0, 0)}))
+ .pose(0.42, merge(WINGS_FOLDED, {"neck1": (-6, 0, 0), "head": (-16, 0, 0), "jaw": (-4, 0, 0)}))
+ .pose(0.8, WINGS_FOLDED).event(0.4, "sneeze"))
+# Too rough: it leans back and shakes its head.
+(clip("pull_away", 0.9).pose(0.0, WINGS_FOLDED)
+ .pose(0.3, merge(WINGS_FOLDED, {"neck1": (14, 0, 0), "neck2": (10, 0, 0), "head": (10, 0, 0), "chest": (6, 0, 0),
+                                 "hips": (-4, 0, 0)}))
+ .pose(0.9, WINGS_FOLDED)
+ .wave(lambda t: {"head": (0, 16 * sin01(t, 0.16) * max(0.0, 1 - abs(t - 0.45) / 0.25), 0)})
+ .event(0.3, "whimper"))

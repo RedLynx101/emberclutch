@@ -7,6 +7,7 @@
 
 #include "check.hpp"
 #include "core/den_actor.hpp"
+#include "core/props.hpp"
 #include "core/rig.hpp"
 
 using namespace ec;
@@ -166,6 +167,126 @@ TEST(dragons_blink_and_shut_their_eyes_to_sleep) {
     CHECK(std::fabs(a.eyes.level - 0.6f) < 0.05f);
 }
 
+// A full fetch round trip with the real ball physics: the dragon chases the ball, picks it
+// up, carries it to the player, drops it and waits; the test plays the scene's part (the
+// ball rides at the mouth while held, and is let go when the dragon drops it).
+TEST(dragons_fetch_the_ball_and_bring_it_back) {
+    for (Stage stage : {Stage::Hatchling, Stage::Adult}) {
+        DenActor a;
+        const DenLayout den;
+        a.reset(den, 31);
+        Dragon d = contentDragon();
+        d.stage = stage;
+        d.personality = Personality::Brave;  // no keep-away in this test
+        Ball ball;
+        a.behavior.ball = &ball;
+        ball.launch({den.player.x, den.player.y, 1.0f}, {1.2f, 5.5f, 3.2f});
+        a.behavior.care(Care::Throw, d);
+        CHECK(a.behavior.activity == Activity::Fetch);
+        bool picked = false, dropped = false;
+        u8 ev[16];
+        float t = 0;
+        for (; t < 40.0f; t += 1.0f / 30) {
+            ball.step(den, 1.0f / 30);
+            a.update(d, false, stage == Stage::Adult ? 1.0f : 0.45f, 1.0f / 30, world().lib, world().clips, ev, 16);
+            const DenBehavior& b = a.behavior;
+            if (b.holdingBall) {  // the scene keeps the ball at the jaw
+                picked = true;
+                ball.pos = {b.pos.x + std::sin(b.heading) * 0.8f, b.pos.y - std::cos(b.heading) * 0.8f, 0.5f};
+            }
+            if (b.dropBall) {
+                a.behavior.dropBall = false;
+                ball.release(ball.pos, {0, -0.8f, 0});
+                dropped = true;
+            }
+            if (dropped && b.activity == Activity::Idle) break;
+        }
+        const float fromPlayer = dist(a.behavior.pos, den.player);
+        std::printf("  %s: fetched in %.1f s, dropped %.2f from the player\n", stageName(stage), t, fromPlayer);
+        CHECK(picked && dropped && !a.behavior.holdingBall);
+        CHECK(fromPlayer < 1.6f);
+        CHECK(t < 30.0f);
+    }
+}
+
+TEST(hands_on_care_reactions) {
+    const DenLayout den;
+    Dragon d = contentDragon();
+    auto fresh = [&](u32 seed) {
+        DenActor a;
+        a.reset(den, seed);
+        return a;
+    };
+    // Hand-feeding: it waits for each bite; the last one ends in the happy wiggle; a food it
+    // dislikes gets refused.
+    DenActor a = fresh(41);
+    a.behavior.care(Care::OfferFood, d);
+    CHECK(a.behavior.activity == Activity::HandFeed);
+    CHECK(run(a, d, false, 1.0f, [](const DenBehavior&) { return false; }) == false);
+    a.behavior.feedBite(false, false, true);
+    CHECK(a.behavior.activity == Activity::HandFeed);
+    a.behavior.feedBite(false, true, true);
+    CHECK(a.behavior.activity == Activity::Favorite);
+    a.behavior.care(Care::OfferFood, d);
+    a.behavior.feedBite(true, false, false);
+    CHECK(a.behavior.activity == Activity::Refuse);
+    CHECK(run(a, d, false, 4, [](const DenBehavior& b) { return b.activity == Activity::Idle; }));
+    a.behavior.care(Care::OfferFood, d);  // held out and taken away: it gives up waiting
+    CHECK(run(a, d, false, 4, [](const DenBehavior& b) { return b.activity == Activity::Idle; }));
+
+    // The bath: to the tub, in, sitting; rinsed, it hops out and shakes off.
+    a = fresh(42);
+    a.behavior.care(Care::Bath, d);
+    CHECK(run(a, d, false, 20, [](const DenBehavior& b) { return b.activity == Activity::Bath && b.step == 2; }));
+    CHECK(dist(a.behavior.pos, den.tub) < 0.5f);
+    a.behavior.care(Care::BathDone, d);
+    CHECK(run(a, d, false, 6, [](const DenBehavior& b) { return b.activity == Activity::Idle; }));
+
+    // Grooming: it turns a flank to the camera, sits up for the belly, lifts a wing, then
+    // shakes off when the brushing stops.
+    a = fresh(43);
+    a.behavior.groomSide = -1;
+    a.behavior.care(Care::GroomBody, d);
+    CHECK(a.behavior.activity == Activity::Groomed);
+    CHECK(run(a, d, false, 3, [&](const DenBehavior& b) {
+        a.behavior.petTimer = 1.0f;
+        return b.step == 1;
+    }));
+    CHECK(std::fabs(a.behavior.heading + 1.25f) < 0.15f);
+    a.behavior.care(Care::GroomWing, d);
+    CHECK(a.behavior.clip == ClipId::LiftWing);
+    CHECK(run(a, d, false, 3, [&](const DenBehavior& b) {
+        a.behavior.petTimer = 1.0f;
+        return b.step == 1;
+    }));
+    a.behavior.care(Care::GroomBelly, d);
+    CHECK(a.behavior.clip == ClipId::Sit);
+    CHECK(run(a, d, false, 6, [](const DenBehavior& b) { return b.activity == Activity::Idle; }));
+
+    // Petting quirks: the sweet spot kicks a leg, a poke makes it sneeze (a shy one pulls
+    // back), rough handling makes it pull away.
+    a = fresh(44);
+    a.behavior.care(Care::SweetSpot, d);
+    CHECK(a.behavior.activity == Activity::Kick);
+    CHECK(run(a, d, false, 3, [](const DenBehavior& b) { return b.activity == Activity::PetHead; }));
+    a.behavior.care(Care::Poke, d);
+    CHECK(a.behavior.activity == Activity::Sneeze);
+    Dragon shy = d;
+    shy.personality = Personality::Shy;
+    a.behavior.care(Care::Poke, shy);
+    CHECK(a.behavior.activity == Activity::PullAway);
+    a.behavior.care(Care::Rough, d);
+    CHECK(a.behavior.activity == Activity::PullAway);
+    CHECK(run(a, d, false, 3, [](const DenBehavior& b) { return b.activity == Activity::Idle; }));
+
+    // Called, it comes over and sits in front of the player.
+    a = fresh(45);
+    a.behavior.pos = {3.0f, 3.0f};
+    a.behavior.care(Care::Call, d);
+    CHECK(run(a, d, false, 15, [](const DenBehavior& b) { return b.activity == Activity::Come && b.step == 2; }));
+    CHECK(dist(a.behavior.pos, den.player) < 1.4f);
+}
+
 TEST(care_interrupts_everyday_life) {
     DenActor a;
     const DenLayout den;
@@ -305,6 +426,8 @@ void runBehaviorTests() {
     RUN(tired_dragons_nap_in_the_nest_and_wake_up);
     RUN(dragons_blink_and_shut_their_eyes_to_sleep);
     RUN(care_interrupts_everyday_life);
+    RUN(dragons_fetch_the_ball_and_bring_it_back);
+    RUN(hands_on_care_reactions);
     RUN(dragons_walk_around_the_hearth_and_hoard);
     RUN(three_dragons_share_the_den);
     RUN(every_activity_is_reachable_and_settles);

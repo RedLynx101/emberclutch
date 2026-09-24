@@ -74,6 +74,7 @@ void playEventSound(App& app, u8 event, const Dragon& d, s64 now) {
             break;
         case kAnimWhimper: audio::playSfx(audio::Sfx::Whimper, voice); break;
         case kAnimSqueak: audio::playSfx(audio::Sfx::Squeak, voice); break;
+        case kAnimSneeze: audio::playSfx(audio::Sfx::Sneeze, voice); break;
         default: break;
     }
 }

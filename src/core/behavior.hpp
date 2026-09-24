@@ -10,6 +10,8 @@
 
 namespace ec {
 
+struct Ball;  // core/props.hpp
+
 // Something solid on the den floor (hearth, egg nest, hoard): dragons walk around it.
 struct DenObstacle {
     Vec2 at;
@@ -30,6 +32,8 @@ struct DenLayout {
     Vec2 sulkSpots[kSpots] = {{-4.6f, 3.0f}, {-5.6f, 0.0f}, {-4.0f, -3.0f}};
     Vec2 eggNest{5.4f, -1.6f};    // the egg nest, warm by the hearth
     Vec2 home{0.0f, 0.6f};        // the rug: where it greets you and eats
+    Vec2 player{0.0f, -2.6f};     // where "you" are: fetched toys come back here, called dragons come
+    Vec2 tub{0.0f, -1.6f};        // where the bath tub is set down (WP7)
     Vec2 hearth{7.9f, 0.8f};
     Vec2 hoard{2.4f, 7.4f};
     Vec2 sunSpot{1.0f, 4.6f};     // where the skylight's beam meets the floor
@@ -46,6 +50,8 @@ enum class Activity : u8 {
     Eat, Favorite, PetHead, PetChin, BellyRub, Shake, Hop, Pounce,
     // feelings
     GoSulk, Sulk, MakeUp, Greet,
+    // hands-on care (WP7, docs/design/care-interactions.md)
+    Fetch, HandFeed, Refuse, Bath, Groomed, Kick, Sneeze, PullAway, Come,
     Count,
 };
 const char* activityName(Activity a);
@@ -54,6 +60,7 @@ enum class ClipId : u8 {
     Idle, LookAround, Scratch, Walk, Trot, Shuffle, Carry, Sit, SitLoop, LieDown, LieLoop, CurlUp, Sleep,
     Wake, Yawn, NapFlop, Eat, FavWiggle, PetHead, PetChin, RollOver, BellyRub, Shake, Hop, Pounce, TailWag,
     WingFlutter, Sulk, SulkLoop, Nuzzle, Greet,
+    PickUp, DropWait, LeapCatch, LegKick, SniffRefuse, LiftWing, Sneeze, PullAway,
     Count,
 };
 const char* clipName(ClipId c);  // the clip's name in the .eca
@@ -61,7 +68,21 @@ const char* clipName(ClipId c);  // the clip's name in the .eca
 // Where a touch lands (core/care zoneOf). The first four have their own reactions; the rest
 // share the head-scratch lean-in until they get theirs.
 enum class PetZone : u8 { Head, Chin, Back, Belly, Cheek, Neck, Tail, Paw, Wing, Heart };
-enum class Care : u8 { Pet, Feed, FeedFavorite, Groom, Play, MakeUp, Greet };
+enum class Care : u8 {
+    Pet, Feed, FeedFavorite, Groom, Play, MakeUp, Greet,
+    // hands-on care (WP7): the scene reports what the stylus is doing
+    Throw,       // a ball was thrown (DenBehavior::ball)
+    Call,        // "come here"
+    OfferFood,   // food held out near it (every frame while held)
+    Bath,        // the tub is out: hop in
+    BathDone,    // rinsed: hop out and shake off
+    GroomBody,   // being brushed or polished (every stroke)
+    GroomBelly,  // ...on the belly: sit up for it
+    GroomWing,   // ...on a wing: lift it
+    SweetSpot,   // scratched just right
+    Poke,        // a tap on the nose
+    Rough,       // too hard or too long
+};
 
 struct DenBehavior {
     Vec2 pos;
@@ -79,6 +100,14 @@ struct DenBehavior {
     bool clipDone = false;  // set by the caller when a one-shot clip has finished
     bool trot = false;      // the current walk is a trot
     bool favorite = false;  // the meal being eaten is its favourite
+    // Hands-on care (WP7). The scene points `ball` at the den's ball; the dragon keeps it in
+    // its mouth while holdingBall (the scene places it at the jaw) and sets dropBall when it
+    // lets go (the scene releases it and clears the flag).
+    Ball* ball = nullptr;
+    bool fumbled = false;   // a baby drops the ball at most once on the way back
+    bool holdingBall = false, dropBall = false;
+    s8 groomSide = 1;       // which flank it shows while groomed (+1 its right, -1 its left)
+    ClipId walkClip = ClipId::Walk;  // what walking looks like (carrying a toy: Carry)
     // Ground speeds (den units per second) that match the walk and trot cycles for this
     // dragon's body, so its feet stay planted (see locomotionSpeed in core/den_actor).
     float walkSpeed = 0.55f, trotSpeed = 1.8f;
@@ -96,6 +125,9 @@ struct DenBehavior {
     void update(const Dragon& d, bool night, float moveScale, float dt);
     // The player's care. Ignored while asleep; only MakeUp reaches an upset dragon.
     void care(Care c, const Dragon& d, PetZone zone = PetZone::Head);
+    // A bite of hand-fed food reached its mouth. `disliked`: it won't have it; `last`: that
+    // was the last bite (a favourite gets the happy wiggle).
+    void feedBite(bool disliked, bool last, bool favourite);
     // Dev menu: jump straight into an activity.
     void force(Activity a) { start(a); }
     // How much the dragon looks at the player right now (0..1): full when idle or greeting,
@@ -111,6 +143,8 @@ struct DenBehavior {
 
 private:
     void start(Activity a);
+    void fetch(const Dragon& d, float moveScale, float dt);
+    void grab();
     void chooseAmbient(const Dragon& d, float moveScale);
     bool walkTo(Vec2 goal, bool trot, float moveScale, float dt);  // true on arrival
     Vec2 steerTarget(Vec2 goal) const;  // the goal, or a point beside an obstacle in the way

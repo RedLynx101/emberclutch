@@ -1,0 +1,75 @@
+# Toys up close (Alpha 2 WP7): the tray's toy slot and its picker; the feather wand (swats),
+# the tug rope (it tugs, then trots off with it), the puzzle orb (rolled until a treat drops
+# out), and food dropped into the bowl.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+# Everything from the Market (dev menu page 2).
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 238 56
+wait 0.3
+key SELECT
+wait 0.5
+# The toy slot (the ball), then its picker.
+tap 290 221
+wait 0.4
+tap 290 221
+wait 0.4
+shot y01-toy-picker
+# The feather: dangled and flicked near its face.
+tap 66 180
+wait 0.5
+drag 150 70 250 110 0.25
+drag 250 110 140 80 0.25
+shotin 0.15 y02-feather-swat
+drag 140 80 250 100 0.25 0.5
+wait 1.2
+shot y03-feather-pounce
+# The rope: held and tugged, then let go.
+tap 290 221
+wait 0.4
+tap 108 180
+wait 0.5
+shotin 1.6 y04-rope-tug
+drag 120 130 220 140 1.0 1.5
+wait 1.2
+shot y05-rope-trots-off
+wait 4
+shot y06-rope-dropped
+# The orb: rolled about until a treat drops out.
+tap 290 221
+wait 0.4
+tap 150 180
+wait 0.5
+shot y07-orb
+drag 230 120 60 110 0.2
+wait 0.6
+drag 60 110 250 70 0.2
+wait 0.6
+drag 250 70 40 130 0.2
+wait 0.6
+drag 40 130 260 120 0.2
+wait 0.3
+shot y08-treat
+wait 1.5
+shot y09-treat-eaten
+# The food bowl: a bread dropped on it.
+tap 82 221
+wait 0.5
+drag 206 182 289 143 0.4
+wait 0.4
+shot y10-bowl-filled
+quit

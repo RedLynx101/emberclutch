@@ -1,0 +1,58 @@
+# The den's toys on their own (Alpha 2 WP7): three dragons with every toy out and food in the
+# bowl; the one you care for starts hungry. shots/log.txt records what each is doing per
+# shot: play with the feather, rope and orb, the bowl, a tug-of-war.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+key R
+wait 0.3
+tap 238 56
+wait 0.3
+tap 238 81
+wait 0.3
+key L
+wait 0.3
+tap 82 81
+wait 0.3
+key SELECT
+wait 6
+shot z01
+wait 6
+shot z02
+wait 6
+shot z03
+wait 6
+shot z04
+wait 6
+shot z05
+wait 6
+shot z06
+wait 6
+shot z07
+wait 6
+shot z08
+wait 6
+shot z09
+wait 6
+shot z10
+wait 6
+shot z11
+wait 6
+shot z12
+quit

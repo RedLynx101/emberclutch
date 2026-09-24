@@ -27,8 +27,17 @@ constexpr float kFoodRowY = 164;   // the food picker, above the tray
 constexpr Rect kView{0, kTopBar, 320, kFoodRowY - kTopBar};  // where the stylus meets the dragon
 constexpr float kFlickSpeed = 160;  // px/s: faster than this on release throws the ball
 
-constexpr Tool kTools[] = {Tool::Hand, Tool::Food, Tool::Brush, Tool::Cloth, Tool::Sponge, Tool::Ball};
+constexpr Tool kTools[] = {Tool::Hand, Tool::Food, Tool::Brush, Tool::Cloth, Tool::Sponge, Tool::Ball};  // the last: a toy
 constexpr int kToolCount = sizeof(kTools) / sizeof(kTools[0]);
+constexpr Rect kBowlDrop{262, kFoodRowY - 38, 54, 34};  // drop a food here to fill the bowl
+constexpr float kOrbRadiusPx = 17;
+constexpr float kOrbTreatAfter = 1500;  // pixels of rolling before a treat drops out
+constexpr float kOrbRefill = 40;        // seconds until the orb has another
+
+bool isToy(Tool t) { return t >= Tool::Ball; }
+Item toyItem(Tool t) {  // the Market thing a toy tool is (the ball comes with the den)
+    return t == Tool::Feather ? Item::FeatherWand : t == Tool::Rope ? Item::TugRope : Item::PuzzleOrb;
+}
 
 std::size_t toolSprite(Tool t) {
     switch (t) {
@@ -37,6 +46,9 @@ std::size_t toolSprite(Tool t) {
         case Tool::Cloth: return care_cloth_idx;
         case Tool::Sponge: return care_sponge_idx;
         case Tool::Ball: return care_ball_idx;
+        case Tool::Feather: return care_item_featherwand_idx;
+        case Tool::Rope: return care_item_tugrope_idx;
+        case Tool::Orb: return care_item_puzzleorb_idx;
         default: return care_hand_idx;
     }
 }
@@ -325,9 +337,103 @@ void releaseBall(App& app, Dragon& d) {
     markVisit(d, nowLocal(app));
 }
 
+// The feather wand: the dragon watches it; flicked near its face, a swat; let go there, a pounce.
+void useFeather(App& app, const Input& in, Dragon& d) {
+    CareState& c = app.care;
+    DenActor& a = actor(app);
+    a.behavior.care(Care::Dangle, d);
+    a.gazeLocal = r3d::closeUpLocal({in.tx, in.ty});
+    a.gazeWeight = 0.9f;
+    Vec2 mouth;
+    c.featherNear = r3d::mouthOnCloseUp(mouth) && std::hypot(in.tx - mouth.x, in.ty - mouth.y) < 80;
+    if (c.featherNear && c.stroke.speed > 140 && c.swatWait <= 0) {
+        c.swatWait = 0.9f;
+        a.behavior.care(Care::Swat, d);
+        play(d, 3);
+        markVisit(d, nowLocal(app));
+        if (app.rng.chance(1, 2)) emit(app, kFxHeart, {in.tx, in.ty - 10}, 1);
+    }
+}
+
+// The tug rope: it bites on and tugs while you hold it; pulling hard, a playful growl.
+void useRope(App& app, const Input& in, Dragon& d, float moved) {
+    CareState& c = app.care;
+    DenBehavior& b = actor(app).behavior;
+    b.care(Care::TugPull, d);
+    if (b.activity != Activity::Tug) return;
+    if (moved > 3 && c.tugWait <= 0) {
+        c.tugWait = 0.7f;
+        audio::playSfx(audio::Sfx::Purr, 1.2f);
+        play(d, 2);
+        markVisit(d, nowLocal(app));
+        emit(app, kFxDust, {in.tx, in.ty}, 1);
+    }
+}
+
+// The puzzle orb: pushed about the close-up; after enough rolling a treat drops out and the
+// dragon gobbles it.
+void stepOrb(App& app, Dragon& d) {
+    CareState& c = app.care;
+    DenActor& a = actor(app);
+    c.orbWait -= app.dt;
+    if (!c.orbHeld) {  // rolling on: friction, and the edges of the view bounce it back
+        c.orbAt.x += c.orbVel.x * app.dt;
+        c.orbAt.y += c.orbVel.y * app.dt;
+        const float k = std::fmax(0.0f, 1.0f - 2.2f * app.dt);
+        c.orbVel = {c.orbVel.x * k, c.orbVel.y * k};
+        const float lo = kView.x + kOrbRadiusPx, hi = kView.x + kView.w - kOrbRadiusPx;
+        const float top = kView.y + kOrbRadiusPx, bottom = kView.y + kView.h - kOrbRadiusPx;
+        if (c.orbAt.x < lo || c.orbAt.x > hi) c.orbVel.x = -c.orbVel.x * 0.7f;
+        if (c.orbAt.y < top || c.orbAt.y > bottom) c.orbVel.y = -c.orbVel.y * 0.7f;
+        c.orbAt = {std::fmax(lo, std::fmin(hi, c.orbAt.x)), std::fmax(top, std::fmin(bottom, c.orbAt.y))};
+    }
+    const float speed = std::hypot(c.orbVel.x, c.orbVel.y);
+    c.orbSpin += c.orbVel.x * app.dt / kOrbRadiusPx;
+    if (speed > 20) {
+        a.gazeLocal = r3d::closeUpLocal(c.orbAt);  // eyes on the orb
+        a.gazeWeight = 0.7f;
+        if (c.orbWait <= 0) c.orbRolled += speed * app.dt;
+    }
+    if (c.orbRolled > kOrbTreatAfter && c.treatT < 0) {  // out it drops, and off to the mouth
+        c.orbRolled = 0;
+        c.orbWait = kOrbRefill;
+        c.treatFrom = c.orbAt;
+        c.treatT = 0;
+        audio::playSfx(audio::Sfx::Sparkle);
+        showToast(app, str::kTreat);
+    }
+    if (c.treatT >= 0 && (c.treatT += app.dt / 0.7f) >= 1) {
+        c.treatT = -1;
+        feed(d, 6, false);
+        play(d, 8);
+        addBond(d, 1);
+        markVisit(d, nowLocal(app));
+        a.behavior.care(Care::Feed, d);
+        audio::playSfx(audio::Sfx::Munch);
+        Vec2 mouth;
+        if (r3d::mouthOnCloseUp(mouth)) emit(app, kFxCrumb, mouth, 5);
+    }
+}
+
+void useOrb(App& app, const Input& in, float moved) {
+    CareState& c = app.care;
+    const Vec2 touch{in.tx, in.ty};
+    if (!c.orbHeld && std::hypot(touch.x - c.orbAt.x, touch.y - c.orbAt.y) < kOrbRadiusPx + 14) {
+        c.orbHeld = true;  // picked up: it goes where the stylus goes
+        if (c.orbWait > 0 && c.treatT < 0) showToast(app, str::kOrbEmpty);
+    }
+    if (!c.orbHeld) return;
+    const Vec2 before = c.orbAt;
+    c.orbAt = touch;
+    if (app.dt > 0) c.orbVel = {(c.orbAt.x - before.x) / app.dt, (c.orbAt.y - before.y) / app.dt};
+    (void)moved;
+}
+
 void selectTool(App& app, Dragon& d, Tool t) {
     CareState& c = app.care;
+    if (isToy(t)) c.toy = t;
     if (c.tool == t) return;
+    if (c.tool == Tool::Rope) actor(app).behavior.care(Care::TugLetGo, d);  // the rope goes with it
     if (c.tool == Tool::Sponge && c.bathOut) actor(app).behavior.care(Care::BathDone, d);  // leaving the bath
     c.tool = t;
     c.holdingFood = false;
@@ -385,6 +491,9 @@ const char* hintFor(Tool t) {
         case Tool::Cloth: return str::kHintCloth;
         case Tool::Sponge: return str::kHintBath;
         case Tool::Ball: return str::kHintBall;
+        case Tool::Feather: return str::kHintFeather;
+        case Tool::Rope: return str::kHintRope;
+        case Tool::Orb: return str::kHintOrb;
         default: return str::kHintPet;
     }
 }
@@ -431,6 +540,9 @@ void update(App& app, Dragon& d) {
     c.biteWait -= app.dt;
     c.chomp -= app.dt;
     c.sweetCooldown -= app.dt;
+    c.swatWait -= app.dt;
+    c.tugWait -= app.dt;
+    stepOrb(app, d);
     // The ball: physics while it's free, the mouth while it's carried.
     DenBehavior& b = a.behavior;
     b.ball = &app.ball;
@@ -487,12 +599,38 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
     panel({0, kTrayY - 2, 320, 42}, withAlpha(theme::kDenPlum, 0.82f));
     const Vec2 touch{in.tx, in.ty};
     bool onUi = in.ty >= kTrayY - 2;
+    int toys = 1;  // the ball, and the Market's toys bought
+    for (Tool t : {Tool::Feather, Tool::Rope, Tool::Orb}) toys += owns(app.game, toyItem(t));
     for (int i = 0; i < kToolCount; ++i) {
         const Rect r{6.0f + i * 52.0f, kTrayY + 1, 48, 36};
-        const bool selected = c.tool == kTools[i];
+        const Tool t = i == kToolCount - 1 ? c.toy : kTools[i];
+        const bool selected = c.tool == t;
         panel(r, withAlpha(selected ? theme::kClutchGold : theme::kShell, selected ? 0.55f : 0.16f));
-        sprite(toolSprite(kTools[i]), r.x + r.w * 0.5f, r.y + r.h * 0.5f, 0.52f);
-        if (in.released && !c.stroke.down && r.contains(in.rx, in.ry)) selectTool(app, d, kTools[i]);
+        sprite(toolSprite(t), r.x + r.w * 0.5f, r.y + r.h * 0.5f, isToy(t) && t != Tool::Ball ? 0.46f : 0.52f);
+        if (i == kToolCount - 1 && toys > 1)  // more toys: a little mark, and the picker on a second tap
+            C2D_DrawTriangle(r.x + r.w - 10, r.y + 8, theme::kShell, r.x + r.w - 4, r.y + 8, theme::kShell, r.x + r.w - 7,
+                             r.y + 3, theme::kShell, 0.5f);
+        if (in.released && !c.stroke.down && r.contains(in.rx, in.ry)) {
+            if (selected && isToy(t)) c.toyRow = !c.toyRow;
+            else selectTool(app, d, t);
+        }
+    }
+    if (!isToy(c.tool)) c.toyRow = false;
+    // The toy picker.
+    if (c.toyRow) {
+        panel({2, kFoodRowY, 316, 36}, withAlpha(theme::kDenPlum, 0.7f));
+        int k = 0;
+        for (Tool t : {Tool::Ball, Tool::Feather, Tool::Rope, Tool::Orb}) {
+            if (t != Tool::Ball && !owns(app.game, toyItem(t))) continue;
+            const Rect r{5.0f + k++ * 42.0f, kFoodRowY + 2, 38, 32};
+            if (c.tool == t) panel(r, withAlpha(theme::kClutchGold, 0.45f));
+            sprite(toolSprite(t), r.x + r.w / 2, r.y + r.h / 2, 0.42f);
+            if (in.released && !c.stroke.down && r.contains(in.rx, in.ry)) {
+                selectTool(app, d, t);
+                c.toyRow = false;
+            }
+        }
+        if (k == 1) text(app, str::kMoreToys, 56, kFoodRowY + 10, 0.4f, withAlpha(theme::kShell, 0.8f), C2D_AlignLeft);
     }
     // The food picker.
     if (c.tool == Tool::Food) {
@@ -517,7 +655,17 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
             }
         }
         onUi = onUi || (in.ty >= kFoodRowY && !c.holdingFood);
+        if (owns(app.game, Item::FoodBowl)) {  // drop a food here to fill the bowl (WP7)
+            panel(kBowlDrop, withAlpha(c.holdingFood && kBowlDrop.contains(in.tx, in.ty) ? theme::kClutchGold : theme::kDenPlum,
+                                       0.75f));
+            drawItem(Item::FoodBowl, kBowlDrop.x + 17, kBowlDrop.y + kBowlDrop.h / 2, 0.42f);
+            char left[8];
+            std::snprintf(left, sizeof(left), "%d/%d", app.game.bowlLeft, kBowlPortions);
+            text(app, left, kBowlDrop.x + kBowlDrop.w - 4, kBowlDrop.y + 10, 0.38f, theme::kShell, C2D_AlignRight);
+            onUi = onUi || (kBowlDrop.contains(in.tx, in.ty) && !c.holdingFood);
+        }
     }
+    if (c.toyRow) onUi = onUi || in.ty >= kFoodRowY;
     // The bath's rinse button.
     const Rect rinseR{250, 132, 64, 28};
     if (c.tool == Tool::Sponge && b.activity == Activity::Bath && b.step == 2) {
@@ -566,11 +714,38 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
                 case Tool::Brush:
                 case Tool::Cloth: useGroomTool(app, in, d, hit, h, moved); break;
                 case Tool::Sponge: useSponge(app, in, d, hit, moved); break;
+                case Tool::Feather: useFeather(app, in, d); break;
+                case Tool::Rope: useRope(app, in, d, moved); break;
+                case Tool::Orb: useOrb(app, in, moved); break;
                 default: break;
             }
         }
     } else if (c.stroke.down && !in.touching) {  // let go
+        const Vec2 lastTouch = c.stroke.last;
         const Stroke end = c.stroke.end();
+        if (c.tool == Tool::Food && c.holdingFood && owns(app.game, Item::FoodBowl) && kBowlDrop.contains(lastTouch.x, lastTouch.y)) {
+            const Food f = bowlFood(app.game);
+            if (fillBowl(app.game, c.food)) {
+                audio::playSfx(audio::Sfx::Confirm);
+                showToast(app, str::kIntoBowl);
+            } else {
+                audio::playSfx(audio::Sfx::Error);
+                showToast(app, app.game.bowlLeft >= kBowlPortions ? str::kBowlFull
+                               : f != Food::Count && f != c.food ? str::kBowlOneFood
+                                                                 : str::kNoneLeft);
+            }
+        }
+        c.orbHeld = false;
+        if (!d.upset && c.tool == Tool::Rope) {  // let go: off it trots, proud
+            b.care(Care::TugLetGo, d);
+            play(d, 6);
+            emit(app, kFxHeart, {in.rx, in.ry - 10}, 2);
+        }
+        if (!d.upset && c.tool == Tool::Feather && c.featherNear && b.activity == Activity::Bat) {  // pounce!
+            b.care(Care::Play, d);
+            play(d, 6);
+            emit(app, kFxHeart, {in.rx, in.ry - 10}, 3);
+        }
         if (!d.upset) {
             if (c.tool == Tool::Hand && end == Stroke::Poke && c.hadHit &&
                 (c.lastHit.zone == PetZone::Head || c.lastHit.zone == PetZone::Cheek))
@@ -604,11 +779,43 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
             case Tool::Ball:
                 if (!app.ball.held) sprite(care_ball_idx, in.tx, in.ty, 0.5f);
                 break;
+            case Tool::Feather:  // the wand swings with the stroke
+                sprite(care_item_featherwand_idx, in.tx - 14, in.ty + 12, 0.85f,
+                       std::fmax(-0.6f, std::fmin(0.6f, c.stroke.dir.x * std::fmin(1.0f, c.stroke.speed / 300.0f) * 0.6f)));
+                break;
+            case Tool::Rope: {  // from your hand to its teeth, sagging a little
+                Vec2 mouth;
+                if (b.activity == Activity::Tug && r3d::mouthOnCloseUp(mouth)) {
+                    const u32 ropeC = theme::rgba(238, 222, 186), shade = theme::rgba(170, 140, 110);
+                    Vec2 prev{in.tx, in.ty};
+                    for (int s = 1; s <= 8; ++s) {
+                        const float t = s / 8.0f;
+                        const Vec2 p{in.tx + (mouth.x - in.tx) * t, in.ty + (mouth.y - in.ty) * t + 14 * std::sin(t * 3.1416f)};
+                        C2D_DrawLine(prev.x, prev.y + 1.5f, shade, p.x, p.y + 1.5f, shade, 5, 0.5f);
+                        C2D_DrawLine(prev.x, prev.y, ropeC, p.x, p.y, ropeC, 4, 0.5f);
+                        prev = p;
+                    }
+                }
+                C2D_DrawCircleSolid(in.tx, in.ty, 0.5f, 7, theme::rgba(214, 86, 70));  // the knot in your hand
+                break;
+            }
             default: break;
         }
-    } else {
+    }
+    if (c.tool == Tool::Orb) {  // the orb stays on the close-up, wherever it rolled
+        sprite(care_item_puzzleorb_idx, c.orbAt.x, c.orbAt.y, c.orbWait > 0 ? 0.5f : 0.55f, c.orbSpin);
+        if (c.orbWait > 0) C2D_DrawCircleSolid(c.orbAt.x, c.orbAt.y, 0.5f, 6, withAlpha(theme::kDenPlum, 0.5f));
+    }
+    if (c.treatT >= 0) {  // the treat, on its way into the mouth
+        Vec2 mouth;
+        if (!r3d::mouthOnCloseUp(mouth)) mouth = {160, 80};
+        const float t = c.treatT;
+        sprite(care_food_glimmercookie_idx, c.treatFrom.x + (mouth.x - c.treatFrom.x) * t,
+               c.treatFrom.y + (mouth.y - c.treatFrom.y) * t - 40 * std::sin(t * 3.1416f), 0.4f, t * 6);
+    }
+    if (!(in.touching && c.stroke.down)) {
         const char* hint = hintFor(c.tool);
-        const float y = c.tool == Tool::Food ? kFoodRowY - 17 : kTrayY - 17;
+        const float y = c.tool == Tool::Food || c.toyRow ? kFoodRowY - 17 : kTrayY - 17;
         const float w = textWidth(app, hint, 0.4f) + 16;
         panel({160 - w / 2, y, w, 15}, withAlpha(theme::kDenPlum, 0.6f));
         textCentered(app, hint, 160, y + 7.5f, 0.4f, withAlpha(theme::kShell, 0.9f), 300);

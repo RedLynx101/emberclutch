@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -16,7 +16,7 @@
   (fast travel in Alpha 2, free flight in 1.0).
 - **Code:** `src/core` (genetics, needs, mood, growth, eggs, clock, breeding, save, model
   format, skeleton/rig, per-dragon mesh assembly, animation, den behavior, den room,
-  daylight, particles) with PC tests (91,750 checks). `src/app` draws the dragons in 3D
+  daylight, particles, items and the den's props) with PC tests (95,213 checks). `src/app` draws the dragons in 3D
   (skinned toon shader) in a 3D den room lit for the time of day, inside themed citro2d
   screens. Runs in Azahar at 60 fps in the den (2026-09-24), sounds and all.
 - **Art:** two dragon forms built by script (`tools/blender/dragon_model.py`): a metaball
@@ -106,8 +106,10 @@ controls and saves screenshots of every step (`tests/autotest/`).
    the Nesting Stone (the pair's egg comes the next day). WP4 ✅: the Wanderings (walk with
    a dragon, the pedometer counts, it finds Gleam, trinkets and sometimes a wild egg). WP5
    ✅: the Market (food for Gleam into the pouch, selling trinkets, the egg of the day). WP6
-   ✅: the world map's trips (a heart travels the path from where you are; A skips). Next:
-   toys and den props (WP7), the profile and family tree (WP8), sounds (WP9).
+   ✅: the world map's trips (a heart travels the path from where you are; A skips). WP7 ✅:
+   toys and decor from the Market (the feather, the rope, the puzzle orb, the food bowl;
+   rugs, lanterns, perches, plants, banners), played with up close and on their own,
+   tug-of-war included. Next: the profile and family tree (WP8), sounds (WP9).
 2. Then the emblem icon and the animated 3D HOME Menu banner (D48, D50).
 3. Then **R5**, three Ember style variants for Noah (blocks, D47); the dragons update in
    the chosen style; the run on Noah's old 3DS (D34).

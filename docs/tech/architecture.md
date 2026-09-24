@@ -200,6 +200,14 @@ white-hot core (the exporter paints a radial glint→glow gradient) and pulses w
   vertex's glow by its palette slot's alpha, so a crack stays shell-coloured and dark until
   its stage, then glows, and the inner light brightens with warmth (dragons keep alpha 1).
   In the den the egg sits in the egg nest; the bottom screen shows it up close to rub.
+- **The den's things** (Alpha 2 WP7; `core/items`, `core/prop_mesh`): the toys, the food
+  bowl and the decor are built in code from a few primitives (tubes, fans, ellipsoids) and
+  drawn with the dragon program, so they take the dragons' light; lanterns and moonflowers
+  glow through the emissive path, brighter at night. The rug at home is one of them (the
+  room model has none of its own): the den's own until a bought one replaces it. Decor has
+  five fixed spots (`decorPlace`); toys lie where the dragons leave them (saved); the orb
+  rolls with the ball's physics. A PC test keeps the room, every toy and the biggest decor
+  in every spot within the room's 2,000-triangle share of the frame.
 
 Rare traits change the palette constants or add a lookup table (Iridescent).
 

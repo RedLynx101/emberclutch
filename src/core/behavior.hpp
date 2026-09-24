@@ -46,6 +46,17 @@ struct DenLayout {
         {{7.9f, 0.8f}, 1.5f}, {{5.4f, -1.6f}, 1.2f}, {{2.4f, 7.4f}, 1.6f}, {{6.5f, -3.7f}, 1.2f}};
 };
 
+// The den's toys on the floor (Alpha 2 WP7), shared by every den dragon: the scene fills this
+// each frame and applies what the dragons did with them (core/items has the toys' order).
+constexpr int kDenToys = 4;  // the feather wand, the tug rope, the puzzle orb, the food bowl
+struct DenToys {
+    bool here[kDenToys] = {};  // out on the floor (not in a mouth, not mid tug-of-war)
+    Vec2 at[kDenToys];
+    bool bowlFood = false;  // something to eat in the bowl
+    bool orbTreat = false;  // the orb has a treat in it
+    Ball* orb = nullptr;    // the orb rolls when nudged
+};
+
 enum class Activity : u8 {
     // on its own
     Idle, LookAround, Scratch, Wander, Sit, Lie, Yawn, TailWag, Flutter,
@@ -63,6 +74,10 @@ enum class Activity : u8 {
     // life together (Alpha 2 WP1, denSocial): a game of chase (one chases, one flees), a
     // nuzzle, lying in the sunbeam
     Chase, Flee, Nuzzle, Bask,
+    // toys (Alpha 2 WP7): batting at the dangled feather, tugging the rope, trotting off
+    // proudly with a toy in its mouth and dropping it; on its own, playing with a toy on the
+    // floor, eating from the food bowl, and a tug-of-war with another dragon (denSocial)
+    Bat, Tug, ToyRun, Play, Bowl, TugWar,
     Count,
 };
 const char* activityName(Activity a);
@@ -72,6 +87,7 @@ enum class ClipId : u8 {
     Wake, Yawn, NapFlop, Eat, FavWiggle, PetHead, PetChin, RollOver, BellyRub, Shake, Hop, Pounce, TailWag,
     WingFlutter, Sulk, SulkLoop, Nuzzle, Greet,
     PickUp, DropWait, LeapCatch, LegKick, SniffRefuse, LiftWing, Sneeze, PullAway,
+    PawBat, Tug,
     Count,
 };
 const char* clipName(ClipId c);  // the clip's name in the .eca
@@ -93,6 +109,11 @@ enum class Care : u8 {
     SweetSpot,   // scratched just right
     Poke,        // a tap on the nose
     Rough,       // too hard or too long
+    // toys (Alpha 2 WP7)
+    Dangle,      // the feather wand held out (every frame): it faces you and watches it
+    Swat,        // the feather flicked near its face: a paw swat
+    TugPull,     // the rope held (every frame): it bites on and tugs
+    TugLetGo,    // let go of the rope: it trots off with it, proud
 };
 
 struct DenBehavior {
@@ -121,6 +142,19 @@ struct DenBehavior {
     float tubSize = 0.95f;  // its radius, den units
     bool fumbled = false;   // a baby drops the ball at most once on the way back
     bool holdingBall = false, dropBall = false;
+    // A toy in its mouth (core/items toy index, -1: none), and one it has just let go of (the
+    // scene sets it down on the floor and clears this).
+    s8 carrying = -1, dropToy = -1;
+    // Toys on the floor (the scene points this at the den's), the one it's playing with, and
+    // what came of it this frame (the scene takes these and clears them): a portion eaten from
+    // the bowl, a treat from the orb, the orb nudged along (nudge), the feather knocked (knock).
+    DenToys* toys = nullptr;
+    s8 toy = -1;
+    bool ateFromBowl = false, gotTreat = false;
+    Vec2 nudge, knock;
+    bool nudged = false, knocked = false;
+    bool tugWinner = false;  // a tug-of-war: this one ends up with the rope
+    u8 pushes = 0;           // the orb pushed along so far
     s8 groomSide = 1;       // which flank it shows while groomed (+1 its right, -1 its left)
     ClipId walkClip = ClipId::Walk;  // what walking looks like (carrying a toy: Carry)
     // Ground speeds (den units per second) that match the walk and trot cycles for this
@@ -158,7 +192,8 @@ struct DenBehavior {
     // Dev menu: jump straight into an activity.
     void force(Activity a) { start(a); }
     // Starts a shared activity (denSocial calls it): Chase (after `partner`), Flee (from it),
-    // Nuzzle (walks to meet it at `at`), Bask (lies in the sunbeam at `at`, partner -1).
+    // Nuzzle (walks to meet it at `at`), Bask (lies in the sunbeam at `at`, partner -1),
+    // TugWar (takes its end of the rope at `at`).
     void join(Activity a, s8 withPartner, Vec2 at);
     // True while it's free to start something with another dragon.
     bool sociable() const;
@@ -176,6 +211,7 @@ struct DenBehavior {
 private:
     void start(Activity a);
     void fetch(const Dragon& d, float moveScale, float dt);
+    void playWithToy(float moveScale, float dt);
     void grab();
     void chooseAmbient(const Dragon& d, float moveScale);
     bool walkTo(Vec2 goal, bool trot, float moveScale, float dt);  // true on arrival

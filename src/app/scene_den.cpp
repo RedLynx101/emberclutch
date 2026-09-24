@@ -148,10 +148,42 @@ void matchSpeeds(DenActor& actor, const Dragon& d, s64 now) {
 
 // Moves the den's dragons along: behavior decides, animation follows (core/den_actor). Each
 // bed's actor is set up for the dragon that sleeps there when it arrives.
+// The toys as the dragons find them this frame (WP7): on the floor unless in a mouth or
+// mid tug-of-war; the orb rolls about with its own physics and stays where it stops.
+void denToys(App& app, const DenRoster& r) {
+    DenToys& t = app.denToys;
+    const SaveData& s = app.game;
+    bool held[kDenToys] = {};
+    for (int b = 0; b < kDenDragons; ++b) {
+        if (r.dragon[b] < 0 || r.away[b] || app.actorId[b] != s.dragons[r.dragon[b]].id) continue;
+        const DenBehavior& db = app.actors[b].behavior;
+        if (db.carrying >= 0 && db.carrying < kDenToys) held[db.carrying] = true;
+        if (db.activity == Activity::TugWar && db.step == 2) held[1] = true;
+    }
+    for (int k = 0; k < kDenToys; ++k) {
+        t.here[k] = owns(s, static_cast<Item>(k)) && !held[k];
+        t.at[k] = toyAt(s, k);
+    }
+    t.bowlFood = bowlFood(s) != Food::Count;
+    app.denOrbWait -= app.dt;
+    t.orbTreat = app.denOrbWait <= 0;
+    Ball& orb = app.denOrb;
+    if (!owns(s, Item::PuzzleOrb)) {
+        orb.active = false;
+    } else if (!orb.active) {  // first seen this session: where it was left
+        orb = Ball{};
+        orb.radius = kOrbRadius;
+        orb.active = true;
+        orb.pos = {t.at[2].x, t.at[2].y, kOrbRadius};
+    }
+    t.orb = orb.active ? &orb : nullptr;
+}
+
 void denLife(App& app, const DenRoster& r, s64 now) {
     const AnimLibrary* lib = r3d::anims();
     if (!lib) return;
     const DenLayout den;
+    denToys(app, r);
     int order[r3d::kDenShown], shown = denOrder(app, r, order);
     DenBehavior* crowd[kDenDragons];
     const Dragon* who[kDenDragons];
@@ -170,6 +202,7 @@ void denLife(App& app, const DenRoster& r, s64 now) {
             app.actorId[b] = d.id;
         }
         if (r.dragon[b] != app.careIndex) a.behavior.ball = nullptr;  // the ball is for yours
+        a.behavior.toys = &app.denToys;
         who[crowdCount] = &d;
         crowd[crowdCount++] = &a.behavior;
     }
@@ -197,6 +230,28 @@ void denLife(App& app, const DenRoster& r, s64 now) {
         if ((lastActivity[b] == Activity::Chase || lastActivity[b] == Activity::Flee) && activity == Activity::Hop)
             audio::playSfx(audio::Sfx::Squeak, voicePitch(d, now), gain);
         lastActivity[b] = activity;
+        DenBehavior& db = a.behavior;  // what it did with the toys (WP7)
+        Dragon& mine = app.game.dragons[r.dragon[b]];
+        if (db.ateFromBowl) {
+            db.ateFromBowl = false;
+            if (eatFromBowl(app.game, r.dragon[b], now)) audio::playSfx(audio::Sfx::Gulp, voicePitch(d, now), gain);
+        }
+        if (db.gotTreat) {  // the orb's treat
+            db.gotTreat = false;
+            app.denOrbWait = 90;
+            feed(mine, 6, false);
+            play(mine, 8);
+            audio::playSfx(audio::Sfx::Munch, voicePitch(d, now), gain);
+        }
+        if (db.nudged && app.denOrb.active) {
+            db.nudged = false;
+            app.denOrb.launch(app.denOrb.pos, {db.nudge.x * 2.4f, db.nudge.y * 2.4f, 0.6f});
+        }
+        if (db.knocked) {
+            db.knocked = false;
+            setToyAt(app.game, 0, db.knock);
+        }
+        if (activity == Activity::Play || activity == Activity::TugWar) play(mine, 0.5f * app.dt);
         Vec3 head;  // hearts while two nuzzle
         if (activity == Activity::Nuzzle && a.behavior.step == 2 && app.rng.chance(1, 40) &&
             r3d::headOf(drawIndexOf(order, shown, r.dragon[b]), head))
@@ -386,15 +441,67 @@ void denEffects(App& app, s64 now) {
 }
 
 // What's been bought for the den (WP7): the toys where they lie, the bowl's food, the decor.
-void denThings(App& app, s64 now) {
+// A toy in a dragon's mouth rides there (the rope crosswise, or out toward you in a tug); one
+// let go of lies where it fell, and stays there.
+void denThings(App& app, const DenRoster& r, s64 now) {
     static r3d::DenThings t;
-    static constexpr float kYaw[kToys] = {0.7f, -0.5f, 0.0f, 0.3f};
-    const SaveData& s = app.game;
+    static float yaw[kToys] = {0.7f, -0.5f, 0.0f, 0.3f};
+    SaveData& s = app.game;
+    int order[r3d::kDenShown];
+    const int shown = denOrder(app, r, order);
+    t.ropeSpan = false;
+    for (int bed = 0; bed < kDenDragons; ++bed) {
+        if (r.dragon[bed] < 0 || r.away[bed] || app.actorId[bed] != s.dragons[r.dragon[bed]].id) continue;
+        DenBehavior& b = app.actors[bed].behavior;
+        const Vec2 fwd{std::sin(b.heading), -std::cos(b.heading)}, side{std::cos(b.heading), std::sin(b.heading)};
+        if (b.dropToy >= 0) {
+            const float ahead = 0.7f * b.size;
+            setToyAt(s, b.dropToy, {b.pos.x + fwd.x * ahead, b.pos.y + fwd.y * ahead});
+            yaw[b.dropToy] = b.heading + 1.5708f;
+            b.dropToy = -1;
+        }
+        Vec3 mouth;
+        if (b.carrying == 1 && r3d::mouthOf(drawIndexOf(order, shown, r.dragon[bed]), mouth)) {
+            t.ropeSpan = true;
+            if (b.activity == Activity::Tug) {  // out toward you
+                t.ropeA = mouth;
+                t.ropeB = {mouth.x + fwd.x * 0.9f, mouth.y + fwd.y * 0.9f, std::fmax(0.1f, mouth.z - 0.35f)};
+            } else {
+                t.ropeA = {mouth.x - side.x * 0.42f, mouth.y - side.y * 0.42f, mouth.z - 0.04f};
+                t.ropeB = {mouth.x + side.x * 0.42f, mouth.y + side.y * 0.42f, mouth.z - 0.04f};
+            }
+        }
+    }
     for (int k = 0; k < kToys; ++k) {
         t.toy[k] = owns(s, static_cast<Item>(k));
         const Vec2 at = toyAt(s, k);
         t.toyAt[k] = {at.x, at.y, k == 2 ? kOrbRadius : 0.0f};
-        t.toyYaw[k] = kYaw[k];
+        t.toyYaw[k] = yaw[k];
+    }
+    if (app.denOrb.active) {  // the orb rolls about with its own physics (nudged by the dragons)
+        Ball& orb = app.denOrb;
+        const DenLayout den;
+        if (orb.step(den, app.dt) == BallEvent::Bounce && orb.lastImpact > 1.0f)
+            audio::playSfx(audio::Sfx::Bounce, 1.2f, 0.5f);
+        const Vec2 saved = toyAt(s, 2);
+        if (orb.resting && std::hypot(orb.pos.x - saved.x, orb.pos.y - saved.y) > 0.05f) setToyAt(s, 2, {orb.pos.x, orb.pos.y});
+        const float speed = std::hypot(orb.vel.x, orb.vel.y);
+        if (speed > 1e-3f && !orb.resting)
+            t.orbSpin = normalize(mul(quatAxisAngle(normalize(Vec3{-orb.vel.y, orb.vel.x, 0}), speed * app.dt / orb.radius), t.orbSpin));
+        t.toyAt[2] = orb.pos;
+    }
+    // A tug-of-war: the rope between the two mouths.
+    int tuggers[2], nt = 0;
+    for (int bed = 0; bed < kDenDragons && nt < 2; ++bed)
+        if (r.dragon[bed] >= 0 && !r.away[bed] && app.actorId[bed] == s.dragons[r.dragon[bed]].id &&
+            app.actors[bed].behavior.activity == Activity::TugWar && app.actors[bed].behavior.step == 2)
+            tuggers[nt++] = bed;
+    Vec3 ma, mb;
+    if (nt == 2 && r3d::mouthOf(drawIndexOf(order, shown, r.dragon[tuggers[0]]), ma) &&
+        r3d::mouthOf(drawIndexOf(order, shown, r.dragon[tuggers[1]]), mb)) {
+        t.ropeSpan = true;
+        t.ropeA = ma;
+        t.ropeB = mb;
     }
     t.bowlFood = bowlFood(s);
     for (int p = 0; p < kDecorSpots; ++p) t.decor[p] = decorAt(s, p);
@@ -430,7 +537,7 @@ void update(App& app, const Input& in) {
     if (d.stage != Stage::Egg && careActor(app)) care::update(app, d);
     denLife(app, r, nowLocal(app));
     denEffects(app, nowLocal(app));
-    denThings(app, nowLocal(app));
+    denThings(app, r, nowLocal(app));
     denBeds(app, r, nowLocal(app));
     eggLife(app, r);
     if (d.stage == Stage::Egg) heartbeat(app, d);

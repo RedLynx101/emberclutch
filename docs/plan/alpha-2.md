@@ -3,7 +3,8 @@
 Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 done: the den of three dragons
 and two eggs (D53), and their life together. WP2 done (the Sanctuary and Cold Vault), with
 a first world map. WP3 done (breeding at the Nesting Stone). WP4 done (the Wanderings).
-WP5 done (the Market, Gleam and the pouch). Goal (D31): complete through Alpha 2. Scope and assets:
+WP5 done (the Market, Gleam and the pouch). WP6 done (the map's trips). WP7 done (toys and
+decor). Goal (D31): complete through Alpha 2. Scope and assets:
 [content & assets](content-and-assets.md) (A2 rows); screens: [screens & flow](../design/screens-and-flow.md).
 
 **The order matters** (Noah, 2026-09-24): everything that doesn't depend on how the
@@ -110,6 +111,21 @@ Worked through alone, package by package (D49).
 ### WP7 — Toys and den props
 - Tug rope, feather wand, puzzle orb, the food bowl ([care interactions §8](../design/care-interactions.md#8-more-toys-alpha-2-from-the-market));
   toys stay where they're left and dragons play with them on their own.
+- *Done:* `src/core/items.*` (22 things bought once at the Market: the four toys, a silver
+  brush that shines twice as fast, bubble soap that leaves a bath's sparkle, warm stones
+  that halve how fast eggs cool, and fifteen pieces of decor for five spots: rugs, lanterns,
+  perches, plants, banners; saved with where the toys lie and what's in the bowl; PC-tested).
+  The Market's Goods tab (icons rendered by `care_sprites.py`): buy, put up, take down. In
+  3D (`src/core/prop_mesh.*`, lit like the dragons, lanterns glowing at night); the room's
+  rug became one of them and the room was trimmed, so a full den with everything out still
+  fits the frame (7,720 of 8,000 measured). Up close, the tray's last slot holds the toy in
+  hand (tap it again for the others): the feather wand (it watches, swats, pounces when you
+  let go near it), the tug rope (it bites on and tugs, then trots off proud and drops it
+  where it likes), the puzzle orb (roll it about until a treat drops out); drop a food on
+  the bowl to fill it. On their own they bat and pounce on the feather, shake the rope and
+  carry it off (sometimes to bed), push the orb along with their noses until a treat drops
+  out, eat from the bowl when hungry (while you're away too), and two may have a tug-of-war.
+  New clips: paw bat, tug. `tests/autotest/things.txt`, `toys.txt`, `toyden.txt`.
 
 ### WP8 — Dragon profile and family tree
 - Name, breed, sex, stage, personality, stats, the sweet spot once found, parents and

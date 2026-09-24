@@ -380,3 +380,24 @@ WING_R_UP = merge(WINGS_FOLDED, {n[:-1] + "_R": v for n, v in WINGS_HALF.items()
  .pose(0.9, WINGS_FOLDED)
  .wave(lambda t: {"head": (0, 16 * sin01(t, 0.16) * max(0.0, 1 - abs(t - 0.45) / 0.25), 0)})
  .event(0.3, "whimper"))
+
+# ------------------------------------------------------------------------------ toys (Alpha 2 WP7)
+# A swat at the dangled feather: from a play bow, the left front paw comes up and forward,
+# the head tilting after it.
+PLAY_BOW = merge(WINGS_FOLDED, {"hips": (-4, 0, 0), "arm_up*": (30, 0, 0), "arm_lo*": (-50, 0, 0), "hand*": (20, 0, 0),
+                                "chest": (-8, 0, 0), "neck1": (-6, 0, 0), "head": (8, 0, 0), "tail1": (14, 0, 0)})
+SWAT = merge(PLAY_BOW, {"arm_up_L": (-78, 12, 0), "arm_lo_L": (-24, 0, 0), "hand_L": (34, 0, 0),
+                        "chest": (-4, 0, 6), "neck1": (0, 0, 0), "head": (14, 8, -12), "jaw": (-14, 0, 0)})
+(clip("paw_bat", 0.75).pose(0.0, PLAY_BOW).pose(0.22, SWAT).pose(0.4, SWAT).pose(0.75, PLAY_BOW)
+ .wave(lambda t: {f"tail{k}": (0, 14 * sin01(t, 0.375, -0.08 * k), 0) for k in range(1, 5)})
+ .event(0.22, "squeak"))
+# Tugging the rope: braced on its front legs, head low and pulled back, shaking side to side.
+TUG = merge(WINGS_FOLDED, {"hips": (6, 0, 0), "leg_up*": (20, 0, 0), "leg_lo*": (-30, 0, 0), "foot*": (10, 0, 0),
+                           "arm_up*": (-10, 0, 0), "arm_lo*": (-20, 0, 0), "hand*": (10, 0, 0),
+                           "chest": (-6, 0, 0), "neck1": (-26, 0, 0), "neck2": (-10, 0, 0), "head": (6, 0, 0),
+                           "jaw": (-5, 0, 0), "tail1": (18, 0, 0)})
+(clip("tug", 0.9, loop=True).pose(0.0, TUG)
+ .wave(lambda t: {"neck1": (0, 14 * sin01(t, 0.45), 0), "neck2": (0, 8 * sin01(t, 0.45, 0.1), 0),
+                  "head": (0, 6 * sin01(t, 0.45, 0.2), 10 * sin01(t, 0.45, 0.15)),
+                  "hips": (0, 0, 3 * sin01(t, 0.9)),
+                  **{f"tail{k}": (0, 18 * sin01(t, 0.45, -0.08 * k), 0) for k in range(1, 5)}}))

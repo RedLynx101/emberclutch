@@ -12,7 +12,8 @@
 namespace ec {
 
 // The tools in the care tray.
-enum class Tool : u8 { Hand, Food, Brush, Cloth, Sponge, Ball, Count };
+// The last four are toys: the ball, and three from the Market (Alpha 2 WP7).
+enum class Tool : u8 { Hand, Food, Brush, Cloth, Sponge, Ball, Feather, Rope, Orb, Count };
 
 // ------------------------------------------------------------------------------ touch picking
 // A capsule around one bone's skin, in the bone's own frame (its Y axis runs along it):

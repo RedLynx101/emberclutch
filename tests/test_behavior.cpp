@@ -487,12 +487,161 @@ TEST(den_dragons_live_together) {
     CHECK(together);
 }
 
+// Toys up close (Alpha 2 WP7): it watches the dangled feather and swats when it comes near;
+// it bites on the rope and tugs while you hold it, then trots off with it, drops it and wags;
+// interrupted on the way, it lets the toy fall where it is.
+TEST(dragons_play_with_toys_up_close) {
+    const DenLayout den;
+    const Dragon d = contentDragon();
+    DenActor a;
+    a.reset(den, 31);
+    DenBehavior& b = a.behavior;
+    b.care(Care::Dangle, d);
+    CHECK(b.activity == Activity::Bat);
+    b.care(Care::Swat, d);
+    CHECK(b.clip == ClipId::PawBat);
+    CHECK(run(a, d, false, 3, [](const DenBehavior& x) { return x.activity != Activity::Bat; }));  // put away
+
+    b.care(Care::TugPull, d);
+    CHECK(b.activity == Activity::Tug && b.carrying == 1);
+    u8 ev[16];
+    for (int f = 0; f < 60; ++f) {  // two seconds of tugging
+        b.care(Care::TugPull, d);
+        a.update(d, false, 1.0f, 1.0f / 30, world().lib, world().clips, ev, 16);
+    }
+    CHECK(b.activity == Activity::Tug && b.clip == ClipId::Tug);
+    const Vec2 from = b.pos;
+    b.care(Care::TugLetGo, d);
+    CHECK(b.activity == Activity::ToyRun && b.carrying == 1);
+    CHECK(run(a, d, false, 12, [](const DenBehavior& x) { return x.dropToy == 1; }));
+    CHECK(b.carrying == -1 && dist(b.pos, from) > 0.8f && dist(b.pos, den.home) <= den.radius);
+    b.dropToy = -1;  // the scene sets it down
+    CHECK(run(a, d, false, 6, [](const DenBehavior& x) { return x.activity == Activity::TailWag; }));
+
+    b.care(Care::TugPull, d);
+    b.care(Care::TugLetGo, d);
+    CHECK(b.activity == Activity::ToyRun && b.carrying == 1);
+    b.care(Care::Pet, d);  // stopped on the way
+    CHECK(b.carrying == -1 && b.dropToy == 1 && b.activity == Activity::PetHead);
+}
+
+// A den with every toy out (Alpha 2 WP7): the scene's part, done here: the orb rolls when
+// nudged, a knocked feather moves, a toy set down lies where it fell.
+struct ToyDen {
+    Ball orb;
+    DenToys toys;
+    ToyDen() {
+        const Vec2 at[kDenToys] = {{-3.0f, 1.6f}, {-2.4f, -0.9f}, {2.0f, 1.9f}, {-1.4f, 3.0f}};
+        for (int k = 0; k < kDenToys; ++k) {
+            toys.here[k] = true;
+            toys.at[k] = at[k];
+        }
+        orb.radius = 0.17f;
+        orb.active = true;
+        orb.pos = {at[2].x, at[2].y, orb.radius};
+        toys.orb = &orb;
+        toys.bowlFood = toys.orbTreat = true;
+    }
+    // After the dragons' update: take what they did.
+    void apply(DenBehavior* const* bs, int n, const DenLayout& den, float dt) {
+        toys.here[1] = true;
+        for (int i = 0; i < n; ++i) {
+            DenBehavior& b = *bs[i];
+            if (b.nudged) orb.launch(orb.pos, {b.nudge.x * 2.4f, b.nudge.y * 2.4f, 0.6f});
+            if (b.knocked) toys.at[0] = b.knock;
+            if (b.dropToy >= 0) toys.at[b.dropToy] = b.pos;
+            b.nudged = b.knocked = false;
+            b.dropToy = -1;
+            if (b.carrying == 1 || (b.activity == Activity::TugWar && b.step == 2)) toys.here[1] = false;
+        }
+        orb.step(den, dt);
+    }
+};
+
+// On their own (Alpha 2 WP7): a dragon bats the feather and pounces on it, picks up the rope,
+// shakes it and trots off with it, pushes the orb along until a treat drops out, eats from
+// the bowl when hungry; two have a tug-of-war over the rope and one wins it.
+TEST(dragons_play_with_toys_on_their_own) {
+    const DenLayout den;
+    Dragon d = contentDragon();
+    d.personality = Personality::Playful;
+    for (int toy = 0; toy < 3; ++toy) {
+        ToyDen world_;
+        DenActor a;
+        a.reset(den, 90 + toy);
+        DenBehavior* b = &a.behavior;
+        b->toys = &world_.toys;
+        b->toy = static_cast<s8>(toy);
+        b->force(Activity::Play);
+        bool knocked = false, carried = false, dropped = false, treat = false;
+        const Vec2 featherWas = world_.toys.at[0];
+        for (int f = 0; f < 40 * 30 && !(knocked || dropped || treat); ++f) {
+            a.update(d, false, 1.0f, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+            knocked = knocked || b->knocked;
+            carried = carried || b->carrying == 1;
+            dropped = dropped || b->dropToy == 1;
+            treat = treat || b->gotTreat;
+            b->gotTreat = false;
+            world_.apply(&b, 1, den, 1.0f / 30);
+        }
+        std::printf("  toy %d: knocked %d, carried %d and dropped %d, treat %d (orb pushes %d)\n", toy, knocked, carried,
+                    dropped, treat, b->pushes);
+        if (toy == 0) CHECK(knocked && dist(world_.toys.at[0], featherWas) > 0.3f);
+        if (toy == 1) CHECK(carried && dropped);
+        if (toy == 2) CHECK(treat && b->pushes >= 3);
+    }
+
+    // Hungry, with food in the bowl: over to it, and a portion eaten.
+    ToyDen bowlDen;
+    DenActor a;
+    a.reset(den, 99);
+    a.behavior.toys = &bowlDen.toys;
+    Dragon hungry = contentDragon();
+    hungry.needs.belly = 20;
+    CHECK(run(a, hungry, false, 60, [](const DenBehavior& b) { return b.activity == Activity::Bowl; }));
+    CHECK(run(a, hungry, false, 30, [](const DenBehavior& b) { return b.ateFromBowl; }));
+    CHECK(dist(a.behavior.pos, bowlDen.toys.at[3]) < 1.6f);
+
+    // Two playful dragons and the rope: a tug-of-war, and one trots off with it.
+    ToyDen shared;
+    DenActor two[2];
+    DenBehavior* bs[2];
+    Dragon pair[2] = {contentDragon(), contentDragon()};
+    pair[0].personality = pair[1].personality = Personality::Playful;
+    const Dragon* ds[2] = {&pair[0], &pair[1]};
+    for (int i = 0; i < 2; ++i) {
+        two[i].reset(den, 120 + i, i);
+        bs[i] = &two[i].behavior;
+        bs[i]->toys = &shared.toys;
+        shared.toys.here[0] = shared.toys.here[2] = shared.toys.here[3] = false;  // just the rope
+    }
+    two[0].behavior.pos = {-1.5f, 0.5f};
+    two[1].behavior.pos = {1.5f, 0.2f};
+    DenSocial social;
+    Rng rng(9);
+    bool tugging = false, won = false;
+    for (int f = 0; f < 10 * 60 * 30 && !won; ++f) {
+        shareCrowd(bs, 2);
+        denSocial(social, bs, ds, 2, false, 0.3f, 1.0f / 30, rng);
+        for (int i = 0; i < 2; ++i) two[i].update(pair[i], false, 1.0f, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+        if (bs[0]->activity == Activity::TugWar && bs[1]->activity == Activity::TugWar && bs[0]->step == 2 &&
+            bs[1]->step == 2 && dist(bs[0]->pos, bs[1]->pos) < 4.0f)
+            tugging = true;
+        for (int i = 0; i < 2; ++i) won = won || (tugging && bs[i]->activity == Activity::ToyRun && bs[i]->carrying == 1);
+        shared.apply(bs, 2, den, 1.0f / 30);
+    }
+    std::printf("  tug-of-war %d, won %d\n", tugging, won);
+    CHECK(tugging && won);
+}
+
 TEST(every_activity_is_reachable_and_settles) {
     const DenLayout den;
     const Dragon d = contentDragon();
+    ToyDen toys;
     for (int i = 0; i < static_cast<int>(Activity::Count); ++i) {
         DenActor a;
         a.reset(den, 20 + i);
+        a.behavior.toys = &toys.toys;
         a.behavior.force(static_cast<Activity>(i));
         CHECK(a.behavior.activity == static_cast<Activity>(i));
         a.behavior.petTimer = 0.5f;
@@ -530,5 +679,7 @@ void runBehaviorTests() {
     RUN(three_dragons_share_the_den);
     RUN(den_dragons_live_together);
     RUN(a_new_hatchling_can_be_bathed);
+    RUN(dragons_play_with_toys_up_close);
+    RUN(dragons_play_with_toys_on_their_own);
     RUN(every_activity_is_reachable_and_settles);
 }

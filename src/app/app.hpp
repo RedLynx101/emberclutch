@@ -72,6 +72,18 @@ struct CareState {
     CareFx fx[64];
     int fxCount = 0;
     bool profileOpen = false;    // the little profile card (tap the heartglow): name, rename
+    // Toys (Alpha 2 WP7): the one in the tray's last slot, and its picker row.
+    Tool toy = Tool::Ball;
+    bool toyRow = false;
+    float swatWait = 0, tugWait = 0;  // between swats; between growls on the rope
+    bool featherNear = false;         // the feather was close to its face when let go
+    // The puzzle orb, rolled about the close-up (screen pixels): a treat drops out after
+    // enough rolling, then it's empty for a while.
+    Vec2 orbAt{230, 120}, orbVel;
+    float orbSpin = 0, orbRolled = 0, orbWait = 0;
+    bool orbHeld = false;
+    Vec2 treatFrom;
+    float treatT = -1;  // a treat on its way to the mouth, 0..1 (< 0: none)
 };
 
 // Egg care (WP7): listening for the heartbeat.
@@ -129,6 +141,10 @@ struct App {
     // until it is), and the egg in each egg nest, how it rocks and how many cracks it had last
     // frame (-1: not seen yet, so cracks it already had make no sound).
     DenActor actors[kDenDragons];
+    // The den's toys as the dragons see them (WP7, scene_den), and the orb rolling about.
+    DenToys denToys;
+    Ball denOrb;
+    float denOrbWait = 0;  // seconds until the orb has another treat for them
     u32 actorId[kDenDragons] = {};
     EggMotion eggs[kDenEggs];
     int eggCracks[kDenEggs] = {-1, -1};

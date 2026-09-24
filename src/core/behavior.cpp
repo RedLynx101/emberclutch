@@ -20,13 +20,16 @@ constexpr float kGrabAt = 0.35f;                     // into the pick-up and lea
 constexpr float kDropAt = 0.45f;                     // into "drop_wait": the ball falls from its mouth
 constexpr float kGroomHold = 1.6f;                   // standing for grooming outlasts the last stroke by this
 constexpr float kBathMax = 20.0f;                    // it hops out on its own after this long
+constexpr float kToyHold = 0.6f;                     // batting or tugging outlasts the last touch by this
+constexpr float kBowlHungry = 35;                    // Belly below this sends it to the food bowl (core/items)
+constexpr int kFeather = 0, kRope = 1, kOrb = 2, kBowl = 3;  // DenToys
 
 constexpr const char* kActivityNames[] = {
     "Idle", "LookAround", "Scratch", "Wander", "Sit", "Lie", "Yawn", "TailWag", "Flutter",
     "GoNap", "Sleep", "Wake", "Eat", "Favorite", "PetHead", "PetChin", "BellyRub", "Shake", "Hop", "Pounce",
     "GoSulk", "Sulk", "MakeUp", "Greet",
     "Fetch", "HandFeed", "Refuse", "Bath", "Groomed", "Kick", "Sneeze", "PullAway", "Come", "Hatch",
-    "Chase", "Flee", "Nuzzle", "Bask",
+    "Chase", "Flee", "Nuzzle", "Bask", "Bat", "Tug", "ToyRun", "Play", "Bowl", "TugWar",
 };
 static_assert(sizeof(kActivityNames) / sizeof(kActivityNames[0]) == static_cast<int>(Activity::Count),
               "one name per activity");
@@ -37,6 +40,7 @@ constexpr const char* kClipNames[] = {
     "roll_over", "belly_rub", "shake", "hop", "pounce", "tail_wag", "wing_flutter", "sulk", "sulk_loop",
     "nuzzle", "greet",
     "pick_up", "drop_wait", "leap_catch", "leg_kick", "sniff_refuse", "lift_wing", "sneeze", "pull_away",
+    "paw_bat", "tug",
 };
 static_assert(sizeof(kClipNames) / sizeof(kClipNames[0]) == static_cast<int>(ClipId::Count), "one name per clip");
 
@@ -165,6 +169,11 @@ bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
 }
 
 void DenBehavior::start(Activity a) {
+    if (carrying >= 0 && a != Activity::Tug && a != Activity::ToyRun && a != Activity::Play) {  // it lets the toy fall
+        dropToy = carrying;
+        carrying = -1;
+        walkClip = ClipId::Walk;
+    }
     activity = a;
     step = 0;
     timer = 0;
@@ -247,6 +256,32 @@ void DenBehavior::start(Activity a) {
             heading = headingTo(pos, den.player);
             setClip(ClipId::Shake, 0.1f, true);
             break;
+        case Activity::Bat: setClip(ClipId::Idle, 0.25f); petTimer = kToyHold; break;
+        case Activity::Tug: petTimer = kToyHold; break;
+        case Activity::Play:  // (chooseAmbient picks the toy)
+        case Activity::Bowl:
+            if (!toys) {
+                start(Activity::Idle);
+                break;
+            }
+            trot = false;
+            timer = 0;
+            break;
+        case Activity::TugWar: trot = false; timer = 0; break;
+        case Activity::ToyRun: {
+            // Off to somewhere of its own, not far, clear of everything, with the toy held high.
+            walkClip = ClipId::Carry;
+            target = pos;
+            for (int tries = 0; tries < 12; ++tries) {
+                const float ang = between(rng, -kPi, kPi), r = between(rng, 1.6f, 3.2f) * std::fmax(0.6f, size);
+                const Vec2 p{pos.x + std::sin(ang) * r, pos.y - std::cos(ang) * r};
+                if (distance(p, den.home) < den.radius * 0.8f && clearAt(p, kClearance * size)) {
+                    target = p;
+                    break;
+                }
+            }
+            break;
+        }
         case Activity::Count: break;
     }
 }
@@ -373,6 +408,100 @@ void DenBehavior::fetch(const Dragon& d, float moveScale, float dt) {
     }
 }
 
+// Playing with a toy on the floor (Alpha 2 WP7): walk over, then bat the feather about and
+// pounce on it, pick up the rope and shake it before trotting off with it, or nudge the orb
+// along with its nose until a treat drops out.
+void DenBehavior::playWithToy(float moveScale, float dt) {
+    timer += dt;
+    Ball* orb = toy == kOrb ? toys->orb : nullptr;
+    const Vec2 at = orb ? Vec2{orb->pos.x, orb->pos.y} : toys->at[toy];
+    const float reach = 0.55f * size + (orb ? orb->radius : 0.25f);
+    if (!toys->here[toy] && carrying != toy) {  // someone else has it
+        start(Activity::Idle);
+        return;
+    }
+    const Vec2 fwd{std::sin(heading), -std::cos(heading)};
+    switch (step) {
+        case 0:  // over to it (a rolling orb: to where it's going)
+            if (distance(pos, at) < reach && (!orb || orb->resting)) {
+                step = 1;
+                timer = 0;
+            } else {
+                walkTo(orb && !orb->resting ? ballHeading(*orb, 0.4f) : at, trot, moveScale, dt);
+                if (timer > 12.0f) start(Activity::Idle);  // lost interest
+            }
+            break;
+        case 1:  // face it, then the game
+            if (turnTo(headingTo(pos, at), dt)) {
+                step = 2;
+                timer = 0;
+                setClip(toy == kFeather ? ClipId::PawBat : ClipId::PickUp, 0.2f, true);
+            }
+            break;
+        case 2:
+            if (toy == kFeather) {  // a swat or two, then the pounce
+                if (clipDone) {
+                    if (timer < 2.5f && rng.chance(2, 3)) {
+                        setClip(ClipId::PawBat, 0.1f, true);
+                    } else {
+                        step = 3;
+                        timer = 0;
+                        setClip(ClipId::Pounce, 0.25f, true);
+                    }
+                }
+            } else if (toy == kRope) {  // up it comes, and a good shake
+                if (carrying < 0 && timer >= kGrabAt) carrying = kRope;
+                if (clipDone) {
+                    step = 3;
+                    timer = 0;
+                    setClip(ClipId::Tug, 0.2f);
+                }
+            } else if (timer >= kGrabAt) {  // the orb: a push with its nose
+                nudged = true;
+                nudge = fwd;
+                ++pushes;
+                step = 4;
+            }
+            break;
+        case 3:
+            if (toy == kFeather) {  // the pounce carries it onto the feather, which skitters off
+                const float from = clampf(timer - dt, kPounceFrom, kPounceTo), to = clampf(timer, kPounceFrom, kPounceTo);
+                const float travel = kPounceLength * moveScale * 0.5f * (to - from) / (kPounceTo - kPounceFrom);
+                pos.x += fwd.x * travel;
+                pos.y += fwd.y * travel;
+                if (timer >= kPounceTo) {
+                    knocked = true;
+                    knock = {pos.x + fwd.x * (0.9f * size + 0.3f), pos.y + fwd.y * (0.9f * size + 0.3f)};
+                    step = 5;
+                }
+            } else if (timer > 2.5f) {  // the rope: off with it, sometimes to its own bed
+                const bool toBed = rng.chance(1, 3);
+                start(Activity::ToyRun);
+                if (toBed) {
+                    const Vec2 bed = den.beds[spot];
+                    const float dx = den.home.x - bed.x, dy = den.home.y - bed.y, len = std::hypot(dx, dy);
+                    target = {bed.x + dx / len * 1.4f * size, bed.y + dy / len * 1.4f * size};
+                }
+            }
+            break;
+        case 4:  // the orb rolls on: after a moment, follow it and push again; three pushes, a treat
+            if (timer > kGrabAt + 1.0f && (!orb || orb->resting || timer > 3.5f)) {
+                if (pushes >= 3) {
+                    gotTreat = toys->orbTreat;
+                    start(gotTreat ? Activity::Eat : Activity::TailWag);
+                } else {
+                    step = 0;
+                    timer = 0;
+                    trot = true;
+                }
+            }
+            break;
+        default:  // the feather's gone skittering: a happy wag
+            if (clipDone) start(Activity::TailWag);
+            break;
+    }
+}
+
 void DenBehavior::chooseAmbient(const Dragon& d, float moveScale) {
     // Weights for what to do next, coloured by mood, personality and tiredness
     // (docs/design/game-design.md sections 3.3 and 3.5).
@@ -407,6 +536,25 @@ void DenBehavior::chooseAmbient(const Dragon& d, float moveScale) {
             break;
         }
         pick -= w[i];
+    }
+    // Toys on the floor (WP7): hungry, the food bowl; otherwise now and then a game.
+    if (toys) {
+        if (toys->here[kBowl] && toys->bowlFood && d.needs.belly < kBowlHungry) {
+            start(Activity::Bowl);
+            return;
+        }
+        float want = 1.0f + (d.needs.play < 50 ? 2.0f : 0.0f) + (d.personality == Personality::Playful ? 2.0f : 0.0f) +
+                     (moodOf(d) == Mood::Joyful ? 1.0f : 0.0f);
+        int choices[3], n = 0;
+        for (int k = kFeather; k <= kOrb; ++k)
+            if (toys->here[k]) choices[n++] = k;
+        if (n > 0 && d.needs.energy > 30 && unit(rng) * (want + 8.0f) < want) {
+            toy = static_cast<s8>(choices[rng.below(static_cast<u32>(n))]);
+            start(Activity::Play);
+            trot = d.personality == Personality::Playful || rng.chance(1, 3);
+            pushes = 0;
+            return;
+        }
     }
     const Activity next = static_cast<Activity>(choice);
     if (next == Activity::Wander) {
@@ -725,6 +873,93 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
                 blend = 0.9f;
             }
             break;
+        case Activity::Play:
+            if (!toys || toy < 0 || toy >= kBowl) start(Activity::Idle);
+            else playWithToy(moveScale, dt);
+            break;
+        case Activity::Bowl: {  // over to the bowl, and a good long eat
+            if (!toys || !toys->here[kBowl]) {
+                start(Activity::Idle);
+                break;
+            }
+            const Vec2 bowl = toys->at[kBowl];
+            const float dx = pos.x - bowl.x, dy = pos.y - bowl.y, len = std::hypot(dx, dy);
+            const Vec2 spotAt = len > 1e-3f ? Vec2{bowl.x + dx / len * (0.6f * size + 0.35f), bowl.y + dy / len * (0.6f * size + 0.35f)}
+                                            : bowl;
+            timer += dt;
+            if (step == 0) {
+                if (walkTo(spotAt, false, moveScale, dt) || timer > 12.0f) step = 1;
+            } else if (step == 1) {
+                if (turnTo(headingTo(pos, bowl), dt)) {
+                    step = 2;
+                    timer = 0;
+                    setClip(ClipId::Eat, 0.35f);
+                }
+            } else if (timer > 3.5f) {
+                ateFromBowl = true;
+                start(Activity::Idle);
+            } else if (!toys->bowlFood) {
+                start(Activity::Idle);  // someone else finished it
+            }
+            break;
+        }
+        case Activity::TugWar:  // to its end of the rope, face the other, and pull
+            timer += dt;
+            if (partner < 0 || partnerDoing != Activity::TugWar || (step < 2 && timer > 10.0f) ||
+                !toys || (!toys->here[kRope] && step < 2 && partnerStep < 2)) {  // (the rope's gone to someone else)
+                partner = -1;
+                start(Activity::Idle);
+            } else if (step == 0) {
+                if (walkTo(target, true, moveScale, dt)) step = 1;
+            } else if (step == 1) {
+                if (turnTo(headingTo(pos, partnerAt), dt) && partnerStep >= 1) {
+                    step = 2;
+                    timer = 0;
+                    setClip(ClipId::Tug, 0.25f);
+                }
+            } else if (timer > 5.0f) {  // the winner trots off with it; the other hops, happy anyway
+                partner = -1;
+                if (tugWinner) {
+                    carrying = kRope;
+                    start(Activity::ToyRun);
+                } else {
+                    start(Activity::Hop);
+                }
+            }
+            break;
+        case Activity::Bat:  // face you and watch the feather; a swat when it comes close (care Swat)
+            if (clip == ClipId::PawBat) {
+                if (clipDone) setClip(ClipId::Idle, 0.2f);
+            } else if (turnTo(0.0f, dt) && clip != ClipId::Idle) {
+                setClip(ClipId::Idle, 0.2f);
+            }
+            if (petTimer <= 0) start(Activity::Idle);
+            break;
+        case Activity::Tug:  // braced, the rope in its teeth, shaking its head, until you let go
+            if (step == 0 && turnTo(0.0f, dt)) {
+                step = 1;
+                setClip(ClipId::Tug, 0.2f);
+            }
+            if (petTimer <= 0) start(Activity::ToyRun);
+            break;
+        case Activity::ToyRun:  // trots off with it, proud, drops it and wags
+            timer += dt;
+            if (step == 0) {
+                walkClip = ClipId::Carry;
+                if (walkTo(target, true, moveScale, dt) || timer > 8.0f) {
+                    step = 1;
+                    timer = 0;
+                    walkClip = ClipId::Walk;
+                    setClip(ClipId::DropWait, 0.25f, true);
+                }
+            } else {
+                if (carrying >= 0 && timer >= kDropAt) {
+                    dropToy = carrying;
+                    carrying = -1;
+                }
+                if (clipDone) start(Activity::TailWag);
+            }
+            break;
         case Activity::Count:
             start(Activity::Idle);
             break;
@@ -752,7 +987,9 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
                          activity == Activity::BellyRub || activity == Activity::MakeUp ||
                          activity == Activity::Groomed || activity == Activity::HandFeed || inNest ||
                          (activity == Activity::Bask && step > 0) || (activity == Activity::Nuzzle && step > 0) ||
-                         (activity == Activity::Bath && step > 0) ||
+                         (activity == Activity::Bath && step > 0) || activity == Activity::Bat ||
+                         activity == Activity::Tug || (activity == Activity::Bowl && step == 2) ||
+                         (activity == Activity::TugWar && step == 2) ||
                          ((activity == Activity::Sit || activity == Activity::Lie) && step == 1);
     if (!settled)
         for (int i = 0; i < crowdCount; ++i) pushOut(crowd[i].at, crowd[i].radius + kBodyRadius * size);
@@ -762,7 +999,7 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
 void DenBehavior::join(Activity a, s8 withPartner, Vec2 at) {
     partner = withPartner;
     start(a);
-    if (a == Activity::Nuzzle || a == Activity::Bask) target = at;
+    if (a == Activity::Nuzzle || a == Activity::Bask || a == Activity::TugWar) target = at;
 }
 
 bool DenBehavior::sociable() const {
@@ -852,7 +1089,23 @@ void startTogether(DenSocial& s, DenBehavior* const* bs, const Dragon* const* ds
                                                    : (p == Personality::Shy || p == Personality::Sleepy) ? 0.5f : 1.0f);
     };
     const float chase = playful(a) + playful(b), nuzzle = 1.6f;
-    if (unit(rng) * (chase + nuzzle) < chase) {
+    DenToys* toys = bs[a]->toys;
+    const float tug = toys && toys->here[1] ? chase * 0.8f : 0.0f;  // the rope's out: tug-of-war!
+    const float roll = unit(rng) * (chase + nuzzle + tug);
+    if (roll >= chase + nuzzle) {  // each takes an end, facing across the rope
+        const Vec2 r = toys->at[1];
+        const Vec2 pa = bs[a]->pos, pb = bs[b]->pos;
+        float ux = pb.x - pa.x, uy = pb.y - pa.y;
+        const float len = std::hypot(ux, uy);
+        ux = len > 1e-3f ? ux / len : 1.0f;
+        uy = len > 1e-3f ? uy / len : 0.0f;
+        const float ra = 0.45f + 0.8f * bs[a]->size, rb = 0.45f + 0.8f * bs[b]->size;
+        bs[a]->join(Activity::TugWar, static_cast<s8>(b), {r.x - ux * ra, r.y - uy * ra});
+        bs[b]->join(Activity::TugWar, static_cast<s8>(a), {r.x + ux * rb, r.y + uy * rb});
+        const bool aWins = rng.chance(1, 2);
+        bs[a]->tugWinner = aWins;
+        bs[b]->tugWinner = !aWins;
+    } else if (roll < chase) {
         if (playful(b) > playful(a)) std::swap(a, b);  // the more playful one does the chasing
         bs[a]->join(Activity::Chase, static_cast<s8>(b), {});
         bs[b]->join(Activity::Flee, static_cast<s8>(a), {});
@@ -1037,6 +1290,23 @@ void DenBehavior::care(Care c, const Dragon& d, PetZone zone) {
             break;
         case Care::Rough:
             if (activity != Activity::PullAway) start(Activity::PullAway);
+            break;
+        case Care::Dangle:
+            if (activity != Activity::Bat) start(Activity::Bat);
+            petTimer = kToyHold;
+            break;
+        case Care::Swat:
+            if (activity == Activity::Bat && clip != ClipId::PawBat) setClip(ClipId::PawBat, 0.12f, true);
+            break;
+        case Care::TugPull:
+            if (activity != Activity::Tug) {
+                start(Activity::Tug);
+                carrying = 1;  // the rope (core/items TugRope)
+            }
+            petTimer = kToyHold;
+            break;
+        case Care::TugLetGo:
+            if (activity == Activity::Tug) start(Activity::ToyRun);
             break;
     }
 }

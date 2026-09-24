@@ -24,6 +24,13 @@ budget (3.7k / 4.2k vs 1.8k / 3k) because they're built from separate primitives
 - Replace the primitive blockout with a **single organic mesh**: skin modifier +
   subdivision over a spine/limb graph, then decimate or retopologize to budget. Match the
   growth sheet silhouettes (S-curve neck, tapered tail, ribbed membrane wings).
+- **Texturing:** UV-unwrap the mesh, then bake Blender procedural scales (Voronoi-based
+  scale plates, belly ridges, a soft ambient-occlusion pass) into the value channel.
+  The mask channels come from painted vertex groups: R base, G accent (belly, wing
+  membrane, horns), B pattern, A heartglow. Compress to ETC1A4 with tex3ds. All procedural
+  and scripted, so the textures are original and openly licensable.
+- **Review loop:** turntable renders at each milestone (blockout, sculpt, textured, rigged)
+  go to Noah for sign-off before moving on.
 - Headless Blender script: hatchling mesh + ≤ 24-bone rig + idle / happy / eat / sleep animations.
 - glTF → `.ecm` / `.eca` converter.
 - Skinned toon shader (picasso) plus the mask-based color combiner and heartglow.
@@ -41,8 +48,11 @@ budget (3.7k / 4.2k vs 1.8k / 3k) because they're built from separate primitives
 - Den with up to 3 dragons + 2 nests. Sanctuary and Cold Vault storage.
 - **Exit:** a dragon can be raised from egg to adult over ~2 weeks of real play.
 
-## Phase 3 — Breeding and variants
-- Nesting Stone. Genetics wired to the in-game creature records.
+## Phase 3 — Breeding, variants and Wanderings
+- Male/female dragons (core rules already in `src/core/breeding.cpp`). Nesting Stone.
+  Genetics wired to the in-game creature records.
+- **Wanderings (pedometer)** and wild eggs, plus the Market's daily egg: the ways to find an
+  opposite-sex partner (moved up from Phase 6 — v1 must-have).
 - Parts meshes: builds, horns, frills, wings, tail tips. Pattern masks. Rare traits.
 - 6 base breeds + 15 hybrids, with egg shells that hint at what's inside.
 - **Exit:** breeding two dragons produces visibly distinct offspring.
@@ -59,7 +69,7 @@ budget (3.7k / 4.2k vs 1.8k / 3k) because they're built from separate primitives
 
 ## Phase 6 — Skyreach Valley and riding
 - Height-field valley map with fog, points of interest, riding on the ground and in the air.
-- Riding finds and wild eggs. Wanderings (pedometer).
+- Riding finds (treasure, trinkets, occasional wild eggs).
 
 ## Phase 7 — Sky Visits and release polish
 - UDS local multiplayer: visits, gifts, local competitions, cross-den clutch (stretch).

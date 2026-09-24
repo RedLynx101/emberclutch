@@ -23,6 +23,8 @@ Wings, Horn, Fins, Breath). Dragons are `bodyPlan = Draconic` with
 Foal → Yearling → Adult (three stages instead of five; about 10 days). Wings and horns
 grow in with age, the same way dragon horns do.
 
+Equines use the same sex rule as dragons: breeding needs a mare and a stallion.
+
 ## Getting an alicorn
 
 Proposed (to be decided):

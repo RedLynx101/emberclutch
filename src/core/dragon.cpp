@@ -123,10 +123,13 @@ Stage stageFor(int days, int stars) {
     return Stage::Hatchling;
 }
 
-Dragon makeEgg(u32 id, const Genome& g, s64 now) {
+Sex rollSex(Rng& rng) { return rng.chance(1, 2) ? Sex::Male : Sex::Female; }
+
+Dragon makeEgg(u32 id, const Genome& g, Sex sex, s64 now) {
     Dragon d;
     d.id = id;
     d.genome = g;
+    d.sex = sex;
     d.stage = Stage::Egg;
     d.laidAt = now;
     d.day = dayIndex(now);

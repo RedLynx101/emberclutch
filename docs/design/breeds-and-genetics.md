@@ -94,8 +94,10 @@ A parent with a rare trait passes it on with a 50% chance. A child can have at m
 
 ## 4. Breeding rules
 
-- Both parents are **Adult**, bond ≥ 300, mood ≥ Content, and neither is Upset.
-- Dragons have no sexes. Any two adults can pair, including same-breed pairs.
+- **One male and one female.** Sex is rolled 50/50 when an egg is laid and revealed at
+  hatching. Any breeds can pair, including same-breed pairs.
+- Both parents are **Adult**, bond ≥ 300, mood ≥ Content, neither is Upset, and both are
+  in the den (not the Sanctuary).
 - Place both at the **Nesting Stone** in the den. The next calendar day there is an egg.
 - One egg per pairing. Each parent then rests for **3 days** before breeding again.
 - The egg needs a free nest, or it goes straight to the Cold Vault.
@@ -131,5 +133,7 @@ struct Genome {             // 16 bytes
 };
 ```
 
-The species-level `bodyPlan` and `modules` fields live on the creature record, not the
-genome, so the equine line can reuse this format (see [Equine Line](../future/equine-line.md)).
+The species-level `bodyPlan` and `modules` fields, `sex`, and the parents' ids (for family
+trees) live on the creature record, not the genome, so the equine line can reuse this
+format (see [Equine Line](../future/equine-line.md)). Breeding rules live in
+`src/core/breeding.cpp`.

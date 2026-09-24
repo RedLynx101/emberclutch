@@ -11,6 +11,13 @@ project's MIT (code) or CC BY-SA (art) licenses** and cannot be relicensed under
 
 Tracks (filled in as they are added):
 
-| Track | File | Created | Plan |
+| Track | File | Received | Plan |
 |---|---|---|---|
-| *(none yet — see docs/audio/suno-music-brief.md)* | | | |
+| Emberclutch (title theme) | `romfs/music/title-theme.ogg` | 2026-09-23 | Paid (per brief) |
+| Den Hearth | `romfs/music/den-hearth.ogg` | 2026-09-23 | Paid (per brief) |
+| Nestsong | `romfs/music/nestsong.ogg` | 2026-09-23 | Paid (per brief) |
+| Skyreach (take 1) | `romfs/music/skyreach.ogg` | 2026-09-23 | Paid (per brief) |
+| Skyreach (take 2) | `romfs/music/skyreach-2.ogg` | 2026-09-23 | Paid (per brief) |
+| Cup Day | `romfs/music/cup-day.ogg` | 2026-09-23 | Paid (per brief) |
+
+*"Plan" records what the brief required. Confirm the plan actually used before the public release.*

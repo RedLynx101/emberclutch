@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 
+#include "core/breeding.hpp"
 #include "core/clock.hpp"
 #include "core/dragon.hpp"
 #include "core/genetics.hpp"
@@ -143,7 +144,7 @@ TEST(stage_gates) {
 
 TEST(egg_hatches_when_kept_warm_and_pauses_in_vault) {
     Rng rng(3);
-    Dragon egg = makeEgg(1, makePurebred(Element::Ember, rng), kT0);
+    Dragon egg = makeEgg(1, makePurebred(Element::Ember, rng), Sex::Female, kT0);
     s64 t = kT0;
     for (int h = 0; h < 30; ++h) {  // rub every 3 hours for 30 hours
         if (h % 3 == 0) warmEgg(egg, 30);
@@ -153,13 +154,13 @@ TEST(egg_hatches_when_kept_warm_and_pauses_in_vault) {
     CHECK(tryHatch(egg, t, rng));
     CHECK(egg.stage == Stage::Hatchling);
 
-    Dragon vaulted = makeEgg(2, makePurebred(Element::Tide, rng), kT0);
+    Dragon vaulted = makeEgg(2, makePurebred(Element::Tide, rng), Sex::Female, kT0);
     vaulted.location = Location::Vault;
     simulate(vaulted, kT0, kT0 + 5 * kDay);
     CHECK(vaulted.incubationSeconds == 0);
     CHECK(!tryHatch(vaulted, kT0 + 5 * kDay, rng));
 
-    Dragon cold = makeEgg(3, makePurebred(Element::Gale, rng), kT0);
+    Dragon cold = makeEgg(3, makePurebred(Element::Gale, rng), Sex::Female, kT0);
     simulate(cold, kT0, kT0 + 3 * kDay);  // never rubbed: stalls, never breaks
     CHECK(cold.incubationSeconds < kIncubationSeconds);
     CHECK(cold.stage == Stage::Egg);
@@ -168,7 +169,7 @@ TEST(egg_hatches_when_kept_warm_and_pauses_in_vault) {
 // Raise a hatchling with `visitsPerDay` full-care visits for `days` days.
 static Dragon raise(int visitsPerDay, int days) {
     Rng rng(11);
-    Dragon d = makeEgg(1, makePurebred(Element::Ember, rng), kT0);
+    Dragon d = makeEgg(1, makePurebred(Element::Ember, rng), Sex::Female, kT0);
     d.incubationSeconds = kIncubationSeconds;
     tryHatch(d, kT0 + 8 * kHour, rng);
     const int visitHours[] = {9, 13, 18};
@@ -207,7 +208,7 @@ TEST(light_care_grows_slower_but_still_grows) {
 
 TEST(neglect_upsets_but_never_harms) {
     Rng rng(2);
-    Dragon d = makeEgg(1, makePurebred(Element::Frost, rng), kT0);
+    Dragon d = makeEgg(1, makePurebred(Element::Frost, rng), Sex::Female, kT0);
     d.incubationSeconds = kIncubationSeconds;
     tryHatch(d, kT0, rng);
     const Stage before = d.stage;
@@ -224,7 +225,7 @@ TEST(neglect_upsets_but_never_harms) {
 
 TEST(sanctuary_keeps_needs_safe) {
     Rng rng(4);
-    Dragon d = makeEgg(1, makePurebred(Element::Grove, rng), kT0);
+    Dragon d = makeEgg(1, makePurebred(Element::Grove, rng), Sex::Female, kT0);
     d.incubationSeconds = kIncubationSeconds;
     tryHatch(d, kT0, rng);
     d.location = Location::Sanctuary;
@@ -236,7 +237,7 @@ TEST(sanctuary_keeps_needs_safe) {
 
 TEST(body_scale_grows_every_day) {
     Rng rng(6);
-    Dragon d = makeEgg(1, makePurebred(Element::Lumen, rng), kT0);
+    Dragon d = makeEgg(1, makePurebred(Element::Lumen, rng), Sex::Female, kT0);
     d.incubationSeconds = kIncubationSeconds;
     tryHatch(d, kT0, rng);
     const float s0 = bodyScale(d, kT0);
@@ -244,6 +245,59 @@ TEST(body_scale_grows_every_day) {
     CHECK(s0 >= 0.25f && s0 < 0.26f);
     CHECK(s2 > s0);
     CHECK(s2 < 0.45f);
+}
+
+static Dragon readyAdult(u32 id, Element e, Sex sex, Rng& rng) {
+    Dragon d = makeEgg(id, makePurebred(e, rng), sex, kT0);
+    d.stage = Stage::Adult;
+    d.hatchedAt = kT0 - 20 * kDay;
+    d.bond = d.bondHigh = 400;
+    d.needs = Needs{90, 90, 90, 90};
+    return d;
+}
+
+TEST(breeding_needs_one_male_and_one_female) {
+    Rng rng(8);
+    const s64 now = kT0;
+    Dragon m = readyAdult(1, Element::Ember, Sex::Male, rng);
+    Dragon f = readyAdult(2, Element::Tide, Sex::Female, rng);
+    Dragon f2 = readyAdult(3, Element::Gale, Sex::Female, rng);
+    CHECK(breedingBlock(m, f, now) == BreedBlock::None);
+    CHECK(breedingBlock(f, f2, now) == BreedBlock::SameSex);
+    CHECK(breedingBlock(m, m, now) == BreedBlock::SameDragon);
+
+    const Dragon egg = layEgg(10, m, f, now, rng);  // argument order doesn't matter
+    CHECK(egg.stage == Stage::Egg);
+    CHECK(egg.motherId == 2 && egg.fatherId == 1);
+    CHECK(std::strcmp(breedName(egg.genome), "Steam") == 0);
+    CHECK(breedingBlock(m, f, now + kDay) == BreedBlock::Resting);
+    CHECK(breedingBlock(m, f, now + 3 * kDay) == BreedBlock::None);
+}
+
+TEST(breeding_requirements) {
+    Rng rng(9);
+    const Dragon m = readyAdult(1, Element::Ember, Sex::Male, rng);
+    Dragon f = readyAdult(2, Element::Frost, Sex::Female, rng);
+    f.stage = Stage::Adolescent;
+    CHECK(breedingBlock(m, f, kT0) == BreedBlock::NotAdult);
+    f.stage = Stage::Adult;
+    f.bond = 100;
+    CHECK(breedingBlock(m, f, kT0) == BreedBlock::LowBond);
+    f.bond = 400;
+    f.upset = true;
+    CHECK(breedingBlock(m, f, kT0) == BreedBlock::Unhappy);
+    f.upset = false;
+    f.location = Location::Sanctuary;
+    CHECK(breedingBlock(m, f, kT0) == BreedBlock::NotInDen);
+    for (int b = 0; b <= static_cast<int>(BreedBlock::NotInDen); ++b)
+        CHECK(std::strlen(breedBlockHint(static_cast<BreedBlock>(b))) > 0);
+}
+
+TEST(egg_sexes_are_roughly_even) {
+    Rng rng(10);
+    int males = 0;
+    for (int i = 0; i < 20000; ++i) males += rollSex(rng) == Sex::Male;
+    CHECK(std::fabs(males / 20000.0 - 0.5) < 0.02);
 }
 
 int main() {
@@ -261,6 +315,9 @@ int main() {
     RUN(neglect_upsets_but_never_harms);
     RUN(sanctuary_keeps_needs_safe);
     RUN(body_scale_grows_every_day);
+    RUN(breeding_needs_one_male_and_one_female);
+    RUN(breeding_requirements);
+    RUN(egg_sexes_are_roughly_even);
     std::printf("\n%d checks, %d failures\n", g_checks, g_failures);
     return g_failures == 0 ? 0 : 1;
 }

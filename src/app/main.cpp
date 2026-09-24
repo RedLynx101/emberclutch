@@ -29,7 +29,7 @@ enum class Scene { Title, PickStarter, Den };
 // Dev-only save: a raw struct dump. Replaced by the versioned A/B format in Phase 1.
 struct DevSave {
     char magic[4] = {'E', 'M', 'B', 'd'};
-    u32 version = 1;
+    u32 version = 2;  // bump whenever Dragon changes shape
     u32 dragonSize = sizeof(Dragon);
     s64 lastSim = 0;
     s64 devOffset = 0;
@@ -59,7 +59,7 @@ bool loadSave(DevSave& out) {
     if (!f) return false;
     DevSave tmp;
     const bool ok = std::fread(&tmp, sizeof(tmp), 1, f) == 1 && std::memcmp(tmp.magic, "EMBd", 4) == 0 &&
-                    tmp.version == 1 && tmp.dragonSize == sizeof(Dragon);
+                    tmp.version == 2 && tmp.dragonSize == sizeof(Dragon);
     std::fclose(f);
     if (ok) out = tmp;
     return ok;
@@ -294,7 +294,7 @@ void drawPickBottom(App& app, bool pressed, float tx, float ty) {
             if (selected) {
                 const s64 now = nowLocal(app);
                 app.rng = Rng(static_cast<std::uint64_t>(osGetTime()) ^ 0xEC0DDull);
-                app.save.dragon = makeEgg(1, makePurebred(kStarters[i], app.rng), now);
+                app.save.dragon = makeEgg(1, makePurebred(kStarters[i], app.rng), rollSex(app.rng), now);
                 std::snprintf(app.save.dragon.name, sizeof(app.save.dragon.name), "Kindle");
                 app.save.hasDragon = 1;
                 app.save.lastSim = now;
@@ -326,7 +326,8 @@ void drawDenTop(App& app) {
         if (d.warmth <= 20) text(app, "It's getting cold...", 200, 205, 0.5f, theme::kRose);
     } else {
         dragonPlaceholder(d, 200, 205, bodyScale(d, now), app.t);
-        std::snprintf(line, sizeof(line), "%s  -  %s %s", d.name, breedName(d.genome), stageName(d.stage));
+        std::snprintf(line, sizeof(line), "%s  -  %s %s %s", d.name, sexName(d.sex), breedName(d.genome),
+                      stageName(d.stage));
         text(app, line, 200, 8, 0.6f, theme::kShell);
         std::snprintf(line, sizeof(line), "Day %d  -  %s  -  %s%s", daysSinceHatch(d, now) + 1, moodName(moodOf(d)),
                       personalityName(d.personality), d.napping ? "  -  napping" : "");

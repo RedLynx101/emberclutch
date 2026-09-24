@@ -1,0 +1,50 @@
+{
+  "cup-day": {
+    "file": "cup-day.ogg",
+    "rate": 32000,
+    "loopStart": 277321,
+    "loopLength": 1826880,
+    "bpm": 135.34,
+    "lufs": -16.0
+  },
+  "den-hearth": {
+    "file": "den-hearth.ogg",
+    "rate": 32000,
+    "loopStart": 503742,
+    "loopLength": 4505280,
+    "bpm": 75.0,
+    "lufs": -16.0
+  },
+  "nestsong": {
+    "file": "nestsong.ogg",
+    "rate": 32000,
+    "loopStart": 595082,
+    "loopLength": 1952000,
+    "bpm": 62.97,
+    "lufs": -16.0
+  },
+  "skyreach": {
+    "file": "skyreach.ogg",
+    "rate": 32000,
+    "loopStart": 243653,
+    "loopLength": 2130560,
+    "bpm": 129.89,
+    "lufs": -16.0
+  },
+  "skyreach-2": {
+    "file": "skyreach-2.ogg",
+    "rate": 32000,
+    "loopStart": 243061,
+    "loopLength": 2281920,
+    "bpm": 128.94,
+    "lufs": -16.0
+  },
+  "title-theme": {
+    "file": "title-theme.ogg",
+    "rate": 32000,
+    "loopStart": 401603,
+    "loopLength": 2823680,
+    "bpm": 88.99,
+    "lufs": -16.0
+  }
+}

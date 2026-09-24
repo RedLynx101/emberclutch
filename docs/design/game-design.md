@@ -87,7 +87,9 @@ every dragon's chest.
 | **Upset** | Dim, turned away | Ignores commands and won't compete or be ridden until you make up |
 
 **Forgiving but upset.** A dragon becomes *Upset* after its mood stays Sulky for 24
-hours, or after 3+ days without a visit. It never dies, leaves, or loses progress.
+hours, or after 3+ days without a visit. It never dies, leaves, or loses progress. An upset
+dragon **retreats to the den's sulk nook** (a shadowy corner) and won't play with the other
+dragons until you make up.
 **Making up** is a short, sweet interaction: approach slowly (hold the stylus still near
 it), offer its favorite food, then pet until the heartglow re-lights. Long absences
 (7+ days) trigger a special "I missed you" greeting after making up.
@@ -113,6 +115,12 @@ small modifiers — never a "bad" roll.
 | Curious | Sniffs everything | Better Wanderings finds |
 
 Each dragon also has a **favorite food** (rolled at hatch, biased toward its breed).
+
+### 3.6 Sex
+
+Every dragon is **male or female**, rolled 50/50 when the egg is laid and revealed at
+hatching. **Breeding needs one male and one female.** Sex has no effect on stats or care.
+Visual differences are subtle (see open question in the decision log).
 
 ## 4. Care interactions (touch-first)
 
@@ -189,8 +197,8 @@ and bond.
 
 ## 9. Breeding (summary)
 
-Two bonded, happy adults placed together at the **Nesting Stone** lay a single egg the
-next day. Offspring inherit element alleles, body parts, colors and rare traits from both
+A bonded, happy adult **male and female** placed together at the **Nesting Stone** lay a
+single egg the next day. Offspring inherit element alleles, body parts, colors and rare traits from both
 parents. Six base breeds and fifteen hybrids give 21 named breeds, with thousands of
 visual variations. Full rules: [Breeds & Genetics](breeds-and-genetics.md).
 
@@ -210,6 +218,9 @@ your steps; when you return, the dragon has found things proportional to distanc
 Gleam, food, trinkets, and rarely a **wild egg** (the main way to get breeds you did not
 start with). One dragon wanders at a time; its needs drain normally.
 
+**Must-have for v1.** Wanderings ships together with breeding (Phase 3). Wild eggs are one
+of the two ways, with the Market, to find a partner of the opposite sex.
+
 ## 12. Economy
 
 - **Gleam** — the single currency (dragons love shiny things). From competitions,
@@ -223,7 +234,8 @@ start with). One dragon wanders at a time; its needs drain normally.
 1. Title → name yourself → choose one of three starter eggs: **Ember, Tide, or Gale**.
 2. Tutorial is diegetic: warm the egg, watch it hatch, feed it, say its name.
 3. Grove, Frost and Lumen eggs come from the Market rotation and Wanderings, which
-   unlock after the first dragon reaches Juvenile.
+   unlock after the first dragon reaches Juvenile. These are also how you find your first
+   dragon a partner of the opposite sex.
 
 ## 14. Social (later phase)
 
@@ -245,11 +257,12 @@ two players' dragons each give one egg to both players.
 - Online play, StreetPass, amiibo, face tracking.
 - Real-money purchases.
 
-## 17. Open questions for review
+## 17. Review answers (2026-09-23)
 
-1. Is ~2 weeks with **perfect** care the right pace, or should the day gates be shorter
-   (e.g. 3/6/10 days) and let care be the main limiter?
-2. Should starters be 3 (Ember, Tide, Gale) or all 6 breeds?
-3. Keep dragons genderless (any two adults can pair), as drafted? It keeps breeding simple.
-4. Should upset dragons still be allowed in the den with others, or retreat to a corner?
-5. Is Wanderings (pedometer) a must-have for v1, or later?
+1. **Pace:** ~2 weeks with perfect care is right. Keep the 4 / 8 / 14 day gates.
+2. **Starters:** just the three (Ember, Tide, Gale).
+3. **Sexes:** dragons are male or female; breeding needs one of each (§3.6).
+4. **Upset dragons** retreat to the sulk nook (§3.3).
+5. **Wanderings** is a v1 must-have and ships with breeding (§11).
+
+Still open: see the "Open" rows in the [decision log](../plan/decisions.md).

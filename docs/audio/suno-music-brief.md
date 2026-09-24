@@ -1,5 +1,22 @@
 # Emberclutch — Suno Music Brief (Batch 1: 5 tracks)
 
+> **Status 2026-09-23: Batch 1 received and processed.** Six WAVs (two Skyreach takes)
+> became six looping Oggs in `romfs/music/` (7.8 MB total, down from 172 MB).
+>
+> | Track | Used for | Real tempo | Loop | Size |
+> |---|---|---|---|---|
+> | title-theme | Title, menus | ~88–89 | 88.2 s | 1.27 MB |
+> | den-hearth | Den by day | 75.0 | 140.8 s (44 bars) | 1.88 MB |
+> | nestsong | Den at night, eggs | 63.0 | 61.0 s (16 bars) | 0.98 MB |
+> | skyreach + skyreach-2 | Flight / riding, alternating so long rides don't repeat | ~129–130 | 66.6 s / 71.3 s | 0.93 / 0.97 MB |
+> | cup-day | Arena, competitions | ~134.5 | 57.1 s (32 bars) | 0.81 MB |
+>
+> Suno ran most tracks 1–8% off the requested tempo (Skyreach came out ~130, not 120), so
+> `make_loop.py` now finds the seam by matching harmony, timbre and rhythm, with no
+> dependence on tempo. Every seam passed the click and level checks; a couple of level
+> changes at the seam are the song's own dynamics. **To listen:** the 12-second seam previews
+> are in `assets/audio/music/previews/` (6 s before the loop point, then the jump).
+
 Everything needed to generate the first five music loops in Suno. Written 2026-09-23
 against **Suno v5.5** (Custom Mode). Suno weights the **first** words of the Style field
 most, so each Style prompt leads with genre and mood.

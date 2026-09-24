@@ -21,6 +21,9 @@ enum class Mood : u8 { Upset, Sulky, Restless, Content, Joyful };
 
 enum class Personality : u8 { Brave, Shy, Playful, Proud, Sleepy, Curious, Count };
 
+// Breeding needs one of each (decision D19).
+enum class Sex : u8 { Female, Male };
+
 // Species-level layout. Dragons are Draconic + (Wings | Breath). The equine line
 // (horse, pegasus, unicorn, alicorn) reuses the same records — see docs/future.
 enum class BodyPlan : u8 { Draconic, Equine };
@@ -37,5 +40,6 @@ const char* elementName(Element e);
 const char* stageName(Stage s);
 const char* moodName(Mood m);
 const char* personalityName(Personality p);
+const char* sexName(Sex s);
 
 }  // namespace ec

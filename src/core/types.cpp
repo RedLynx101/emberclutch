@@ -41,4 +41,6 @@ const char* personalityName(Personality p) {
     return i < static_cast<int>(Personality::Count) ? kNames[i] : "?";
 }
 
+const char* sexName(Sex s) { return s == Sex::Male ? "Male" : "Female"; }
+
 }  // namespace ec

@@ -19,6 +19,9 @@ struct Dragon {
     BodyPlan bodyPlan = BodyPlan::Draconic;
     u8 modules = kModWings | kModBreath;
     Genome genome{};
+    Sex sex = Sex::Female;           // rolled when the egg is laid, shown at hatch
+    u32 motherId = 0, fatherId = 0;  // 0 = starter / wild / Market egg
+    s64 lastBredAt = 0;
     Personality personality = Personality::Playful;
     u8 favoriteFood = 0;  // index into the food table (later)
     char name[16] = {};
@@ -54,7 +57,8 @@ constexpr s32 kIncubationSeconds = 24 * 3600;
 Stage stageFor(int daysSinceHatch, int careStars);
 int stageMinDay(Stage s);
 
-Dragon makeEgg(u32 id, const Genome& g, s64 now);
+Sex rollSex(Rng& rng);
+Dragon makeEgg(u32 id, const Genome& g, Sex sex, s64 now);
 // Hatches the egg if incubation is complete. Returns true if it hatched.
 bool tryHatch(Dragon& d, s64 now, Rng& rng);
 

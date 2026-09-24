@@ -946,7 +946,7 @@ void submitEgg(App& app, const EggForm& egg, const Dragon& d, const EggMotion& m
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &modelView);
     Rgb pal[kPalCount];
     float glow[kPalCount];
-    eggPalette(d, 0.85f + 0.15f * std::sin(app.t * 2.2f), pal, glow);
+    eggPalette(d, 0.85f + 0.15f * std::sin(app.t * 2.2f), pal, glow, app.t);
     for (int i = 0; i < kPalCount; ++i)
         C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, pal[i].r / 255.0f, pal[i].g / 255.0f, pal[i].b / 255.0f,
                       glow[i]);
@@ -1348,6 +1348,47 @@ void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, floa
     bindDragons(projection);
     lightDragon(dragonLight(dayBlend(now)), plain);
     submit(app, g_posed, view, model);
+    end3D();
+}
+
+void drawPair(App& app, const Dragon& a, const DenActor& actorA, const Dragon& b, const DenActor& actorB, s64 now) {
+    if (!g_ready) return;
+    ++g_frame;
+    const Dragon* ds[2] = {&a, &b};
+    const DenActor* as[2] = {&actorA, &actorB};
+    // Frame both: their middle, wide enough for both bodies.
+    Vec2 mid{0, 0};
+    float reach = 0;
+    for (int i = 0; i < 2; ++i) {
+        mid.x += as[i]->behavior.pos.x * 0.5f;
+        mid.y += as[i]->behavior.pos.y * 0.5f;
+    }
+    for (int i = 0; i < 2; ++i) {
+        const Cache* c = cacheFor(*ds[i], now, 0);
+        if (!c) return;
+        reach = std::fmax(reach, std::hypot(as[i]->behavior.pos.x - mid.x, as[i]->behavior.pos.y - mid.y) +
+                                     viewRadius(*c, sizeScale(ds[i]->genome)) * 0.8f);
+    }
+    C3D_Mtx projection, view, model;
+    const Vec3 target{mid.x, mid.y, reach * 0.45f};
+    const float dist = reach / std::tan(kFovY * 0.5f) * 0.95f;
+    Mtx_PerspTilt(&projection, kFovY, C3D_AspectRatioTop, 0.05f, dist * 4.0f, false);
+    lookAt(view, target + normalize(Vec3{-0.2f, -0.95f, 0.3f}) * dist, target);
+    C2D_Flush();
+    bindDragons(projection);
+    const float plain[3] = {1, 1, 1};
+    lightDragon(dragonLight(dayBlend(now)), plain);
+    for (int i = 0; i < 2; ++i) {
+        if (!pose(app, *ds[i], as[i], now, 0, g_posed)) continue;
+        modelMatrix(g_posed, model);
+        submit(app, g_posed, view, model);
+        if (g_posed.form->headBone >= 0) {
+            g_heads[i] = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
+            g_headSet[i] = true;
+        }
+    }
+    g_denView = view;  // for project(): hearts over their heads
+    g_denViewSet = true;
     end3D();
 }
 

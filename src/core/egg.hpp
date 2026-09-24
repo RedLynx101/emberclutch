@@ -53,6 +53,8 @@ int eggCracks(const Dragon& d);
 // The egg's colour for each palette slot and each slot's glow (the shader's emissive scale):
 // the shell tinted by its breed, speckles, cracks (invisible until they open, then
 // glowing), the inside of the shell, and the light inside, brighter as it warms.
-void eggPalette(const Dragon& d, float pulse, Rgb out[kPalCount], float glow[kPalCount]);
+// A hybrid's light drifts between its two elements' colours (the shell's hint at its
+// alleles, breeds-and-genetics section 4): `t` is seconds, for that drift.
+void eggPalette(const Dragon& d, float pulse, Rgb out[kPalCount], float glow[kPalCount], float t = 0);
 
 }  // namespace ec

@@ -92,8 +92,11 @@ int eggCracks(const Dragon& d) {
     return p >= 0.985f ? 3 : (p >= 0.93f ? 2 : (p >= 0.85f ? 1 : 0));
 }
 
-void eggPalette(const Dragon& d, float pulse, Rgb out[kPalCount], float glow[kPalCount]) {
-    const Rgb light = heartglowColor(static_cast<Element>(d.genome.elementA));
+void eggPalette(const Dragon& d, float pulse, Rgb out[kPalCount], float glow[kPalCount], float t) {
+    Rgb light = heartglowColor(static_cast<Element>(d.genome.elementA));
+    if (d.genome.elementB != d.genome.elementA)  // two elements: the light drifts between them
+        light = mixRgb(light, heartglowColor(static_cast<Element>(d.genome.elementB)),
+                       0.5f + 0.5f * std::sin(t * 0.9f));
     const Rgb breed = hsvToRgb(d.genome.baseH, d.genome.baseS, d.genome.baseV);
     const Rgb shell = mixRgb({250, 240, 225}, breed, 0.16f);
     const float warm = d.warmth / 100.0f;

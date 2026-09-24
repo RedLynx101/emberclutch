@@ -2,7 +2,7 @@
 
 Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 done: the den of three dragons
 and two eggs (D53), and their life together. WP2 done (the Sanctuary and Cold Vault), with
-a first world map. Goal (D31): complete through Alpha 2. Scope and assets:
+a first world map. WP3 done (breeding at the Nesting Stone). Goal (D31): complete through Alpha 2. Scope and assets:
 [content & assets](content-and-assets.md) (A2 rows); screens: [screens & flow](../design/screens-and-flow.md).
 
 **The order matters** (Noah, 2026-09-24): everything that doesn't depend on how the
@@ -62,6 +62,12 @@ Worked through alone, package by package (D49).
 - The Nesting Stone corner of the den; courtship nuzzle, settling on the nest, laying.
 - Rules exist (`src/core/breeding.cpp`); the readiness hint on screen.
 - Egg shells hinting at elements (all 6 patterns); lineage kept for the profile.
+- *Done:* the Nesting Stone is a place on the map (`src/app/scene_stone.cpp`): pick her and
+  him from the den's dragons, the readiness hint, "Nest together" (their nuzzle on the
+  stone, `r3d::drawPair`); the pair is saved and their egg comes the next calendar day into
+  a free nest or the Vault (`settleToNest`, `layDueEgg`; PC-tested), with its parents
+  recorded. A hybrid egg's light drifts between its two elements' colours. Dev menu
+  "Breed-ready"; scripted runs use a fixed seed. `tests/autotest/breeding.txt`.
 
 ### WP4 — Wanderings
 - The step counter (PTMU), a trail map with progress, departure and return scenes.

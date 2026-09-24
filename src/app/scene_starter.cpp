@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "app/audio.hpp"
+#include "app/autotest.hpp"
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
@@ -28,7 +29,8 @@ void drawTop(App& app) {
 
 void chooseStarter(App& app, int i) {
     const s64 now = nowLocal(app);
-    app.rng = Rng(static_cast<std::uint64_t>(osGetTime()) ^ 0xEC0DDull);
+    // A scripted run (autotest) gets the same dragons every time.
+    app.rng = Rng(autotest::active() ? 0xA070ull : static_cast<std::uint64_t>(osGetTime()) ^ 0xEC0DDull);
     app.game.dragons[0] = makeEgg(app.game.nextId++, makePurebred(kStarters[i], app.rng), rollSex(app.rng), now);
     std::snprintf(app.game.dragons[0].name, sizeof(app.game.dragons[0].name), "%s", str::kDefaultName);
     app.game.dragonCount = 1;

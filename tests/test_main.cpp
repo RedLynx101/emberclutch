@@ -282,6 +282,29 @@ TEST(breeding_requirements) {
         CHECK(std::strlen(breedBlockHint(static_cast<BreedBlock>(b))) > 0);
 }
 
+// The Nesting Stone (Alpha 2 WP3): a ready pair settles; the egg comes the next calendar day,
+// with its parents, into a free nest (else the Vault); the pair stops nesting.
+TEST(the_nesting_stone) {
+    static SaveData s;
+    s = SaveData{};
+    Rng rng(21);
+    s.dragons[s.dragonCount++] = readyAdult(1, Element::Ember, Sex::Male, rng);
+    s.dragons[s.dragonCount++] = readyAdult(2, Element::Tide, Sex::Female, rng);
+    s.dragons[1].denSlot = 1;
+    s.nextId = 3;
+    CHECK(!settleToNest(s, 0, 0, kT0));  // one dragon isn't a pair
+    CHECK(settleToNest(s, 0, 1, kT0) && s.nestA == 1 && s.nestB == 2);
+    CHECK(layDueEgg(s, kT0 + kHour, rng) == -1);  // not until tomorrow
+    const s64 tomorrow = kT0 + kDay;
+    const int e = layDueEgg(s, tomorrow, rng);
+    CHECK(e == 2 && s.dragonCount == 3 && s.nestA == 0 && s.nestB == 0);
+    const Dragon& egg = s.dragons[e];
+    CHECK(egg.stage == Stage::Egg && egg.motherId == 2 && egg.fatherId == 1 && egg.id == 3);
+    CHECK(egg.location == Location::Den && denRoster(s).eggCount == 1);
+    CHECK(layDueEgg(s, tomorrow + kDay, rng) == -1);  // one egg per pairing
+    CHECK(!settleToNest(s, 0, 1, tomorrow));  // they rest for three days
+}
+
 TEST(egg_sexes_are_roughly_even) {
     Rng rng(10);
     int males = 0;
@@ -300,6 +323,9 @@ static SaveData& sampleSave() {
     s.nextId = 42;
     s.settings.musicVolume = 55;
     s.settings.seenHatch = 1;
+    s.nestA = 11;
+    s.nestB = 12;
+    s.nestDay = 77;
     Rng rng(123);
     s.dragonCount = 5;
     for (int i = 0; i < 5; ++i) {
@@ -448,13 +474,14 @@ TEST(save_round_trip) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 1 + 2));  // v1 + dirt + egg care + den slot
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 1 + 2));  // + the nesting pair
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
     CHECK(info.seq == 7 && info.savedAt == kT0 + 99 && info.version == kSaveVersion);
     CHECK(std::strcmp(out.playerName, "Noah") == 0);
     CHECK(out.lastSim == s.lastSim && out.devOffset == s.devOffset && out.nextId == 42);
+    CHECK(out.nestA == 11 && out.nestB == 12 && out.nestDay == 77);
     CHECK(out.settings.musicVolume == 55 && out.settings.seenHatch == 1);
     CHECK(out.dragonCount == 5);
     for (int i = 0; i < 5; ++i) CHECK(sameDragon(out.dragons[i], s.dragons[i]));
@@ -534,6 +561,7 @@ int main() {
     RUN(body_scale_grows_every_day);
     RUN(breeding_needs_one_male_and_one_female);
     RUN(breeding_requirements);
+    RUN(the_nesting_stone);
     RUN(egg_sexes_are_roughly_even);
     RUN(the_den_has_three_beds_and_two_nests);
     RUN(the_sanctuary_and_the_vault);

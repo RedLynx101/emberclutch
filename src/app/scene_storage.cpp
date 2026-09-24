@@ -56,9 +56,7 @@ void update(App& app, const Input& in) {
     // The keepers' time passes like everyone else's.
     app.simAccum += app.dt;
     if (app.simAccum >= 1.0f) {
-        const s64 now = nowLocal(app);
-        for (int i = 0; i < app.game.dragonCount; ++i) simulate(app.game.dragons[i], app.game.lastSim, now);
-        app.game.lastSim = now;
+        tickWorld(app);
         app.simAccum = 0;
     }
 }

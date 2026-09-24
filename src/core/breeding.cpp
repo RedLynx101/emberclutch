@@ -1,5 +1,8 @@
 #include "core/breeding.hpp"
 
+#include "core/clock.hpp"
+#include "core/den_roster.hpp"
+
 namespace ec {
 namespace {
 
@@ -36,6 +39,30 @@ const char* breedBlockHint(BreedBlock b) {
         case BreedBlock::NotInDen: return "Bring both dragons home to the den.";
     }
     return "";
+}
+
+bool settleToNest(SaveData& s, int a, int b, s64 now) {
+    if (a < 0 || b < 0 || a >= s.dragonCount || b >= s.dragonCount) return false;
+    if (breedingBlock(s.dragons[a], s.dragons[b], now) != BreedBlock::None) return false;
+    s.nestA = s.dragons[a].id;
+    s.nestB = s.dragons[b].id;
+    s.nestDay = dayIndex(now);
+    return true;
+}
+
+int layDueEgg(SaveData& s, s64 now, Rng& rng) {
+    if (s.nestA == 0 || s.nestB == 0 || dayIndex(now) <= s.nestDay) return -1;
+    int a = -1, b = -1;
+    for (int i = 0; i < s.dragonCount; ++i) {
+        if (s.dragons[i].id == s.nestA) a = i;
+        if (s.dragons[i].id == s.nestB) b = i;
+    }
+    s.nestA = s.nestB = 0;
+    if (a < 0 || b < 0 || s.dragonCount >= static_cast<int>(kMaxDragons)) return -1;
+    Dragon egg = layEgg(s.nextId++, s.dragons[a], s.dragons[b], now, rng);
+    placeEgg(s, egg);
+    s.dragons[s.dragonCount] = egg;
+    return s.dragonCount++;
 }
 
 Dragon layEgg(u32 id, Dragon& a, Dragon& b, s64 now, Rng& rng) {

@@ -113,6 +113,17 @@ inline constexpr const char* kStayHome = "Someone should stay home.";
 inline constexpr const char* kSentAway = "%s went to the Sanctuary.";
 inline constexpr const char* kEggAway = "The egg went to the Cold Vault.";
 inline constexpr const char* kVaultFull = "The Cold Vault is full.";
+// The Nesting Stone (Alpha 2 WP3)
+inline constexpr const char* kNestingStone = "The Nesting Stone";
+inline constexpr const char* kHer = "Her";
+inline constexpr const char* kHim = "Him";
+inline constexpr const char* kNoneInDen = "None in the den";
+inline constexpr const char* kPickAPair = "Choose a female and a male from the den.";
+inline constexpr const char* kNestingNow = "%s and %s are nesting: their egg comes tomorrow.";
+inline constexpr const char* kNestTogether = "Nest together";
+inline constexpr const char* kEggTomorrow = "They settle on the stone. An egg by tomorrow!";
+inline constexpr const char* kNewEggNest = "A new egg, warm in the nest!";
+inline constexpr const char* kNewEggVault = "A new egg! The nests are full: it's in the Cold Vault.";
 inline constexpr const char* kDenFull = "The den is full (three beds).";
 inline constexpr const char* kEggToVault = "The nests are full: it went to the Vault.";
 

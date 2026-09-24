@@ -220,6 +220,9 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
     w.s64v(data.lastSim);
     w.s64v(data.devOffset);
     w.u32v(data.nextId);
+    w.u32v(data.nestA);  // Alpha 2: the pair at the Nesting Stone
+    w.u32v(data.nestB);
+    w.s32v(data.nestDay);
     w.patchU16(at, static_cast<u16>(w.pos() - start));
 
     // Settings section
@@ -301,6 +304,11 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
     tmp.lastSim = r.s64v();
     tmp.devOffset = r.s64v();
     tmp.nextId = r.u32v();
+    if (sectionSize >= 16 + 8 + 8 + 4 + 12) {  // older saves: no one nesting
+        tmp.nestA = r.u32v();
+        tmp.nestB = r.u32v();
+        tmp.nestDay = r.s32v();
+    }
     r.seek(start + sectionSize);
 
     sectionSize = r.u16v();

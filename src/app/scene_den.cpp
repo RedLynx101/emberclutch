@@ -389,11 +389,8 @@ void update(App& app, const Input& in) {
     app.simAccum += app.dt;
     app.saveAccum += app.dt;
     if (app.simAccum >= 1.0f || (in.held & KEY_R)) {
-        const s64 now = nowLocal(app);
-        for (int i = 0; i < app.game.dragonCount; ++i) simulate(app.game.dragons[i], app.game.lastSim, now);
-        app.game.lastSim = now;
+        tickWorld(app);
         app.simAccum = 0;
-        settleDen(app.game);
     }
     if (app.saveAccum >= 60.0f) {
         saveNow(app);

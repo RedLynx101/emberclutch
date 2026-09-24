@@ -57,6 +57,9 @@ bool pickCloseUp(Vec2 touch, TouchHit& out);
 // turned `spin` radians toward the viewer's left, standing a little below centre: the
 // Sanctuary, the Cold Vault, later the profile and the Market's egg.
 void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, float spin);
+// Two dragons on the top screen, animated by their actors (standing where their behaviors
+// put them), framed together: the Nesting Stone's pair.
+void drawPair(App& app, const Dragon& a, const DenActor& actorA, const Dragon& b, const DenActor& actorB, s64 now);
 // The dragon's mouth on the bottom screen (the last close-up); false if it isn't in view.
 bool mouthOnCloseUp(Vec2& at);
 // A bottom-screen point held out in front of the dragon's face, in its armature space (at

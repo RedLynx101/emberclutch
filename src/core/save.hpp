@@ -34,6 +34,10 @@ struct SaveData {
     s64 lastSim = 0;    // local unix time the simulation last advanced to
     s64 devOffset = 0;  // dev-build clock offset (0 in release)
     u32 nextId = 1;     // next creature id
+    // A pair nesting at the Nesting Stone (Alpha 2 WP3): their ids (0: none) and the day they
+    // settled; the egg comes the next day (core/breeding layDueEgg).
+    u32 nestA = 0, nestB = 0;
+    s32 nestDay = 0;
     Settings settings{};
     u16 dragonCount = 0;
     Dragon dragons[kMaxDragons];

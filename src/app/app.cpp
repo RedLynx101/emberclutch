@@ -4,7 +4,9 @@
 
 #include "app/audio.hpp"
 #include "app/scenes.hpp"
+#include "core/breeding.hpp"
 #include "core/genetics.hpp"
+#include "app/strings.hpp"
 
 namespace ec {
 namespace {
@@ -49,6 +51,19 @@ void resetForNewGame(App& app) {
     app.eggCare = EggCare{};
     app.hatch = HatchState{};
     app.nameRoll = 0;
+}
+
+void tickWorld(App& app) {
+    const s64 now = nowLocal(app);
+    for (int i = 0; i < app.game.dragonCount; ++i) simulate(app.game.dragons[i], app.game.lastSim, now);
+    app.game.lastSim = now;
+    settleDen(app.game);
+    const int egg = layDueEgg(app.game, now, app.rng);  // the pair's egg, the day after they nested
+    if (egg >= 0) {
+        showToast(app, app.game.dragons[egg].location == Location::Den ? str::kNewEggNest : str::kNewEggVault);
+        audio::playSfx(audio::Sfx::EggKnock);
+        saveNow(app);
+    }
 }
 
 void openMap(App& app) {
@@ -121,6 +136,7 @@ const SceneFns& sceneFns(SceneId id) {
         case SceneId::Map: return kMapScene;
         case SceneId::Sanctuary: return kSanctuaryScene;
         case SceneId::Vault: return kVaultScene;
+        case SceneId::NestingStone: return kNestingStoneScene;
         default: return kTitleScene;
     }
 }

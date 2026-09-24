@@ -33,7 +33,7 @@ struct Input {
     float rx = 0, ry = 0;
 };
 
-enum class SceneId : u8 { Title, PickStarter, Den, Map, Sanctuary, Vault, Count };
+enum class SceneId : u8 { Title, PickStarter, Den, Map, Sanctuary, Vault, NestingStone, Count };
 
 // Per-frame counters the renderer fills in; the debug overlay checks them against the
 // budgets in docs/tech/architecture.md section 1.
@@ -161,6 +161,12 @@ struct App {
     SceneId travelTo = SceneId::Den;
     // The Sanctuary and the Cold Vault: the one picked (an index into their list) and the page.
     int storePick = 0, storePage = 0;
+    // The Nesting Stone: the pair picked (SaveData indices, -1: none), their animation on the
+    // stone (set up for these ids), and the courtship nuzzle's seconds left.
+    int stoneMother = -1, stoneFather = -1;
+    DenActor stoneActors[2];
+    u32 stoneIds[2] = {};
+    float stoneCourt = 0;
 
     // Debug
     bool overlay = EC_DEV;
@@ -189,6 +195,9 @@ int careNest(const App& app);
 void cycleCare(App& app, int dir);
 // Opens the world map (from the den: X, or the system menu).
 void openMap(App& app);
+// Once a second from any scene where time runs: everyone's simulation, and the nesting pair's
+// egg when its day comes (with a toast).
+void tickWorld(App& app);
 
 // Saves to the next A/B slot; shows a toast if the SD card write fails.
 void saveNow(App& app);

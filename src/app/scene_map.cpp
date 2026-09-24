@@ -28,7 +28,8 @@ constexpr Place kPlaces[] = {
     {"The Den", "Home: your dragons, their beds and the egg nests.", 160, 138, SceneId::Den, true},
     {"The Sanctuary", "The keepers' meadow: dragons rest here, looked after.", 62, 96, SceneId::Sanctuary, true},
     {"The Cold Vault", "Eggs keep here, cool and waiting, until a nest is free.", 262, 62, SceneId::Vault, true},
-    {"The Nesting Stone", "Where a pair lays an egg.", 214, 176, SceneId::Den, false},
+    {"The Nesting Stone", "Where a pair of adults settles, and an egg comes the next day.", 214, 176,
+     SceneId::NestingStone, true},
     {"The Market", "Food, toys and treasures, and an egg of the day.", 92, 182, SceneId::Den, false},
     {"The Wanderings", "Trails to walk with your dragon, and what you find.", 276, 138, SceneId::Den, false},
 };
@@ -131,6 +132,11 @@ void drawPlaceView(App& app, int p) {
             C2D_DrawTriangle(90, 210, col(170, 200, 230), 330, 210, col(150, 180, 214), 220, 30, col(230, 244, 255), 0);
             C2D_DrawCircleSolid(210, 170, 0, 26, col(96, 120, 160));
             C2D_DrawCircleSolid(210, 170, 0, 20, col(70, 90, 130));
+            break;
+        case 3:  // the nesting stone on its hill
+            C2D_DrawEllipseSolid(90, 150, 0, 220, 50, col(120, 116, 124));
+            C2D_DrawEllipseSolid(100, 144, 0, 200, 40, col(158, 154, 160));
+            C2D_DrawEllipseSolid(140, 150, 0, 120, 22, col(214, 184, 110, 0.8f));
             break;
         default:  // not open yet: a misty silhouette
             C2D_DrawEllipseSolid(120, 110, 0, 160, 110, col(170, 170, 190, 0.6f));

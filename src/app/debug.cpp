@@ -106,7 +106,7 @@ bool debugMenu(App& app, const Input& in) {
         {"+1 hour", 0},   {"+1 day", 1},     {"+7 days", 2},      {"Fill needs", 3},
         {"Drain needs", 4}, {"Hatch now", 5}, {"Next stage", 6},   {"Next breed", 10},
         {"Next activity", 12}, {"Add dragon", 11}, {"Overlay", 7}, {"Save now", 8},
-        {"Reset save", 9}, {"Dusty / bath", 13}, {"Add egg", 14},
+        {"Reset save", 9}, {"Dusty / bath", 13}, {"Add egg", 14}, {"Breed-ready", 15},
     };
     constexpr int kCount = sizeof(kItems) / sizeof(kItems[0]);
     for (int i = 0; i < kCount; ++i) {
@@ -126,6 +126,14 @@ bool debugMenu(App& app, const Input& in) {
             case 10: nextBreed(d, app.rng); break;
             case 11: devAddDragon(app, false); break;
             case 14: devAddDragon(app, true); break;
+            case 15:  // an adult ready for the Nesting Stone: grown, trusting, content, rested
+                while (d.stage != Stage::Egg && d.stage != Stage::Adult) forceNextStage(d, now);
+                if (d.bond < 400) d.bond = 400;
+                if (d.bondHigh < d.bond) d.bondHigh = d.bond;
+                d.needs = Needs{95, 95, 95, 95};
+                d.upset = false;
+                d.lastBredAt = 0;
+                break;
             case 13: {  // see the dust (D46) without waiting a day: all dusty, then a bath
                 const bool dusty = d.dirt[kRegionBack] > 50.0f;
                 if (dusty) bathe(d);

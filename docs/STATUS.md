@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -102,9 +102,9 @@ controls and saves screenshots of every step (`tests/autotest/`).
    ✅ (2026-09-24, D53): three dragons and two eggs in the den, switching who you care for,
    the room and egg trimmed to fit the frame; and their life together: games of chase,
    nuzzles, the sunbeam, two curled up in the big nest at night. WP2 ✅: the Sanctuary and
-   the Cold Vault, reached through a first world map (X in the den). Next: breeding at
-   the Nesting Stone, Wanderings, the Market, the rest of the world map, more toys, the
-   profile.
+   the Cold Vault, reached through a first world map (X in the den). WP3 ✅: breeding at
+   the Nesting Stone (the pair's egg comes the next day). Next: Wanderings, the Market, the
+   rest of the world map, more toys, the profile.
 2. Then the emblem icon and the animated 3D HOME Menu banner (D48, D50).
 3. Then **R5**, three Ember style variants for Noah (blocks, D47); the dragons update in
    the chosen style; the run on Noah's old 3DS (D34).

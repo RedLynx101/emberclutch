@@ -1,0 +1,66 @@
+# Breeding at the Nesting Stone (Alpha 2 WP3): three dragons made breed-ready (dev), a pair
+# chosen at the stone, their nuzzle, and a day later their egg in the den's nest.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+# Two more, then everyone breed-ready (dev menu, one at a time with the D-pad).
+key SELECT
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 206
+key SELECT
+wait 0.5
+key RIGHT
+wait 0.5
+key SELECT
+wait 0.3
+tap 238 206
+key SELECT
+wait 0.5
+key RIGHT
+wait 0.5
+key SELECT
+wait 0.3
+tap 238 206
+key SELECT
+wait 2
+shot b01-den-grown
+# The Nesting Stone.
+key X
+wait 0.8
+tap 214 176
+wait 0.4
+tap 214 176
+wait 2.5
+shot b02-stone
+tap 82 81
+wait 0.4
+tap 238 81
+wait 1
+shot b03-pair
+tap 91 217
+wait 1.5
+shot b04-nuzzle
+# A day later: the egg.
+skip 26
+wait 3
+shot b05-next-day
+tap 240 217
+wait 0.8
+tap 58 221
+wait 3
+shot b06-den-egg
+quit

@@ -78,6 +78,11 @@ void stepHatched(Dragon& d, s64 t, float hours) {
     n.shine = clamp100(n.shine);
     n.play = clamp100(n.play);
 
+    // Dust settles over a day or two (D46): fastest where a dragon meets the floor, slowest
+    // on the wings; the keepers keep Sanctuary dragons tidy.
+    static const float kDirtRate[kRegionCount] = {0.8f, 0.8f, 0.9f, 1.3f, 1.1f, 1.1f, 1.2f, 0.6f};
+    for (int r = 0; r < kRegionCount; ++r) d.dirt[r] = clamp100(d.dirt[r] + 2.6f * kDirtRate[r] * hours * scale);
+
     if (sanctuary) {
         // Keepers tend stored dragons: needs never fall below 50, mood holds.
         if (n.belly < 50) n.belly = 50;
@@ -207,6 +212,17 @@ void pet(Dragon& d, float amount) {
 
 void groom(Dragon& d, float amount) {
     d.needs.shine = clamp100(d.needs.shine + amount);
+    for (float& dust : d.dirt) dust = clamp100(dust - amount * 1.5f);
+    addBond(d, 1);
+}
+
+void cleanRegion(Dragon& d, int region, float amount) {
+    if (region >= 0 && region < kRegionCount) d.dirt[region] = clamp100(d.dirt[region] - amount);
+}
+
+void bathe(Dragon& d) {
+    for (float& dust : d.dirt) dust = 0;
+    d.needs.shine = clamp100(d.needs.shine + 30);
     addBond(d, 1);
 }
 

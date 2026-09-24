@@ -17,6 +17,10 @@ writes the .ecm format read by src/core/model.cpp (docs/tech/architecture.md sec
 The hatchling form is modelled at a comfortable scale and written scaled by its
 export_scale (uniform scaling commutes with the skinning, so parity is unaffected).
 Vertex paint = palette indices + mix + emissive (the shader looks up per-dragon colours).
+Each vertex also carries a UV into its form's skin texture (romfs/models/<form>[_lod1]_skin.t3x,
+baked here by tools/blender/dragon_texture.py) and a body region for dirt (D46). The body's
+UV seams become extra vertices appended after the Blender vertices, so vertex indices (and
+the parity reference) stay those of the Blender mesh.
 The reference file holds poses and Blender-deformed vertex positions; the PC tests check
 that src/core/skeleton reproduces them.
 """
@@ -27,11 +31,14 @@ import struct
 import sys
 from pathlib import Path
 
+import subprocess
+
 import bpy
 from mathutils import Euler, Vector
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import dragon_model as dm  # noqa: E402
+import dragon_texture as dt  # noqa: E402
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
 
@@ -136,10 +143,12 @@ def world_normal_matrix(m):
     return m.to_3x3().inverted_safe().transposed()
 
 
-def mesh_arrays(objs, palette_of, matrix_of, scale):
-    """Merge objects into one vertex/index list. palette_of(obj, vertex) -> (b0, b1, w0, w1).
-    Paint follows each face's material (eyes are one object with iris/pupil/glint faces)."""
-    positions, normals, skin, paint, indices = [], [], [], [], []
+def mesh_arrays(objs, palette_of, matrix_of, scale, region_of):
+    """Merge objects into one vertex/index list. palette_of(obj, vertex) -> (b0, b1, w0, w1);
+    region_of(obj, vertex) -> body region. Paint follows each face's material (eyes are one
+    object with iris/pupil/glint faces). An object with a UV map gets a vertex copy for every
+    extra UV a vertex has (its UV seams), appended after its own vertices."""
+    positions, normals, skin, paint, indices, uvs, regions = [], [], [], [], [], [], []
     for o in objs:
         me = o.data
         me.calc_loop_triangles()
@@ -165,9 +174,34 @@ def mesh_arrays(objs, palette_of, matrix_of, scale):
             else:
                 mix = int(round(mask.data[v.index].color[1] * 255)) if (mask and pa != pb) else 0
             paint.append((pa, pb, mix, emissive))
+            uvs.append(dt.CLEAN_UV)
+            regions.append(region_of(o, v))
+        uvl = me.uv_layers.get("UVMap")
+        if uvl:
+            assert len(objs) == 1, "UV seams would shift the vertices of later objects"
+        first, extra = {}, {}
         for tri in me.loop_triangles:
-            indices += [base + tri.vertices[0], base + tri.vertices[1], base + tri.vertices[2]]
-    return positions, normals, skin, paint, indices
+            for v, li in zip(tri.vertices, tri.loops):
+                i = base + v
+                if uvl:
+                    uv = (round(uvl.data[li].uv[0], 5), round(uvl.data[li].uv[1], 5))
+                    if v not in first:
+                        first[v] = uv
+                        uvs[i] = uv
+                    elif first[v] != uv:
+                        if (v, uv) not in extra:  # a seam: the same point with another UV
+                            extra[(v, uv)] = len(positions)
+                            for arr in (positions, normals, skin, paint, regions):
+                                arr.append(arr[i])
+                            uvs.append(uv)
+                        i = extra[(v, uv)]
+                indices.append(i)
+    return positions, normals, skin, paint, indices, uvs, regions
+
+
+def body_region(o, v):
+    attr = o.data.attributes.get("region")
+    return attr.data[v.index].value if attr else dt.REGION_CLEAN
 
 
 def quantize_weights(pairs):
@@ -187,10 +221,10 @@ class Mesh:
         self.palette = palette  # skeleton bone indices
         self.keys = []          # [(positions, normals)] per key
         self.key_ts = []
-        self.skin = self.paint = self.indices = None
+        self.skin = self.paint = self.indices = self.uvs = self.regions = None
 
 
-def skinned_mesh(name, kind, group, variant, objs, bone_index, allowed, scale):
+def skinned_mesh(name, kind, group, variant, objs, bone_index, allowed, scale, region_of):
     """Body / wings: deformed by up to two bones from the mesh's palette."""
     used = sorted({bone_index[vg.name] for o in objs for vg in o.vertex_groups if allowed(vg.name)})
     local = {b: i for i, b in enumerate(used)}
@@ -201,10 +235,11 @@ def skinned_mesh(name, kind, group, variant, objs, bone_index, allowed, scale):
                  if g.weight > 0 and allowed(names[g.group])]
         return quantize_weights(pairs)
 
-    pos, nrm, skin, paint, idx = mesh_arrays(objs, palette_of, lambda o: o.matrix_world.copy(), scale)
+    pos, nrm, skin, paint, idx, uvs, regions = mesh_arrays(objs, palette_of, lambda o: o.matrix_world.copy(), scale,
+                                                          region_of)
     m = Mesh(name, kind, group, variant, SEX_ANY, used)
     m.keys, m.key_ts = [(pos, nrm)], [1.0]
-    m.skin, m.paint, m.indices = skin, paint, idx
+    m.skin, m.paint, m.indices, m.uvs, m.regions = skin, paint, idx, uvs, regions
     return m
 
 
@@ -223,12 +258,12 @@ def part_meshes(d, tagged, bone_index, scale):
     for t in dm.F["key_ts"]:
         dm.apply_t(d, t, "neutral")  # scales + surface snap for every part at once
         for m in meshes:
-            pos, nrm, skin, paint, idx = mesh_arrays(
+            pos, nrm, skin, paint, idx, uvs, regions = mesh_arrays(
                 m.objs, lambda o, v, m=m: (m.bone_of[o.name], m.bone_of[o.name], 255, 0),
-                lambda o: o.matrix_basis.copy(), scale)
+                lambda o: o.matrix_basis.copy(), scale, lambda o, v: dt.REGION_CLEAN)
             m.keys.append((pos, nrm))
             m.key_ts.append(t)
-            m.skin, m.paint, m.indices = skin, paint, idx
+            m.skin, m.paint, m.indices, m.uvs, m.regions = skin, paint, idx, uvs, regions
     return meshes
 
 
@@ -236,7 +271,7 @@ def part_meshes(d, tagged, bone_index, scale):
 def write_ecm(path, d, meshes, order, scale):
     arm = d["arm"]
     out = bytearray()
-    out += b"ECM1" + struct.pack("<HH", 2, len(order))
+    out += b"ECM1" + struct.pack("<HH", 3, len(order))
     index = {n: i for i, n in enumerate(order)}
     for name in order:
         bone = arm.data.bones[name]
@@ -276,6 +311,9 @@ def write_ecm(path, d, meshes, order, scale):
             out += struct.pack("<4B", *sk)
         for pt in m.paint:
             out += struct.pack("<4B", *pt)
+        for uv in m.uvs:  # v3: skin texture coordinates and body regions
+            out += struct.pack("<2f", *uv)
+        out += bytes(m.regions)
         out += struct.pack(f"<{len(m.indices)}H", *m.indices)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(bytes(out))
@@ -342,6 +380,22 @@ def write_reference(path, d, meshes, order, sources, scale):
     return sum(len(c[3]) for c in cases)
 
 
+# ---------------------------------------------------------------------------------- skin
+TEX3DS = Path(os.environ.get("DEVKITPRO", "C:/msys64/opt/devkitpro")) / "tools" / "bin" / "tex3ds.exe"
+
+
+def bake_skin(d, form, lod):
+    """Bake the body's skin texture (rest pose) and convert it for the 3DS with mipmaps."""
+    name = f"{form}_skin" if lod == 0 else f"{form}_lod{lod}_skin"
+    png = ROOT / "build" / "textures" / f"{name}.png"
+    png.parent.mkdir(parents=True, exist_ok=True)
+    rgba = dt.bake_skin(d["body"], form, 256 if lod == 0 else 128)
+    dt.save_png(rgba, png)
+    out = OUT_DIR / f"{name}.t3x"
+    subprocess.run([str(TEX3DS), "-f", "rgba8", "-m", "box", "-z", "none", "-o", str(out), str(png)], check=True)
+    print(f"[export] {out} ({out.stat().st_size} bytes)")
+
+
 # ---------------------------------------------------------------------------------- main
 def export_form(form, lod):
     """LOD1 shares the skeleton, growth tables and part layout; only the mesh detail drops,
@@ -355,13 +409,15 @@ def export_form(form, lod):
     bone_index = {n: i for i, n in enumerate(order)}
     assert all(not n.startswith("wing") for n in order[:len(dm.BONES)]), "body bones must come first"
 
+    bake_skin(d, form, lod)
     meshes, sources = [], []
     meshes.append(skinned_mesh("body", KIND_BODY, GROUP["body"], 0, [d["body"]], bone_index,
-                               lambda n: not n.startswith("wing"), scale))
+                               lambda n: not n.startswith("wing"), scale, body_region))
     sources.append([d["body"]])
+    wings_region = dt.REGIONS.index("wings")
     for kind, objs in wings.items():
         meshes.append(skinned_mesh(f"wings_{kind}", KIND_WINGS, GROUP["wings"], WINGS[kind], objs, bone_index,
-                                   dm.wing_keep, scale))
+                                   dm.wing_keep, scale, lambda o, v: wings_region))
         sources.append(objs)
     for m in part_meshes(d, tagged, bone_index, scale):
         meshes.append(m)

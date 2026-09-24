@@ -113,6 +113,7 @@ void writeDragon(Writer& w, const Dragon& d) {
     w.f32v(d.dayLowestSum);
     w.f32v(d.dayHours);
     w.u8v(d.dayVisited);
+    for (float dust : d.dirt) w.u16v(static_cast<u16>(dust * 100.0f + 0.5f));  // hundredths (added 2026-09-24)
     w.patchU16(sizeAt, static_cast<u16>(w.pos() - start));
 }
 
@@ -156,6 +157,11 @@ bool readDragon(Reader& r, Dragon& d) {
     d.dayLowestSum = r.f32v();
     d.dayHours = r.f32v();
     d.dayVisited = r.u8v() != 0;
+    if (r.pos() + 2 * kRegionCount <= start + size)  // older records have no dirt: clean
+        for (float& dust : d.dirt) {
+            const float v = r.u16v() / 100.0f;
+            dust = v > 100.0f ? 100.0f : v;
+        }
     r.seek(start + size);  // skip fields from newer builds
 
     if (!inRange(plan, 2) || !inRange(sex, 2) || !inRange(personality, static_cast<u8>(Personality::Count)) ||

@@ -42,6 +42,8 @@ enum Palette : u8 {
 constexpr int kMaxPalette = 25;    // bones per draw call (vertex shader uniform budget)
 constexpr int kPaletteField = 32;  // palette bytes per mesh in the file (format version 2)
 constexpr int kMaxKeys = 4;
+constexpr float kCleanUv = 0.97f;  // the skin texture's clean corner (no pattern, detail 1)
+constexpr u8 kRegionClean = 8;     // a vertex that never gets dirty (parts, the egg)
 constexpr int kModelBuilds = 3;  // sturdy, sleek, long (genome Build order)
 
 struct MeshData {
@@ -56,6 +58,8 @@ struct MeshData {
     std::vector<Vec3> nrm;         // keyCount * vertexCount
     std::vector<u8> skin;          // 4 per vertex: bone0, bone1 (palette-local), w0, w1 (sum 255)
     std::vector<u8> paint;         // 4 per vertex: palette A, palette B, mix, emissive
+    std::vector<float> uv;         // 2 per vertex: the form's skin texture (v3); non-skin -> kCleanUv
+    std::vector<u8> region;        // 1 per vertex: body region for dirt (BodyRegion), kRegionClean if none
     std::vector<u16> indices;      // triangle list
 };
 

@@ -229,8 +229,8 @@ def decal_line(m, pts, width, bone, paint):
 
 
 def write_ecm(path, m):
-    """.ecm v1 (src/core/model.cpp), two bones and one body mesh."""
-    out = bytearray(b"ECM1" + struct.pack("<HH", 2, 2))  # version 2: 32-byte palettes
+    """.ecm v3 (src/core/model.cpp), two bones and one body mesh."""
+    out = bytearray(b"ECM1" + struct.pack("<HH", 3, 2))  # v2: 32-byte palettes; v3: UVs and regions
     for name, parent, z in (("root", -1, 0.0), ("cap", 0, SEAM * H)):
         out += struct.pack("<16sbB2x", name.encode(), parent, 0)
         for row in ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, z)):
@@ -251,6 +251,10 @@ def write_ecm(path, m):
         out += struct.pack("<4B", *s)
     for pt in m.paint:
         out += struct.pack("<4B", *pt)
+    # The dragon skin texture's clean corner and the never-dirty region (dragon_texture.py
+    # CLEAN_UV, REGION_CLEAN): the egg is shaded exactly as before.
+    out += struct.pack("<2f", 0.97, 0.97) * len(m.pos)
+    out += bytes([8] * len(m.pos))
     out += struct.pack(f"<{len(m.idx)}H", *m.idx)
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     Path(path).write_bytes(bytes(out))

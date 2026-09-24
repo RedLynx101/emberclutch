@@ -6,6 +6,8 @@
 ;     heartglow, eye glints, the egg's light).
 ;   * Outputs the view-space normal as a quaternion + the view vector for fragment
 ;     lighting (toon ramp LUT on L.N, rim from a Fresnel LUT on N.V).
+;   * texcoord0 = the skin texture UV; texcoord1 = (dust level / 255, 0.5) into the dust
+;     ramp texture, which hands the level back to the colour combiner (render3d).
 ; Uniform budget: 4 + 4 + 75 (25 bones) + 10 + 2 constants = 95 of 96 float registers.
 
 .fvec projection[4], modelView[4]
@@ -24,11 +26,15 @@
 .out outnq   normalquat
 .out outview view
 .out outclr  color
+.out outtc0  texcoord0
+.out outtc1  texcoord1
 
 .alias inpos   v0  ; float x3, model (armature) space
 .alias innrm   v1  ; float x3
 .alias inskin  v2  ; ubyte x4: bone0, bone1 (palette-local), w0, w1
 .alias inpaint v3  ; ubyte x4: palette A, palette B, mix, emissive
+.alias inuv    v4  ; float x2: skin texture UV
+.alias indust  v5  ; x = dust level 0..255 (the dragon's buffer, or a fixed value)
 
 .proc main
 	; a0.x = bone0 * 3, a0.y = bone1 * 3 (rows of the 3x4 bone matrices)
@@ -83,6 +89,12 @@
 	mul r10.y, inv255, inpaint.w
 	mul r8.w, r8.w, r10.y
 	mov outclr, r8
+
+	; texture coordinates: the skin, and the dust level as a ramp coordinate
+	mov outtc0, inuv
+	mul r11.x, inv255, indust.x
+	mov r11.y, half
+	mov outtc1, r11
 
 	; view-space normal -> quaternion (as in the devkitPro fragment_light example)
 	dp3 r14.x, modelView[0], r5

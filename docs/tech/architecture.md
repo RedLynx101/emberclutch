@@ -141,10 +141,20 @@ Fragment lighting (`src/app/render3d.cpp`): primary = a plum-tinted ambient; sec
 = specular 0 through lookup table D0 on L.N (the stepped **toon ramp**); secondary alpha =
 the Fresnel table on N.V (a thin **rim**). One directional light, fixed in view space.
 
-TEV: `(primary + secondary) x vertex colour + vertex colour x emissive + rim colour x rim`.
-The heartglow is emissive with a white-hot core (the exporter paints a radial glint→glow
-gradient) and pulses with mood. Scale detail arrives later as a grayscale texture
-multiplied in (after the R2 texturing review).
+**Skin texture and dust (R2, D46, D51).** Each body form has one baked RGBA texture
+(`romfs/models/<form>[_lod1]_skin.t3x`, 256² / 128² with mipmaps, from
+`tools/blender/dragon_texture.py`): R stripes, G spots, B dapple (3D procedurals baked
+through automatic UVs, so they run across seams), A scale detail × occlusion. Parts, wings
+and the egg sit on the texture's clean corner. Dust is per dragon: each body vertex has a
+region, and the renderer keeps a per-dragon stream of 4-byte dust levels (rebuilt only when
+the dirt changes) as vertex attribute 5; wings and parts use a fixed attribute value. The
+shader passes the level as texture coordinate 1 into a 256-texel ramp, so the combiner
+can read it.
+
+TEV (six stages): `albedo = lerp(vertex colour, pattern colour, skin[pattern channel])`
+→ `lerp(albedo, dust colour, dust)` → `× skin.a` → `× (primary + secondary)`, alpha = rim
+→ `+ vertex colour × emissive` → `+ rim colour × rim`. The heartglow is emissive with a
+white-hot core (the exporter paints a radial glint→glow gradient) and pulses with mood.
 
 ### Mixing citro3d with citro2d (as built in WP4)
 
@@ -231,8 +241,9 @@ generated WAVs --tools/audio/process_sfx.py (ffmpeg; sfx_manifest.json)--> romfs
 - **Why not glTF:** the growth tables, the per-stage surface-snapped part offsets, part
   variants and sex differences live in the Blender scene and have no glTF equivalent, so
   the exporter writes the game format directly.
-- **`.ecm` v2** (little-endian, read by `src/core/model.cpp`; v2 widened the bone palette
-  field to 32 bytes, of which at most 25 are used):
+- **`.ecm` v3** (little-endian, read by `src/core/model.cpp`; v2 widened the bone palette
+  field to 32 bytes, of which at most 25 are used; v3 added per-vertex skin UVs and body
+  regions after the paint):
   header `ECM1`, version, bone count; bones (name, parent, flags, 3x4 rest matrix);
   growth tables (bone scales at the form's t = 0, build multipliers, idle pose Euler XYZ,
   young head lift); meshes (name, kind body/wings/part, group, variant, sex, bone palette,

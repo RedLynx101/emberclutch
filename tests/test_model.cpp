@@ -75,6 +75,11 @@ TEST(model_loads_and_is_well_formed) {
         for (const MeshData& mesh : m.meshes) {
             CHECK(mesh.paletteCount <= kMaxPalette);
             CHECK(!mesh.indices.empty() && mesh.indices.size() % 3 == 0);
+            // Texture coordinates inside the texture; the body is textured, parts use the clean corner.
+            CHECK(mesh.uv.size() == std::size_t(mesh.vertexCount) * 2 && mesh.region.size() == mesh.vertexCount);
+            for (float t : mesh.uv) CHECK(t >= 0.0f && t <= 1.0f);
+            if (mesh.kind == kMeshPart)
+                for (int v = 0; v < mesh.vertexCount; ++v) CHECK(mesh.region[v] == kRegionClean);
             // Every vertex belongs to a triangle: a loose one still counts for floor contact.
             std::vector<bool> used(mesh.vertexCount, false);
             for (u16 ix : mesh.indices) used[ix] = true;

@@ -14,6 +14,20 @@ struct Needs {
 
 enum class Location : u8 { Den, Sanctuary, Vault /* eggs only */ };
 
+// Body regions for dirt (D46) and, later, shine (WP7 brushing). The model tags every body
+// vertex with one (tools/blender/dragon_model.py body_regions); the wings are one region.
+enum BodyRegion : u8 {
+    kRegionHead,
+    kRegionNeck,
+    kRegionBack,
+    kRegionBelly,
+    kRegionLeft,   // left flank and legs
+    kRegionRight,  // right flank and legs
+    kRegionTail,
+    kRegionWings,
+    kRegionCount,
+};
+
 struct Dragon {
     u32 id = 0;
     BodyPlan bodyPlan = BodyPlan::Draconic;
@@ -43,6 +57,7 @@ struct Dragon {
     bool upset = false;
     bool napping = false;
     float sulkyHours = 0;
+    float dirt[kRegionCount] = {};  // 0 clean .. 100 dusty, per body region (D46)
 
     // Current-day accounting for care stars
     s32 day = 0;
@@ -73,7 +88,9 @@ void markVisit(Dragon& d, s64 now);
 // Interactions (clamped, bond-aware). Amounts are need points.
 void feed(Dragon& d, float amount, bool favorite);
 void pet(Dragon& d, float amount);
-void groom(Dragon& d, float amount);
+void groom(Dragon& d, float amount);  // a quick groom: shine up, dust off every region
+void cleanRegion(Dragon& d, int region, float amount);  // brushing one region (WP7)
+void bathe(Dragon& d);                                   // the bath: every region clean
 void play(Dragon& d, float amount);
 void warmEgg(Dragon& d, float amount);
 // The make-up interaction completes: clears Upset.

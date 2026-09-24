@@ -47,13 +47,16 @@ RES = int(arg("--res", "560"))
 BREEDS = {
     "ember": dict(build="sturdy", horns="swept", frill="none", wings="classic", tail="spade",
                   base=(0.86, 0.30, 0.10), accent=(0.98, 0.84, 0.55), horn=(0.96, 0.74, 0.30),
-                  glow=(1.0, 0.55, 0.16), eye=(0.95, 0.62, 0.15)),
+                  glow=(1.0, 0.55, 0.16), eye=(0.95, 0.62, 0.15),
+                  pattern="stripes", pattern_color=(0.58, 0.16, 0.06)),
     "tide": dict(build="long", horns="nubs", frill="fin", wings="sail", tail="fan",
                  base=(0.10, 0.60, 0.62), accent=(0.70, 0.93, 0.86), horn=(0.62, 0.90, 0.85),
-                 glow=(0.35, 0.95, 0.85), eye=(0.20, 0.55, 0.85)),
+                 glow=(0.35, 0.95, 0.85), eye=(0.20, 0.55, 0.85),
+                 pattern="spots", pattern_color=(0.05, 0.36, 0.46)),
     "gale": dict(build="sleek", horns="swept", frill="feather", wings="plumed", tail="tuft",
                  base=(0.55, 0.72, 0.95), accent=(0.95, 0.97, 1.00), horn=(0.85, 0.92, 1.00),
-                 glow=(0.62, 0.92, 1.00), eye=(0.25, 0.45, 0.90)),
+                 glow=(0.62, 0.92, 1.00), eye=(0.25, 0.45, 0.90),
+                 pattern="dapple", pattern_color=(0.36, 0.50, 0.82)),
 }
 RIDGE_OF_FRILL = {"none": "spikes", "leaf": "spikes", "fin": "fin", "feather": "feather"}
 
@@ -61,6 +64,7 @@ RIDGE_OF_FRILL = {"none": "spikes", "leaf": "spikes", "fin": "fin", "feather": "
 # The bone layout (names, hierarchy, export order) lives in rig_layout.py, shared with the
 # animation tools, which run without Blender.
 from rig_layout import BONES, WING_BONES, WING_CHAIN  # noqa: E402
+import dragon_texture  # noqa: E402
 
 WING_DRAW_BODY_BONES = ("chest", "belly", "hips")  # the membrane's flank edge follows these
 # Classic bat-style wing in its own plane: u = out along the span, v = back along the chord.
@@ -1381,6 +1385,8 @@ def build_dragon(breed, form="grown"):
     weight_jaw(body)
     mouth_parts = build_mouth_parts(body, upper, lower, mats)
     build_mouth_pocket(body, upper, lower)
+    dragon_texture.tag_regions(body)  # dirt regions (D46), from the final weights
+    dragon_texture.unwrap(body)       # skin UVs; the texture is baked on demand (bake_skin)
 
     wings = build_wings(b["wings"], mats)
     for wobj in wings:
@@ -1665,6 +1671,14 @@ def main():
         pose_stage(built, t, built["breed"]["build"], sit="--sit" in argv)
         if arg("--jaw"):
             open_jaw(built, float(arg("--jaw")))
+        if "--texture" in argv and not built.get("skin_baked"):  # previews: the baked skin (R2)
+            rgba = dragon_texture.bake_skin(built["body"], form, 256)
+            b = built["breed"]
+            dragon_texture.preview_material(built["mats"]["body"], rgba, arg("--pattern", b["pattern"]),
+                                            b["pattern_color"], float(arg("--dirt", "0")))
+            built["skin_baked"] = True
+            if arg("--save-skin"):
+                dragon_texture.save_png(rgba, bpy.path.abspath(arg("--save-skin")))
         if arg("--blink"):  # previews: 0 open .. 1 shut, as the runtime does it
             built["arm"].pose.bones["eyes"].scale[2] *= 1.0 - BLINK_SQUASH * float(arg("--blink"))
             bpy.context.view_layer.update()

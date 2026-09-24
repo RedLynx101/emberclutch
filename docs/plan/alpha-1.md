@@ -77,8 +77,10 @@ While waiting on a review, work continues on the non-art packages (engine, save,
   - "A bit more cute" in general: ✅ blinking (D42): a blink every few seconds, eyes shut
     in sleep, a content squint while petted, a sleepy one while yawning, and a smile in
     the tail wag. Still open: softer expressions if R3 asks for them.
-  - Then texturing (the Pattern gene, scale detail, and **visible dirt** per body region
-    that grooming cleans, D46) → R2.
+  - ✅ Texturing ([R2](../art/reviews/R2-textures.md), D51): a baked skin per body form
+    (scale detail, occlusion, the Pattern gene's stripes / spots / dapple) and **visible
+    dust** per body region that grooming cleans (D46). In-game check in Azahar pending
+    (a full-screen overlay blocked screenshots on 2026-09-24).
 - *Verify:* script prints tris/bones per part vs budget; renders saved to `docs/art/`.
 
 ### WP3 — Converter and formats ⟂ WP2 ✅

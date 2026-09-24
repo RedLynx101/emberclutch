@@ -76,7 +76,7 @@ bool debugMenu(App& app, const Input& in) {
         {"+1 hour", 0},   {"+1 day", 1},     {"+7 days", 2},      {"Fill needs", 3},
         {"Drain needs", 4}, {"Hatch now", 5}, {"Next stage", 6},   {"Next breed", 10},
         {"Next activity", 12}, {"3-dragon test", 11}, {"Overlay", 7}, {"Save now", 8},
-        {"Reset save", 9},
+        {"Reset save", 9}, {"Dusty / bath", 13},
     };
     constexpr int kCount = sizeof(kItems) / sizeof(kItems[0]);
     for (int i = 0; i < kCount; ++i) {
@@ -95,6 +95,12 @@ bool debugMenu(App& app, const Input& in) {
             case 9: deleteGame(); app.game = SaveData{}; app.slots = SaveSlots{}; app.scene = SceneId::Title; app.devMenu = false; app.actorsReady = false; break;
             case 10: nextBreed(d, app.rng); break;
             case 11: app.denTest = !app.denTest; break;
+            case 13: {  // see the dust (D46) without waiting a day: all dusty, then a bath
+                const bool dusty = d.dirt[kRegionBack] > 50.0f;
+                if (dusty) bathe(d);
+                else for (float& dust : d.dirt) dust = 100.0f;
+                break;
+            }
             case 12: {  // every behavior state is reachable from here (WP5)
                 DenBehavior& b = app.actors[0].behavior;
                 b.force(static_cast<Activity>((static_cast<int>(b.activity) + 1) % static_cast<int>(Activity::Count)));

@@ -31,6 +31,8 @@ void PartsMesh::clear() {
     nrm.clear();
     skin.clear();
     paint.clear();
+    uv.clear();
+    region.clear();
     indices.clear();
 }
 
@@ -84,6 +86,8 @@ bool buildParts(const ModelData& m, const Genome& g, Sex sex, float t, PartsMesh
             out.skin.insert(out.skin.end(), {remap[sk[0]], remap[sk[1]], sk[2], sk[3]});
             const u8* pt = &mesh.paint[std::size_t(v) * 4];
             out.paint.insert(out.paint.end(), pt, pt + 4);
+            out.uv.insert(out.uv.end(), {mesh.uv[std::size_t(v) * 2], mesh.uv[std::size_t(v) * 2 + 1]});
+            out.region.push_back(mesh.region[v]);
         }
         for (u16 ix : mesh.indices) out.indices.push_back(static_cast<u16>(base + ix));
     }

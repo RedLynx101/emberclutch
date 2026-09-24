@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-24 — Texturing (R2)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D51 | **One baked skin texture per body form** (RGBA: stripes, spots, dapple, scale detail × occlusion) instead of per-part mask textures; the Pattern gene picks a channel on the GPU, and dust is a per-dragon vertex stream (8 regions) read through a ramp texture. `.ecm` v3 carries UVs and regions | One texture per form is cheap on the old 3DS (~0.9 MB for all four), needs no per-dragon texture work, and the combiner's six stages fit pattern, dust, detail, light, glow and rim exactly | Default (owner can change at R2 or R5) |
+
 ## 2026-09-24 — Alpha 2 order: the style review, the icon, working alone
 
 | # | Decision | Why | Status |

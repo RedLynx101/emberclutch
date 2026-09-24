@@ -19,7 +19,7 @@ bool loadModel(const u8* data, std::size_t size, ModelData& out) {
     char magic[4];
     c.bytes(magic, 4);
     if (!c.ok() || std::memcmp(magic, "ECM1", 4) != 0) return false;
-    if (c.u16v() != 2) return false;  // version
+    if (c.u16v() != 3) return false;  // version (3: UVs and body regions)
     const u16 boneCount = c.u16v();
     if (boneCount == 0 || boneCount > kMaxBones) return false;
 
@@ -81,6 +81,10 @@ bool loadModel(const u8* data, std::size_t size, ModelData& out) {
         c.bytes(m.skin.data(), m.skin.size());
         m.paint.resize(std::size_t(m.vertexCount) * 4);
         c.bytes(m.paint.data(), m.paint.size());
+        m.uv.resize(std::size_t(m.vertexCount) * 2);
+        for (float& t : m.uv) t = c.f32();
+        m.region.resize(m.vertexCount);
+        c.bytes(m.region.data(), m.region.size());
         m.indices.resize(indexCount);
         for (u16& ix : m.indices) ix = c.u16v();
         if (!c.ok()) return false;
@@ -88,6 +92,8 @@ bool loadModel(const u8* data, std::size_t size, ModelData& out) {
             if (m.skin[v * 4] >= m.paletteCount || m.skin[v * 4 + 1] >= m.paletteCount) return false;
         for (u16 ix : m.indices)
             if (ix >= m.vertexCount) return false;
+        for (u8 r : m.region)
+            if (r > kRegionClean) return false;
     }
     return c.ok();
 }

@@ -42,6 +42,9 @@ session, and add new decisions to the log.
   `blender -b -P tools/blender/den_model.py -- --out <abs>/romfs/models/den.esm` and
   `tools\test.ps1`. Previews from the game camera: `-- --render <abs prefix> --dragons --shot home`
   (one shot per Blender run: building several dragons in one session is less reliable).
+- Dragon textures: `export_dragon.py` bakes each form's skin (`dragon_texture.py`, Cycles)
+  and converts it with tex3ds into `romfs/models/*_skin.t3x`. Previews with the skin:
+  `dragon_model.py -- --texture [--dirt 1] [--pattern spots]`.
 - Egg: `python tools/blender/egg_model.py --out romfs/models/egg.ecm` (plain Python);
   previews with `blender -b -P tools/blender/egg_model.py -- --render <abs prefix>`.
 - Animations: edit `tools/anim/clips.py`, then `python tools/anim/build_anims.py` (writes

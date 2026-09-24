@@ -3,6 +3,7 @@
 #include <3ds.h>
 #include <citro2d.h>
 #include <citro3d.h>
+#include <tex3ds.h>
 
 #include <cmath>
 #include <cstdio>
@@ -26,14 +27,21 @@ namespace {
 constexpr float kDegToRad = 3.14159265f / 180.0f;
 constexpr float kFovY = 38.0f * kDegToRad;
 
-// Matches the attribute loaders below and the shader's inputs v0..v3.
+// Matches the attribute loaders below and the shader's inputs v0..v4 (v5, the dust level,
+// comes from a per-dragon buffer for the body and is a fixed value for everything else).
 struct GpuVertex {
     float pos[3];
     float nrm[3];
     u8 skin[4];   // bone0, bone1 (palette-local), w0, w1
     u8 paint[4];  // palette A, palette B, mix, emissive
+    float uv[2];  // the form's skin texture
 };
-static_assert(sizeof(GpuVertex) == 32, "shared with the shader's attribute layout");
+static_assert(sizeof(GpuVertex) == 40, "shared with the shader's attribute layout");
+
+// Dust (D46): a fully dirty region moves this far toward the dust colour (dragon_texture.py
+// DIRT_MAX, DIRT_COLOR).
+constexpr float kDirtMax = 0.4f;
+constexpr u32 kDirtColor = 0xFF758594;  // ABGR of (148, 133, 117)
 
 struct GpuMesh {
     GpuVertex* vbo = nullptr;  // linear memory, read by the GPU
@@ -63,8 +71,8 @@ struct GpuMesh {
 };
 
 // Copies CPU mesh arrays into a GPU mesh and flushes them out of the CPU cache.
-bool fill(GpuMesh& g, int n, const Vec3* pos, const Vec3* nrm, const u8* skin, const u8* paint, const u16* idx,
-          int idxCount, const u8* palette, u8 paletteCount) {
+bool fill(GpuMesh& g, int n, const Vec3* pos, const Vec3* nrm, const u8* skin, const u8* paint, const float* uv,
+          const u16* idx, int idxCount, const u8* palette, u8 paletteCount) {
     if (!g.reserve(n, idxCount)) return false;
     for (int v = 0; v < n; ++v) {
         GpuVertex& o = g.vbo[v];
@@ -72,6 +80,7 @@ bool fill(GpuMesh& g, int n, const Vec3* pos, const Vec3* nrm, const u8* skin, c
         o.nrm[0] = nrm[v].x, o.nrm[1] = nrm[v].y, o.nrm[2] = nrm[v].z;
         std::memcpy(o.skin, skin + std::size_t(v) * 4, 4);
         std::memcpy(o.paint, paint + std::size_t(v) * 4, 4);
+        o.uv[0] = uv[std::size_t(v) * 2], o.uv[1] = uv[std::size_t(v) * 2 + 1];
     }
     std::memcpy(g.ibo, idx, sizeof(u16) * idxCount);
     g.vertexCount = n;
@@ -84,8 +93,8 @@ bool fill(GpuMesh& g, int n, const Vec3* pos, const Vec3* nrm, const u8* skin, c
 }
 
 bool fillStatic(GpuMesh& g, const MeshData& m) {
-    return fill(g, m.vertexCount, m.pos.data(), m.nrm.data(), m.skin.data(), m.paint.data(), m.indices.data(),
-                static_cast<int>(m.indices.size()), m.palette, m.paletteCount);
+    return fill(g, m.vertexCount, m.pos.data(), m.nrm.data(), m.skin.data(), m.paint.data(), m.uv.data(),
+                m.indices.data(), static_cast<int>(m.indices.size()), m.palette, m.paletteCount);
 }
 
 bool readFile(const char* path, std::vector<u8>& out) {
@@ -101,8 +110,11 @@ bool readFile(const char* path, std::vector<u8>& out) {
 
 struct Form {
     ModelData model;
+    const MeshData* bodyData = nullptr;  // its vertex regions build each dragon's dust stream
     GpuMesh body;
     GpuMesh wings[kWingsCount];
+    C3D_Tex skin;                        // romfs:/models/<form>[_lod1]_skin.t3x
+    bool skinOk = false;
     int headBone = -1, chestBone = -1, eyesBone = -1;
     bool ok = false;
 };
@@ -123,7 +135,12 @@ struct Cache {
     float radius = 1;
     float groundNow = 0;       // this frame's (smoothed) floor contact under the animated pose
     bool groundSet = false;
+    u8* dust = nullptr;        // per body vertex: its region's dust level (4 bytes each, linear memory)
+    int dustCount = 0;
+    float dustShown[kRegionCount] = {};  // the levels in `dust` (-1: not built)
 };
+
+void updateDust(Cache& c, const Form& f, const Dragon& d);
 
 // The den room (WP6, romfs:/models/den.esm). Each attribute array has its own linear buffer,
 // so any two lighting sets can feed the static shader's colours A and B. The index list is
@@ -170,7 +187,12 @@ constexpr float kNestFloor = 0.07f;  // eggs sit on the egg nest's straw
 DVLB_s* g_dvlb = nullptr;
 shaderProgram_s g_program;
 int g_locProjection = -1, g_locModelView = -1, g_locBones = -1, g_locPalette = -1;
-C3D_AttrInfo g_attr;
+C3D_AttrInfo g_attr;       // the body: v5 (dust) from each dragon's buffer
+C3D_AttrInfo g_attrFixed;  // everything else: v5 fixed (the wings' dust, or none)
+int g_dustFixed = -1;      // that fixed attribute's index
+C3D_Tex g_dustRamp;        // 256x8 L8: texel i = i, so the dust stream (as u) reads back as a factor
+C3D_Tex g_cleanSkin;       // 8x8 white: stands in when a form's skin texture is missing
+bool g_texOk = false;
 DVLB_s* g_staticDvlb = nullptr;
 shaderProgram_s g_staticProgram;
 int g_locSProjection = -1, g_locSModelView = -1, g_locSBlend = -1, g_locSTint = -1;
@@ -231,11 +253,49 @@ float toonRamp(float x, float) { return x < 0.12f ? 0.0f : (x < 0.45f ? 0.62f : 
 // Rim on N.V: a thin bright band on the silhouette.
 float rimBand(float x, float) { return x < 0.28f ? 1.0f : (x < 0.38f ? 0.35f : 0.0f); }
 
-bool loadForm(const char* path, Form& f) {
+bool loadTexture(const char* path, C3D_Tex& tex) {
+    FILE* file = std::fopen(path, "rb");
+    if (!file) return false;
+    Tex3DS_Texture t3x = Tex3DS_TextureImportStdio(file, &tex, nullptr, false);
+    std::fclose(file);
+    if (!t3x) return false;
+    Tex3DS_TextureFree(t3x);
+    C3D_TexSetFilter(&tex, GPU_LINEAR, GPU_LINEAR);
+    C3D_TexSetFilterMipmap(&tex, GPU_LINEAR);
+    C3D_TexSetWrap(&tex, GPU_CLAMP_TO_EDGE, GPU_CLAMP_TO_EDGE);
+    return true;
+}
+
+// Texel (x, y) of an 8x8-tiled L8 texture (the GPU's Morton order inside each tile).
+std::size_t tiledIndex(int x, int y, int width) {
+    const int tile = (y / 8) * (width / 8) + x / 8;
+    int m = 0;
+    for (int b = 0; b < 3; ++b) m |= (((x >> b) & 1) << (2 * b)) | (((y >> b) & 1) << (2 * b + 1));
+    return std::size_t(tile) * 64 + m;
+}
+
+// The dust ramp and the clean stand-in skin (rgba8: no pattern in R, G, B; detail 1 in A).
+bool makeTextures() {
+    if (!C3D_TexInit(&g_dustRamp, 256, 8, GPU_L8) || !C3D_TexInit(&g_cleanSkin, 8, 8, GPU_RGBA8)) return false;
+    u8* ramp = static_cast<u8*>(g_dustRamp.data);
+    for (int y = 0; y < 8; ++y)
+        for (int x = 0; x < 256; ++x) ramp[tiledIndex(x, y, 256)] = static_cast<u8>(x);
+    C3D_TexFlush(&g_dustRamp);
+    C3D_TexSetFilter(&g_dustRamp, GPU_NEAREST, GPU_NEAREST);
+    C3D_TexSetWrap(&g_dustRamp, GPU_CLAMP_TO_EDGE, GPU_CLAMP_TO_EDGE);
+    u32* clean = static_cast<u32*>(g_cleanSkin.data);
+    for (int i = 0; i < 8 * 8; ++i) clean[i] = 0x000000FFu;  // GPU_RGBA8 texels are 0xRRGGBBAA
+    C3D_TexFlush(&g_cleanSkin);
+    return true;
+}
+
+bool loadForm(const char* path, const char* skinPath, Form& f) {
     std::vector<u8> bytes;
     if (!readFile(path, bytes) || !loadModel(bytes.data(), bytes.size(), f.model)) return false;
     const MeshData* body = f.model.findMesh(kMeshBody, kGroupBody, 0);
     if (!body || !fillStatic(f.body, *body)) return false;
+    f.bodyData = body;
+    f.skinOk = loadTexture(skinPath, f.skin);  // without it the dragons are plain, not broken
     for (const MeshData& m : f.model.meshes)
         if (m.kind == kMeshWings && m.variant < kWingsCount && !fillStatic(f.wings[m.variant], m)) return false;
     f.headBone = f.model.skel.find("head");
@@ -332,7 +392,7 @@ void refreshCache(Cache& c, const Dragon& d, const Growth& gr, int build, int lo
     c.valid = false;
     if (!buildParts(f.model, d.genome, d.sex, gr.t, g_parts)) return;
     if (!fill(c.parts, static_cast<int>(g_parts.pos.size()), g_parts.pos.data(), g_parts.nrm.data(),
-              g_parts.skin.data(), g_parts.paint.data(), g_parts.indices.data(),
+              g_parts.skin.data(), g_parts.paint.data(), g_parts.uv.data(), g_parts.indices.data(),
               static_cast<int>(g_parts.indices.size()), g_parts.palette, g_parts.paletteCount))
         return;
 
@@ -392,6 +452,7 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
     Cache* c = cacheFor(d, now, lod);
     if (!c) return false;
     const Form& f = g_forms[c->form][lod];
+    updateDust(*c, f, d);
     out.size = sizeScale(d.genome);
     out.scale = growthScale(growthFor(d.stage, stageProgress(d, now))) * out.size;
     out.pos = actor ? actor->behavior.pos : Vec2{};
@@ -451,27 +512,42 @@ Vec3 apply(const C3D_Mtx& m, Vec3 v) {
             m.r[2].x * v.x + m.r[2].y * v.y + m.r[2].z * v.z + m.r[2].w};
 }
 
+void dragonPattern(u8 pattern, Rgb color);
+
+// The dragon colour chain (architecture §4), texture 0 = the form's skin (R stripes, G
+// spots, B dapple, A scale detail), texture 1 = the dust ramp read at the dust stream:
+//   0: albedo = vertex colour, patterned (dragonPattern sets it per dragon)
+//   1: dusted: toward the dust colour by the dust level
+//   2: x scale detail
+//   3: lit: x (ambient + toon), alpha = rim (Fresnel)
+//   4: + vertex colour x emissive (vertex alpha): heartglow, eye glints
+//   5: + warm rim colour (per dragon, lightDragon) x rim; opaque
 void setupTexEnv() {
-    // 0: light = ambient + toon (primary + secondary); alpha = rim (Fresnel)
-    C3D_TexEnv* env = C3D_GetTexEnv(0);
+    C3D_TexEnv* env = C3D_GetTexEnv(1);
     C3D_TexEnvInit(env);
-    C3D_TexEnvSrc(env, C3D_RGB, GPU_FRAGMENT_PRIMARY_COLOR, GPU_FRAGMENT_SECONDARY_COLOR, GPU_PRIMARY_COLOR);
-    C3D_TexEnvFunc(env, C3D_RGB, GPU_ADD);
+    C3D_TexEnvSrc(env, C3D_RGB, GPU_CONSTANT, GPU_PREVIOUS, GPU_TEXTURE1);
+    C3D_TexEnvOpRgb(env, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_R);
+    C3D_TexEnvFunc(env, C3D_RGB, GPU_INTERPOLATE);
+    C3D_TexEnvColor(env, kDirtColor);
+    env = C3D_GetTexEnv(2);
+    C3D_TexEnvInit(env);
+    C3D_TexEnvSrc(env, C3D_RGB, GPU_PREVIOUS, GPU_TEXTURE0, GPU_PRIMARY_COLOR);
+    C3D_TexEnvOpRgb(env, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_ALPHA, GPU_TEVOP_RGB_SRC_COLOR);
+    C3D_TexEnvFunc(env, C3D_RGB, GPU_MODULATE);
+    env = C3D_GetTexEnv(3);
+    C3D_TexEnvInit(env);
+    C3D_TexEnvSrc(env, C3D_RGB, GPU_FRAGMENT_PRIMARY_COLOR, GPU_FRAGMENT_SECONDARY_COLOR, GPU_PREVIOUS);
+    C3D_TexEnvFunc(env, C3D_RGB, GPU_ADD_MULTIPLY);
     C3D_TexEnvSrc(env, C3D_Alpha, GPU_FRAGMENT_SECONDARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
     C3D_TexEnvFunc(env, C3D_Alpha, GPU_REPLACE);
-    // 1: x vertex colour (the dragon's palette)
-    env = C3D_GetTexEnv(1);
-    C3D_TexEnvInit(env);
-    C3D_TexEnvSrc(env, C3D_RGB, GPU_PREVIOUS, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
-    C3D_TexEnvFunc(env, C3D_RGB, GPU_MODULATE);
-    // 2: + vertex colour x emissive (vertex alpha): heartglow, eye glints
-    env = C3D_GetTexEnv(2);
+    env = C3D_GetTexEnv(4);
     C3D_TexEnvInit(env);
     C3D_TexEnvSrc(env, C3D_RGB, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PREVIOUS);
     C3D_TexEnvOpRgb(env, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_ALPHA, GPU_TEVOP_RGB_SRC_COLOR);
     C3D_TexEnvFunc(env, C3D_RGB, GPU_MULTIPLY_ADD);
-    // 3: + warm rim colour (set per dragon, lightDragon) x rim; opaque
-    env = C3D_GetTexEnv(3);
+    C3D_TexEnvSrc(env, C3D_Alpha, GPU_PREVIOUS, GPU_PREVIOUS, GPU_PREVIOUS);
+    C3D_TexEnvFunc(env, C3D_Alpha, GPU_REPLACE);
+    env = C3D_GetTexEnv(5);
     C3D_TexEnvInit(env);
     C3D_TexEnvSrc(env, C3D_RGB, GPU_CONSTANT, GPU_PREVIOUS, GPU_PREVIOUS);
     C3D_TexEnvOpRgb(env, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_ALPHA, GPU_TEVOP_RGB_SRC_COLOR);
@@ -479,8 +555,36 @@ void setupTexEnv() {
     C3D_TexEnvSrc(env, C3D_Alpha, GPU_CONSTANT, GPU_CONSTANT, GPU_CONSTANT);
     C3D_TexEnvFunc(env, C3D_Alpha, GPU_REPLACE);
     C3D_TexEnvColor(env, 0xFF28405A);  // ABGR: warm rim (90, 64, 40), alpha 255
-    C3D_TexEnvInit(C3D_GetTexEnv(4));
-    C3D_TexEnvInit(C3D_GetTexEnv(5));
+    dragonPattern(kPatternSolid, {0, 0, 0});
+}
+
+// Stage 0 for one dragon: its Pattern gene picks a skin channel and blends the pattern
+// colour in by it (Runes, until Alpha 2 draws them, and Solid show no pattern).
+void dragonPattern(u8 pattern, Rgb color) {
+    C3D_TexEnv* env = C3D_GetTexEnv(0);
+    C3D_TexEnvInit(env);
+    GPU_TEVOP_RGB channel;
+    switch (pattern) {
+        case kPatternStripes: channel = GPU_TEVOP_RGB_SRC_R; break;
+        case kPatternSpots: channel = GPU_TEVOP_RGB_SRC_G; break;
+        case kPatternDapple: channel = GPU_TEVOP_RGB_SRC_B; break;
+        default:
+            C3D_TexEnvSrc(env, C3D_Both, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
+            C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
+            return;
+    }
+    C3D_TexEnvSrc(env, C3D_RGB, GPU_CONSTANT, GPU_PRIMARY_COLOR, GPU_TEXTURE0);
+    C3D_TexEnvOpRgb(env, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_COLOR, channel);
+    C3D_TexEnvFunc(env, C3D_RGB, GPU_INTERPOLATE);
+    C3D_TexEnvSrc(env, C3D_Alpha, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
+    C3D_TexEnvFunc(env, C3D_Alpha, GPU_REPLACE);
+    C3D_TexEnvColor(env, 0xFF000000u | (u32(color.b) << 16) | (u32(color.g) << 8) | color.r);
+}
+
+// Binds a form's skin (or the clean stand-in) and the dust ramp.
+void bindSkin(const Form* f) {
+    C3D_TexBind(0, f && f->skinOk ? const_cast<C3D_Tex*>(&f->skin) : &g_cleanSkin);
+    C3D_TexBind(1, &g_dustRamp);
 }
 
 u8 toByte(float v) { return static_cast<u8>(v <= 0 ? 0 : (v >= 1 ? 255 : v * 255.0f + 0.5f)); }
@@ -494,7 +598,7 @@ void lightDragon(const DragonLight& light, const float local[3]) {
     C3D_LightSpecular0(&g_light, light.key[0] * local[0], light.key[1] * local[1], light.key[2] * local[2]);
     const u32 rim = 0xFF000000u | (u32(toByte(light.rim[2])) << 16) | (u32(toByte(light.rim[1])) << 8) |
                     toByte(light.rim[0]);  // ABGR
-    C3D_TexEnvColor(C3D_GetTexEnv(3), rim);
+    C3D_TexEnvColor(C3D_GetTexEnv(5), rim);
 }
 
 // The room's floor light near `at` for the time of day (0..1 per channel).
@@ -520,16 +624,70 @@ void localLight(Vec2 at, const DayBlend& b, float out[3]) {
     }
 }
 
-void drawMesh(App& app, const GpuMesh& g, const Mat34* skin) {
-    if (!g.vbo || g.indexCount == 0) return;
+// A dragon's dust level for one region, in the dust stream's units (0..255 = none..kDirtMax).
+float dustValue(const Dragon& d, int region) {
+    return region < kRegionCount ? d.dirt[region] * (255.0f / 100.0f) * kDirtMax : 0.0f;
+}
+
+// Rebuilds a dragon's per-vertex dust stream when its dirt has visibly changed.
+void updateDust(Cache& c, const Form& f, const Dragon& d) {
+    const MeshData* body = f.bodyData;
+    if (!body) return;
+    if (c.dustCount != body->vertexCount) {
+        if (c.dust) linearFree(c.dust);
+        c.dust = static_cast<u8*>(linearAlloc(std::size_t(body->vertexCount) * 4));
+        c.dustCount = c.dust ? body->vertexCount : 0;
+        for (float& s : c.dustShown) s = -1.0f;
+    }
+    if (!c.dust) return;
+    bool changed = false;
+    for (int r = 0; r < kRegionCount; ++r) changed |= std::fabs(d.dirt[r] - c.dustShown[r]) > 0.5f;
+    if (!changed) return;
+    for (int r = 0; r < kRegionCount; ++r) c.dustShown[r] = d.dirt[r];
+    for (int v = 0; v < body->vertexCount; ++v) {
+        u8* o = c.dust + std::size_t(v) * 4;
+        o[0] = static_cast<u8>(dustValue(d, body->region[v]) + 0.5f);
+        o[1] = o[2] = o[3] = 0;
+    }
+    GSPGPU_FlushDataCache(c.dust, std::size_t(c.dustCount) * 4);
+}
+
+void uploadBones(const GpuMesh& g, const Mat34* skin) {
     C3D_FVec* rows = C3D_FVUnifWritePtr(GPU_VERTEX_SHADER, g_locBones, g.paletteCount * 3);
     for (int i = 0; i < g.paletteCount; ++i) {
         const Mat34& m = skin[g.palette[i]];
         for (int r = 0; r < 3; ++r) rows[i * 3 + r] = FVec4_New(m.m[r][0], m.m[r][1], m.m[r][2], m.m[r][3]);
     }
+}
+
+// Draws a mesh whose dust level is one value for every vertex (wings, parts, the egg).
+void drawMesh(App& app, const GpuMesh& g, const Mat34* skin, float dust = 0.0f) {
+    if (!g.vbo || g.indexCount == 0) return;
+    uploadBones(g, skin);
+    C3D_SetAttrInfo(&g_attrFixed);
+    C3D_FixedAttribSet(g_dustFixed, dust, 0, 0, 0);
     C3D_BufInfo* buf = C3D_GetBufInfo();
     BufInfo_Init(buf);
-    BufInfo_Add(buf, g.vbo, sizeof(GpuVertex), 4, 0x3210);
+    BufInfo_Add(buf, g.vbo, sizeof(GpuVertex), 5, 0x43210);
+    C3D_DrawElements(GPU_TRIANGLES, g.indexCount, C3D_UNSIGNED_SHORT, g.ibo);
+    app.stats.tris += g.indexCount / 3;
+    app.stats.draws += 1;
+    if (g.paletteCount > app.stats.maxBonesPerDraw) app.stats.maxBonesPerDraw = g.paletteCount;
+}
+
+// Draws a dragon's body with its own dust stream (per-vertex, by region).
+void drawBody(App& app, const GpuMesh& g, const Mat34* skin, const Cache& c) {
+    if (!g.vbo || g.indexCount == 0) return;
+    if (!c.dust || c.dustCount != g.vertexCount) {  // no stream: clean
+        drawMesh(app, g, skin, 0.0f);
+        return;
+    }
+    uploadBones(g, skin);
+    C3D_SetAttrInfo(&g_attr);
+    C3D_BufInfo* buf = C3D_GetBufInfo();
+    BufInfo_Init(buf);
+    BufInfo_Add(buf, g.vbo, sizeof(GpuVertex), 5, 0x43210);
+    BufInfo_Add(buf, c.dust, 4, 1, 0x5);
     C3D_DrawElements(GPU_TRIANGLES, g.indexCount, C3D_UNSIGNED_SHORT, g.ibo);
     app.stats.tris += g.indexCount / 3;
     app.stats.draws += 1;
@@ -547,11 +705,17 @@ bool init() {
     g_locBones = shaderInstanceGetUniformLocation(g_program.vertexShader, "bones");
     g_locPalette = shaderInstanceGetUniformLocation(g_program.vertexShader, "palette");
 
-    AttrInfo_Init(&g_attr);
-    AttrInfo_AddLoader(&g_attr, 0, GPU_FLOAT, 3);          // position
-    AttrInfo_AddLoader(&g_attr, 1, GPU_FLOAT, 3);          // normal
-    AttrInfo_AddLoader(&g_attr, 2, GPU_UNSIGNED_BYTE, 4);  // skin
-    AttrInfo_AddLoader(&g_attr, 3, GPU_UNSIGNED_BYTE, 4);  // paint
+    for (C3D_AttrInfo* a : {&g_attr, &g_attrFixed}) {
+        AttrInfo_Init(a);
+        AttrInfo_AddLoader(a, 0, GPU_FLOAT, 3);          // position
+        AttrInfo_AddLoader(a, 1, GPU_FLOAT, 3);          // normal
+        AttrInfo_AddLoader(a, 2, GPU_UNSIGNED_BYTE, 4);  // skin
+        AttrInfo_AddLoader(a, 3, GPU_UNSIGNED_BYTE, 4);  // paint
+        AttrInfo_AddLoader(a, 4, GPU_FLOAT, 2);          // skin texture UV
+    }
+    AttrInfo_AddLoader(&g_attr, 5, GPU_UNSIGNED_BYTE, 4);  // dust level (the dragon's own buffer)
+    g_dustFixed = AttrInfo_AddFixed(&g_attrFixed, 5);
+    g_texOk = makeTextures();
 
     g_staticDvlb = DVLB_ParseFile(reinterpret_cast<u32*>(const_cast<u8*>(static_shbin)), static_shbin_size);
     shaderProgramInit(&g_staticProgram);
@@ -579,10 +743,13 @@ bool init() {
     C3D_FVec lightDir = FVec4_New(-0.45f, 0.8f, 0.4f, 0.0f);  // view space, directional (w = 0)
     C3D_LightPosition(&g_light, &lightDir);
 
-    g_ready = loadForm("romfs:/models/hatchling.ecm", g_forms[kFormHatchling][0]) &&
-              loadForm("romfs:/models/hatchling_lod1.ecm", g_forms[kFormHatchling][1]) &&
-              loadForm("romfs:/models/grown.ecm", g_forms[kFormGrown][0]) &&
-              loadForm("romfs:/models/grown_lod1.ecm", g_forms[kFormGrown][1]);
+    g_ready = g_texOk &&
+              loadForm("romfs:/models/hatchling.ecm", "romfs:/models/hatchling_skin.t3x",
+                       g_forms[kFormHatchling][0]) &&
+              loadForm("romfs:/models/hatchling_lod1.ecm", "romfs:/models/hatchling_lod1_skin.t3x",
+                       g_forms[kFormHatchling][1]) &&
+              loadForm("romfs:/models/grown.ecm", "romfs:/models/grown_skin.t3x", g_forms[kFormGrown][0]) &&
+              loadForm("romfs:/models/grown_lod1.ecm", "romfs:/models/grown_lod1_skin.t3x", g_forms[kFormGrown][1]);
     if (g_ready) g_adultRadius = framingRadius(g_forms[kFormGrown][0].model, 1.0f, kBuildNeutral, nullptr, nullptr);
     if (g_ready) {
         std::vector<u8> bytes;
@@ -601,10 +768,20 @@ void shutdown() {
         for (Form& f : lods) {
             f.body.release();
             for (GpuMesh& w : f.wings) w.release();
+            if (f.skinOk) C3D_TexDelete(&f.skin);
+            f.skinOk = false;
         }
     for (Cache& c : g_caches) {
         c.parts.release();
+        if (c.dust) linearFree(c.dust);
+        c.dust = nullptr;
+        c.dustCount = 0;
         c.valid = false;
+    }
+    if (g_texOk) {
+        C3D_TexDelete(&g_dustRamp);
+        C3D_TexDelete(&g_cleanSkin);
+        g_texOk = false;
     }
     g_room.release();
     g_egg.shell.release();
@@ -642,6 +819,7 @@ void bindDragons(const C3D_Mtx& projection) {
 // Hands the GPU back to citro2d.
 void end3D() {
     C3D_LightEnvBind(nullptr);
+    C3D_TexBind(1, nullptr);
     for (int i = 0; i < 6; ++i) C3D_TexEnvInit(C3D_GetTexEnv(i));
     C2D_Prepare();
     prepare2D();
@@ -705,10 +883,12 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
     for (int i = 0; i < kPalCount; ++i)
         C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, pal[i].r / 255.0f, pal[i].g / 255.0f, pal[i].b / 255.0f,
                       1.0f);
-    drawMesh(app, p.form->body, p.skin);
+    bindSkin(p.form);
+    dragonPattern(d.genome.pattern, pal[kPalPattern]);
+    drawBody(app, p.form->body, p.skin, *p.cache);
     drawMesh(app, p.cache->parts, p.skin);
     if (const MeshData* wings = selectWings(p.form->model, d.genome))
-        drawMesh(app, p.form->wings[wings->variant], p.skin);
+        drawMesh(app, p.form->wings[wings->variant], p.skin, dustValue(d, kRegionWings));
 }
 
 // An egg: its palette with each slot's glow in the alpha, rocking and cap from its motion,
@@ -727,6 +907,8 @@ void submitEgg(App& app, const Dragon& d, const EggMotion& motion, const C3D_Mtx
     for (int i = 0; i < kPalCount; ++i)
         C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, pal[i].r / 255.0f, pal[i].g / 255.0f, pal[i].b / 255.0f,
                       glow[i]);
+    bindSkin(nullptr);  // the shell sits on the clean corner: no pattern, no dust
+    dragonPattern(kPatternSolid, {0, 0, 0});
     drawMesh(app, g_egg.shell, skin);
 }
 

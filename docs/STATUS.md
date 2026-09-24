@@ -8,7 +8,7 @@
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D50 recorded ([log](plan/decisions.md)); nothing open.
+  Decisions D1–D51 recorded ([log](plan/decisions.md)); nothing open.
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
   [Alpha 1 plan](plan/alpha-1.md), [Alpha 2 plan](plan/alpha-2.md) (draft: the style review
   R5, the emblem icon and a 3D HOME Menu banner, D47–D50). New specs (2026-09-24): [hands-on care](design/care-interactions.md)
@@ -40,8 +40,10 @@
   with warmth, and three stages of glowing cracks appear in the last stretch (sounds on
   each). **Cuteness pass** (Noah, 2026-09-24): bird-like folded wings with membranes that
   follow the fingers, the chest heart clear of the body, an opening mouth with teeth and a
-  tongue (D41), a centred puppy tail wag, blinking eyes that shut in sleep (D42). Still to
-  do: texturing (review R2, not blocking).
+  tongue (D41), a centred puppy tail wag, blinking eyes that shut in sleep (D42), the
+  walking limp fixed. **Textured** (review [R2](art/reviews/R2-textures.md) sent, D51): a baked
+  skin per body form with scale detail and the Pattern gene, and visible dust per body region
+  (D46). In-game texture check in Azahar still to do.
 - ✅ **WP4 renderer:** `dragon.v.pica` (2-bone skinning, palette colours, fragment-light
   outputs) and `render3d` (toon ramp + rim + emissive heartglow with a white-hot core;
   citro3d inside citro2d scenes). Den camera, a bottom-screen petting close-up, per-dragon
@@ -88,7 +90,7 @@
 
 ## Next actions
 1. ✅ **The walking limp** (fixed 2026-09-24: a stray vertex under the grown body).
-2. **WP2 texturing** → review R2 (the Pattern gene, scale detail). Not blocking.
+2. ✅ **WP2 texturing** (R2 sent). Check it in Azahar when the screen is free.
 3. **WP7 hands-on care**, the big one: [care interactions](design/care-interactions.md)
    (petting with the hand and a sweet spot, brushing and polishing with shine regions,
    bath, hand-feeding into the jaw, fetch with ball physics, calling), then egg turning

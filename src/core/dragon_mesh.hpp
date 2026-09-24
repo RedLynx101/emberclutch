@@ -17,6 +17,8 @@ struct PartsMesh {
     u8 palette[kMaxPalette] = {};
     std::vector<Vec3> pos, nrm;
     std::vector<u8> skin, paint;  // 4 bytes per vertex each (as in MeshData)
+    std::vector<float> uv;        // 2 per vertex
+    std::vector<u8> region;       // 1 per vertex
     std::vector<u16> indices;
     void clear();
 };

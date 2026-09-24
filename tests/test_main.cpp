@@ -307,6 +307,7 @@ static SaveData& sampleSave() {
             tryHatch(d, kT0 + kHour, rng);
             simulate(d, kT0 + kHour, kT0 + (i + 1) * kDay);
             pet(d, 5);
+            for (float& dust : d.dirt) dust = std::round(dust * 100.0f) / 100.0f;  // saved in hundredths
         }
         std::snprintf(d.name, sizeof(d.name), "Drake%d", i);
         d.motherId = i;
@@ -322,7 +323,34 @@ static bool sameDragon(const Dragon& a, const Dragon& b) {
            a.location == b.location && a.hatchedAt == b.hatchedAt && a.needs.belly == b.needs.belly &&
            a.needs.play == b.needs.play && a.bond == b.bond && a.careStars == b.careStars &&
            a.personality == b.personality && a.warmth == b.warmth && a.dayLowestSum == b.dayLowestSum &&
-           a.upset == b.upset && a.napping == b.napping;
+           a.upset == b.upset && a.napping == b.napping &&
+           std::memcmp(a.dirt, b.dirt, sizeof(a.dirt)) == 0;
+}
+
+// Dust settles over a day or two, faster on the belly than the wings; grooming, brushing a
+// region and the bath clear it; Sanctuary keepers keep it low (D46).
+TEST(dirt_settles_and_grooming_clears_it) {
+    Rng rng(5);
+    Dragon d = makeEgg(1, makePurebred(Element::Ember, rng), Sex::Female, kT0);
+    d.incubationSeconds = kIncubationSeconds;
+    tryHatch(d, kT0 + 8 * kHour, rng);
+    for (float dust : d.dirt) CHECK(dust == 0.0f);
+    simulate(d, kT0 + 8 * kHour, kT0 + 32 * kHour);  // a day
+    std::printf("  after a day: belly %.0f, back %.0f, wings %.0f\n", d.dirt[kRegionBelly], d.dirt[kRegionBack],
+                d.dirt[kRegionWings]);
+    CHECK(d.dirt[kRegionBelly] > 60 && d.dirt[kRegionBelly] < 100);
+    CHECK(d.dirt[kRegionWings] > 25 && d.dirt[kRegionWings] < d.dirt[kRegionBelly]);
+    simulate(d, kT0 + 32 * kHour, kT0 + 80 * kHour);  // two more days: fully dusty
+    CHECK(d.dirt[kRegionBack] == 100.0f);
+    cleanRegion(d, kRegionBack, 60);
+    CHECK(d.dirt[kRegionBack] == 40.0f && d.dirt[kRegionBelly] == 100.0f);
+    groom(d, 40);
+    CHECK(d.dirt[kRegionBack] == 0.0f && d.dirt[kRegionBelly] == 40.0f);
+    bathe(d);
+    for (float dust : d.dirt) CHECK(dust == 0.0f);
+    d.location = Location::Sanctuary;
+    simulate(d, kT0 + 80 * kHour, kT0 + 104 * kHour);
+    CHECK(d.dirt[kRegionBelly] < 10.0f);
 }
 
 TEST(save_round_trip) {
@@ -330,7 +358,7 @@ TEST(save_round_trip) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 2 + 4 + 2 + 2 + 5 * (132 + 2));  // exact v1 layout
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 2 + 4 + 2 + 2 + 5 * (132 + 16 + 2));  // v1 + dirt
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
@@ -412,6 +440,7 @@ int main() {
     RUN(light_care_grows_slower_but_still_grows);
     RUN(neglect_upsets_but_never_harms);
     RUN(sanctuary_keeps_needs_safe);
+    RUN(dirt_settles_and_grooming_clears_it);
     RUN(body_scale_grows_every_day);
     RUN(breeding_needs_one_male_and_one_female);
     RUN(breeding_requirements);

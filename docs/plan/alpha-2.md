@@ -4,7 +4,7 @@ Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 done: the den of three 
 and two eggs (D53), and their life together. WP2 done (the Sanctuary and Cold Vault), with
 a first world map. WP3 done (breeding at the Nesting Stone). WP4 done (the Wanderings).
 WP5 done (the Market, Gleam and the pouch). WP6 done (the map's trips). WP7 done (toys and
-decor). WP8 done (the profile and family tree). WP9 done (brief 2's sounds wired, stand-ins until they arrive). WP10 done (the emblem icon and the 3D banner). **R5 decided (D54): all four looks ship, per dragon; details being settled with Noah.** Goal (D31): complete through Alpha 2. Scope and assets:
+decor). WP8 done (the profile and family tree). WP9 done (brief 2's sounds wired, stand-ins until they arrive). WP10 done (the emblem icon and the 3D banner). **R5 decided (D54): all four looks ship, per dragon.** Next: a first look on Noah's old 3DS (D55), then WP12. Goal (D31): complete through Alpha 2. Scope and assets:
 [content & assets](content-and-assets.md) (A2 rows); screens: [screens & flow](../design/screens-and-flow.md).
 
 **The order matters** (Noah, 2026-09-24): everything that doesn't depend on how the
@@ -221,15 +221,27 @@ budgets and animated by the same clips.
 
 ## Phase C — after the decision
 
+### WP11b — A first look on the old 3DS (D55, before WP12)
+- Noah installs a dev CIA and reads the budget overlay with a full den, with every look's
+  models in memory at once (dev menu: Probe: all looks), and tries the 3D banner in the real
+  HOME Menu: [hardware-check-1.md](hardware-check-1.md). Emulator: all four looks cost about
+  3.4 MB of linear memory (21.4 → 18.0 MB free), the full den holds 16.7 ms.
+
 ### WP12 — The dragons update: every look, every breed (D54)
-- **Looks per dragon (D54):** the current look and V1–V3 all ship. A look is part of each
-  dragon (saved; how it's inherited is open), drawn by its own forms and shading: the
-  renderer keeps each look's forms loaded (or loads them as the den needs them) and sets the
-  shading per draw instead of per style. Every breed has at least four looks with cute
-  names: three common (~30% each) and a rarer **wild** look (≤ 10%, planned 8%); the Ember's
-  wild look is V3, each other breed gets its own. The look shows on the profile and in the
-  hatching. The dev menu's style switch becomes a "force look" for reviews.
-- Memory and frame budgets measured with mixed looks in the den (three dragons, three looks).
+- **Looks per dragon (D54):** the current look and V1–V3 all ship. A look gene per dragon
+  (saved), inherited with surprises (50/50 a parent's, sometimes random; wild 8% by base
+  odds, about 25% with a wild parent). Each look is drawn by its own forms and shading (the
+  renderer keeps each look's forms loaded and sets the ramps and the veins' stage per draw).
+  Names: Classic, Pebbleback, Tallneck + breed, and a wild name per element (Cinderveined,
+  Glimmertide, Stormstreak, Mossglow, Rimelight, Starveined; hybrids follow their base
+  element). Wild looks for the other five elements, each its element glowing through the
+  cracks. Revealed and named in the hatching; a wild egg's shell has a faint glowing crack
+  pattern. The profile shows the look; the dev menu's style switch becomes "force look".
+- **The Dragondex (D55):** every breed × look (84) plus the rare traits, filled in as you
+  hatch or meet them; small rewards for completing a breed.
+- **Photo mode (D55):** hide the UI, freeze the den, save a framed picture to the SD card.
+- Memory and frame budgets measured with mixed looks in the den (three dragons, three looks),
+  against the numbers from the first hardware look.
 - The full parts library: horns (Crown, Crystal, Antler), frill (Leaf), tail tip (Plain),
   patterns (Solid, Runes), rare-trait looks (Iridescent, Melanistic, Leucistic,
   Starspeckle); all 6 base breeds and 15 hybrids; egg shells for all 6 elements.

@@ -154,6 +154,7 @@ bool debugMenu(App& app, const Input& in) {
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
         {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26}, {"Next style (R5)", 27},
+        {"Probe: all looks", 28},
     };
     const Entry* items = app.devPage ? kPage2 : kPage1;
     const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
@@ -197,6 +198,14 @@ bool debugMenu(App& app, const Input& in) {
                 }
                 break;
             case 26: devAddFamily(app); break;
+            case 28: {  // before WP12 (D54): every look's models in memory at once, measured
+                const float before = linearSpaceFree() / 1048576.0f;
+                const bool on = r3d::probeAllLooks();
+                char msg[64];
+                std::snprintf(msg, sizeof(msg), "%.1f -> %.1f MB linear free", before, linearSpaceFree() / 1048576.0f);
+                showToastf(app, on ? "All looks loaded: %s" : "Probe released: %s", msg);
+                break;
+            }
             case 27: {  // review R5 (D47): the current look and the three variants, in turn
                 const int next = (r3d::style() + 1) % r3d::kStyleCount;
                 showToastf(app, r3d::setStyle(next) ? "Style: %s" : "Style %s: models missing", r3d::styleName(next));

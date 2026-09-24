@@ -93,6 +93,9 @@ constexpr int kStyleCount = 4;
 bool setStyle(int style);
 int style();
 const char* styleName(int style);
+// Dev (D54, before WP12): the other looks' forms loaded as well, as a den of mixed looks will
+// need, so the budget overlay shows the memory on the hardware. Toggles; true while loaded.
+bool probeAllLooks();
 // The den camera watches this point too (a thrown ball) while `weight` > 0.
 void followInDen(Vec3 at, float weight);
 

@@ -1723,17 +1723,23 @@ void setDenThings(const DenThings* things) { g_things = things; }
 
 namespace {
 
+void releaseForm(Form& f) {
+    f.body.release();
+    for (GpuMesh& w : f.wings) w.release();
+    if (f.skinOk) C3D_TexDelete(&f.skin);
+    f.skinOk = false;
+    f.ok = false;
+    f.model = ModelData{};
+}
+
 void releaseForms() {
     for (auto& lods : g_forms)
-        for (Form& f : lods) {
-            f.body.release();
-            for (GpuMesh& w : f.wings) w.release();
-            if (f.skinOk) C3D_TexDelete(&f.skin);
-            f.skinOk = false;
-            f.ok = false;
-        }
+        for (Form& f : lods) releaseForm(f);
     for (Cache& c : g_caches) c.valid = false;  // every dragon is rebuilt from the new forms
 }
+
+Form g_probe[kStyleCount][kFormCount][2];  // probeAllLooks
+bool g_probing = false;
 
 bool loadForms(int s) {
     auto one = [s](const char* form, int lod, Form& f) {
@@ -1772,6 +1778,26 @@ bool setStyle(int s) {
 }
 
 int style() { return g_style; }
+
+bool probeAllLooks() {
+    for (auto& forms : g_probe)
+        for (auto& lods : forms)
+            for (Form& f : lods) releaseForm(f);
+    g_probing = !g_probing;
+    if (!g_probing) return false;
+    for (int s = 0; s < kStyleCount; ++s) {
+        if (s == g_style) continue;  // already loaded
+        for (int form = 0; form < kFormCount; ++form)
+            for (int lod = 0; lod < 2; ++lod) {
+                char ecm[64], skin[64];
+                const char* name = form == kFormHatchling ? "hatchling" : "grown";
+                std::snprintf(ecm, sizeof(ecm), "%s%s%s.ecm", kStyleDir[s], name, lod ? "_lod1" : "");
+                std::snprintf(skin, sizeof(skin), "%s%s%s_skin.t3x", kStyleDir[s], name, lod ? "_lod1" : "");
+                loadForm(ecm, skin, g_probe[s][form][lod]);
+            }
+    }
+    return true;
+}
 
 const char* styleName(int s) {
     static const char* const kNames[kStyleCount] = {"current", "V1 surface", "V2 shape", "V3 bold"};

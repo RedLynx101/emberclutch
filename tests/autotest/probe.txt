@@ -1,0 +1,41 @@
+# Before WP12 (D54): every look's models in memory at once (dev menu page 2: Probe: all
+# looks), with a full den and the budget overlay, then released again.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+tap 82 206
+wait 0.3
+key R
+wait 0.3
+tap 82 131
+wait 0.6
+key SELECT
+overlay on
+wait 3
+shot p1-all-looks-loaded
+key SELECT
+wait 0.3
+tap 82 131
+wait 0.6
+key SELECT
+wait 2
+shot p2-released
+quit

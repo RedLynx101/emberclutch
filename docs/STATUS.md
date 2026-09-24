@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon**
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · waiting on the first 3DS look (D55)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -133,9 +133,10 @@ after each. Stops:
   haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
-- **D54's details** (asked 2026-09-24): how looks pass to eggs, the other five breeds' wild
-  looks, the looks' names, when an egg's look is revealed. They shape WP12 (the dragons
-  update), which comes next; then the old 3DS run (D34) and the Alpha 2 tag.
+- **A first look on the old 3DS** ([steps](plan/hardware-check-1.md), D55): install the dev
+  CIA (`build/cia-test/`), read the budget with a full den and with every look in memory,
+  try the 3D banner. Then WP12 (looks per dragon, the Dragondex, the parts library, all 21
+  breeds, photo mode), the full hardware run (D34) and the Alpha 2 tag.
 - Sound brief 2 (`docs/audio/sfx-batch-2.md`): nothing waits on it (stand-ins play).
 - Whenever convenient: the [sound brief 2](audio/sfx-batch-2.md) (hands-on care and
   Alpha 2 sounds); a listen to the new sounds, the two UI chimes and the Market loop seam

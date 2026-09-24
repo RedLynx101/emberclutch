@@ -31,8 +31,11 @@ int standIns(const Dragon& d, const Dragon** out) {
     static Dragon extra[2];
     for (int i = 0; i < 2; ++i) {
         Rng rng(40 + i);
-        extra[i] = d;
+        extra[i] = d;  // same stage, but content and awake by day: they get on with their own lives
         extra[i].id = 0xFFFFFF01u + i;
+        extra[i].upset = false;
+        extra[i].napping = false;
+        extra[i].needs = Needs{80, 80, 80, 80};
         extra[i].genome = makePurebred(static_cast<Element>((d.genome.elementA + 1 + i) % 3), rng);
         extra[i].sex = i == 0 ? Sex::Female : Sex::Male;
         out[i] = &extra[i];
@@ -120,9 +123,9 @@ void denLife(App& app, s64 now) {
     if (!lib || d.stage == Stage::Egg) return;
     const DenLayout den;
     if (!app.actorsReady) {
-        app.actors[0].reset(den, d.id * 2654435761u + 17);
-        app.actors[1].reset(den, 101);
-        app.actors[2].reset(den, 202);
+        app.actors[0].reset(den, d.id * 2654435761u + 17, 0);  // yours: the big nest, the nook
+        app.actors[1].reset(den, 101, 1);
+        app.actors[2].reset(den, 202, 2);
         app.actors[1].behavior.pos = {-1.9f, 1.0f};
         app.actors[2].behavior.pos = {2.0f, 1.3f};
         app.actors[0].behavior.care(Care::Greet, d);  // hello!
@@ -130,6 +133,8 @@ void denLife(App& app, s64 now) {
     }
     const bool night = isNight(now);
     u8 events[8];
+    DenBehavior* crowd[3] = {&app.actors[0].behavior, &app.actors[1].behavior, &app.actors[2].behavior};
+    shareCrowd(crowd, app.denTest ? 3 : 1);  // they walk around each other
     matchSpeeds(app.actors[0], d, now);
     const int n = app.actors[0].update(d, night, moveScaleOf(d, now), app.dt, *lib, clipsFor(d, now), events, 8);
     for (int i = 0; i < n; ++i) playEventSound(events[i], d, now);

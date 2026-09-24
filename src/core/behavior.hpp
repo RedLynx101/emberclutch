@@ -21,10 +21,14 @@ struct DenObstacle {
 // keep them in sync (tests/test_den.cpp checks the two against each other).
 struct DenLayout {
     static constexpr int kObstacles = 3;
-    float radius = 6.0f;          // walkable circle around home (the room's walls stand at 9.5)
-    Vec2 napSpot{4.4f, 3.6f};     // the sleeping nest
+    static constexpr int kSpots = 3;  // a bed and a sulking spot for each den dragon
+    float radius = 6.0f;              // walkable circle around home (the room's walls stand at 9.5)
+    // Beds: [0] the big nest by the hearth, then two straw beds. Sulking spots: [0] the nook,
+    // a shadowy alcove among rocks (a sulking dragon faces +Y, back to the player), then
+    // two quiet corners.
+    Vec2 beds[kSpots] = {{4.4f, 3.6f}, {-0.6f, 5.4f}, {2.8f, -3.2f}};
+    Vec2 sulkSpots[kSpots] = {{-4.6f, 3.0f}, {-5.6f, 0.0f}, {-4.0f, -3.0f}};
     Vec2 eggNest{5.4f, -1.6f};    // the egg nest, warm by the hearth
-    Vec2 sulkNook{-4.6f, 3.0f};   // a shadowy alcove (a sulking dragon faces the rocks, +Y)
     Vec2 home{0.0f, 0.6f};        // the rug: where it greets you and eats
     Vec2 hearth{7.9f, 0.8f};
     Vec2 hoard{2.4f, 7.4f};
@@ -77,10 +81,14 @@ struct DenBehavior {
     // dragon's body, so its feet stay planted (see locomotionSpeed in core/den_actor).
     float walkSpeed = 0.55f, trotSpeed = 1.8f;
     float size = 1.0f;  // the last moveScale: how much room the body needs around obstacles
+    u8 spot = 0;        // which bed and sulking spot are its own (its place in the den)
+    // The other den dragons, set each frame by shareCrowd: it walks around them too.
+    DenObstacle crowd[DenLayout::kSpots - 1];
+    int crowdCount = 0;
     DenLayout den;
     Rng rng{1};
 
-    void reset(const DenLayout& layout, u32 seed);
+    void reset(const DenLayout& layout, u32 seed, int spot = 0);
     // Advances by dt seconds. moveScale: the dragon's size relative to an adult (leaps and
     // arrival distances scale with it; walking uses walkSpeed / trotSpeed).
     void update(const Dragon& d, bool night, float moveScale, float dt);
@@ -92,7 +100,7 @@ struct DenBehavior {
     // none while eating, sleeping or sulking.
     float lookWeight() const;
     // True if a dragon of this size can stand at p / walk straight from a to b without
-    // touching an obstacle.
+    // touching an obstacle or another dragon.
     bool clearAt(Vec2 p, float margin) const;
     bool clearPath(Vec2 a, Vec2 b, float margin) const;
 
@@ -104,5 +112,9 @@ private:
     bool turnTo(float goal, float dt);  // shuffles in place; true when facing it
     void setClip(ClipId c, float crossfade = 0.25f, bool restart = false);
 };
+
+// Tells each den dragon where the others are, so they walk around each other. Call once a
+// frame before updating them.
+void shareCrowd(DenBehavior* const* dragons, int count);
 
 }  // namespace ec

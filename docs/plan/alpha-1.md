@@ -52,6 +52,13 @@ While waiting on a review, work continues on the non-art packages (engine, save,
 - As built so far: both body forms approved (D36–D39); the egg model
   (`tools/blender/egg_model.py`, two bones, three crack stages, 948 triangles). Left:
   texturing → R2.
+- **Cuteness pass** (Noah, 2026-09-24, after seeing the den in the emulator):
+  - ✅ Folded wings tuck like a bird's (a Z: upper arm up, forearm down and forward, hand
+    back), clear of the spine; solved from bone directions (`tools/blender/fold_solver.py`).
+  - An animated mouth: a jaw that opens for eating, yawning, greeting and happy panting,
+    with little teeth lining it and a small tongue.
+  - "A bit more cute" in general (candidates: blinking, softer expressions).
+  - Then texturing (the Pattern gene, scale detail) → R2.
 - *Verify:* script prints tris/bones per part vs budget; renders saved to `docs/art/`.
 
 ### WP3 — Converter and formats ⟂ WP2 ✅

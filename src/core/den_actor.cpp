@@ -54,8 +54,8 @@ float locomotionSpeed(const ModelData& m, const AnimBinding& bind, const AnimCli
     return speed > 0 ? speed : clip.speed;
 }
 
-void DenActor::reset(const DenLayout& den, u32 seed) {
-    behavior.reset(den, seed);
+void DenActor::reset(const DenLayout& den, u32 seed, int spot) {
+    behavior.reset(den, seed, spot);
     anim = Animator{};
     playedSerial = 0xFFFF;
     speedForm = -1;

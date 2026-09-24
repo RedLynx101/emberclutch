@@ -13,6 +13,7 @@ constexpr float kPounceFrom = 0.65f, kPounceTo = 1.05f;  // airborne part of the
 constexpr float kPetHold = 1.2f;                     // a petting reaction outlasts the last stroke by this
 constexpr float kClearance = 0.8f;                   // body room around obstacles (adult units, x size)
 constexpr float kWanderClearance = 1.6f;             // wander targets keep further off
+constexpr float kBodyRadius = 1.2f;                  // how close two dragons come (adult units, x size)
 
 constexpr const char* kActivityNames[] = {
     "Idle", "LookAround", "Scratch", "Wander", "Sit", "Lie", "Yawn", "TailWag", "Flutter",
@@ -54,6 +55,15 @@ float segmentDistance(Vec2 a, Vec2 b, Vec2 p) {
     return distance(p, {a.x + dx * t, a.y + dy * t});
 }
 
+// Everything solid on the floor, with the room this dragon keeps from it: obstacles with
+// `margin`, other dragons with their body and this one's.
+template <typename Fn>
+void eachSolid(const DenBehavior& b, float margin, Fn fn) {
+    for (const DenObstacle& o : b.den.obstacles) fn(o.at, o.radius + margin);
+    for (int i = 0; i < b.crowdCount; ++i)
+        fn(b.crowd[i].at, b.crowd[i].radius + std::fmax(margin, kBodyRadius * b.size));
+}
+
 bool ambient(Activity a) { return a <= Activity::Flutter; }
 bool sulking(Activity a) { return a == Activity::GoSulk || a == Activity::Sulk || a == Activity::MakeUp; }
 bool asleep(const DenBehavior& b) {
@@ -68,9 +78,10 @@ const char* activityName(Activity a) {
 
 const char* clipName(ClipId c) { return c < ClipId::Count ? kClipNames[static_cast<int>(c)] : "idle"; }
 
-void DenBehavior::reset(const DenLayout& layout, u32 seed) {
+void DenBehavior::reset(const DenLayout& layout, u32 seed, int place) {
     *this = DenBehavior{};
     den = layout;
+    spot = static_cast<u8>(place >= 0 && place < DenLayout::kSpots ? place : 0);
     rng = Rng(seed);
     pos = den.home;
     start(Activity::Idle);
@@ -93,36 +104,42 @@ bool DenBehavior::turnTo(float goal, float dt) {
 }
 
 bool DenBehavior::clearAt(Vec2 p, float margin) const {
-    for (const DenObstacle& o : den.obstacles)
-        if (distance(p, o.at) < o.radius + margin) return false;
-    return true;
+    bool clear = true;
+    eachSolid(*this, margin, [&](Vec2 at, float room) { clear = clear && distance(p, at) >= room; });
+    return clear;
 }
 
 bool DenBehavior::clearPath(Vec2 a, Vec2 b, float margin) const {
-    for (const DenObstacle& o : den.obstacles)
-        if (segmentDistance(a, b, o.at) < o.radius + margin) return false;
-    return true;
+    bool clear = true;
+    eachSolid(*this, margin, [&](Vec2 at, float room) { clear = clear && segmentDistance(a, b, at) >= room; });
+    return clear;
 }
 
 Vec2 DenBehavior::steerTarget(Vec2 goal) const {
-    const float margin = kClearance * size;
-    for (const DenObstacle& o : den.obstacles) {
-        const float r = o.radius + margin;
-        if (distance(goal, o.at) < r || segmentDistance(pos, goal, o.at) >= r) continue;
+    Vec2 via = goal;
+    bool found = false;
+    eachSolid(*this, kClearance * size, [&](Vec2 at, float r) {
+        if (found || distance(goal, at) < r || segmentDistance(pos, goal, at) >= r) return;
         const float dx = goal.x - pos.x, dy = goal.y - pos.y;
         const float len = std::hypot(dx, dy);
-        if (len < 1e-4f) continue;
+        if (len < 1e-4f) return;
         // Pass just outside it, on the side of the path the dragon is already on.
         const Vec2 left{-dy / len, dx / len};
-        const float s = (o.at.x - pos.x) * left.x + (o.at.y - pos.y) * left.y > 0 ? -1.0f : 1.0f;
-        return {o.at.x + left.x * s * (r + 0.3f), o.at.y + left.y * s * (r + 0.3f)};
-    }
-    return goal;
+        const float s = (at.x - pos.x) * left.x + (at.y - pos.y) * left.y > 0 ? -1.0f : 1.0f;
+        via = {at.x + left.x * s * (r + 0.3f), at.y + left.y * s * (r + 0.3f)};
+        found = true;
+    });
+    return via;
 }
 
 bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
     const float dist = distance(pos, goal);
     if (dist < 0.2f * moveScale + 0.05f) return true;
+    // Another dragon is standing on the spot: close enough.
+    for (int i = 0; i < crowdCount; ++i)
+        if (distance(goal, crowd[i].at) < crowd[i].radius + kBodyRadius * size &&
+            dist < crowd[i].radius + kBodyRadius * size + 0.3f)
+            return true;
     const Vec2 via = steerTarget(goal);
     const float err = wrapAngle(headingTo(pos, via) - heading);
     if (std::fabs(err) > 0.7f) {  // face the way first
@@ -162,7 +179,7 @@ void DenBehavior::start(Activity a) {
         case Activity::Yawn: setClip(ClipId::Yawn, 0.3f, true); break;
         case Activity::TailWag: setClip(ClipId::TailWag, 0.25f); timer = between(rng, 2.0f, 3.5f); break;
         case Activity::Flutter: setClip(ClipId::WingFlutter, 0.3f, true); break;
-        case Activity::GoNap: target = den.napSpot; trot = false; break;
+        case Activity::GoNap: target = den.beds[spot]; trot = false; break;
         case Activity::Sleep: setClip(ClipId::Sleep, 0.8f); break;
         case Activity::Wake: setClip(ClipId::Wake, 0.6f, true); break;
         case Activity::Eat: setClip(ClipId::Eat, 0.35f); timer = 3.5f; break;
@@ -173,7 +190,7 @@ void DenBehavior::start(Activity a) {
         case Activity::Shake: setClip(ClipId::Shake, 0.25f, true); break;
         case Activity::Hop: setClip(ClipId::Hop, 0.2f, true); break;
         case Activity::Pounce: setClip(ClipId::Pounce, 0.25f, true); break;
-        case Activity::GoSulk: target = den.sulkNook; trot = false; break;
+        case Activity::GoSulk: target = den.sulkSpots[spot]; trot = false; break;
         case Activity::Sulk: setClip(ClipId::Sulk, 0.4f, true); break;
         case Activity::MakeUp: setClip(ClipId::Nuzzle, 0.5f); timer = 3.0f; break;
         case Activity::Greet: setClip(ClipId::Greet, 0.3f, true); break;
@@ -370,14 +387,31 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
         pos.x = den.home.x + (pos.x - den.home.x) * den.radius / r;
         pos.y = den.home.y + (pos.y - den.home.y) * den.radius / r;
     }
-    for (const DenObstacle& o : den.obstacles) {
-        const float room = o.radius + kClearance * size, d = distance(pos, o.at);
+    auto pushOut = [&](Vec2 at, float room) {
+        const float d = distance(pos, at);
         if (d < room && d > 1e-4f) {
-            pos.x = o.at.x + (pos.x - o.at.x) * room / d;
-            pos.y = o.at.y + (pos.y - o.at.y) * room / d;
+            pos.x = at.x + (pos.x - at.x) * room / d;
+            pos.y = at.y + (pos.y - at.y) * room / d;
         }
-    }
+    };
+    for (const DenObstacle& o : den.obstacles) pushOut(o.at, o.radius + kClearance * size);
+    // ...and out of the other dragons. One lying down, eating or sulking stays put: the
+    // others make way around it.
+    const bool settled = asleep(*this) || activity == Activity::Sulk || activity == Activity::Eat ||
+                         activity == Activity::BellyRub || activity == Activity::MakeUp ||
+                         ((activity == Activity::Sit || activity == Activity::Lie) && step == 1);
+    if (!settled)
+        for (int i = 0; i < crowdCount; ++i) pushOut(crowd[i].at, crowd[i].radius + kBodyRadius * size);
     clipDone = false;  // consumed
+}
+
+void shareCrowd(DenBehavior* const* dragons, int count) {
+    for (int i = 0; i < count; ++i) {
+        DenBehavior& b = *dragons[i];
+        b.crowdCount = 0;
+        for (int j = 0; j < count && b.crowdCount < DenLayout::kSpots - 1; ++j)
+            if (j != i) b.crowd[b.crowdCount++] = {dragons[j]->pos, kBodyRadius * dragons[j]->size};
+    }
 }
 
 float DenBehavior::lookWeight() const {

@@ -49,14 +49,15 @@ ONLY_SHOT = arg("--shot")  # render just this shot (a fresh Blender per shot bui
 # Keep in sync with src/core/behavior.hpp DenLayout (adult units, Z up, the camera side is -Y).
 R = 9.5                              # floor and wall radius
 HOME = Vector((0.0, 0.6, 0))         # the rug (the walkable circle, radius 6, is centred here)
-NEST = Vector((4.4, 3.6, 0))         # napSpot
+NEST = Vector((4.4, 3.6, 0))         # beds[0], the big nest
+BEDS = [Vector((-0.6, 5.4, 0)), Vector((2.8, -3.2, 0))]  # beds[1], beds[2]: straw beds
 EGG_NEST = Vector((5.4, -1.6, 0))
-NOOK = Vector((-4.6, 3.0, 0))        # sulkNook (a sulking dragon faces +Y: its nose is ~2.2 ahead)
+NOOK = Vector((-4.6, 3.0, 0))        # sulkSpots[0] (a sulking dragon faces +Y: its nose is ~2.2 ahead)
 HEARTH = Vector((7.9, 0.8, 0))
 HOARD = Vector((2.4, 7.4, 0))
 SUN_SPOT = Vector((1.0, 4.6, 0))     # where the sunbeam lands
 SKY_A, SKY_Z, SKY_R = math.radians(12), 4.8, 1.3   # skylight: angle from +Y, height, radius
-SHELF_A = math.radians(-26)
+SHELF_A = math.radians(-8)   # between the nook rocks and the skylight
 CAM_DIR = Vector((-0.35, -0.9, 0.32)).normalized()  # render3d.cpp drawDen: toward the camera
 CAM_RIGHT = Vector((0.0, 0.0, 1.0)).cross(CAM_DIR).normalized()  # screen right, seen from the camera
 FOV_Y = math.radians(38)
@@ -141,7 +142,8 @@ def floor():
     def albedo(p, n):
         base = (0.64, 0.50, 0.38)  # warm sandstone
         straw = (0.80, 0.68, 0.40)
-        near = max(0.0, 1.0 - min((p - NEST).length / 2.8, (p - EGG_NEST).length / 2.0))
+        near = max(0.0, 1.0 - min([(p - NEST).length / 2.8, (p - EGG_NEST).length / 2.0] +
+                                  [(p - b).length / 2.4 for b in BEDS]))
         c = mix(base, straw, near * 0.7)
         c = mix(c, (0.40, 0.33, 0.30), max(0.0, 1.0 - (p - HEARTH).length / 2.2) * 0.6)  # soot
         return jitter(c, 0.12, p)
@@ -293,6 +295,11 @@ def nests():
     torus(bm, EGG_NEST, 0.85, 0.28, 14, 5)
     ring_disc(bm, EGG_NEST, [0.85], 10, 0.05)
     add("egg_nest", bm, straw)
+    for i, at in enumerate(BEDS, 1):  # a bed for each of the other den dragons
+        bm = bmesh.new()
+        torus(bm, at, 1.25, 0.36, 12, 5)
+        ring_disc(bm, at, [1.2], 10, 0.05)
+        add(f"bed_{i}", bm, straw)
 
 
 def box(bm, lo, hi):
@@ -394,7 +401,7 @@ def nook():
 
 def boulders():
     bm = bmesh.new()
-    for a, r, size in ((48, 8.7, 1.0), (-8, 8.9, 0.8), (108, 8.8, 0.9)):
+    for a, r, size in ((48, 8.7, 1.0), (108, 8.8, 0.9)):
         rock(bm, radial(math.radians(a)) * r + Vector((0, 0, size * 0.55)), size, (1.1, 1.0, 0.9), a)
     add("boulders", bm, lambda p, n: jitter((0.42, 0.34, 0.44), 0.2, p, 1.7))
 

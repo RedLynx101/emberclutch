@@ -108,7 +108,7 @@ TEST(an_upset_dragon_sulks_in_the_nook_until_you_make_up) {
     Dragon d = contentDragon();
     d.upset = true;
     CHECK(run(a, d, false, 40, [](const DenBehavior& b) { return b.activity == Activity::Sulk; }));
-    CHECK(dist(a.behavior.pos, den.sulkNook) < 0.4f);
+    CHECK(dist(a.behavior.pos, den.sulkSpots[0]) < 0.4f);
     CHECK(std::fabs(std::fabs(a.behavior.heading) - 3.14159f) < 0.2f);  // back turned
     a.behavior.care(Care::Pet, d);                                       // ignored while upset
     CHECK(a.behavior.activity == Activity::Sulk);
@@ -127,7 +127,7 @@ TEST(tired_dragons_nap_in_the_nest_and_wake_up) {
     Dragon d = contentDragon();
     d.napping = true;
     CHECK(run(a, d, false, 40, [](const DenBehavior& b) { return b.activity == Activity::Sleep; }));
-    CHECK(dist(a.behavior.pos, den.napSpot) < 0.4f);
+    CHECK(dist(a.behavior.pos, den.beds[0]) < 0.4f);
     a.behavior.care(Care::Feed, d);  // asleep: ignored
     CHECK(a.behavior.activity == Activity::Sleep);
     d.napping = false;
@@ -189,7 +189,7 @@ TEST(dragons_walk_around_the_hearth_and_hoard) {
     a.reset(den, 14);
     a.behavior.pos = {4.2f, -3.4f};
     a.behavior.heading = 3.14159f;  // facing +Y, the nest beyond the egg nest
-    CHECK(!a.behavior.clearPath(a.behavior.pos, den.napSpot, 0.8f));
+    CHECK(!a.behavior.clearPath(a.behavior.pos, den.beds[0], 0.8f));
     Dragon tired = contentDragon();
     tired.napping = true;
     float nearest = 1e9f;
@@ -197,8 +197,55 @@ TEST(dragons_walk_around_the_hearth_and_hoard) {
         nearest = std::fmin(nearest, dist(b.pos, den.eggNest));
         return b.activity == Activity::Sleep;
     });
-    CHECK(slept && dist(a.behavior.pos, den.napSpot) < 0.4f);
+    CHECK(slept && dist(a.behavior.pos, den.beds[0]) < 0.4f);
     CHECK(nearest >= den.obstacles[1].radius + 0.8f - 1e-3f);
+}
+
+TEST(three_dragons_share_the_den) {
+    const DenLayout den;
+    DenActor a[3];
+    DenBehavior* crowd[3];
+    for (int i = 0; i < 3; ++i) {
+        a[i].reset(den, 31 + i, i);
+        crowd[i] = &a[i].behavior;
+    }
+    a[1].behavior.pos = {-1.9f, 1.0f};
+    a[2].behavior.pos = {2.0f, 1.3f};
+    Dragon d = contentDragon();
+    // Everyday life: they walk around each other (a little overlap while two are both
+    // moving is fine; never deep inside one another).
+    float closest = 1e9f;
+    for (int f = 0; f < 10 * 60 * 30; ++f) {
+        shareCrowd(crowd, 3);
+        for (int i = 0; i < 3; ++i) a[i].update(d, false, 1.0f, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+        for (int i = 0; i < 3; ++i)
+            for (int j = i + 1; j < 3; ++j) closest = std::fmin(closest, dist(a[i].behavior.pos, a[j].behavior.pos));
+    }
+    std::printf("  3 dragons, 10 min: closest %.2f apart\n", closest);
+    CHECK(closest > 2.0f);  // two adult bodies (2 x 1.2), less a little jostling
+    // Bedtime: each goes to its own bed.
+    bool asleep[3] = {};
+    for (int f = 0; f < 90 * 30; ++f) {
+        shareCrowd(crowd, 3);
+        for (int i = 0; i < 3; ++i) {
+            a[i].update(d, true, 1.0f, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+            asleep[i] = a[i].behavior.activity == Activity::Sleep;
+        }
+        if (asleep[0] && asleep[1] && asleep[2]) break;
+    }
+    for (int i = 0; i < 3; ++i) CHECK(asleep[i] && dist(a[i].behavior.pos, den.beds[i]) < 0.4f);
+    // Upset: each sulks in its own spot.
+    d.upset = true;
+    bool sulking[3] = {};
+    for (int f = 0; f < 90 * 30; ++f) {
+        shareCrowd(crowd, 3);
+        for (int i = 0; i < 3; ++i) {
+            a[i].update(d, false, 1.0f, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+            sulking[i] = a[i].behavior.activity == Activity::Sulk;
+        }
+        if (sulking[0] && sulking[1] && sulking[2]) break;
+    }
+    for (int i = 0; i < 3; ++i) CHECK(sulking[i] && dist(a[i].behavior.pos, den.sulkSpots[i]) < 0.4f);
 }
 
 TEST(every_activity_is_reachable_and_settles) {
@@ -229,5 +276,6 @@ void runBehaviorTests() {
     RUN(tired_dragons_nap_in_the_nest_and_wake_up);
     RUN(care_interrupts_everyday_life);
     RUN(dragons_walk_around_the_hearth_and_hoard);
+    RUN(three_dragons_share_the_den);
     RUN(every_activity_is_reachable_and_settles);
 }

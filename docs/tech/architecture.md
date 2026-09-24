@@ -114,7 +114,9 @@ the whole simulation deterministic and testable without hardware (`make -C tests
 - `tools/blender/preview_anims.py` renders clips on the Blender rig with the same math
   (review R3). The den's spots (nest, nook, rug, hearth, hoard) and its solid obstacles live
   in `DenLayout`; dragons pick wander targets clear of the obstacles, steer around one in
-  the way, and are pushed out if a leap lands them in one.
+  the way, and are pushed out if a leap lands them in one. Each den dragon has its own bed
+  and sulking spot (`DenLayout::beds`, `sulkSpots`), and `shareCrowd` makes the others
+  obstacles too (a dragon lying down or eating stays put; the moving ones make way).
 
 ### Coloring (no texture per variant) — as built in WP3/WP4
 

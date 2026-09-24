@@ -24,7 +24,7 @@ struct DenActor {
     float speedT = -1;
     float look = 0;      // smoothed look-at-the-player weight
 
-    void reset(const DenLayout& den, u32 seed);
+    void reset(const DenLayout& den, u32 seed, int spot = 0);  // spot: its bed and sulking spot
     // Re-measures walk/trot speeds when the body changes (form, growth, build, size).
     void updateSpeeds(const ModelData& m, const AnimBinding& bind, const AnimLibrary& lib, const int* clipIndex,
                       int form, float t, int build, float size);

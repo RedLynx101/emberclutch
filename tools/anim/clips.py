@@ -37,8 +37,12 @@ def sin01(t, period, phase=0.0):
 # ------------------------------------------------------------------------------ poses
 # At rest the wings are lowered and swept back along the flanks, the finger fan closed
 # (the model's rest pose has them raised in a V, for spreading and flying).
-WINGS_FOLDED = {"wing_arm*": (-6, 52, -74), "wing_fore*": (0, 16, 0),
-                "wing_f1*": (42, 35, 0), "wing_f2*": (26, 22, 0), "wing_f3*": (8, 7, 0), "wing_f4*": (-12, -10, 0)}
+# Folded like a bird's wing (a Z): upper arm up and back, forearm down and forward, the hand
+# back along the side, so the wing tucks between shoulder and mid-back, clear of the spine.
+# Solved from bone directions by tools/blender/fold_solver.py (--variant zfold, grown form).
+WINGS_FOLDED = {"wing_arm*": (8, 14, 19), "wing_fore*": (-33, -121, -106),
+                "wing_f1*": (13, 22, -134), "wing_f2*": (55, 71, -138), "wing_f3*": (101, -15, -24),
+                "wing_f4*": (118, 69, -83)}
 WINGS_HALF = {"wing_arm*": (0, 20, -25), "wing_f1*": (12, 10, 0), "wing_f4*": (-4, -3, 0)}
 WINGS_OPEN = {"wing_arm*": (0, -10, 10)}  # a little wider than the rest V
 

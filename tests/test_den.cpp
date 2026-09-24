@@ -70,8 +70,8 @@ TEST(den_file_loads_and_fits_the_frame_budget) {
     std::printf("  den: %d parts, %d triangles, %d vertices, %zu bytes\n", static_cast<int>(s.parts.size()),
                 s.triangles(), s.vertexCount, denBytes().size());
     CHECK(s.triangles() > 1000 && s.triangles() <= 8000 - 3000 - 2 * 1200);
-    for (const char* name : {"floor", "walls", "sky", "rug", "nest", "egg_nest", "nook_moss", "embers", "hoard",
-                             "hearth_stones", "sunbeam", "flames"})
+    for (const char* name : {"floor", "walls", "sky", "rug", "nest", "bed_1", "bed_2", "egg_nest", "nook_moss",
+                             "embers", "hoard", "hearth_stones", "shelves", "sunbeam", "flames"})
         CHECK(s.find(name) != nullptr);
     bool additiveSeen = false, orderOk = true;
     for (const StaticPart& p : s.parts) {
@@ -100,8 +100,8 @@ TEST(den_room_matches_the_behavior_layout) {
     const StaticScene& s = den();
     const DenLayout lay;
     const struct { const char* part; Vec2 spot; } spots[] = {
-        {"nest", lay.napSpot}, {"egg_nest", lay.eggNest}, {"nook_moss", lay.sulkNook},
-        {"rug", lay.home},     {"embers", lay.hearth},    {"hoard", lay.hoard},
+        {"nest", lay.beds[0]}, {"bed_1", lay.beds[1]},  {"bed_2", lay.beds[2]}, {"nook_moss", lay.sulkSpots[0]},
+        {"egg_nest", lay.eggNest}, {"rug", lay.home}, {"embers", lay.hearth}, {"hoard", lay.hoard},
     };
     for (const auto& sp : spots) {
         const StaticPart* p = s.find(sp.part);
@@ -112,10 +112,16 @@ TEST(den_room_matches_the_behavior_layout) {
     // Walkable spots are on the floor and clear of the obstacles.
     DenBehavior probe;
     probe.den = lay;
-    for (Vec2 p : {lay.napSpot, lay.sulkNook, lay.home}) {
+    std::vector<Vec2> places{lay.home};
+    for (int i = 0; i < DenLayout::kSpots; ++i) places.insert(places.end(), {lay.beds[i], lay.sulkSpots[i]});
+    for (Vec2 p : places) {
         CHECK(std::hypot(p.x - lay.home.x, p.y - lay.home.y) <= lay.radius);
         CHECK(probe.clearAt(p, 0.8f));
     }
+    // Room for three curled-up adults: beds and sulking spots keep apart.
+    for (std::size_t i = 1; i < places.size(); ++i)
+        for (std::size_t j = i + 1; j < places.size(); ++j)
+            CHECK(std::hypot(places[i].x - places[j].x, places[i].y - places[j].y) > 2.6f);
     // The walls leave room for an adult's head at the edge of the walkable circle (the nose is
     // ~2.3 ahead of its origin), and the floor runs on well past them into the dark.
     const float reach = lay.radius + std::hypot(lay.home.x, lay.home.y) + 2.3f;
@@ -142,13 +148,27 @@ TEST(den_room_matches_the_behavior_layout) {
     }
 
     // A sulking dragon faces the nook's rocks (+Y) without its head going into them.
-    const Vec2 nose{lay.sulkNook.x, lay.sulkNook.y + 2.3f};
+    const Vec2 nose{lay.sulkSpots[0].x, lay.sulkSpots[0].y + 2.3f};
     float clearance = 1e9f;
     if (const StaticPart* r = s.find("nook_rocks"))
         for (int v = r->firstVertex; v < r->firstVertex + r->vertexCount; ++v)
             if (s.pos[v].z < 2.5f) clearance = std::fmin(clearance, dist2d(s.pos[v], nose));
     std::printf("  sulking nose to the nook rocks: %.2f\n", clearance);
     CHECK(clearance > 0.3f);
+
+    // Props don't clip into each other: the shelves and jars stand clear of the rocks.
+    float gap = 1e9f;
+    for (const char* a : {"shelves", "jars"})
+        for (const char* b : {"nook_rocks", "boulders", "hoard"}) {
+            const StaticPart* pa = s.find(a);
+            const StaticPart* pb = s.find(b);
+            if (!pa || !pb) continue;
+            for (int u = pa->firstVertex; u < pa->firstVertex + pa->vertexCount; ++u)
+                for (int v = pb->firstVertex; v < pb->firstVertex + pb->vertexCount; ++v)
+                    gap = std::fmin(gap, length(s.pos[u] - s.pos[v]));
+        }
+    std::printf("  shelves to the nearest rock: %.2f\n", gap);
+    CHECK(gap > 0.3f);
 }
 
 TEST(den_lighting_sets_read_right) {
@@ -170,7 +190,7 @@ TEST(den_lighting_sets_read_right) {
     const DenLayout lay;
     float sun[3], nook[3];
     CHECK(s.lightNear("floor", lay.sunSpot, 2.2f, kLightDay, sun));
-    CHECK(s.lightNear("floor", lay.sulkNook, 2.2f, kLightDay, nook));
+    CHECK(s.lightNear("floor", lay.sulkSpots[0], 2.2f, kLightDay, nook));
     CHECK(sun[0] + sun[1] + sun[2] > nook[0] + nook[1] + nook[2]);
     CHECK(!s.lightNear("floor", {40, 40}, 1.0f, kLightDay, sun));
 }

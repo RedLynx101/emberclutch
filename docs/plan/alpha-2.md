@@ -4,7 +4,7 @@ Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 done: the den of three 
 and two eggs (D53), and their life together. WP2 done (the Sanctuary and Cold Vault), with
 a first world map. WP3 done (breeding at the Nesting Stone). WP4 done (the Wanderings).
 WP5 done (the Market, Gleam and the pouch). WP6 done (the map's trips). WP7 done (toys and
-decor). WP8 done (the profile and family tree). WP9 done (brief 2's sounds wired, stand-ins until they arrive). WP10 done (the emblem icon and the 3D banner). Goal (D31): complete through Alpha 2. Scope and assets:
+decor). WP8 done (the profile and family tree). WP9 done (brief 2's sounds wired, stand-ins until they arrive). WP10 done (the emblem icon and the 3D banner). **R5 built: waiting on Noah's choice of style.** Goal (D31): complete through Alpha 2. Scope and assets:
 [content & assets](content-and-assets.md) (A2 rows); screens: [screens & flow](../design/screens-and-flow.md).
 
 **The order matters** (Noah, 2026-09-24): everything that doesn't depend on how the
@@ -210,6 +210,14 @@ budgets and animated by the same clips.
 - The icon and the 3D banner (WP10) are shown alongside.
 - **Stop here** until Noah chooses: keep the current style, or move to a variant (or a
   mix of their best parts).
+- *Built (2026-09-24), waiting on Noah:* [R5-style.md](../art/reviews/R5-style.md). V1
+  surface (bold outlined scale plates, a banded belly, a darker spine, rounder pupils, softer
+  three-band light), V2 shape (chubby big-headed babies; long-necked, deep-chested adults with
+  big wings and horns), V3 bold (the ember-veined dragon: dark scales with glowing cracks,
+  glowing eyes and wings). One `--style` switch through `dragon_model.py`,
+  `dragon_texture.py` and `export_dragon.py` (models in `romfs/models/v1..v3`, all ≤ 2,910
+  triangles, same rig and clips); in the game, dev menu page 2 **Next style (R5)**
+  (`r3d::setStyle`). Review sheets, turntables and in-game captures (`tests/autotest/styles.txt`).
 
 ## Phase C — after the decision
 

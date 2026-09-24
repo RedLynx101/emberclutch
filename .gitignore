@@ -8,6 +8,7 @@ build/
 *.map
 *.t3x
 !romfs/models/*.t3x
+!romfs/models/*/*.t3x
 *.shbin
 
 # PC tests

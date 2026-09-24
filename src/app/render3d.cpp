@@ -283,6 +283,14 @@ float g_followWeight = 0;
 float toonRamp(float x, float) { return x < 0.12f ? 0.0f : (x < 0.45f ? 0.62f : 1.0f); }
 // Rim on N.V: a thin bright band on the silhouette.
 float rimBand(float x, float) { return x < 0.28f ? 1.0f : (x < 0.38f ? 0.35f : 0.0f); }
+// Review R5's styles: v1 softer, three-band shading and a wider rim; v3 harder, darker.
+float toonRampSoft(float x, float) { return x < 0.05f ? 0.0f : (x < 0.3f ? 0.5f : (x < 0.6f ? 0.82f : 1.0f)); }
+float rimWide(float x, float) { return x < 0.33f ? 1.0f : (x < 0.46f ? 0.45f : 0.0f); }
+float toonRampHard(float x, float) { return x < 0.2f ? 0.0f : (x < 0.5f ? 0.5f : 1.0f); }
+
+int g_style = 0;  // review R5 (D47): 0 current, 1 surface, 2 shape, 3 bold
+const char* const kStyleDir[kStyleCount] = {"romfs:/models/", "romfs:/models/v1/", "romfs:/models/v2/",
+                                            "romfs:/models/v3/"};
 
 bool loadTexture(const char* path, C3D_Tex& tex) {
     FILE* file = std::fopen(path, "rb");
@@ -606,6 +614,19 @@ void setupTexEnv() {
 void dragonPattern(u8 pattern, Rgb color) {
     C3D_TexEnv* env = C3D_GetTexEnv(0);
     C3D_TexEnvInit(env);
+    if (g_style == 3) {  // v3: no pattern on the scales; the veins (skin B) glow after the light, in place of the rim
+        C3D_TexEnvSrc(env, C3D_Both, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
+        C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
+        env = C3D_GetTexEnv(5);
+        C3D_TexEnvInit(env);
+        C3D_TexEnvSrc(env, C3D_RGB, GPU_TEXTURE0, GPU_CONSTANT, GPU_PREVIOUS);
+        C3D_TexEnvOpRgb(env, GPU_TEVOP_RGB_SRC_B, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_COLOR);
+        C3D_TexEnvFunc(env, C3D_RGB, GPU_MULTIPLY_ADD);
+        C3D_TexEnvSrc(env, C3D_Alpha, GPU_CONSTANT, GPU_CONSTANT, GPU_CONSTANT);
+        C3D_TexEnvFunc(env, C3D_Alpha, GPU_REPLACE);
+        C3D_TexEnvColor(env, 0xFF000000u | (u32(color.b) << 16) | (u32(color.g) << 8) | color.r);
+        return;
+    }
     GPU_TEVOP_RGB channel;
     switch (pattern) {
         case kPatternStripes: channel = GPU_TEVOP_RGB_SRC_R; break;
@@ -631,6 +652,25 @@ void bindSkin(const Form* f) {
 }
 
 u8 toByte(float v) { return static_cast<u8>(v <= 0 ? 0 : (v >= 1 ? 255 : v * 255.0f + 0.5f)); }
+
+// The style's colours on top of the genome's (review R5): v3 turns the scales dark and lets
+// the fire show through: the veins (the pattern colour), the eyes and the wings glow.
+void stylePalette(Rgb pal[kPalCount]) {
+    if (g_style != 3) return;
+    auto scale = [](Rgb c, float k, int add) {
+        return Rgb{toByte(c.r * k / 255.0f + add / 255.0f), toByte(c.g * k / 255.0f + add / 255.0f),
+                   toByte(c.b * k / 255.0f + add / 255.0f)};
+    };
+    const Rgb glow = pal[kPalGlow];
+    const Rgb base = scale(pal[kPalBase], 0.2f, 8);
+    pal[kPalAccent] = {static_cast<u8>(base.r / 2 + pal[kPalAccent].r / 8), static_cast<u8>(base.g / 2 + pal[kPalAccent].g / 8),
+                       static_cast<u8>(base.b / 2 + pal[kPalAccent].b / 8)};
+    pal[kPalBase] = base;
+    pal[kPalHorn] = {33, 23, 26};
+    pal[kPalIris] = glow;
+    pal[kPalPattern] = scale(glow, 1.1f, 0);
+    pal[kPalMembrane] = scale(glow, 0.62f, 0);
+}
 
 // The light on one dragon: the time of day, scaled per channel by `local` (the room's light
 // where it stands, relative to the rug's).
@@ -928,6 +968,7 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
     const Dragon& d = *p.dragon;
     Rgb pal[kPalCount];
     dragonPalette(d.genome, pal);
+    stylePalette(pal);
     const float glow = 0.55f + 0.45f * heartglowLevel(d, app.t);  // the heartglow pulses with mood
     pal[kPalGlow] = {static_cast<u8>(pal[kPalGlow].r * glow), static_cast<u8>(pal[kPalGlow].g * glow),
                      static_cast<u8>(pal[kPalGlow].b * glow)};
@@ -1679,6 +1720,63 @@ void setProps(const Ball* ball, bool tubOut, Vec2 tubAt, float tubSize) {
 }
 
 void setDenThings(const DenThings* things) { g_things = things; }
+
+namespace {
+
+void releaseForms() {
+    for (auto& lods : g_forms)
+        for (Form& f : lods) {
+            f.body.release();
+            for (GpuMesh& w : f.wings) w.release();
+            if (f.skinOk) C3D_TexDelete(&f.skin);
+            f.skinOk = false;
+            f.ok = false;
+        }
+    for (Cache& c : g_caches) c.valid = false;  // every dragon is rebuilt from the new forms
+}
+
+bool loadForms(int s) {
+    auto one = [s](const char* form, int lod, Form& f) {
+        char ecm[64], skin[64];
+        std::snprintf(ecm, sizeof(ecm), "%s%s%s.ecm", kStyleDir[s], form, lod ? "_lod1" : "");
+        std::snprintf(skin, sizeof(skin), "%s%s%s_skin.t3x", kStyleDir[s], form, lod ? "_lod1" : "");
+        return loadForm(ecm, skin, f);
+    };
+    return one("hatchling", 0, g_forms[kFormHatchling][0]) && one("hatchling", 1, g_forms[kFormHatchling][1]) &&
+           one("grown", 0, g_forms[kFormGrown][0]) && one("grown", 1, g_forms[kFormGrown][1]);
+}
+
+void styleLight(int s) {
+    LightLut_FromFunc(&g_lutToon, s == 1 ? toonRampSoft : (s == 3 ? toonRampHard : toonRamp), 0.0f, true);
+    C3D_LightEnvLut(&g_lightEnv, GPU_LUT_D0, GPU_LUTINPUT_LN, true, &g_lutToon);
+    LightLut_FromFunc(&g_lutRim, s == 1 ? rimWide : rimBand, 0.0f, false);
+    C3D_LightEnvLut(&g_lightEnv, GPU_LUT_FR, GPU_LUTINPUT_NV, false, &g_lutRim);
+}
+
+}  // namespace
+
+bool setStyle(int s) {
+    if (!g_ready || s < 0 || s >= kStyleCount || s == g_style) return s == g_style;
+    releaseForms();
+    const bool ok = loadForms(s);
+    if (!ok) {  // missing: back to the style that was
+        releaseForms();
+        loadForms(g_style);
+    } else {
+        g_style = s;
+    }
+    g_adultRadius = framingRadius(g_forms[kFormGrown][0].model, 1.0f, kBuildNeutral, nullptr, nullptr);
+    for (int f = 0; f < kFormCount; ++f) bindAnims(g_anims, g_forms[f][0].model.skel, g_bind[f]);
+    styleLight(g_style);
+    return ok;
+}
+
+int style() { return g_style; }
+
+const char* styleName(int s) {
+    static const char* const kNames[kStyleCount] = {"current", "V1 surface", "V2 shape", "V3 bold"};
+    return s >= 0 && s < kStyleCount ? kNames[s] : "?";
+}
 
 void followInDen(Vec3 at, float weight) {
     g_follow = at;

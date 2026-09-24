@@ -1,0 +1,63 @@
+# Review R5 (D47): the four styles in the game. An adult and two hatchlings in the den, and
+# the adult up close, in the current look, then V1 surface, V2 shape and V3 bold (dev menu
+# page 2: Next style).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+# Cinder grown up (Next stage x3), two hatchlings for company.
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+key SELECT
+wait 4
+shot s0-current
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 238 106
+wait 0.5
+key SELECT
+wait 4
+shot s1-v1-surface
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.5
+key SELECT
+wait 4
+shot s2-v2-shape
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.5
+key SELECT
+wait 4
+shot s3-v3-bold
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.5
+key SELECT
+wait 2
+shot s4-back-to-current
+quit

@@ -11,6 +11,7 @@ nostrils, pupils) and every non-body mesh point at a reserved clean corner of th
 region (dragon.hpp BodyRegion) and the game looks up that region's dirt per dragon.
 """
 import math
+import sys
 
 import bmesh
 import bpy
@@ -29,6 +30,14 @@ SKIN = {
     "grown": dict(scale_cell=0.11, plate=0.19, stripe=0.5, spot_cell=0.34, dapple=2.6, ao=0.6),
     "hatchling": dict(scale_cell=0.05, plate=0.085, stripe=0.22, spot_cell=0.15, dapple=5.5, ao=0.25),
 }
+
+
+# Review R5 styles (dragon_model.py STYLE): v1 bolder scale plates, a banded belly and a
+# darker spine; v3 veins in place of the dapple channel (B), which the game lights up.
+_ARGV = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+STYLE = _ARGV[_ARGV.index("--style") + 1] if "--style" in _ARGV else "current"
+SKIN_STYLE = {"v1": dict(cell=1.8, edge=0.42, plates=0.4, spine=0.36),
+              "v3": dict(cell=0.9, edge=0.26, veins=True)}.get(STYLE, {})
 
 
 # ------------------------------------------------------------------------------ regions
@@ -142,19 +151,24 @@ def _channels(nt, p):
 
     # Scales: cells darken toward their edges; belly plates run across the body.
     vor = _node(nt, "ShaderNodeTexVoronoi", feature="DISTANCE_TO_EDGE")
-    vor.inputs["Scale"].default_value = 1.0 / p["scale_cell"]
+    vor.inputs["Scale"].default_value = 1.0 / (p["scale_cell"] * SKIN_STYLE.get("cell", 1.0))
     nt.links.new(coord, vor.inputs["Vector"])
-    cells = _madd(nt, _smooth(nt, vor.outputs["Distance"], 0.0, 0.16), 0.18, 0.82)
+    edge = SKIN_STYLE.get("edge", 0.18)
+    cells = _madd(nt, _smooth(nt, vor.outputs["Distance"], 0.0, 0.16), edge, 1.0 - edge)
     wave = _node(nt, "ShaderNodeTexWave", wave_type="BANDS", bands_direction="Y", wave_profile="SAW")
     wave.inputs["Scale"].default_value = WAVE_PERIOD / p["plate"]
     wave.inputs["Distortion"].default_value = 0.0
     nt.links.new(coord, wave.inputs["Vector"])
-    plates = _madd(nt, _smooth(nt, wave.outputs["Fac"], 0.97, 0.80), 0.16, 0.84)
+    band = SKIN_STYLE.get("plates", 0.16)
+    plates = _madd(nt, _smooth(nt, wave.outputs["Fac"], 0.97, 0.80), band, 1.0 - band)
     scales = _node(nt, "ShaderNodeMix", data_type="FLOAT")
     nt.links.new(belly, scales.inputs["Factor"])
     nt.links.new(cells, scales.inputs["A"])
     nt.links.new(plates, scales.inputs["B"])
     scales = scales.outputs["Result"]
+    if SKIN_STYLE.get("spine"):  # v1: the back darker along the spine
+        ridge = _smooth(nt, nz, 0.5, 0.95)
+        scales = _math(nt, "MULTIPLY", scales, _madd(nt, ridge, -SKIN_STYLE["spine"], 1.0))
 
     # Stripes: soft bands across the spine, on the back and upper flanks.
     sw = _node(nt, "ShaderNodeTexWave", wave_type="BANDS", bands_direction="Y", wave_profile="SIN")
@@ -180,6 +194,19 @@ def _channels(nt, p):
     noise.inputs["Detail"].default_value = 2.0
     nt.links.new(coord, noise.inputs["Vector"])
     dapple = _math(nt, "MULTIPLY", _smooth(nt, noise.outputs["Fac"], 0.52, 0.60), upper)
+    if SKIN_STYLE.get("veins"):  # v3: glowing cracks between big scales, wandering a little
+        warp = _node(nt, "ShaderNodeTexNoise")
+        warp.inputs["Scale"].default_value = 1.0 / (p["scale_cell"] * 3.0)
+        mix = _node(nt, "ShaderNodeMix", data_type="VECTOR")
+        mix.inputs["Factor"].default_value = 0.35
+        nt.links.new(coord, warp.inputs["Vector"])
+        nt.links.new(coord, mix.inputs["A"])
+        nt.links.new(warp.outputs["Color"], mix.inputs["B"])
+        cracks = _node(nt, "ShaderNodeTexVoronoi", feature="DISTANCE_TO_EDGE")
+        cracks.inputs["Scale"].default_value = 1.0 / (p["scale_cell"] * 4.2)
+        nt.links.new(mix.outputs["Result"], cracks.inputs["Vector"])
+        veins = _smooth(nt, cracks.outputs["Distance"], 0.028, 0.0)  # thin, bright cracks
+        dapple = _math(nt, "MULTIPLY", veins, _madd(nt, upper, 0.6, 0.4))  # fainter on the belly
     return {"stripes": stripes, "spots": spots, "dapple": dapple, "scales": scales}
 
 
@@ -268,7 +295,7 @@ def save_png(rgba, path):
 
 
 # ------------------------------------------------------------------------------ preview
-PATTERN_CHANNEL = {"stripes": 0, "spots": 1, "dapple": 2}
+PATTERN_CHANNEL = {"stripes": 0, "spots": 1, "dapple": 2, "veins": 2}
 
 
 def preview_material(body_mat, rgba, pattern, pattern_color, dirt=0.0):
@@ -288,7 +315,7 @@ def preview_material(body_mat, rgba, pattern, pattern_color, dirt=0.0):
     nt.links.new(uv.outputs["UV"], tex.inputs["Vector"])
     sep = _node(nt, "ShaderNodeSeparateColor")
     nt.links.new(tex.outputs["Color"], sep.inputs[0])
-    if pattern in PATTERN_CHANNEL:
+    if pattern in PATTERN_CHANNEL and pattern != "veins":  # (v3's veins glow instead, below)
         pat = _node(nt, "ShaderNodeMix", data_type="RGBA")
         nt.links.new(sep.outputs[("Red", "Green", "Blue")[PATTERN_CHANNEL[pattern]]], pat.inputs["Factor"])
         nt.links.new(col, pat.inputs["A"])
@@ -305,6 +332,17 @@ def preview_material(body_mat, rgba, pattern, pattern_color, dirt=0.0):
     nt.links.new(col, det.inputs["A"])
     nt.links.new(tex.outputs["Alpha"], det.inputs["B"])
     nt.links.new(det.outputs["Result"], mul.inputs["A"])
+    if pattern == "veins":  # v3: the cracks glow, after the light (as the game adds them)
+        add = next(n for n in nt.nodes if n.bl_idname == "ShaderNodeMix" and n.blend_type == "ADD")
+        glow = _node(nt, "ShaderNodeMix", data_type="RGBA", blend_type="ADD")
+        glow.inputs["Factor"].default_value = 1.0
+        vein = _node(nt, "ShaderNodeMix", data_type="RGBA", blend_type="MULTIPLY")
+        vein.inputs["Factor"].default_value = 1.0
+        nt.links.new(sep.outputs["Blue"], vein.inputs["A"])
+        vein.inputs["B"].default_value = (*[min(1.0, c * 1.4) for c in pattern_color], 1)
+        nt.links.new(mul.outputs["Result"], glow.inputs["A"])
+        nt.links.new(vein.outputs["Result"], glow.inputs["B"])
+        nt.links.new(glow.outputs["Result"], add.inputs["A"])
 
 
 DIRT_COLOR = (0.58, 0.52, 0.46)  # dusty grey-brown (src/app/render3d.cpp kDirtColor)

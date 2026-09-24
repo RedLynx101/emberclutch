@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 ready: waiting on Noah**
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -115,7 +115,9 @@ controls and saves screenshots of every step (`tests/autotest/`).
    a retuned stand-in until its file arrives. WP10 ✅: the emblem app icon and the animated 3D
    HOME Menu banner (the baby Ember in its cracked egg; 284 KB CGFX via pycgfx, rigid pieces
    only; packed with `package_cia.ps1 -Banner3D`, the flat banner stays the default until
-   the old 3DS shows the 3D one). Next: **R5**, the three Ember style variants (stop for Noah).
+   the old 3DS shows the 3D one). **R5 is built** ([review](art/reviews/R5-style.md)): the
+   current look next to V1 surface, V2 shape and V3 bold (the ember-veined dragon), as sheets,
+   turntables and in the game (dev menu page 2: Next style). **Waiting on Noah's choice.**
 2. Then the emblem icon and the animated 3D HOME Menu banner (D48, D50).
 3. Then **R5**, three Ember style variants for Noah (blocks, D47); the dragons update in
    the chosen style; the run on Noah's old 3DS (D34).
@@ -131,7 +133,10 @@ after each. Stops:
   haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
-- Nothing blocking until R5.
+- **R5, the dragons' style** ([review](art/reviews/R5-style.md)): keep the current style, move
+  to V1, V2 or V3, or mix (e.g. V2's shapes with V1's surface, or V3's veins as a rare trait).
+  Blocks the dragons update; after it, the old 3DS run (D34) and the Alpha 2 tag.
+- Sound brief 2 (`docs/audio/sfx-batch-2.md`): nothing waits on it (stand-ins play).
 - Whenever convenient: the [sound brief 2](audio/sfx-batch-2.md) (hands-on care and
   Alpha 2 sounds); a listen to the new sounds, the two UI chimes and the Market loop seam
   (`assets/audio/music/previews/market-bustle.seam-preview.wav`).

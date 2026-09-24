@@ -1,7 +1,7 @@
 # The app icon and the HOME Menu banners (Alpha 2 WP10, D48, D50): the emblem icon
 # (assets/icon.png), the flat 2D banner (assets/banner.png) and the animated 3D banner
 # (build/banner/banner.cgfx), built by Blender and converted by pycgfx.
-#   tools\make_banner.ps1 [-SkipIcon] [-Skip2D3D]
+#   tools\make_banner.ps1 [-SkipIcon] [-SkipBanner]
 # pycgfx is a build tool, never committed: git clone --depth 1 https://github.com/skyfloogle/pycgfx build\tools\pycgfx
 # with gltflib and pillow for Python 3.12 (py -3.12 -m pip install gltflib pillow). Approved for this step (D50).
 param(

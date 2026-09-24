@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "app/audio.hpp"
+#include "app/render3d.hpp"
 #include "app/strings.hpp"
 #include "core/den_roster.hpp"
 #include "core/genetics.hpp"
@@ -152,7 +153,7 @@ bool debugMenu(App& app, const Input& in) {
     };
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
-        {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26},
+        {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26}, {"Next style (R5)", 27},
     };
     const Entry* items = app.devPage ? kPage2 : kPage1;
     const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
@@ -196,6 +197,11 @@ bool debugMenu(App& app, const Input& in) {
                 }
                 break;
             case 26: devAddFamily(app); break;
+            case 27: {  // review R5 (D47): the current look and the three variants, in turn
+                const int next = (r3d::style() + 1) % r3d::kStyleCount;
+                showToastf(app, r3d::setStyle(next) ? "Style: %s" : "Style %s: models missing", r3d::styleName(next));
+                break;
+            }
             case 25:
                 app.game.owned |= 1u << static_cast<int>(ec::Item::FoodBowl);
                 app.game.bowlFood = static_cast<u8>(Food::HearthBread);
@@ -226,9 +232,9 @@ bool debugMenu(App& app, const Input& in) {
     }
     char buf[80];
     const DenBehavior& b = (careActor(app) ? *careActor(app) : app.actors[0]).behavior;
-    std::snprintf(buf, sizeof(buf), "+%lldh  stars %d  %s  %s/%d  (%.1f, %.1f)  v%.2f", static_cast<long long>(app.game.devOffset / kHour),
+    std::snprintf(buf, sizeof(buf), "+%lldh  stars %d  %s  %s/%d  (%.1f, %.1f)  v%.2f  %s", static_cast<long long>(app.game.devOffset / kHour),
                   d.careStars, stageName(d.stage), careActor(app) ? activityName(b.activity) : "-", b.step, b.pos.x,
-                  b.pos.y, b.speed);
+                  b.pos.y, b.speed, r3d::styleName(r3d::style()));
     text(app, buf, 160, 226, 0.4f, theme::kAsh);
     return true;
 }

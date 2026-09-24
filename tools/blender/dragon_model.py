@@ -4,6 +4,7 @@ Run headless:
   blender -b -P tools/blender/dragon_model.py -- --breed ember --stages hatchling,adult --out tools/blender/out/r1b
   blender -b -P tools/blender/dragon_model.py -- --breed tide --stages hatchling --views three_quarter,front,side
   blender -b -P tools/blender/dragon_model.py -- --breed gale --lineup --out tools/blender/out/r1b     (growth lineup)
+  ... -- --style v1 --sex female --texture --turntable 12     (review R5: a style, a sex, a turntable)
 
 How it works (docs/plan/alpha-1.md WP2; decisions D36-D38):
   * Two FORMS share one skeleton layout (same bone names and hierarchy):
@@ -302,6 +303,80 @@ HATCH = dict(
 )
 
 FORMS = {"grown": GROWN, "hatchling": HATCH}
+
+# ------------------------------------------------------------------------------ styles (R5, D47)
+# Review R5 puts the current look next to three variants of it. A style adjusts the forms
+# before anything is built: proportions go into the build tables (so the runtime scales the
+# bones the same way at every growth stage and the same clips animate them), and the sizes
+# of the eyes, horns, ridge and wings into the geometry. The skin is dragon_texture's
+# (SKIN_STYLE) and the game's shading per style is src/app/render3d.cpp's. "current" changes
+# nothing.
+#   v1 surface  today's shapes, a new surface: bold scale plates, a banded belly, a darker
+#               spine, rounder pupils with a third glint; softer three-band shading in game
+#   v2 shape    new proportions: chubbier babies with bigger heads and eyes and short legs;
+#               adults with long necks, deep chests, slim waists, long tails, big wings
+#   v3 bold     the ember-veined dragon: dark scales with the fire showing through glowing
+#               cracks, glowing eyes and wings, spikier, a leaner neck and a long tail
+STYLE = arg("--style", "current")
+STYLE_BUILDS = {  # (girth, length) multipliers on every build, per form
+    "v2": {"hatchling": {"head": (1.14, 1.08), "snout": (1.0, 0.78), "chest": (1.12, 0.92), "belly": (1.16, 0.92),
+                         "hips": (1.08, 1.0), "arm_up": (1.05, 0.85), "arm_lo": (1.05, 0.85), "leg_up": (1.08, 0.82),
+                         "leg_lo": (1.08, 0.82), "tail1": (0.95, 1.12), "tail2": (0.95, 1.12), "tail3": (0.95, 1.12),
+                         "tail4": (0.95, 1.12)},
+           "grown": {"neck1": (0.9, 1.4), "neck2": (0.9, 1.42), "neck3": (0.9, 1.42), "head": (0.94, 1.06),
+                     "snout": (0.88, 1.24), "chest": (1.22, 1.04), "belly": (0.8, 1.08), "hips": (0.94, 1.0),
+                     "arm_up": (0.94, 1.22), "arm_lo": (0.94, 1.22), "leg_up": (0.94, 1.2), "leg_lo": (0.94, 1.2),
+                     "tail1": (0.88, 1.28), "tail2": (0.88, 1.3), "tail3": (0.86, 1.32), "tail4": (0.86, 1.32)}},
+    "v3": {"hatchling": {"snout": (0.95, 1.12), "tail1": (0.92, 1.1), "tail2": (0.92, 1.12), "tail3": (0.92, 1.12),
+                         "tail4": (0.92, 1.12)},
+           "grown": {"neck1": (0.94, 1.1), "neck2": (0.94, 1.1), "neck3": (0.94, 1.1), "snout": (0.92, 1.14),
+                     "chest": (1.06, 1.0), "belly": (0.9, 1.04), "tail1": (0.9, 1.15), "tail2": (0.9, 1.2),
+                     "tail3": (0.88, 1.22), "tail4": (0.88, 1.25)}},
+}
+STYLE_SIZES = {  # geometry: iris scale, pupil (x, y) scale, a third glint, horns, ridge, wings
+    "v1": {"hatchling": dict(iris=1.1, pupil=(1.28, 1.2), glint3=True),
+           "grown": dict(iris=1.1, pupil=(1.9, 1.05), glint3=True)},
+    "v2": {"hatchling": dict(iris=1.2, pupil=(1.12, 1.12), wings=0.8, horns=0.85),
+           "grown": dict(iris=1.05, wings=1.3, horns=1.4)},
+    "v3": {"hatchling": dict(iris=1.05, ridge=1.35, horns=1.1),
+           "grown": dict(iris=0.95, pupil=(0.75, 1.0), ridge=1.5, horns=1.25, wings=1.1)},
+}
+
+
+def apply_style():
+    for name, f in FORMS.items():
+        for build in f["builds"].values():
+            for bone, (g, l) in STYLE_BUILDS.get(STYLE, {}).get(name, {}).items():
+                bg, bl = build.get(bone, (1.0, 1.0))
+                build[bone] = (bg * g, bl * l)
+        s = STYLE_SIZES.get(STYLE, {}).get(name, {})
+        e = f["eyes"]
+        if "iris" in s:
+            e["iris"] = tuple(v * s["iris"] for v in e["iris"])
+        if "pupil" in s:
+            px, py = s["pupil"]
+            e["pupil"] = (e["pupil"][0] * px, e["pupil"][1] * py, e["pupil"][2])
+        if s.get("glint3"):  # a little third glint, low on the other side
+            gx, gy, gr = e["glints"][0]
+            e["glints"] = tuple(e["glints"]) + ((-gx * 0.9, -gy * 1.25, gr * 0.45),)
+        if "wings" in s:
+            f["wing"]["scale"] *= s["wings"]
+        if "horns" in s:
+            f["head"]["horn_len"] *= s["horns"]
+            f["head"]["horn_r"] *= s["horns"] ** 0.5
+        if "ridge" in s:
+            f["ridge"]["size"] = tuple(v * s["ridge"] for v in f["ridge"]["size"])
+    if STYLE == "v3":  # dark scales, the fire showing through (the game's palette does the same)
+        for b in BREEDS.values():
+            base, glow = b["base"], b["glow"]
+            b["base"] = (base[0] * 0.2 + 0.03, base[1] * 0.2 + 0.02, base[2] * 0.2 + 0.035)
+            b["accent"] = tuple(0.5 * c + 0.12 * a for c, a in zip(b["base"], b["accent"]))
+            b["horn"] = (0.13, 0.09, 0.1)
+            b["eye"] = glow
+            b["pattern"], b["pattern_color"] = "veins", tuple(min(1.0, c * 1.1) for c in glow)
+
+
+apply_style()
 # Review stages -> (form, growth t within the form).
 STAGE = {"newborn": ("hatchling", 0.0), "hatchling": ("hatchling", 0.75), "juvenile": ("grown", 0.0),
          "adolescent": ("grown", 0.45), "adult": ("grown", 1.0)}
@@ -1079,9 +1154,10 @@ def make_materials(b):
         "body": toon_material("body", b["base"], accent=b["accent"]),
         "body_plain": toon_material("body_plain", b["base"]),
         "accent_flat": toon_material("accent_flat", b["accent"]),
-        "membrane": toon_material("membrane", tuple(0.55 * c + 0.45 * a for c, a in zip(b["base"], b["accent"]))),
+        "membrane": toon_material("membrane", tuple(0.62 * g for g in b["glow"]), emission=1.0) if STYLE == "v3" else
+        toon_material("membrane", tuple(0.55 * c + 0.45 * a for c, a in zip(b["base"], b["accent"]))),
         "horn": toon_material("horn", b["horn"]),
-        "iris": toon_material("iris", b["eye"]),
+        "iris": toon_material("iris", b["eye"], emission=1.3) if STYLE == "v3" else toon_material("iris", b["eye"]),
         "pupil": toon_material("pupil", (0.06, 0.03, 0.05)),
         "glint": toon_material("glint", (1, 1, 1), emission=2.0),
         "heart": toon_material("heart", b["glow"], emission=1.4),
@@ -1624,6 +1700,11 @@ def frame_camera(cam, ds, view, lens=55, margin=1.55):
         view, margin = "mouth", 2.6
     else:
         pts = visible_points(ds)
+    frame_points(cam, pts, view, lens, margin)
+
+
+def frame_points(cam, pts, view, lens=55, margin=1.55):
+    """Frame these points from a named view direction."""
     lo = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
     hi = Vector((max(p.x for p in pts), max(p.y for p in pts), max(p.z for p in pts)))
     center = (lo + hi) / 2
@@ -1653,6 +1734,9 @@ def report(d, label):
     print(f"[model] {BREED} {label}: total {total} tris = body {body} + wings {wings} + parts {parts}")
 
 
+SEX_PART_SCALE = {"male": {"horns": 1.15, "frill": 1.12}, "female": {"tail_tip": 1.15}}  # export_dragon SEX_SCALE
+
+
 def main():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene, cam = setup_scene()
@@ -1679,6 +1763,11 @@ def main():
             built["skin_baked"] = True
             if arg("--save-skin"):
                 dragon_texture.save_png(rgba, bpy.path.abspath(arg("--save-skin")))
+        if arg("--sex"):  # previews: the sexes' part sizes, as the exporter's SEX_SCALE
+            for group, k in SEX_PART_SCALE.get(arg("--sex"), {}).items():
+                for o in built["groups"][group]:
+                    o.scale = o.scale * k
+            snap_parts(built)
         if arg("--blink"):  # previews: 0 open .. 1 shut, as the runtime does it
             built["arm"].pose.bones["eyes"].scale[2] *= 1.0 - BLINK_SQUASH * float(arg("--blink"))
             bpy.context.view_layer.update()
@@ -1686,6 +1775,20 @@ def main():
         for view in views:
             frame_camera(cam, [built], view)
             render(f"{OUT}_{BREED}_{stage}_{view}.png")
+        if arg("--turntable"):  # previews: the dragon turning round, framed once to fit every angle
+            n = int(arg("--turntable"))
+            arm = built["arm"]
+            pts = []
+            for k in range(n):
+                arm.rotation_euler.z = 2 * math.pi * k / n
+                bpy.context.view_layer.update()
+                pts += visible_points([built])
+            frame_points(cam, pts, "side", lens=55, margin=1.4)
+            for k in range(n):
+                arm.rotation_euler.z = 2 * math.pi * k / n
+                bpy.context.view_layer.update()
+                render(f"{OUT}_{BREED}_{stage}_turn{k:02d}.png")
+            arm.rotation_euler.z = 0
 
 
 def lineup(cam):

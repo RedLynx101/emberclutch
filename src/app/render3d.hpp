@@ -86,6 +86,13 @@ struct DenThings {
     float daylight = 1;  // 0 night .. 1 day: lanterns and moonflowers glow brighter at night
 };
 void setDenThings(const DenThings* things);
+// Review R5 (D47): the dragons' style. 0 the current look, 1 surface, 2 shape, 3 bold (the
+// ember-veined dragon); the variants' models are in romfs:/models/v1..v3. Dev builds switch
+// it from the dev menu. False if a style's models are missing (the style stays as it was).
+constexpr int kStyleCount = 4;
+bool setStyle(int style);
+int style();
+const char* styleName(int style);
 // The den camera watches this point too (a thrown ball) while `weight` > 0.
 void followInDen(Vec3 at, float weight);
 

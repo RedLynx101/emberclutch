@@ -67,6 +67,7 @@ TAIL = {"plain": 0, "spade": 1, "tuft": 2, "fan": 3}
 # Palette slots (src/core/model.hpp kPal*): colours are set per dragon at runtime.
 PAL_BASE, PAL_ACCENT, PAL_PATTERN, PAL_HORN, PAL_MEMBRANE, PAL_IRIS, PAL_PUPIL, PAL_GLINT, PAL_GLOW, PAL_TONGUE = range(10)
 PALETTE_FIELD = 32  # palette bytes per mesh in the file (src/core/model.hpp kPaletteField)
+EMISSIVE_STYLE = {"v3": {"iris": 230, "membrane": 110}}  # review R5 v3: glowing eyes and wings
 MATERIAL_PAINT = {  # material name -> (palette A, palette B, emissive 0..255)
     "body": (PAL_BASE, PAL_ACCENT, 0), "body_plain": (PAL_BASE, PAL_BASE, 0),
     "accent_flat": (PAL_ACCENT, PAL_ACCENT, 0), "membrane": (PAL_MEMBRANE, PAL_MEMBRANE, 0),
@@ -164,6 +165,7 @@ def mesh_arrays(objs, palette_of, matrix_of, scale, region_of):
         base = len(positions)
         for v in me.vertices:
             pa, pb, emissive = MATERIAL_PAINT[vmat[v.index]]
+            emissive = EMISSIVE_STYLE.get(dm.STYLE, {}).get(vmat[v.index], emissive)
             positions.append((m @ v.co) * scale)
             normals.append((nm @ v.normal).normalized())
             skin.append(palette_of(o, v))
@@ -387,8 +389,9 @@ TEX3DS = Path(os.environ.get("DEVKITPRO", "C:/msys64/opt/devkitpro")) / "tools" 
 def bake_skin(d, form, lod):
     """Bake the body's skin texture (rest pose) and convert it for the 3DS with mipmaps."""
     name = f"{form}_skin" if lod == 0 else f"{form}_lod{lod}_skin"
-    png = ROOT / "build" / "textures" / f"{name}.png"
+    png = ROOT / "build" / "textures" / ("" if dm.STYLE == "current" else dm.STYLE) / f"{name}.png"
     png.parent.mkdir(parents=True, exist_ok=True)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     rgba = dt.bake_skin(d["body"], form, 256 if lod == 0 else 128)
     dt.save_png(rgba, png)
     out = OUT_DIR / f"{name}.t3x"

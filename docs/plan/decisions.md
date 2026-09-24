@@ -2,7 +2,7 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
-## 2026-09-23 — Design review round 1
+## 2026-09-23 — Design review rounds 1–3
 
 | # | Decision | Why | Status |
 |---|---|---|---|
@@ -18,6 +18,9 @@ Approved decisions, newest first. "Approved" means the project owner signed off.
 | D25 | Install the **Azahar** emulator (winget) for quick local testing and **3ds-libvorbisidec** for Ogg music. Performance sign-off stays on real old-3DS hardware | Owner approved both installs | Approved |
 | D26 | **Art reviews at milestones:** renders after the sculpt, after texturing, and after rigging/animation | Owner choice | Approved |
 | D27 | **Naming:** name the dragon at hatch with the 3DS keyboard (a random suggestion is pre-filled) and rename it any time in the den | Owner approved the proposed default | Approved |
+| D28 | **Hardware testing is deferred** until the game is much further along; development is checked in the Azahar emulator with budget counters in a debug overlay. Recommended first hardware check: by the end of Alpha 2 | Owner direction | Approved |
+| D29 | Work is organized into **playable milestones**: Alpha 1 (*a living pet*), Alpha 2 (*a den*), Beta (*a trainer*), 1.0 (*the sky*), 1.x (Sky Visits), 2.0 (equine) | Keeps every stage enjoyable and reviewable | Approved |
+| D30 | **English only for v1**, with every string in one table so translations can be added later | Scope | Default (owner can change) |
 
 ## 2026-09-23 — Project kickoff
 
@@ -30,8 +33,8 @@ Approved decisions, newest first. "Approved" means the project owner signed off.
 | D5 | Egg → Adult in **about 2 weeks**, gated by real days (3DS clock) **and** care stars | Owner direction: growth driven by needs met over time | Approved |
 | D6 | **Forgiving but upset**: no death, running away or regression. Neglect makes the dragon Upset until you make up | Owner direction | Approved |
 | D7 | Own **many dragons of any breed**: den (3 active + 2 egg nests), off-map **Sanctuary**, egg **Cold Vault** | Owner direction; the 3-dragon cap in the den comes from old-3DS performance | Approved |
-| D8 | **Breeding with lots of variants**: Mendelian element alleles (6 base breeds + 15 hybrids) plus inherited parts, colors and rare traits | Owner direction: creative but not overly complex | Proposed, awaiting review |
-| D9 | Visual theme: **warm light inside**. A heart-shaped heartglow is the signature and the mood indicator. Babies super cute, adults majestic | Owner direction ("super cute", "majestic") | Proposed, awaiting review |
+| D8 | **Breeding with lots of variants**: Mendelian element alleles (6 base breeds + 15 hybrids) plus inherited parts, colors and rare traits | Owner direction: creative but not overly complex | Approved (review round 1) |
+| D9 | Visual theme: **warm light inside**. A heart-shaped heartglow is the signature and the mood indicator. Babies super cute, adults majestic | Owner direction ("super cute", "majestic") | Approved (review round 1) |
 | D10 | Voice commands are **on-device and optional**, with cue buttons always available | Accessibility, public release, no cloud | Approved (from suggestions) |
 | D11 | Species data has `bodyPlan` + `modules` fields from day one, so **the equine line and alicorns** fit later | Owner wants alicorns planned | Approved |
 | D12 | **Open source**, starting private. Code MIT, original art CC BY-SA 4.0, music under its own notice | Owner direction; Suno terms don't allow relicensing the music | Approved |

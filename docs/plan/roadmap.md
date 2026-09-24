@@ -1,84 +1,108 @@
 # Roadmap
 
-Each phase ends with something playable on a real old 3DS. Phases are ordered by
-**risk first**: the 3D creature pipeline is proven before content is built on it.
+Emberclutch is built in **playable milestones**. Each one is a game you could keep on your
+3DS and enjoy on its own, and each is ordered **risk first** (the 3D creature pipeline is
+proven before content piles onto it).
 
-## Phase 0 — Foundations ✅ (2026-09-23)
+- **Live state:** [`docs/STATUS.md`](../STATUS.md)
+- **What gets built:** [content & asset inventory](content-and-assets.md)
+- **What the screens are:** [screens & flow](../design/screens-and-flow.md)
+- **Current work plan:** [Alpha 1 plan](alpha-1.md)
+
+**Testing policy (D28):** day-to-day development and checks run in the Azahar emulator
+(`tools/emu.ps1`). Hardware testing on an old 3DS happens later, when Noah decides we're
+far enough along. Until then, performance is protected by **budget counters** (triangles,
+draw calls, bones, memory) that the debug overlay checks every frame against the limits in
+[architecture §1](../tech/architecture.md). **Recommended first hardware check: by the end
+of Alpha 2 at the latest**, before content volume makes a rendering change expensive.
+
+## Milestone overview
+
+| Milestone | Theme | Contains (old phase numbers) | Status |
+|---|---|---|---|
+| **Foundations** | Design, tools, proof of pipeline | Phase 0 | ✅ Done 2026-09-23 |
+| **Alpha 1** | *A living pet* | Phases 1–2: 3D dragon, care, growth, naming, real saves, music, CIA | ▶ Next |
+| **Alpha 2** | *A den* | Phase 3: several dragons, breeding, eggs, Sanctuary/Vault, Market, Wanderings | Planned |
+| **Beta** | *A trainer* | Phase 4 + ground half of Phase 5: tricks, voice, 3 ground competitions, economy | Planned |
+| **1.0** | *The sky* | Phase 6 + air half of Phase 5 + Phase 7 polish: flight, riding, valley, Sky Rings, Lantern Trial, public release | Planned |
+| **1.x** | *Friends* | Sky Visits (local wireless) | Later |
+| **2.0** | *The meadow* | Equine line: horse, pegasus, unicorn, alicorn | Later |
+
+Every milestone starts by writing its own detailed plan (like [alpha-1.md](alpha-1.md))
+and ends with: all unit tests green, a full emulator playthrough of its content, the docs
+synced (`STATUS.md`, decisions, this file), a commit and push, and a RedWiki update.
+
+---
+
+## Foundations ✅ (2026-09-23)
 - [x] Name chosen: **Emberclutch**. Private repo created.
 - [x] Design docs: GDD, breeds & genetics, theme & art direction, architecture.
 - [x] Concept art (growth sheet, hatchling, adult, breed lineup, den, eggs).
-- [x] Suno music brief for 5 tracks, plus the loop-processing tool.
+- [x] Suno music batch 1 (6 loops, processed) and the loop tool.
 - [x] 3DS project skeleton builds a `.3dsx` (themed title + den placeholder screens).
-- [x] Portable `core/` simulation (genetics, needs, growth, clock) with PC unit tests.
+- [x] Portable `core/` simulation (genetics, needs, growth, clock, breeding rules) with
+      PC unit tests.
 - [x] Wi-Fi deploy scripts (3dslink + ftpd).
 - [x] Headless Blender pipeline proven: `tools/blender/dragon_blockout.py` renders and
       exports glTF for any growth value ([v0 renders](../art/blockout/)).
-- [x] First run in the **Azahar emulator** (2026-09-23): title → starter pick → rub egg →
-      day skip → hatch → feed/pet → save → reload all work at 60 fps. Fixed: the hatchling's
-      head covered the heartglow; on-screen messages were too short.
-- [ ] First run on hardware (waiting on 3DS access).
+- [x] First run in the **Azahar emulator**: title → starter pick → rub egg → day skip →
+      hatch → feed/pet → save → reload, at 60 fps. Fixed: the hatchling's head covered the
+      heartglow; on-screen messages were too short.
+- [ ] First run on hardware (deferred per D28).
 
 **Blockout v0 findings:** the hatchling reads as cute (the head and eye proportions
 work), but the snout is too duck-like. The adult does not read as majestic: the body looks
 inflated, the neck is beaded, and the wings are flat wedges. Both are over the triangle
 budget (3.7k / 4.2k vs 1.8k / 3k) because they're built from separate primitives.
 
-## Phase 1 — Hatchling slice (go / no-go for full 3D)
-- Replace the primitive blockout with a **single organic mesh**: skin modifier +
-  subdivision over a spine/limb graph, then decimate or retopologize to budget. Match the
-  growth sheet silhouettes (S-curve neck, tapered tail, ribbed membrane wings).
-- **Texturing:** UV-unwrap the mesh, then bake Blender procedural scales (Voronoi-based
-  scale plates, belly ridges, a soft ambient-occlusion pass) into the value channel.
-  The mask channels come from painted vertex groups: R base, G accent (belly, wing
-  membrane, horns), B pattern, A heartglow. Compress to ETC1A4 with tex3ds. All procedural
-  and scripted, so the textures are original and openly licensable.
-- **Review loop:** turntable renders at each milestone (blockout, sculpt, textured, rigged)
-  go to Noah for sign-off before moving on.
-- Headless Blender script: hatchling mesh + ≤ 24-bone rig + idle / happy / eat / sleep animations.
-- glTF → `.ecm` / `.eca` converter.
-- Skinned toon shader (picasso) plus the mask-based color combiner and heartglow.
-- Den scene: one hatchling you can pet (touch zones) and feed. Heartglow reacts.
-- Save and load on the SD card (A/B slots).
-- Install `3ds-libvorbisidec` and stream `den-hearth.ogg`.
-- **Exit:** a stable 30 fps on an old 3DS, and the hatchling feels cute. If full 3D can't
-  hold 30 fps, fall back to pre-rendered sprites from the same Blender assets.
+## Alpha 1 — *A living pet*
+Full plan: [alpha-1.md](alpha-1.md).
+- 3D engine layer: citro3d, skinned toon renderer, mask coloring, heartglow, debug overlay.
+- The dragon: one organic mesh that grows through all stages, the three starter breeds'
+  parts, sex differences, procedural textures, rig, ~22 animations.
+- The den in 3D with day/night, nests, the sulk nook.
+- Care loop: feed, pet (touch zones), groom, play, sleep/nap, upset → make-up.
+- Egg care and a hatching sequence; naming with the 3DS keyboard; rename in the den.
+- Real save system (versioned A/B + CRC + migrations).
+- Music streaming (Ogg loops) and a first sound-effect set.
+- Installable CIA with an original icon and HOME Menu banner.
+- **Exit:** in the emulator, a starter egg is raised to an adult (with time skip), every
+  care action is animated, saves survive restarts, and all budget counters stay green.
 
-## Phase 2 — Care loop and growth
-- Four needs, mood, bond, personality, favorite foods.
-- Real-time catch-up, clock rollback safety, day/night, sleep.
-- Egg → Adult with continuous growth (bone-scale curves for every stage).
-- Upset state and the make-up interaction.
-- Den with up to 3 dragons + 2 nests. Sanctuary and Cold Vault storage.
-- **Exit:** a dragon can be raised from egg to adult over ~2 weeks of real play.
+## Alpha 2 — *A den*
+- Several dragons: den of 3 + 2 nests; Sanctuary and Cold Vault screens.
+- Breeding at the Nesting Stone (rules already in `src/core/breeding.cpp`), lay-egg
+  sequence, egg shells hinting at elements.
+- The full parts library: builds, all horns/frills/wings/tails, patterns, rare traits;
+  6 base breeds + 15 hybrids.
+- **Wanderings** (pedometer), wild eggs, trinkets and the hoard pile.
+- **Market**: food, grooming, toys, decor, and the daily sex-labeled egg (D24). Gleam.
+- Dragon profile with parents (family tree).
+- **Exit:** breeding produces visibly distinct offspring; a player can get a partner of
+  the opposite sex through the Market or Wanderings.
 
-## Phase 3 — Breeding, variants and Wanderings
-- Male/female dragons (core rules already in `src/core/breeding.cpp`). Nesting Stone.
-  Genetics wired to the in-game creature records.
-- **Wanderings (pedometer)** and wild eggs, plus the Market's daily egg: the ways to find an
-  opposite-sex partner (moved up from Phase 6 — v1 must-have).
-- Parts meshes: builds, horns, frills, wings, tail tips. Pattern masks. Rare traits.
-- 6 base breeds + 15 hybrids, with egg shells that hint at what's inside.
-- **Exit:** breeding two dragons produces visibly distinct offspring.
-
-## Phase 4 — Training and voice
-- Trick learning by gesture, then naming. Skill curves.
-- Mic capture + MFCC/DTW template matching on a worker thread. Cue-button fallback.
+## Beta — *A trainer*
+- Trick learning (gesture then name), skill curves, 12 tricks.
+- Voice: mic capture + MFCC/DTW template matching on a worker thread; cue buttons always.
 - Wing / Wit / Spark stats.
+- Training yard scene; arena scene.
+- Ground competitions: **Command Trial**, **Fruit Catch**, **Shine Show**, with the
+  Ember → Flame → Blaze → Starfire cups, ribbons and den trophies.
+- Music batch 2 and the full sound-effect set.
 
-## Phase 5 — Competitions and economy
-- Command Trial, Fruit Catch, Shine Show (grounded or hop versions first).
-- Sky Rings and Lantern Trial (these need flight and breath effects).
-- Ember → Flame → Blaze → Starfire cups. Gleam, the Market, den decor.
+## 1.0 — *The sky*
+- Flight animation set and flight controller; adolescent gliding.
+- **Riding anywhere** in free roam; a rider model.
+- **Skyreach Valley**: height-field terrain, fog, lake, cliffs, floating islands, points
+  of interest, riding finds.
+- Air competitions: **Sky Rings** and **Lantern Trial** (breath effects for all 6 elements).
+- Release polish: tutorial pass, settings, balance pass, performance pass on hardware.
+- Replace every AI-concept-derived asset (the placeholder icon) with original work.
+- **Public open-source release** (repo goes public, CIA + 3DSX on GitHub Releases).
 
-## Phase 6 — Skyreach Valley and riding
-- Height-field valley map with fog, points of interest, riding on the ground and in the air.
-- Riding finds (treasure, trinkets, occasional wild eggs).
+## 1.x — *Friends*
+- Sky Visits over UDS local wireless (based on `3ds-linkplay`'s uds-demo): visit a den,
+  play together, exchange gifts, local competitions; cross-den clutch as a stretch goal.
 
-## Phase 7 — Sky Visits and release polish
-- UDS local multiplayer: visits, gifts, local competitions, cross-den clutch (stretch).
-- Full soundtrack, sound effects, banner, icon, CIA packaging.
-- Replace AI concept-derived assets with original ones, then the **public open-source
-  release**.
-
-## Phase 8 — Equine line
+## 2.0 — *The meadow*
 - Horse → Pegasus / Unicorn → Alicorn. See [Equine Line](../future/equine-line.md).

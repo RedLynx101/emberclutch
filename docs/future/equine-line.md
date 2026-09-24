@@ -1,6 +1,6 @@
 # Future: The Equine Line (Horses, Pegasi, Unicorns, Alicorns)
 
-Status: planning only. Target: Phase 8, after the dragon game ships.
+Status: planning only. Target: the 2.0 milestone (“The meadow”), after the dragon game ships.
 
 ## Idea
 

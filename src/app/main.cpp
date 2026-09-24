@@ -1,7 +1,7 @@
 // Emberclutch — Phase 0 skeleton.
 // A themed citro2d prototype that runs the real core simulation on hardware:
 // pick a starter egg, rub it warm, watch it hatch, and care for the hatchling.
-// The dragon is a 2D placeholder until the Phase 1 citro3d pipeline lands.
+// The dragon is a 2D placeholder until the Alpha 1 citro3d pipeline lands.
 #include <3ds.h>
 #include <citro2d.h>
 
@@ -26,7 +26,7 @@ constexpr const char* kSavePath = "sdmc:/3ds/emberclutch/dev-save.bin";
 
 enum class Scene { Title, PickStarter, Den };
 
-// Dev-only save: a raw struct dump. Replaced by the versioned A/B format in Phase 1.
+// Dev-only save: a raw struct dump. Replaced by the versioned A/B format in Alpha 1 (WP8).
 struct DevSave {
     char magic[4] = {'E', 'M', 'B', 'd'};
     u32 version = 2;  // bump whenever Dragon changes shape

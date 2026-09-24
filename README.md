@@ -12,9 +12,10 @@ den full of unique dragons, and ride them anywhere across Skyreach Valley.
 Built natively for the 3DS (C++17, libctru, citro3d, citro2d). **The old 3DS is the
 performance floor.**
 
-> Status: **Phase 0 — Foundations.** Design docs, concept art, a portable simulation
-> core with unit tests, and a themed prototype that builds a `.3dsx`. Not playable yet.
-> See the [roadmap](docs/plan/roadmap.md).
+> Status: **Foundations done; Alpha 1 (*a living pet*) next.** Design docs, concept art,
+> a portable simulation core with unit tests, processed music, and a themed 2D prototype
+> that runs in the Azahar emulator. See [STATUS](docs/STATUS.md) and the
+> [roadmap](docs/plan/roadmap.md).
 
 ## Highlights (planned)
 
@@ -38,7 +39,11 @@ performance floor.**
 | [Breeds & genetics](docs/design/breeds-and-genetics.md) | Elements, hybrid table, traits, inheritance rules |
 | [Theme & art direction](docs/design/theme-and-art-direction.md) | Palette, heartglow, shape language, UI, audio |
 | [Architecture](docs/tech/architecture.md) | Layers, rendering budget, asset pipeline, save format |
-| [Roadmap](docs/plan/roadmap.md) · [Decisions](docs/plan/decisions.md) | Phases and the decision log |
+| [Screens & flow](docs/design/screens-and-flow.md) | Every screen and how they connect |
+| **[Status](docs/STATUS.md)** | Live state and next actions |
+| [Roadmap](docs/plan/roadmap.md) · [Decisions](docs/plan/decisions.md) | Playable milestones and the decision log |
+| [Content & assets](docs/plan/content-and-assets.md) | Models, animations, scenes, effects, UI, audio, items |
+| [Alpha 1 plan](docs/plan/alpha-1.md) | Current work plan and definition of done |
 | [Suno music brief](docs/audio/suno-music-brief.md) | Prompts and settings for the soundtrack |
 | [Equine line](docs/future/equine-line.md) | Future horses, pegasi, unicorns and alicorns |
 

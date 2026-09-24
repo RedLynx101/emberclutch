@@ -1,6 +1,6 @@
 # Breeds & Genetics
 
-Status: **Draft v0.1 for review** (2026-09-23)
+Status: **v0.2 — approved** (2026-09-23, review round 1)
 
 Goal: lots of visibly different dragons from a **small, understandable** rule set that is
 cheap to render on an old 3DS. Every dragon shares one skeleton; variety comes from

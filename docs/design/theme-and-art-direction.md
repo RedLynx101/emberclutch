@@ -1,6 +1,6 @@
 # Theme & Art Direction
 
-Status: **Draft v0.1 for review** (2026-09-23)
+Status: **v0.2 — approved** (2026-09-23, review round 1)
 
 ## 1. The idea in one line
 

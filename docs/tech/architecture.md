@@ -1,6 +1,6 @@
 # Technical Architecture
 
-Status: **Draft v0.1** (2026-09-23)
+Status: **v0.2** (2026-09-23)
 
 ## 1. Target and constraints
 
@@ -101,8 +101,8 @@ Rare traits change the constants or add a specular lookup table (Iridescent).
 ### Bottom screen
 
 citro2d for all UI: eggshell panels, ember gauges, heartglow orb, pouch, map. In petting
-mode the bottom screen shows a close-up of the dragon rendered to a texture at reduced
-resolution, with body-zone hitboxes projected from its bones.
+mode the bottom screen renders a close-up of the dragon directly (a second 3D pass, one
+dragon only, so it fits the budget) with body-zone hitboxes projected from its bones.
 
 ## 5. Assets pipeline
 
@@ -127,8 +127,8 @@ Suno WAV ──tools/audio/make_loop.py (ffmpeg)──▶ .ogg with LOOPSTART/LO
 ## 6. Audio
 
 - **ndsp** (proven in 3D-Claw and asteria-ds). Channel 0–1 for music, 2–7 for sound effects.
-- **Music:** Ogg Vorbis via Tremor (the `3ds-libvorbisidec` package, to be installed in
-  Phase 1) decoded on a worker thread, with sample-accurate loops from the
+- **Music:** Ogg Vorbis via Tremor (the `3ds-libvorbisidec` package, installed
+  2026-09-23) decoded on a worker thread, with sample-accurate loops from the
   `LOOPSTART`/`LOOPLENGTH` tags.
 - **Sound effects:** PCM16 or DSP-ADPCM WAVs preloaded into linear memory.
 - **Dragon voices:** a small set of base samples pitch-shifted per dragon (from the genome
@@ -168,13 +168,28 @@ authoritative; the guest sends inputs; genomes are exchanged for cross-den clutc
 | PC unit tests | `tools/test.ps1` (runs `make -C tests` with the ucrt64 g++) |
 | Push + run over Wi-Fi | `tools/run.ps1 -Address <3ds-ip>` (`3dslink`, Homebrew Launcher netloader: press **Y**) |
 | Upload files over Wi-Fi | `tools/deploy_ftp.ps1 -FtpHost <3ds-ip>` (ftpd on port 5000) |
-| Package CIA | Phase 1, adapting 3D-Claw's `package_cia.ps1` (`makerom` + `bannertool`) |
+| Run in the emulator | `tools/emu.ps1` (Azahar; `-ResetSave`, `-NoBuild`) |
+| Package CIA | Alpha 1 (WP11): `tools/package_cia.ps1`, adapting 3D-Claw's (`makerom` + `bannertool`) |
 
-## 11. Testing
+
+## 11. Testing and development process
 
 - **Unit tests (PC):** genetics distributions, stage gates, needs catch-up, clock
-  rollback, save round-trips and migrations.
-- **Hardware checks (old 3DS):** frame time overlay (debug build), memory high-water
-  mark, and a stress test with 3 dragons plus particles.
-- An emulator (e.g. Azahar) is fine for quick checks. **Performance sign-off is on real
-  hardware only.**
+  rollback, breeding rules, save round-trips and migrations, model-converter round trips.
+- **Emulator-first (D28):** day-to-day checks run in Azahar. It shows logic, UI and
+  rendering correctness, but its speed says nothing about an old 3DS.
+- **Budget counters instead of hardware timing (until the hardware check):** the debug
+  overlay counts what we control and what drives old-3DS cost: triangles and draw calls
+  per frame, bones per draw, particles, texture memory, linear/VRAM use, command-buffer
+  use (`C3D_GetCmdBufUsage`), plus `C3D_GetProcessingTime` / `C3D_GetDrawingTime`. Any
+  counter over its limit turns red. Limits: §1.
+- **Hardware checks (old 3DS), when Noah is ready (recommended by end of Alpha 2):**
+  frame-time overlay, memory high-water mark, a stress scene with 3 dragons plus particles.
+  **Performance sign-off is on real hardware only.**
+- **Stay close to known-good GPU patterns** (devkitPro `3ds-examples/graphics/gpu`) so
+  the emulator and the hardware don't diverge.
+
+## 12. Text
+
+All player-facing strings live in one table (`src/app/strings.hpp`). v1 is English only
+(D30); a translation later means adding a table, not touching code.

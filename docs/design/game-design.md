@@ -1,6 +1,6 @@
 # Emberclutch — Game Design Document
 
-Status: **Draft v0.1 for review** (2026-09-23)
+Status: **v0.2 — reviewed** (2026-09-23; review answers in §17 and the decision log)
 Owner: Noah Hicks · Platform: Nintendo 3DS homebrew (old 3DS is the performance floor)
 
 Emberclutch is a dragon-raising life sim in the spirit of a pocket pet game: you hatch,
@@ -64,8 +64,8 @@ Four needs, each 0–100. Kept few on purpose so the bottom-screen HUD stays rea
 
 | Need | Refilled by | Drains ~ |
 |---|---|---|
-| **Belly** | Feeding (favorite food fills more) | 6 / hour |
-| **Energy** | Sleeping (auto at night, or nap in den) | 5 / hour awake |
+| **Belly** | Feeding (favorite food fills more) | 6 / hour (3 while asleep) |
+| **Energy** | Sleeping at night; tired dragons also nap on their own in the den (below 25, until 70) | 3 / hour awake |
 | **Shine** | Grooming (brush, polish, bath) | 2 / hour, faster after flying/digging |
 | **Play** | Toys, tricks, competitions, riding, other dragons | 4 / hour |
 
@@ -120,7 +120,8 @@ Each dragon also has a **favorite food** (rolled at hatch, biased toward its bre
 
 Every dragon is **male or female**, rolled 50/50 when the egg is laid and revealed at
 hatching. **Breeding needs one male and one female.** Sex has no effect on stats or care.
-Visual differences are subtle (see open question in the decision log).
+Visual differences are subtle (D23): males have bigger horns and crest; females a longer
+tail fan and brighter accent sheen.
 
 ## 4. Care interactions (touch-first)
 
@@ -183,6 +184,8 @@ and bond.
 - Riding finds **Gleam**, **trinkets** (hoard items) and occasionally a **wild egg**.
 - Controls: Circle Pad steer, A flap/accelerate, B brake/land, L/R bank, touch screen
   shows the map. Optional gyro look.
+- The player appears as a small **rider** on the dragon's back (one model, 3 outfit
+  colors) — the only time the player is seen.
 
 ## 8. The Den, Sanctuary and Cold Vault
 
@@ -218,21 +221,25 @@ your steps; when you return, the dragon has found things proportional to distanc
 Gleam, food, trinkets, and rarely a **wild egg** (the main way to get breeds you did not
 start with). One dragon wanders at a time; its needs drain normally.
 
-**Must-have for v1.** Wanderings ships together with breeding (Phase 3). Wild eggs are one
+**Must-have for v1.** Wanderings ships together with breeding (Alpha 2). Wild eggs are one
 of the two ways, with the Market, to find a partner of the opposite sex.
 
 ## 12. Economy
 
 - **Gleam** — the single currency (dragons love shiny things). From competitions,
   Wanderings, riding finds and selling trinkets.
-- **Market** — food, grooming kits, toys, den decor, nest upgrades, and one wild egg per
-  day on rotation.
+- **Market** — food, grooming kits, toys, den decor, nest upgrades, and one egg per
+  day on rotation. **Market eggs are labeled with their sex** so a partner can be bought
+  on purpose (D24); bred and wild eggs stay a surprise until they hatch.
+- Full item list: [content & assets §7](../plan/content-and-assets.md).
 - No real-money anything, ever.
 
 ## 13. Getting started
 
 1. Title → name yourself → choose one of three starter eggs: **Ember, Tide, or Gale**.
 2. Tutorial is diegetic: warm the egg, watch it hatch, feed it, say its name.
+   At hatching you **name the dragon** with the 3DS keyboard (a random suggestion is
+   pre-filled) and can rename it any time in the den (D27).
 3. Grove, Frost and Lumen eggs come from the Market rotation and Wanderings, which
    unlock after the first dragon reaches Juvenile. These are also how you find your first
    dragon a partner of the opposite sex.
@@ -250,12 +257,15 @@ two players' dragons each give one egg to both players.
   heartglow mood indicator, the pouch (items), cue buttons, map.
 - In petting mode the camera frames the dragon so touches on the bottom screen map to
   its body (head / chin / back / belly zones).
+- Every screen and the flow between them: [screens & flow](screens-and-flow.md).
 
 ## 16. Out of scope (for now)
 
 - Death, illness, aging past adult.
 - Online play, StreetPass, amiibo, face tracking.
 - Real-money purchases.
+- Languages other than English in v1 (strings live in one table so translation can come
+  later, D30).
 
 ## 17. Review answers (2026-09-23)
 

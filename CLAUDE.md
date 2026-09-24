@@ -1,7 +1,10 @@
 # Emberclutch — agent notes
 
 Dragon-raising homebrew for Nintendo 3DS. **The old 3DS is the performance floor.**
-Read `docs/plan/decisions.md` before changing design; approved decisions are binding.
+Start every session with `docs/STATUS.md` (live state, next actions), then the current
+milestone plan (`docs/plan/alpha-1.md`). Read `docs/plan/decisions.md` before changing
+design; approved decisions are binding. Update `docs/STATUS.md` at the end of every
+session, and add new decisions to the log.
 
 ## Layout rules
 - `src/core/` is pure C++17: **no libctru, no clock reads, no file I/O**. Time comes in as

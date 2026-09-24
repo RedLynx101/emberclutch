@@ -52,6 +52,11 @@ void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMoti
 
 // Hands-on care (WP7): what's under the stylus on the dragon last drawn by drawCloseUp.
 bool pickCloseUp(Vec2 touch, TouchHit& out);
+
+// One dragon (idle pose) or egg on the top screen over whatever 2D the scene drew first,
+// turned `spin` radians toward the viewer's left, standing a little below centre: the
+// Sanctuary, the Cold Vault, later the profile and the Market's egg.
+void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, float spin);
 // The dragon's mouth on the bottom screen (the last close-up); false if it isn't in view.
 bool mouthOnCloseUp(Vec2& at);
 // A bottom-screen point held out in front of the dragon's face, in its armature space (at

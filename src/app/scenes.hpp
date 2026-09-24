@@ -17,5 +17,8 @@ const SceneFns& sceneFns(SceneId id);
 extern const SceneFns kTitleScene;
 extern const SceneFns kStarterScene;
 extern const SceneFns kDenScene;
+extern const SceneFns kMapScene;
+extern const SceneFns kSanctuaryScene;
+extern const SceneFns kVaultScene;
 
 }  // namespace ec

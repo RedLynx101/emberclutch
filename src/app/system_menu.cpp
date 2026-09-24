@@ -40,9 +40,21 @@ void closeMenu(App& app) {
 
 void mainPage(App& app, const Input& in) {
     heading(app, str::kGameTitle);
-    if (button(app, {60, 58, 200, 40}, str::kResume, in) || (in.down & KEY_B)) closeMenu(app);
-    if (button(app, {60, 108, 200, 40}, str::kSettings, in)) app.menu = MenuPage::Settings;
-    if (button(app, {60, 158, 200, 40}, hasDragon(app) ? str::kSaveQuit : str::kQuit, in)) {
+    const bool inGame = hasDragon(app) && app.scene != SceneId::Title && app.scene != SceneId::PickStarter;
+    const float step = inGame ? 42.0f : 50.0f;
+    float y = inGame ? 50.0f : 58.0f;
+    if (button(app, {60, y, 200, 36}, str::kResume, in) || (in.down & KEY_B)) closeMenu(app);
+    y += step;
+    if (inGame) {
+        if (button(app, {60, y, 200, 36}, str::kMap, in)) {
+            closeMenu(app);
+            openMap(app);
+        }
+        y += step;
+    }
+    if (button(app, {60, y, 200, 36}, str::kSettings, in)) app.menu = MenuPage::Settings;
+    y += step;
+    if (button(app, {60, y, 200, 36}, hasDragon(app) ? str::kSaveQuit : str::kQuit, in)) {
         if (hasDragon(app)) saveNow(app);
         app.quit = true;
     }

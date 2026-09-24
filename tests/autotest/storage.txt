@@ -1,0 +1,76 @@
+# The Sanctuary and the Cold Vault (Alpha 2 WP2), and the world map: send a dragon and an egg
+# away from the den, travel to each place on the map and bring them home.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+tap 82 206
+wait 0.3
+key SELECT
+wait 2
+# Cinder to the Sanctuary (the profile card).
+tap 298 16
+wait 0.5
+shot s01-card
+tap 160 168
+wait 1
+shot s02-sent
+# The egg (two steps along) to the Vault.
+key RIGHT
+wait 0.5
+key RIGHT
+wait 1
+shot s03-egg
+tap 274 43
+wait 1
+shot s04-egg-sent
+# The map, then the Sanctuary.
+key X
+wait 1
+shot s05-map
+tap 62 96
+wait 0.6
+shot s06-map-sanctuary
+tap 62 96
+wait 2.5
+shot s07-sanctuary
+tap 91 217
+wait 1
+shot s08-sanctuary-home
+# Back to the map, then the Vault.
+key B
+wait 0.8
+tap 262 62
+wait 0.4
+tap 262 62
+wait 2.5
+shot s09-vault
+tap 91 217
+wait 1
+shot s10-vault-home
+# Home.
+key B
+wait 0.8
+tap 58 221
+wait 2
+shot s11-den
+key START
+wait 0.4
+shot s12-menu
+key B
+quit

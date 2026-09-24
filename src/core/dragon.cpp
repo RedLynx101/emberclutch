@@ -186,6 +186,7 @@ void simulate(Dragon& d, s64 from, s64 now) {
             stepEgg(d, hours, static_cast<s32>(step));
         } else {
             stepHatched(d, t, hours);
+            if (d.location == Location::Sanctuary) d.hatchedAt += step;  // growth pauses there (GDD 8)
         }
         t += step;
         remaining -= step;

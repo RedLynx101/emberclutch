@@ -90,4 +90,37 @@ bool placeEgg(SaveData& s, Dragon& egg) {
 
 int bedForHatchling(const SaveData& s) { return denRoster(s).freeBed(); }
 
+int vaultCount(const SaveData& s) {
+    int n = 0;
+    for (int i = 0; i < s.dragonCount; ++i) n += s.dragons[i].location == Location::Vault;
+    return n;
+}
+
+bool storeAway(SaveData& s, int index) {
+    if (index < 0 || index >= s.dragonCount) return false;
+    Dragon& d = s.dragons[index];
+    if (!inDen(d)) return false;
+    if (isEgg(d)) {
+        if (vaultCount(s) >= kVaultEggs) return false;
+        d.location = Location::Vault;
+    } else {
+        d.location = Location::Sanctuary;
+    }
+    d.denSlot = 0;
+    return true;
+}
+
+bool bringHome(SaveData& s, int index, s64 now) {
+    if (index < 0 || index >= s.dragonCount) return false;
+    Dragon& d = s.dragons[index];
+    if (inDen(d)) return false;
+    const DenRoster r = denRoster(s);
+    const int place = isEgg(d) ? r.freeNest() : r.freeBed();
+    if (place < 0) return false;
+    d.location = Location::Den;
+    d.denSlot = static_cast<u8>(place);
+    if (!isEgg(d)) markVisit(d, now);  // the keepers kept it company: no "you haven't visited"
+    return true;
+}
+
 }  // namespace ec

@@ -51,6 +51,13 @@ void resetForNewGame(App& app) {
     app.nameRoll = 0;
 }
 
+void openMap(App& app) {
+    app.mapPick = static_cast<u8>(app.scene == SceneId::Sanctuary ? 1 : app.scene == SceneId::Vault ? 2 : 0);
+    app.scene = SceneId::Map;
+    app.travel = 0;
+    audio::playSfx(audio::Sfx::Confirm);
+}
+
 void fixCare(App& app) {
     const SaveData& s = app.game;
     const int i = app.careIndex;
@@ -111,6 +118,9 @@ const SceneFns& sceneFns(SceneId id) {
     switch (id) {
         case SceneId::PickStarter: return kStarterScene;
         case SceneId::Den: return kDenScene;
+        case SceneId::Map: return kMapScene;
+        case SceneId::Sanctuary: return kSanctuaryScene;
+        case SceneId::Vault: return kVaultScene;
         default: return kTitleScene;
     }
 }

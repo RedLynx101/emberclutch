@@ -350,11 +350,23 @@ void drawProfile(App& app, const Input& in, const Dragon& d, s64 now) {
     text(app, line, 160, 94, 0.5f, theme::kShell);
     std::snprintf(line, sizeof(line), "%s %d   -   %s %d", str::kBond, d.bond, str::kDay, daysSinceHatch(d, now) + 1);
     text(app, line, 160, 114, 0.5f, theme::kShell);
-    if (button(app, {40, 150, 112, 36}, str::kRename, in)) {
+    if (button(app, {30, 150, 84, 36}, str::kRename, in)) {
         c.profileOpen = false;
         app.keyboard = KeyboardFor::Rename;  // opens after this frame (main.cpp)
     }
-    if (button(app, {168, 150, 112, 36}, str::kProfileClose, in) || (in.down & KEY_B)) {
+    if (button(app, {118, 150, 84, 36}, str::kToSanctuary, in)) {  // off to the keepers
+        const DenRoster r = denRoster(app.game);
+        if (r.dragonCount + r.eggCount <= 1) {
+            showToast(app, str::kStayHome);
+        } else if (storeAway(app.game, app.careIndex)) {
+            showToastf(app, str::kSentAway, d.name);
+            c.profileOpen = false;
+            fixCare(app);
+            saveNow(app);
+            return;
+        }
+    }
+    if (button(app, {206, 150, 84, 36}, str::kProfileClose, in) || (in.down & KEY_B)) {
         c.profileOpen = false;
         audio::playSfx(audio::Sfx::Back);
     }

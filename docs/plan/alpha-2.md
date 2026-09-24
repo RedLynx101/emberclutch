@@ -1,7 +1,8 @@
 # Alpha 2 — *A den*: Work Plan
 
 Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 done: the den of three dragons
-and two eggs (D53), and their life together. Goal (D31): complete through Alpha 2. Scope and assets:
+and two eggs (D53), and their life together. WP2 done (the Sanctuary and Cold Vault), with
+a first world map. Goal (D31): complete through Alpha 2. Scope and assets:
 [content & assets](content-and-assets.md) (A2 rows); screens: [screens & flow](../design/screens-and-flow.md).
 
 **The order matters** (Noah, 2026-09-24): everything that doesn't depend on how the
@@ -50,6 +51,12 @@ Worked through alone, package by package (D49).
 ### WP2 — Sanctuary and Cold Vault
 - Illustrated screens with grids; move dragons and eggs in and out (needs drain slowly
   and never below 50 in the Sanctuary; incubation pauses in the Vault, GDD §8).
+  *Done:* `src/app/scene_storage.cpp` (the keepers' meadow and the icy vault on the top
+  screen with the chosen one in 3D, `r3d::drawShowcase`; a paged grid; "To the den"),
+  `storeAway` / `bringHome` in `core/den_roster` (the Vault holds 50; growth now really
+  pauses in the Sanctuary); "Sanctuary" on the profile card and "To the Vault" on the egg
+  screen (someone always stays home). Reached through a first world map (below, WP6).
+  `tests/autotest/storage.txt`.
 
 ### WP3 — Breeding and eggs
 - The Nesting Stone corner of the den; courtship nuzzle, settling on the nest, laying.
@@ -69,6 +76,11 @@ Worked through alone, package by package (D49).
 ### WP6 — World map and fast travel
 - [Map & travel](../design/world-map-and-travel.md): the illustrated map, place pins that
   unlock, the travel transition.
+  *Started with WP2:* `src/app/scene_map.cpp`, the valley painted in code (mountains,
+  meadows, the river and lake, woods, dotted paths) with six pins (Den, Sanctuary and
+  Vault open; the rest "not open yet"), a painted view of the place picked on the top
+  screen, a short trip between places; X or the START menu opens it. Left: unlock
+  conditions (the Market at Juvenile), the places as they're built, the skippable glide.
 
 ### WP7 — Toys and den props
 - Tug rope, feather wand, puzzle orb, the food bowl ([care interactions §8](../design/care-interactions.md#8-more-toys-alpha-2-from-the-market));

@@ -33,7 +33,7 @@ struct Input {
     float rx = 0, ry = 0;
 };
 
-enum class SceneId : u8 { Title, PickStarter, Den, Count };
+enum class SceneId : u8 { Title, PickStarter, Den, Map, Sanctuary, Vault, Count };
 
 // Per-frame counters the renderer fills in; the debug overlay checks them against the
 // budgets in docs/tech/architecture.md section 1.
@@ -155,6 +155,12 @@ struct App {
     MenuPage menu = MenuPage::Closed;
     bool quit = false;        // Save & quit: leave after this frame
     u8 titleConfirm = 0;      // the title's "start over?" steps (0 none, 1 asked, 2 really?)
+    // The world map (Alpha 2): the place picked, and a trip under way (seconds left, where to).
+    u8 mapPick = 0;
+    float travel = 0;
+    SceneId travelTo = SceneId::Den;
+    // The Sanctuary and the Cold Vault: the one picked (an index into their list) and the page.
+    int storePick = 0, storePage = 0;
 
     // Debug
     bool overlay = EC_DEV;
@@ -181,6 +187,8 @@ DenActor* careActor(App& app);
 int careNest(const App& app);
 // Moves the care to the next (+1) or previous (-1) one in the den: beds, then nests.
 void cycleCare(App& app, int dir);
+// Opens the world map (from the den: X, or the system menu).
+void openMap(App& app);
 
 // Saves to the next A/B slot; shows a toast if the SD card write fails.
 void saveNow(App& app);

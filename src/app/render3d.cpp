@@ -1316,6 +1316,41 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
     if (fx) drawParticles(app, *fx, true);
 }
 
+void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, float spin) {
+    if (!g_ready) return;
+    ++g_frame;
+    C3D_Mtx projection, view;
+    const float plain[3] = {1, 1, 1};
+    const Vec3 dir = normalize(Vec3{-0.35f * std::cos(spin) - 0.9f * std::sin(spin), 0.35f * std::sin(spin) - 0.9f * std::cos(spin), 0.3f});
+    if (d.stage == Stage::Egg) {
+        if (!g_egg.ok || !egg) return;
+        const Vec3 target{0, 0, 0.62f};
+        const float dist = 1.0f / std::tan(kFovY * 0.5f);
+        Mtx_PerspTilt(&projection, kFovY, C3D_AspectRatioTop, 0.05f, dist * 4.0f, false);
+        lookAt(view, target + dir * dist, target);
+        C2D_Flush();
+        bindDragons(projection);
+        lightDragon(dragonLight(dayBlend(now)), plain);
+        submitEgg(app, g_egg, d, *egg, view, {0, 0, 0});
+        end3D();
+        return;
+    }
+    if (!pose(app, d, nullptr, now, 0, g_posed)) return;
+    C3D_Mtx model;
+    modelMatrix(g_posed, model);
+    const Vec3 hips = apply(model, g_posed.poseMat[0].translation());
+    const float radius = g_posed.cache->radius * g_posed.size;
+    const Vec3 target{hips.x, hips.y, hips.z + radius * 0.25f};
+    const float dist = radius * 1.05f / std::tan(kFovY * 0.5f);
+    Mtx_PerspTilt(&projection, kFovY, C3D_AspectRatioTop, 0.05f, dist * 4.0f, false);
+    lookAt(view, target + dir * dist, target);
+    C2D_Flush();
+    bindDragons(projection);
+    lightDragon(dragonLight(dayBlend(now)), plain);
+    submit(app, g_posed, view, model);
+    end3D();
+}
+
 void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMotion* egg, s64 now, CloseUpView mode) {
     if (!g_ready) return;
     ++g_frame;

@@ -31,4 +31,13 @@ bool placeEgg(SaveData& s, Dragon& egg);
 // The bed a hatchling would take, or -1: with all three beds taken, a ready egg waits.
 int bedForHatchling(const SaveData& s);
 
+constexpr int kVaultEggs = 50;  // GDD 8
+
+// Out of the den: a dragon to the Sanctuary, an egg to the Cold Vault (false if the Vault is
+// full, or it isn't in the den).
+bool storeAway(SaveData& s, int index);
+// Back into the den: a free bed or nest. False if there's none (or it's already home).
+bool bringHome(SaveData& s, int index, s64 now);
+int vaultCount(const SaveData& s);
+
 }  // namespace ec

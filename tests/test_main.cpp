@@ -396,6 +396,53 @@ TEST(the_den_has_three_beds_and_two_nests) {
     CHECK(placeEgg(s, egg) && egg.location == Location::Den && egg.denSlot == 1);
 }
 
+// The Sanctuary and the Cold Vault (Alpha 2 WP2, GDD 8): a stored dragon is looked after and
+// doesn't grow; a vaulted egg waits; bringing one home needs a free bed or nest.
+TEST(the_sanctuary_and_the_vault) {
+    static SaveData s;
+    s = SaveData{};
+    Rng rng(12);
+    Dragon d = makeEgg(1, makePurebred(Element::Tide, rng), Sex::Male, kT0);
+    d.incubationSeconds = kIncubationSeconds;
+    tryHatch(d, kT0, rng);
+    s.dragons[s.dragonCount++] = d;
+    Dragon egg = makeEgg(2, makePurebred(Element::Gale, rng), Sex::Female, kT0);
+    egg.incubationSeconds = kIncubationSeconds / 2;
+    CHECK(placeEgg(s, egg));
+    s.dragons[s.dragonCount++] = egg;
+
+    CHECK(storeAway(s, 0) && s.dragons[0].location == Location::Sanctuary);
+    CHECK(storeAway(s, 1) && s.dragons[1].location == Location::Vault && vaultCount(s) == 1);
+    CHECK(!storeAway(s, 0));  // already away
+    const s64 later = kT0 + 10 * kDay;
+    for (int i = 0; i < s.dragonCount; ++i) simulate(s.dragons[i], kT0, later);
+    const Dragon& kept = s.dragons[0];
+    CHECK(daysSinceHatch(kept, later) == 0 && kept.stage == Stage::Hatchling);  // no growing up while away
+    CHECK(kept.needs.lowest() >= 50 && !kept.upset);
+    CHECK(s.dragons[1].incubationSeconds == kIncubationSeconds / 2);  // the egg waited
+
+    CHECK(bringHome(s, 0, later) && s.dragons[0].location == Location::Den);
+    simulate(s.dragons[0], later, later + 2 * kHour);
+    CHECK(!s.dragons[0].upset);  // welcomed home, not "you never visit"
+    CHECK(bringHome(s, 1, later) && s.dragons[1].location == Location::Den && denRoster(s).eggCount == 1);
+
+    // Full places: the den's three beds, the Vault's fifty eggs.
+    for (int i = 0; i < 3; ++i) {
+        Dragon x = makeEgg(10 + i, makePurebred(Element::Ember, rng), Sex::Female, kT0);
+        x.incubationSeconds = kIncubationSeconds;
+        tryHatch(x, kT0, rng);
+        x.location = Location::Sanctuary;
+        s.dragons[s.dragonCount++] = x;
+    }
+    CHECK(bringHome(s, 2, later) && bringHome(s, 3, later) && !bringHome(s, 4, later));
+    while (vaultCount(s) < kVaultEggs) {
+        Dragon x = makeEgg(100 + s.dragonCount, makePurebred(Element::Frost, rng), Sex::Male, kT0);
+        x.location = Location::Vault;
+        s.dragons[s.dragonCount++] = x;
+    }
+    CHECK(!storeAway(s, 1));  // the Vault is full
+}
+
 TEST(save_round_trip) {
     const SaveData& s = sampleSave();
     std::vector<u8> buf(maxEncodedSize());
@@ -489,6 +536,7 @@ int main() {
     RUN(breeding_requirements);
     RUN(egg_sexes_are_roughly_even);
     RUN(the_den_has_three_beds_and_two_nests);
+    RUN(the_sanctuary_and_the_vault);
     RUN(save_round_trip);
     RUN(save_detects_corruption_and_truncation);
     RUN(save_rejects_out_of_range_data);

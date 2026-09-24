@@ -400,8 +400,12 @@ void update(App& app, const Input& in) {
         app.saveAccum = 0;
     }
     fixCare(app);
-    // The D-pad moves the care between the den's dragons and eggs.
+    // The D-pad moves the care between the den's dragons and eggs; X opens the map.
     if (!app.hatch.active && (in.down & (KEY_DLEFT | KEY_DRIGHT))) cycleCare(app, (in.down & KEY_DRIGHT) ? 1 : -1);
+    if (!app.hatch.active && (in.down & KEY_X) && !(in.held & KEY_R)) {
+        openMap(app);
+        return;
+    }
     const DenRoster r = denRoster(app.game);
     Dragon& d = activeDragon(app);
     if (d.stage != Stage::Egg && careActor(app)) care::update(app, d);
@@ -496,8 +500,9 @@ void drawTop(App& app) {
                       d.napping ? str::kNapping : "");
         text(app, line, 200, 26, 0.45f, theme::kClutchGold);
     }
-    if (count > 1 && !app.hatch.active)  // how to switch
-        text(app, str::kSwitchHint, 392, 226, 0.4f, withAlpha(theme::kShell, 0.6f), C2D_AlignRight);
+    if (!app.hatch.active)  // the map, and how to switch
+        text(app, count > 1 ? str::kSwitchHint : str::kMapHint, 392, 226, 0.4f, withAlpha(theme::kShell, 0.6f),
+             C2D_AlignRight);
 }
 
 void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {
@@ -524,6 +529,19 @@ void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {
         e.still = 0;
     }
     gauge(app, 20, 196, str::kWarmth, d.warmth);
+    if (button(app, {236, 30, 76, 26}, str::kToVault, in)) {  // off to the Cold Vault
+        const DenRoster r = denRoster(app.game);
+        if (r.dragonCount + r.eggCount <= 1) {
+            showToast(app, str::kStayHome);
+        } else if (storeAway(app.game, app.careIndex)) {
+            showToast(app, str::kEggAway);
+            fixCare(app);
+            saveNow(app);
+            return;
+        } else {
+            showToast(app, str::kVaultFull);
+        }
+    }
     if (button(app, {150, 198, 76, 32}, str::kTurn, in)) turnTheEgg(app, d, now);
     if (button(app, {234, 198, 76, 32}, str::kListen, in)) listen(app, d);
 }

@@ -414,6 +414,24 @@ void shareCrowd(DenBehavior* const* dragons, int count) {
     }
 }
 
+float DenBehavior::eyesClosed() const {
+    switch (activity) {
+        case Activity::Sleep:
+            return 1.0f;
+        case Activity::GoNap:
+            return step == 2 ? 1.0f : 0.0f;  // curling up: drifting off
+        case Activity::PetHead:
+        case Activity::PetChin:
+            return 0.6f;
+        case Activity::BellyRub:
+            return step == 1 ? 0.6f : 0.0f;
+        case Activity::Yawn:
+            return 0.5f;
+        default:
+            return 0.0f;
+    }
+}
+
 float DenBehavior::lookWeight() const {
     switch (activity) {
         case Activity::Idle:

@@ -57,7 +57,7 @@ TEST(model_loads_and_is_well_formed) {
     for (int k = 0; k < kFormCount * 2; ++k) {
         const int form = k / 2, lod = k % 2;
         const ModelData& m = model(form, lod);
-        CHECK(m.skel.count == 37);
+        CHECK(m.skel.count == 38);
         CHECK(!m.meshes.empty());
         int wingBones = 0;
         for (int i = 0; i < m.skel.count; ++i) wingBones += m.skel.flags[i] & 1;
@@ -66,6 +66,7 @@ TEST(model_loads_and_is_well_formed) {
         const MeshData* body = m.findMesh(kMeshBody, kGroupBody, 0);
         CHECK(body && body->paletteCount == 25 && body->keyCount == 1);
         CHECK(m.skel.find("jaw") >= 0 && m.findMesh(kMeshPart, kGroupMouth, 0) != nullptr);  // the opening mouth
+        CHECK(m.skel.find("eyes") >= 0);                                                      // blinking
         for (u8 w = 0; w < kWingsCount; ++w) CHECK(m.findMesh(kMeshWings, kGroupWings, w) != nullptr);
         CHECK(m.findMesh(kMeshPart, kGroupHorns, kHornsSwept, kSexMale) !=
               m.findMesh(kMeshPart, kGroupHorns, kHornsSwept, kSexFemale));

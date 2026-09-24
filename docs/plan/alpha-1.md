@@ -71,7 +71,9 @@ While waiting on a review, work continues on the non-art packages (engine, save,
     floor, runtime and previews alike) lifts the whole dragon. Check by tracking the
     ground offset over the walk and trot cycles; fix by keeping swinging feet above the
     planted ones (or grounding on planted feet only).
-  - "A bit more cute" in general (candidates: blinking, softer expressions).
+  - "A bit more cute" in general: ✅ blinking (D42): a blink every few seconds, eyes shut
+    in sleep, a content squint while petted, a sleepy one while yawning, and a smile in
+    the tail wag. Still open: softer expressions if R3 asks for them.
   - Then texturing (the Pattern gene, scale detail) → R2.
 - *Verify:* script prints tris/bones per part vs budget; renders saved to `docs/art/`.
 

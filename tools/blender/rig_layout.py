@@ -1,12 +1,15 @@
 """The dragon skeleton layout shared by the model (dragon_model.py) and the animation tools
 (tools/anim). Pure Python: no bpy, so the animation exporter runs without Blender.
 
-Bones: (name, head node, tail node, parent). 25 body bones come first (one 25-bone draw),
-then 12 wing bones (the wing draw). Both body forms (hatchling, grown) use this list with
-their own node positions. The jaw is not a body node (the skin modifier would turn it into
-flesh): it hinges at the form's "jaw_hinge" point, parallel to the snout and parented to it,
-and grows exactly like the snout, so the closed lips stay together at every growth stage and
-build (dragon_model.jaw_points).
+Bones: (name, head node, tail node, parent). 26 body bones come first, then 12 wing bones
+(the wing draw). The body mesh uses 25 of them (one 25-bone draw); the 26th, "eyes", only
+carries the eye parts. Both body forms (hatchling, grown) use this list with their own node
+positions. The jaw and eyes are not body nodes (the skin modifier would turn them into
+flesh), see dragon_model.extra_points:
+  * the jaw hinges at the form's "jaw_hinge" point, parallel to the snout and parented to
+    it, and grows exactly like the snout, so the closed lips meet at every stage and build;
+  * the eyes bone sits between the eyes, parallel to the head and growing like it, so it
+    moves the eyes exactly as the head did; the runtime squashes it vertically to blink.
 """
 
 BONES = [
@@ -33,6 +36,7 @@ for _side in ("L", "R"):
         (f"foot_{_side}", f"ankle_{_side}", f"toe_b_{_side}", f"leg_lo_{_side}"),
     ]
 BONES.append(("jaw", "jaw_hinge", "jaw_tip", "snout"))  # the lower jaw: opens the mouth
+BONES.append(("eyes", "eyes_c", "eyes_tip", "head"))    # both eyes: squashed to blink
 
 # Wing bones (second draw): arm, forearm and four fingers per side.
 WING_CHAIN = [("wing_arm", "root", "elbow", "chest"), ("wing_fore", "elbow", "wrist", "wing_arm"),

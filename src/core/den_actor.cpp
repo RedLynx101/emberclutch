@@ -54,9 +54,35 @@ float locomotionSpeed(const ModelData& m, const AnimBinding& bind, const AnimCli
     return speed > 0 ? speed : clip.speed;
 }
 
+void Eyelids::update(float target, float dt) {
+    const float rate = target > level ? 1.6f : 3.0f;  // drifting off is slow, waking quicker
+    const float step = target - level;
+    level += step > rate * dt ? rate * dt : (step < -rate * dt ? -rate * dt : step);
+    constexpr float kClose = 0.06f, kHold = 0.05f, kOpen = 0.11f;
+    float b = 0;
+    if (blink >= 0) {
+        blink += dt;
+        if (blink < kClose) {
+            b = blink / kClose;
+        } else if (blink < kClose + kHold) {
+            b = 1;
+        } else if (blink < kClose + kHold + kOpen) {
+            b = 1 - (blink - kClose - kHold) / kOpen;
+        } else {
+            blink = -1;
+            next = rng.chance(1, 6) ? 0.15f : 2.0f + rng.below(4000) * 0.001f;
+        }
+    } else if (level < 0.8f && (next -= dt) <= 0) {
+        blink = 0;
+    }
+    shut = b > level ? b : level;
+}
+
 void DenActor::reset(const DenLayout& den, u32 seed, int spot) {
     behavior.reset(den, seed, spot);
     anim = Animator{};
+    eyes = Eyelids{};
+    eyes.rng = Rng(seed * 2654435761u + 17);
     playedSerial = 0xFFFF;
     speedForm = -1;
 }
@@ -78,6 +104,7 @@ int DenActor::update(const Dragon& d, bool night, float moveScale, float dt, con
     behavior.update(d, night, moveScale, dt);
     const float k = dt * 3.0f < 1.0f ? dt * 3.0f : 1.0f;
     look += (behavior.lookWeight() - look) * k;
+    eyes.update(behavior.eyesClosed(), dt);
     if (behavior.clipSerial != playedSerial) {
         const int index = clipIndex[static_cast<int>(behavior.clip)];
         if (index >= 0) anim.play(index, behavior.blend, true);

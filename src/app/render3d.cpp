@@ -103,7 +103,7 @@ struct Form {
     ModelData model;
     GpuMesh body;
     GpuMesh wings[kWingsCount];
-    int headBone = -1, chestBone = -1;
+    int headBone = -1, chestBone = -1, eyesBone = -1;
     bool ok = false;
 };
 
@@ -239,6 +239,7 @@ bool loadForm(const char* path, Form& f) {
     for (const MeshData& m : f.model.meshes)
         if (m.kind == kMeshWings && m.variant < kWingsCount && !fillStatic(f.wings[m.variant], m)) return false;
     f.headBone = f.model.skel.find("head");
+    f.eyesBone = f.model.skel.find("eyes");
     f.chestBone = f.model.skel.find("chest");
     f.ok = true;
     return true;
@@ -414,6 +415,7 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
             applyLookAt(f.model.skel, g_bind[c->form], bones, local, actor->look);
         }
     }
+    if (actor && f.eyesBone >= 0) bones[f.eyesBone].scale.z *= 1.0f - kBlinkSquash * actor->eyes.shut;  // blinks
     evaluatePose(f.model.skel, bones, out.poseMat, out.skin);
     // Floor contact follows the pose (sitting, lying, rolling over), smoothed so a swinging
     // foot does not make the body bob.

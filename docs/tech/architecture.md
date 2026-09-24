@@ -64,7 +64,7 @@ the whole simulation deterministic and testable without hardware (`make -C tests
 
 ### Skinned dragons
 
-- **Two body forms** (D36), each a `.ecm` with the same 36-bone layout (24 body + 12 wing):
+- **Two body forms** (D36), each a `.ecm` with the same 38-bone layout (24 body + jaw + eyes + 12 wing):
   `hatchling.ecm` for the hatchling stage and `grown.ecm` from juvenile to adult. The
   stage-up to juvenile swaps forms behind a glow (the first molt). `rig.hpp growthFor()`
   maps stage + in-stage progress to (form, growth t).
@@ -84,6 +84,11 @@ the whole simulation deterministic and testable without hardware (`make -C tests
   mouth line; the lower lip and chin are weighted to the jaw, fading back to the throat
   behind the corners. A dark pocket (roof and floor) fills the opening, and the teeth and
   tongue are a rigid part group.
+- **Blinking** (D42): an `eyes` bone between the eyes, parallel to the head, parented to
+  it and grown by its tables, carries the eye parts (no skin). The renderer squashes its
+  vertical axis by up to 90% (`core/den_actor` `Eyelids`): a blink every 2–6 s (now and
+  then a double one), shut while asleep or curling up to nap, a content 0.6 squint while
+  petted and 0.5 while yawning.
 - **LOD1** (`{form}_lod1.ecm`): the same skeleton, growth tables and part layout with
   fewer segments. A PC test checks it shares the LOD0 rig.
 - **Pose math** (`src/core/skeleton.cpp`) copies Blender's rule for bones with scale

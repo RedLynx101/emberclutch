@@ -137,6 +137,35 @@ TEST(tired_dragons_nap_in_the_nest_and_wake_up) {
     CHECK(run(a, d, true, 40, [](const DenBehavior& b) { return b.activity == Activity::Sleep; }));
 }
 
+TEST(dragons_blink_and_shut_their_eyes_to_sleep) {
+    DenActor a;
+    const DenLayout den;
+    a.reset(den, 12);
+    Dragon d = contentDragon();
+    int blinks = 0;
+    bool wasShut = false;
+    run(a, d, false, 30, [&](const DenBehavior& b) {
+        if (b.activity == Activity::Sleep || b.activity == Activity::GoNap) return false;
+        const bool shut = a.eyes.shut > 0.9f;
+        blinks += shut && !wasShut;
+        wasShut = shut;
+        return false;
+    });
+    std::printf("    %d blinks in 30 s awake\n", blinks);
+    CHECK(blinks >= 5 && blinks <= 16);
+    d.napping = true;
+    CHECK(run(a, d, false, 40, [](const DenBehavior& b) { return b.activity == Activity::Sleep; }));
+    CHECK(run(a, d, false, 2, [](const DenBehavior&) { return false; }) == false);
+    CHECK(a.eyes.shut > 0.99f);
+    d.napping = false;  // wakes: the eyes open again
+    CHECK(run(a, d, false, 12, [](const DenBehavior& b) { return b.activity == Activity::Idle; }));
+    CHECK(run(a, d, false, 1, [](const DenBehavior&) { return false; }) == false);
+    CHECK(a.eyes.level < 0.05f);
+    a.behavior.care(Care::Pet, d, PetZone::Chin);  // a content squint
+    CHECK(run(a, d, false, 1, [&](const DenBehavior&) { a.behavior.petTimer = 1.0f; return false; }) == false);
+    CHECK(std::fabs(a.eyes.level - 0.6f) < 0.05f);
+}
+
 TEST(care_interrupts_everyday_life) {
     DenActor a;
     const DenLayout den;
@@ -274,6 +303,7 @@ void runBehaviorTests() {
     RUN(a_content_dragon_leads_a_varied_life_on_the_floor);
     RUN(an_upset_dragon_sulks_in_the_nook_until_you_make_up);
     RUN(tired_dragons_nap_in_the_nest_and_wake_up);
+    RUN(dragons_blink_and_shut_their_eyes_to_sleep);
     RUN(care_interrupts_everyday_life);
     RUN(dragons_walk_around_the_hearth_and_hoard);
     RUN(three_dragons_share_the_den);

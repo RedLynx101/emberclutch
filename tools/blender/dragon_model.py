@@ -331,7 +331,7 @@ def base_key(name):
     return name.rsplit("_", 1)[0] if name.endswith(("_L", "_R")) else name
 
 
-SCALE_LIKE = {"jaw": "snout"}  # bones that grow like another (the jaw sits in the snout)
+SCALE_LIKE = {"jaw": "snout", "eyes": "head"}  # bones that grow like another (see extra_points)
 
 
 def scale_key(name):
@@ -618,14 +618,19 @@ def wing_points(side):
     return {k: root + (span * u + chord * v) * w["scale"] for k, (u, v) in WING_LAYOUT.items()}
 
 
-def jaw_points():
-    """The jaw bone: from the hinge, parallel to the snout bone and as long. With the snout's
-    axes and growth scales (SCALE_LIKE) and the snout as parent, the jaw's skinning matches
-    the snout's until it rotates, so the lips meet at every stage and build."""
+def extra_points():
+    """Bones that are not body nodes, each parallel to a body bone, as long, parented to
+    it and growing like it (SCALE_LIKE): until it moves on its own, it skins exactly like
+    that bone.
+      * jaw: from the hinge behind the mouth corners, like the snout (the lips meet at every
+        stage and build);
+      * eyes: from the point between the eyes, like the head (the runtime squashes its
+        vertical axis to blink)."""
     nodes = F["nodes"]
-    muzzle, tip = V(nodes["muzzle"][0]), V(nodes["snout"][0])
+    head, muzzle, tip = V(nodes["head"][0]), V(nodes["muzzle"][0]), V(nodes["snout"][0])
     hinge = V(F["jaw_hinge"])
-    return {"jaw_hinge": hinge, "jaw_tip": hinge + (tip - muzzle)}
+    eyes = V((0.0, F["eyes"]["at"][1], F["eyes"]["at"][2]))
+    return {"jaw_hinge": hinge, "jaw_tip": hinge + (tip - muzzle), "eyes_c": eyes, "eyes_tip": eyes + (muzzle - head)}
 
 
 def build_armature():
@@ -646,9 +651,9 @@ def build_armature():
         b.inherit_scale = "NONE"
         eb[name] = b
 
-    jaw = jaw_points()
+    extra = extra_points()
     for name, h, t, parent in BONES:
-        add(name, V(jaw[h] if h in jaw else nodes[h][0]), V(jaw[t] if t in jaw else nodes[t][0]), parent)
+        add(name, V(extra[h] if h in extra else nodes[h][0]), V(extra[t] if t in extra else nodes[t][0]), parent)
     for side in ("L", "R"):
         w = wing_points(side)
         for name, h, t, parent in WING_CHAIN:
@@ -1357,7 +1362,7 @@ def build_dragon(breed, form="grown"):
     upper, lower = lip_chains(body)  # vertex indices: adding the face details keeps them
     add_face_details(body, [body.data.vertices[i].co.copy() for i in upper])
     arm = build_armature()
-    bind(body, arm, lambda n: not n.startswith("wing") and n != "jaw")  # weight_jaw paints the jaw
+    bind(body, arm, lambda n: not n.startswith("wing") and n not in ("jaw", "eyes"))  # weight_jaw paints the jaw
     weight_jaw(body)
     mouth_parts = build_mouth_parts(body, upper, lower, mats)
     build_mouth_pocket(body, upper, lower)
@@ -1372,7 +1377,7 @@ def build_dragon(breed, form="grown"):
     snap = {"eyes": [], "horns": [], "frill": [], "spikes": [], "heart": []}
     d = dict(body=body, arm=arm, wings=wings, groups=groups, snap=snap, breed=b, mats=mats, form=form)
     for e in build_eyes(mats):
-        attach(d, "eyes", e, "head")
+        attach(d, "eyes", e, "eyes")
     for h in build_horns(b["horns"], mats):
         attach(d, "horns", h, "head")
     for f in build_frill(b["frill"], mats):
@@ -1443,6 +1448,9 @@ def apply_t(d, t, build):
     snap_parts(d)
 
 
+SNAP_FROM = {"eyes": "head"}  # parts on these bones are seated along rays from this joint
+
+
 def snap_parts(d):
     """Seat each part on the body surface for the current stage: ray from the bone joint
     toward the part's anchor, place the anchor at the hit (minus a small inset). The
@@ -1455,7 +1463,8 @@ def snap_parts(d):
     for key, inset in F["inset"].items():
         for anchor, members in d["snap"].get(key, []):
             c = anchor.constraints[0]
-            joint = (d["arm"].matrix_world @ d["arm"].pose.bones[c.subtarget].matrix).translation
+            ray_bone = SNAP_FROM.get(c.subtarget, c.subtarget)
+            joint = (d["arm"].matrix_world @ d["arm"].pose.bones[ray_bone].matrix).translation
             for o in members:  # reset last stage's snap offset
                 if "snap_off" in o:
                     o.location = Vector(o["base_loc"])
@@ -1502,6 +1511,9 @@ def pose_stage(d, t, build, sit=False):
         sit_pose(d)
     apply_t(d, t, build)
     ground(d)
+
+
+BLINK_SQUASH = 0.9  # shut eyes keep this much less of their height (src/core/den_actor.hpp kBlinkSquash)
 
 
 def open_jaw(d, degrees):
@@ -1638,6 +1650,9 @@ def main():
         pose_stage(built, t, built["breed"]["build"], sit="--sit" in argv)
         if arg("--jaw"):
             open_jaw(built, float(arg("--jaw")))
+        if arg("--blink"):  # previews: 0 open .. 1 shut, as the runtime does it
+            built["arm"].pose.bones["eyes"].scale[2] *= 1.0 - BLINK_SQUASH * float(arg("--blink"))
+            bpy.context.view_layer.update()
         report(built, stage)
         for view in views:
             frame_camera(cam, [built], view)

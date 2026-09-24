@@ -16,9 +16,23 @@ bool resolveClips(const AnimLibrary& lib, int form, int out[static_cast<int>(Cli
 // second, at growth t and build): the ground speed at which the feet do not slide.
 float locomotionSpeed(const ModelData& m, const AnimBinding& bind, const AnimClip& clip, float t, int build);
 
+// The eyelids (the model's "eyes" bone is squashed vertically to shut the eyes): a blink
+// every few seconds (now and then a double one), eased toward how shut the activity wants
+// them (DenBehavior::eyesClosed). No blinking while they are mostly shut already.
+constexpr float kBlinkSquash = 0.9f;  // shut eyes lose this much of their height (dragon_model BLINK_SQUASH)
+struct Eyelids {
+    float shut = 0;     // 0 open .. 1 shut, this frame
+    float level = 0;    // the activity's level, eased
+    float next = 2.5f;  // seconds to the next blink
+    float blink = -1;   // seconds into the current blink (< 0: none)
+    Rng rng{7};
+    void update(float target, float dt);
+};
+
 struct DenActor {
     DenBehavior behavior;
     Animator anim;
+    Eyelids eyes;
     u16 playedSerial = 0xFFFF;
     int speedForm = -1;  // the body the walking speeds were measured on
     float speedT = -1;

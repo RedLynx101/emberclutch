@@ -99,6 +99,9 @@ struct DenBehavior {
     // How much the dragon looks at the player right now (0..1): full when idle or greeting,
     // none while eating, sleeping or sulking.
     float lookWeight() const;
+    // How shut its eyes should be (0 open .. 1 shut): asleep or drifting off, a content
+    // squint while petted, a sleepy one while yawning. Blinks come on top (core/den_actor).
+    float eyesClosed() const;
     // True if a dragon of this size can stand at p / walk straight from a to b without
     // touching an obstacle or another dragon.
     bool clearAt(Vec2 p, float margin) const;

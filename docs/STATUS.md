@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-23 · **Milestone:** **Alpha 1 in progress** (WP2 sculpt → R1 sent; WP1 next)
+**Updated:** 2026-09-23 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP2 sculpt → R1 sent; WP8 next)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -19,11 +19,19 @@
 - **Audio:** music batch 1 processed into `romfs/music/` (6 loops). No SFX yet.
 - **Hardware:** never run on a real 3DS yet (deferred, D28).
 
-## Next actions (Alpha 1)
-1. WP1 engine foundation (scenes, romfs, citro3d, debug overlay, dev menu).
-2. WP2 dragon model pipeline in parallel → **review R1 (sculpt renders) for Noah**.
-3. WP8 save system and WP9 audio streaming while R1 is pending.
-4. Write the Suno briefs for the hatching stinger and the A1 sound-effect set.
+## Alpha 1 progress
+- ✅ **WP1 engine foundation:** scenes split into `src/app/scene_*.cpp`, string table,
+  romfs enabled (music packed in, 7 MB `.3dsx`), budget overlay (frame/CPU/GPU ms,
+  command buffer, triangles, draw calls, bones, memory, romfs check), dev menu on
+  SELECT (time skip, needs, hatch, next stage, save, reset). Verified in Azahar.
+- ⏸ **WP2 dragon model:** organic mesh, rig and growth stages done
+  (`tools/blender/dragon_model.py`); **R1 sent**, texturing waits for it.
+
+## Next actions
+1. WP8 save system (versioned A/B + CRC + migrations), with PC tests.
+2. WP9 audio: Ogg streaming with loop points; Suno briefs for the hatching stinger and
+   the A1 sound-effect set.
+3. WP3 converter + WP4 renderer (**ask Noah for extra-high effort**).
 
 ## Current goal (D31)
 **Complete through Alpha 2.** Gates that stop the run:

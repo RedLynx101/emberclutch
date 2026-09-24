@@ -44,7 +44,7 @@ APP_TITLE	:=	Emberclutch
 APP_DESCRIPTION	:=	Raise, breed and fly with dragons
 APP_AUTHOR	:=	Noah Hicks
 GFXBUILD	:=	$(BUILD)
-#ROMFS		:=	romfs
+ROMFS		:=	romfs
 #GFXBUILD	:=	$(ROMFS)/gfx
 
 #---------------------------------------------------------------------------------
@@ -56,7 +56,9 @@ CFLAGS	:=	-g -Wall -Wextra -Wno-unused-parameter -O2 -mword-relocations \
 			-ffunction-sections \
 			$(ARCH)
 
-CFLAGS	+=	$(INCLUDE) -D__3DS__
+# DEV=1 (default) builds the budget overlay and dev menu; `make DEV=0` for release.
+DEV	?=	1
+CFLAGS	+=	$(INCLUDE) -D__3DS__ -DEC_DEV=$(DEV)
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 

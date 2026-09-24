@@ -1,5 +1,7 @@
 #include "core/dragon.hpp"
 
+#include <initializer_list>
+
 #include "core/clock.hpp"
 
 namespace ec {
@@ -116,10 +118,18 @@ int stageMinDay(Stage s) {
     }
 }
 
+int stageMinStars(Stage s) {
+    switch (s) {
+        case Stage::Juvenile: return 6;
+        case Stage::Adolescent: return 14;
+        case Stage::Adult: return 26;
+        default: return 0;
+    }
+}
+
 Stage stageFor(int days, int stars) {
-    if (days >= 14 && stars >= 26) return Stage::Adult;
-    if (days >= 8 && stars >= 14) return Stage::Adolescent;
-    if (days >= 4 && stars >= 6) return Stage::Juvenile;
+    for (Stage s : {Stage::Adult, Stage::Adolescent, Stage::Juvenile})
+        if (days >= stageMinDay(s) && stars >= stageMinStars(s)) return s;
     return Stage::Hatchling;
 }
 

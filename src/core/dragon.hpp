@@ -56,6 +56,7 @@ constexpr s32 kIncubationSeconds = 24 * 3600;
 // Stage gates: minimum days since hatching and minimum total care stars.
 Stage stageFor(int daysSinceHatch, int careStars);
 int stageMinDay(Stage s);
+int stageMinStars(Stage s);
 
 Sex rollSex(Rng& rng);
 Dragon makeEgg(u32 id, const Genome& g, Sex sex, s64 now);

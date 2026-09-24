@@ -140,7 +140,7 @@ float g_adultRadius = 1;  // framing radius of a neutral adult: the camera's ref
 PartsMesh g_parts;
 bool g_ready = false;
 AnimLibrary g_anims;
-int g_clipIndex[static_cast<int>(ClipId::Count)];
+int g_clipIndex[kFormCount][static_cast<int>(ClipId::Count)];
 bool g_animsOk = false;
 AnimBinding g_bind[kFormCount];  // LOD1 shares its form's skeleton
 Vec3 g_camTarget;                // smoothed den camera target
@@ -418,7 +418,9 @@ bool init() {
             std::fseek(file, 0, SEEK_SET);
             const bool read = std::fread(bytes.data(), 1, bytes.size(), file) == bytes.size();
             std::fclose(file);
-            g_animsOk = read && loadAnims(bytes.data(), bytes.size(), g_anims) && resolveClips(g_anims, g_clipIndex);
+            g_animsOk = read && loadAnims(bytes.data(), bytes.size(), g_anims) &&
+                        resolveClips(g_anims, kFormHatchling, g_clipIndex[kFormHatchling]) &&
+                        resolveClips(g_anims, kFormGrown, g_clipIndex[kFormGrown]);
         }
         for (int f = 0; f < kFormCount; ++f) bindAnims(g_anims, g_forms[f][0].model.skel, g_bind[f]);
     }
@@ -566,7 +568,7 @@ void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, s64 now) {
 }
 
 const AnimLibrary* anims() { return g_animsOk ? &g_anims : nullptr; }
-const int* clipIndex() { return g_clipIndex; }
+const int* clipIndex(int form) { return g_clipIndex[form == kFormHatchling ? kFormHatchling : kFormGrown]; }
 const ModelData* model(int form) { return g_ready && form >= 0 && form < kFormCount ? &g_forms[form][0].model : nullptr; }
 const AnimBinding* binding(int form) { return g_animsOk && form >= 0 && form < kFormCount ? &g_bind[form] : nullptr; }
 

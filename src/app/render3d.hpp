@@ -33,9 +33,9 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now);
 void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, s64 now);
 
 // The dragon animation clips (romfs:/anims/dragon.eca), or nullptr if they failed to load,
-// and the library index of each behavior clip.
+// and the library index of each behavior clip for a body form.
 const AnimLibrary* anims();
-const int* clipIndex();
+const int* clipIndex(int form);
 // A body form's model (LOD0) and its clip binding, for measuring walking speeds.
 const ModelData* model(int form);
 const AnimBinding* binding(int form);

@@ -7,6 +7,7 @@
 
 #include "check.hpp"
 #include "core/den_actor.hpp"
+#include "core/rig.hpp"
 
 using namespace ec;
 
@@ -30,7 +31,7 @@ struct World {
     bool ok = false;
     World() {
         const std::vector<u8> bytes = fileBytes("../romfs/anims/dragon.eca");
-        ok = !bytes.empty() && loadAnims(bytes.data(), bytes.size(), lib) && resolveClips(lib, clips);
+        ok = !bytes.empty() && loadAnims(bytes.data(), bytes.size(), lib) && resolveClips(lib, kFormGrown, clips);
     }
 };
 
@@ -62,6 +63,11 @@ float dist(Vec2 a, Vec2 b) { return std::hypot(a.x - b.x, a.y - b.y); }
 
 TEST(behavior_clips_exist_in_the_clip_file) {
     CHECK(world().ok);  // every ClipId name is a clip in tools/anim/clips.py
+    // Hatchlings get their own variants where one exists.
+    int baby[static_cast<int>(ClipId::Count)];
+    CHECK(resolveClips(world().lib, kFormHatchling, baby));
+    CHECK(baby[static_cast<int>(ClipId::Eat)] == world().lib.find("eat_h"));
+    CHECK(baby[static_cast<int>(ClipId::Walk)] == world().clips[static_cast<int>(ClipId::Walk)]);
     for (int a = 0; a < static_cast<int>(Activity::Count); ++a)
         CHECK(activityName(static_cast<Activity>(a))[0] != '?');
 }

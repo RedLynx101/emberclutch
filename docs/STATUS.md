@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-23 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP8 ✅, WP9 ✅; WP2 sculpt approved, texturing next; WP5 next)
+**Updated:** 2026-09-23 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP5 ✅, WP8 ✅, WP9 ✅; WP2 sculpt approved; WP6 next)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -41,6 +41,15 @@
   both forms (body < 0.001, wings < 0.006, parts exact), a 3,000-triangle worst-case budget,
   and the stage → form mapping.
 
+- ✅ **WP5 animation and behavior:** 32 clips authored in Python (`tools/anim/clips.py`,
+  pitch/yaw/roll deltas in armature axes on top of the idle pose) → `romfs/anims/dragon.eca`.
+  Runtime animator with crossfades and events (sounds), per-frame floor contact, head
+  look-at, and a den behavior state machine (everyday life by mood/personality/energy, naps
+  and night sleep at the nest, sulking in the nook, care reactions). Walking speed is
+  measured from each body's stride (no skating). Dev menu "Next activity" reaches every
+  state. PC tests: 57,381 checks. **R3 sent** (contact sheets). Not yet seen in the
+  emulator (paused).
+
 - ✅ **WP8 save system:** versioned A/B slots, CRC32, per-record sizes, validation,
   legacy dev-save import; 5 new PC tests (22 total, 11,383 checks). In Azahar: slots
   alternate, a corrupted newest slot falls back to the older one and is then rewritten.
@@ -54,14 +63,16 @@
   Note: the emulator needs `sdmc:/3ds/dspfirm.cdc`; a local dummy file works in Azahar (never commit it).
 
 ## Next actions
-1. **WP5 animation and behavior:** `.eca` clips authored by Blender scripts, playback and
-   crossfades in `src/core` (PC-tested), the behavior state machine.
-2. **WP2 rest:** egg model; texturing (UVs, scale detail, the Pattern gene) → R2.
-3. WP6 den scene, WP7 interactions, WP10 UI/fonts, WP11 CIA packaging, WP12 wrap-up.
+1. **WP6 den scene:** the room model (Blender script), a static-mesh render path, day /
+   evening / night lighting, particles. The behavior's `DenLayout` spots move into it.
+2. **WP2 rest:** egg model (+ hatching clips); texturing (UVs, scale detail, the Pattern
+   gene) → R2.
+3. WP7 interactions, WP10 UI/fonts, WP11 CIA packaging, WP12 wrap-up.
 
 **Emulator checks are paused** (Noah asked for no computer use until he says so). Queued
 for the next session: 3-dragon test triangle count with LOD1, the petting close-up, the
-heartglow core, then everything built since.
+heartglow core, den life (walking, sitting, sleeping, sulking, reactions, sounds, look-at),
+then everything built since.
 
 ## Current goal (D31)
 **Complete through Alpha 2.** Gates that stop the run:
@@ -76,7 +87,8 @@ heartglow core, then everything built since.
 ## Waiting on Noah
 - Optional, non-blocking: Suno [music batch 2](audio/suno-music-batch-2.md) and the
   [sound effects](audio/suno-sfx-alpha1.md).
-- Nothing blocking. R1c (faces, growth) was sent as a follow-up; comments welcome.
+- Nothing blocking. Comments welcome on R1c (faces, growth) and
+  **[R3 animation](art/reviews/R3-anim.md)** (`R3-anim-grown-1/2.png`, `R3-anim-hatchling.png`).
 
 ## How to work
 - Build: `tools\build.ps1` · Tests: `tools\test.ps1` · Emulator: `tools\emu.ps1`

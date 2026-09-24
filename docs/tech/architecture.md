@@ -89,6 +89,31 @@ the whole simulation deterministic and testable without hardware (`make -C tests
   (D38), falling back to spikes. Three draws per dragon: body, parts, wings (the wing draw
   also uses chest/belly/hips so the membrane's flank edge follows the body).
 
+### Animation (as built in WP5)
+
+- **Clips** (`tools/anim/clips.py` → `romfs/anims/dragon.eca`, 32 clips, ~174 KB) store,
+  per bone and 30 Hz frame, a rotation **delta** applied on top of the dragon's idle pose.
+  Deltas are authored as pitch / yaw / roll about **armature axes** (they read the same
+  for every bone), and `bindAnims` turns them into each bone's local frame with that
+  form's rest rotation, so one clip set serves both body forms and every growth stage.
+  A clip named `<name>_h` replaces `<name>` on the hatchling (a baby's big head nods
+  instead of bending its neck to eat).
+- Optional **root track** (lift, forward) for hops. Horizontal travel (walking, the
+  pounce's leap) moves the dragon itself, never the mesh.
+- **Floor contact** is recomputed every frame from the posed body (every third vertex,
+  smoothed), so sitting, lying and rolling over settle onto the floor without authored
+  root motion.
+- **Animator** (`core/anim`): one clip plus a crossfade, event markers (footstep, chomp,
+  purr, thump, flap, yawn) that play sounds. **Look-at**: the neck and head turn toward the
+  den camera within limits, weighted by activity.
+- **Behavior** (`core/behavior`): a state machine of activities: everyday life weighted
+  by mood, personality and energy; naps and night sleep at the nest; sulking in the nook
+  until made up; care reactions by petting zone. `core/den_actor` steps behavior and
+  animation together. Walk/trot speeds are **measured from each body's stride**
+  (`locomotionSpeed`), so feet never skate.
+- `tools/blender/preview_anims.py` renders clips on the Blender rig with the same math
+  (review R3). The den layout (nest, nook, radius) lives in `DenLayout` until WP6's room.
+
 ### Coloring (no texture per variant) — as built in WP3/WP4
 
 Every vertex carries **paint**: two palette slots, a mix amount and an emissive weight
@@ -166,7 +191,10 @@ tools/audio/make_placeholder_sfx.py         --> romfs/sfx/*.wav
   poses/growth/build cases per form; `tests/test_model.cpp` checks the C++ rig
   (`src/core/skeleton.cpp`, `rig.cpp`) reproduces them (body < 0.001, wings < 0.006,
   parts exact, on a ~6-unit adult).
-- **`.eca` animations** follow in WP5 (per-bone quaternions at 30 Hz + events).
+- **`.eca` v1** (`tools/anim/eca.py` → `src/core/anim.cpp`): bone names; per clip name,
+  fps, frames, loop/root flags, locomotion speed; per bone a mode (none / constant /
+  animated) and int16 quaternions; optional root track; event markers. Built by
+  `python tools/anim/build_anims.py` (no Blender needed).
 - Everything ships in **romfs**. Music is streamed and never loaded whole.
 
 ## 6. Audio

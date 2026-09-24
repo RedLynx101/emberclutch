@@ -58,6 +58,9 @@ void playEventSound(u8 event, const Dragon& d, s64 now) {
     }
 }
 
+// The clips for this dragon's current body (hatchlings have a few of their own).
+const int* clipsFor(const Dragon& d, s64 now) { return r3d::clipIndex(growthFor(d.stage, stageProgress(d, now)).form); }
+
 // Walk and trot at the speed this dragon's feet actually move (no skating).
 void matchSpeeds(DenActor& actor, const Dragon& d, s64 now) {
     const Growth g = growthFor(d.stage, stageProgress(d, now));
@@ -65,7 +68,7 @@ void matchSpeeds(DenActor& actor, const Dragon& d, s64 now) {
     const AnimBinding* bind = r3d::binding(g.form);
     if (!m || !bind) return;
     const int build = d.genome.build < kModelBuilds ? d.genome.build : kBuildNeutral;
-    actor.updateSpeeds(*m, *bind, *r3d::anims(), r3d::clipIndex(), g.form, g.t, build, sizeScale(d.genome));
+    actor.updateSpeeds(*m, *bind, *r3d::anims(), r3d::clipIndex(g.form), g.form, g.t, build, sizeScale(d.genome));
 }
 
 // Moves the den's dragons along: behavior decides, animation follows (core/den_actor).
@@ -86,15 +89,15 @@ void denLife(App& app, s64 now) {
     const bool night = isNight(now);
     u8 events[8];
     matchSpeeds(app.actors[0], d, now);
-    const int n = app.actors[0].update(d, night, moveScaleOf(d, now), app.dt, *lib, r3d::clipIndex(), events, 8);
+    const int n = app.actors[0].update(d, night, moveScaleOf(d, now), app.dt, *lib, clipsFor(d, now), events, 8);
     for (int i = 0; i < n; ++i) playEventSound(events[i], d, now);
     if (app.denTest) {
         const Dragon* extra[2];
         standIns(d, extra);
         for (int i = 0; i < 2; ++i) {
             matchSpeeds(app.actors[i + 1], *extra[i], now);
-            app.actors[i + 1].update(*extra[i], night, moveScaleOf(*extra[i], now), app.dt, *lib, r3d::clipIndex(),
-                                     events, 8);
+            app.actors[i + 1].update(*extra[i], night, moveScaleOf(*extra[i], now), app.dt, *lib,
+                                     clipsFor(*extra[i], now), events, 8);
         }
     }
 }

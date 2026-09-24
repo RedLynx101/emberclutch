@@ -59,9 +59,11 @@ CURL = merge(LIE, {
     "neck1": (-6, 32, 0), "neck2": (-4, 30, 0), "neck3": (0, 22, 0), "head": (-22, 10, 12),
     "tail1": (0, 28, 0), "tail2": (0, 30, 0), "tail3": (0, 32, 0), "tail4": (0, 30, 0),
 })
+# Front legs crouch so the chest comes down: babies' big heads reach the food without
+# tipping below their feet.
 EAT = merge(WINGS_FOLDED, {
-    "neck1": (-52, 0, 0), "neck2": (-30, 0, 0), "neck3": (-14, 0, 0), "head": (-18, 0, 0),
-    "arm_up*": (-10, 0, 8), "arm_lo*": (6, 0, 0), "chest": (-10, 0, 0), "hips": (-4, 0, 0),
+    "neck1": (-40, 0, 0), "neck2": (-24, 0, 0), "neck3": (-10, 0, 0), "head": (-14, 0, 0),
+    "arm_up*": (26, 0, 8), "arm_lo*": (-44, 0, 0), "hand*": (18, 0, 0), "chest": (-6, 0, 0), "hips": (-8, 0, 0),
 })
 BELLY_UP = merge(WINGS_HALF, {
     "hips": (0, 0, 165), "chest": (0, 0, 12),
@@ -199,6 +201,16 @@ eat = clip("eat", 1.2, loop=True).pose(0.0, EAT)
 eat.wave(lambda t: {"head": (8 * max(0.0, sin01(t, 0.6)), 0, 0), "snout": (6 * max(0.0, sin01(t, 0.6)), 0, 0),
                     "neck1": (3 * sin01(t, 1.2), 0, 0)})
 eat.event(0.15, "chomp").event(0.75, "chomp")
+
+# Hatchling variants ("<name>_h" replaces "<name>" on the baby body, core/den_actor): a big
+# baby head only needs a nod to reach the bowl.
+EAT_BABY = merge(WINGS_FOLDED, {
+    "neck1": (-18, 0, 0), "neck2": (-10, 0, 0), "head": (-26, 0, 0),
+    "arm_up*": (30, 0, 8), "arm_lo*": (-50, 0, 0), "hand*": (20, 0, 0), "chest": (-8, 0, 0), "hips": (-6, 0, 0),
+})
+eat_h = clip("eat_h", 1.2, loop=True).pose(0.0, EAT_BABY)
+eat_h.wave(lambda t: {"head": (8 * max(0.0, sin01(t, 0.6)), 0, 0), "neck1": (3 * sin01(t, 1.2), 0, 0)})
+eat_h.event(0.15, "chomp").event(0.75, "chomp")
 (clip("fav_wiggle", 1.6).pose(0.0, WINGS_FOLDED).pose(0.3, merge(WINGS_HALF, {"neck1": (10, 0, 0), "head": (12, 0, 0)}))
  .pose(1.3, merge(WINGS_HALF, {"neck1": (10, 0, 0), "head": (12, 0, 0)})).pose(1.6, WINGS_FOLDED)
  .wave(lambda t: {"hips": (0, 7 * sin01(t, 0.4), 0), "chest": (0, -5 * sin01(t, 0.4), 0),

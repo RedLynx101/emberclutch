@@ -1,13 +1,22 @@
 #include "core/den_actor.hpp"
 
+#include <cstdio>
+
 #include "core/rig.hpp"
 
 namespace ec {
 
-bool resolveClips(const AnimLibrary& lib, int out[static_cast<int>(ClipId::Count)]) {
+bool resolveClips(const AnimLibrary& lib, int form, int out[static_cast<int>(ClipId::Count)]) {
     bool all = true;
     for (int i = 0; i < static_cast<int>(ClipId::Count); ++i) {
-        out[i] = lib.find(clipName(static_cast<ClipId>(i)));
+        const char* name = clipName(static_cast<ClipId>(i));
+        out[i] = -1;
+        if (form == kFormHatchling) {
+            char baby[16];
+            std::snprintf(baby, sizeof(baby), "%s_h", name);
+            out[i] = lib.find(baby);
+        }
+        if (out[i] < 0) out[i] = lib.find(name);
         all &= out[i] >= 0;
     }
     return all;

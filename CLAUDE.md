@@ -27,6 +27,9 @@ session, and add new decisions to the log.
 - Push to 3DS: `tools\run.ps1 -Address <ip>` (Homebrew Launcher, press Y) or
   `tools\deploy_ftp.ps1 -FtpHost <ip>` (ftpd, port 5000)
 - Music: `python tools/audio/make_loop.py assets/audio/music/source/<slug>.wav --bpm <bpm> --preview`
+- Animations: edit `tools/anim/clips.py`, then `python tools/anim/build_anims.py` (writes
+  `romfs/anims/dragon.eca`) and `tools\test.ps1`. Preview on the rig:
+  `blender -b -P tools/blender/preview_anims.py -- --clips walk,sit --form grown --out <abs prefix>`
   (set `FFMPEG_DIR` if ffmpeg isn't on PATH)
 
 ## Gotchas

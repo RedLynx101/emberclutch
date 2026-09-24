@@ -66,7 +66,7 @@ While waiting on a review, work continues on the non-art packages (engine, save,
 - Camera: den overview, petting close-up (bottom screen renders the close-up directly).
 - *Verify:* test scene with 3 dragons in the den stays in budget.
 
-### WP5 — Animation and behavior
+### WP5 — Animation and behavior ✅ (review R3 sent)
 - Clip playback, crossfades, additive head look-at, event markers.
 - Behavior state machine: wander, idle variants, sit/lie, nap, sleep at night, eat,
   react to pets, play, sulk in the nook, make-up, greet, look at the player.

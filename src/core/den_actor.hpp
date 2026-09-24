@@ -8,8 +8,9 @@
 
 namespace ec {
 
-// Library index of every behavior clip. False if the clip file lacks one.
-bool resolveClips(const AnimLibrary& lib, int out[static_cast<int>(ClipId::Count)]);
+// Library index of every behavior clip for a body form (a clip named "<name>_h" replaces
+// "<name>" on the hatchling). False if the clip file lacks one.
+bool resolveClips(const AnimLibrary& lib, int form, int out[static_cast<int>(ClipId::Count)]);
 
 // How fast a locomotion clip's planted feet move backward under this body (model units per
 // second, at growth t and build): the ground speed at which the feet do not slide.

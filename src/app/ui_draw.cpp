@@ -260,7 +260,7 @@ void drawSaveIcon(App& app) {
 void gauge(App& app, float x, float y, const char* label, float value) {
     text(app, label, x, y, 0.42f, theme::kShell, C2D_AlignLeft);
     const Rect bar{x, y + 14, 66, 8};
-    panel(bar, theme::kDusk);
+    panel(bar, theme::kTrack);
     const u32 fill = value < 25 ? theme::kRose : (value < 50 ? theme::kEmber : theme::kClutchGold);
     if (value > 2) panel({bar.x, bar.y, bar.w * value / 100.0f, bar.h}, fill);
 }

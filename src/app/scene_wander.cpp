@@ -84,10 +84,14 @@ void drawTop(App& app) {
     const int out = wandererIndex(app.game);
     int shown = -1;
     if (app.findsFrom >= 0) shown = app.findsFrom;          // back, with its finds
-    else if (out < 0 && app.wanderPick >= 0) shown = app.wanderPick;  // the one picked to go
+    else if (out >= 0) shown = out;                          // out on the trail: walking along it
+    else if (app.wanderPick >= 0) shown = app.wanderPick;    // the one picked to go
     if (shown >= 0 && r3d::ready()) {
         static EggMotion none;
-        r3d::drawShowcase(app, app.game.dragons[shown], &none, now, 0.35f * std::sin(app.t * 0.5f));
+        if (shown == out && app.findsFrom < 0)  // seen side-on, as if passing along the path
+            r3d::drawShowcase(app, app.game.dragons[shown], &none, now, 1.25f, ClipId::Walk);
+        else
+            r3d::drawShowcase(app, app.game.dragons[shown], &none, now, 0.35f * std::sin(app.t * 0.5f));
     }
     textCentered(app, str::kWanderings, 200, 26, 1.0f, theme::kDenPlum, 380, Face::Title);
     if (out >= 0 && app.findsFrom < 0) {  // out: a little heart far along the path

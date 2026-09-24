@@ -281,9 +281,71 @@ while every other title runs. Fixed in 0.1.2 (D56):
   memory reads 0 MB on the 3DS, because libctru gives the heap everything at start, so the
   log line no longer shows it.)
 
-**Run 3:** 0.1.3, the 3D-banner CIA first (if the HOME Menu freezes: hold POWER, install
-the diagnostic CIA and try again, then the flat one), and the game also as a `.3dsx` for the
-Homebrew Launcher (D59).
+**Run 3 (2026-09-24, 0.1.3, the flat-banner CIA and the .3dsx):** the game runs on the old
+3DS: past the egg pick, the hatching, care, the map, the Wanderings. 11 screenshots, the
+first real numbers: one egg in the den 16.7 ms; **the full den with the close-up 22–23 ms**
+(7,286 + 2,966 triangles, CPU 10.9 ms, GPU 8.3 ms), so about 45 fps; all four looks in
+memory 22.9 → 19.6 MB of linear memory free.
+- **Both 3D-banner CIAs still froze the HOME Menu** (the flag back, the wordmark as 0.1.1 or
+  not), and the flat one played **0.1.1's sound**, though every 0.1.3 banner carries the
+  theme clip (checked in the built banner). So the HOME Menu keeps a banner per title and
+  showed a cached one. It no longer makes sense to test banners on the game's own title:
+  `tools/banner_lab.ps1` packs **banner-lab titles** (their own IDs, no romfs, ~1 MB each)
+  to try on the HOME Menu instead. Lab 1: A = 0.1.1's banner exactly (the control), B =
+  0.1.1's scene with the theme clip, C = the new scene with the old sound, D = the new scene
+  with 0.1.1's wordmark and the old sound, E = 0.1.3's banner exactly. Which ones freeze
+  says whether it's the scene, the sound or neither.
+- **Next style (R5) froze the whole 3DS** after one or two presses (CIA and .3dsx both). The
+  dev menu runs while the bottom screen is drawn, after the top screen's dragons are queued
+  for the GPU; the style change freed their vertex buffers and skins at once, and the GPU
+  read memory already handed out again. Fixed for every such release: GPU memory is freed
+  only after the next C3D_FrameBegin (which waits for the last frame), in
+  `r3d::frameBegun()`. Scene updates freed buffers the same way while the last frame could
+  still be drawing (decor, props); those go through it too.
+- **Fixed in 0.1.4 from Noah's notes:** the need bars' empty track dark (it was the colour
+  of the background); the ball bounces off the room's real wall and the rocks against it
+  (it bounced off the dragons' walking circle), and past that circle the floor rises so it
+  rolls back within reach; feeding no longer swings the head left and right, and petting
+  under the chin no longer jitters (the look-at aimed from the head itself, so a target at
+  the snout flipped it between its limits; now from a little behind it, and the gaze eases
+  toward the stylus); the sponge on a rinsed dragon brings it back to the tub for another
+  wash (it did nothing until the tool was picked again); L / R with the brush or cloth turns
+  it to show the other flank at any time (it only listened mid-stroke); the petting close-up
+  frames a grown dragon's face closer; a wagging tail no longer lifts a big dragon off the
+  floor (the tail no longer counts as floor contact); a dragon interrupted while carrying the
+  ball back lets it drop (it kept it in its mouth); the tub grows with the dragon; the
+  Wanderings show the dragon out walking; the baby's chest heart sits lower, where its chin
+  doesn't hide it when it sits (all four looks re-exported).
+- **Already there, less visible than it should be:** favourite foods (one per dragon, hidden
+  until fed; 1.5x belly and double bond, "Its favourite!" and hearts; the profile shows it
+  once found). Planned: a small heart on the known favourite in the food row, and an eager
+  sniff when an unknown favourite is offered.
+
+**Run 4:** the banner lab first (install the five `Banner lab` CIAs from `/cias/lab/`,
+select each on the HOME Menu, note which freeze, never start them, then delete them in FBI),
+then 0.1.4 with the flat banner. To drop the HOME Menu's cached banner, delete the
+Emberclutch title in FBI before installing (the save is on the SD card and stays).
+
+### WP11d — Hardware performance pass (after run 3)
+The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 8.3). Target:
+16.7 ms with three dragons, their toys and decor, and the close-up.
+- **Measure first, on the 3DS:** section timers in the dev overlay (pose and look-at, skinning
+  data, the ground search, dust, the room, props, 2D UI, audio) and a "perf" line in the
+  screenshot log, so a Y press on the hardware brings back where the milliseconds go.
+- **Likely CPU cuts:** evaluate each dragon's pose once a frame (the look-at evaluates the
+  whole skeleton again), the ground from the feet bones instead of body vertices, dust
+  streams only when dirt changes, background dragons animated at 30 Hz, fewer draw calls
+  for props.
+- **Likely GPU cuts:** LOD1 sooner for the dragons behind, a lighter close-up (it draws the
+  whole dragon again), cheaper lighting for the room's glows.
+- Checked on the 3DS with the same full den; the budget overlay's targets updated from the
+  hardware numbers.
+
+### WP11e — Stereoscopic 3D (the 3D slider; Noah, run 3)
+The top screen is flat today. Rendered per eye when the slider is up: the den, the
+showcases, the map and the title, with the UI at screen depth and the dragons just behind
+it. It draws the top screen's 3D twice, so it waits for WP11d; in 3D it may run at 30 fps on
+the old 3DS (to decide with Noah). The bottom screen can't be 3D.
 
 ### WP11c — An Emberclutch boot logo (D58)
 The logo the HOME Menu plays as a title starts (the NCCH's logo region; the emulator never
@@ -339,6 +401,26 @@ hatchling sits in it. It also "just hatches": no moment where it breaks out.
   the sequence frame by frame.
 - This replaces the first plan (the newborn curled up inside, an egg of four or five
   shards, the cap riding on its head): simpler, and closer to what Noah pictures.
+
+### WP12b — Grooming that fits together (Noah, run 3; proposal, to settle with him)
+Today the brush, the cloth and the bath each raise Shine and clear dust, so the bath does it
+all and the others feel pointless. A proposal: each tool has its own job, in an order that
+makes a little routine.
+- **The bath** washes off mud and grime (a new "grubby" level from the Wanderings, the
+  garden, rain), in a tub with **visible water** (a surface that sways, splashes, suds on
+  top) sized to the dragon. It leaves the dragon damp and its scales dull.
+- **The cloth** dries it (a damp sheen fading as you rub) and polishes: Shine only rises on
+  dry, clean scales.
+- **The brush** is for loose scales: growing dragons shed (more before a stage-up), and
+  brushing them out keeps the coat even, with a little pile of shed scales to sell or
+  craft with; it's also what the Shine Show (Beta) judges.
+- The needs bar shows what's missing (a droplet when damp, a smudge when grubby).
+
+### WP12c — Running (Noah, run 3)
+- A **sprint / zoomies clip** for hatchlings (a scamper with bounding hops) and a gallop for
+  grown dragons, used in chase games, fetch (a far throw), toy runs and a happy burst of
+  zoomies after a bath or a favourite food. The walk and trot stay; run speed matches the
+  new clip's stride, as the others do.
 
 ### WP12 — The dragons update: every look, every breed (D54)
 - **Looks per dragon (D54):** the current look and V1–V3 all ship. A look gene per dragon

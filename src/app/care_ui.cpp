@@ -149,6 +149,15 @@ void noteSample(CareState& c, Vec2 p, float t) {
 
 // The hand: strokes where you touch; the sweet spot, pokes, rough handling; held still off
 // the dragon, a call.
+// The dragon's gaze follows the stylus smoothly (it twitched with every pixel of it); a gaze
+// that had faded away starts where it's aimed.
+void gazeAt(App& app, Vec3 target, float weight) {
+    DenActor& a = actor(app);
+    const float k = a.gazeWeight > 0.05f ? std::fmin(1.0f, app.dt * 8.0f) : 1.0f;
+    a.gazeLocal = a.gazeLocal + (target - a.gazeLocal) * k;
+    a.gazeWeight = weight;
+}
+
 void useHand(App& app, const Input& in, Dragon& d, bool hit, const TouchHit& h, Stroke kind) {
     CareState& c = app.care;
     DenBehavior& b = actor(app).behavior;
@@ -172,8 +181,7 @@ void useHand(App& app, const Input& in, Dragon& d, bool hit, const TouchHit& h, 
         return;
     }
     if (kind == Stroke::None) return;
-    actor(app).gazeLocal = h.local;  // lean toward the hand
-    actor(app).gazeWeight = 0.55f;
+    gazeAt(app, h.local, 0.55f);  // lean toward the hand
     if ((c.petTick -= app.dt) <= 0) {
         c.petTick = 0.25f;
         pet(d, 3);
@@ -210,8 +218,7 @@ void useFood(App& app, const Input& in, Dragon& d) {
     DenActor& a = actor(app);
     if (!c.holdingFood) return;
     a.behavior.care(Care::OfferFood, d);
-    a.gazeLocal = r3d::closeUpLocal({in.tx, in.ty});
-    a.gazeWeight = 0.8f;
+    gazeAt(app, r3d::closeUpLocal({in.tx, in.ty}), 0.8f);
     Vec2 mouth;
     if (!r3d::mouthOnCloseUp(mouth)) return;
     const float dist = std::hypot(in.tx - mouth.x, in.ty - mouth.y);
@@ -289,11 +296,21 @@ void useGroomTool(App& app, const Input& in, Dragon& d, bool hit, const TouchHit
     }
 }
 
-// The sponge: suds while it sits in the tub.
+// The sponge: suds while it sits in the tub. Rinsed, it hops out and shakes off; the tub stays
+// out, and the sponge on it again brings it back in for another wash (it did nothing until
+// the tool was picked again: Noah, run 3).
 void useSponge(App& app, const Input& in, Dragon& d, bool hit, float moved) {
     CareState& c = app.care;
-    const DenBehavior& b = actor(app).behavior;
-    if (!hit || moved < 0.5f || b.activity != Activity::Bath || b.step != 2) return;
+    DenBehavior& b = actor(app).behavior;
+    if (!hit || moved < 0.5f) return;
+    if (b.activity != Activity::Bath) {
+        if (c.bathOut && !d.upset) {
+            c.suds = 0;
+            b.care(Care::Bath, d);
+        }
+        return;
+    }
+    if (b.step != 2) return;
     c.suds = std::fmin(1.0f, c.suds + moved / 900.0f);
     if (app.rng.chance(1, 2)) emit(app, kFxSuds, {in.tx, in.ty}, 1);
     if ((c.soundWait -= app.dt) <= 0) {
@@ -804,8 +821,13 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
         audio::playSfx(audio::Sfx::Purr, 1.0f);
         showToast(app, str::kMadeUp);
     }
-    if (in.down & KEY_L) b.groomSide = -1;
-    if (in.down & KEY_R) b.groomSide = 1;
+    // L / R with a brush or cloth in hand: it turns the other flank to you, whether or not it's
+    // being groomed right now (it only listened mid-stroke before, so it seemed to do nothing).
+    // care() ignores a sleeping or upset one.
+    if ((in.down & (KEY_L | KEY_R)) && (c.tool == Tool::Brush || c.tool == Tool::Cloth)) {
+        b.groomSide = (in.down & KEY_L) ? -1 : 1;
+        b.care(Care::GroomBody, d);
+    }
 
     // The stylus on the dragon.
     Stroke kind = Stroke::None;

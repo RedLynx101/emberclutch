@@ -174,6 +174,13 @@ void DenBehavior::start(Activity a) {
         carrying = -1;
         walkClip = ClipId::Walk;
     }
+    // The ball too: interrupted on the way back (petted, called, fed), it kept the ball in its
+    // mouth for good (a grown dragon, Noah's run 3).
+    if (holdingBall && a != Activity::Fetch) {
+        holdingBall = false;
+        dropBall = true;
+        walkClip = ClipId::Walk;
+    }
     activity = a;
     step = 0;
     timer = 0;
@@ -223,7 +230,7 @@ void DenBehavior::start(Activity a) {
         case Activity::Bath: {
             // The tub goes down just in front of it, toward you (in its usual spot if that's in
             // the way), so it only has to hop in.
-            tubSize = 0.35f + 0.6f * size;
+            tubSize = 0.3f + 0.95f * size;  // a grown dragon fits (it was cramped: Noah, run 3)
             const float dx = den.player.x - pos.x, dy = den.player.y - pos.y, len = std::hypot(dx, dy);
             const float away = tubSize + 0.35f * size;
             Vec2 spot = len > 1e-3f ? Vec2{pos.x + dx / len * away, pos.y + dy / len * away} : den.tub;

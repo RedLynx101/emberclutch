@@ -10,14 +10,19 @@ started, but the 3D-banner CIA froze the HOME Menu (a flag it needs was dropped)
 game crashed at its first 3D frame (a null texture read the emulator hides). Both fixed in
 **0.1.3** ([alpha-2.md](alpha-2.md), WP11b).
 
-The builds are in `build/cia-test/` (not in git; `tools\package_cia.ps1 -Version 0.1.3`,
-add `-Banner3D` for the 3D one), all uploaded with `tools\deploy_ftp.ps1 -FtpHost <ip> -Cia`:
-- `emberclutch-3dbanner.cia`: the game with the animated 3D banner. **Install this one.**
-- `emberclutch-3dbanner-diag.cia`: the same, its banner's wordmark as in 0.1.1. Only if the
-  first one freezes the HOME Menu: it tells whether the wordmark change is to blame.
-- `emberclutch-2d.cia`: the same game with the flat banner, if the 3D ones misbehave.
-- `sdmc:/3ds/emberclutch/emberclutch.3dsx`: the same game for the **Homebrew Launcher**
-  (no install; it shares the save).
+**Run 3 (0.1.3):** the game runs (screenshots and numbers in [alpha-2.md](alpha-2.md),
+WP11b); both 3D-banner CIAs froze the HOME Menu, which also turned out to keep an old banner
+per title; Next style froze the 3DS (fixed in 0.1.4).
+
+**Run 4** (0.1.4, 2026-09-24):
+1. **The banner lab.** In FBI: SD → cias → lab → install the five `banner-lab-*.cia`. On the
+   HOME Menu, open each `Banner lab A`…`E` present and select it; if it freezes, hold POWER
+   and carry on with the next. Never start them. Tell me which froze. Then delete them in
+   FBI (Titles → Banner lab … → Delete Title).
+2. **The game.** In FBI, delete the Emberclutch title first (Titles → Emberclutch → Delete
+   Title: the HOME Menu's cached banner goes with it; the save is on the SD card and stays),
+   then install `emberclutch-2d.cia`. Or run `emberclutch.3dsx` from the Homebrew Launcher.
+3. Try the fixes (alpha-2.md, WP11b run 3), then the steps below, pressing Y at anything odd.
 
 **Screenshots (new):** press **Y** anywhere in the game. Both screens (and the overlay, when
 it's on) go to `sdmc:/3ds/emberclutch/screenshots/` with a line of numbers in `log.txt`, and

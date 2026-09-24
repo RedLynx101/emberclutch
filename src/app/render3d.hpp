@@ -18,6 +18,9 @@ namespace ec::r3d {
 // a dragon model is missing; without the room, dragons stand on the 2D backdrop.
 bool init();
 void shutdown();
+// Right after each C3D_FrameBegin: frees the GPU memory released since the last frame began
+// (the GPU may have been reading it until then).
+void frameBegun();
 bool ready();
 bool roomReady();
 bool eggReady();  // romfs:/models/egg.ecm loaded: eggs are 3D
@@ -54,10 +57,10 @@ void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMoti
 // Hands-on care (WP7): what's under the stylus on the dragon last drawn by drawCloseUp.
 bool pickCloseUp(Vec2 touch, TouchHit& out);
 
-// One dragon (idle pose) or egg on the top screen over whatever 2D the scene drew first,
-// turned `spin` radians toward the viewer's left, standing a little below centre: the
-// Sanctuary, the Cold Vault, later the profile and the Market's egg.
-void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, float spin);
+// One dragon (idle, or `clip` in place: the Wanderings show the one out walking) or egg on the
+// top screen over whatever 2D the scene drew first, turned `spin` radians toward the viewer's
+// left, standing a little below centre: the Sanctuary, the Cold Vault, the Market's egg.
+void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, float spin, ClipId clip = ClipId::Idle);
 // Two dragons on the top screen, animated by their actors (standing where their behaviors
 // put them), framed together: the Nesting Stone's pair.
 void drawPair(App& app, const Dragon& a, const DenActor& actorA, const Dragon& b, const DenActor& actorB, s64 now);

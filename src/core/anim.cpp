@@ -200,7 +200,11 @@ void applyLookAt(const Skeleton& skel, const AnimBinding& bind, BonePose* pose, 
     evaluatePose(skel, pose, poseMat, skin);
     const Mat34& h = poseMat[bones[2]];
     const Vec3 facing = normalize(Vec3{h.m[0][1], h.m[1][1], h.m[2][1]});  // along the head bone
-    const Vec3 want = normalize(target - h.translation());
+    // Aimed from a little behind the head: a target right at the snout (food held to the mouth,
+    // a hand under the chin) turns it gently. Aimed from the head itself, a pixel either side
+    // of it swung the head between its limits (Noah, run 3).
+    constexpr float kPivotBack = 0.5f;
+    const Vec3 want = normalize(target - h.translation() + facing * kPivotBack);
     float yaw = std::atan2(want.x, -want.y) - std::atan2(facing.x, -facing.y);
     while (yaw > 3.14159265f) yaw -= 6.2831853f;
     while (yaw < -3.14159265f) yaw += 6.2831853f;

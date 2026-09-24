@@ -13,6 +13,7 @@ inline const u32 kClutchGold = rgba(0xF5, 0xC4, 0x51);
 inline const u32 kShell = rgba(0xFF, 0xF3, 0xDC);
 inline const u32 kDenPlum = rgba(0x34, 0x23, 0x3F);
 inline const u32 kDusk = rgba(0x5E, 0x44, 0x66);
+inline const u32 kTrack = rgba(0x1C, 0x11, 0x22);  // an empty gauge: dark against the dusk backgrounds (Noah, run 3)
 inline const u32 kSkyTeal = rgba(0x3F, 0xA7, 0xA8);
 inline const u32 kAsh = rgba(0x8C, 0x7A, 0x86);
 inline const u32 kRose = rgba(0xD9, 0x54, 0x6A);

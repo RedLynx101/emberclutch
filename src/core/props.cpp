@@ -13,6 +13,7 @@ constexpr float kRollFriction = 1.6f;     // speed lost per second while rolling
 constexpr float kAirDrag = 0.15f;
 constexpr float kWallBounce = 0.6f;
 constexpr float kRestSpeed = 0.08f;
+constexpr float kEdgeSlope = 3.0f;         // past the walking circle: pull back per unit out, per second
 
 float len2(Vec2 v) { return v.x * v.x + v.y * v.y; }
 
@@ -56,11 +57,20 @@ BallEvent Ball::step(const DenLayout& den, float dt) {
         }
     }
 
-    // The walls: the walkable circle around the den's centre.
-    const Vec2 c = den.home;
+    // Rolling past the walking circle, up the rise toward the wall: back it comes.
+    const Vec2 fromHome{pos.x - den.home.x, pos.y - den.home.y};
+    const float out = std::sqrt(len2(fromHome)) - den.radius;
+    if (out > 0 && pos.z <= radius + 1e-3f) {
+        const float k = kEdgeSlope * out * dt / (out + den.radius);
+        vel.x -= fromHome.x * k;
+        vel.y -= fromHome.y * k;
+    }
+
+    // The room's wall.
+    const Vec2 c = den.room;
     const Vec2 off{pos.x - c.x, pos.y - c.y};
     const float r = std::sqrt(len2(off));
-    const float wall = den.radius - radius;
+    const float wall = den.wallRadius - radius;
     if (r > wall && r > 1e-4f) {
         const Vec2 n{off.x / r, off.y / r};
         pos.x = c.x + n.x * wall;
@@ -74,8 +84,11 @@ BallEvent Ball::step(const DenLayout& den, float dt) {
         }
     }
 
-    // Furniture (the hearth, the egg nest, the hoard): circles on the floor.
-    for (const DenObstacle& o : den.obstacles) {
+    // Furniture (the hearth, the egg nests, the hoard) and the rocks by the wall: circles on the floor.
+    DenObstacle solids[DenLayout::kObstacles + DenLayout::kWallRocks];
+    for (int i = 0; i < DenLayout::kObstacles; ++i) solids[i] = den.obstacles[i];
+    for (int i = 0; i < DenLayout::kWallRocks; ++i) solids[DenLayout::kObstacles + i] = den.wallRocks[i];
+    for (const DenObstacle& o : solids) {
         const Vec2 d{pos.x - o.at.x, pos.y - o.at.y};
         const float dist = std::sqrt(len2(d));
         const float reach = o.radius + radius;
@@ -93,7 +106,8 @@ BallEvent Ball::step(const DenLayout& den, float dt) {
         }
     }
 
-    if (pos.z <= radius + 1e-3f && std::fabs(vel.z) < 1e-3f && vel.x * vel.x + vel.y * vel.y < kRestSpeed * kRestSpeed) {
+    if (pos.z <= radius + 1e-3f && std::fabs(vel.z) < 1e-3f && vel.x * vel.x + vel.y * vel.y < kRestSpeed * kRestSpeed &&
+        out <= 0) {
         vel = {0, 0, 0};
         resting = true;
         return BallEvent::Rest;

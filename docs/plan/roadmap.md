@@ -118,6 +118,15 @@ style, the last thing before Noah decides (D47) → the dragons update in the ch
   Alpha 1 and Alpha 2, D48).
 - **Public open-source release** (repo goes public, CIA + 3DSX on GitHub Releases).
 
+**From Noah's run-3 notes (2026-09-24), toward 1.0:** the world map needs to look better (it
+works, and the heart travelling the path is liked), and the destination pictures on the top
+screen are far too simple; both are redone when the valley becomes an open world to fly
+over, which the map should blend into. With it, **people**: cute, Nintendo-like human
+characters for the valley's NPCs and for the player, their animations, and the start of
+**campaigns** (stories and quests around the places and the cups). To explore once the
+valley's first pass exists: style, a rig shared with the dragons' pipeline, the triangle
+budget next to the dragons.
+
 ## 1.x — *Friends*
 - Sky Visits over UDS local wireless (based on `3ds-linkplay`'s uds-demo): visit a den,
   play together, exchange gifts, local competitions; cross-den clutch as a stretch goal.

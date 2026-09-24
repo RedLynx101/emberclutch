@@ -46,6 +46,28 @@ static_assert(sizeof(GpuVertex) == 40, "shared with the shader's attribute layou
 constexpr float kDirtMax = 0.4f;
 constexpr u32 kDirtColor = 0xFF758594;  // ABGR of (148, 133, 117)
 
+// GPU memory is freed only once the GPU is done with it. The last frame is still being drawn
+// while the next one's update runs, and a change mid-frame (the dev menu draws with the bottom
+// screen) comes after the top screen's draws were queued: freeing straight away left the GPU
+// reading memory already handed out again, and on the 3DS it hung (Next style, run 3; the
+// emulator never minded). What's retired is freed in frameBegun(), after C3D_FrameBegin has
+// waited for every frame before.
+std::vector<void*> g_graveLinear;
+std::vector<C3D_Tex> g_graveTex;
+
+void retire(void* p) {
+    if (p) g_graveLinear.push_back(p);
+}
+
+void retireTex(const C3D_Tex& t) { g_graveTex.push_back(t); }
+
+void bury() {
+    for (void* p : g_graveLinear) linearFree(p);
+    g_graveLinear.clear();
+    for (C3D_Tex& t : g_graveTex) C3D_TexDelete(&t);
+    g_graveTex.clear();
+}
+
 struct GpuMesh {
     GpuVertex* vbo = nullptr;  // linear memory, read by the GPU
     u16* ibo = nullptr;
@@ -67,8 +89,8 @@ struct GpuMesh {
         return true;
     }
     void release() {
-        if (vbo) linearFree(vbo);
-        if (ibo) linearFree(ibo);
+        retire(vbo);
+        retire(ibo);
         *this = GpuMesh{};
     }
 };
@@ -165,14 +187,14 @@ struct Room {
     bool ok = false;
 
     void release() {
-        if (pos) linearFree(pos);
+        retire(pos);
         pos = nullptr;
         for (u8*& c : color) {
-            if (c) linearFree(c);
+            retire(c);
             c = nullptr;
         }
         for (Run& r : runs) {
-            if (r.idx) linearFree(r.idx);
+            retire(r.idx);
             r = Run{};
         }
         runCount = 0;
@@ -476,16 +498,25 @@ Cache* cacheFor(const Dragon& d, s64 now, int lod) {
 // as big while a hatchling still fills a good part of the screen.
 float viewRadius(const Cache& c, float size) { return (0.8f * c.radius + 0.2f * g_adultRadius) * size; }
 
-// Lowest point of the animated body, so the feet (or belly, or back) rest on the floor.
+// Lowest point of the animated body, so the feet (or belly, or back) rest on the floor. The
+// tail doesn't hold it up: a big dragon's wag swung its tail below its feet and the whole
+// dragon rose with it (Noah, run 3), so vertices mostly on tail bones don't count.
 float animatedGround(const ModelData& m, const Mat34* skin) {
     const MeshData* body = m.findMesh(kMeshBody, kGroupBody, 0);
     if (!body) return 0;
+    bool tail[kMaxPalette] = {};
+    for (const char* name : {"tail1", "tail2", "tail3", "tail4"}) {
+        const int bone = m.skel.find(name);
+        for (int i = 0; i < body->paletteCount && bone >= 0; ++i) tail[i] = tail[i] || body->palette[i] == bone;
+    }
     float low = 1e9f;
     for (int v = 0; v < body->vertexCount; v += 3) {
+        const u8* w = &body->skin[std::size_t(v) * 4];
+        if (tail[w[0]] && w[2] >= 128) continue;
         const Vec3 p = skinPoint(*body, v, body->pos[v], skin);
         if (p.z < low) low = p.z;
     }
-    return low;
+    return low < 1e8f ? low : 0.0f;
 }
 
 // Poses a dragon: idle pose + its actor's animation, placed where its behavior stands.
@@ -717,7 +748,7 @@ void updateDust(Cache& c, const Form& f, const Dragon& d) {
     const MeshData* body = f.bodyData;
     if (!body) return;
     if (c.dustCount != body->vertexCount) {
-        if (c.dust) linearFree(c.dust);
+        retire(c.dust);
         c.dust = static_cast<u8*>(linearAlloc(std::size_t(body->vertexCount) * 4));
         c.dustCount = c.dust ? body->vertexCount : 0;
         for (float& s : c.dustShown) s = -1.0f;
@@ -847,17 +878,19 @@ bool init() {
     return g_ready;
 }
 
+void frameBegun() { bury(); }
+
 void shutdown() {
     for (auto& lods : g_forms)
         for (Form& f : lods) {
             f.body.release();
             for (GpuMesh& w : f.wings) w.release();
-            if (f.skinOk) C3D_TexDelete(&f.skin);
+            if (f.skinOk) retireTex(f.skin);
             f.skinOk = false;
         }
     for (Cache& c : g_caches) {
         c.parts.release();
-        if (c.dust) linearFree(c.dust);
+        retire(c.dust);
         c.dust = nullptr;
         c.dustCount = 0;
         c.valid = false;
@@ -887,6 +920,7 @@ void shutdown() {
         DVLB_Free(g_dvlb);
         g_dvlb = nullptr;
     }
+    bury();  // the loop is over: nothing is drawn any more
     g_ready = false;
 }
 
@@ -1472,7 +1506,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
     if (fx) drawParticles(app, *fx, true);
 }
 
-void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, float spin) {
+void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, float spin, ClipId clip) {
     if (!g_ready) return;
     ++g_frame;
     C3D_Mtx projection, view;
@@ -1495,13 +1529,17 @@ void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, floa
     static DenActor show;
     static u32 showId = 0;
     static int showForm = -1;
+    static ClipId showClip = ClipId::Idle;
     const int form = growthFor(d.stage, stageProgress(d, now)).form;
     const int* clips = clipIndex(form);
-    if (g_animsOk && (showId != d.id || showForm != form)) {
+    if (g_animsOk && (showId != d.id || showForm != form || showClip != clip)) {
         show = DenActor{};
-        show.anim.play(clips[static_cast<int>(ClipId::Idle)], 0.0f, true);
+        int index = clips[static_cast<int>(clip)];
+        if (index < 0) index = clips[static_cast<int>(ClipId::Idle)];
+        show.anim.play(index, 0.0f, true);
         showId = d.id;
         showForm = form;
+        showClip = clip;
     }
     if (g_animsOk) {
         show.anim.update(g_anims, app.dt, nullptr, 0);
@@ -1598,11 +1636,12 @@ void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMoti
         const bool hasMouth = mouthLocal(g_posed, mouth);
         if (g_posed.cache->form == kFormHatchling) {  // its head sits right on its chest: the front of it
             radius = std::fmax(radius, g_posed.cache->radius * g_posed.size * 0.42f);
-        } else if (hasMouth) {  // a long neck: the head and the top of the neck
+        } else if (hasMouth) {  // a long neck: the face and the top of the neck, close (it was
+            // framed so wide that a big dragon's face was small: Noah, run 3)
             const float span = length(apply(model, mouth) - head);
-            if (radius > span * 2.4f) {
-                radius = span * 2.4f;
-                target = lerp(head, chest, 0.12f);
+            if (radius > span * 1.6f) {
+                radius = span * 1.6f;
+                target = lerp(head, chest, 0.08f);
             }
         }
         if (mode == CloseUpView::Feed && hasMouth) target = lerp(apply(model, mouth), head, 0.25f);
@@ -1728,7 +1767,7 @@ namespace {
 void releaseForm(Form& f) {
     f.body.release();
     for (GpuMesh& w : f.wings) w.release();
-    if (f.skinOk) C3D_TexDelete(&f.skin);
+    if (f.skinOk) retireTex(f.skin);
     f.skinOk = false;
     f.ok = false;
     f.model = ModelData{};

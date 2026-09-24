@@ -289,7 +289,7 @@ HATCH = dict(
                      ("hips", 0.24), ("tail2", 0.13), ("tail3", 0.10), ("tail4", 0.07)],
                size=(0.035, 0.02, 0.2), spike=(1.3, 0.8, 20), fin=(1.8, 1.5, 0.012), plume=(2.4, 1.0, 0.008)),
     tail_k=0.42,
-    heart=dict(at=(0, -0.40, 0.60), size=0.075),
+    heart=dict(at=(0, -0.40, 0.53), size=0.075),  # low enough that the chin clears it sitting (Noah, run 3)
     wing=dict(root=(0.13, -0.10, 0.77), scale=0.19, dihedral=35, droop=5,
               radii={"root": 0.045, "elbow": 0.035, "wrist": 0.03, "finger": 0.011, "tip": 0.005},
               arm_tris=120, thickness=0.008),

@@ -44,6 +44,15 @@ struct DenLayout {
     // The hearth, egg nest 0, the hoard, egg nest 1.
     DenObstacle obstacles[kObstacles] = {
         {{7.9f, 0.8f}, 1.5f}, {{5.4f, -1.6f}, 1.2f}, {{2.4f, 7.4f}, 1.6f}, {{6.5f, -3.7f}, 1.2f}};
+    // The room itself, for what flies and rolls (the ball, the orb): its wall round the room's
+    // centre (den_model.py R = 9.5, less its bumps) and the rocks standing against it. A ball
+    // bounced off the walking circle before (Noah, run 3); past it the floor rises toward the
+    // wall, so a ball rolls back within reach.
+    static constexpr int kWallRocks = 5;
+    Vec2 room{0.0f, 0.0f};
+    float wallRadius = 8.9f;
+    DenObstacle wallRocks[kWallRocks] = {
+        {{-4.2f, 7.9f}, 1.2f}, {{-6.2f, 6.4f}, 1.1f}, {{-7.5f, 4.35f}, 1.2f}, {{6.5f, 5.8f}, 1.0f}, {{8.4f, -2.7f}, 0.9f}};
 };
 
 // The den's toys on the floor (Alpha 2 WP7), shared by every den dragon: the scene fills this

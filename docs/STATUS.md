@@ -2,13 +2,13 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · 3DS runs 1–2: the game starts since 0.1.2 (a boot logo); run 2 found a HOME Menu freeze (a banner flag) and a crash at the first 3D frame (a null read the emulator hides), both fixed in 0.1.3 · waiting on run 3
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · 3DS runs 1–3: the game runs on the old 3DS since 0.1.3 (full den 22–23 ms); the 3D banner still freezes the HOME Menu (banner-lab titles to find why); run 3's notes fixed in 0.1.4 (D61) · waiting on run 4
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D59 recorded ([log](plan/decisions.md)); nothing open.
+  Decisions D1–D61 recorded ([log](plan/decisions.md)); open: WP12b's grooming design.
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
   [Alpha 1 plan](plan/alpha-1.md), [Alpha 2 plan](plan/alpha-2.md) (draft: the style review
   R5, the emblem icon and a 3D HOME Menu banner, D47–D50). New specs (2026-09-24): [hands-on care](design/care-interactions.md)
@@ -31,7 +31,10 @@
   screenshots work; the 3D-banner CIA froze the HOME Menu (a flag 0.1.2 dropped), and the
   game crashed at its first 3D frame (`C3D_TexBind(1, nullptr)`: a null read that Azahar
   lets pass). Both fixed in 0.1.3; every scripted run now checks for unmapped accesses (D59).
-  Run 3 next.
+  Run 3 (0.1.3): it plays on the hardware; the full den runs 22–23 ms (a performance pass is
+  planned, WP11d); Next style froze the 3DS (GPU memory freed while in use: fixed); the 3D
+  banner still freezes the HOME Menu, which caches banners per title (banner-lab titles
+  next). Run 4 next.
 
 ## Alpha 1 progress
 - ✅ **WP1 engine foundation:** scenes split into `src/app/scene_*.cpp`, string table,
@@ -138,9 +141,9 @@ after each. Stops:
   haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
-- **Run 3 on the old 3DS** ([steps](plan/hardware-check-1.md), D55): install 0.1.3 with
-  FBI (`emberclutch-3dbanner.cia`, already in `/cias/` on the SD card; the `.3dsx` is in
-  `/3ds/emberclutch/` for the Homebrew Launcher),
+- **Run 4 on the old 3DS** ([steps](plan/hardware-check-1.md), D55): the banner lab (five
+  test titles in `/cias/lab/`), then 0.1.4 (`emberclutch-2d.cia`, after deleting the title so
+  the cached banner goes; or the `.3dsx`),
   check the banner, sound and icon fixes, read the budget with a full den and with every
   look in memory, pressing **Y** for a screenshot at each number and anything odd (pulled
   with `tools\pull_shots.ps1`). Runs 1 and 2: [what they found](plan/alpha-2.md) (WP11b). Meanwhile, or next: our own boot logo (WP11c, D58). Then the hatching rework (WP12a: the egg bursts

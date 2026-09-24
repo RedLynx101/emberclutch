@@ -18,7 +18,7 @@ struct EggMotion {
     float rock = 0;     // rocking amplitude, radians (dies away)
     float phase = 0;    // rocking phase, radians
     float axis = 0;     // rocking axis, radians about Z (0: about X, rocking toward the camera)
-    float capLift = 0;  // 0 closed .. 1 off (the hatching cinematic drives it)
+    float capLift = 0;  // 0 closed .. 1 off; on to 2 it flies up and is gone (the hatching drives it)
     float knockIn = 3;  // seconds until the dragon inside may knock again
     float yaw = 0, yawGoal = 0;  // turning: its spin about its long axis, radians, easing to the goal
 

@@ -89,4 +89,34 @@ inline constexpr const char* kOk = "OK";
 inline constexpr const char* kCancel = "Cancel";
 inline constexpr const char* kSayHello = "Say hello to %s!";
 
+// Title, system menu and settings (WP10)
+inline constexpr const char* kContinue = "Continue";
+inline constexpr const char* kNewGame = "New game";
+inline constexpr const char* kStartOverAsk = "Start a new game?";
+inline constexpr const char* kStartOverBody = "%s would be gone for good.";
+inline constexpr const char* kKeepPlaying = "Keep playing";
+inline constexpr const char* kStartOver = "Start over";
+inline constexpr const char* kReally = "Really? This can't be undone.";
+inline constexpr const char* kNo = "No";
+inline constexpr const char* kYesStartOver = "Yes, start over";
+inline constexpr const char* kYourNameHint = "Your name, keeper";
+inline constexpr const char* kBack = "Back";
+inline constexpr const char* kResume = "Resume";
+inline constexpr const char* kSettings = "Settings";
+inline constexpr const char* kSaveQuit = "Save & quit";
+inline constexpr const char* kQuit = "Quit";
+inline constexpr const char* kMusic = "Music";
+inline constexpr const char* kSounds = "Sounds";
+inline constexpr const char* kClockNote1 = "Time in the den follows your 3DS clock:";
+inline constexpr const char* kClockNote2 = "your dragon grows while you're away.";
+inline constexpr const char* kDeleteSave = "Delete save";
+inline constexpr const char* kDeleteAsk = "Delete your save?";
+inline constexpr const char* kDeleteBody = "Your dragon and everything with it will be gone.";
+inline constexpr const char* kKeepIt = "Keep it";
+inline constexpr const char* kDelete = "Delete";
+inline constexpr const char* kDeleteSure = "Are you sure? This can't be undone.";
+inline constexpr const char* kYesDelete = "Yes, delete";
+inline constexpr const char* kDeleted = "Save deleted.";
+inline constexpr const char* kKeeper = "Keeper";
+
 }  // namespace ec::str

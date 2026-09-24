@@ -145,7 +145,7 @@ int Animator::update(const AnimLibrary& lib, float dt, u8* events, int maxEvents
     }
     if (clip < 0 || clip >= static_cast<int>(lib.clips.size())) return 0;
     const AnimClip& a = lib.clips[clip];
-    const float t0 = time, t1 = time + dt;
+    const float t0 = time, t1 = time + dt * rate;
     time = t1;
     int count = 0;
     const float period = a.duration();

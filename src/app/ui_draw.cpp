@@ -16,11 +16,65 @@ u32 withAlpha(u32 c, float a) {
 
 u32 fromRgb(Rgb c, u8 a) { return theme::rgba(c.r, c.g, c.b, a); }
 
-void text(App& app, const char* s, float x, float y, float scale, u32 color, u32 flags) {
-    C2D_Text t;
-    C2D_TextParse(&t, app.textBuf, s);
+namespace {
+
+C2D_Font g_fonts[2] = {nullptr, nullptr};
+float g_norm[2] = {1.0f, 1.0f};  // font scale that matches the system font's line height
+
+// Parses s in a face; returns the scale that draws it at `scale` (shrunk to maxWidth).
+float prepare(App& app, C2D_Text& t, const char* s, float scale, Face face, float maxWidth) {
+    const int f = static_cast<int>(face);
+    C2D_TextFontParse(&t, g_fonts[f], app.textBuf, s);
     C2D_TextOptimize(&t);
-    C2D_DrawText(&t, C2D_WithColor | flags, x, y, 0.5f, scale, scale, color);
+    float k = scale * g_norm[f];
+    if (maxWidth > 0) {
+        float w = 0;
+        C2D_TextGetDimensions(&t, k, k, &w, nullptr);
+        if (w > maxWidth) k *= maxWidth / w;
+    }
+    return k;
+}
+
+}  // namespace
+
+void loadFonts() {
+    const FINF_s* sys = C2D_FontGetInfo(nullptr);
+    const float sysLine = sys && sys->lineFeed ? sys->lineFeed : 30.0f;
+    static const char* const kFiles[2] = {"romfs:/fonts/ui.bcfnt", "romfs:/fonts/title.bcfnt"};
+    for (int i = 0; i < 2; ++i) {
+        g_fonts[i] = C2D_FontLoad(kFiles[i]);
+        const FINF_s* info = g_fonts[i] ? C2D_FontGetInfo(g_fonts[i]) : nullptr;
+        g_norm[i] = info && info->lineFeed ? sysLine / info->lineFeed : 1.0f;
+    }
+}
+
+void freeFonts() {
+    for (C2D_Font& f : g_fonts) {
+        if (f) C2D_FontFree(f);
+        f = nullptr;
+    }
+}
+
+void text(App& app, const char* s, float x, float y, float scale, u32 color, u32 flags, float maxWidth, Face face) {
+    C2D_Text t;
+    const float k = prepare(app, t, s, scale, face, maxWidth);
+    C2D_DrawText(&t, C2D_WithColor | flags, x, y, 0.5f, k, k, color);
+}
+
+void textCentered(App& app, const char* s, float cx, float cy, float scale, u32 color, float maxWidth, Face face) {
+    C2D_Text t;
+    const float k = prepare(app, t, s, scale, face, maxWidth);
+    float h = 0;
+    C2D_TextGetDimensions(&t, k, k, nullptr, &h);
+    C2D_DrawText(&t, C2D_WithColor | C2D_AlignCenter, cx, cy - h * 0.46f, 0.5f, k, k, color);  // letters sit a touch high
+}
+
+float textWidth(App& app, const char* s, float scale, Face face) {
+    C2D_Text t;
+    const float k = prepare(app, t, s, scale, face, 0);
+    float w = 0;
+    C2D_TextGetDimensions(&t, k, k, &w, nullptr);
+    return w;
 }
 
 void verticalGradient(float x, float y, float w, float h, u32 top, u32 bottom) {
@@ -140,25 +194,67 @@ void dragonPlaceholder(const Dragon& d, float cx, float groundY, float scale, fl
     heart(heartX, heartY - 1, (12 + 6 * s) * 0.5f, withAlpha(theme::kShell, 0.35f + 0.6f * level));
 }
 
-void panel(const Rect& r, u32 color) {
-    C2D_DrawRectSolid(r.x + 4, r.y, 0, r.w - 8, r.h, color);
-    C2D_DrawRectSolid(r.x, r.y + 4, 0, r.w, r.h - 8, color);
-    C2D_DrawCircleSolid(r.x + 4, r.y + 4, 0, 4, color);
-    C2D_DrawCircleSolid(r.x + r.w - 4, r.y + 4, 0, 4, color);
-    C2D_DrawCircleSolid(r.x + 4, r.y + r.h - 4, 0, 4, color);
-    C2D_DrawCircleSolid(r.x + r.w - 4, r.y + r.h - 4, 0, 4, color);
+namespace {
+
+// A quarter disc as a fan of triangles from angle a0: pieces that never overlap, so a
+// translucent panel's corners are as see-through as the rest of it.
+void cornerFan(float cx, float cy, float r, float a0, u32 color) {
+    constexpr int kSeg = 3;
+    constexpr float kStep = 1.5707963f / kSeg;
+    for (int i = 0; i < kSeg; ++i) {
+        const float t0 = a0 + i * kStep, t1 = t0 + kStep;
+        C2D_DrawTriangle(cx, cy, color, cx + std::cos(t0) * r, cy + std::sin(t0) * r, color, cx + std::cos(t1) * r,
+                         cy + std::sin(t1) * r, color, 0);
+    }
 }
 
-bool button(App& app, const Rect& r, const char* label, const Input& in) {
+}  // namespace
+
+void panel(const Rect& r, u32 color) {
+    const float k = std::fmin(4.0f, std::fmin(r.w, r.h) * 0.5f);  // corner radius
+    C2D_DrawRectSolid(r.x + k, r.y, 0, r.w - 2 * k, r.h, color);
+    C2D_DrawRectSolid(r.x, r.y + k, 0, k, r.h - 2 * k, color);
+    C2D_DrawRectSolid(r.x + r.w - k, r.y + k, 0, k, r.h - 2 * k, color);
+    cornerFan(r.x + k, r.y + k, k, 3.1415927f, color);
+    cornerFan(r.x + r.w - k, r.y + k, k, 4.712389f, color);
+    cornerFan(r.x + r.w - k, r.y + r.h - k, k, 0.0f, color);
+    cornerFan(r.x + k, r.y + r.h - k, k, 1.5707963f, color);
+}
+
+bool button(App& app, const Rect& r, const char* label, const Input& in, u32 color) {
     // Fires when the stylus lifts over it (a few pixels forgiving at the edges); lights up
     // while pressed.
     const Rect reach{r.x - 4, r.y - 4, r.w + 8, r.h + 8};
     const bool pressed = in.touching && reach.contains(in.tx, in.ty);
     const bool hit = in.released && reach.contains(in.rx, in.ry);
     if (hit) audio::playSfx(audio::Sfx::Tap);
-    panel(r, pressed || hit ? theme::kClutchGold : theme::kShell);
-    text(app, label, r.x + r.w / 2, r.y + r.h / 2 - 8, 0.55f, theme::kDenPlum);
+    panel({r.x, r.y + 2, r.w, r.h}, withAlpha(theme::kDenPlum, 0.35f));  // a soft drop shadow
+    panel(r, pressed || hit ? theme::kClutchGold : (color ? color : theme::kShell));
+    textCentered(app, label, r.x + r.w / 2, r.y + r.h / 2, r.h >= 40 ? 0.62f : 0.55f, theme::kDenPlum, r.w - 12);
     return hit;
+}
+
+void drawToast(App& app) {
+    if (!app.toast) return;
+    // In over 0.2 s, out over the last 0.35 s (toasts live 3 s, showToast).
+    const float a = std::fmax(0.0f, std::fmin(1.0f, std::fmin((3.0f - app.toastTime) / 0.2f, app.toastTime / 0.35f)));
+    const float w = std::fmin(384.0f, textWidth(app, app.toast, 0.5f) + 28.0f);
+    panel({200 - w / 2, 207, w, 26}, withAlpha(theme::kDenPlum, 0.86f * a));
+    panel({200 - w / 2 + 3, 209, 3, 22}, withAlpha(theme::kClutchGold, 0.9f * a));  // an ember at its edge
+    textCentered(app, app.toast, 200, 220, 0.5f, withAlpha(theme::kShell, a), 370);
+}
+
+void drawSaveIcon(App& app) {
+    if (app.saveFlash <= 0) return;
+    const float a = std::fmin(1.0f, app.saveFlash / 0.4f);
+    const float cx = 384, cy = 18;
+    for (int i = 0; i < 6; ++i) {  // a ring of embers turning around the egg
+        const float ang = app.t * 5.0f + i * 1.0472f;
+        C2D_DrawCircleSolid(cx + std::cos(ang) * 11, cy + std::sin(ang) * 11, 0, 1.2f + 0.25f * i,
+                            withAlpha(theme::kClutchGold, a * (0.25f + 0.12f * i)));
+    }
+    C2D_DrawEllipseSolid(cx - 5, cy - 6.5f, 0, 10, 13, withAlpha(theme::kShell, a));
+    C2D_DrawEllipseSolid(cx - 2.5f, cy - 1, 0, 5, 5, withAlpha(theme::kEmber, a * 0.7f));
 }
 
 void gauge(App& app, float x, float y, const char* label, float value) {

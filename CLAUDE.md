@@ -24,12 +24,21 @@ session, and add new decisions to the log.
 - Emulator: `powershell -ExecutionPolicy Bypass -File tools\emu.ps1` (Azahar; `-ResetSave`, `-NoBuild`).
   When driving it with synthetic input, hold taps ~0.2 s and hold key chords ~0.3 s, because
   instant clicks can fall between frames. Dismiss Azahar's update prompt with "Ignore".
+- **Checking screens without anyone at the controls (preferred over computer use):**
+  `powershell -ExecutionPolicy Bypass -File tools\autotest.ps1 tests\autotest\tour.txt -ResetSave`
+  runs a script in Azahar (taps, strokes, keys, `shot <name>`; see `src/app/autotest.hpp`),
+  then writes each shot as PNGs plus 2x2 contact sheets to `build/autotest/<script>/`.
+  The dev save is set aside and restored. `tour.txt` walks the whole Alpha 1 loop (new
+  game, egg care, hatching and naming, every care tool, profile, system menu). The dev
+  menu's bottom line shows the activity/step, position and speed of your dragon.
 - Push to 3DS: `tools\run.ps1 -Address <ip>` (Homebrew Launcher, press Y) or
   `tools\deploy_ftp.ps1 -FtpHost <ip>` (ftpd, port 5000)
 - Azahar keeps a stale touch map if its window is resized, maximized or fullscreened while
   a game runs: touches then land ~20 px low. Size the window first, then (re)start the
   game (`tools\emu.ps1` relaunches; Azahar remembers the size). Dev builds draw a green
   crosshair where the game reads the stylus (overlay on).
+- Fonts: `tools\make_fonts.ps1` (Nunito and Cinzel Decorative from `assets/fonts/`, subset
+  into `romfs/fonts/ui.bcfnt` and `title.bcfnt`; renamed because Cinzel's OFL reserves its name).
 - Music: `python tools/audio/make_loop.py assets/audio/music/source/<slug>.wav --bpm <bpm> --preview`
   (stingers: `--no-loop`)
 - Audio on the 3DS: never hand ndsp one long wave buffer (Azahar slows down quadratically

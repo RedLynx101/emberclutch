@@ -155,6 +155,13 @@ Nintendogs", a full polish of the at-home care). In order:
 ### WP10 — UI
 - Bottom-screen HUD in the theme; fonts converted with mkbcfnt (Nunito, Cinzel Decorative,
   both OFL, license files added); title Continue/New; system menu; settings; toasts; save icon.
+- Done 2026-09-24: `tools/make_fonts.ps1` (Nunito SemiBold for the interface, Cinzel
+  Decorative Bold for titles, subset and renamed as the OFL asks), text that scales to the
+  system font's line height and shrinks to fit; the title's Continue / New game (asks twice
+  before replacing a dragon), your name on the keyboard; START's system menu (resume,
+  settings, save & quit) with music and sound volume, a note on the clock and deleting the
+  save (asks twice); toasts as fading pills; a save icon. The 3D-effect toggle waits until
+  the top screen renders in stereo; the voice toggle is Beta.
 
 ### WP11 — Packaging
 - CIA build (makerom + bannertool, reusing the 3D-Claw pattern) as `tools/package_cia.ps1`;

@@ -296,7 +296,7 @@ void hatchLife(App& app, const Input& in, s64 now) {
     }
     DenActor& a = app.actors[0];
     if (skip && h.t < kNameAt) h.t = kNameAt;
-    h.shell.capLift = std::fmin(1.0f, h.shell.capLift + app.dt / 0.4f);
+    h.shell.capLift = std::fmin(2.0f, h.shell.capLift + app.dt / 0.35f);  // pops, flies up, gone
     const float rise = std::fmin(1.0f, std::fmax(0.0f, (h.t - kRiseFrom) / kRiseTime));
     a.lift = -kSink * (1.0f - rise * (2.0f - rise));  // eased out: it climbs, then settles
     if (!h.blinked && h.t >= kBlinkAt) {
@@ -396,7 +396,7 @@ void drawTop(App& app) {
         std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", breedName(d.genome), str::kEggSuffix,
                       static_cast<int>(progress * 100), str::kIncubated);
         text(app, line, 200, 14, 0.6f, theme::kShell);
-        if (d.warmth <= 20) text(app, str::kGettingCold, 200, 205, 0.5f, theme::kRose);
+        if (d.warmth <= 20) text(app, str::kGettingCold, 200, 184, 0.5f, theme::kRose);
     } else {
         if (r3d::ready()) {
             r3d::DenDragon shown[3] = {
@@ -422,7 +422,6 @@ void drawTop(App& app) {
                       d.napping ? str::kNapping : "");
         text(app, line, 200, 26, 0.45f, theme::kClutchGold);
     }
-    if (app.toast) text(app, app.toast, 200, 222, 0.5f, theme::kShell);
 }
 
 void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {

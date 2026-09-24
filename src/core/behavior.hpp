@@ -107,6 +107,9 @@ struct DenBehavior {
     // its mouth while holdingBall (the scene places it at the jaw) and sets dropBall when it
     // lets go (the scene releases it and clears the flag).
     Ball* ball = nullptr;
+    // The bath tub is set down just in front of the dragon, sized to it (the scene draws it).
+    Vec2 tubAt;
+    float tubSize = 0.95f;  // its radius, den units
     bool fumbled = false;   // a baby drops the ball at most once on the way back
     bool holdingBall = false, dropBall = false;
     s8 groomSide = 1;       // which flank it shows while groomed (+1 its right, -1 its left)
@@ -114,6 +117,9 @@ struct DenBehavior {
     // Ground speeds (den units per second) that match the walk and trot cycles for this
     // dragon's body, so its feet stay planted (see locomotionSpeed in core/den_actor).
     float walkSpeed = 0.55f, trotSpeed = 1.8f;
+    // Small dragons step quicker (DenActor sets it from their size): walking and trotting play
+    // this much faster, and cover ground this much faster, so the feet still stay planted.
+    float gait = 1.0f;
     float size = 1.0f;  // the last moveScale: how much room the body needs around obstacles
     u8 spot = 0;        // which bed and sulking spot are its own (its place in the den)
     // The other den dragons, set each frame by shareCrowd: it walks around them too.

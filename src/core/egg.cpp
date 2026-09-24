@@ -63,8 +63,11 @@ void eggSkin(const ModelData& egg, const EggMotion& m, Mat34 skin[2]) {
     const int cap = egg.skel.find("cap");
     const float seam = cap >= 0 ? egg.skel.rest[cap].translation().z : 0.63f;
     const Vec3 hinge{0, kCapHinge, seam};
-    const Quat tip = quatAxisAngle({1, 0, 0}, -0.9f * m.capLift);
-    const Mat34 lift = fromQuatScale(tip, one, hinge + Vec3{0, 0, 0.45f * m.capLift} - rotate(tip, hinge));
+    const float open = std::fmin(1.0f, m.capLift), gone = std::fmax(0.0f, std::fmin(1.0f, m.capLift - 1.0f));
+    const float s = 1.0f - gone;  // flying off, it shrinks away (into the sparkles)
+    const Quat tip = quatAxisAngle({1, 0, 0}, -0.9f * open - 1.4f * gone);
+    const Vec3 up{0, 0, 0.45f * open + 0.9f * gone};
+    const Mat34 lift = fromQuatScale(tip, {s, s, s}, hinge + up - rotate(tip, hinge) * s);
     skin[1] = mul(skin[0], lift);
 }
 

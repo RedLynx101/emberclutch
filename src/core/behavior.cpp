@@ -156,7 +156,7 @@ bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
     }
     heading = wrapAngle(heading + clampf(err, -kSteerRate * dt, kSteerRate * dt));
     setClip(trotting ? ClipId::Trot : walkClip, 0.3f);
-    speed = trotting ? trotSpeed : walkSpeed;
+    speed = (trotting ? trotSpeed : walkSpeed) * gait;
     const float step = std::fmin(speed * dt, dist);
     pos.x += std::sin(heading) * step;
     pos.y -= std::cos(heading) * step;
@@ -210,7 +210,19 @@ void DenBehavior::start(Activity a) {
             break;
         case Activity::HandFeed: setClip(ClipId::Idle, 0.3f); timer = 1.5f; break;
         case Activity::Refuse: setClip(ClipId::SniffRefuse, 0.2f, true); break;
-        case Activity::Bath: target = den.tub; trot = false; timer = 0; break;
+        case Activity::Bath: {
+            // The tub goes down just in front of it, toward you (in its usual spot if that's in
+            // the way), so it only has to hop in.
+            tubSize = 0.35f + 0.6f * size;
+            const float dx = den.player.x - pos.x, dy = den.player.y - pos.y, len = std::hypot(dx, dy);
+            const float away = tubSize + 0.35f * size;
+            Vec2 spot = len > 1e-3f ? Vec2{pos.x + dx / len * away, pos.y + dy / len * away} : den.tub;
+            if (distance(spot, den.home) > den.radius - tubSize || !clearAt(spot, tubSize)) spot = den.tub;
+            tubAt = target = spot;
+            trot = distance(pos, target) > 2.0f;  // eager
+            timer = 0;
+            break;
+        }
         case Activity::Groomed: setClip(ClipId::Idle, 0.3f); petTimer = kGroomHold; break;
         case Activity::Kick: setClip(ClipId::LegKick, 0.2f, true); break;
         case Activity::Sneeze: setClip(ClipId::Sneeze, 0.15f, true); break;
@@ -623,11 +635,11 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
                     start(Activity::Greet);
                 } else {
                     if (clipDone) setClip(walkClip, 0.3f);
-                    const float stepLen = std::fmin(walkSpeed * dt, left);
+                    const float stepLen = std::fmin(walkSpeed * gait * dt, left);
                     heading = headingTo(pos, target);
                     pos.x += std::sin(heading) * stepLen;
                     pos.y -= std::cos(heading) * stepLen;
-                    speed = walkSpeed;
+                    speed = walkSpeed * gait;
                 }
             }
             break;

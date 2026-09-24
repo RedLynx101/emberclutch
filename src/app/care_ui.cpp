@@ -381,6 +381,7 @@ r3d::CloseUpView view(const App& app) {
         case Tool::Brush:
         case Tool::Cloth:
         case Tool::Sponge: return r3d::CloseUpView::Body;
+        case Tool::Food: return r3d::CloseUpView::Feed;
         default: return r3d::CloseUpView::Face;
     }
 }
@@ -417,7 +418,7 @@ void update(App& app, Dragon& d) {
     r3d::followInDen(app.ball.pos, inFlight ? 1.0f : 0.0f);
     // The tub goes away once the dragon is out of it.
     if (c.bathOut && c.tool != Tool::Sponge && b.activity != Activity::Bath) c.bathOut = false;
-    r3d::setProps(&app.ball, c.bathOut);
+    r3d::setProps(&app.ball, c.bathOut, b.tubAt, b.tubSize);
     // An Ember dragon in the bath steams a little.
     if (b.activity == Activity::Bath && b.step == 2 && bathMoodOf(d) == BathMood::Grudging && app.rng.chance(1, 20))
         emit(app, kFxSteam, {frand(app, 120, 200), frand(app, 70, 110)}, 1);
@@ -538,6 +539,11 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
 
     // The tool in hand, at the stylus.
     drawFx(app);
+    Vec2 mouth;
+    if (EC_DEV && app.overlay && c.tool == Tool::Food && r3d::mouthOnCloseUp(mouth)) {  // where bites happen
+        C2D_DrawCircleSolid(mouth.x, mouth.y, 0.5f, 3, theme::rgba(0, 255, 120));
+        C2D_DrawCircleSolid(mouth.x, mouth.y, 0.5f, 1.5f, theme::rgba(0, 0, 0));
+    }
     if (in.touching && c.stroke.down) {
         switch (c.tool) {
             case Tool::Hand: sprite(c.hadHit ? care_hand_press_idx : care_hand_idx, in.tx, in.ty - 6, 0.75f); break;
@@ -557,8 +563,11 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
             default: break;
         }
     } else {
-        text(app, hintFor(c.tool), 160, c.tool == Tool::Food ? kFoodRowY - 16 : kTrayY - 16, 0.4f,
-             withAlpha(theme::kShell, 0.8f));
+        const char* hint = hintFor(c.tool);
+        const float y = c.tool == Tool::Food ? kFoodRowY - 17 : kTrayY - 17;
+        const float w = textWidth(app, hint, 0.4f) + 16;
+        panel({160 - w / 2, y, w, 15}, withAlpha(theme::kDenPlum, 0.6f));
+        textCentered(app, hint, 160, y + 7.5f, 0.4f, withAlpha(theme::kShell, 0.9f), 300);
     }
 }
 

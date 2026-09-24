@@ -111,8 +111,10 @@ bool debugMenu(App& app, const Input& in) {
         }
     }
     char buf[80];
-    std::snprintf(buf, sizeof(buf), "+%lldh  stars %d  %s  %s", static_cast<long long>(app.game.devOffset / kHour),
-                  d.careStars, stageName(d.stage), app.actorsReady ? activityName(app.actors[0].behavior.activity) : "-");
+    const DenBehavior& b = app.actors[0].behavior;
+    std::snprintf(buf, sizeof(buf), "+%lldh  stars %d  %s  %s/%d  (%.1f, %.1f)  v%.2f", static_cast<long long>(app.game.devOffset / kHour),
+                  d.careStars, stageName(d.stage), app.actorsReady ? activityName(b.activity) : "-", b.step, b.pos.x,
+                  b.pos.y, b.speed);
     text(app, buf, 160, 226, 0.4f, theme::kAsh);
     return true;
 }

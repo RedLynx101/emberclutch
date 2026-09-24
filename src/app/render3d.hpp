@@ -44,7 +44,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
 
 // Bottom-screen close-up of the dragon's head and chest (petting, feeding: Face), or its
 // whole body (grooming, the bath: Body), or of the whole egg you rub; same hand-over.
-enum class CloseUpView : u8 { Face, Body };
+enum class CloseUpView : u8 { Face, Feed, Body };  // Feed: the face, centred on the mouth
 void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMotion* egg, s64 now,
                  CloseUpView view = CloseUpView::Face);
 
@@ -59,7 +59,7 @@ Vec3 closeUpLocal(Vec2 touch);
 bool mouthOf(int i, Vec3& out);
 // Props drawn with the dragons, in the den and up close: the ball (nullptr or inactive: none)
 // and the bath tub.
-void setProps(const Ball* ball, bool tubOut);
+void setProps(const Ball* ball, bool tubOut, Vec2 tubAt = {}, float tubSize = 0.95f);
 // The den camera watches this point too (a thrown ball) while `weight` > 0.
 void followInDen(Vec3 at, float weight);
 

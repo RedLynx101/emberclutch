@@ -1,0 +1,99 @@
+# The whole Alpha 1 loop, unattended (tools\autotest.ps1 tests\autotest\tour.txt -ResetSave):
+# a new game, egg care, the hatching and naming, every care tool, the profile card and the
+# system menu. Coordinates are bottom-screen pixels (320 x 240).
+overlay off
+wait 3
+shot 01-title
+name Noah
+tap 160 107
+wait 1.5
+shot 02-choose-egg
+tap 60 120
+wait 3
+# Egg care: rub, turn, listen.
+shotin 0.5 03-egg-rub
+drag 130 100 190 115 0.8
+drag 190 115 130 100 0.8
+tap 188 214
+wait 1.2
+shot 04-egg-turned
+hold 160 120 1.6
+wait 0.5
+shot 05-egg-listen
+# Hatch it now (dev menu), then watch.
+key SELECT
+wait 0.4
+shot 06-dev-menu
+tap 238 92
+key SELECT
+wait 1.2
+shot 07-hatch-shaking
+wait 1.8
+shot 08-hatch-pop
+wait 2.0
+shot 09-hatch-meet
+name Cinder
+wait 3.5
+shot 10-named
+wait 4
+shot 11-care
+# Petting with the hand.
+shotin 0.9 12-pet
+drag 110 80 210 95 1.6
+wait 0.5
+# Hand-feeding: pick the first food, bring it up to the mouth.
+tap 82 221
+wait 0.6
+shot 13-food-row
+overlay on
+shotin 1.8 14-food-offer
+drag 20 182 162 118 1.2 2.4
+overlay off
+wait 1
+shot 14b-food-after
+# Brushing and polishing.
+tap 134 221
+wait 1.2
+shotin 0.8 15-brush
+drag 90 110 230 110 1.4
+tap 186 221
+wait 0.6
+shotin 0.8 16-cloth
+drag 120 110 200 110 1.2
+# The bath.
+tap 238 221
+wait 5
+shot 17-bath
+key SELECT
+wait 0.3
+shot 17b-bath-status
+key SELECT
+shotin 0.7 18-suds
+drag 120 90 200 110 1.2
+tap 282 146
+wait 1.2
+shot 19-rinse
+wait 4
+# Fetch: flick the ball up into the den.
+tap 290 221
+wait 0.6
+drag 160 150 168 60 0.15
+wait 0.7
+shot 20-throw
+wait 5
+shot 21-fetch
+# The profile card, then the system menu.
+tap 298 16
+wait 0.4
+shot 22-profile
+tap 224 168
+key START
+wait 0.4
+shot 23-menu
+tap 160 128
+wait 0.4
+shot 24-settings
+key B
+key B
+wait 0.5
+quit

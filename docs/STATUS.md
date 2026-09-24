@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP5 ✅, WP6 ✅, WP8 ✅, WP9 ✅; WP2 ✅ (texturing in-game check pending); WP7 ✅ built and PC-tested, emulator check pending; WP10–12 to go)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP5 ✅, WP6 ✅, WP8 ✅, WP9 ✅; WP2 ✅ (texturing in-game check pending); WP7 ✅, WP10 ✅, checked in Azahar by script; WP11–12 to go)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -101,10 +101,15 @@
    camera following the ball. Then egg care and hatching (D52): turning (starting bond),
    listening for the heartbeat (a hint at the temperament), the hatching sequence, naming
    with the 3DS keyboard, and renaming from a profile card on the heartglow.
-   **None of WP7 has been seen in the emulator yet** (the screen capture is masked):
-   check every tool, the hatching and the keyboard there first.
-4. **WP10 UI** (fonts, title Continue/New, system menu, settings, toasts, save icon),
-   **WP11** CIA packaging, **WP12** checklist playthrough and tag → **Alpha 1 done**.
+   Checked in Azahar on 2026-09-24 with the new unattended runner (`tools/autotest.ps1`,
+   `tests/autotest/tour.txt`: screenshots of every step), which found and fixed: a face
+   close-up far too tight on hatchlings, a floating egg cap, a bath the hatchling took half
+   a minute to reach (the tub now goes down in front of it, and small dragons step
+   quicker), and the mouth hidden under the food row (feeding centres on the mouth).
+4. ✅ **WP10 UI** (2026-09-24): Nunito and Cinzel Decorative fonts, the title's Continue /
+   New game with your name on the keyboard, START's system menu with settings (volumes,
+   the clock note, delete save), fading toasts, a save icon. Checked in Azahar.
+   Next: **WP11** CIA packaging, **WP12** checklist playthrough and tag → **Alpha 1 done**.
 5. Then **Alpha 2** ([plan](plan/alpha-2.md)): several dragons, Sanctuary and Vault,
    breeding, Wanderings, the Market, the world map with fast travel, more toys, the emblem
    icon and a 3D HOME Menu banner; then **R5**, three Ember style variants for Noah (blocks); then the dragons update

@@ -22,8 +22,8 @@ void drawTop(App& app) {
     egg(200, 120, 70, 92, {250, 240, 225}, heartglowColor(e), pulse);
     char line[64];
     std::snprintf(line, sizeof(line), "%s %s", elementName(e), str::kEggSuffix);
-    text(app, line, 200, 18, 0.9f, theme::kClutchGold);
-    text(app, str::kStarterBlurb[app.starterHover], 200, 192, 0.5f, theme::kShell);
+    textCentered(app, line, 200, 30, 0.95f, theme::kClutchGold, 380, Face::Title);
+    text(app, str::kStarterBlurb[app.starterHover], 200, 184, 0.5f, theme::kShell, C2D_AlignCenter, 380);
 }
 
 void chooseStarter(App& app, int i) {
@@ -40,7 +40,7 @@ void chooseStarter(App& app, int i) {
 
 void drawBottom(App& app, const Input& in) {
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
-    text(app, str::kChooseEgg, 160, 16, 0.6f, theme::kShell);
+    textCentered(app, str::kChooseEgg, 160, 28, 0.7f, theme::kShell, 300, Face::Title);
     if (in.down & KEY_LEFT) app.starterHover = (app.starterHover + 2) % 3;
     if (in.down & KEY_RIGHT) app.starterHover = (app.starterHover + 1) % 3;
     for (int i = 0; i < 3; ++i) {

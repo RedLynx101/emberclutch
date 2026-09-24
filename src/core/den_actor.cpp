@@ -1,5 +1,6 @@
 #include "core/den_actor.hpp"
 
+#include <cmath>
 #include <cstdio>
 
 #include "core/rig.hpp"
@@ -101,6 +102,9 @@ void DenActor::updateSpeeds(const ModelData& m, const AnimBinding& bind, const A
 int DenActor::update(const Dragon& d, bool night, float moveScale, float dt, const AnimLibrary& lib,
                      const int* clipIndex, u8* events, int maxEvents) {
     behavior.clipDone = playedSerial == behavior.clipSerial && anim.finished(lib);
+    // Smaller legs step faster (stride frequency goes about as 1 / sqrt(size)): a hatchling
+    // scampers instead of creeping. Up to twice as quick.
+    behavior.gait = moveScale < 1.0f ? std::fmin(2.0f, 1.0f / std::sqrt(std::fmax(moveScale, 0.05f))) : 1.0f;
     behavior.update(d, night, moveScale, dt);
     const float k = dt * 3.0f < 1.0f ? dt * 3.0f : 1.0f;
     look += (behavior.lookWeight() - look) * k;
@@ -110,6 +114,8 @@ int DenActor::update(const Dragon& d, bool night, float moveScale, float dt, con
         if (index >= 0) anim.play(index, behavior.blend, true);
         playedSerial = behavior.clipSerial;
     }
+    const ClipId c = behavior.clip;
+    anim.rate = c == ClipId::Walk || c == ClipId::Trot || c == ClipId::Carry ? behavior.gait : 1.0f;
     return anim.update(lib, dt, events, maxEvents);
 }
 

@@ -82,6 +82,7 @@ struct Animator {
     float prevTime = 0;
     float fade = 1;  // crossfade progress, 1 = finished
     float fadeLength = 0.25f;
+    float rate = 1.0f;  // playback speed of the current clip (a small dragon's quicker steps)
 
     // Starts a clip, crossfading from the current one. Asking for the clip that is already
     // playing does nothing unless restart is set.

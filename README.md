@@ -73,8 +73,13 @@ logic and UI, but frame rate must be judged on a real old 3DS.
 - **Install to the SD card:** start **ftpd** on the 3DS, then run
   `tools\deploy_ftp.ps1 -FtpHost <3ds-ip>`. It uploads to `sdmc:/3ds/emberclutch/`.
 
-Prototype controls: touch to begin, pick an egg (tap twice), rub it warm, then care for
-the hatchling. Dev shortcuts: **R+A** skips 1 hour, **R+X** skips 1 day, **START** saves and quits.
+Controls: Continue or New game (your name, then pick an egg: tap twice), rub the egg warm,
+turn it and listen to it, watch it hatch and name it, then care for the hatchling with the
+tool tray. **START** opens the system menu (settings, save & quit); **SELECT** the dev menu
+in dev builds. Dev shortcuts: **R+A** skips 1 hour, **R+X** skips 1 day.
+
+Unattended checks: `tools\autotest.ps1 tests\autotest\tour.txt -ResetSave` plays a scripted
+session in Azahar and saves screenshots of each step to `build/autotest/`.
 
 ## Layout
 

@@ -1,0 +1,11 @@
+# Smoke test for the autotest runner: title, a new game, the egg.
+overlay off
+wait 3
+shot 01-title
+name Noah
+tap 160 107
+wait 1.5
+shot 02-choose-egg
+tap 60 120
+wait 3
+shot 03-egg

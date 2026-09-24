@@ -7,12 +7,15 @@
 
 #include "app/app.hpp"
 #include "app/audio.hpp"
+#include "app/autotest.hpp"
 #include "app/care_ui.hpp"
 #include "app/keyboard.hpp"
 #include "app/debug.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
+#include "app/system_menu.hpp"
 #include "app/theme.hpp"
+#include "app/ui_draw.hpp"
 #include "core/clock.hpp"
 #include "core/dragon.hpp"
 
@@ -67,6 +70,7 @@ int main() {
     app.top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
     app.bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     app.textBuf = C2D_TextBufNew(4096);
+    if (romfsMounted) loadFonts();  // Nunito and Cinzel Decorative (the system font if missing)
     app.romfsOk = romfsMounted && romfsReady();
     if (app.romfsOk) r3d::init();  // otherwise the den keeps its 2D placeholder
     care::loadSprites();            // the care tray's tools and foods (built into the program)
@@ -81,6 +85,7 @@ int main() {
     }
 
     audio::setVolumes(app.game.settings.musicVolume, app.game.settings.sfxVolume);
+    autotest::start(app);  // dev builds: a scripted run if sdmc:/3ds/emberclutch/autotest.txt exists
 
     u64 lastTick = svcGetSystemTick();
     while (aptMainLoop()) {
@@ -91,40 +96,53 @@ int main() {
         app.dt = ms > 100.0f ? 0.1f : ms / 1000.0f;     // clamp after suspend
         app.t += app.dt;
         if (app.toast && (app.toastTime -= app.dt) <= 0) app.toast = nullptr;
+        if (app.saveFlash > 0) app.saveFlash -= app.dt;
 
-        const Input in = readInput();
-        if (in.down & KEY_START) break;
+        const Input in = autotest::active() ? autotest::next(app) : readInput();
+        if (in.down & KEY_START) toggleSystemMenu(app);
+        const bool paused = app.menu != MenuPage::Closed;  // the game waits under the menu
 
         const SceneFns& scene = sceneFns(app.scene);
-        if (scene.update && !app.devMenu) scene.update(app, in);
+        if (scene.update && !app.devMenu && !paused) scene.update(app, in);
         audio::playMusic(musicFor(app));
         audio::update(app.dt);
 
         app.stats.reset();
         C2D_TextBufClear(app.textBuf);
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+        autotest::afterFrameBegin();  // last frame's picture is finished now
 
         C2D_TargetClear(app.top, theme::kDenPlum);
         C2D_SceneBegin(app.top);
         sceneFns(app.scene).drawTop(app);
+        if (paused) dimTopForMenu(app);
+        drawToast(app);
+        drawSaveIcon(app);
         debugDrawOverlay(app);
 
         C2D_TargetClear(app.bottom, theme::kDenPlum);
         C2D_SceneBegin(app.bottom);
-        if (!debugMenu(app, in)) sceneFns(app.scene).drawBottom(app, in);
+        if (paused)
+            drawSystemMenu(app, in);
+        else if (!debugMenu(app, in))
+            sceneFns(app.scene).drawBottom(app, in);
         if (EC_DEV && app.overlay && in.touching) {  // where the game reads the stylus
             C2D_DrawRectSolid(in.tx - 8, in.ty - 0.5f, 0, 17, 1, theme::rgba(0, 255, 120));
             C2D_DrawRectSolid(in.tx - 0.5f, in.ty - 8, 0, 1, 17, theme::rgba(0, 255, 120));
         }
 
+        autotest::beforeFrameEnd();
         C3D_FrameEnd(0);
         if (app.keyboard != KeyboardFor::None) runKeyboard(app);  // between frames: it takes both screens
+        if (app.quit) break;
     }
 
-    if (hasDragon(app)) saveNow(app);
+    if (hasDragon(app) && !app.quit) saveNow(app);  // (Save & quit has just saved)
+    autotest::finish();
     audio::shutdown();
     r3d::shutdown();
     care::freeSprites();
+    freeFonts();
     C2D_TextBufDelete(app.textBuf);
     C2D_Fini();
     C3D_Fini();

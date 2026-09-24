@@ -238,7 +238,8 @@ TEST(hands_on_care_reactions) {
     a = fresh(42);
     a.behavior.care(Care::Bath, d);
     CHECK(run(a, d, false, 20, [](const DenBehavior& b) { return b.activity == Activity::Bath && b.step == 2; }));
-    CHECK(dist(a.behavior.pos, den.tub) < 0.5f);
+    CHECK(dist(a.behavior.pos, a.behavior.tubAt) < 0.5f);
+    CHECK(dist(a.behavior.tubAt, den.player) < dist(den.home, den.player));  // set down toward you
     a.behavior.care(Care::BathDone, d);
     CHECK(run(a, d, false, 6, [](const DenBehavior& b) { return b.activity == Activity::Idle; }));
 
@@ -398,6 +399,31 @@ TEST(three_dragons_share_the_den) {
     for (int i = 0; i < 3; ++i) CHECK(sulking[i] && dist(a[i].behavior.pos, den.sulkSpots[i]) < 0.4f);
 }
 
+// A hatchling straight out of the egg: named, out of the nest, groomed, then bathed.
+TEST(a_new_hatchling_can_be_bathed) {
+    const DenLayout den;
+    Dragon d = contentDragon();
+    d.stage = Stage::Hatchling;
+    DenActor a;
+    a.reset(den, 77);
+    a.behavior.force(Activity::Hatch);
+    const float s = 0.35f;
+    run(a, d, false, 7, [](const DenBehavior&) { return false; }, s);
+    a.behavior.care(Care::Greet, d);
+    run(a, d, false, 12, [](const DenBehavior&) { return false; }, s);
+    std::printf("  after naming: %s step %d at (%.2f, %.2f)\n", activityName(a.behavior.activity), a.behavior.step,
+                a.behavior.pos.x, a.behavior.pos.y);
+    for (int i = 0; i < 20; ++i) {
+        a.behavior.care(Care::GroomBody, d);
+        run(a, d, false, 0.1f, [](const DenBehavior&) { return false; }, s);
+    }
+    a.behavior.care(Care::Bath, d);
+    const bool inTub = run(a, d, false, 20, [](const DenBehavior& b) { return b.activity == Activity::Bath && b.step == 2; }, s);
+    std::printf("  bath: %s step %d at (%.2f, %.2f), walk %.2f\n", activityName(a.behavior.activity), a.behavior.step,
+                a.behavior.pos.x, a.behavior.pos.y, a.behavior.walkSpeed);
+    CHECK(inTub);
+}
+
 TEST(every_activity_is_reachable_and_settles) {
     const DenLayout den;
     const Dragon d = contentDragon();
@@ -439,5 +465,6 @@ void runBehaviorTests() {
     RUN(hands_on_care_reactions);
     RUN(dragons_walk_around_the_hearth_and_hoard);
     RUN(three_dragons_share_the_den);
+    RUN(a_new_hatchling_can_be_bathed);
     RUN(every_activity_is_reachable_and_settles);
 }

@@ -30,7 +30,24 @@ void saveNow(App& app) {
     if (!saveGame(app.game, app.slots, nowLocal(app))) {
         showToast(app, "Couldn't save to the SD card.");
         audio::playSfx(audio::Sfx::Error);
+    } else {
+        app.saveFlash = 1.4f;
     }
+}
+
+void resetForNewGame(App& app) {
+    const Settings keep = app.game.settings;
+    app.game = SaveData{};
+    app.game.settings = keep;
+    app.actorsReady = false;
+    app.care = CareState{};
+    app.ball = Ball{};
+    app.egg = EggMotion{};
+    app.eggCracks = -1;
+    app.eggCare = EggCare{};
+    app.hatch = HatchState{};
+    app.nameRoll = 0;
+    app.denTest = false;
 }
 
 const SceneFns& sceneFns(SceneId id) {

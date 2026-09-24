@@ -267,6 +267,8 @@ CloseUpState g_close;
 GpuMesh g_ballMesh, g_tubMesh;
 const Ball* g_ball = nullptr;
 bool g_tubOut = false;
+Vec2 g_tubAt;
+float g_tubSize = 0.95f;
 Quat g_ballSpin{0, 0, 0, 1};
 Vec3 g_follow;          // the den camera also watches this (a thrown ball)
 float g_followWeight = 0;
@@ -1050,9 +1052,8 @@ void drawProps(App& app, const C3D_Mtx& view) {
     bindSkin(nullptr);
     dragonPattern(kPatternSolid, {0, 0, 0});
     if (g_tubOut && g_tubMesh.vbo) {
-        const DenLayout den;
         setPalette({{150, 98, 56}, {178, 124, 74}, {120, 178, 222}});
-        propModelView(view, {den.tub.x, den.tub.y, 0}, 0.95f, nullptr);
+        propModelView(view, {g_tubAt.x, g_tubAt.y, 0}, g_tubSize, nullptr);
         drawMesh(app, g_tubMesh, identity);
     }
     if (g_ball && g_ball->active && g_ballMesh.vbo) {
@@ -1332,10 +1333,14 @@ void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMoti
     const Vec3 chest = apply(model, g_posed.poseMat[g_posed.form->chestBone].translation());
     Vec3 target, dir;
     float radius;
-    if (mode == CloseUpView::Face) {
+    if (mode == CloseUpView::Face || mode == CloseUpView::Feed) {
         // Head and chest, seen from in front of the dragon wherever it stands: the parts you pet.
+        // Feeding centres on the mouth, clear of the food row under it.
         target = lerp(head, chest, 0.3f);
-        radius = length(head - chest) * 0.75f;
+        Vec3 mouth;
+        if (mode == CloseUpView::Feed && mouthLocal(g_posed, mouth)) target = lerp(apply(model, mouth), head, 0.25f);
+        // At least the front of the body: a hatchling's head sits right on its chest.
+        radius = std::fmax(length(head - chest) * 0.75f, g_posed.cache->radius * g_posed.size * 0.42f);
         const float ch = std::cos(g_posed.heading), sh = std::sin(g_posed.heading);
         const Vec3 local = normalize(Vec3{-0.3f, -0.95f, 0.18f});  // front-left of the face
         dir = {local.x * ch - local.y * sh, local.x * sh + local.y * ch, local.z};
@@ -1440,9 +1445,11 @@ bool mouthOf(int i, Vec3& out) {
     return true;
 }
 
-void setProps(const Ball* ball, bool tubOut) {
+void setProps(const Ball* ball, bool tubOut, Vec2 tubAt, float tubSize) {
     g_ball = ball;
     g_tubOut = tubOut;
+    g_tubAt = tubAt;
+    g_tubSize = tubSize;
 }
 
 void followInDen(Vec3 at, float weight) {

@@ -97,7 +97,10 @@ struct HatchState {
 
 // The 3DS keyboard runs between frames (it takes over both screens): main.cpp opens it for
 // whatever a scene asked (src/app/keyboard.cpp).
-enum class KeyboardFor : u8 { None, NameHatchling, Rename };
+enum class KeyboardFor : u8 { None, PlayerName, NameHatchling, Rename };
+
+// START's system menu (src/app/system_menu.cpp): the game waits while it's open.
+enum class MenuPage : u8 { Closed, Main, Settings, DeleteAsk, DeleteSure };
 
 struct App {
     SceneId scene = SceneId::Title;
@@ -141,6 +144,10 @@ struct App {
     const char* toast = nullptr;
     float toastTime = 0;
     char toastText[64] = {};  // for toasts with a name in them (showToastf)
+    float saveFlash = 0;      // seconds the save icon still shows
+    MenuPage menu = MenuPage::Closed;
+    bool quit = false;        // Save & quit: leave after this frame
+    u8 titleConfirm = 0;      // the title's "start over?" steps (0 none, 1 asked, 2 really?)
 
     // Debug
     bool overlay = EC_DEV;
@@ -161,5 +168,8 @@ inline const Dragon& activeDragon(const App& app) { return app.game.dragons[0]; 
 
 // Saves to the next A/B slot; shows a toast if the SD card write fails.
 void saveNow(App& app);
+
+// A fresh game in memory (the settings stay): nothing is written until the new egg is chosen.
+void resetForNewGame(App& app);
 
 }  // namespace ec

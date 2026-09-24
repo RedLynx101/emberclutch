@@ -34,7 +34,7 @@ const char* currentMusic();
 // A one-shot music cue (e.g. the hatching stinger) that ducks the loop, then resumes it.
 void playStinger(const char* slug);
 
-void playSfx(Sfx s, float pitch = 1.0f);
+void playSfx(Sfx s, float pitch = 1.0f, float gain = 1.0f);  // gain: 0..1 of the SFX volume
 void setVolumes(u8 music, u8 sfx);  // 0..100
 
 // Call once per frame from the main thread (fades, volume).

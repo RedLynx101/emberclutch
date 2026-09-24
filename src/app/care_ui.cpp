@@ -9,6 +9,7 @@
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
+#include "core/genetics.hpp"
 #include "care.h"      // sprite indices (gfx/care.t3s, tools/blender/care_sprites.py)
 #include "care_t3x.h"  // the sprite atlas, linked into the program
 
@@ -329,6 +330,29 @@ void selectTool(App& app, Dragon& d, Tool t) {
     audio::playSfx(audio::Sfx::Tap);
 }
 
+// The little profile card (tap the heartglow): who it is, and renaming (D27). Alpha 2's
+// Dragons tab grows this into the full profile.
+void drawProfile(App& app, const Input& in, const Dragon& d, s64 now) {
+    CareState& c = app.care;
+    panel({22, 34, 276, 166}, withAlpha(theme::kDenPlum, 0.94f));
+    text(app, d.name, 160, 42, 0.85f, theme::kClutchGold);
+    char line[80];
+    std::snprintf(line, sizeof(line), "%s %s %s", sexName(d.sex), breedName(d.genome), stageName(d.stage));
+    text(app, line, 160, 74, 0.5f, theme::kShell);
+    std::snprintf(line, sizeof(line), "%s: %s", str::kPersonality, personalityName(d.personality));
+    text(app, line, 160, 94, 0.5f, theme::kShell);
+    std::snprintf(line, sizeof(line), "%s %d   -   %s %d", str::kBond, d.bond, str::kDay, daysSinceHatch(d, now) + 1);
+    text(app, line, 160, 114, 0.5f, theme::kShell);
+    if (button(app, {40, 150, 112, 36}, str::kRename, in)) {
+        c.profileOpen = false;
+        app.keyboard = KeyboardFor::Rename;  // opens after this frame (main.cpp)
+    }
+    if (button(app, {168, 150, 112, 36}, str::kProfileClose, in) || (in.down & KEY_B)) {
+        c.profileOpen = false;
+        audio::playSfx(audio::Sfx::Back);
+    }
+}
+
 const char* hintFor(Tool t) {
     switch (t) {
         case Tool::Food: return str::kHintFood;
@@ -411,6 +435,18 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
     const float level = heartglowLevel(d, app.t);
     glow(298, 16, 14, fromRgb(heartglowColor(static_cast<Element>(d.genome.elementA))), level);
     heart(298, 16, 11, fromRgb(heartglowColor(static_cast<Element>(d.genome.elementA)), static_cast<u8>(120 + 135 * level)));
+
+    // The heartglow opens the profile card; while it's open, the tools rest.
+    if (in.released && !c.stroke.down && Rect{276, 0, 44, 36}.contains(in.rx, in.ry)) {
+        c.profileOpen = !c.profileOpen;
+        c.holdingFood = false;
+        audio::playSfx(c.profileOpen ? audio::Sfx::Tap : audio::Sfx::Back);
+        return;
+    }
+    if (c.profileOpen) {
+        drawProfile(app, in, d, now);
+        return;
+    }
 
     // The tray.
     panel({0, kTrayY - 2, 320, 42}, withAlpha(theme::kDenPlum, 0.82f));

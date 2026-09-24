@@ -227,6 +227,7 @@ struct Posed {
     float heading = 0;          // 0 faces -Y
     float root[2] = {0, 0};     // clip root offset (forward, up), adult units
     float ground = 0;           // floor contact, armature space
+    float lift = 0;             // DenActor::lift (a hatchling climbing out of its shell)
     Mat34 poseMat[kMaxBones], skin[kMaxBones];
 };
 
@@ -481,6 +482,7 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
     out.scale = growthScale(growthFor(d.stage, stageProgress(d, now))) * out.size;
     out.pos = actor ? actor->behavior.pos : Vec2{};
     out.heading = actor ? actor->behavior.heading : 0.0f;
+    out.lift = actor ? actor->lift : 0.0f;
     BonePose bones[kMaxBones];
     idlePose(f.model, c->t, buildOf(d), bones);
     out.root[0] = out.root[1] = 0;
@@ -492,7 +494,8 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
         // (the inverse of modelMatrix, with last frame's floor contact).
         if (actor->look > 0.01f && g_camRadius > 0) {
             const float ch = std::cos(out.heading), sh = std::sin(out.heading);
-            const Vec3 rel{g_camEye.x - out.pos.x, g_camEye.y - out.pos.y, g_camEye.z - out.root[1] * out.scale};
+            const Vec3 rel{g_camEye.x - out.pos.x, g_camEye.y - out.pos.y,
+                           g_camEye.z - out.root[1] * out.scale - out.lift};
             Vec3 local{rel.x * ch + rel.y * sh, -rel.x * sh + rel.y * ch, rel.z};
             local.y += out.root[0] * out.scale;
             local = local * (1.0f / out.size);
@@ -531,7 +534,7 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
 // offset, genome size, feet on the floor.
 void modelMatrix(const Posed& p, C3D_Mtx& out) {
     Mtx_Identity(&out);
-    Mtx_Translate(&out, p.pos.x, p.pos.y, p.root[1] * p.scale, true);
+    Mtx_Translate(&out, p.pos.x, p.pos.y, p.root[1] * p.scale + p.lift, true);
     Mtx_RotateZ(&out, p.heading, true);
     Mtx_Translate(&out, 0, -p.root[0] * p.scale, 0, true);  // forward is -Y
     Mtx_Scale(&out, p.size, p.size, p.size);
@@ -1278,6 +1281,12 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         localLight(g_posed.pos, blend, local);
         lightDragon(light, local);
         submit(app, g_posed, view, model);
+        if (dragons[i].egg && g_egg.ok) {  // just hatched: the empty shell is still in the nest
+            float nest[3];
+            localLight(den.eggNest, blend, nest);
+            lightDragon(light, nest);
+            submitEgg(app, *dragons[i].dragon, *dragons[i].egg, view, {den.eggNest.x, den.eggNest.y, kNestFloor});
+        }
         if (g_posed.form->headBone >= 0) {
             g_heads[i] = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
             g_headSet[i] = true;

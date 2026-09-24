@@ -134,7 +134,8 @@ Nintendogs", a full polish of the at-home care). In order:
 - **Calling:** tap and hold (or A) and the dragon comes to the front and sits.
 - **New clips:** pick up, carry, drop and wait, leap-catch, lean-in, leg kick,
   sniff-refuse, lift wing, sit up, hop into the tub.
-- **Egg:** rub (done), turn, listen; hatching cinematic; naming via swkbd; rename in the den.
+- **Egg:** rub (done), turn, listen; hatching cinematic; naming via swkbd; rename in the den
+  (all done 2026-09-24, D52).
 - *Verify:* in Azahar, every tool on every zone at every stage; a full fetch round trip
   in each personality; the budget overlay stays green while the ball is in play.
 

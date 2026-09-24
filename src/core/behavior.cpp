@@ -25,7 +25,7 @@ constexpr const char* kActivityNames[] = {
     "Idle", "LookAround", "Scratch", "Wander", "Sit", "Lie", "Yawn", "TailWag", "Flutter",
     "GoNap", "Sleep", "Wake", "Eat", "Favorite", "PetHead", "PetChin", "BellyRub", "Shake", "Hop", "Pounce",
     "GoSulk", "Sulk", "MakeUp", "Greet",
-    "Fetch", "HandFeed", "Refuse", "Bath", "Groomed", "Kick", "Sneeze", "PullAway", "Come",
+    "Fetch", "HandFeed", "Refuse", "Bath", "Groomed", "Kick", "Sneeze", "PullAway", "Come", "Hatch",
 };
 static_assert(sizeof(kActivityNames) / sizeof(kActivityNames[0]) == static_cast<int>(Activity::Count),
               "one name per activity");
@@ -218,6 +218,11 @@ void DenBehavior::start(Activity a) {
         case Activity::Come:
             target = {den.player.x, den.player.y + 0.8f};
             trot = distance(pos, target) > 3.0f;
+            break;
+        case Activity::Hatch:
+            pos = den.eggNest;
+            heading = headingTo(pos, den.player);
+            setClip(ClipId::Shake, 0.1f, true);
             break;
         case Activity::Count: break;
     }
@@ -599,12 +604,40 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
                 if ((timer -= dt) <= 0) start(Activity::Idle);
             }
             break;
+        case Activity::Hatch:
+            if (step == 0) {  // shaking off the shell
+                if (clipDone) {
+                    step = 1;
+                    setClip(ClipId::Sit, 0.3f, true);
+                }
+            } else if (step == 1) {  // sitting in the nest, looking at you, until it has a name
+                if (clipDone && clip == ClipId::Sit) setClip(ClipId::SitLoop, 0.2f);
+            } else if (step == 2) {  // named: face the way out...
+                if (turnTo(headingTo(pos, target), dt)) {
+                    step = 3;
+                    setClip(ClipId::Hop, 0.2f, true);
+                }
+            } else if (step == 3) {  // ...hop over the rim and walk clear of the nest
+                const float left = distance(pos, target);
+                if (left < 0.05f) {
+                    start(Activity::Greet);
+                } else {
+                    if (clipDone) setClip(walkClip, 0.3f);
+                    const float stepLen = std::fmin(walkSpeed * dt, left);
+                    heading = headingTo(pos, target);
+                    pos.x += std::sin(heading) * stepLen;
+                    pos.y -= std::cos(heading) * stepLen;
+                    speed = walkSpeed;
+                }
+            }
+            break;
         case Activity::Count:
             start(Activity::Idle);
             break;
     }
 
-    // Stay on the floor, and out of the solid things on it.
+    // Stay on the floor, and out of the solid things on it (a hatchling starts in the nest).
+    const bool inNest = activity == Activity::Hatch;
     const float r = distance(pos, den.home);
     if (r > den.radius) {
         pos.x = den.home.x + (pos.x - den.home.x) * den.radius / r;
@@ -617,12 +650,13 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
             pos.y = at.y + (pos.y - at.y) * room / d;
         }
     };
-    for (const DenObstacle& o : den.obstacles) pushOut(o.at, o.radius + kClearance * size);
+    if (!inNest)
+        for (const DenObstacle& o : den.obstacles) pushOut(o.at, o.radius + kClearance * size);
     // ...and out of the other dragons. One lying down, eating or sulking stays put: the
     // others make way around it.
     const bool settled = asleep(*this) || activity == Activity::Sulk || activity == Activity::Eat ||
                          activity == Activity::BellyRub || activity == Activity::MakeUp ||
-                         activity == Activity::Groomed || activity == Activity::HandFeed ||
+                         activity == Activity::Groomed || activity == Activity::HandFeed || inNest ||
                          (activity == Activity::Bath && step > 0) ||
                          ((activity == Activity::Sit || activity == Activity::Lie) && step == 1);
     if (!settled)
@@ -660,6 +694,8 @@ float DenBehavior::eyesClosed() const {
             return step == 2 ? 0.35f : 0.0f;
         case Activity::Sneeze:
             return 0.8f;
+        case Activity::Hatch:
+            return step == 0 ? 0.6f : 0.0f;  // squinting at its first light
         default:
             return 0.0f;
     }
@@ -684,6 +720,8 @@ float DenBehavior::lookWeight() const {
             return step == 5 ? 1.0f : 0.0f;  // waiting for the next throw; otherwise eyes on the ball
         case Activity::Come:
             return step == 2 ? 1.0f : 0.4f;
+        case Activity::Hatch:
+            return step == 1 ? 1.0f : 0.0f;  // meeting you
         case Activity::Groomed:
         case Activity::Kick:
             return 0.5f;
@@ -700,6 +738,7 @@ void DenBehavior::care(Care c, const Dragon& d, PetZone zone) {
         if (c == Care::MakeUp) start(Activity::MakeUp);
         return;  // an upset dragon turns away from everything else
     }
+    if (activity == Activity::Hatch && c != Care::Greet) return;  // meeting you comes first
     switch (c) {
         case Care::Pet: {
             petTimer = kPetHold;
@@ -720,7 +759,20 @@ void DenBehavior::care(Care c, const Dragon& d, PetZone zone) {
             start(d.personality == Personality::Playful || rng.chance(1, 2) ? Activity::Pounce : Activity::Hop);
             break;
         case Care::MakeUp: start(Activity::MakeUp); break;
-        case Care::Greet: start(Activity::Greet); break;
+        case Care::Greet:
+            if (activity == Activity::Hatch) {  // named: out of the nest, toward the rug
+                if (step < 2) {
+                    const float dx = den.home.x - pos.x, dy = den.home.y - pos.y, len = std::hypot(dx, dy);
+                    float out = kClearance * size + 0.15f;  // clear of the egg nest's rim
+                    for (const DenObstacle& o : den.obstacles)
+                        if (distance(o.at, den.eggNest) < 0.1f) out += o.radius;
+                    target = len > 1e-4f ? Vec2{pos.x + dx / len * out, pos.y + dy / len * out} : den.home;
+                    step = 2;
+                }
+            } else {
+                start(Activity::Greet);
+            }
+            break;
         case Care::Throw:
             if (!ball) break;
             // Too tired (or a sleepy dragon, sometimes): it just watches the ball go.

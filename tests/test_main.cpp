@@ -298,6 +298,7 @@ static SaveData& sampleSave() {
     s.devOffset = 3 * kDay;
     s.nextId = 42;
     s.settings.musicVolume = 55;
+    s.settings.seenHatch = 1;
     Rng rng(123);
     s.dragonCount = 5;
     for (int i = 0; i < 5; ++i) {
@@ -310,6 +311,8 @@ static SaveData& sampleSave() {
             for (float& dust : d.dirt) dust = std::round(dust * 100.0f) / 100.0f;  // saved in hundredths
         }
         std::snprintf(d.name, sizeof(d.name), "Drake%d", i);
+        d.eggTurns = static_cast<u8>(i % 3);
+        d.lastTurnedAt = kT0 + i * kHour;
         d.motherId = i;
         d.location = static_cast<Location>(i % 2);
         s.dragons[i] = d;
@@ -324,7 +327,8 @@ static bool sameDragon(const Dragon& a, const Dragon& b) {
            a.needs.play == b.needs.play && a.bond == b.bond && a.careStars == b.careStars &&
            a.personality == b.personality && a.warmth == b.warmth && a.dayLowestSum == b.dayLowestSum &&
            a.upset == b.upset && a.napping == b.napping &&
-           std::memcmp(a.dirt, b.dirt, sizeof(a.dirt)) == 0;
+           std::memcmp(a.dirt, b.dirt, sizeof(a.dirt)) == 0 && a.eggTurns == b.eggTurns &&
+           a.lastTurnedAt == b.lastTurnedAt;
 }
 
 // Dust settles over a day or two, faster on the belly than the wings; grooming, brushing a
@@ -358,14 +362,14 @@ TEST(save_round_trip) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 2 + 4 + 2 + 2 + 5 * (132 + 16 + 2));  // v1 + dirt
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 2));  // v1 + dirt + egg care
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
     CHECK(info.seq == 7 && info.savedAt == kT0 + 99 && info.version == kSaveVersion);
     CHECK(std::strcmp(out.playerName, "Noah") == 0);
     CHECK(out.lastSim == s.lastSim && out.devOffset == s.devOffset && out.nextId == 42);
-    CHECK(out.settings.musicVolume == 55);
+    CHECK(out.settings.musicVolume == 55 && out.settings.seenHatch == 1);
     CHECK(out.dragonCount == 5);
     for (int i = 0; i < 5; ++i) CHECK(sameDragon(out.dragons[i], s.dragons[i]));
 }

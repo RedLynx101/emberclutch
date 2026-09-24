@@ -3,12 +3,14 @@
 // and stay invisible until then; the dragon inside knocks as hatching nears.
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <vector>
 
 #include "check.hpp"
 #include "core/dragon_mesh.hpp"
 #include "core/egg.hpp"
 #include "core/genetics.hpp"
+#include "core/names.hpp"
 
 using namespace ec;
 
@@ -147,6 +149,80 @@ TEST(the_dragon_inside_knocks_near_hatching) {
     }
 }
 
+// Turning counts a few hours apart, up to four times; the turns become bond at hatching.
+// The egg spins a quarter turn each time and settles.
+TEST(turning_the_egg) {
+    Dragon d = anEgg(0.4f, 60);
+    const s64 t0 = 1'000'000;
+    CHECK(turnEgg(d, t0));
+    CHECK(!turnEgg(d, t0 + 3600));  // too soon
+    CHECK(turnEgg(d, t0 + kEggTurnGap));
+    CHECK(turnEgg(d, t0 + 2 * kEggTurnGap) && turnEgg(d, t0 + 3 * kEggTurnGap));
+    CHECK(!turnEgg(d, t0 + 9 * kEggTurnGap));  // four is plenty
+    CHECK(d.eggTurns == kMaxEggTurns);
+    d.incubationSeconds = kIncubationSeconds;
+    Rng rng(1);
+    CHECK(tryHatch(d, t0 + 30 * 3600, rng));
+    CHECK(d.bond == kBondPerEggTurn * kMaxEggTurns && d.bondHigh == d.bond);
+    CHECK(!turnEgg(d, t0 + 40 * 3600));  // hatched
+
+    EggMotion m;
+    m.turn();
+    Rng r2(2);
+    for (int f = 0; f < 60; ++f) m.update(1.0f / 30, 0.2f, r2);
+    CHECK(std::fabs(m.yaw - 3.14159265f * 0.5f) < 0.02f);
+    Mat34 skin[2];
+    eggSkin(eggModel(), m, skin);
+    const Vec3 side = transformDir(skin[0], {1, 0, 0});
+    CHECK(std::fabs(side.y - 1.0f) < 0.05f);  // a quarter turn about its upright axis
+}
+
+// Listening: the heartbeat grows stronger with the egg; its pace tells the temperament it
+// hatches with (the same one every time for a given egg).
+TEST(listening_to_the_egg) {
+    Dragon young = anEgg(0.1f, 60), grown = anEgg(0.9f, 60);
+    CHECK(heartbeatOf(young).strength < heartbeatOf(grown).strength);
+    int seen[static_cast<int>(Personality::Count)] = {};
+    for (u32 id = 1; id <= 120; ++id) {
+        Dragon d = anEgg(0.9f, 60);
+        d.id = id;
+        const Personality p = temperamentOf(d);
+        ++seen[static_cast<int>(p)];
+        Dragon hatched = d;
+        hatched.incubationSeconds = kIncubationSeconds;
+        Rng rng(id);
+        tryHatch(hatched, 1000, rng);
+        CHECK(hatched.personality == p);
+    }
+    for (int n : seen) CHECK(n >= 8);
+    Dragon sleepy = grown, playful = grown;
+    for (u32 id = 1; id < 200 && temperamentOf(sleepy) != Personality::Sleepy; ++id) sleepy.id = id;
+    for (u32 id = 1; id < 200 && temperamentOf(playful) != Personality::Playful; ++id) playful.id = id;
+    CHECK(heartbeatOf(sleepy).bpm < heartbeatOf(playful).bpm - 40);
+}
+
+TEST(hatchlings_get_name_suggestions) {
+    Dragon d = anEgg(1.0f, 60);
+    char a[kNameMax], b[kNameMax];
+    int differ = 0;
+    for (u32 roll = 0; roll < 40; ++roll) {
+        suggestName(d, roll, a, sizeof(a));
+        suggestName(d, roll + 1, b, sizeof(b));
+        CHECK(a[0] != '\0' && std::strlen(a) < kNameMax);
+        differ += std::strcmp(a, b) != 0;
+        char again[kNameMax];
+        suggestName(d, roll, again, sizeof(again));
+        CHECK(std::strcmp(a, again) == 0);
+    }
+    CHECK(differ > 30);
+    char name[kNameMax] = "Old";
+    CHECK(setName(name, sizeof(name), "  Cinder  ") && std::strcmp(name, "Cinder") == 0);
+    CHECK(!setName(name, sizeof(name), "   ") && std::strcmp(name, "Cinder") == 0);
+    CHECK(setName(name, sizeof(name), "Abcdefghijklmnopqrstu") && std::strlen(name) == kNameMax - 1);
+    // A two-byte character straddling the end is left out whole.
+    CHECK(setName(name, sizeof(name), "Abcdefghijklmn\xC3\xA9") && std::strcmp(name, "Abcdefghijklmn") == 0);
+}
+
 }  // namespace
 
 void runEggTests() {
@@ -154,4 +230,7 @@ void runEggTests() {
     RUN(egg_rests_rocks_and_opens);
     RUN(egg_cracks_open_on_schedule);
     RUN(the_dragon_inside_knocks_near_hatching);
+    RUN(turning_the_egg);
+    RUN(listening_to_the_egg);
+    RUN(hatchlings_get_name_suggestions);
 }

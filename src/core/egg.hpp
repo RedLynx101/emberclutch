@@ -20,11 +20,13 @@ struct EggMotion {
     float axis = 0;     // rocking axis, radians about Z (0: about X, rocking toward the camera)
     float capLift = 0;  // 0 closed .. 1 off (the hatching cinematic drives it)
     float knockIn = 3;  // seconds until the dragon inside may knock again
+    float yaw = 0, yawGoal = 0;  // turning: its spin about its long axis, radians, easing to the goal
 
     // A stylus stroke: amount ~ its length in pixels / 100; (dx, dy) its direction on
     // screen. Sideways strokes rock the egg side to side.
     void rub(float amount, float dx, float dy);
     void knock(float strength, float axisAngle);
+    void turn();  // a quarter turn in the nest (the spin eases in over about a second)
     // Rocks on. Past 60% incubation the dragon inside knocks now and then, more often as
     // hatching nears. Returns true on a knock (for a sound).
     bool update(float dt, float progress, Rng& rng);
@@ -34,6 +36,15 @@ struct EggMotion {
 // Skin matrices for the egg's two bones (root, cap), in the egg's model space: rocking about
 // the pivot, the cap lifting and tipping back on a hinge at its back edge.
 void eggSkin(const ModelData& egg, const EggMotion& m, Mat34 skin[2]);
+
+// Listening to the egg: the heartbeat inside. Faint and slow at first, stronger as it grows;
+// its pace follows the temperament it will hatch with (a sleepy one's is slow, a playful
+// one's skips along).
+struct Heartbeat {
+    float bpm = 80;       // beats per minute (each beat a "lub-dub")
+    float strength = 0;   // 0..1: how clearly it can be heard
+};
+Heartbeat heartbeatOf(const Dragon& d);
 
 // Incubation progress 0..1, and how many cracks show (0..3) in the last stretch.
 float eggProgress(const Dragon& d);

@@ -2,13 +2,13 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP5 ✅, WP6 ✅, WP8 ✅, WP9 ✅; WP2 ✅ (texturing in-game check pending); WP7 care done, egg and naming left; WP10–12 to go)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP5 ✅, WP6 ✅, WP8 ✅, WP9 ✅; WP2 ✅ (texturing in-game check pending); WP7 ✅ built and PC-tested, emulator check pending; WP10–12 to go)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D51 recorded ([log](plan/decisions.md)); nothing open.
+  Decisions D1–D52 recorded ([log](plan/decisions.md)); nothing open.
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
   [Alpha 1 plan](plan/alpha-1.md), [Alpha 2 plan](plan/alpha-2.md) (draft: the style review
   R5, the emblem icon and a 3D HOME Menu banner, D47–D50). New specs (2026-09-24): [hands-on care](design/care-interactions.md)
@@ -16,7 +16,7 @@
   (fast travel in Alpha 2, free flight in 1.0).
 - **Code:** `src/core` (genetics, needs, mood, growth, eggs, clock, breeding, save, model
   format, skeleton/rig, per-dragon mesh assembly, animation, den behavior, den room,
-  daylight, particles) with PC tests (60,764 checks). `src/app` draws the dragons in 3D
+  daylight, particles) with PC tests (91,750 checks). `src/app` draws the dragons in 3D
   (skinned toon shader) in a 3D den room lit for the time of day, inside themed citro2d
   screens. Runs in Azahar at 60 fps in the den (2026-09-24), sounds and all.
 - **Art:** two dragon forms built by script (`tools/blender/dragon_model.py`): a metaball
@@ -98,9 +98,11 @@
    cloth, sponge, ball) with toon sprites at the stylus, petting by zone with the sweet
    spot, hand-feeding into the opening jaw, brushing and polishing by region up to the
    gleaming moment, the bath with suds and a rinse, flick-to-throw fetch with the top
-   camera following the ball. **Not yet seen in the emulator** (the screen is masked);
-   check every tool there first. Left: egg turning and listening, the hatching
-   cinematic, naming with the keyboard.
+   camera following the ball. Then egg care and hatching (D52): turning (starting bond),
+   listening for the heartbeat (a hint at the temperament), the hatching sequence, naming
+   with the 3DS keyboard, and renaming from a profile card on the heartglow.
+   **None of WP7 has been seen in the emulator yet** (the screen capture is masked):
+   check every tool, the hatching and the keyboard there first.
 4. **WP10 UI** (fonts, title Continue/New, system menu, settings, toasts, save icon),
    **WP11** CIA packaging, **WP12** checklist playthrough and tag → **Alpha 1 done**.
 5. Then **Alpha 2** ([plan](plan/alpha-2.md)): several dragons, Sanctuary and Vault,

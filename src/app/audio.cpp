@@ -375,7 +375,7 @@ void playStinger(const char* slug) {
     LightEvent_Signal(&g_event);
 }
 
-void playSfx(Sfx s, float pitch) {
+void playSfx(Sfx s, float pitch, float gain) {
     if (!g_ok) return;
     const int i = static_cast<int>(s);
     if (g_takes[i] == 0) return;
@@ -394,7 +394,7 @@ void playSfx(Sfx s, float pitch) {
     g_nextSfx = (slot + 1) % kSfxCount;
     ndspChnWaveBufClear(ch);
     setupChannel(ch, c.stereo ? 2 : 1, static_cast<long>(c.rate * pitch));
-    setMix(ch, g_sfxVol);
+    setMix(ch, g_sfxVol * gain);
     queueSlices(ch, c.data, c.stereo ? 2 : 1, c.frames, g_sfxBufs[slot], kSfxSlices);
 }
 

@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-24 — Egg care, hatching and naming (WP7)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D52 | **Egg care counts.** Turning the egg (a button; a quarter turn you can see) counts up to four times, at least 3 hours apart, and each counted turn is +30 starting bond at hatch. Holding still on the egg (or Listen) plays its heartbeat: faint early on, then at a pace set by the **temperament it will hatch with**, which is now fixed from the egg's id instead of rolled at hatch. **The hatching** is a ~6 s sequence (shaking, the cap pops, the hatchling climbs out, shakes off, first blink, looks at you), then the 3DS keyboard names it with a suggestion filled in ("Another" rolls a new one). Skippable once seen (a saved setting). **Renaming:** tap the heartglow for a small profile card with Rename; Alpha 2's Dragons tab grows it into the full profile | Makes the egg days matter without punishing a missed turn; listening gives a reason to come back; the keyboard flow is D27 | Default (owner can change) |
+
 ## 2026-09-24 — Texturing (R2)
 
 | # | Decision | Why | Status |

@@ -35,6 +35,11 @@ void EggMotion::knock(float strength, float axisAngle) {
 bool EggMotion::update(float dt, float progress, Rng& rng) {
     phase = std::fmod(phase + dt * 2 * kPi * kRockHz, 2 * kPi);
     rock *= std::exp(-2.2f * dt);
+    yaw += (yawGoal - yaw) * std::fmin(1.0f, dt * 4.0f);
+    if (yawGoal > 2 * kPi && yaw > 2 * kPi) {  // keep the numbers small
+        yaw -= 2 * kPi;
+        yawGoal -= 2 * kPi;
+    }
     if (progress <= 0.6f) return false;
     if ((knockIn -= dt) > 0) return false;
     knockIn = (1.5f + 4.0f * unit(rng)) * (1.6f - progress);  // livelier near the end
@@ -42,11 +47,17 @@ bool EggMotion::update(float dt, float progress, Rng& rng) {
     return true;
 }
 
+void EggMotion::turn() {
+    yawGoal += kPi * 0.5f;
+    knock(0.05f, 0.0f);  // it wobbles as it settles
+}
+
 float EggMotion::angle() const { return rock * std::sin(phase); }
 
 void eggSkin(const ModelData& egg, const EggMotion& m, Mat34 skin[2]) {
     const Vec3 one{1, 1, 1};
-    const Quat q = quatAxisAngle({std::cos(m.axis), std::sin(m.axis), 0}, m.angle());
+    // Spin about its own axis (which passes through the pivot), then rock.
+    const Quat q = mul(quatAxisAngle({std::cos(m.axis), std::sin(m.axis), 0}, m.angle()), quatAxisAngle({0, 0, 1}, m.yaw));
     const Vec3 pivot{0, 0, kEggPivot};
     skin[0] = fromQuatScale(q, one, pivot - rotate(q, pivot));
     const int cap = egg.skel.find("cap");
@@ -55,6 +66,17 @@ void eggSkin(const ModelData& egg, const EggMotion& m, Mat34 skin[2]) {
     const Quat tip = quatAxisAngle({1, 0, 0}, -0.9f * m.capLift);
     const Mat34 lift = fromQuatScale(tip, one, hinge + Vec3{0, 0, 0.45f * m.capLift} - rotate(tip, hinge));
     skin[1] = mul(skin[0], lift);
+}
+
+Heartbeat heartbeatOf(const Dragon& d) {
+    static constexpr float kBpm[] = {96, 128, 140, 84, 66, 116};  // Brave Shy Playful Proud Sleepy Curious
+    static_assert(sizeof(kBpm) / sizeof(kBpm[0]) == static_cast<int>(Personality::Count), "one per personality");
+    const float p = eggProgress(d);
+    Heartbeat h;
+    const float pace = kBpm[static_cast<int>(temperamentOf(d))];
+    h.bpm = 58 + (pace - 58) * (p < 0.3f ? p / 0.3f : 1.0f);  // a young egg's heart is slow whatever it'll be
+    h.strength = 0.25f + 0.75f * p;
+    return h;
 }
 
 float eggProgress(const Dragon& d) {

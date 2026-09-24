@@ -114,6 +114,8 @@ void writeDragon(Writer& w, const Dragon& d) {
     w.f32v(d.dayHours);
     w.u8v(d.dayVisited);
     for (float dust : d.dirt) w.u16v(static_cast<u16>(dust * 100.0f + 0.5f));  // hundredths (added 2026-09-24)
+    w.u8v(d.eggTurns);  // egg care (added 2026-09-24)
+    w.s64v(d.lastTurnedAt);
     w.patchU16(sizeAt, static_cast<u16>(w.pos() - start));
 }
 
@@ -162,6 +164,11 @@ bool readDragon(Reader& r, Dragon& d) {
             const float v = r.u16v() / 100.0f;
             dust = v > 100.0f ? 100.0f : v;
         }
+    if (r.pos() + 9 <= start + size) {  // older records: never turned
+        d.eggTurns = r.u8v();
+        if (d.eggTurns > kMaxEggTurns) d.eggTurns = kMaxEggTurns;
+        d.lastTurnedAt = r.s64v();
+    }
     r.seek(start + size);  // skip fields from newer builds
 
     if (!inRange(plan, 2) || !inRange(sex, 2) || !inRange(personality, static_cast<u8>(Personality::Count)) ||
@@ -221,6 +228,7 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
     w.u8v(data.settings.sfxVolume);
     w.u8v(data.settings.voiceEnabled);
     w.u8v(data.settings.stereo3d);
+    w.u8v(data.settings.seenHatch);
     w.patchU16(at, static_cast<u16>(w.pos() - start));
 
     w.u16v(data.dragonCount);
@@ -299,6 +307,7 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
     tmp.settings.sfxVolume = r.u8v();
     tmp.settings.voiceEnabled = r.u8v();
     tmp.settings.stereo3d = r.u8v();
+    if (sectionSize >= 5) tmp.settings.seenHatch = r.u8v();
     r.seek(start + sectionSize);
 
     tmp.dragonCount = r.u16v();

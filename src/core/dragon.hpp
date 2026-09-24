@@ -49,6 +49,8 @@ struct Dragon {
     // Egg
     float warmth = 60;           // 0..100
     s32 incubationSeconds = 0;   // progresses only while warm and not vaulted
+    u8 eggTurns = 0;             // turns that counted (a few hours apart): bond at hatch
+    s64 lastTurnedAt = 0;        // the last turn that counted
 
     // Hatched
     Needs needs{};
@@ -67,6 +69,9 @@ struct Dragon {
 };
 
 constexpr s32 kIncubationSeconds = 24 * 3600;
+constexpr s32 kEggTurnGap = 3 * 3600;  // a turn counts again this long after the last one
+constexpr u8 kMaxEggTurns = 4;
+constexpr u16 kBondPerEggTurn = 30;    // a well-turned egg hatches already fond of you
 
 // Stage gates: minimum days since hatching and minimum total care stars.
 Stage stageFor(int daysSinceHatch, int careStars);
@@ -77,6 +82,8 @@ Sex rollSex(Rng& rng);
 Dragon makeEgg(u32 id, const Genome& g, Sex sex, s64 now);
 // Hatches the egg if incubation is complete. Returns true if it hatched.
 bool tryHatch(Dragon& d, s64 now, Rng& rng);
+// The personality it will hatch with, fixed from its id (listening to the egg hints at it).
+Personality temperamentOf(const Dragon& d);
 
 // Advance the simulation from d's last update time to `now`, in <= 1 hour steps.
 // `from` is the last time this dragon was simulated (the save's timestamp).
@@ -94,6 +101,8 @@ void cleanRegion(Dragon& d, int region, float amount);  // brushing one region (
 void bathe(Dragon& d);                                   // the bath: every region clean
 void play(Dragon& d, float amount);
 void warmEgg(Dragon& d, float amount);
+// Turning the egg. Returns true when the turn counts (up to kMaxEggTurns, kEggTurnGap apart).
+bool turnEgg(Dragon& d, s64 now);
 // The make-up interaction completes: clears Upset.
 void makeUp(Dragon& d);
 

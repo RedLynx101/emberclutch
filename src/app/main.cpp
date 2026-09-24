@@ -8,6 +8,7 @@
 #include "app/app.hpp"
 #include "app/audio.hpp"
 #include "app/care_ui.hpp"
+#include "app/keyboard.hpp"
 #include "app/debug.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
@@ -117,6 +118,7 @@ int main() {
         }
 
         C3D_FrameEnd(0);
+        if (app.keyboard != KeyboardFor::None) runKeyboard(app);  // between frames: it takes both screens
     }
 
     if (hasDragon(app)) saveNow(app);

@@ -92,7 +92,7 @@ bool debugMenu(App& app, const Input& in) {
             case 6: forceNextStage(d, now); break;
             case 7: app.overlay = !app.overlay; break;
             case 8: saveNow(app); showToast(app, "Saved."); audio::playSfx(audio::Sfx::Save); break;
-            case 9: deleteGame(); app.game = SaveData{}; app.slots = SaveSlots{}; app.scene = SceneId::Title; app.devMenu = false; app.actorsReady = false; break;
+            case 9: deleteGame(); app.game = SaveData{}; app.slots = SaveSlots{}; app.scene = SceneId::Title; app.devMenu = false; app.actorsReady = false; app.hatch = HatchState{}; app.eggCare = EggCare{}; break;
             case 10: nextBreed(d, app.rng); break;
             case 11: app.denTest = !app.denTest; break;
             case 13: {  // see the dust (D46) without waiting a day: all dusty, then a bath
@@ -103,7 +103,9 @@ bool debugMenu(App& app, const Input& in) {
             }
             case 12: {  // every behavior state is reachable from here (WP5)
                 DenBehavior& b = app.actors[0].behavior;
-                b.force(static_cast<Activity>((static_cast<int>(b.activity) + 1) % static_cast<int>(Activity::Count)));
+                int next = (static_cast<int>(b.activity) + 1) % static_cast<int>(Activity::Count);
+                if (static_cast<Activity>(next) == Activity::Hatch) next = 0;  // only the hatching starts there
+                b.force(static_cast<Activity>(next));
                 break;
             }
         }

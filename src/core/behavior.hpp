@@ -52,6 +52,9 @@ enum class Activity : u8 {
     GoSulk, Sulk, MakeUp, Greet,
     // hands-on care (WP7, docs/design/care-interactions.md)
     Fetch, HandFeed, Refuse, Bath, Groomed, Kick, Sneeze, PullAway, Come,
+    // just hatched: in the egg nest, shaking off the shell, then sitting to meet you; a
+    // Greet (after naming) sends it out of the nest
+    Hatch,
     Count,
 };
 const char* activityName(Activity a);

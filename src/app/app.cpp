@@ -1,5 +1,7 @@
 #include "app/app.hpp"
 
+#include <cstdio>
+
 #include "app/audio.hpp"
 #include "app/scenes.hpp"
 
@@ -17,6 +19,11 @@ s64 nowLocal(const App& app) {
 void showToast(App& app, const char* msg) {
     app.toast = msg;
     app.toastTime = 3.0f;
+}
+
+void showToastf(App& app, const char* fmt, const char* arg) {
+    std::snprintf(app.toastText, sizeof(app.toastText), fmt, arg);
+    showToast(app, app.toastText);
 }
 
 void saveNow(App& app) {

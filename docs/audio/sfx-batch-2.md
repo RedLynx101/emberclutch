@@ -21,6 +21,9 @@ dragons sound like real small animals (bird + cat + small reptile), never a huma
 | `suds` | Soapy sponge squishing, bubbly lather | one-shot | 0.4–0.8 s |
 | `water-pour` | Water poured from a small ladle over an animal, splashing into a tub | one-shot | 0.6–1 s |
 | `shake-spray` | Small animal shaking off water, droplets spraying | one-shot | 0.6–1 s |
+| `egg-heartbeat` | A tiny heartbeat heard through an eggshell, one soft "lub-dub", muffled and warm | one-shot | 0.3–0.5 s |
+| `egg-turn` | A large egg turned gently in a straw nest, a soft rustle and a hollow shell knock | one-shot | 0.4–0.7 s |
+| `hatch-first-cry` | A newborn baby dragon's very first tiny chirp, wobbly and curious | one-shot | 0.4–0.8 s |
 
 ## Toys, den and places (Alpha 2)
 | Slug | Prompt | Kind | Length |

@@ -26,6 +26,7 @@ struct Settings {
     u8 sfxVolume = 90;
     u8 voiceEnabled = 1;
     u8 stereo3d = 1;
+    u8 seenHatch = 0;  // the hatching has been watched once: it can be skipped after that
 };
 
 struct SaveData {

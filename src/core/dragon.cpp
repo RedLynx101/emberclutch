@@ -161,7 +161,8 @@ bool tryHatch(Dragon& d, s64 now, Rng& rng) {
     d.hatchedAt = now;
     d.lastVisitAt = now;
     d.needs = Needs{70, 70, 70, 70};
-    d.personality = static_cast<Personality>(rng.below(static_cast<u32>(Personality::Count)));
+    d.personality = temperamentOf(d);
+    d.bond = d.bondHigh = static_cast<u16>(kBondPerEggTurn * (d.eggTurns < kMaxEggTurns ? d.eggTurns : kMaxEggTurns));
     // Favourite food leans toward the breed's own (food index == element for now).
     d.favoriteFood = rng.chance(60, 100) ? d.genome.elementA : static_cast<u8>(rng.below(kElementCount));
     d.day = dayIndex(now);
@@ -238,6 +239,19 @@ void play(Dragon& d, float amount) {
 
 void warmEgg(Dragon& d, float amount) {
     if (d.stage == Stage::Egg) d.warmth = clamp100(d.warmth + amount);
+}
+
+bool turnEgg(Dragon& d, s64 now) {
+    if (d.stage != Stage::Egg || d.eggTurns >= kMaxEggTurns) return false;
+    if (d.eggTurns > 0 && now - d.lastTurnedAt < kEggTurnGap) return false;
+    ++d.eggTurns;
+    d.lastTurnedAt = now;
+    return true;
+}
+
+Personality temperamentOf(const Dragon& d) {
+    Rng r(d.id * 0x9E3779B97F4A7C15ull + 0x7E3Du);
+    return static_cast<Personality>(r.below(static_cast<u32>(Personality::Count)));
 }
 
 void makeUp(Dragon& d) {

@@ -27,7 +27,8 @@ bool eggReady();  // romfs:/models/egg.ecm loaded: eggs are 3D
 void prepare2D();
 
 // A dragon in the den and the actor animating it (nullptr: stands in its idle pose). An egg
-// sits in the egg nest, moved by its EggMotion (eggs without one are skipped).
+// sits in the egg nest, moved by its EggMotion (eggs without one are skipped); a hatched
+// dragon with an EggMotion has just hatched, and its empty shell sits in the nest.
 struct DenDragon {
     const Dragon* dragon;
     const DenActor* actor;

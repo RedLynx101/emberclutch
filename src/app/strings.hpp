@@ -57,5 +57,36 @@ inline constexpr const char* kHintCloth = "Polish in little circles.";
 inline constexpr const char* kHintBath = "Rub in the suds, then rinse.";
 inline constexpr const char* kHintBall = "Flick to throw, drag to roll.";
 inline constexpr const char* kSplash = "Splash! Squeaky clean.";
+inline constexpr const char* kProfileClose = "Close";
+inline constexpr const char* kRename = "Rename";
+inline constexpr const char* kPersonality = "Personality";
+inline constexpr const char* kRenamed = "A fine new name.";
+
+// Egg care and hatching (WP7)
+inline constexpr const char* kTurn = "Turn";
+inline constexpr const char* kListen = "Listen";
+inline constexpr const char* kHintEgg = "Rub to warm.  Hold still on it to listen.";
+inline constexpr const char* kTurned = "You turn the egg. It hums, snug.";
+inline constexpr const char* kTurnedRecently = "Turned not long ago. It's comfy.";
+inline constexpr const char* kTurnedPlenty = "It's been turned plenty. Keep it warm.";
+inline constexpr const char* kHeartFaint = "A faint, slow flutter. Still very small.";
+inline constexpr const char* kHeartScratching = "Scritch, scratch! It wants out.";
+// What the heartbeat sounds like, per temperament (Personality order).
+inline constexpr const char* kHeartTemperament[6] = {
+    "A strong, steady heartbeat. Fearless.",       // Brave
+    "A soft, quick patter. A little shy?",         // Shy
+    "A skipping, bouncy heartbeat. Playful!",      // Playful
+    "A slow, stately thump. Rather grand.",        // Proud
+    "A slow, drowsy heartbeat. Zzz...",            // Sleepy
+    "A busy heartbeat that keeps changing pace.",  // Curious
+};
+inline constexpr const char* kHatching = "It's hatching!";
+inline constexpr const char* kSkipHint = "A: skip";
+inline constexpr const char* kNameHint = "Name your dragon";
+inline constexpr const char* kRenameHint = "A new name";
+inline constexpr const char* kAnotherName = "Another";
+inline constexpr const char* kOk = "OK";
+inline constexpr const char* kCancel = "Cancel";
+inline constexpr const char* kSayHello = "Say hello to %s!";
 
 }  // namespace ec::str

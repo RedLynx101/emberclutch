@@ -69,7 +69,35 @@ struct CareState {
     int sampleCount = 0;
     CareFx fx[64];
     int fxCount = 0;
+    bool profileOpen = false;    // the little profile card (tap the heartglow): name, rename
 };
+
+// Egg care (WP7): listening for the heartbeat.
+struct EggCare {
+    float still = 0;      // seconds the stylus has rested on the egg (a long rest listens)
+    float listening = 0;  // seconds of heartbeat left to hear
+    float beatIn = 0;     // to the next "lub"
+    float dubIn = -1;     // to its "dub" (< 0: none due)
+};
+
+// The hatching (WP7): the egg shakes harder and harder, the cap pops off, the hatchling climbs
+// out of the shell, blinks at its first light, looks at you; then it's named.
+struct HatchState {
+    bool active = false;
+    float t = 0;            // seconds into it
+    float nextKnock = 0;
+    bool skippable = false; // seen once before (settings.seenHatch)
+    bool popped = false;    // the cap is off: it has hatched
+    bool blinked = false;
+    bool asked = false;     // the keyboard was asked for
+    bool named = false;     // the keyboard is done
+    EggMotion shell;        // the empty shell left in the nest
+    float shellTime = 0;    // seconds it stays there
+};
+
+// The 3DS keyboard runs between frames (it takes over both screens): main.cpp opens it for
+// whatever a scene asked (src/app/keyboard.cpp).
+enum class KeyboardFor : u8 { None, NameHatchling, Rename };
 
 struct App {
     SceneId scene = SceneId::Title;
@@ -105,9 +133,14 @@ struct App {
     // Hands-on care (WP7): the tool in hand, and the den's ball.
     CareState care;
     Ball ball;
+    EggCare eggCare;
+    HatchState hatch;
+    KeyboardFor keyboard = KeyboardFor::None;
+    u32 nameRoll = 0;  // the next name suggestion
 
     const char* toast = nullptr;
     float toastTime = 0;
+    char toastText[64] = {};  // for toasts with a name in them (showToastf)
 
     // Debug
     bool overlay = EC_DEV;
@@ -119,6 +152,7 @@ struct App {
 
 s64 nowLocal(const App& app);
 void showToast(App& app, const char* msg);
+void showToastf(App& app, const char* fmt, const char* arg);  // one %s
 
 // Alpha 1 keeps one dragon; the den with several arrives in Alpha 2.
 inline bool hasDragon(const App& app) { return app.game.dragonCount > 0; }

@@ -88,6 +88,7 @@ void markVisit(Dragon& d, s64 now);
 // Interactions (clamped, bond-aware). Amounts are need points.
 void feed(Dragon& d, float amount, bool favorite);
 void pet(Dragon& d, float amount);
+void addBond(Dragon& d, int amount);  // nothing while upset; tracks the high-water mark
 void groom(Dragon& d, float amount);  // a quick groom: shine up, dust off every region
 void cleanRegion(Dragon& d, int region, float amount);  // brushing one region (WP7)
 void bathe(Dragon& d);                                   // the bath: every region clean

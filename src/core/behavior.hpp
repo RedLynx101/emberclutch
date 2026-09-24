@@ -58,7 +58,9 @@ enum class ClipId : u8 {
 };
 const char* clipName(ClipId c);  // the clip's name in the .eca
 
-enum class PetZone : u8 { Head, Chin, Back, Belly };
+// Where a touch lands (core/care zoneOf). The first four have their own reactions; the rest
+// share the head-scratch lean-in until they get theirs.
+enum class PetZone : u8 { Head, Chin, Back, Belly, Cheek, Neck, Tail, Paw, Wing, Heart };
 enum class Care : u8 { Pet, Feed, FeedFavorite, Groom, Play, MakeUp, Greet };
 
 struct DenBehavior {

@@ -9,6 +9,8 @@ namespace {
 
 float clamp100(float v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }
 
+}  // namespace
+
 void addBond(Dragon& d, int amount) {
     if (d.upset) return;  // bond only grows again after making up
     int b = d.bond + amount;
@@ -16,6 +18,8 @@ void addBond(Dragon& d, int amount) {
     d.bond = static_cast<u16>(b);
     if (d.bond > d.bondHigh) d.bondHigh = d.bond;
 }
+
+namespace {
 
 // Care stars for one finished day: average of the lowest need over the hours the
 // dragon spent in the den. A day without a visit earns at most one star.

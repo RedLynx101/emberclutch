@@ -1,5 +1,8 @@
 # Review R5 — the dragons' style (blocks, D47)
 
+> **Decided 2026-09-24 (D54):** all four ship. Each dragon has one of the looks: three
+> common ones about equally likely and a rarer wild one (V3 is the Ember's wild look).
+
 **For Noah, 2026-09-24.** The last thing built before the big dragon update. Everything in
 Alpha 2 that doesn't depend on how the dragons look is done (WP1–WP10). Before the full
 parts library, all 21 breeds, the patterns and the rare traits are built on top of the

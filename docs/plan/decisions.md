@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-24 — R5: every look ships (Alpha 2)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D54 | **All four looks are in the game, per dragon** (R5's outcome). The current look and V1–V3 become a per-dragon **look**, not a global style. Every breed has at least four looks, each with a cute name from what sets it apart: three common looks about equally likely (~30% each) and one **wild** look that's rarer (≤ 10%, planned 8%). The Ember's wild look is V3, the ember-veined dragon; each other breed gets a wild look of its own. Open (asked 2026-09-24): how looks pass to eggs, the other breeds' wild looks, the names, when a look is revealed | Noah liked all the variants and wants variety between dragons of the same breed | Approved; details open |
+
 ## 2026-09-24 — The den with several dragons (Alpha 2 WP1)
 
 | # | Decision | Why | Status |

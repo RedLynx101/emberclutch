@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 ready: waiting on Noah**
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon**
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -133,9 +133,9 @@ after each. Stops:
   haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
-- **R5, the dragons' style** ([review](art/reviews/R5-style.md)): keep the current style, move
-  to V1, V2 or V3, or mix (e.g. V2's shapes with V1's surface, or V3's veins as a rare trait).
-  Blocks the dragons update; after it, the old 3DS run (D34) and the Alpha 2 tag.
+- **D54's details** (asked 2026-09-24): how looks pass to eggs, the other five breeds' wild
+  looks, the looks' names, when an egg's look is revealed. They shape WP12 (the dragons
+  update), which comes next; then the old 3DS run (D34) and the Alpha 2 tag.
 - Sound brief 2 (`docs/audio/sfx-batch-2.md`): nothing waits on it (stand-ins play).
 - Whenever convenient: the [sound brief 2](audio/sfx-batch-2.md) (hands-on care and
   Alpha 2 sounds); a listen to the new sounds, the two UI chimes and the Market loop seam

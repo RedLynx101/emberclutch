@@ -33,6 +33,11 @@ struct DenActor {
     DenBehavior behavior;
     Animator anim;
     Eyelids eyes;
+    // Hands-on care (WP7), set by the scene each frame: where it looks instead of at the
+    // player (armature space; food held out, a hand petting), and extra jaw opening.
+    Vec3 gazeLocal;
+    float gazeWeight = 0;  // 0..1
+    float jawOpen = 0;     // 0..1
     u16 playedSerial = 0xFFFF;
     int speedForm = -1;  // the body the walking speeds were measured on
     float speedT = -1;

@@ -4,9 +4,11 @@
 #pragma once
 
 #include "app/app.hpp"
+#include "core/behavior.hpp"
 #include "core/den_actor.hpp"
 #include "core/egg.hpp"
 #include "core/particles.hpp"
+#include "core/props.hpp"
 
 namespace ec::r3d {
 
@@ -39,9 +41,26 @@ struct DenDragon {
 // no dragon out, it looks at the egg nest. Fills app.stats.
 void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Particles* fx);
 
-// Bottom-screen close-up of the dragon's head and chest (petting), or of the whole egg you
-// rub; same hand-over.
-void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMotion* egg, s64 now);
+// Bottom-screen close-up of the dragon's head and chest (petting, feeding: Face), or its
+// whole body (grooming, the bath: Body), or of the whole egg you rub; same hand-over.
+enum class CloseUpView : u8 { Face, Body };
+void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMotion* egg, s64 now,
+                 CloseUpView view = CloseUpView::Face);
+
+// Hands-on care (WP7): what's under the stylus on the dragon last drawn by drawCloseUp.
+bool pickCloseUp(Vec2 touch, TouchHit& out);
+// The dragon's mouth on the bottom screen (the last close-up); false if it isn't in view.
+bool mouthOnCloseUp(Vec2& at);
+// A bottom-screen point held out in front of the dragon's face, in its armature space (at
+// the head's depth): where it looks when you hold food there.
+Vec3 closeUpLocal(Vec2 touch);
+// Den dragon i's mouth (den space) in the last drawDen; false if it was not drawn.
+bool mouthOf(int i, Vec3& out);
+// Props drawn with the dragons, in the den and up close: the ball (nullptr or inactive: none)
+// and the bath tub.
+void setProps(const Ball* ball, bool tubOut);
+// The den camera watches this point too (a thrown ball) while `weight` > 0.
+void followInDen(Vec3 at, float weight);
 
 // Projects a den-space point with the last den camera: top-screen pixels and pixels per
 // den unit at that depth. False before the first drawDen or behind the camera.

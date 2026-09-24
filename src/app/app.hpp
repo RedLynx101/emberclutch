@@ -5,10 +5,12 @@
 #include <citro2d.h>
 
 #include "app/storage.hpp"
+#include "core/care.hpp"
 #include "core/den_actor.hpp"
 #include "core/dragon.hpp"
 #include "core/egg.hpp"
 #include "core/particles.hpp"
+#include "core/props.hpp"
 #include "core/rng.hpp"
 #include "core/save.hpp"
 
@@ -37,6 +39,36 @@ enum class SceneId : u8 { Title, PickStarter, Den, Count };
 struct RenderStats {
     u32 tris = 0, draws = 0, maxBonesPerDraw = 0, particles = 0;
     void reset() { *this = RenderStats{}; }
+};
+
+// Hands-on care (WP7, src/app/care_ui.cpp): the tool in hand and what it's doing.
+struct CareFx {  // a 2D effect over the close-up
+    Vec2 pos, vel;
+    float life = 0, maxLife = 1, size = 4;
+    u8 kind = 0;
+};
+struct CareState {
+    Tool tool = Tool::Hand;
+    Food food = Food::HearthBread;
+    bool holdingFood = false;  // a food at the stylus (picked from the tray)
+    int bitesLeft = 0;
+    float biteWait = 0, chomp = 0;
+    StrokeTracker stroke;
+    GroomSession groom;
+    bool onDragon = false;       // this contact started on the dragon
+    bool reported = false;       // a rough stroke / a call was reported this contact
+    TouchHit lastHit;            // (render3d) the last spot touched
+    bool hadHit = false;
+    float sweetTime = 0, sweetCooldown = 0, stillTime = 0;
+    float soundWait = 0, heartWait = 0, petTick = 0;
+    bool sweetFound = false;     // this visit
+    bool bathOut = false;        // the tub is in the den
+    float suds = 0;              // 0..1
+    Vec2 samples[6];             // recent stylus positions (a flick throws the ball)
+    float sampleT[6] = {};
+    int sampleCount = 0;
+    CareFx fx[64];
+    int fxCount = 0;
 };
 
 struct App {
@@ -70,6 +102,9 @@ struct App {
     // not seen yet, so cracks it already had make no sound).
     EggMotion egg;
     int eggCracks = -1;
+    // Hands-on care (WP7): the tool in hand, and the den's ball.
+    CareState care;
+    Ball ball;
 
     const char* toast = nullptr;
     float toastTime = 0;

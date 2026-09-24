@@ -7,6 +7,7 @@
 
 #include "app/app.hpp"
 #include "app/audio.hpp"
+#include "app/care_ui.hpp"
 #include "app/debug.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
@@ -67,6 +68,7 @@ int main() {
     app.textBuf = C2D_TextBufNew(4096);
     app.romfsOk = romfsMounted && romfsReady();
     if (app.romfsOk) r3d::init();  // otherwise the den keeps its 2D placeholder
+    care::loadSprites();            // the care tray's tools and foods (built into the program)
 
     audio::init();  // silent if the DSP firmware is missing
     if (loadGame(app.game, app.slots) && hasDragon(app)) {
@@ -120,6 +122,7 @@ int main() {
     if (hasDragon(app)) saveNow(app);
     audio::shutdown();
     r3d::shutdown();
+    care::freeSprites();
     C2D_TextBufDelete(app.textBuf);
     C2D_Fini();
     C3D_Fini();

@@ -4,6 +4,7 @@
 #include <cstdio>
 
 #include "app/audio.hpp"
+#include "app/care_ui.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
@@ -119,15 +120,6 @@ void effectsFor(App& app, int i, const Dragon& d, const DenActor& a, const u8* e
     }
 }
 
-// A burst of an effect at your dragon's head (or its middle, before it has been drawn).
-void burst(App& app, Fx kind, int count, s64 now) {
-    const Dragon& d = activeDragon(app);
-    const float s = moveScaleOf(d, now);
-    Vec3 at{app.actors[0].behavior.pos.x, app.actors[0].behavior.pos.y, 1.2f * s};
-    if (kind != Fx::Sparkle) r3d::headOf(0, at);
-    app.fx.emit(kind, at, count, s);
-}
-
 // The clips for this dragon's current body (hatchlings have a few of their own).
 const int* clipsFor(const Dragon& d, s64 now) { return r3d::clipIndex(growthFor(d.stage, stageProgress(d, now)).form); }
 
@@ -221,6 +213,7 @@ void update(App& app, const Input& in) {
         saveNow(app);
         app.saveAccum = 0;
     }
+    if (activeDragon(app).stage != Stage::Egg && app.actorsReady) care::update(app, activeDragon(app));
     denLife(app, nowLocal(app));
     denEffects(app, nowLocal(app));
     denBeds(activeDragon(app), nowLocal(app));
@@ -311,93 +304,16 @@ void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {
     }
 }
 
-void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
-    gauge(app, 12, 6, str::kBelly, d.needs.belly);
-    gauge(app, 88, 6, str::kEnergy, d.needs.energy);
-    gauge(app, 164, 6, str::kShine, d.needs.shine);
-    gauge(app, 240, 6, str::kPlay, d.needs.play);
-
-    // Heartglow orb mirrors the dragon's mood.
-    const float level = heartglowLevel(d, app.t);
-    glow(282, 88, 30, fromRgb(glowOf(d)), level);
-    heart(282, 88, 22, fromRgb(glowOf(d), static_cast<u8>(120 + 135 * level)));
-    char line[48];
-    std::snprintf(line, sizeof(line), "%s %d", str::kBond, d.bond);
-    text(app, line, 282, 116, 0.45f, theme::kShell);
-
-    // Petting area: stroke the stylus across the pad.
-    const Rect pad{12, 44, 220, 96};
-    panel(pad, withAlpha(theme::kShell, 0.18f));
-    text(app, d.upset ? str::kMakeUpHint : str::kStrokeToPet, pad.x + pad.w / 2, pad.y + 38, 0.5f, theme::kShell);
-    app.petCooldown -= app.dt;
-    if (in.touching && pad.contains(in.tx, in.ty) && app.lastTouchX >= 0 && app.petCooldown <= 0) {
-        const float dx = in.tx - app.lastTouchX, dy = in.ty - app.lastTouchY;
-        if (dx * dx + dy * dy > 25) {
-            pet(d, 3);
-            markVisit(d, now);
-            app.petCooldown = 0.25f;
-            // The close-up shows the head above the chin; hold L for a belly rub (WP7 maps
-            // strokes onto the body properly). The reaction clips purr on their own.
-            const PetZone zone = (in.held & KEY_L) ? PetZone::Belly
-                                 : in.ty < pad.y + pad.h * 0.5f ? PetZone::Head
-                                                                 : PetZone::Chin;
-            app.actors[0].behavior.care(Care::Pet, d, zone);
-        }
-    }
-    if (in.touching) {
-        app.lastTouchX = in.tx;
-        app.lastTouchY = in.ty;
-    }
-
-    const float by = 150;
-    if (button(app, {12, by, 70, 36}, str::kFeed, in)) {
-        const bool fav = d.favoriteFood == d.genome.elementA;
-        feed(d, 35, fav);
-        markVisit(d, now);
-        app.actors[0].behavior.care(fav ? Care::FeedFavorite : Care::Feed, d);  // its bites munch
-        if (fav) {
-            audio::playSfx(audio::Sfx::Trill, voicePitch(d, now));
-            burst(app, Fx::Heart, 3, now);
-        }
-        showToast(app, fav ? str::kFedFavorite : str::kFed);
-    }
-    if (button(app, {88, by, 70, 36}, str::kGroom, in)) {
-        groom(d, 40);
-        markVisit(d, now);
-        app.actors[0].behavior.care(Care::Groom, d);
-        audio::playSfx(audio::Sfx::Brush);
-        audio::playSfx(audio::Sfx::Sparkle);
-        burst(app, Fx::Sparkle, 10, now);
-        showToast(app, str::kGroomed);
-    }
-    if (button(app, {164, by, 70, 36}, str::kPlayBtn, in)) {
-        play(d, 35);
-        markVisit(d, now);
-        app.actors[0].behavior.care(Care::Play, d);  // it squeaks as it hops or pounces
-        audio::playSfx(audio::Sfx::Bounce);
-        showToast(app, str::kPlayed);
-    }
-    if (d.upset && button(app, {240, by, 70, 36}, str::kMakeUp, in)) {
-        makeUp(d);
-        feed(d, 20, true);
-        markVisit(d, now);
-        app.actors[0].behavior.care(Care::MakeUp, d);
-        audio::playSfx(audio::Sfx::Purr, voicePitch(d, now));
-        burst(app, Fx::Heart, 6, now);
-        showToast(app, str::kMadeUp);
-    }
-}
-
 void drawBottom(App& app, const Input& in) {
     Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
     if (r3d::ready())  // pet the dragon itself, or rub the egg
-        r3d::drawCloseUp(app, d, app.actorsReady ? &app.actors[0] : nullptr, &app.egg, now);
+        r3d::drawCloseUp(app, d, app.actorsReady ? &app.actors[0] : nullptr, &app.egg, now, care::view(app));
     if (d.stage == Stage::Egg) {
         drawEggBottom(app, in, d, now);
     } else {
-        drawCareBottom(app, in, d, now);
+        care::drawBottom(app, in, d, now);
     }
     if (!in.touching) app.lastTouchX = app.lastTouchY = -1;
 }

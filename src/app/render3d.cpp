@@ -13,6 +13,7 @@
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
 #include "core/anim.hpp"
+#include "core/care.hpp"
 #include "core/daylight.hpp"
 #include "core/dragon_mesh.hpp"
 #include "core/egg.hpp"
@@ -115,7 +116,9 @@ struct Form {
     GpuMesh wings[kWingsCount];
     C3D_Tex skin;                        // romfs:/models/<form>[_lod1]_skin.t3x
     bool skinOk = false;
-    int headBone = -1, chestBone = -1, eyesBone = -1;
+    BoneCapsule caps[kMaxCapsules];      // touch picking (core/care)
+    int capCount = 0;
+    int headBone = -1, chestBone = -1, eyesBone = -1, jawBone = -1;
     bool ok = false;
 };
 
@@ -247,6 +250,25 @@ C3D_Mtx g_denView;               // last den camera, for projecting particles an
 bool g_denViewSet = false;
 Vec3 g_heads[3];                 // den dragons' heads in the last drawDen
 bool g_headSet[3] = {};
+Vec3 g_mouths[3];                // ...and their mouths (a carried ball rides there)
+bool g_mouthSet[3] = {};
+
+// The last close-up: hands-on care picks against what it showed (WP7).
+struct CloseUpState {
+    bool set = false;
+    C3D_Mtx view, model;
+    Vec3 eye;
+    Posed posed;
+};
+CloseUpState g_close;
+
+// Props (WP7): the ball and the bath tub, drawn with the dragon program (one bone).
+GpuMesh g_ballMesh, g_tubMesh;
+const Ball* g_ball = nullptr;
+bool g_tubOut = false;
+Quat g_ballSpin{0, 0, 0, 1};
+Vec3 g_follow;          // the den camera also watches this (a thrown ball)
+float g_followWeight = 0;
 
 // Toon ramp on L.N (signed): plum shadow, a mid band, full light.
 float toonRamp(float x, float) { return x < 0.12f ? 0.0f : (x < 0.45f ? 0.62f : 1.0f); }
@@ -300,6 +322,8 @@ bool loadForm(const char* path, const char* skinPath, Form& f) {
         if (m.kind == kMeshWings && m.variant < kWingsCount && !fillStatic(f.wings[m.variant], m)) return false;
     f.headBone = f.model.skel.find("head");
     f.eyesBone = f.model.skel.find("eyes");
+    f.jawBone = f.model.skel.find("jaw");
+    f.capCount = buildCapsules(f.model, f.caps, kMaxCapsules);
     f.chestBone = f.model.skel.find("chest");
     f.ok = true;
     return true;
@@ -473,8 +497,16 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
             local.y += out.root[0] * out.scale;
             local = local * (1.0f / out.size);
             local.z += c->groundNow;
-            applyLookAt(f.model.skel, g_bind[c->form], bones, local, actor->look);
+            applyLookAt(f.model.skel, g_bind[c->form], bones, local, actor->look * (1.0f - actor->gazeWeight));
         }
+        // Hands-on care: it looks at the food you hold out, or leans toward your hand.
+        if (actor->gazeWeight > 0.01f)
+            applyLookAt(f.model.skel, g_bind[c->form], bones, actor->gazeLocal, actor->gazeWeight);
+    }
+    if (actor && f.jawBone >= 0 && actor->jawOpen > 0.01f) {  // opening for the food
+        const Quat q = quatFromPitchYawRoll(-actor->jawOpen * 30.0f * kDegToRad, 0, 0);
+        const Quat& rest = g_bind[c->form].rest[f.jawBone];
+        bones[f.jawBone].rot = mul(bones[f.jawBone].rot, mul(mul(conjugate(rest), q), rest));
     }
     if (actor && f.eyesBone >= 0) bones[f.eyesBone].scale.z *= 1.0f - kBlinkSquash * actor->eyes.shut;  // blinks
     evaluatePose(f.model.skel, bones, out.poseMat, out.skin);
@@ -785,6 +817,8 @@ void shutdown() {
     }
     g_room.release();
     g_egg.shell.release();
+    g_ballMesh.release();
+    g_tubMesh.release();
     g_egg.ok = false;
     if (g_staticDvlb) {
         shaderProgramFree(&g_staticProgram);
@@ -912,6 +946,188 @@ void submitEgg(App& app, const Dragon& d, const EggMotion& motion, const C3D_Mtx
     drawMesh(app, g_egg.shell, skin);
 }
 
+// ------------------------------------------------------------------------------ props (WP7)
+constexpr float kPi = 3.14159265f;
+
+void propVertex(std::vector<Vec3>& pos, std::vector<Vec3>& nrm, std::vector<u8>& paint, Vec3 p, Vec3 n, u8 slot) {
+    pos.push_back(p);
+    nrm.push_back(n);
+    paint.insert(paint.end(), {slot, slot, 0, 0});
+}
+
+bool fillProp(GpuMesh& g, const std::vector<Vec3>& pos, const std::vector<Vec3>& nrm, const std::vector<u8>& paint,
+              const std::vector<u16>& idx) {
+    const std::size_t n = pos.size();
+    std::vector<u8> skin;
+    std::vector<float> uv;
+    for (std::size_t v = 0; v < n; ++v) {
+        skin.insert(skin.end(), {0, 0, 255, 0});
+        uv.insert(uv.end(), {kCleanUv, kCleanUv});
+    }
+    const u8 palette[1] = {0};
+    return fill(g, static_cast<int>(n), pos.data(), nrm.data(), skin.data(), paint.data(), uv.data(), idx.data(),
+                static_cast<int>(idx.size()), palette, 1);
+}
+
+// A unit ball: red (palette slot 0) with a cream band (slot 1).
+bool makeBallMesh(GpuMesh& g) {
+    constexpr int kSeg = 12, kRing = 8;
+    std::vector<Vec3> pos, nrm;
+    std::vector<u8> paint;
+    std::vector<u16> idx;
+    for (int r = 0; r <= kRing; ++r) {
+        const float th = kPi * r / kRing;
+        for (int s = 0; s <= kSeg; ++s) {
+            const float ph = 2 * kPi * s / kSeg;
+            const Vec3 p{std::sin(th) * std::cos(ph), std::sin(th) * std::sin(ph), std::cos(th)};
+            propVertex(pos, nrm, paint, p, p, std::fabs(p.x) < 0.22f ? 1 : 0);
+        }
+    }
+    for (int r = 0; r < kRing; ++r)
+        for (int s = 0; s < kSeg; ++s) {
+            const u16 a = static_cast<u16>(r * (kSeg + 1) + s), b = static_cast<u16>(a + kSeg + 1);
+            idx.insert(idx.end(), {a, b, static_cast<u16>(a + 1), static_cast<u16>(a + 1), b, static_cast<u16>(b + 1)});
+        }
+    return fillProp(g, pos, nrm, paint, idx);
+}
+
+// A wooden tub, radius 1, height 0.55: staves in two woods (slots 0 and 1), water (slot 2).
+bool makeTubMesh(GpuMesh& g) {
+    constexpr int kSeg = 16;
+    constexpr float kH = 0.55f, kIn = 0.9f, kWater = 0.4f;
+    std::vector<Vec3> pos, nrm;
+    std::vector<u8> paint;
+    std::vector<u16> idx;
+    auto quad = [&](Vec3 a, Vec3 b, Vec3 c, Vec3 d, Vec3 n, u8 slot) {  // counter-clockwise, seen from n
+        const u16 base = static_cast<u16>(pos.size());
+        for (Vec3 p : {a, b, c, d}) propVertex(pos, nrm, paint, p, n, slot);
+        idx.insert(idx.end(), {base, static_cast<u16>(base + 1), static_cast<u16>(base + 2), base,
+                               static_cast<u16>(base + 2), static_cast<u16>(base + 3)});
+    };
+    for (int s = 0; s < kSeg; ++s) {
+        const float a0 = 2 * kPi * s / kSeg, a1 = 2 * kPi * (s + 1) / kSeg, am = (a0 + a1) * 0.5f;
+        const Vec3 o0{std::cos(a0), std::sin(a0), 0}, o1{std::cos(a1), std::sin(a1), 0}, om{std::cos(am), std::sin(am), 0};
+        const u8 wood = static_cast<u8>(s % 2);
+        quad(o0, o1, o1 + Vec3{0, 0, kH}, o0 + Vec3{0, 0, kH}, om, wood);                              // outside
+        quad(o1 * kIn + Vec3{0, 0, kH}, o1 * kIn, o0 * kIn, o0 * kIn + Vec3{0, 0, kH}, om * -1.0f, wood);  // inside
+        quad(o0 * kIn + Vec3{0, 0, kH}, o0 + Vec3{0, 0, kH}, o1 + Vec3{0, 0, kH}, o1 * kIn + Vec3{0, 0, kH},
+             {0, 0, 1}, wood);                                                                          // rim
+        quad(o0 * kIn + Vec3{0, 0, kWater}, Vec3{0, 0, kWater}, Vec3{0, 0, kWater}, o1 * kIn + Vec3{0, 0, kWater},
+             {0, 0, 1}, 2);  // water: a fan of (degenerate) quads
+    }
+    return fillProp(g, pos, nrm, paint, idx);
+}
+
+void setPalette(std::initializer_list<Rgb> colours) {
+    int i = 0;
+    for (const Rgb& c : colours)
+        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i++, c.r / 255.0f, c.g / 255.0f, c.b / 255.0f, 1.0f);
+}
+
+void propModelView(const C3D_Mtx& view, Vec3 at, float scale, const Quat* rot) {
+    C3D_Mtx model, modelView;
+    Mtx_Identity(&model);
+    Mtx_Translate(&model, at.x, at.y, at.z, true);
+    if (rot) {
+        C3D_Mtx r, t;
+        Mtx_FromQuat(&r, Quat_New(rot->x, rot->y, rot->z, rot->w));
+        Mtx_Multiply(&t, &model, &r);
+        model = t;
+    }
+    Mtx_Scale(&model, scale, scale, scale);
+    Mtx_Multiply(&modelView, &view, &model);
+    C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &modelView);
+}
+
+// Draws the ball and the tub (after bindDragons and a lightDragon).
+void drawProps(App& app, const C3D_Mtx& view) {
+    if (!g_ballMesh.vbo) makeBallMesh(g_ballMesh);
+    if (!g_tubMesh.vbo) makeTubMesh(g_tubMesh);
+    const Mat34 identity[1] = {Mat34::identity()};
+    bindSkin(nullptr);
+    dragonPattern(kPatternSolid, {0, 0, 0});
+    if (g_tubOut && g_tubMesh.vbo) {
+        const DenLayout den;
+        setPalette({{150, 98, 56}, {178, 124, 74}, {120, 178, 222}});
+        propModelView(view, {den.tub.x, den.tub.y, 0}, 0.95f, nullptr);
+        drawMesh(app, g_tubMesh, identity);
+    }
+    if (g_ball && g_ball->active && g_ballMesh.vbo) {
+        const Vec3 v = g_ball->vel;
+        const float s = std::sqrt(v.x * v.x + v.y * v.y);
+        if (s > 1e-3f && !g_ball->held)  // it rolls the way it moves
+            g_ballSpin = normalize(mul(quatAxisAngle(normalize(Vec3{-v.y, v.x, 0}), s * app.dt / g_ball->radius), g_ballSpin));
+        setPalette({{232, 82, 66}, {247, 234, 200}});
+        propModelView(view, g_ball->pos, g_ball->radius, &g_ballSpin);
+        drawMesh(app, g_ballMesh, identity);
+    }
+}
+
+// ------------------------------------------------------------------------------ picking (WP7)
+// Den space -> a dragon's armature space (the inverse of modelMatrix), for points and directions.
+Vec3 toArmature(const Posed& p, Vec3 w, bool point) {
+    Vec3 v = point ? Vec3{w.x - p.pos.x, w.y - p.pos.y, w.z - p.root[1] * p.scale} : w;
+    const float c = std::cos(p.heading), s = std::sin(p.heading);
+    Vec3 r{v.x * c + v.y * s, -v.x * s + v.y * c, v.z};
+    if (point) r.y += p.root[0] * p.scale;
+    r = r * (1.0f / p.size);
+    if (point) r.z += p.ground;
+    return r;
+}
+
+// The bottom screen's projection (the close-up camera): pixels, and pixels per unit there.
+bool projectBottom(const C3D_Mtx& view, Vec3 p, float& x, float& y, float& ppu) {
+    const Vec3 v = apply(view, p);
+    if (v.z > -0.02f) return false;
+    ppu = (kScreenH * 0.5f / std::tan(kFovY * 0.5f)) / -v.z;
+    x = kBotW * 0.5f + v.x * ppu;
+    y = kScreenH * 0.5f - v.y * ppu;
+    return true;
+}
+
+// The ray under a bottom-screen point, in den space.
+Vec3 rayThrough(Vec2 touch) {
+    const float f = kScreenH * 0.5f / std::tan(kFovY * 0.5f);
+    const Vec3 d{(touch.x - kBotW * 0.5f) / f, (kScreenH * 0.5f - touch.y) / f, -1.0f};
+    const C3D_Mtx& m = g_close.view;
+    return normalize(Vec3{m.r[0].x * d.x + m.r[1].x * d.y + m.r[2].x * d.z, m.r[0].y * d.x + m.r[1].y * d.y + m.r[2].y * d.z,
+                          m.r[0].z * d.x + m.r[1].z * d.y + m.r[2].z * d.z});
+}
+
+Mat34 inverseAffine(const Mat34& a) {
+    const float(*m)[4] = a.m;
+    const float det = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0]) +
+                      m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0]);
+    const float k = std::fabs(det) > 1e-9f ? 1.0f / det : 0.0f;
+    Mat34 r;
+    r.m[0][0] = (m[1][1] * m[2][2] - m[1][2] * m[2][1]) * k;
+    r.m[0][1] = (m[0][2] * m[2][1] - m[0][1] * m[2][2]) * k;
+    r.m[0][2] = (m[0][1] * m[1][2] - m[0][2] * m[1][1]) * k;
+    r.m[1][0] = (m[1][2] * m[2][0] - m[1][0] * m[2][2]) * k;
+    r.m[1][1] = (m[0][0] * m[2][2] - m[0][2] * m[2][0]) * k;
+    r.m[1][2] = (m[0][2] * m[1][0] - m[0][0] * m[1][2]) * k;
+    r.m[2][0] = (m[1][0] * m[2][1] - m[1][1] * m[2][0]) * k;
+    r.m[2][1] = (m[0][1] * m[2][0] - m[0][0] * m[2][1]) * k;
+    r.m[2][2] = (m[0][0] * m[1][1] - m[0][1] * m[1][0]) * k;
+    for (int i = 0; i < 3; ++i)
+        r.m[i][3] = -(r.m[i][0] * m[0][3] + r.m[i][1] * m[1][3] + r.m[i][2] * m[2][3]);
+    return r;
+}
+
+// Where the mouth is, armature space: the end of the jaw's skin (or the head's).
+bool mouthLocal(const Posed& p, Vec3& out) {
+    const Form& f = *p.form;
+    for (int pass = 0; pass < 2; ++pass) {
+        const int bone = pass == 0 ? f.jawBone : f.headBone;
+        for (int i = 0; i < f.capCount; ++i)
+            if (f.caps[i].bone == bone) {
+                out = transformPoint(p.poseMat[bone], {f.caps[i].cx, f.caps[i].t1, f.caps[i].cz});
+                return true;
+            }
+    }
+    return false;
+}
+
 void lookAt(C3D_Mtx& view, Vec3 eye, Vec3 target) {
     Mtx_LookAt(&view, FVec3_New(eye.x, eye.y, eye.z), FVec3_New(target.x, target.y, target.z), FVec3_New(0, 0, 1),
                false);
@@ -1012,7 +1228,13 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
     } else {
         return;
     }
-    const float radius = maxRadius + spread * 0.9f;
+    float radius = maxRadius + spread * 0.9f;
+    if (g_followWeight > 0.01f) {  // a thrown ball: keep it in view with the dragons
+        const float apart = std::hypot(g_follow.x - mid.x, g_follow.y - mid.y);
+        mid.x += (g_follow.x - mid.x) * 0.45f * g_followWeight;
+        mid.y += (g_follow.y - mid.y) * 0.45f * g_followWeight;
+        radius = std::fmax(radius, (apart * 0.6f + maxRadius * 0.6f) * g_followWeight + radius * (1 - g_followWeight));
+    }
     const Vec3 want{mid.x, mid.y, radius * 0.62f};  // feet land low on the screen
     const float k = g_camRadius > 0 ? std::fmin(1.0f, app.dt * 2.5f) : 1.0f;
     g_camTarget = lerp(g_camTarget, want, k);
@@ -1037,7 +1259,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         C2D_Flush();
     }
     bindDragons(projection);
-    for (int i = 0; i < 3; ++i) g_headSet[i] = false;
+    for (int i = 0; i < 3; ++i) g_headSet[i] = g_mouthSet[i] = false;
     for (int i = 0; i < count; ++i) {
         if (!drawn[i]) continue;
         if (dragons[i].dragon->stage == Stage::Egg) {
@@ -1060,13 +1282,23 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
             g_heads[i] = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
             g_headSet[i] = true;
         }
+        Vec3 mouth;
+        if (mouthLocal(g_posed, mouth)) {
+            g_mouths[i] = apply(model, mouth);
+            g_mouthSet[i] = true;
+        }
+    }
+    {
+        const float plain[3] = {1, 1, 1};
+        lightDragon(light, plain);
+        drawProps(app, view);
     }
     drawRoom(app, projection, view, blend, true);
     end3D();
     if (fx) drawParticles(app, *fx, true);
 }
 
-void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMotion* egg, s64 now) {
+void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMotion* egg, s64 now, CloseUpView mode) {
     if (!g_ready) return;
     ++g_frame;
     if (d.stage == Stage::Egg) {  // the egg you rub, filling the view from the front-left
@@ -1087,23 +1319,126 @@ void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMoti
     if (!pose(app, d, actor, now, 0, g_posed) || g_posed.form->headBone < 0 || g_posed.form->chestBone < 0) return;
     C3D_Mtx projection, view, model;
     modelMatrix(g_posed, model);
-    // Head and chest, seen from in front of the dragon wherever it stands: the parts you pet.
     const Vec3 head = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
     const Vec3 chest = apply(model, g_posed.poseMat[g_posed.form->chestBone].translation());
-    const Vec3 target = lerp(head, chest, 0.3f);
-    const float radius = length(head - chest) * 0.75f;
-    const float ch = std::cos(g_posed.heading), sh = std::sin(g_posed.heading);
-    const Vec3 local = normalize(Vec3{-0.3f, -0.95f, 0.18f});  // front-left of the face
-    const Vec3 dir{local.x * ch - local.y * sh, local.x * sh + local.y * ch, local.z};
+    Vec3 target, dir;
+    float radius;
+    if (mode == CloseUpView::Face) {
+        // Head and chest, seen from in front of the dragon wherever it stands: the parts you pet.
+        target = lerp(head, chest, 0.3f);
+        radius = length(head - chest) * 0.75f;
+        const float ch = std::cos(g_posed.heading), sh = std::sin(g_posed.heading);
+        const Vec3 local = normalize(Vec3{-0.3f, -0.95f, 0.18f});  // front-left of the face
+        dir = {local.x * ch - local.y * sh, local.x * sh + local.y * ch, local.z};
+    } else {
+        // The whole dragon from where you stand (it turns a flank to you while groomed).
+        const Vec3 hips = apply(model, g_posed.poseMat[0].translation());
+        target = lerp(chest, hips, 0.4f);
+        radius = g_posed.cache->radius * g_posed.size * 0.8f;
+        dir = normalize(Vec3{-0.2f, -1.0f, 0.45f});
+    }
     const float dist = radius / std::tan(kFovY * 0.5f);
     Mtx_PerspTilt(&projection, kFovY, C3D_AspectRatioBot, 0.05f, dist * 4.0f, false);
-    lookAt(view, target + dir * dist, target);
+    const Vec3 eye = target + dir * dist;
+    lookAt(view, eye, target);
     C2D_Flush();
     bindDragons(projection);
     const float plain[3] = {1, 1, 1};
     lightDragon(dragonLight(dayBlend(now)), plain);
     submit(app, g_posed, view, model);
+    drawProps(app, view);
     end3D();
+    g_close.set = true;
+    g_close.view = view;
+    g_close.model = model;
+    g_close.eye = eye;
+    g_close.posed = g_posed;
+}
+
+bool pickCloseUp(Vec2 touch, TouchHit& out) {
+    if (!g_close.set || !g_close.posed.form) return false;
+    const Posed& p = g_close.posed;
+    const Form& f = *p.form;
+    ScreenCapsule sc[kMaxCapsules];
+    int which[kMaxCapsules], n = 0;
+    for (int i = 0; i < f.capCount; ++i) {
+        const BoneCapsule& c = f.caps[i];
+        const Mat34& bm = p.poseMat[c.bone];
+        const Vec3 a = apply(g_close.model, transformPoint(bm, {c.cx, c.t0, c.cz}));
+        const Vec3 b = apply(g_close.model, transformPoint(bm, {c.cx, c.t1, c.cz}));
+        const Vec3 side = transformPoint(bm, {c.cx + c.radius, (c.t0 + c.t1) * 0.5f, c.cz}) -
+                          transformPoint(bm, {c.cx, (c.t0 + c.t1) * 0.5f, c.cz});
+        float ax, ay, appu, bx, by, bppu;
+        if (!projectBottom(g_close.view, a, ax, ay, appu) || !projectBottom(g_close.view, b, bx, by, bppu)) continue;
+        const Vec3 va = apply(g_close.view, a), vb = apply(g_close.view, b);
+        sc[n] = {{ax, ay}, {bx, by}, length(side) * p.size * (appu + bppu) * 0.5f, -(va.z + vb.z) * 0.5f};
+        which[n++] = i;
+    }
+    float t = 0, across = 0;
+    const int k = pickCapsule(sc, n, touch, t, across);
+    if (k < 0) return false;
+    const BoneCapsule& c = f.caps[which[k]];
+    const Mat34& bm = p.poseMat[c.bone];
+    // The ray under the stylus, into the bone's own frame, against the capsule's cylinder.
+    const Mat34 inv = inverseAffine(bm);
+    const Vec3 o = transformPoint(inv, toArmature(p, g_close.eye, true));
+    const Vec3 d = transformDir(inv, toArmature(p, rayThrough(touch), false));
+    const float ox = o.x - c.cx, oz = o.z - c.cz;
+    const float qa = d.x * d.x + d.z * d.z, qb = 2 * (ox * d.x + oz * d.z), qc = ox * ox + oz * oz - c.radius * c.radius;
+    const float disc = qb * qb - 4 * qa * qc;
+    Vec3 hit;
+    if (qa > 1e-8f && disc >= 0) {
+        const float s = (-qb - std::sqrt(disc)) / (2 * qa);
+        hit = o + d * s;
+    } else {  // grazing the rounded end: the axis point, pushed toward the camera
+        const Vec3 axisPt{c.cx, c.t0 + (c.t1 - c.t0) * t, c.cz};
+        hit = axisPt + normalize(o - axisPt) * c.radius;
+    }
+    const float y = hit.y < c.t0 ? c.t0 : (hit.y > c.t1 ? c.t1 : hit.y);
+    out.local = transformPoint(bm, hit);
+    out.outward = normalize(out.local - transformPoint(bm, {c.cx, y, c.cz}));
+    out.bone = f.model.skel.name[c.bone];
+    out.zone = zoneOf(out.bone, out.outward, t);
+    out.region = regionOf(out.bone, out.outward);
+    // The scales lie head to tail: spine, neck and head bones point head-ward, tail and leg
+    // bones point away from the body.
+    const bool outwardBone = std::strncmp(out.bone, "tail", 4) == 0 || std::strncmp(out.bone, "arm", 3) == 0 ||
+                             std::strncmp(out.bone, "hand", 4) == 0 || std::strncmp(out.bone, "leg", 3) == 0 ||
+                             std::strncmp(out.bone, "foot", 4) == 0;
+    const float gx = sc[k].b.x - sc[k].a.x, gy = sc[k].b.y - sc[k].a.y, gl = std::sqrt(gx * gx + gy * gy);
+    out.grain = gl > 1e-3f ? Vec2{(outwardBone ? gx : -gx) / gl, (outwardBone ? gy : -gy) / gl} : Vec2{0, 1};
+    return true;
+}
+
+bool mouthOnCloseUp(Vec2& at) {
+    if (!g_close.set || !g_close.posed.form) return false;
+    Vec3 mouth;
+    float ppu;
+    return mouthLocal(g_close.posed, mouth) && projectBottom(g_close.view, apply(g_close.model, mouth), at.x, at.y, ppu);
+}
+
+Vec3 closeUpLocal(Vec2 touch) {
+    if (!g_close.set || !g_close.posed.form) return {0, 0, 0};
+    const Posed& p = g_close.posed;
+    const Vec3 head = apply(g_close.model, p.poseMat[p.form->headBone].translation());
+    const Vec3 w = g_close.eye + rayThrough(touch) * length(head - g_close.eye);
+    return toArmature(p, w, true);
+}
+
+bool mouthOf(int i, Vec3& out) {
+    if (i < 0 || i >= 3 || !g_mouthSet[i]) return false;
+    out = g_mouths[i];
+    return true;
+}
+
+void setProps(const Ball* ball, bool tubOut) {
+    g_ball = ball;
+    g_tubOut = tubOut;
+}
+
+void followInDen(Vec3 at, float weight) {
+    g_follow = at;
+    g_followWeight = weight < 0 ? 0 : (weight > 1 ? 1 : weight);
 }
 
 bool project(Vec3 p, float& x, float& y, float& pixelsPerUnit) {

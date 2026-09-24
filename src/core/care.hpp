@@ -40,6 +40,16 @@ struct ScreenCapsule {
 // of a->b, measured 90 degrees counter-clockwise on screen).
 int pickCapsule(const ScreenCapsule* caps, int n, Vec2 touch, float& t, float& across);
 
+// What's under the stylus on the dragon (filled by the renderer's close-up picking).
+struct TouchHit {
+    PetZone zone = PetZone::Head;
+    int region = 0;          // BodyRegion
+    const char* bone = "";
+    Vec3 local;              // the touched point on the skin, armature space (a lean / look target)
+    Vec3 outward;            // the skin's direction there, armature space
+    Vec2 grain;              // on screen: the way its scales lie there (head to tail), unit
+};
+
 // The pet zone and body region of a spot on a bone. `outward` is the skin's direction at
 // that spot in armature space (the dragon faces -Y, Z up, +X is its right).
 PetZone zoneOf(const char* bone, Vec3 outward, float t);

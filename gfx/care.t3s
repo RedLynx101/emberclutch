@@ -1,0 +1,18 @@
+--atlas -f rgba8 -z auto
+../assets/sprites/care/hand.png
+../assets/sprites/care/hand_press.png
+../assets/sprites/care/brush.png
+../assets/sprites/care/cloth.png
+../assets/sprites/care/sponge.png
+../assets/sprites/care/ladle.png
+../assets/sprites/care/ball.png
+../assets/sprites/care/food_firepepper.png
+../assets/sprites/care/food_riverfish.png
+../assets/sprites/care/food_skyberry.png
+../assets/sprites/care/food_honeyroot.png
+../assets/sprites/care/food_frostmelon.png
+../assets/sprites/care/food_starfruit.png
+../assets/sprites/care/food_hearthbread.png
+../assets/sprites/care/food_drumstick.png
+../assets/sprites/care/food_embercandy.png
+../assets/sprites/care/food_glimmercookie.png

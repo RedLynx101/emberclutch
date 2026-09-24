@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP5 ✅, WP6 ✅, WP8 ✅, WP9 ✅; WP2 sculpt, egg and cuteness pass done, texturing left; WP7, WP10–12 to go)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP5 ✅, WP6 ✅, WP8 ✅, WP9 ✅; WP2 ✅ (texturing in-game check pending); WP7 care done, egg and naming left; WP10–12 to go)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -91,10 +91,16 @@
 ## Next actions
 1. ✅ **The walking limp** (fixed 2026-09-24: a stray vertex under the grown body).
 2. ✅ **WP2 texturing** (R2 sent). Check it in Azahar when the screen is free.
-3. **WP7 hands-on care**, the big one: [care interactions](design/care-interactions.md)
-   (petting with the hand and a sweet spot, brushing and polishing with shine regions,
-   bath, hand-feeding into the jaw, fetch with ball physics, calling), then egg turning
-   and listening, the hatching cinematic, naming with the keyboard.
+3. **WP7 hands-on care**, the big one: [care interactions](design/care-interactions.md).
+   Done (2026-09-24): the care core (touch picking on bone capsules, strokes, sweet spots,
+   tastes, grooming sessions, ball physics; PC-tested), the dragon's reactions and 8 new
+   clips, and the care screen (`src/app/care_ui.cpp`): a tool tray (hand, food, brush,
+   cloth, sponge, ball) with toon sprites at the stylus, petting by zone with the sweet
+   spot, hand-feeding into the opening jaw, brushing and polishing by region up to the
+   gleaming moment, the bath with suds and a rinse, flick-to-throw fetch with the top
+   camera following the ball. **Not yet seen in the emulator** (the screen is masked);
+   check every tool there first. Left: egg turning and listening, the hatching
+   cinematic, naming with the keyboard.
 4. **WP10 UI** (fonts, title Continue/New, system menu, settings, toasts, save icon),
    **WP11** CIA packaging, **WP12** checklist playthrough and tag → **Alpha 1 done**.
 5. Then **Alpha 2** ([plan](plan/alpha-2.md)): several dragons, Sanctuary and Vault,

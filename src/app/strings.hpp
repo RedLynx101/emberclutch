@@ -44,5 +44,18 @@ inline constexpr const char* kFed = "Munch munch.";
 inline constexpr const char* kGroomed = "Scales polished to a shine.";
 inline constexpr const char* kPlayed = "Fetch! It bounds after the ball.";
 inline constexpr const char* kMadeUp = "Its heartglow lights up again.";
+// Hands-on care (WP7)
+inline constexpr const char* kSweetSpot = "It loves that spot!";
+inline constexpr const char* kRefused = "Not that one... it turns its nose up.";
+inline constexpr const char* kGleaming = "Gleaming from nose to tail!";
+inline constexpr const char* kComeHere = "Come here!";
+inline constexpr const char* kRinse = "Rinse";
+inline constexpr const char* kHintPet = "Stroke it. Hold still off it to call.";
+inline constexpr const char* kHintFood = "Pick a food, hold it to its mouth.";
+inline constexpr const char* kHintBrush = "Brush head to tail.  L / R: turn.";
+inline constexpr const char* kHintCloth = "Polish in little circles.";
+inline constexpr const char* kHintBath = "Rub in the suds, then rinse.";
+inline constexpr const char* kHintBall = "Flick to throw, drag to roll.";
+inline constexpr const char* kSplash = "Splash! Squeaky clean.";
 
 }  // namespace ec::str

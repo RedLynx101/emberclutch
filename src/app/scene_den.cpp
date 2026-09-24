@@ -48,19 +48,43 @@ float moveScaleOf(const Dragon& d, s64 now) {
     return growthScale(growthFor(d.stage, stageProgress(d, now))) * sizeScale(d.genome);
 }
 
-// Animation markers become sounds (placeholders until the Suno set arrives, D35).
-void playEventSound(u8 event, const Dragon& d, s64 now) {
+// Animation markers become sounds. Voices are pitched per dragon (up for babies, down for
+// grown-ups); a sniff around sometimes brings a curious chirp, sometimes a sneeze.
+void playEventSound(App& app, u8 event, const Dragon& d, s64 now) {
+    const float voice = voicePitch(d, now);
     switch (event) {
         case kAnimFootstep: audio::playSfx(audio::Sfx::Step, 0.95f + 0.1f * (d.genome.size / 255.0f)); break;
         case kAnimChomp: audio::playSfx(audio::Sfx::Munch); break;
-        case kAnimPurr: audio::playSfx(audio::Sfx::Purr, voicePitch(d, now)); break;
+        case kAnimSwallow: audio::playSfx(audio::Sfx::Gulp, voice); break;
+        case kAnimPurr: audio::playSfx(audio::Sfx::Purr, voice); break;
         case kAnimThump:
         case kAnimLand: audio::playSfx(audio::Sfx::Thump); break;
         case kAnimFlap: audio::playSfx(audio::Sfx::Flap); break;
-        case kAnimYawn: audio::playSfx(audio::Sfx::Yawn, voicePitch(d, now)); break;
+        case kAnimYawn: audio::playSfx(audio::Sfx::Yawn, voice); break;
         case kAnimShake: audio::playSfx(audio::Sfx::Brush, 1.3f); break;
+        case kAnimSniff:
+            switch (app.rng.below(4)) {
+                case 0: audio::playSfx(audio::Sfx::Sneeze, voice); break;
+                case 1: audio::playSfx(audio::Sfx::Chirp, voice); break;
+                default: break;
+            }
+            break;
+        case kAnimCall:
+            audio::playSfx(d.stage >= Stage::Adolescent ? audio::Sfx::Rumble : audio::Sfx::Trill, voice);
+            break;
+        case kAnimWhimper: audio::playSfx(audio::Sfx::Whimper, voice); break;
+        case kAnimSqueak: audio::playSfx(audio::Sfx::Squeak, voice); break;
         default: break;
     }
+}
+
+// The den's sound beds under the music: the hearth always, the night outside after dark,
+// and the egg's warm hum (louder the warmer it is).
+void denBeds(const Dragon& d, s64 now) {
+    const DayBlend light = dayBlend(now);
+    audio::setBed(audio::Bed::Hearth, 1.0f);
+    audio::setBed(audio::Bed::Night, light.weight(kLightNight) + 0.3f * light.weight(kLightEvening));
+    if (d.stage == Stage::Egg) audio::setBed(audio::Bed::EggHum, 0.35f + 0.65f * d.warmth / 100.0f);
 }
 
 // Particles for what a den dragon just did: dust at its feet, crumbs when it chomps, hearts
@@ -137,7 +161,12 @@ void denLife(App& app, s64 now) {
     shareCrowd(crowd, app.denTest ? 3 : 1);  // they walk around each other
     matchSpeeds(app.actors[0], d, now);
     const int n = app.actors[0].update(d, night, moveScaleOf(d, now), app.dt, *lib, clipsFor(d, now), events, 8);
-    for (int i = 0; i < n; ++i) playEventSound(events[i], d, now);
+    for (int i = 0; i < n; ++i) playEventSound(app, events[i], d, now);
+    // A gulp when a meal is finished.
+    static Activity lastActivity = Activity::Idle;
+    const Activity activity = app.actors[0].behavior.activity;
+    if (lastActivity == Activity::Eat && activity != Activity::Eat) audio::playSfx(audio::Sfx::Gulp, voicePitch(d, now));
+    lastActivity = activity;
     effectsFor(app, 0, d, app.actors[0], events, n, now);
     if (app.denTest) {
         const Dragon* extra[2];
@@ -154,10 +183,10 @@ void denLife(App& app, s64 now) {
 // The egg between rubs: it settles, the dragon inside knocks as hatching nears, and it
 // cracks open in stages, each with a crackle.
 void eggLife(App& app, const Dragon& d) {
-    if (app.egg.update(app.dt, eggProgress(d), app.rng)) audio::playSfx(audio::Sfx::Thump, 1.7f);
+    if (app.egg.update(app.dt, eggProgress(d), app.rng)) audio::playSfx(audio::Sfx::EggKnock);
     const int cracks = eggCracks(d);
     if (app.eggCracks >= 0 && cracks > app.eggCracks) {  // not for cracks it had when loaded
-        audio::playSfx(audio::Sfx::Crack, 1.25f);
+        audio::playSfx(audio::Sfx::EggCrack);
         app.egg.knock(0.2f, 0);
     }
     app.eggCracks = cracks;
@@ -193,6 +222,7 @@ void update(App& app, const Input& in) {
     }
     denLife(app, nowLocal(app));
     denEffects(app, nowLocal(app));
+    denBeds(activeDragon(app), nowLocal(app));
     if (activeDragon(app).stage == Stage::Egg) eggLife(app, activeDragon(app));
 }
 
@@ -269,9 +299,9 @@ void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {
     gauge(app, 20, 196, str::kWarmth, d.warmth);
     if (tryHatch(d, now, app.rng)) {
         markVisit(d, now);
-        audio::playSfx(audio::Sfx::Crack);
-        audio::playSfx(audio::Sfx::HatchPop, voicePitch(d, now));
-        audio::playStinger("hatching");  // silent until the Suno stinger exists
+        audio::playSfx(audio::Sfx::EggCrack);
+        audio::playSfx(audio::Sfx::EggHatch);
+        audio::playStinger("hatching");
         app.actorsReady = false;          // the new hatchling starts its den life with a hello
         app.egg = EggMotion{};
         app.eggCracks = -1;
@@ -323,10 +353,9 @@ void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
         const bool fav = d.favoriteFood == d.genome.elementA;
         feed(d, 35, fav);
         markVisit(d, now);
-        app.actors[0].behavior.care(fav ? Care::FeedFavorite : Care::Feed, d);
-        audio::playSfx(audio::Sfx::Munch);
+        app.actors[0].behavior.care(fav ? Care::FeedFavorite : Care::Feed, d);  // its bites munch
         if (fav) {
-            audio::playSfx(audio::Sfx::Chirp, voicePitch(d, now));
+            audio::playSfx(audio::Sfx::Trill, voicePitch(d, now));
             burst(app, Fx::Heart, 3, now);
         }
         showToast(app, fav ? str::kFedFavorite : str::kFed);
@@ -336,14 +365,15 @@ void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
         markVisit(d, now);
         app.actors[0].behavior.care(Care::Groom, d);
         audio::playSfx(audio::Sfx::Brush);
+        audio::playSfx(audio::Sfx::Sparkle);
         burst(app, Fx::Sparkle, 10, now);
         showToast(app, str::kGroomed);
     }
     if (button(app, {164, by, 70, 36}, str::kPlayBtn, in)) {
         play(d, 35);
         markVisit(d, now);
-        app.actors[0].behavior.care(Care::Play, d);
-        audio::playSfx(audio::Sfx::Chirp, voicePitch(d, now));
+        app.actors[0].behavior.care(Care::Play, d);  // it squeaks as it hops or pounces
+        audio::playSfx(audio::Sfx::Bounce);
         showToast(app, str::kPlayed);
     }
     if (d.upset && button(app, {240, by, 70, 36}, str::kMakeUp, in)) {

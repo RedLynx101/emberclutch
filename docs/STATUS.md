@@ -19,7 +19,10 @@
 - **Art:** two dragon forms built by script (`tools/blender/dragon_model.py`): a metaball
   hatchling and the skin-modifier grown body, classic wings, part variants, an opening
   mouth with teeth and a tongue (D41), blinking eyes (D42). Exported to `romfs/models/{hatchling,grown}.ecm`.
-- **Audio:** music batch 1 processed into `romfs/music/` (6 loops); placeholder SFX until the Suno batch arrives.
+- **Audio:** music batch 1 processed into `romfs/music/` (6 loops); batch 2 (the hatching and
+  Wanderings stingers, the Market loop) and the full Alpha 1 sound-effect set (ElevenLabs,
+  2–4 takes per sound) processed on 2026-09-24. The den has hearth and night beds and an
+  egg hum under the music.
 - **Hardware:** never run on a real 3DS yet (deferred, D28).
 
 ## Alpha 1 progress
@@ -70,7 +73,8 @@
 - ✅ **WP9 audio:** Tremor Ogg streaming on a worker thread with sample-accurate loops
   (LOOPSTART tag), fades between tracks, stingers that duck the loop, 6-channel sound
   effects with per-dragon voice pitch; music director (title / den day / nestsong at night
-  and during incubation). Placeholder SFX synthesized (D35). Verified in Azahar (fixed a
+  and during incubation). Placeholder SFX synthesized (D35; replaced by the real set on
+  2026-09-24). Verified in Azahar (fixed a
   thread race that restarted the stream forever). `make_loop.py --no-loop` for stingers.
   Briefs sent: [music batch 2](audio/suno-music-batch-2.md), [SFX](audio/suno-sfx-alpha1.md).
   Note: the emulator needs `sdmc:/3ds/dspfirm.cdc`; a local dummy file works in Azahar (never commit it).

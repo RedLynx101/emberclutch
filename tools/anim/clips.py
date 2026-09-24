@@ -236,7 +236,8 @@ eat_h.event(0.15, "chomp").event(0.75, "chomp")
  .pose(1.3, merge(WINGS_HALF, {"neck1": (10, 0, 0), "head": (12, 0, 0), "jaw": (-16, 0, 0)})).pose(1.6, WINGS_FOLDED)
  .wave(lambda t: {"hips": (0, 7 * sin01(t, 0.4), 0), "chest": (0, -5 * sin01(t, 0.4), 0),
                   **{f"tail{k}": (0, 14 * sin01(t, 0.3, -0.1 * k), 0) for k in range(1, 5)}})
- .root(0.0).root(0.55, up=0.0).root(0.75, up=0.25).root(0.95, up=0.0).root(1.6).event(0.95, "land"))
+ .root(0.0).root(0.55, up=0.0).root(0.75, up=0.25).root(0.95, up=0.0).root(1.6).event(0.95, "land")
+ .event(0.3, "call"))
 (clip("pet_head", 1.6, loop=True)
  .pose(0.0, merge(WINGS_FOLDED, {"neck1": (6, 0, 0), "neck3": (4, 0, 6), "head": (-10, 6, 16), "jaw": (-7, 0, 0)}))
  .wave(lambda t: {"head": (0, 4 * sin01(t, 1.6), 4 * sin01(t, 1.6)), "neck2": (0, 3 * sin01(t, 1.6, 0.1), 0)})
@@ -265,7 +266,7 @@ clip("shake", 1.0).pose(0.0, WINGS_FOLDED).pose(1.0, WINGS_FOLDED).wave(shake_wa
  .pose(0.45, merge(WINGS_OPEN, {"arm_up*": (30, 0, 0), "arm_lo*": (-50, 0, 0), "leg_up*": (-10, 0, 0),
                                 "neck1": (10, 0, 0), "head": (10, 0, 0), "tail1": (-10, 0, 0)}))
  .pose(0.7, CROUCH).pose(0.9, WINGS_FOLDED)
- .root(0.0).root(0.25).root(0.45, up=0.55).root(0.65).root(0.9).event(0.65, "land"))
+ .root(0.0).root(0.25).root(0.45, up=0.55).root(0.65).root(0.9).event(0.65, "land").event(0.35, "squeak"))
 
 # ------------------------------------------------------------------------------ play
 (clip("pounce", 1.4).pose(0.0, WINGS_FOLDED).pose(0.35, CROUCH).pose(0.65, CROUCH)
@@ -274,7 +275,7 @@ clip("shake", 1.0).pose(0.0, WINGS_FOLDED).pose(1.0, WINGS_FOLDED).wave(shake_wa
  .pose(1.05, CROUCH).pose(1.4, WINGS_FOLDED)
  .wave(lambda t: {"hips": (0, 6 * sin01(t, 0.15), 0) if 0.35 < t < 0.65 else (0, 0, 0)})
  .root(0.0).root(0.65).root(0.85, up=0.45).root(1.05).root(1.4)  # the den behavior moves it forward
- .event(1.05, "land"))
+ .event(0.75, "squeak").event(1.05, "land"))
 
 
 def happy_wag(t):
@@ -307,7 +308,7 @@ def happy_wag(t):
  .event(0.25, "flap").event(0.65, "flap"))
 
 # ------------------------------------------------------------------------------ feelings
-clip("sulk", 1.5).pose(0.0, WINGS_FOLDED).pose(0.7, CROUCH_FOLDED).pose(1.5, SULK).event(1.2, "thump")
+clip("sulk", 1.5).pose(0.0, WINGS_FOLDED).pose(0.7, CROUCH_FOLDED).pose(1.5, SULK).event(0.5, "whimper").event(1.2, "thump")
 (clip("sulk_loop", 5.0, loop=True).pose(0.0, SULK)
  .wave(lambda t: {"chest": (3 * max(0.0, sin01(t, 5.0)), 0, 0), "head": (-2 * max(0.0, sin01(t, 5.0)), 0, 0)}))
 (clip("nuzzle", 1.4, loop=True)
@@ -320,4 +321,4 @@ clip("sulk", 1.5).pose(0.0, WINGS_FOLDED).pose(0.7, CROUCH_FOLDED).pose(1.5, SUL
  .pose(0.7, CROUCH).pose(1.0, merge(WINGS_HALF, {"neck1": (8, 0, 0), "head": (-4, 10, 12), "jaw": (-12, 0, 0)}))
  .pose(1.6, WINGS_FOLDED)
  .wave(lambda t: {f"tail{k}": (0, 14 * sin01(t, 0.4, -0.08 * k), 0) for k in range(1, 5)})
- .root(0.0).root(0.2).root(0.45, up=0.5).root(0.7).root(1.6).event(0.7, "land"))
+ .root(0.0).root(0.2).root(0.45, up=0.5).root(0.7).root(1.6).event(0.4, "call").event(0.7, "land"))

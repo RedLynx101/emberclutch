@@ -19,5 +19,20 @@ Tracks (filled in as they are added):
 | Skyreach (take 1) | `romfs/music/skyreach.ogg` | 2026-09-23 | Paid (per brief) |
 | Skyreach (take 2) | `romfs/music/skyreach-2.ogg` | 2026-09-23 | Paid (per brief) |
 | Cup Day | `romfs/music/cup-day.ogg` | 2026-09-23 | Paid (per brief) |
+| Market Bustle | `romfs/music/market-bustle.ogg` | 2026-09-24 | Paid (per brief) |
 
 *"Plan" records what the brief required. Confirm the plan actually used before the public release.*
+
+## ElevenLabs audio
+
+Some cues and every sound effect are generated with **ElevenLabs** (Sound Effects) on
+Noah's paid plan. The same rules apply as for the Suno music above: they are **not covered
+by the project's MIT or CC BY-SA licenses**, may be redistributed only as part of
+unmodified Emberclutch builds, forks should replace them, and ElevenLabs' current terms
+must be re-checked before each public release.
+
+| Audio | Files | Received |
+|---|---|---|
+| Hatching (stinger) | `romfs/music/hatching.ogg` | 2026-09-24 |
+| Wanderings Return (stinger) | `romfs/music/wanderings-return.ogg` | 2026-09-24 |
+| Sound effects, Alpha 1 set (26 sounds, 2 beds and an egg hum; `tools/audio/sfx_manifest.json` lists the takes) | `romfs/sfx/*.wav` | 2026-09-24 |

@@ -91,7 +91,7 @@ bool debugMenu(App& app, const Input& in) {
             case 5: if (d.stage == Stage::Egg) d.incubationSeconds = kIncubationSeconds; break;
             case 6: forceNextStage(d, now); break;
             case 7: app.overlay = !app.overlay; break;
-            case 8: saveNow(app); showToast(app, "Saved."); break;
+            case 8: saveNow(app); showToast(app, "Saved."); audio::playSfx(audio::Sfx::Save); break;
             case 9: deleteGame(); app.game = SaveData{}; app.slots = SaveSlots{}; app.scene = SceneId::Title; app.devMenu = false; app.actorsReady = false; break;
             case 10: nextBreed(d, app.rng); break;
             case 11: app.denTest = !app.denTest; break;

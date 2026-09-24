@@ -223,7 +223,7 @@ tools/blender/den_model.py --out romfs/models/den.esm   (the den room, baked lig
 tools/blender/egg_model.py --out romfs/models/egg.ecm   (the egg: plain Python; Blender only for previews)
 tools/blender/sheet.py          (tiles review renders into docs/art/reviews/*.png)
 Suno WAV --tools/audio/make_loop.py (ffmpeg)--> romfs/music/*.ogg (LOOPSTART/LOOPLENGTH tags)
-tools/audio/make_placeholder_sfx.py         --> romfs/sfx/*.wav
+generated WAVs --tools/audio/process_sfx.py (ffmpeg; sfx_manifest.json)--> romfs/sfx/*.wav
 ```
 
 - **Blender runs headless** (`blender -b -P ...`). Everything is a version-controlled
@@ -257,13 +257,23 @@ tools/audio/make_placeholder_sfx.py         --> romfs/sfx/*.wav
 
 ## 6. Audio
 
-- **ndsp** (proven in 3D-Claw and asteria-ds). Channel 0–1 for music, 2–7 for sound effects.
+- **ndsp** (proven in 3D-Claw and asteria-ds). Channels 0–1 for music (loop, stinger),
+  2–9 for sound effects (a free channel first, else the oldest), 10–12 for looping beds.
 - **Music:** Ogg Vorbis via Tremor (the `3ds-libvorbisidec` package, installed
   2026-09-23) decoded on a worker thread, with sample-accurate loops from the
   `LOOPSTART`/`LOOPLENGTH` tags.
-- **Sound effects:** PCM16 or DSP-ADPCM WAVs preloaded into linear memory.
-- **Dragon voices:** a small set of base samples pitch-shifted per dragon (from the genome
-  seed) and per stage.
+- **Sound effects:** 22 kHz mono PCM16 WAVs (`romfs/sfx/<slug>.wav`, takes `<slug>-2..4`)
+  preloaded into linear memory (~3 MB); a sound's takes play in turn. Made by
+  `tools/audio/process_sfx.py` from the generated sources: EQ for the small speakers,
+  silence trimmed, levelled per kind (voices, body, egg, care, interface), a soft limiter
+  on sharp sounds.
+- **Beds:** the hearth, the night outside and an egg's hum are seamless loops that play
+  from start-up at zero volume; the den sets their levels every frame (the night bed
+  follows the daylight blend, the hum the egg's warmth) and they ease in and out.
+- **Dragon voices:** a small set of base samples (chirp, trill, purr, squeak, whimper,
+  yawn, sneeze, rumble) pitch-shifted per dragon: up for babies, down for grown-ups, a
+  little by size. Clip events trigger most of them (`call` is a trill from the young and a
+  rumble from adolescents and adults).
 
 ## 7. Input
 

@@ -1,5 +1,6 @@
 #include "app/app.hpp"
 
+#include "app/audio.hpp"
 #include "app/scenes.hpp"
 
 namespace ec {
@@ -19,7 +20,10 @@ void showToast(App& app, const char* msg) {
 }
 
 void saveNow(App& app) {
-    if (!saveGame(app.game, app.slots, nowLocal(app))) showToast(app, "Couldn't save to the SD card.");
+    if (!saveGame(app.game, app.slots, nowLocal(app))) {
+        showToast(app, "Couldn't save to the SD card.");
+        audio::playSfx(audio::Sfx::Error);
+    }
 }
 
 const SceneFns& sceneFns(SceneId id) {

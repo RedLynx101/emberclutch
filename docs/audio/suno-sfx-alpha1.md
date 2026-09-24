@@ -1,9 +1,14 @@
 # Emberclutch — Sound Effects Brief (Alpha 1)
 
-For **Suno Sounds** (one-shots and short loops). Until these arrive, the game uses
-synthesized placeholders from `tools/audio/make_placeholder_sfx.py` (D35), so nothing is
-blocked. Drop finished files into `assets/audio/sfx/source/` using the slugs below; I
-trim, level, and convert them to small 22 kHz mono WAVs in `romfs/sfx/`.
+> **Delivered 2026-09-24**, generated with ElevenLabs Sound Effects (paid plan) rather
+> than Suno, 2–4 takes for most sounds. `tools/audio/sfx_manifest.json` records which
+> generated file became which take; `tools/audio/process_sfx.py` makes `romfs/sfx/`. The
+> placeholders (D35) are gone. Loaded but not played yet (no moment in the game for them
+> until WP7 and WP10): `splash`, `ui-back`, `ui-toast`.
+
+For **Suno Sounds** (one-shots and short loops). Drop finished files into
+`assets/audio/sfx/source/` using the slugs below; I trim, level, and convert them to small
+22 kHz mono WAVs in `romfs/sfx/`.
 
 **General notes**
 - Short and clean: no music under the sound, and no long reverb tails unless noted.
@@ -68,5 +73,5 @@ trim, level, and convert them to small 22 kHz mono WAVs in `romfs/sfx/`.
 | `amb-night` | Night crickets and soft distant wind outside a cave, calm, seamless | loop | 10–20 s |
 
 ## Licensing
-Suno Sounds made on the paid plan fall under the same music notice
-(`assets/audio/music/LICENSE-MUSIC.md`); I'll add them to its table.
+Generated sounds made on a paid plan fall under the same notice as the music
+(`assets/audio/music/LICENSE-MUSIC.md`, which lists them).

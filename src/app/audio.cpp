@@ -11,14 +11,22 @@
 namespace ec::audio {
 namespace {
 
-constexpr int kMusicCh = 0, kStingerCh = 1, kSfxFirst = 2, kSfxCount = 6;
+constexpr int kMusicCh = 0, kStingerCh = 1, kSfxFirst = 2, kSfxCount = 8, kBedFirst = kSfxFirst + kSfxCount;
+constexpr int kMaxTakes = 4;
 constexpr int kBufFrames = 4096;  // per streaming buffer (~128 ms at 32 kHz)
 constexpr int kNumBufs = 3;
 constexpr float kFadeSeconds = 0.7f;
 
-const char* const kSfxFiles[] = {"tap", "confirm", "back", "munch", "brush", "purr", "chirp", "crack", "hatch_pop",
-                                 "step", "thump", "flap", "yawn"};
+const char* const kSfxFiles[] = {
+    "ui-tap",       "ui-confirm",   "ui-back",        "ui-error",      "ui-toast",    "ui-save",
+    "dragon-chirp", "dragon-trill", "dragon-purr",    "dragon-squeak", "dragon-whimper", "dragon-yawn",
+    "dragon-sneeze", "dragon-rumble", "step",         "thump",         "flap",        "egg-knock",
+    "egg-crack",    "egg-hatch",    "munch",          "gulp",          "brush",       "polish-sparkle",
+    "splash",       "ball-bounce"};
 static_assert(sizeof(kSfxFiles) / sizeof(kSfxFiles[0]) == static_cast<int>(Sfx::Count), "one file per Sfx");
+const char* const kBedFiles[] = {"amb-hearth", "amb-night", "egg-hum"};
+const float kBedGain[] = {0.55f, 0.5f, 0.6f};  // under the music and the voices
+static_assert(sizeof(kBedFiles) / sizeof(kBedFiles[0]) == static_cast<int>(Bed::Count), "one file per Bed");
 
 struct Stream {
     OggVorbis_File vf;
@@ -60,9 +68,15 @@ float g_musicVol = 0.8f, g_sfxVol = 0.9f;
 
 s16* g_stingerData = nullptr;
 ndspWaveBuf g_stingerBuf;
-Clip g_clips[static_cast<int>(Sfx::Count)];
+Clip g_clips[static_cast<int>(Sfx::Count)][kMaxTakes];
+u8 g_takes[static_cast<int>(Sfx::Count)] = {};     // takes loaded
+u8 g_nextTake[static_cast<int>(Sfx::Count)] = {};  // the one to play next
 ndspWaveBuf g_sfxBufs[kSfxCount];
 int g_nextSfx = 0;
+Clip g_beds[static_cast<int>(Bed::Count)];
+ndspWaveBuf g_bedBufs[static_cast<int>(Bed::Count)];
+float g_bedLevel[static_cast<int>(Bed::Count)] = {}, g_bedWant[static_cast<int>(Bed::Count)] = {};
+bool g_bedOn[static_cast<int>(Bed::Count)] = {};
 
 void setMix(int ch, float vol) {
     float mix[12] = {};
@@ -268,10 +282,21 @@ bool init() {
         g_stream.data[i] = static_cast<s16*>(linearAlloc(kBufFrames * 2 * sizeof(s16)));
         if (!g_stream.data[i]) return false;
     }
-    for (int i = 0; i < static_cast<int>(Sfx::Count); ++i) {
+    for (int i = 0; i < static_cast<int>(Sfx::Count); ++i) {  // a missing sound just stays silent
+        for (int k = 0; k < kMaxTakes; ++k) {
+            char path[64];
+            if (k == 0)
+                std::snprintf(path, sizeof(path), "romfs:/sfx/%s.wav", kSfxFiles[i]);
+            else
+                std::snprintf(path, sizeof(path), "romfs:/sfx/%s-%d.wav", kSfxFiles[i], k + 1);
+            if (!loadWav(path, g_clips[i][k])) break;
+            g_takes[i] = static_cast<u8>(k + 1);
+        }
+    }
+    for (int b = 0; b < static_cast<int>(Bed::Count); ++b) {  // started when a scene asks
         char path[64];
-        std::snprintf(path, sizeof(path), "romfs:/sfx/%s.wav", kSfxFiles[i]);
-        loadWav(path, g_clips[i]);  // a missing clip just stays silent
+        std::snprintf(path, sizeof(path), "romfs:/sfx/%s.wav", kBedFiles[b]);
+        loadWav(path, g_beds[b]);
     }
     LightEvent_Init(&g_event, RESET_ONESHOT);
     LightLock_Init(&g_lock);
@@ -291,9 +316,11 @@ void shutdown() {
     threadJoin(g_thread, U64_MAX);
     threadFree(g_thread);
     closeStream();
-    for (int ch = 0; ch < kSfxFirst + kSfxCount; ++ch) ndspChnWaveBufClear(ch);
+    for (int ch = 0; ch < kBedFirst + static_cast<int>(Bed::Count); ++ch) ndspChnWaveBufClear(ch);
     for (auto* d : g_stream.data) if (d) linearFree(d);
-    for (auto& c : g_clips) if (c.data) linearFree(c.data);
+    for (auto& takes : g_clips)
+        for (auto& c : takes) if (c.data) linearFree(c.data);
+    for (auto& c : g_beds) if (c.data) linearFree(c.data);
     if (g_stingerData) linearFree(g_stingerData);
     ndspExit();
     g_ok = false;
@@ -325,11 +352,22 @@ void playStinger(const char* slug) {
 
 void playSfx(Sfx s, float pitch) {
     if (!g_ok) return;
-    const Clip& c = g_clips[static_cast<int>(s)];
-    if (!c.data) return;
-    const int ch = kSfxFirst + g_nextSfx;
-    ndspWaveBuf& w = g_sfxBufs[g_nextSfx];
-    g_nextSfx = (g_nextSfx + 1) % kSfxCount;
+    const int i = static_cast<int>(s);
+    if (g_takes[i] == 0) return;
+    const Clip& c = g_clips[i][g_nextTake[i]];
+    g_nextTake[i] = static_cast<u8>((g_nextTake[i] + 1) % g_takes[i]);  // takes in turn
+    // A free channel if there is one, else the one used longest ago.
+    int slot = g_nextSfx;
+    for (int k = 0; k < kSfxCount; ++k) {
+        const int j = (g_nextSfx + k) % kSfxCount;
+        if (!ndspChnIsPlaying(kSfxFirst + j)) {
+            slot = j;
+            break;
+        }
+    }
+    const int ch = kSfxFirst + slot;
+    ndspWaveBuf& w = g_sfxBufs[slot];
+    g_nextSfx = (slot + 1) % kSfxCount;
     ndspChnWaveBufClear(ch);
     setupChannel(ch, c.stereo ? 2 : 1, static_cast<long>(c.rate * pitch));
     setMix(ch, g_sfxVol);
@@ -337,6 +375,11 @@ void playSfx(Sfx s, float pitch) {
     w.data_pcm16 = c.data;
     w.nsamples = c.frames;
     ndspChnWaveBufAdd(ch, &w);
+}
+
+void setBed(Bed b, float level) {
+    const int i = static_cast<int>(b);
+    g_bedWant[i] = level < 0.0f ? 0.0f : (level > 1.0f ? 1.0f : level);
 }
 
 void setVolumes(u8 music, u8 sfx) {
@@ -367,6 +410,38 @@ void update(float dt) {
     const float duckTarget = ndspChnIsPlaying(kStingerCh) ? 0.2f : 1.0f;
     g_duck += (duckTarget - g_duck) * (dt * 4.0f > 1.0f ? 1.0f : dt * 4.0f);
     setMix(kMusicCh, g_gain * g_duck * g_musicVol);
+    // Beds ease toward their wanted level (about a second), then the wish lapses: a scene
+    // keeps a bed going by asking again every frame. A bed's channel runs only while it is
+    // wanted or still fading out.
+    const float k = dt * 1.5f > 1.0f ? 1.0f : dt * 1.5f;
+    for (int b = 0; b < static_cast<int>(Bed::Count); ++b) {
+        const float want = g_bedWant[b];
+        g_bedWant[b] = 0.0f;
+        g_bedLevel[b] += (want - g_bedLevel[b]) * k;
+        const Clip& c = g_beds[b];
+        const int ch = kBedFirst + b;
+        if (!c.data) continue;
+        if (!g_bedOn[b] && want > 0.0f) {
+            setupChannel(ch, c.stereo ? 2 : 1, c.rate);
+            ndspChnSetInterp(ch, NDSP_INTERP_LINEAR);
+            setMix(ch, 0.0f);
+            ndspWaveBuf& w = g_bedBufs[b];
+            std::memset(&w, 0, sizeof(w));
+            w.data_pcm16 = c.data;
+            w.nsamples = c.frames;
+            w.looping = true;
+            ndspChnWaveBufAdd(ch, &w);
+            g_bedOn[b] = true;
+        }
+        if (!g_bedOn[b]) continue;
+        if (want <= 0.0f && g_bedLevel[b] < 0.002f) {
+            ndspChnWaveBufClear(ch);
+            g_bedOn[b] = false;
+            g_bedLevel[b] = 0.0f;
+        } else {
+            setMix(ch, g_bedLevel[b] * kBedGain[b] * g_sfxVol);
+        }
+    }
 }
 
 }  // namespace ec::audio

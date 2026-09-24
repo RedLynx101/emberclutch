@@ -29,7 +29,12 @@ session, and add new decisions to the log.
 - Azahar keeps a stale touch map if its window is resized, maximized or fullscreened while
   a game runs: touches then land ~20 px low. Size the window first, then (re)start the
   game (`tools\emu.ps1` relaunches; Azahar remembers the size). Dev builds draw a green
-  crosshair where the game reads the stylus (overlay on).- Music: `python tools/audio/make_loop.py assets/audio/music/source/<slug>.wav --bpm <bpm> --preview`
+  crosshair where the game reads the stylus (overlay on).
+- Music: `python tools/audio/make_loop.py assets/audio/music/source/<slug>.wav --bpm <bpm> --preview`
+  (stingers: `--no-loop`)
+- Sound effects: `python tools/audio/process_sfx.py` (all, or name slugs) turns
+  `assets/audio/sfx/source/<slug>-<take>.wav` into `romfs/sfx/`. A new download folder:
+  add its files to `tools/audio/sfx_manifest.json`, then run with `--import <folder>`.
 - Den room: edit `tools/blender/den_model.py` (keep its spots in sync with `DenLayout` in
   `src/core/behavior.hpp`), then
   `blender -b -P tools/blender/den_model.py -- --out <abs>/romfs/models/den.esm` and

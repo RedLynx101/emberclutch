@@ -1,5 +1,12 @@
 # Emberclutch — Suno Music Brief, Batch 2 (3 cues)
 
+> **Delivered 2026-09-24.** `market-bustle` is from Suno; `hatching` and
+> `wanderings-return` were made with ElevenLabs instead (see
+> `assets/audio/music/LICENSE-MUSIC.md`). The hatching stinger plays when an egg hatches.
+> The market loop's seam is the best match the tool found (0.41 of 1; the take keeps
+> developing and never quite repeats): listen to
+> `assets/audio/music/previews/market-bustle.seam-preview.wav` before the Market ships.
+
 Same setup as [batch 1](suno-music-brief.md): **Suno v5.5, paid plan, Custom Mode,
 Instrumental ON**, Weirdness ~30%, Style Influence ~75%, the same Exclude Styles list.
 Download **WAV** and drop the files in `assets/audio/music/source/` with the slugs below.

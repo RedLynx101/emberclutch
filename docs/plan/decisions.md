@@ -46,7 +46,7 @@ Approved decisions, newest first. "Approved" means the project owner signed off.
 | D32 | **Review gates during the run:** R1 (sculpt) **blocks** until Noah approves; R2 (textured) and R3 (rigged/animated) are sent but **don't block**. Feedback is folded in when it arrives | Owner choice (refines D26) | Approved |
 | D33 | Pre-approved download: **Nunito** and **Cinzel Decorative** (SIL OFL) from Google Fonts' official GitHub, with license files, into `assets/fonts/` | Owner approval | Approved |
 | D34 | **Alpha 2 is not complete until it has run once on Noah's old 3DS.** Everything else can finish on emulator checks; the final step waits for the hardware session | Owner choice (refines D28) | Approved |
-| D35 | Missing Suno sounds never block: placeholder sounds are used until Noah delivers the briefs' tracks | Keeps the run moving | Approved (default) |
+| D35 | Missing Suno sounds never block: placeholder sounds are used until Noah delivers the briefs' tracks (the sound effects arrived on 2026-09-24, from ElevenLabs) | Keeps the run moving | Approved (default) |
 | D30 | **English only for v1**, with every string in one table so translations can be added later | Scope | Default (owner can change) |
 
 ## 2026-09-23 — Project kickoff

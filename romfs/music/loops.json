@@ -15,6 +15,14 @@
     "bpm": 75.0,
     "lufs": -16.0
   },
+  "market-bustle": {
+    "file": "market-bustle.ogg",
+    "rate": 32000,
+    "loopStart": 664615,
+    "loopLength": 1993600,
+    "bpm": 104.0,
+    "lufs": -16.0
+  },
   "nestsong": {
     "file": "nestsong.ogg",
     "rate": 32000,

@@ -14,6 +14,11 @@ game crashed at its first 3D frame (a null texture read the emulator hides). Bot
 WP11b); both 3D-banner CIAs froze the HOME Menu, which also turned out to keep an old banner
 per title; Next style froze the 3DS (fixed in 0.1.4).
 
+**Run 7:** 0.1.7 plays (the waiting egg hatched); the full den averages ~19 ms. **Run 8:** lab
+M, N, O in `/cias/lab/`: the banner without turning, with three cute sounds (sparkle-chirp,
+chirp-chirp, hello). Pick one; tell whether the banner still turns while it sits there or
+only as it comes in (the HOME Menu turns every 3D banner in).
+
 **Run 6:** J passed, K froze (the hidden triangle matters). **Run 7 (0.1.7):** delete the old
 Emberclutch title in FBI (Titles), then install `emberclutch-3dbanner.cia`: it's a new title
 (0xEC0C2), so the HOME Menu has no old banner for it, and the save on the SD card carries

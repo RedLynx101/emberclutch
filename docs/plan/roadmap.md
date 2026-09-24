@@ -22,15 +22,23 @@ of Alpha 2 at the latest**, before content volume makes a rendering change expen
 |---|---|---|---|
 | **Foundations** | Design, tools, proof of pipeline | Phase 0 | ✅ Done 2026-09-23 |
 | **Alpha 1** | *A living pet* | Phases 1–2: 3D dragon, care, growth, naming, real saves, music, CIA | ✅ Done (2026-09-24, `v0.1.0-alpha1`) |
-| **Alpha 2** | *A den* | Phase 3: several dragons, breeding, eggs, Sanctuary/Vault, Market, Wanderings, map with fast travel; style review R5; first hardware run | Planned ([plan](alpha-2.md)) |
-| **Beta** | *A trainer* | Phase 4 + ground half of Phase 5: tricks, voice, 3 ground competitions, economy | Planned |
-| **1.0** | *The sky* | Phase 6 + air half of Phase 5 + Phase 7 polish: flight, riding, valley, Sky Rings, Lantern Trial, public release | Planned |
-| **1.x** | *Friends* | Sky Visits (local wireless) | Later |
-| **2.0** | *The meadow* | Equine line: horse, pegasus, unicorn, alicorn | Later |
+| **Alpha 2** | *A den* | Phase 3: several dragons, breeding, eggs, Sanctuary/Vault, Market, Wanderings, map with fast travel; style review R5; first hardware runs | In progress ([plan](alpha-2.md)) |
+| **Beta** | *A trainer* | Phase 4 + ground half of Phase 5: tricks, voice, 3 ground competitions, economy | Planned · **sit-down first** |
+| **1.0** | *The sky* | Phase 6 + air half of Phase 5 + Phase 7 polish: flight, riding, valley, Sky Rings, Lantern Trial, public release | Planned · **sit-down first** |
+| **1.x** | *Friends* | Sky Visits (local wireless) | Later · **sit-down first** |
+| **2.0** | *The meadow* | Equine line: horse, pegasus, unicorn, alicorn | Later · **sit-down first** |
 
-Every milestone starts by writing its own detailed plan (like [alpha-1.md](alpha-1.md))
-and ends with: all unit tests green, a full emulator playthrough of its content, the docs
-synced (`STATUS.md`, decisions, this file), a commit and push, and a RedWiki update.
+**Every milestone after Alpha 2 opens with a design sit-down with Noah (D65), and no work
+on it starts until he has passed it.** The sit-down happens when the milestone before it is
+done. Ahead of it Claude writes a short brief: the open questions, the options with a
+recommendation for each, and what's already decided. In it the milestone's scale,
+mechanics, progression, content and writing are settled, and the outcome goes into the
+decision log. Then the milestone's detailed plan is written (like [alpha-1.md](alpha-1.md)),
+and Noah signs that off too. What each sit-down covers is listed under the milestone below.
+
+Every milestone ends with: all unit tests green, a full emulator playthrough of its content,
+a run on the old 3DS, the docs synced (`STATUS.md`, decisions, this file), a commit and push,
+and a RedWiki update.
 
 ---
 
@@ -96,6 +104,10 @@ style, the last thing before Noah decides (D47) → the dragons update in the ch
   the opposite sex through the Market or Wanderings.
 
 ## Beta — *A trainer*
+**Sit-down first (after Alpha 2):** how training works (tricks, gestures, voice, skills),
+the ground competitions and their cups, the economy and progression (Gleam, what's earned
+and spent, how a dragon grows as a trainee), grooming (below), the Wanderings' next pass,
+what Beta leaves out. Nothing below is built until it's passed.
 - **Grooming that fits together** (WP12b, moved from Alpha 2): the bath washes grime and
   leaves the dragon damp, the cloth dries and polishes, the brush clears shed scales; the
   three tools under one Groom button; judged in the Shine Show.
@@ -109,6 +121,12 @@ style, the last thing before Noah decides (D47) → the dragons update in the ch
 - Music batch 2 and the full sound-effect set.
 
 ## 1.0 — *The sky*
+**Sit-down first (after Beta, Noah's ask, 2026-09-24):** the open world's scale and mechanics
+(how big the valley is, what's in it, how exploring on foot, gliding, flying and riding
+work), the map (how it looks and how it blends into the open world), campaign writing and
+story, progression across the whole game, people (the player character, the valley's NPCs),
+the air competitions, and the scope of the public release. Nothing below is built until
+it's passed; the list below is the starting point for that conversation, not a plan.
 - Flight animation set and flight controller; adolescent gliding.
 - **Exploring with a young dragon** before it can carry you (follow it, hops and glides, D44).
 - **Riding anywhere** in free roam; a rider model. **Free flight** over the valley with a
@@ -132,8 +150,12 @@ valley's first pass exists: style, a rig shared with the dragons' pipeline, the 
 budget next to the dragons.
 
 ## 1.x — *Friends*
+**Sit-down first (after 1.0):** what friends do together over local wireless, what's shared
+and traded, how a visit plays, what stays single-player.
 - Sky Visits over UDS local wireless (based on `3ds-linkplay`'s uds-demo): visit a den,
   play together, exchange gifts, local competitions; cross-den clutch as a stretch goal.
 
 ## 2.0 — *The meadow*
+**Sit-down first (after 1.x):** whether the equine line is an expansion or its own game, how
+it meets the dragons, its creatures, care and progression.
 - Horse → Pegasus / Unicorn → Alicorn. See [Equine Line](../future/equine-line.md).

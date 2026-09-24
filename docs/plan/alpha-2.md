@@ -370,6 +370,24 @@ enough. From Noah's notes, in **0.1.7**:
   of the bottom 1.7–3.4, update 0.3–1.1. citro3d's FrameBegin waits for the GPU to finish the
   last frame, so the CPU's and GPU's times add up. **Posing moved ahead** (WP11d).
 
+**Run 7 (0.1.7, the new title 0xEC0C2):** the egg that waited hatched (the wanderer's bed
+lent). The full den: the CPU's part of the frame fell from 8.8–10.5 to 6.6–6.8 ms, but the
+frame still averages ~19 ms: 6.7 ms of CPU, then 7.9 of GPU and the screens' copies, sit
+right at the 16.7 ms a frame has, so some frames miss their refresh. A 104 ms stall in the
+update as the egg began to hatch (the hatching stinger read and decoded, and the save
+written, on the main thread). Noah: "the banner still spins and doesn't have a new cute
+sound". The CGFX has no turning in it (checked: the head's and tail's rotation keys, as
+pycgfx converts them, move at most 1° and 9° a frame); the turn is most likely the HOME
+Menu's own as it brings a title's banner in (it showed the wordmark's back in run 1), to
+confirm with Noah. The sound: 0.1.7 played the theme's bar (the new title can't have had a
+cached banner); Noah wants a cute sound effect, so the default is now a little mix of the
+game's own sounds (a sparkle, a baby's chirp and trill, a soft sparkle; "sparkle-chirp"),
+with two more to compare. The HOME Menu keeps a title's banner and doesn't refresh it on a
+reinstall (known in the homebrew community; the fixes are a new title ID or deleting the
+HOME Menu's extdata, which also resets its layout). So banners are chosen on lab titles, and
+the game takes a new title ID when its banner changes, until the public release fixes one.
+**Lab 4:** M, N, O: the banner without turning, with each cute sound.
+
 ### WP11d — Hardware performance pass (after run 3; before WP12a, Noah agreed)
 The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 8.3). Target:
 16.7 ms with three dragons, their toys and decor, and the close-up.
@@ -384,6 +402,12 @@ The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 
   reuses the cared-for dragon's pose instead of posing it again. On 0.1.6 the full den spent
   2.5–3.9 ms posing inside the frame: that should come off the frame time. Next, from the
   hardware profile: the rest of the top screen (3–4 ms), then the GPU (~7.9 ms).
+- **Run 7's numbers:** the frame's CPU part fell to 6.6–6.8 ms; the frame averages ~19 ms
+  because 6.7 (CPU) + 7.9 (GPU) + the screens' copies sit at the 16.7 ms limit. Next: the
+  top screen's text laid out once instead of every frame, fewer 2D draws; the close-up's GPU
+  cost (it fills the bottom screen with lit dragon); the save written and the stingers
+  decoded on a thread (a 104 ms stall as an egg began to hatch). Target: ≤ 14 ms of CPU +
+  GPU, a margin under the refresh.
 - **Likely CPU cuts:** evaluate each dragon's pose once a frame (the look-at evaluates the
   whole skeleton again), the ground from the feet bones instead of body vertices, dust
   streams only when dirt changes, background dragons animated at 30 Hz, fewer draw calls
@@ -529,6 +553,8 @@ Done: WP1–WP10, R5 (WP11), the first hardware runs (WP11b: the game runs on th
 6. **WP11e, the 3D slider** (after WP11d; 30 fps in 3D is fine).
 7. **WP13, the full run on the old 3DS** and **WP14, the wrap-up** (the checklist, docs, the
    tag `v0.2.0-alpha2`).
+
+Then **the Beta sit-down** with Noah (D65) before any Beta work: Claude brings a brief.
 
 Moved past Alpha 2: the grooming redesign and its Groom button (Beta, with the Shine Show),
 several dragons wandering at once (Beta, the Wanderings' next pass), the map's new look and

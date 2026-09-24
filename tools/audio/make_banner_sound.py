@@ -1,16 +1,16 @@
 """The HOME Menu banner's sound: what plays when the Emberclutch icon is selected. Writes
 assets/audio/banner.wav (16-bit mono, under three seconds, the banner's limit).
 
-Since 2026-09-24 (Noah, after the first 3DS run: "a cuter sound... or a little music bit from
-the theme"): one bar of the title theme (romfs/music/title-theme.ogg, 89 bpm, so a bar is
-2.7 s), a quick fade in and a soft fade out. The bars are counted from the track's loop point,
-which sits on a bar line. Alpha 1's mix of the game's own effects (a knock, a crack, the hatch
-and a baby's trill) is still there with --sfx.
+Noah asked for "a cuter sound" (first 3DS run, 2026-09-24). A bar of the title theme was tried
+first (--theme); on the 3DS he still wanted a cute sound effect (run 7), so the default is a
+little mix of the game's own sounds: a sparkle (the banner's sparkles), a baby's chirp and
+trill, pitched up, and a soft sparkle to end ("sparkle-chirp"). The other mixes in MIXES and
+the theme's bars stay for comparing.
 
-  python tools/audio/make_banner_sound.py [--start <seconds>] [--candidates] [--sfx]
+  python tools/audio/make_banner_sound.py [--mix <name>] [--theme [--start <seconds>]] [--candidates]
 
---candidates also writes each bar in THEME_BARS to build/review/banner-sound/ to compare.
-Needs ffmpeg on PATH (to decode the Ogg Vorbis).
+--candidates also writes every mix and every bar in THEME_BARS to build/review/banner-sound/.
+The theme needs ffmpeg on PATH (to decode the Ogg Vorbis).
 """
 from __future__ import annotations
 
@@ -37,14 +37,33 @@ LENGTH = 2.8  # seconds
 THEME_BARS = {"loop-start": 12.55, "bright": 15.25, "gentle": 36.82}
 THEME_START = THEME_BARS["bright"]
 
-# (sound, start in seconds, gain, pitch)
-CUES = [
-    ("egg-knock.wav", 0.00, 0.8, 1.0),
-    ("egg-knock-2.wav", 0.42, 0.9, 1.08),
-    ("egg-crack-2.wav", 0.95, 0.9, 1.0),
-    ("egg-hatch.wav", 1.25, 1.0, 1.0),
-    ("dragon-trill.wav", 1.85, 0.9, 1.35),  # a baby's voice, as the game pitches it
-]
+# The effect mixes: (sound, start in seconds, gain, pitch), and each one's length.
+MIXES = {
+    "sparkle-chirp": ([  # the default: a sparkle, a baby's hello, a soft sparkle
+        ("polish-sparkle.wav", 0.00, 0.8, 1.1),
+        ("dragon-chirp.wav", 0.28, 1.0, 1.35),
+        ("dragon-trill.wav", 0.78, 0.8, 1.45),
+        ("polish-sparkle-2.wav", 1.45, 0.45, 1.2),
+    ], 2.4),
+    "chirp-chirp": ([  # two quick chirps, a sparkle
+        ("dragon-chirp.wav", 0.00, 1.0, 1.35),
+        ("dragon-chirp-2.wav", 0.42, 0.9, 1.55),
+        ("polish-sparkle.wav", 0.85, 0.55, 1.2),
+    ], 1.9),
+    "hello": ([  # a chime, a trill, a sparkle
+        ("ui-confirm.wav", 0.00, 0.6, 1.0),
+        ("dragon-trill.wav", 0.30, 1.0, 1.45),
+        ("polish-sparkle-2.wav", 1.10, 0.5, 1.15),
+    ], 2.0),
+    "alpha1": ([  # Alpha 1's: a knock, a crack, the hatch, a baby's trill
+        ("egg-knock.wav", 0.00, 0.8, 1.0),
+        ("egg-knock-2.wav", 0.42, 0.9, 1.08),
+        ("egg-crack-2.wav", 0.95, 0.9, 1.0),
+        ("egg-hatch.wav", 1.25, 1.0, 1.0),
+        ("dragon-trill.wav", 1.85, 0.9, 1.35),  # a baby's voice, as the game pitches it
+    ], LENGTH),
+}
+DEFAULT_MIX = "sparkle-chirp"
 
 
 def load(name: str) -> list[float]:
@@ -68,9 +87,10 @@ def resample(x: list[float], pitch: float) -> list[float]:
     return out
 
 
-def sfx_mix() -> list[float]:
-    mix = [0.0] * int(LENGTH * RATE)
-    for name, start, gain, pitch in CUES:
+def sfx_mix(name: str = DEFAULT_MIX) -> list[float]:
+    cues, length = MIXES[name]
+    mix = [0.0] * int(length * RATE)
+    for name, start, gain, pitch in cues:
         clip = resample(load(name), pitch)
         at = int(start * RATE)
         for i, s in enumerate(clip):
@@ -112,15 +132,15 @@ def write(path: str, mix: list[float]) -> None:
 
 def main() -> None:
     args = sys.argv[1:]
-    if "--sfx" in args:
-        write(OUT, sfx_mix())
-        return
-    start = float(args[args.index("--start") + 1]) if "--start" in args else THEME_START
     if "--candidates" in args:
+        for name in MIXES:
+            write(os.path.join(REVIEW, f"sfx-{name}.wav"), sfx_mix(name))
         for name, t in THEME_BARS.items():
             write(os.path.join(REVIEW, f"theme-{name}-{t:.2f}s.wav"), theme_bar(t))
-        write(os.path.join(REVIEW, "sfx-alpha1.wav"), sfx_mix())
-    write(OUT, theme_bar(start))
+    if "--theme" in args:
+        write(OUT, theme_bar(float(args[args.index("--start") + 1]) if "--start" in args else THEME_START))
+    else:
+        write(OUT, sfx_mix(args[args.index("--mix") + 1] if "--mix" in args else DEFAULT_MIX))
 
 
 if __name__ == "__main__":

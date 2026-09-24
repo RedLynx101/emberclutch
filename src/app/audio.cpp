@@ -14,6 +14,15 @@ namespace {
 constexpr int kMusicCh = 0, kStingerCh = 1, kSfxFirst = 2, kSfxCount = 8, kBedFirst = kSfxFirst + kSfxCount;
 constexpr int kMaxTakes = 4;
 constexpr int kBufFrames = 4096;  // per streaming buffer (~128 ms at 32 kHz)
+// Preloaded sounds are queued as slices of at most this many frames, one wave buffer
+// each. Azahar's HLE DSP decodes a whole wave buffer into a vector and erases the played
+// samples from its front every audio frame, so one long buffer costs it time quadratic in
+// its length: two 15 s beds took the den from 100% to ~55% emulation speed. The 3DS
+// itself doesn't mind; short slices are how the music already streams.
+constexpr u32 kSliceFrames = 4096;
+constexpr int kSfxSlices = 12;       // per sound-effect channel: up to ~2.2 s at 22 kHz in full slices
+constexpr int kBedRing = 6;          // slices queued ahead per bed (~1.1 s at 22 kHz), refilled as they finish
+constexpr int kStingerSlices = 64;
 constexpr int kNumBufs = 3;
 constexpr float kFadeSeconds = 0.7f;
 
@@ -67,16 +76,34 @@ float g_duck = 1.0f;  // lowered while a stinger plays
 float g_musicVol = 0.8f, g_sfxVol = 0.9f;
 
 s16* g_stingerData = nullptr;
-ndspWaveBuf g_stingerBuf;
+ndspWaveBuf g_stingerBufs[kStingerSlices];
 Clip g_clips[static_cast<int>(Sfx::Count)][kMaxTakes];
 u8 g_takes[static_cast<int>(Sfx::Count)] = {};     // takes loaded
 u8 g_nextTake[static_cast<int>(Sfx::Count)] = {};  // the one to play next
-ndspWaveBuf g_sfxBufs[kSfxCount];
+ndspWaveBuf g_sfxBufs[kSfxCount][kSfxSlices];
 int g_nextSfx = 0;
 Clip g_beds[static_cast<int>(Bed::Count)];
-ndspWaveBuf g_bedBufs[static_cast<int>(Bed::Count)];
+ndspWaveBuf g_bedBufs[static_cast<int>(Bed::Count)][kBedRing];
+u32 g_bedNext[static_cast<int>(Bed::Count)] = {};  // the frame the next slice starts at
 float g_bedLevel[static_cast<int>(Bed::Count)] = {}, g_bedWant[static_cast<int>(Bed::Count)] = {};
 bool g_bedOn[static_cast<int>(Bed::Count)] = {};
+
+// Queues frames [0, frames) of interleaved PCM16 on `ch` as consecutive slices, one wave
+// buffer each (see kSliceFrames): as many as fit in `count` buffers, each at least
+// kSliceFrames long. Returns the number queued.
+int queueSlices(int ch, const s16* data, int channels, u32 frames, ndspWaveBuf* bufs, int count) {
+    u32 slice = (frames + count - 1) / count;
+    if (slice < kSliceFrames) slice = kSliceFrames;
+    int n = 0;
+    for (u32 at = 0; at < frames && n < count; at += slice, ++n) {
+        ndspWaveBuf& w = bufs[n];
+        std::memset(&w, 0, sizeof(w));
+        w.data_pcm16 = const_cast<s16*>(data) + static_cast<size_t>(at) * channels;
+        w.nsamples = frames - at < slice ? frames - at : slice;
+        ndspChnWaveBufAdd(ch, &w);
+    }
+    return n;
+}
 
 void setMix(int ch, float vol) {
     float mix[12] = {};
@@ -176,12 +203,10 @@ void startStinger(const char* slug) {
     }
     setupChannel(kStingerCh, channels, vi->rate);
     ov_clear(&vf);
-    std::memset(&g_stingerBuf, 0, sizeof(g_stingerBuf));
-    g_stingerBuf.data_pcm16 = g_stingerData;
-    g_stingerBuf.nsamples = static_cast<u32>(got / (channels * 2));
     DSP_FlushDataCache(g_stingerData, got);
     setMix(kStingerCh, g_musicVol);
-    ndspChnWaveBufAdd(kStingerCh, &g_stingerBuf);
+    queueSlices(kStingerCh, g_stingerData, channels, static_cast<u32>(got / (channels * 2)), g_stingerBufs,
+                kStingerSlices);
 }
 
 void streamThread(void*) {
@@ -366,15 +391,11 @@ void playSfx(Sfx s, float pitch) {
         }
     }
     const int ch = kSfxFirst + slot;
-    ndspWaveBuf& w = g_sfxBufs[slot];
     g_nextSfx = (slot + 1) % kSfxCount;
     ndspChnWaveBufClear(ch);
     setupChannel(ch, c.stereo ? 2 : 1, static_cast<long>(c.rate * pitch));
     setMix(ch, g_sfxVol);
-    std::memset(&w, 0, sizeof(w));
-    w.data_pcm16 = c.data;
-    w.nsamples = c.frames;
-    ndspChnWaveBufAdd(ch, &w);
+    queueSlices(ch, c.data, c.stereo ? 2 : 1, c.frames, g_sfxBufs[slot], kSfxSlices);
 }
 
 void setBed(Bed b, float level) {
@@ -425,15 +446,24 @@ void update(float dt) {
             setupChannel(ch, c.stereo ? 2 : 1, c.rate);
             ndspChnSetInterp(ch, NDSP_INTERP_LINEAR);
             setMix(ch, 0.0f);
-            ndspWaveBuf& w = g_bedBufs[b];
-            std::memset(&w, 0, sizeof(w));
-            w.data_pcm16 = c.data;
-            w.nsamples = c.frames;
-            w.looping = true;
-            ndspChnWaveBufAdd(ch, &w);
+            std::memset(g_bedBufs[b], 0, sizeof(g_bedBufs[b]));  // all free: the ring fills below
+            g_bedNext[b] = 0;
             g_bedOn[b] = true;
         }
         if (!g_bedOn[b]) continue;
+        // The loop plays as a ring of slices: each finished one takes the next stretch of
+        // the bed (wrapping to its start) and goes back in the queue.
+        const int channels = c.stereo ? 2 : 1;
+        for (ndspWaveBuf& w : g_bedBufs[b]) {
+            if (w.status != NDSP_WBUF_FREE && w.status != NDSP_WBUF_DONE) continue;
+            const u32 at = g_bedNext[b];
+            const u32 n = c.frames - at < kSliceFrames ? c.frames - at : kSliceFrames;
+            std::memset(&w, 0, sizeof(w));
+            w.data_pcm16 = c.data + static_cast<size_t>(at) * channels;
+            w.nsamples = n;
+            ndspChnWaveBufAdd(ch, &w);
+            g_bedNext[b] = at + n >= c.frames ? 0 : at + n;
+        }
         if (want <= 0.0f && g_bedLevel[b] < 0.002f) {
             ndspChnWaveBufClear(ch);
             g_bedOn[b] = false;

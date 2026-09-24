@@ -32,6 +32,8 @@ session, and add new decisions to the log.
   crosshair where the game reads the stylus (overlay on).
 - Music: `python tools/audio/make_loop.py assets/audio/music/source/<slug>.wav --bpm <bpm> --preview`
   (stingers: `--no-loop`)
+- Audio on the 3DS: never hand ndsp one long wave buffer (Azahar slows down quadratically
+  with buffer length); `src/app/audio.cpp` queues everything in ~4,096-frame slices.
 - Sound effects: `python tools/audio/process_sfx.py` (all, or name slugs) turns
   `assets/audio/sfx/source/<slug>-<take>.wav` into `romfs/sfx/`. A new download folder:
   add its files to `tools/audio/sfx_manifest.json`, then run with `--import <folder>`.

@@ -267,9 +267,15 @@ generated WAVs --tools/audio/process_sfx.py (ffmpeg; sfx_manifest.json)--> romfs
   `tools/audio/process_sfx.py` from the generated sources: EQ for the small speakers,
   silence trimmed, levelled per kind (voices, body, egg, care, interface), a soft limiter
   on sharp sounds.
-- **Beds:** the hearth, the night outside and an egg's hum are seamless loops that play
-  from start-up at zero volume; the den sets their levels every frame (the night bed
-  follows the daylight blend, the hum the egg's warmth) and they ease in and out.
+- **Beds:** the hearth, the night outside and an egg's hum are seamless loops; the den
+  sets their levels every frame (the night bed follows the daylight blend, the hum the
+  egg's warmth), they ease in and out, and a bed's channel runs only while it is heard.
+- **Short wave buffers only.** Preloaded sounds are queued as slices of ~4,096 frames
+  (beds as a ring of six refilled as each finishes; stingers and longer effects as a run
+  of slices). Azahar's HLE DSP decodes each wave buffer whole into a vector and erases
+  the played samples from its front every audio frame, so one long buffer costs the
+  emulator time quadratic in its length: two 15 s beds as single buffers dropped the den
+  from 100% to ~55% speed. The 3DS doesn't care; this keeps the emulator honest.
 - **Dragon voices:** a small set of base samples (chirp, trill, purr, squeak, whimper,
   yawn, sneeze, rumble) pitch-shifted per dragon: up for babies, down for grown-ups, a
   little by size. Clip events trigger most of them (`call` is a trill from the young and a

@@ -1,6 +1,6 @@
 # The World Map and Travel
 
-Status: **Plan v1** (2026-09-24). Noah: "have a game map that you can fast travel in, or
+Status: **Plan v1** (2026-09-24; Noah's answers: follow your young dragon, D44; free flight in 1.0, D45). Noah: "have a game map that you can fast travel in, or
 fly around in freely". This page ties the Map tab ([screens & flow](screens-and-flow.md)),
 Skyreach Valley ([GDD §7](game-design.md#7-riding-and-skyreach-valley)) and the places of
 each milestone together.
@@ -33,17 +33,27 @@ each milestone together.
   point and may hold a find (Gleam, a trinket, rarely a wild egg).
 - Flying into a place (the Market's square, the Arena) lands you there.
 - Tapping a discovered place on the live map fast-travels there; you arrive riding.
-- Before you have an adult, the map offers fast travel only; a "Fly" button waits,
-  greyed out, with "when your dragon is grown".
+- Before you have an adult, the map still fast-travels, and a "Fly" button waits, greyed
+  out, with "when your dragon is grown".
 
-## 4. Milestones
+## 4. Exploring with a young dragon (1.0, D44)
+- Before a dragon can carry you, **you explore by following it**: the camera follows your
+  young dragon through the valley and the Circle Pad guides it (A to hop, the stylus to
+  point it at things). You're never shown on foot.
+- Hatchlings trot and hop; from **Juvenile** they glide short distances off ledges and
+  low perches (the adolescent gliding from the roadmap), which reaches some spots early.
+- Discovery and finds work the same as in flight, so a young dragon can already find
+  landmarks, Gleam and trinkets near the ground.
+- When it's grown, the same valley opens to free flight with you riding.
+
+## 5. Milestones
 | What | When |
 |---|---|
 | The map screen with fast travel between the Den, Market, Nesting Stone, Sanctuary and Cold Vault, and the Wanderings trailheads | **Alpha 2** |
 | Training Yard and Arena join the map | **Beta** |
-| Skyreach Valley free flight; the live map (position, discovery, finds); fast travel to discovered landmarks | **1.0** |
+| Skyreach Valley: exploring with a young dragon (D44) and free flight on an adult (D45); the live map (position, discovery, finds); fast travel to discovered landmarks | **1.0** |
 
-## 5. How it's built
+## 6. How it's built
 - The map is one texture with place pins read from a small table (position, unlock
   condition, scene). Fast travel is a scene change with the travel transition in between.
 - The valley (1.0) is the height-field terrain from the [asset inventory](../plan/content-and-assets.md)

@@ -8,7 +8,7 @@
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D42 recorded ([log](plan/decisions.md)); nothing open.
+  Decisions D1–D46 recorded ([log](plan/decisions.md)); nothing open.
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
   [Alpha 1 plan](plan/alpha-1.md). New specs (2026-09-24): [hands-on care](design/care-interactions.md)
   (the *Nintendogs*-style polish for WP7) and [world map & travel](design/world-map-and-travel.md)

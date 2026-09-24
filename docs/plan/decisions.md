@@ -2,6 +2,15 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-24 — Hands-on care and travel (Noah's answers)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D43 | **The full hands-on care polish is Alpha 1** ([care interactions](../design/care-interactions.md)): tools drawn where you touch, petting with lean-in and a sweet spot, brushing and polishing shine regions, the bath, hand-feeding into the jaw, fetch with ball physics, calling. Extra toys (tug rope, feather wand, puzzle orb, bowl) come with the Market in Alpha 2 | It's the heart of "a living pet"; WP7 becomes Alpha 1's biggest package | Approved |
+| D44 | **Before a dragon can carry you, you explore by following your young dragon** (1.0, with the valley): the camera follows it, the Circle Pad guides it, it trots and hops, and from Juvenile on it glides short distances from ledges. No player on foot; the player is still only seen as a rider | Noah's pick over fast-travel-only and walking together; no walking player character needed | Approved |
+| D45 | **Free flight stays in 1.0**; the map with fast travel arrives in Alpha 2 ([map & travel](../design/world-map-and-travel.md)) | The valley is 1.0 work; fast travel keeps Alpha 2's places quick to reach | Approved |
+| D46 | **Dragons get visibly dirty**: dust slowly dulls a region's colours over a day or two, Wanderings can bring back mud spots (Alpha 2); brushing and baths visibly clean them. Built with texturing (R2) | Grooming should show a before and after, like Nintendogs | Approved |
+
 ## 2026-09-24 — Cuteness pass
 
 | # | Decision | Why | Status |

@@ -1,6 +1,6 @@
 # Care Interactions: the hands-on polish
 
-Status: **Plan v1** (2026-09-24). Noah: care should feel like *Nintendogs*: "actually throw
+Status: **Plan v1** (2026-09-24; Noah's answers: all of it in Alpha 1, D43; visible dirt, D46). Noah: care should feel like *Nintendogs*: "actually throw
 a ball or similar for the dragon, who goes to get it", "a brush when brushing that goes
 around where you're brushing", "petting the same", "a full polish". This page is the spec
 for [Alpha 1 WP7](../plan/alpha-1.md#wp7--interactions) and the toys that follow in Alpha 2.
@@ -57,8 +57,12 @@ the default. Items that run out (food, in Alpha 2) show a count.
 - **Shine regions:** head, neck, back, belly, left flank, right flank, tail, wings. Each
   holds 0–100 shine. Strokes with the grain (head to tail) count fully; against the grain
   count half and ruffle the scales (a small shiver).
-- **Visible result:** dirty regions puff dust at the brush; as a region's shine rises its
-  gloss and rim glint brighten, so you can see what's done.
+- **Dirt you can see** (D46): each region also has a dirt level that creeps up over a day
+  or two, dulling and dusting its colours; Wanderings (Alpha 2) can bring back mud spots.
+  Brushing clears dust (with puffs at the brush), the bath clears everything, mud needs
+  the bath.
+- **Visible result:** as a region's shine rises its gloss and rim glint brighten, so you
+  can see what's done.
 - **The dragon helps:** it turns the brushed side toward you, lifts a wing so you can
   brush underneath, flicks its tail when you reach the tip, and sits up for the belly.
 - **Polish cloth** (after brushing): small circles leave a sparkle trail and a glint sweeps
@@ -129,8 +133,12 @@ the default. Items that run out (food, in Alpha 2) show a count.
   radius, bounce, friction; the den floor, walls and obstacle circles from `DenLayout`),
   PC-tested like the rest of the core. A prop in the mouth is a rigid part attached to the
   jaw bone at runtime.
-- **Save:** shine per region (8 bytes per dragon), toy positions in the den. Sweet spots
-  and dislikes come from the genome, so they cost no save space.
+- **Dirt on screen** (D46): built with texturing (R2). Each body vertex knows its region,
+  and a per-dragon dirt level per region darkens and desaturates its colours (a per-dragon
+  copy of the paint buffer, refreshed when dirt changes, since shader uniforms are nearly
+  full); mud spots are decals on a texture layer.
+- **Save:** shine and dirt per region (16 bytes per dragon), toy positions in the den.
+  Sweet spots and dislikes come from the genome, so they cost no save space.
 - **New clips:** pick up, carry (head up, mouth closed on the toy), drop and sit-wait,
   leap-catch, lean-in (pet), leg kick (sweet spot), sniff-refuse, lift wing (brushing),
   sit up (belly), hop into the tub, tug, paw bat. The shake-off and pounce exist.

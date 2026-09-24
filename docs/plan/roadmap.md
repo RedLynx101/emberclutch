@@ -99,6 +99,7 @@ Full plan: [alpha-1.md](alpha-1.md).
 
 ## 1.0 — *The sky*
 - Flight animation set and flight controller; adolescent gliding.
+- **Exploring with a young dragon** before it can carry you (follow it, hops and glides, D44).
 - **Riding anywhere** in free roam; a rider model. **Free flight** over the valley with a
   live map: your position, landmarks discovered by flying near them, and fast travel to
   any discovered place ([map & travel](../design/world-map-and-travel.md)).

@@ -78,7 +78,8 @@ While waiting on a review, work continues on the non-art packages (engine, save,
   - "A bit more cute" in general: ✅ blinking (D42): a blink every few seconds, eyes shut
     in sleep, a content squint while petted, a sleepy one while yawning, and a smile in
     the tail wag. Still open: softer expressions if R3 asks for them.
-  - Then texturing (the Pattern gene, scale detail) → R2.
+  - Then texturing (the Pattern gene, scale detail, and **visible dirt** per body region
+    that grooming cleans, D46) → R2.
 - *Verify:* script prints tris/bones per part vs budget; renders saved to `docs/art/`.
 
 ### WP3 — Converter and formats ⟂ WP2 ✅

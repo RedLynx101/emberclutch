@@ -154,6 +154,7 @@ struct App {
     bool devMenu = false;
     bool denTest = false;  // dev: two stand-in dragons join the den (3-dragon budget check)
     RenderStats stats;
+    u32 bottomTris = 0;  // last frame's bottom screen (the overlay is drawn before it)
     float frameMs = 16.7f;
 };
 

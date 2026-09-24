@@ -1,0 +1,67 @@
+# The den over a day, and the render budget (tools\autotest.ps1 tests\autotest\den.txt -ResetSave):
+# a hatchling with the budget overlay, the dev 3-dragon test (LOD1 for the other two), the
+# light through a day, and a burst of frames to see blinking and the tail in motion.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+# Hatch now (dev menu), skip the naming wait.
+key SELECT
+wait 0.3
+tap 238 92
+key SELECT
+name Ember
+wait 12
+# A burst: blinking, breathing, the tail.
+shot 09-m01
+wait 0.25
+shot 09-m02
+wait 0.25
+shot 09-m03
+wait 0.25
+shot 09-m04
+wait 0.25
+shot 09-m05
+wait 0.25
+shot 09-m06
+wait 0.25
+shot 09-m07
+wait 0.25
+shot 09-m08
+# The render budget: one dragon, then three.
+overlay on
+wait 1
+shot 01-budget-one
+key SELECT
+wait 0.3
+tap 238 150
+key SELECT
+wait 4
+shot 02-budget-three
+key SELECT
+wait 0.3
+tap 238 150
+key SELECT
+overlay off
+# The light through a day (the dev clock runs ahead).
+wait 2
+shot 03-now
+skip 4
+wait 3
+shot 04-plus4h
+skip 4
+wait 3
+shot 05-plus8h
+skip 4
+wait 3
+shot 06-plus12h
+skip 4
+wait 3
+shot 07-plus16h
+skip 4
+wait 3
+shot 08-plus20h
+quit

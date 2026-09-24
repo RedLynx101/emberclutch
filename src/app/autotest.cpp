@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 
 #include <algorithm>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -242,6 +243,23 @@ void afterFrameBegin() {
     std::snprintf(path, sizeof(path), "%s/%s_bottom.bmp", kShots, g_armed.c_str());
     saveBmp(path, g_fbBottom, 320);
     g_armed.clear();
+}
+
+bool shooting() { return g_active && !g_pending.empty(); }
+
+void log(const char* fmt, ...) {
+    if (!g_active) return;
+    char path[96];
+    std::snprintf(path, sizeof(path), "%s/log.txt", kShots);
+    FILE* f = std::fopen(path, "a");
+    if (!f) return;
+    std::fprintf(f, "[%s] ", g_pending.c_str());
+    va_list args;
+    va_start(args, fmt);
+    std::vfprintf(f, fmt, args);
+    va_end(args);
+    std::fputs("\n", f);
+    std::fclose(f);
 }
 
 bool typedName(char* out, std::size_t cap) {

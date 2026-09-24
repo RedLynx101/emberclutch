@@ -120,6 +120,7 @@ int main() {
         drawSaveIcon(app);
         debugDrawOverlay(app);
 
+        const u32 topTris = app.stats.tris;
         C2D_TargetClear(app.bottom, theme::kDenPlum);
         C2D_SceneBegin(app.bottom);
         if (paused)
@@ -131,6 +132,7 @@ int main() {
             C2D_DrawRectSolid(in.tx - 0.5f, in.ty - 8, 0, 1, 17, theme::rgba(0, 255, 120));
         }
 
+        app.bottomTris = app.stats.tris - topTris;
         autotest::beforeFrameEnd();
         C3D_FrameEnd(0);
         if (app.keyboard != KeyboardFor::None) runKeyboard(app);  // between frames: it takes both screens

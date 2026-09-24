@@ -1,0 +1,76 @@
+# Alpha 1 checklist, part A (docs/plan/alpha-1-checklist.md), run with -ResetSave -KeepSave:
+# a Tide egg, hatching and naming, renaming, a whole fetch, growing up through every stage,
+# neglect to the sulk nook and making up, then Save & quit (part B checks it was kept).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+# The Tide egg: select it, then tap again to choose.
+tap 160 120
+wait 0.5
+shot a01-tide-picked
+tap 160 120
+wait 2.5
+shot a02-tide-egg
+key SELECT
+wait 0.3
+tap 238 92
+key SELECT
+name Ripple
+wait 12
+shot a03-named
+# Renaming from the profile card.
+tap 298 16
+wait 0.4
+name Brook
+tap 96 168
+wait 1
+shot a04-renamed
+# A whole fetch: throw, chase, carry back, drop at your feet.
+tap 290 221
+wait 0.5
+drag 160 150 166 70 0.15
+wait 16
+shot a05-fetch-back
+# Growing up: the next stage, three times (dev menu), with the budget overlay.
+overlay on
+key SELECT
+wait 0.3
+tap 82 121
+key SELECT
+wait 3
+shot a06-juvenile
+key SELECT
+wait 0.3
+tap 82 121
+key SELECT
+wait 3
+shot a07-adolescent
+key SELECT
+wait 0.3
+tap 82 121
+key SELECT
+wait 3
+shot a08-adult
+tap 30 221
+wait 0.5
+shotin 0.8 a09-adult-petting
+drag 110 80 210 95 1.4
+overlay off
+# Neglect: needs drained, a day and more alone, it sulks in the nook; then making up.
+key SELECT
+wait 0.3
+tap 82 92
+key SELECT
+skip 26
+wait 10
+shot a10-upset
+tap 160 145
+wait 2
+shot a11-made-up
+# Save & quit.
+key START
+wait 0.3
+tap 160 178
+wait 1

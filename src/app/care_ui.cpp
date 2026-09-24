@@ -377,6 +377,10 @@ void freeSprites() {
 }
 
 r3d::CloseUpView view(const App& app) {
+    if (app.actorsReady) {  // asleep, curled up: its face is tucked away, so the whole of it
+        const DenBehavior& b = app.actors[0].behavior;
+        if (b.activity == Activity::Sleep) return r3d::CloseUpView::Body;
+    }
     switch (app.care.tool) {
         case Tool::Brush:
         case Tool::Cloth:

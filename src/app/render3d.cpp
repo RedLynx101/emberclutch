@@ -10,6 +10,7 @@
 #include <cstring>
 #include <vector>
 
+#include "app/autotest.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
 #include "core/anim.hpp"
@@ -1337,10 +1338,19 @@ void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMoti
         // Head and chest, seen from in front of the dragon wherever it stands: the parts you pet.
         // Feeding centres on the mouth, clear of the food row under it.
         target = lerp(head, chest, 0.3f);
+        radius = length(head - chest) * 0.75f;
         Vec3 mouth;
-        if (mode == CloseUpView::Feed && mouthLocal(g_posed, mouth)) target = lerp(apply(model, mouth), head, 0.25f);
-        // At least the front of the body: a hatchling's head sits right on its chest.
-        radius = std::fmax(length(head - chest) * 0.75f, g_posed.cache->radius * g_posed.size * 0.42f);
+        const bool hasMouth = mouthLocal(g_posed, mouth);
+        if (g_posed.cache->form == kFormHatchling) {  // its head sits right on its chest: the front of it
+            radius = std::fmax(radius, g_posed.cache->radius * g_posed.size * 0.42f);
+        } else if (hasMouth) {  // a long neck: the head and the top of the neck
+            const float span = length(apply(model, mouth) - head);
+            if (radius > span * 2.4f) {
+                radius = span * 2.4f;
+                target = lerp(head, chest, 0.12f);
+            }
+        }
+        if (mode == CloseUpView::Feed && hasMouth) target = lerp(apply(model, mouth), head, 0.25f);
         const float ch = std::cos(g_posed.heading), sh = std::sin(g_posed.heading);
         const Vec3 local = normalize(Vec3{-0.3f, -0.95f, 0.18f});  // front-left of the face
         dir = {local.x * ch - local.y * sh, local.x * sh + local.y * ch, local.z};
@@ -1354,6 +1364,10 @@ void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMoti
     const float dist = radius / std::tan(kFovY * 0.5f);
     Mtx_PerspTilt(&projection, kFovY, C3D_AspectRatioBot, 0.05f, dist * 4.0f, false);
     const Vec3 eye = target + dir * dist;
+    if (autotest::shooting())
+        autotest::log("closeup view %d form %d heading %.2f head (%.2f %.2f %.2f) chest (%.2f %.2f %.2f) target (%.2f %.2f %.2f) radius %.2f eye (%.2f %.2f %.2f)",
+                      static_cast<int>(mode), g_posed.cache->form, g_posed.heading, head.x, head.y, head.z, chest.x, chest.y,
+                      chest.z, target.x, target.y, target.z, radius, eye.x, eye.y, eye.z);
     lookAt(view, eye, target);
     C2D_Flush();
     bindDragons(projection);

@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP5 ✅, WP6 ✅, WP8 ✅, WP9 ✅; WP2 ✅ (texturing in-game check pending); WP7 ✅, WP10 ✅, WP11 ✅, checked in Azahar by script; WP12 to go)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 1 done** (tagged `v0.1.0-alpha1`, 2026-09-24; [checklist](plan/alpha-1-checklist.md)) · **next: Alpha 2**
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -89,38 +89,23 @@
   Note: the emulator needs `sdmc:/3ds/dspfirm.cdc`; a local dummy file works in Azahar (never commit it).
 
 ## Next actions
-1. ✅ **The walking limp** (fixed 2026-09-24: a stray vertex under the grown body).
-2. ✅ **WP2 texturing** (R2 sent). Check it in Azahar when the screen is free.
-3. **WP7 hands-on care**, the big one: [care interactions](design/care-interactions.md).
-   Done (2026-09-24): the care core (touch picking on bone capsules, strokes, sweet spots,
-   tastes, grooming sessions, ball physics; PC-tested), the dragon's reactions and 8 new
-   clips, and the care screen (`src/app/care_ui.cpp`): a tool tray (hand, food, brush,
-   cloth, sponge, ball) with toon sprites at the stylus, petting by zone with the sweet
-   spot, hand-feeding into the opening jaw, brushing and polishing by region up to the
-   gleaming moment, the bath with suds and a rinse, flick-to-throw fetch with the top
-   camera following the ball. Then egg care and hatching (D52): turning (starting bond),
-   listening for the heartbeat (a hint at the temperament), the hatching sequence, naming
-   with the 3DS keyboard, and renaming from a profile card on the heartglow.
-   Checked in Azahar on 2026-09-24 with the new unattended runner (`tools/autotest.ps1`,
-   `tests/autotest/tour.txt`: screenshots of every step), which found and fixed: a face
-   close-up far too tight on hatchlings, a floating egg cap, a bath the hatchling took half
-   a minute to reach (the tub now goes down in front of it, and small dragons step
-   quicker), and the mouth hidden under the food row (feeding centres on the mouth).
-4. ✅ **WP10 UI** (2026-09-24): Nunito and Cinzel Decorative fonts, the title's Continue /
-   New game with your name on the keyboard, START's system menu with settings (volumes,
-   the clock note, delete save), fading toasts, a save icon. Checked in Azahar.
-   ✅ **WP11 CIA** (2026-09-24): `tools/package_cia.ps1` builds `emberclutch.cia` (14 MB)
-   with an interim icon and banner rendered from our own model and a banner sound from
-   our own effects; installed and run in Azahar.
-   Next: **WP12** checklist playthrough and tag → **Alpha 1 done**.
-5. Then **Alpha 2** ([plan](plan/alpha-2.md)): several dragons, Sanctuary and Vault,
-   breeding, Wanderings, the Market, the world map with fast travel, more toys, the emblem
-   icon and a 3D HOME Menu banner; then **R5**, three Ember style variants for Noah (blocks); then the dragons update
-   in the chosen style; then the run on Noah's old 3DS (D34).
+**Alpha 1 is done** (2026-09-24, tag `v0.1.0-alpha1`): every item of its Definition of done
+was checked in Azahar by scripted runs, see the [checklist](plan/alpha-1-checklist.md)
+with contact sheets. In its last stretch: hands-on care (WP7: the tool tray, petting with a
+sweet spot, hand-feeding, brushing and polishing, the bath, fetch; egg turning and
+listening, the hatching, naming and renaming, D52), the UI (WP10: fonts, title, system
+menu and settings, toasts, save icon) and the CIA (WP11: an interim icon and banner from
+our own model). New tool: `tools/autotest.ps1` plays a script in Azahar with nobody at the
+controls and saves screenshots of every step (`tests/autotest/`).
 
-Emulator checks resumed on 2026-09-24 (the den, egg, mouth, sounds and speed were checked).
-Still to look at in the emulator: the 3-dragon triangle count with LOD1, a full day/night
-cycle in the den, the tail wag and blinking in motion.
+1. **Alpha 2** ([plan](plan/alpha-2.md)), the style-independent systems first: several
+   dragons (with an egg LOD so three dragons and an egg stay under 8k triangles),
+   Sanctuary and Vault, breeding, Wanderings, the Market, the world map with fast travel,
+   more toys, the profile.
+2. Then the emblem icon and the animated 3D HOME Menu banner (D48, D50).
+3. Then **R5**, three Ember style variants for Noah (blocks, D47); the dragons update in
+   the chosen style; the run on Noah's old 3DS (D34).
+
 ## Current goal (D31)
 **Complete through Alpha 2.** Noah is hands-off until the style variants are ready (D49):
 work continues package by package, committing, pushing and updating STATUS and RedWiki

@@ -35,6 +35,8 @@ Worked through alone, package by package (D49).
 - Dragon-to-dragon life: play-chase, nuzzle, curling up together, sharing the sunbeam
   (the crowd avoidance and three beds exist).
 - LOD1 for background dragons (exists); the 3-dragon budget confirmed in the emulator.
+- An egg LOD (~450 triangles, the egg is 948): three dragons and an egg in the nest
+  measured 8,247 top-screen triangles against the 8,000 budget (Alpha 1 checklist).
 
 ### WP2 — Sanctuary and Cold Vault
 - Illustrated screens with grids; move dragons and eggs in and out (needs drain slowly

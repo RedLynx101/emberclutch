@@ -7,7 +7,7 @@ proven before content piles onto it).
 - **Live state:** [`docs/STATUS.md`](../STATUS.md)
 - **What gets built:** [content & asset inventory](content-and-assets.md)
 - **What the screens are:** [screens & flow](../design/screens-and-flow.md)
-- **Current work plan:** [Alpha 1 plan](alpha-1.md)
+- **Current work plan:** [Alpha 2 plan](alpha-2.md) (Alpha 1 done: [plan](alpha-1.md), [checklist](alpha-1-checklist.md))
 
 **Testing policy (D28):** day-to-day development and checks run in the Azahar emulator
 (`tools/emu.ps1`). Hardware testing on an old 3DS happens later, when Noah decides we're
@@ -21,7 +21,7 @@ of Alpha 2 at the latest**, before content volume makes a rendering change expen
 | Milestone | Theme | Contains (old phase numbers) | Status |
 |---|---|---|---|
 | **Foundations** | Design, tools, proof of pipeline | Phase 0 | ✅ Done 2026-09-23 |
-| **Alpha 1** | *A living pet* | Phases 1–2: 3D dragon, care, growth, naming, real saves, music, CIA | ▶ Next |
+| **Alpha 1** | *A living pet* | Phases 1–2: 3D dragon, care, growth, naming, real saves, music, CIA | ✅ Done (2026-09-24, `v0.1.0-alpha1`) |
 | **Alpha 2** | *A den* | Phase 3: several dragons, breeding, eggs, Sanctuary/Vault, Market, Wanderings, map with fast travel; style review R5; first hardware run | Planned ([plan](alpha-2.md)) |
 | **Beta** | *A trainer* | Phase 4 + ground half of Phase 5: tricks, voice, 3 ground competitions, economy | Planned |
 | **1.0** | *The sky* | Phase 6 + air half of Phase 5 + Phase 7 polish: flight, riding, valley, Sky Rings, Lantern Trial, public release | Planned |

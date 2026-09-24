@@ -8,6 +8,7 @@ param(
     [Parameter(Mandatory = $true)][string]$Script,
     [switch]$ResetSave,
     [switch]$NoBuild,
+    [switch]$KeepSave,  # leave this run's save for the next run (the dev save stays backed up)
     [int]$TimeoutSec = 180,
     [string]$Game = ""  # what Azahar boots: the .3dsx by default, or an installed CIA's .app
 )
@@ -28,12 +29,17 @@ $saves = "save.a", "save.b"
 
 if (-not $NoBuild) { & (Join-Path $PSScriptRoot "build.ps1") }
 New-Item -ItemType Directory -Force $sd | Out-Null
-Remove-Item $backup -Recurse -Force -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force $backup | Out-Null
-foreach ($f in $saves) {
-    $p = Join-Path $sd $f
-    if (Test-Path $p) { Copy-Item $p $backup }
-    if ($ResetSave) { Remove-Item $p -ErrorAction SilentlyContinue }
+$kept = Join-Path $backup "kept.txt"  # a previous run kept its save: the backup is the dev save
+if (-not (Test-Path $kept)) {
+    Remove-Item $backup -Recurse -Force -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory -Force $backup | Out-Null
+    foreach ($f in $saves) {
+        $p = Join-Path $sd $f
+        if (Test-Path $p) { Copy-Item $p $backup }
+    }
+}
+if ($ResetSave) {
+    foreach ($f in $saves) { Remove-Item (Join-Path $sd $f) -ErrorAction SilentlyContinue }
 }
 Remove-Item $shots -Recurse -Force -ErrorAction SilentlyContinue
 Copy-Item $scriptPath (Join-Path $sd "autotest.txt")
@@ -50,10 +56,15 @@ try {
 } finally {
     Get-Process azahar -ErrorAction SilentlyContinue | Stop-Process
     Remove-Item (Join-Path $sd "autotest.txt") -ErrorAction SilentlyContinue
-    foreach ($f in $saves) {  # put the dev save back
-        Remove-Item (Join-Path $sd $f) -ErrorAction SilentlyContinue
-        $b = Join-Path $backup $f
-        if (Test-Path $b) { Copy-Item $b $sd }
+    if ($KeepSave) {
+        Set-Content $kept "the save in the emulator is a test run's; the dev save is here"
+    } else {
+        foreach ($f in $saves) {  # put the dev save back
+            Remove-Item (Join-Path $sd $f) -ErrorAction SilentlyContinue
+            $b = Join-Path $backup $f
+            if (Test-Path $b) { Copy-Item $b $sd }
+        }
+        Remove-Item $kept -ErrorAction SilentlyContinue
     }
 }
 

@@ -1,6 +1,6 @@
 # Alpha 1 — *A living pet*: Work Plan
 
-Status: **Ready to start** (2026-09-23). Goal: one 3D dragon you raise from a starter egg
+Status: **Done** (2026-09-24, tag `v0.1.0-alpha1`; [checklist](alpha-1-checklist.md)). Goal: one 3D dragon you raise from a starter egg
 to a majestic adult in a 3D den, with care, feelings, naming, music, and real saves,
 installed as a CIA. Scope and assets: [content & assets](content-and-assets.md) (A1 rows).
 Screens: [screens & flow](../design/screens-and-flow.md) (A1 rows).

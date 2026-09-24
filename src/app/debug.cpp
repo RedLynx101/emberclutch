@@ -37,16 +37,18 @@ void debugDrawOverlay(App& app) {
     if (!EC_DEV || !app.overlay) return;
     const RenderStats& s = app.stats;
     char buf[96];
-    C2D_DrawRectSolid(0, 0, 0, 236, 57, withAlpha(theme::kDenPlum, 0.75f));
+    C2D_DrawRectSolid(0, 0, 0, 262, 57, withAlpha(theme::kDenPlum, 0.75f));
     std::snprintf(buf, sizeof(buf), "%4.1fms  CPU %.1f  GPU %.1f  CMD %d%%", app.frameMs, C3D_GetProcessingTime(),
                   C3D_GetDrawingTime(), static_cast<int>(C3D_GetCmdBufUsage() * 100));
     line(app, 2, buf, okOr(app.frameMs <= kBudgetFrameMs));
-    std::snprintf(buf, sizeof(buf), "TRI %lu/%lu  DRAW %lu/%lu  BONE %lu/%lu", static_cast<unsigned long>(s.tris),
-                  static_cast<unsigned long>(kBudgetTris), static_cast<unsigned long>(s.draws),
+    std::snprintf(buf, sizeof(buf), "TRI %lu/%lu +%lu/%lu  DRAW %lu/%lu  BONE %lu/%lu", static_cast<unsigned long>(s.tris),
+                  static_cast<unsigned long>(kBudgetTris), static_cast<unsigned long>(app.bottomTris),
+                  static_cast<unsigned long>(kBudgetCloseTris), static_cast<unsigned long>(s.draws),
                   static_cast<unsigned long>(kBudgetDraws), static_cast<unsigned long>(s.maxBonesPerDraw),
                   static_cast<unsigned long>(kBudgetBones));
     line(app, 15, buf,
-         okOr(s.tris <= kBudgetTris && s.draws <= kBudgetDraws && s.maxBonesPerDraw <= kBudgetBones));
+         okOr(s.tris <= kBudgetTris && app.bottomTris <= kBudgetCloseTris && s.draws <= kBudgetDraws &&
+              s.maxBonesPerDraw <= kBudgetBones));
     std::snprintf(buf, sizeof(buf), "LIN %.1fMB  VRAM %.2fMB  APP %.1fMB  romfs %s", linearSpaceFree() / 1048576.0f,
                   vramSpaceFree() / 1048576.0f, osGetMemRegionFree(MEMREGION_APPLICATION) / 1048576.0f,
                   app.romfsOk ? "ok" : "MISSING");

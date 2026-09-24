@@ -19,7 +19,7 @@ Status: **v0.2** (2026-09-23)
 | Target frame rate | **30 fps locked** in 3D scenes, 60 fps in menus |
 | Skinned dragons on screen | ≤ 3 (den), 1 up close (petting, riding) |
 | Dragon triangles | LOD0 ≤ 3,000 for the heaviest gene mix (grown 2,994, hatchling 2,778) · LOD1 ≤ 1,200 (1,123 / 1,047), both checked by a PC test. A full den draws the cared-for dragon at LOD0 and the others at LOD1 (~4,850 for three adults) |
-| Bones per draw | ≤ 24 (vertex shader constant limit, see §4) |
+| Bones per draw | ≤ 25 (the vertex shader's constants, see §4: 95 of 96 used since the jaw bone, D41) |
 | Dragon colour | Per-vertex palette paint (no texture per variant); a shared scale-detail texture comes with texturing |
 | Environment | Vertex-coloured. The den room is 2,251 triangles (a PC test holds it to 8,000 − 3,000 − 2 × 1,200 = 2,600, so a full den frame stays under 8k) |
 | Audio | Music streamed from romfs, sound effects preloaded, ≤ 8 voices |

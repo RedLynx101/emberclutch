@@ -35,5 +35,9 @@ void afterFrameBegin();
 // queued, take the suggestion).
 bool typedName(char* out, std::size_t cap);
 void finish();  // writes shots/done.txt
+// True on a frame whose picture will be saved; log() then adds a line to shots/log.txt
+// (for numbers behind a picture: camera framing, positions).
+bool shooting();
+void log(const char* fmt, ...);
 
 }  // namespace ec::autotest

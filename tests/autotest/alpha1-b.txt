@@ -1,0 +1,21 @@
+# Alpha 1 checklist, part B: runs after part A (without -ResetSave). The title offers
+# Continue with part A's dragon (the save was kept); then starting over, asked twice, with
+# the Gale egg.
+overlay off
+wait 2.5
+shot b01-title-continue
+tap 160 163
+wait 0.4
+shot b02-start-over-ask
+tap 236 170
+wait 0.4
+shot b03-really
+name Noah
+tap 236 170
+wait 1.5
+tap 260 120
+wait 0.5
+tap 260 120
+wait 2.5
+shot b04-gale-egg
+quit

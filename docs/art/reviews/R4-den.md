@@ -14,6 +14,12 @@ Each is the game's own den camera, with real dragons posed with the game's clips
 The renders come from Blender with the same colours the 3DS draws. The dragons' shading is
 Blender's preview, tinted for the time of day as in the game.
 
+**Egg** `R4-egg.png`: the 3D egg (`tools/blender/egg_model.py`), warm and whole, cracked
+just before hatching, and with its cap off. In the game the shell takes a pale tint of the
+breed inside, the light shines through it brighter the warmer you keep it, it rocks when
+you rub it, and near hatching the dragon inside knocks. Cracks appear in three stages in
+the last few percent of incubation and glow with the heartglow's colour.
+
 ## What's in the room
 - **A round cave** with a skylight in the back wall. By day a sunbeam falls through it
   onto the floor, turning into a sunset glow in the evening and moonlight at night.
@@ -29,16 +35,19 @@ Blender's preview, tinted for the time of day as in the game.
   or made up, "z"s while asleep, crumbs when eating, sparkles after grooming, dust puffs
   from footsteps.
 - Dragons walk around the hearth, the egg nest and the hoard instead of through them.
-- Before hatching, the egg sits in the egg nest by the fire.
+- Before hatching, the egg sits in the egg nest by the fire; the bottom screen shows it up
+  close to rub.
 
 ## Please judge
 1. Does it feel like a cozy dragon home? Anything missing that a den should have?
 2. Night: dark enough to feel like night, still easy to see?
 3. The low-poly rocks and props: charming or too crude?
+4. The egg: does it read as a precious dragon egg? Speckles, glow and cracks right?
 
 ## Known and planned
 - The rocks and props are untextured (colours only), like the dragons before R2.
-- The egg is still the 2D egg until the egg model (WP2).
+- The hatching moment itself (the cap flying off, the baby climbing out) comes with the
+  hatching cinematic (WP7).
 
 ## Noah's verdict
 *(pending)*

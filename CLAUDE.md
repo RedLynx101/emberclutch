@@ -32,6 +32,8 @@ session, and add new decisions to the log.
   `blender -b -P tools/blender/den_model.py -- --out <abs>/romfs/models/den.esm` and
   `tools\test.ps1`. Previews from the game camera: `-- --render <abs prefix> --dragons --shot home`
   (one shot per Blender run: building several dragons in one session is less reliable).
+- Egg: `python tools/blender/egg_model.py --out romfs/models/egg.ecm` (plain Python);
+  previews with `blender -b -P tools/blender/egg_model.py -- --render <abs prefix>`.
 - Animations: edit `tools/anim/clips.py`, then `python tools/anim/build_anims.py` (writes
   `romfs/anims/dragon.eca`) and `tools\test.ps1`. Preview on the rig:
   `blender -b -P tools/blender/preview_anims.py -- --clips walk,sit --form grown --out <abs prefix>`

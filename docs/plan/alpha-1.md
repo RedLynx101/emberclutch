@@ -49,6 +49,9 @@ While waiting on a review, work continues on the non-art packages (engine, save,
   stages + shape keys; sex bone-scale offsets (D23).
 - Decimate/retopo to budget; UVs; procedural bake to the mask textures.
 - **R1, then R2.**
+- As built so far: both body forms approved (D36–D39); the egg model
+  (`tools/blender/egg_model.py`, two bones, three crack stages, 948 triangles). Left:
+  texturing → R2.
 - *Verify:* script prints tris/bones per part vs budget; renders saved to `docs/art/`.
 
 ### WP3 — Converter and formats ⟂ WP2 ✅

@@ -7,6 +7,7 @@
 #include "app/storage.hpp"
 #include "core/den_actor.hpp"
 #include "core/dragon.hpp"
+#include "core/egg.hpp"
 #include "core/particles.hpp"
 #include "core/rng.hpp"
 #include "core/save.hpp"
@@ -61,6 +62,10 @@ struct App {
     Particles fx;
     DenAmbience ambience;
     float zzz[3] = {};
+    // The egg before hatching: how it rocks, and how many cracks it had last frame (-1:
+    // not seen yet, so cracks it already had make no sound).
+    EggMotion egg;
+    int eggCracks = -1;
 
     const char* toast = nullptr;
     float toastTime = 0;

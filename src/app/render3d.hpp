@@ -5,6 +5,7 @@
 
 #include "app/app.hpp"
 #include "core/den_actor.hpp"
+#include "core/egg.hpp"
 #include "core/particles.hpp"
 
 namespace ec::r3d {
@@ -16,27 +17,31 @@ bool init();
 void shutdown();
 bool ready();
 bool roomReady();
+bool eggReady();  // romfs:/models/egg.ecm loaded: eggs are 3D
 
 // Puts citro2d in the state the 3D pass relies on: 2D draws never write depth, so the
 // depth buffer stays clear for dragons and 2D overlays always land on top. Call after
 // C2D_Prepare().
 void prepare2D();
 
-// A dragon in the den and the actor animating it (nullptr: stands in its idle pose).
+// A dragon in the den and the actor animating it (nullptr: stands in its idle pose). An egg
+// sits in the egg nest, moved by its EggMotion (eggs without one are skipped).
 struct DenDragon {
     const Dragon* dragon;
     const DenActor* actor;
+    const EggMotion* egg = nullptr;
 };
 
 // Draws the den on the current top-screen target: the room lit for the time of day, up to
 // three dragons, and the particles (fx may be null): ambient ones behind the dragons, care
 // effects over them. Flushes pending 2D first and hands the GPU back to citro2d after.
 // The first dragon is the one being cared for (full detail); the camera follows them. With
-// no dragon out (eggs are skipped), it looks at the egg nest. Fills app.stats.
+// no dragon out, it looks at the egg nest. Fills app.stats.
 void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Particles* fx);
 
-// Bottom-screen close-up of the dragon's head and chest (petting), same hand-over.
-void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, s64 now);
+// Bottom-screen close-up of the dragon's head and chest (petting), or of the whole egg you
+// rub; same hand-over.
+void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMotion* egg, s64 now);
 
 // Projects a den-space point with the last den camera: top-screen pixels and pixels per
 // den unit at that depth. False before the first drawDen or behind the camera.

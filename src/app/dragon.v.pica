@@ -2,7 +2,8 @@
 ;   * 2-bone linear blend skinning: bone rows come from `bones` by relative addressing
 ;     (a0 = bone index * 3), weights are bytes (sum 255).
 ;   * Vertex paint picks two per-dragon palette colours and mixes them; the emissive weight
-;     goes to the colour alpha (the TEV adds colour x alpha: heartglow, eye glints).
+;     times the palette alpha goes to the colour alpha (the TEV adds colour x alpha:
+;     heartglow, eye glints, the egg's light).
 ;   * Outputs the view-space normal as a quaternion + the view vector for fragment
 ;     lighting (toon ramp LUT on L.N, rim from a Fresnel LUT on N.V).
 ; Uniform budget: 4 + 4 + 72 + 9 + 2 constants = 91 of 96 float registers.
@@ -71,14 +72,16 @@
 	dp4 outpos.z, projection[2], r7
 	dp4 outpos.w, projection[3], r7
 
-	; colour: mix the two palette slots, emissive weight in alpha
+	; colour: mix the two palette slots; alpha = emissive weight x the slots' glow (palette
+	; alpha: 1 for dragons; the egg's cracks and inner light fade in through it)
 	mova a0.xy, inpaint.xy
 	mov r8, palette[a0.x]
 	mov r9, palette[a0.y]
 	add r9, r9, -r8
 	mul r10.x, inv255, inpaint.z
 	mad r8, r10.xxxx, r9, r8
-	mul r8.w, inv255, inpaint.w
+	mul r10.y, inv255, inpaint.w
+	mul r8.w, r8.w, r10.y
 	mov outclr, r8
 
 	; view-space normal -> quaternion (as in the devkitPro fragment_light example)

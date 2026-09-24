@@ -28,8 +28,11 @@
   command buffer, triangles, draw calls, bones, memory, romfs check), dev menu on
   SELECT (time skip, needs, hatch, next stage, save, reset). Verified in Azahar.
 - ⏸ **WP2 dragon model:** sculpt **approved** after R1 → R1b → R1c (D36–D39: baby body,
-  classic wings, strong breed shapes, nostrils and mouth, bigger late hatchling). Still to
-  do: the egg model and texturing (review R2, not blocking).
+  classic wings, strong breed shapes, nostrils and mouth, bigger late hatchling). **The egg
+  is done:** a 3D egg (948 triangles) in the egg nest and up close on the bottom screen; it
+  rocks when rubbed, the dragon inside knocks near hatching, the light inside brightens
+  with warmth, and three stages of glowing cracks appear in the last stretch (sounds on
+  each). Still to do: texturing (review R2, not blocking).
 - ✅ **WP4 renderer:** `dragon.v.pica` (2-bone skinning, palette colours, fragment-light
   outputs) and `render3d` (toon ramp + rim + emissive heartglow with a white-hot core;
   citro3d inside citro2d scenes). Den camera, a bottom-screen petting close-up, per-dragon
@@ -73,8 +76,7 @@
   Note: the emulator needs `sdmc:/3ds/dspfirm.cdc`; a local dummy file works in Azahar (never commit it).
 
 ## Next actions
-1. **WP2 rest:** egg model (+ hatching clips, the egg in its nest); texturing (UVs, scale
-   detail, the Pattern gene) → R2.
+1. **WP2 rest:** texturing (UVs, scale detail, the Pattern gene) → R2.
 2. **WP7 interactions:** touch zones from bone capsules, feeding from a tray, grooming,
    play with a ball, egg rubbing and the hatching cinematic, naming.
 3. WP10 UI/fonts, WP11 CIA packaging, WP12 wrap-up.
@@ -83,8 +85,8 @@
 for the next session: 3-dragon test triangle count with LOD1, the petting close-up, the
 heartglow core, den life (walking, sitting, sleeping, sulking, reactions, sounds, look-at),
 the den room (cutaway from every camera position, day/evening/night via the dev time skip,
-sunbeam and flames, particles, the egg in its nest, triangle count ≤ 8k with the 3-dragon
-test), then everything built since.
+sunbeam and flames, particles, triangle count ≤ 8k with the 3-dragon test), the 3D egg
+(rubbing rocks it, knocks, cracks via the dev time skip), then everything built since.
 
 ## Current goal (D31)
 **Complete through Alpha 2.** Gates that stop the run:
@@ -100,7 +102,7 @@ test), then everything built since.
 - Optional, non-blocking: Suno [music batch 2](audio/suno-music-batch-2.md) and the
   [sound effects](audio/suno-sfx-alpha1.md).
 - Nothing blocking. Comments welcome on R1c (faces, growth),
-  **[R3 animation](art/reviews/R3-anim.md)** and **[R4 den](art/reviews/R4-den.md)**.
+  **[R3 animation](art/reviews/R3-anim.md)** and **[R4 den and egg](art/reviews/R4-den.md)**.
 
 ## How to work
 - Build: `tools\build.ps1` · Tests: `tools\test.ps1` · Emulator: `tools\emu.ps1`

@@ -11,6 +11,7 @@
 #include "app/ui_draw.hpp"
 #include "core/clock.hpp"
 #include "core/daylight.hpp"
+#include "core/egg.hpp"
 #include "core/genetics.hpp"
 #include "core/rig.hpp"
 
@@ -145,6 +146,18 @@ void denLife(App& app, s64 now) {
     }
 }
 
+// The egg between rubs: it settles, the dragon inside knocks as hatching nears, and it
+// cracks open in stages, each with a crackle.
+void eggLife(App& app, const Dragon& d) {
+    if (app.egg.update(app.dt, eggProgress(d), app.rng)) audio::playSfx(audio::Sfx::Thump, 1.7f);
+    const int cracks = eggCracks(d);
+    if (app.eggCracks >= 0 && cracks > app.eggCracks) {  // not for cracks it had when loaded
+        audio::playSfx(audio::Sfx::Crack, 1.25f);
+        app.egg.knock(0.2f, 0);
+    }
+    app.eggCracks = cracks;
+}
+
 // Particles move on; the room adds its own life: embers over the hearth, motes in the
 // sunbeam, glints on the hoard.
 void denEffects(App& app, s64 now) {
@@ -175,6 +188,7 @@ void update(App& app, const Input& in) {
     }
     denLife(app, nowLocal(app));
     denEffects(app, nowLocal(app));
+    if (activeDragon(app).stage == Stage::Egg) eggLife(app, activeDragon(app));
 }
 
 void drawTop(App& app) {
@@ -195,14 +209,16 @@ void drawTop(App& app) {
     char line[96];
     if (d.stage == Stage::Egg) {
         const float progress = static_cast<float>(d.incubationSeconds) / kIncubationSeconds;
-        // The egg rests in the egg nest by the hearth (a 2D egg until the egg model, WP2).
+        // The egg rests in the egg nest by the hearth (the 2D egg if its model is missing).
         float ex = 200, ey = 130, ppu = 84;
         if (room) {
-            r3d::drawDen(app, nullptr, 0, now, &app.fx);
+            const r3d::DenDragon inNest[1] = {{&d, nullptr, &app.egg}};
+            r3d::drawDen(app, inNest, r3d::eggReady() ? 1 : 0, now, &app.fx);
             const DenLayout den;
             r3d::project({den.eggNest.x, den.eggNest.y, 0.55f}, ex, ey, ppu);  // unchanged if it fails
         }
-        egg(ex, ey, 0.8f * ppu, 1.05f * ppu, {250, 240, 225}, glowOf(d), 0.3f + 0.7f * d.warmth / 100.0f);
+        if (!room || !r3d::eggReady())
+            egg(ex, ey, 0.8f * ppu, 1.05f * ppu, {250, 240, 225}, glowOf(d), 0.3f + 0.7f * d.warmth / 100.0f);
         std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", breedName(d.genome), str::kEggSuffix,
                       static_cast<int>(progress * 100), str::kIncubated);
         text(app, line, 200, 14, 0.6f, theme::kShell);
@@ -233,11 +249,14 @@ void drawTop(App& app) {
 
 void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {
     text(app, str::kRubEgg, 160, 10, 0.55f, theme::kShell);
-    egg(160, 120, 80, 104, {250, 240, 225}, glowOf(d), 0.3f + 0.7f * d.warmth / 100.0f);
+    if (!r3d::ready() || !r3d::eggReady())  // otherwise the 3D egg is already drawn (drawCloseUp)
+        egg(160, 120, 80, 104, {250, 240, 225}, glowOf(d), 0.3f + 0.7f * d.warmth / 100.0f);
     if (in.touching && in.tx > 100 && in.tx < 220 && in.ty > 60 && in.ty < 180) {
         if (app.lastTouchX >= 0) {
             const float dx = in.tx - app.lastTouchX, dy = in.ty - app.lastTouchY;
-            warmEgg(d, std::sqrt(dx * dx + dy * dy) * 0.05f);
+            const float stroke = std::sqrt(dx * dx + dy * dy);
+            warmEgg(d, stroke * 0.05f);
+            app.egg.rub(stroke / 100.0f, dx, dy);  // it rocks under your hand
         }
         app.lastTouchX = in.tx;
         app.lastTouchY = in.ty;
@@ -249,6 +268,8 @@ void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {
         audio::playSfx(audio::Sfx::HatchPop, voicePitch(d, now));
         audio::playStinger("hatching");  // silent until the Suno stinger exists
         app.actorsReady = false;          // the new hatchling starts its den life with a hello
+        app.egg = EggMotion{};
+        app.eggCracks = -1;
         showToast(app, str::kHatched);
         saveNow(app);
     }
@@ -335,8 +356,8 @@ void drawBottom(App& app, const Input& in) {
     Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
-    if (d.stage != Stage::Egg && r3d::ready())  // pet the dragon itself
-        r3d::drawCloseUp(app, d, app.actorsReady ? &app.actors[0] : nullptr, now);
+    if (r3d::ready())  // pet the dragon itself, or rub the egg
+        r3d::drawCloseUp(app, d, app.actorsReady ? &app.actors[0] : nullptr, &app.egg, now);
     if (d.stage == Stage::Egg) {
         drawEggBottom(app, in, d, now);
     } else {

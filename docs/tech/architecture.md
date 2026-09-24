@@ -168,8 +168,15 @@ multiplied in (after the R2 texturing review).
   `dragonLight(blend)` (midday = the look the dragons were designed in), scaled per channel
   by the room's floor light where the dragon stands relative to the rug's
   (`StaticScene::lightNear`): darker in the nook, warmer by the hearth, brighter in the sun.
-- With no dragon out yet (an egg), the camera frames the egg nest and the 2D egg is drawn
-  at its projected position (until the egg model).
+- **The egg** (`romfs/models/egg.ecm`, `tools/blender/egg_model.py`, `core/egg`): the
+  dragons' format with two bones, the shell and the cap that pops off along a zigzag seam.
+  It is drawn with the dragon program; its motion is procedural (rocking about a pivot in
+  the round bottom when rubbed or knocked from inside, the cap tipping back on a hinge).
+  Colours are palette slots set per egg: a breed-tinted shell, speckles, the inside of
+  the shell, the light inside and three crack stages. The dragon shader multiplies each
+  vertex's glow by its palette slot's alpha, so a crack stays shell-coloured and dark until
+  its stage, then glows, and the inner light brightens with warmth (dragons keep alpha 1).
+  In the den the egg sits in the egg nest; the bottom screen shows it up close to rub.
 
 Rare traits change the palette constants or add a lookup table (Iridescent).
 
@@ -200,6 +207,7 @@ tools/blender/dragon_model.py  (two forms: metaball hatchling + skin-modifier gr
 tools/blender/export_dragon.py --out-dir romfs/models --reference-dir tests/data
         -> romfs/models/{hatchling,grown}.ecm + tests/data/{hatchling,grown}_reference.ecr
 tools/blender/den_model.py --out romfs/models/den.esm   (the den room, baked lighting sets)
+tools/blender/egg_model.py --out romfs/models/egg.ecm   (the egg: plain Python; Blender only for previews)
 tools/blender/sheet.py          (tiles review renders into docs/art/reviews/*.png)
 Suno WAV --tools/audio/make_loop.py (ffmpeg)--> romfs/music/*.ogg (LOOPSTART/LOOPLENGTH tags)
 tools/audio/make_placeholder_sfx.py         --> romfs/sfx/*.wav

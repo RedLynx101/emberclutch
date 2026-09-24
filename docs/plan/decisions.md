@@ -17,12 +17,7 @@ Approved decisions, newest first. "Approved" means the project owner signed off.
 | D24 | **Egg sex:** bred and wild eggs are a hatch-day surprise; **Market eggs are labeled** so a partner can be bought on purpose | Owner choice | Approved |
 | D25 | Install the **Azahar** emulator (winget) for quick local testing and **3ds-libvorbisidec** for Ogg music. Performance sign-off stays on real old-3DS hardware | Owner approved both installs | Approved |
 | D26 | **Art reviews at milestones:** renders after the sculpt, after texturing, and after rigging/animation | Owner choice | Approved |
-
-### Open
-
-| # | Question | Proposed default |
-|---|---|---|
-| O3 | May the player rename dragons, and is there a default name? | Name at hatch with the 3DS keyboard; rename any time at the den. A random name is suggested from a list. |
+| D27 | **Naming:** name the dragon at hatch with the 3DS keyboard (a random suggestion is pre-filled) and rename it any time in the den | Owner approved the proposed default | Approved |
 
 ## 2026-09-23 — Project kickoff
 

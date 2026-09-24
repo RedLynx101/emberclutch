@@ -15,7 +15,7 @@
 namespace ec {
 namespace {
 
-constexpr float kTripTime = 1.1f;  // seconds of travel between places
+constexpr float kTripTime = 1.8f;  // seconds of travel between places (A or a tap skips)
 
 struct Place {
     const char* name;
@@ -179,6 +179,7 @@ void drawPlaceView(App& app, int p) {
 
 void update(App& app, const Input& in) {
     if (app.travel > 0) {
+        if ((in.down & KEY_A) || in.tapped) app.travel = 0;  // skip the trip
         if ((app.travel -= app.dt) <= 0) {
             app.travel = 0;
             app.scene = app.travelTo;
@@ -201,16 +202,20 @@ void travel(App& app) {
         showToast(app, app.mapPick == kMarketPlace ? str::kMarketLocked : str::kNotOpenYet);
         return;
     }
+    app.travelTo = pl.scene;
+    if (app.mapPick == app.mapFrom) {  // already here: straight in
+        app.scene = pl.scene;
+        return;
+    }
     audio::playSfx(audio::Sfx::Flap);
     app.travel = kTripTime;
-    app.travelTo = pl.scene;
 }
 
 void drawTop(App& app) {
     drawPlaceView(app, app.mapPick);
     if (app.travel > 0) {  // the trip: the view drifts away into warm light
         const float k = 1.0f - app.travel / kTripTime;
-        C2D_DrawRectSolid(0, 0, 0.5f, kTopW, kScreenH, withAlpha(theme::kDenPlum, std::fmin(1.0f, k * 1.4f)));
+        C2D_DrawRectSolid(0, 0, 0.5f, kTopW, kScreenH, withAlpha(theme::kDenPlum, std::fmin(1.0f, k * 1.2f)));
         textCentered(app, kPlaces[app.mapPick].name, 200, 120, 0.9f, withAlpha(theme::kClutchGold, std::fmin(1.0f, k * 2)),
                      380, Face::Title);
     }
@@ -219,9 +224,16 @@ void drawTop(App& app) {
 void drawBottom(App& app, const Input& in) {
     drawValley(app);
     drawPins(app);
-    if (app.travel > 0) {
-        C2D_DrawRectSolid(0, 0, 0.5f, kBotW, kScreenH,
-                          withAlpha(theme::kDenPlum, std::fmin(1.0f, (1.0f - app.travel / kTripTime) * 1.4f)));
+    if (app.travel > 0) {  // a heart travels the path from here to there, then the view fades
+        const float k = 1.0f - app.travel / kTripTime;
+        const float m = std::fmin(1.0f, k / 0.7f), e = m * m * (3 - 2 * m);
+        const Place& a = kPlaces[app.mapFrom];
+        const Place& b = kPlaces[app.mapPick];
+        const float x = a.x + (b.x - a.x) * e, y = a.y + (b.y - a.y) * e - 10 * std::sin(e * 3.1416f);
+        glow(x, y, 12, theme::kEmber, 0.9f);
+        heart(x, y, 11, theme::kEmber);
+        if (k > 0.6f)
+            C2D_DrawRectSolid(0, 0, 0.5f, kBotW, kScreenH, withAlpha(theme::kDenPlum, std::fmin(1.0f, (k - 0.6f) / 0.35f)));
         return;
     }
     for (int p = 0; p < kPlaceCount; ++p)  // tap a pin to pick it (a second tap goes)

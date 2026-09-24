@@ -77,7 +77,16 @@ void tickWorld(App& app) {
 }
 
 void openMap(App& app) {
-    app.mapPick = static_cast<u8>(app.scene == SceneId::Sanctuary ? 1 : app.scene == SceneId::Vault ? 2 : 0);
+    // The places' order on the map (scene_map kPlaces): den, sanctuary, vault, stone, market, trails.
+    switch (app.scene) {
+        case SceneId::Sanctuary: app.mapFrom = 1; break;
+        case SceneId::Vault: app.mapFrom = 2; break;
+        case SceneId::NestingStone: app.mapFrom = 3; break;
+        case SceneId::Market: app.mapFrom = 4; break;
+        case SceneId::Wanderings: app.mapFrom = 5; break;
+        default: app.mapFrom = 0; break;
+    }
+    app.mapPick = app.mapFrom;
     app.scene = SceneId::Map;
     app.travel = 0;
     audio::playSfx(audio::Sfx::Confirm);

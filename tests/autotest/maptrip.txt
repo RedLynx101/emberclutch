@@ -1,0 +1,49 @@
+# The map trip (Alpha 2 WP6): a heart travels the path from where you are to where you're
+# going, then the view fades; A or a tap skips it. Picking where you already are goes straight in.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+# The map from the den: to the Sanctuary, caught mid-trip.
+key X
+wait 1
+tap 62 96
+wait 0.4
+tap 62 96
+wait 0.5
+shot t01-heart-leaving
+wait 0.6
+shot t02-heart-arriving
+wait 1.2
+shot t03-sanctuary
+# From the Sanctuary to the Vault: the heart starts at the Sanctuary.
+key B
+wait 0.8
+shot t04-map-from-sanctuary
+tap 262 62
+wait 0.4
+tap 262 62
+wait 0.6
+shot t05-heart-to-vault
+wait 1.5
+shot t06-vault
+# The Vault to the Den, skipped with A.
+key B
+wait 0.8
+tap 160 138
+wait 0.4
+tap 160 138
+wait 0.3
+key A
+wait 0.4
+shot t07-skipped-to-den
+# The den from the den: straight in.
+key X
+wait 0.8
+key A
+wait 0.3
+shot t08-straight-in
+quit

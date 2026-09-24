@@ -100,8 +100,12 @@ Worked through alone, package by package (D49).
   *Started with WP2:* `src/app/scene_map.cpp`, the valley painted in code (mountains,
   meadows, the river and lake, woods, dotted paths) with six pins (Den, Sanctuary and
   Vault open; the rest "not open yet"), a painted view of the place picked on the top
-  screen, a short trip between places; X or the START menu opens it. Left: unlock
-  conditions (the Market at Juvenile), the places as they're built, the skippable glide.
+  screen, a short trip between places; X or the START menu opens it.
+- *Done:* all six places built and open (the Market once a dragon is Juvenile, with its
+  own "opens at Juvenile" note); the map remembers where you are, and the trip is a heart
+  travelling the dotted path from there to where you're going, then a fade into the place
+  (1.8 s; A or a tap skips it); picking where you already are goes straight in.
+  `tests/autotest/maptrip.txt`.
 
 ### WP7 — Toys and den props
 - Tug rope, feather wand, puzzle orb, the food bowl ([care interactions §8](../design/care-interactions.md#8-more-toys-alpha-2-from-the-market));

@@ -158,6 +158,7 @@ struct App {
     u8 titleConfirm = 0;      // the title's "start over?" steps (0 none, 1 asked, 2 really?)
     // The world map (Alpha 2): the place picked, and a trip under way (seconds left, where to).
     u8 mapPick = 0;
+    u8 mapFrom = 0;   // where you are (the trip starts there)
     float travel = 0;
     SceneId travelTo = SceneId::Den;
     // The Sanctuary and the Cold Vault: the one picked (an index into their list) and the page.

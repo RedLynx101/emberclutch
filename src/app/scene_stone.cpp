@@ -162,7 +162,7 @@ void drawBottom(App& app, const Input& in) {
     if (button(app, {16, 200, 150, 34}, str::kNestTogether, in, ready ? 0 : withAlpha(theme::kShell, 0.5f)) && ready) {
         if (settleToNest(app.game, app.stoneMother, app.stoneFather, now)) {
             app.stoneCourt = 4.0f;
-            audio::playSfx(audio::Sfx::Purr, 0.9f);
+            audio::playSfx(audio::Sfx::NestSettle);
             audio::playSfx(audio::Sfx::Trill, 1.1f);
             showToast(app, str::kEggTomorrow);
             saveNow(app);

@@ -4,7 +4,7 @@ Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 done: the den of three 
 and two eggs (D53), and their life together. WP2 done (the Sanctuary and Cold Vault), with
 a first world map. WP3 done (breeding at the Nesting Stone). WP4 done (the Wanderings).
 WP5 done (the Market, Gleam and the pouch). WP6 done (the map's trips). WP7 done (toys and
-decor). WP8 done (the profile and family tree). Goal (D31): complete through Alpha 2. Scope and assets:
+decor). WP8 done (the profile and family tree). WP9 done (brief 2's sounds wired, stand-ins until they arrive). Goal (D31): complete through Alpha 2. Scope and assets:
 [content & assets](content-and-assets.md) (A2 rows); screens: [screens & flow](../design/screens-and-flow.md).
 
 **The order matters** (Noah, 2026-09-24): everything that doesn't depend on how the
@@ -144,6 +144,14 @@ Worked through alone, package by package (D49).
 ### WP9 — Sounds
 - Wire in the [sound brief 2](../audio/sfx-batch-2.md) sounds as they arrive
   (placeholders until then, D35); the Market loop and Wanderings stinger exist.
+- *Done (stand-ins):* every sound in brief 2 has its own slot in `src/app/audio`, named
+  after its slug and played where it belongs (the heartbeat, turning the egg, the first
+  cry, the tub, suds, the rinse, the wet shake, a grumble, sniffs, the giggle at the sweet
+  spot, the leg kick, the ball's roll and catch; the rope, the feather, the orb, the treat,
+  the bowl, settling at the Nesting Stone, an egg laid, Gleam, the register, the map, the
+  trip, setting off on a walk) and the Market's ambience bed. Until a file arrives, a
+  retuned stand-in plays (what those moments played before); dropping
+  `romfs/sfx/<slug>.wav` in replaces it, no code change. None of brief 2 has arrived yet.
 
 ### WP10 — The app icon and a 3D HOME Menu banner (D48, D50)
 - **Icon:** a designed **emblem**, independent of the dragon style: a glowing heart inside

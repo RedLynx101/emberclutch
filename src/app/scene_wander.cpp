@@ -159,7 +159,8 @@ void drawBottom(App& app, const Input& in) {
             app.finds = comeBack(app.game, out, stepCount(app), nowLocal(app), app.rng);
             app.findsFrom = out;
             audio::playSfx(audio::Sfx::Trill);
-            if (app.finds.gleam > 0) audio::playSfx(audio::Sfx::Sparkle);
+            if (app.finds.gleam > 0) audio::playSfx(audio::Sfx::Coin);
+            if (app.finds.wildEgg >= 0) audio::playSfx(audio::Sfx::EggLay);
             saveNow(app);
         }
         if (button(app, {176, 200, 128, 34}, str::kMap, in)) openMap(app);
@@ -193,7 +194,7 @@ void drawBottom(App& app, const Input& in) {
         if (button(app, {16, 200, 150, 34}, str::kSetOff, in) && !why) {
             if (setOff(app.game, app.wanderPick, stepCount(app), nowLocal(app))) {
                 showToast(app, str::kOffWeGo);
-                audio::playSfx(audio::Sfx::Confirm);
+                audio::playSfx(audio::Sfx::TrailDepart);
                 fixCare(app);
                 saveNow(app);
             }

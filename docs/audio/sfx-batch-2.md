@@ -1,7 +1,9 @@
 # Emberclutch — Sound Effects Brief, Batch 2 (hands-on care and Alpha 2)
 
 For **ElevenLabs Sound Effects** (or Suno Sounds), like [batch 1](suno-sfx-alpha1.md).
-Nothing waits on these: the game uses stand-ins until they arrive (D35). Drop the files in
+Nothing waits on these: the game uses stand-ins until they arrive (D35). Every slug below
+already has its own slot in the game (`src/app/audio`, Alpha 2 WP9), so a processed
+`romfs/sfx/<slug>.wav` (and `<slug>-2.wav`... for takes) simply replaces its stand-in. Drop the files in
 a folder and tell me; I match them to the slugs, trim, level and convert them
 (`tools/audio/process_sfx.py`). 2–3 takes of the dragon sounds help (the game rotates).
 

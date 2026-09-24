@@ -167,6 +167,7 @@ void useHand(App& app, const Input& in, Dragon& d, bool hit, const TouchHit& h, 
         if (!c.reported) {
             c.reported = true;
             b.care(Care::Rough, d);
+            audio::playSfx(audio::Sfx::Grumble);
         }
         return;
     }
@@ -188,6 +189,7 @@ void useHand(App& app, const Input& in, Dragon& d, bool hit, const TouchHit& h, 
         if (c.sweetTime > 0.8f && c.sweetCooldown <= 0) {
             c.sweetCooldown = 6.0f;
             b.care(Care::SweetSpot, d);
+            audio::playSfx(audio::Sfx::Giggle);
             emit(app, kFxHeart, {in.tx, in.ty - 10}, 4);
             if (!c.sweetFound) {
                 c.sweetFound = true;
@@ -224,6 +226,7 @@ void useFood(App& app, const Input& in, Dragon& d) {
         a.behavior.feedBite(true, false, false);
         c.holdingFood = false;
         showToast(app, str::kRefused);
+        audio::playSfx(audio::Sfx::Grumble);
         return;
     }
     --c.bitesLeft;
@@ -295,14 +298,14 @@ void useSponge(App& app, const Input& in, Dragon& d, bool hit, float moved) {
     if (app.rng.chance(1, 2)) emit(app, kFxSuds, {in.tx, in.ty}, 1);
     if ((c.soundWait -= app.dt) <= 0) {
         c.soundWait = 0.5f;
-        audio::playSfx(audio::Sfx::Splash, 1.25f);
+        audio::playSfx(audio::Sfx::Suds);
     }
     (void)d;
 }
 
 void rinse(App& app, Dragon& d) {
     CareState& c = app.care;
-    audio::playSfx(audio::Sfx::Splash);
+    audio::playSfx(audio::Sfx::WaterPour);
     for (int i = 0; i < 10; ++i) emit(app, kFxDrop, {frand(app, 80, 240), frand(app, 40, 90)}, 1);
     if (c.suds > 0.3f) {
         bathe(d);
@@ -333,6 +336,7 @@ void releaseBall(App& app, Dragon& d) {
         app.ball.launch(from, {vx * 0.006f, -vy * 0.011f + 1.2f, 1.5f + s * 0.0035f});
     } else if (dragged > 30) {  // a slow drag: roll it along the floor
         app.ball.launch({from.x, from.y, app.ball.radius}, {(z.x - c.stroke.start.x) * 0.012f, 2.2f, 0});
+        audio::playSfx(audio::Sfx::BallRoll);
     } else {
         return;
     }
@@ -354,6 +358,7 @@ void useFeather(App& app, const Input& in, Dragon& d) {
     if (c.featherNear && c.stroke.speed > 140 && c.swatWait <= 0) {
         c.swatWait = 0.9f;
         a.behavior.care(Care::Swat, d);
+        audio::playSfx(audio::Sfx::FeatherFlutter);
         play(d, 3);
         markVisit(d, nowLocal(app));
         if (app.rng.chance(1, 2)) emit(app, kFxHeart, {in.tx, in.ty - 10}, 1);
@@ -368,7 +373,7 @@ void useRope(App& app, const Input& in, Dragon& d, float moved) {
     if (b.activity != Activity::Tug) return;
     if (moved > 3 && c.tugWait <= 0) {
         c.tugWait = 0.7f;
-        audio::playSfx(audio::Sfx::Purr, 1.2f);
+        audio::playSfx(audio::Sfx::RopeTug);
         play(d, 2);
         markVisit(d, nowLocal(app));
         emit(app, kFxDust, {in.tx, in.ty}, 1);
@@ -404,7 +409,7 @@ void stepOrb(App& app, Dragon& d) {
         c.orbWait = kOrbRefill;
         c.treatFrom = c.orbAt;
         c.treatT = 0;
-        audio::playSfx(audio::Sfx::Sparkle);
+        audio::playSfx(audio::Sfx::TreatDrop);
         showToast(app, str::kTreat);
     }
     if (c.treatT >= 0 && (c.treatT += app.dt / 0.7f) >= 1) {
@@ -443,6 +448,7 @@ void selectTool(App& app, Dragon& d, Tool t) {
     c.tool = t;
     c.holdingFood = false;
     if (t == Tool::Sponge && !d.upset) {
+        audio::playSfx(audio::Sfx::TubSlide);
         c.bathOut = true;
         c.suds = 0;
         actor(app).behavior.care(Care::Bath, d);
@@ -660,6 +666,7 @@ void update(App& app, Dragon& d) {
     DenBehavior& b = a.behavior;
     b.ball = &app.ball;
     if (b.holdingBall) {
+        if (!app.ball.held) audio::playSfx(audio::Sfx::BallPickup);  // caught it
         app.ball.held = true;
         Vec3 mouth;
         if (r3d::mouthOf(0, mouth)) app.ball.pos = mouth;
@@ -839,7 +846,7 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
         if (c.tool == Tool::Food && c.holdingFood && owns(app.game, Item::FoodBowl) && kBowlDrop.contains(lastTouch.x, lastTouch.y)) {
             const Food f = bowlFood(app.game);
             if (fillBowl(app.game, c.food)) {
-                audio::playSfx(audio::Sfx::Confirm);
+                audio::playSfx(audio::Sfx::BowlClink);
                 showToast(app, str::kIntoBowl);
             } else {
                 audio::playSfx(audio::Sfx::Error);
@@ -848,6 +855,7 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
                                                                  : str::kNoneLeft);
             }
         }
+        if (c.orbHeld && std::hypot(c.orbVel.x, c.orbVel.y) > 120) audio::playSfx(audio::Sfx::OrbRattle);  // off it rolls
         c.orbHeld = false;
         if (!d.upset && c.tool == Tool::Rope) {  // let go: off it trots, proud
             b.care(Care::TugLetGo, d);

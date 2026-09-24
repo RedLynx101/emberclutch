@@ -207,7 +207,7 @@ void travel(App& app) {
         app.scene = pl.scene;
         return;
     }
-    audio::playSfx(audio::Sfx::Flap);
+    audio::playSfx(audio::Sfx::TravelWhoosh);
     app.travel = kTripTime;
 }
 

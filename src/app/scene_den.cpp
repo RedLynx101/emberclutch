@@ -37,7 +37,7 @@ float moveScaleOf(const Dragon& d, s64 now) {
 // Animation markers become sounds. Voices are pitched per dragon (up for babies, down for
 // grown-ups); a sniff around sometimes brings a curious chirp, sometimes a sneeze.
 // The other den dragons are a little quieter than the one you're with (gain).
-void playEventSound(App& app, u8 event, const Dragon& d, s64 now, float gain = 1.0f) {
+void playEventSound(App& app, u8 event, const Dragon& d, Activity doing, s64 now, float gain = 1.0f) {
     const float voice = voicePitch(d, now);
     auto play = [&](audio::Sfx s, float pitch) { audio::playSfx(s, pitch, gain); };
     switch (event) {
@@ -46,15 +46,15 @@ void playEventSound(App& app, u8 event, const Dragon& d, s64 now, float gain = 1
         case kAnimSwallow: play(audio::Sfx::Gulp, voice); break;
         case kAnimPurr: play(audio::Sfx::Purr, voice); break;
         case kAnimThump:
-        case kAnimLand: play(audio::Sfx::Thump, 1.0f); break;
+        case kAnimLand: play(doing == Activity::Kick ? audio::Sfx::LegKick : audio::Sfx::Thump, 1.0f); break;
         case kAnimFlap: play(audio::Sfx::Flap, 1.0f); break;
         case kAnimYawn: play(audio::Sfx::Yawn, voice); break;
-        case kAnimShake: play(audio::Sfx::Brush, 1.3f); break;
+        case kAnimShake: play(doing == Activity::Bath ? audio::Sfx::ShakeSpray : audio::Sfx::Brush, doing == Activity::Bath ? 1.0f : 1.3f); break;
         case kAnimSniff:
             switch (app.rng.below(4)) {
                 case 0: play(audio::Sfx::Sneeze, voice); break;
                 case 1: play(audio::Sfx::Chirp, voice); break;
-                default: break;
+                default: play(audio::Sfx::Sniff, voice); break;
             }
             break;
         case kAnimCall: play(d.stage >= Stage::Adolescent ? audio::Sfx::Rumble : audio::Sfx::Trill, voice); break;
@@ -221,7 +221,7 @@ void denLife(App& app, const DenRoster& r, s64 now) {
         u8 events[8];
         matchSpeeds(a, d, now);
         const int n = a.update(d, night, moveScaleOf(d, now), app.dt, *lib, clipsFor(d, now), events, 8);
-        for (int i = 0; i < n; ++i) playEventSound(app, events[i], d, now, yours ? 1.0f : 0.6f);
+        for (int i = 0; i < n; ++i) playEventSound(app, events[i], d, a.behavior.activity, now, yours ? 1.0f : 0.6f);
         // A gulp when a meal is finished; a happy squeak when a game of chase ends.
         const Activity activity = a.behavior.activity;
         const float gain = yours ? 1.0f : 0.6f;
@@ -241,11 +241,13 @@ void denLife(App& app, const DenRoster& r, s64 now) {
             app.denOrbWait = 90;
             feed(mine, 6, false);
             play(mine, 8);
+            audio::playSfx(audio::Sfx::TreatDrop, 1.0f, gain);
             audio::playSfx(audio::Sfx::Munch, voicePitch(d, now), gain);
         }
         if (db.nudged && app.denOrb.active) {
             db.nudged = false;
             app.denOrb.launch(app.denOrb.pos, {db.nudge.x * 2.4f, db.nudge.y * 2.4f, 0.6f});
+            audio::playSfx(audio::Sfx::OrbRattle, 1.0f, gain);
         }
         if (db.knocked) {
             db.knocked = false;
@@ -315,8 +317,8 @@ void heartbeat(App& app, const Dragon& d) {
         e.beatIn += 60.0f / h.bpm;
         if (temperamentOf(d) == Personality::Curious)  // it keeps changing pace
             e.beatIn *= 0.75f + 0.5f * (app.rng.below(100) / 100.0f);
-        audio::playSfx(audio::Sfx::Thump, 0.5f, gain);
-        e.dubIn = 14.0f / h.bpm;
+        audio::playSfx(audio::Sfx::EggHeartbeat, 1.0f, gain);
+        e.dubIn = audio::has(audio::Sfx::EggHeartbeat) ? -1.0f : 14.0f / h.bpm;  // the stand-in needs its "dub"
         if (careNest(app) >= 0) app.eggs[careNest(app)].knock(0.012f * h.strength, 0.0f);  // a flutter you can see
     }
     if (e.dubIn >= 0 && (e.dubIn -= app.dt) < 0) audio::playSfx(audio::Sfx::Thump, 0.6f, gain * 0.7f);
@@ -326,7 +328,7 @@ void heartbeat(App& app, const Dragon& d) {
 // starts out fonder of you.
 void turnTheEgg(App& app, Dragon& d, s64 now) {
     if (careNest(app) >= 0) app.eggs[careNest(app)].turn();
-    audio::playSfx(audio::Sfx::Brush, 0.7f, 0.6f);  // the shell on straw
+    audio::playSfx(audio::Sfx::EggTurn);  // the shell on straw
     if (turnEgg(d, now)) {
         audio::playSfx(audio::Sfx::Toast);
         markVisit(d, now);
@@ -411,7 +413,7 @@ void hatchLife(App& app, const Input& in, s64 now) {
     if (!h.blinked && h.t >= kBlinkAt) {
         h.blinked = true;
         a.eyes.blink = 0;  // its first blink
-        audio::playSfx(audio::Sfx::Squeak, voicePitch(d, now));
+        audio::playSfx(audio::Sfx::HatchCry, voicePitch(d, now));  // its very first cry
         Vec3 head;
         if (r3d::headOf(0, head)) app.fx.emit(Fx::Heart, head, 2, 0.5f);
     }

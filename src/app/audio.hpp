@@ -14,12 +14,20 @@ enum class Sfx : u8 {
     Step, Thump, Flap,                                       // body
     EggKnock, EggCrack, EggHatch,                            // egg
     Munch, Gulp, Brush, Sparkle, Splash, Bounce,             // care
+    // Sound brief 2 (docs/audio/sfx-batch-2.md): each has a stand-in, retuned, until its own
+    // file arrives (D35); drop romfs/sfx/<slug>.wav in and it plays instead.
+    BallRoll, BallPickup, Grumble, Sniff, Giggle, LegKick, TubSlide, Suds, WaterPour, ShakeSpray,
+    EggHeartbeat, EggTurn, HatchCry,                         // hands-on care
+    RopeTug, FeatherFlutter, OrbRattle, TreatDrop, BowlClink, NestSettle, EggLay, Coin, Register,
+    MapOpen, TravelWhoosh, TrailDepart,                      // toys, den and places (Alpha 2)
     Count
 };
+// True once a sound's own file is loaded (not a stand-in).
+bool has(Sfx s);
 
 // Looping beds under the music (the den's hearth and night outside, an egg's hum). Each
 // fades toward the level last set; set it every frame it's wanted, or it fades out.
-enum class Bed : u8 { Hearth, Night, EggHum, Count };
+enum class Bed : u8 { Hearth, Night, EggHum, Market, Count };  // Market: silent until amb-market arrives
 void setBed(Bed b, float level);  // 0..1
 
 // Returns false (and stays silent) if the DSP can't start, e.g. no sdmc:/3ds/dspfirm.cdc.

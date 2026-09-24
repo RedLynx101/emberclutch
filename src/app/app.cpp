@@ -74,7 +74,7 @@ void tickWorld(App& app) {
     const int egg = layDueEgg(app.game, now, app.rng);  // the pair's egg, the day after they nested
     if (egg >= 0) {
         showToast(app, app.game.dragons[egg].location == Location::Den ? str::kNewEggNest : str::kNewEggVault);
-        audio::playSfx(audio::Sfx::EggKnock);
+        audio::playSfx(audio::Sfx::EggLay);
         saveNow(app);
     }
 }
@@ -92,7 +92,7 @@ void openMap(App& app) {
     app.mapPick = app.mapFrom;
     app.scene = SceneId::Map;
     app.travel = 0;
-    audio::playSfx(audio::Sfx::Confirm);
+    audio::playSfx(audio::Sfx::MapOpen);
 }
 
 void fixCare(App& app) {

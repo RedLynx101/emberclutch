@@ -31,10 +31,33 @@ const char* const kSfxFiles[] = {
     "dragon-chirp", "dragon-trill", "dragon-purr",    "dragon-squeak", "dragon-whimper", "dragon-yawn",
     "dragon-sneeze", "dragon-rumble", "step",         "thump",         "flap",        "egg-knock",
     "egg-crack",    "egg-hatch",    "munch",          "gulp",          "brush",       "polish-sparkle",
-    "splash",       "ball-bounce"};
+    "splash",       "ball-bounce",
+    // sound brief 2
+    "ball-roll", "ball-pickup", "dragon-grumble", "dragon-sniff", "dragon-giggle", "leg-kick", "tub-slide", "suds",
+    "water-pour", "shake-spray", "egg-heartbeat", "egg-turn", "hatch-first-cry", "rope-tug", "feather-flutter",
+    "orb-rattle", "treat-drop", "bowl-clink", "nest-settle", "egg-lay", "coin", "register", "map-open",
+    "travel-whoosh", "trail-depart"};
 static_assert(sizeof(kSfxFiles) / sizeof(kSfxFiles[0]) == static_cast<int>(Sfx::Count), "one file per Sfx");
-const char* const kBedFiles[] = {"amb-hearth", "amb-night", "egg-hum"};
-const float kBedGain[] = {0.55f, 0.5f, 0.6f};  // under the music and the voices
+// Stand-ins (D35) for sound brief 2, in Sfx order from BallRoll: what plays until the sound's
+// own file arrives, and how it's retuned. They match what these moments played before.
+struct StandIn {
+    Sfx use;
+    float pitch, gain;
+};
+constexpr int kFirstBrief2 = static_cast<int>(Sfx::BallRoll);
+constexpr StandIn kStandIns[] = {
+    {Sfx::Bounce, 0.6f, 0.35f},  {Sfx::Squeak, 1.4f, 0.5f},  {Sfx::Rumble, 1.4f, 0.6f},  {Sfx::Chirp, 1.5f, 0.3f},
+    {Sfx::Trill, 1.25f, 1.0f},   {Sfx::Thump, 1.2f, 0.8f},   {Sfx::Thump, 0.8f, 0.7f},   {Sfx::Splash, 1.25f, 1.0f},
+    {Sfx::Splash, 1.0f, 1.0f},   {Sfx::Brush, 1.3f, 1.0f},   {Sfx::Thump, 0.5f, 1.0f},   {Sfx::Brush, 0.7f, 0.6f},
+    {Sfx::Squeak, 1.0f, 1.0f},   {Sfx::Purr, 1.2f, 1.0f},    {Sfx::Flap, 1.8f, 0.35f},   {Sfx::Bounce, 1.5f, 0.4f},
+    {Sfx::Sparkle, 1.0f, 1.0f},  {Sfx::Confirm, 1.0f, 1.0f}, {Sfx::Purr, 0.9f, 0.8f},    {Sfx::EggKnock, 1.0f, 1.0f},
+    {Sfx::Sparkle, 1.0f, 1.0f},  {Sfx::Confirm, 1.0f, 1.0f}, {Sfx::Confirm, 1.0f, 1.0f}, {Sfx::Flap, 1.0f, 1.0f},
+    {Sfx::Chirp, 1.2f, 1.0f},
+};
+static_assert(sizeof(kStandIns) / sizeof(kStandIns[0]) == static_cast<int>(Sfx::Count) - kFirstBrief2,
+              "a stand-in for every brief 2 sound");
+const char* const kBedFiles[] = {"amb-hearth", "amb-night", "egg-hum", "amb-market"};
+const float kBedGain[] = {0.55f, 0.5f, 0.6f, 0.45f};  // under the music and the voices
 static_assert(sizeof(kBedFiles) / sizeof(kBedFiles[0]) == static_cast<int>(Bed::Count), "one file per Bed");
 
 struct Stream {
@@ -375,10 +398,18 @@ void playStinger(const char* slug) {
     LightEvent_Signal(&g_event);
 }
 
+bool has(Sfx s) { return s < Sfx::Count && g_takes[static_cast<int>(s)] > 0; }
+
 void playSfx(Sfx s, float pitch, float gain) {
     if (!g_ok) return;
     const int i = static_cast<int>(s);
-    if (g_takes[i] == 0) return;
+    if (g_takes[i] == 0) {  // not here yet: its stand-in
+        if (i >= kFirstBrief2) {
+            const StandIn& in = kStandIns[i - kFirstBrief2];
+            if (g_takes[static_cast<int>(in.use)] > 0) playSfx(in.use, pitch * in.pitch, gain * in.gain);
+        }
+        return;
+    }
     const Clip& c = g_clips[i][g_nextTake[i]];
     g_nextTake[i] = static_cast<u8>((g_nextTake[i] + 1) % g_takes[i]);  // takes in turn
     // A free channel if there is one, else the one used longest ago.

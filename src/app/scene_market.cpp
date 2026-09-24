@@ -34,6 +34,7 @@ Dragon todaysEgg(const App& app) {
 }
 
 void update(App& app, const Input& in) {
+    audio::setBed(audio::Bed::Market, 1.0f);  // the stalls' murmur (silent until amb-market arrives)
     app.simAccum += app.dt;
     if (app.simAccum >= 1.0f) {
         tickWorld(app);
@@ -96,7 +97,7 @@ void foodTab(App& app, const Input& in) {
         text(app, line, r.x + r.w - 3, r.y + 2, 0.32f, withAlpha(theme::kShell, 0.8f), C2D_AlignRight);
         if (in.released && r.contains(in.rx, in.ry)) {
             if (buyFood(app.game, food)) {
-                audio::playSfx(audio::Sfx::Confirm);
+                audio::playSfx(audio::Sfx::Register);
                 showToast(app, str::kBought);
                 saveNow(app);
             } else {
@@ -139,7 +140,7 @@ void goodsTab(App& app, const Input& in) {
         std::snprintf(label, sizeof(label), str::kBuyFor, static_cast<unsigned long>(info.price));
         if (button(app, act, label, in)) {
             if (buyItem(s, it)) {
-                audio::playSfx(audio::Sfx::Confirm);
+                audio::playSfx(audio::Sfx::Register);
                 showToast(app, decor || static_cast<int>(it) < kToys ? str::kBoughtThing : str::kBoughtKeep);
                 saveNow(app);
             } else {
@@ -186,7 +187,7 @@ void sellTab(App& app, const Input& in) {
         text(app, line, r.x + 26, r.y + 20, 0.36f, theme::kClutchGold, C2D_AlignLeft, r.w - 30);
         shown += have;
         if (in.released && r.contains(in.rx, in.ry) && sellTrinket(app.game, t)) {
-            audio::playSfx(audio::Sfx::Sparkle);
+            audio::playSfx(audio::Sfx::Coin);
             showToast(app, str::kSold);
             saveNow(app);
         }
@@ -207,7 +208,8 @@ void eggTab(App& app, const Input& in) {
         textCentered(app, str::kEggTomorrowMarket, 160, 180, 0.45f, withAlpha(theme::kShell, 0.8f), 300);
     } else if (button(app, {100, 170, 120, 28}, str::kBuyEgg, in)) {
         if (buyDailyEgg(app.game, nowLocal(app)) >= 0) {
-            audio::playSfx(audio::Sfx::EggKnock);
+            audio::playSfx(audio::Sfx::Register);
+            audio::playSfx(audio::Sfx::EggLay);
             showToast(app, str::kEggBought);
             saveNow(app);
         } else {

@@ -227,6 +227,33 @@ budgets and animated by the same clips.
   HOME Menu: [hardware-check-1.md](hardware-check-1.md). Emulator: all four looks cost about
   3.4 MB of linear memory (21.4 → 18.0 MB free), the full den holds 16.7 ms.
 
+### WP12a — The hatching, reworked (proposed; Noah 2026-09-24)
+**The problem:** the hatchling appears whole inside an intact shell. A newborn is 0.79 wide
+and 1.34–1.47 long; the egg is 0.74 wide and 1.0 tall. So the body, wings and tail poke
+through the shell walls, and the shell stays in the nest (for three minutes) while the
+hatchling sits in it. It also "just hatches": no moment where it breaks out.
+
+**The fix:**
+- **It starts curled up inside.** A new clip, `hatch_emerge`: from the curl pose (head
+  tucked, tail wrapped round) it pushes up, the snout breaks through first, then the head
+  comes out wearing the cap, then it stands and stretches. An egg sized to hold the curled
+  newborn (about 1.2 tall instead of 1.0; the nests have room).
+- **The shell breaks apart instead of staying whole.** A shattering egg model: the cap and
+  four or five lower shards, each a rigid piece on its own bone. As the hatchling stands,
+  the shards tip outward about their bottom edges and fall onto the straw with a small
+  bounce, settling in a ring clear of its body; the cap rides on its head until it shakes
+  it off. The shards fade once it's named and walks out.
+- **The moment:** the cracks glow brighter and the egg wobbles harder (as now), a pause, a
+  flash of warm light from inside, then the break. Shell crumbs and dust, the first cry
+  (`hatch-first-cry`, stand-in until it arrives), the first blink, and the look's name
+  (D54: "It's a Cinderveined Ember!"); a wild egg's glowing crack pattern pays off here.
+- **The bottom screen follows it:** the close-up shows the egg breaking and then the
+  hatchling's face for the first blink, instead of cutting away.
+- **Checked, not eyeballed:** a PC test that the curled newborn fits inside the egg at the
+  start (every body vertex inside the shell's inner surface), that no shard passes through
+  the hatchling's body capsules at sampled moments of the sequence, and that the shards'
+  resting ring clears its footprint; an autotest run capturing the sequence frame by frame.
+
 ### WP12 — The dragons update: every look, every breed (D54)
 - **Looks per dragon (D54):** the current look and V1–V3 all ship. A look gene per dragon
   (saved), inherited with surprises (50/50 a parent's, sometimes random; wild 8% by base

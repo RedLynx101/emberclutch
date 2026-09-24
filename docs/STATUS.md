@@ -135,8 +135,11 @@ after each. Stops:
 ## Waiting on Noah
 - **A first look on the old 3DS** ([steps](plan/hardware-check-1.md), D55): install the dev
   CIA (`build/cia-test/`), read the budget with a full den and with every look in memory,
-  try the 3D banner. Then WP12 (looks per dragon, the Dragondex, the parts library, all 21
-  breeds, photo mode), the full hardware run (D34) and the Alpha 2 tag.
+  try the 3D banner. The two CIAs are already on the SD card (`/cias/`, uploaded over FTP
+  2026-09-24): install them with FBI. Then the hatching rework (WP12a: the newborn starts
+  curled up inside, the shell breaks into shards that fall away, no more clipping), WP12
+  (looks per dragon, the Dragondex, the parts library, all 21 breeds, photo mode), the full
+  hardware run (D34) and the Alpha 2 tag.
 - Sound brief 2 (`docs/audio/sfx-batch-2.md`): nothing waits on it (stand-ins play).
 - Whenever convenient: the [sound brief 2](audio/sfx-batch-2.md) (hands-on care and
   Alpha 2 sounds); a listen to the new sounds, the two UI chimes and the Market loop seam

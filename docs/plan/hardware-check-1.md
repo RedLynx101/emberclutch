@@ -12,8 +12,8 @@ The builds are in `build/cia-test/` (not in git; rebuild with `tools\package_cia
 Both are dev builds: SELECT opens the dev menu, L/R turn its pages.
 
 ## 1. Install
-Copy `emberclutch-2d.cia` to the SD card (for example `/cias/`) and install it with **FBI**
-(Luma3DS). Sound needs your console's own DSP firmware at `sdmc:/3ds/dspfirm.cdc` (from the
+Both CIAs are already on the SD card in `/cias/` (uploaded over FTP). In **FBI**: SD → cias →
+`emberclutch-2d.cia` → Install CIA. Sound needs your console's own DSP firmware at `sdmc:/3ds/dspfirm.cdc` (from the
 DSP1 homebrew); if other homebrew has sound, it's there already. The save goes to
 `sdmc:/3ds/emberclutch/`.
 

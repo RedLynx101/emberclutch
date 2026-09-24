@@ -48,6 +48,7 @@ struct App {
     int starterHover = 0;
     float lastTouchX = -1, lastTouchY = -1;
     float petCooldown = 0;
+    float purrCooldown = 0;
     float simAccum = 0, saveAccum = 0;
 
     const char* toast = nullptr;

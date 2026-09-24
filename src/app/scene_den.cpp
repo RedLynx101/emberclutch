@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "app/audio.hpp"
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
@@ -13,6 +14,11 @@ namespace ec {
 namespace {
 
 Rgb glowOf(const Dragon& d) { return heartglowColor(static_cast<Element>(d.genome.elementA)); }
+
+// Babies squeak high; voices deepen with growth and vary a little per dragon (size gene).
+float voicePitch(const Dragon& d, s64 now) {
+    return (1.45f - 0.55f * bodyScale(d, now)) * (1.08f - 0.16f * (d.genome.size / 255.0f));
+}
 
 void update(App& app, const Input& in) {
     // Dev time skip (also in the dev menu): R+A = +1 hour, R+X = +1 day.
@@ -77,6 +83,9 @@ void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {
     gauge(app, 20, 196, str::kWarmth, d.warmth);
     if (tryHatch(d, now, app.rng)) {
         markVisit(d, now);
+        audio::playSfx(audio::Sfx::Crack);
+        audio::playSfx(audio::Sfx::HatchPop, voicePitch(d, now));
+        audio::playStinger("hatching");  // silent until the Suno stinger exists
         showToast(app, str::kHatched);
         saveNow(app);
     }
@@ -107,6 +116,11 @@ void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
             pet(d, 3);
             markVisit(d, now);
             app.petCooldown = 0.25f;
+            app.purrCooldown -= 0.25f;
+            if (app.purrCooldown <= 0) {
+                audio::playSfx(audio::Sfx::Purr, voicePitch(d, now));
+                app.purrCooldown = 1.0f;
+            }
         }
     }
     if (in.touching) {
@@ -119,22 +133,27 @@ void drawCareBottom(App& app, const Input& in, Dragon& d, s64 now) {
         const bool fav = d.favoriteFood == d.genome.elementA;
         feed(d, 35, fav);
         markVisit(d, now);
+        audio::playSfx(audio::Sfx::Munch);
+        if (fav) audio::playSfx(audio::Sfx::Chirp, voicePitch(d, now));
         showToast(app, fav ? str::kFedFavorite : str::kFed);
     }
     if (button(app, {88, by, 70, 36}, str::kGroom, in)) {
         groom(d, 40);
         markVisit(d, now);
+        audio::playSfx(audio::Sfx::Brush);
         showToast(app, str::kGroomed);
     }
     if (button(app, {164, by, 70, 36}, str::kPlayBtn, in)) {
         play(d, 35);
         markVisit(d, now);
+        audio::playSfx(audio::Sfx::Chirp, voicePitch(d, now));
         showToast(app, str::kPlayed);
     }
     if (d.upset && button(app, {240, by, 70, 36}, str::kMakeUp, in)) {
         makeUp(d);
         feed(d, 20, true);
         markVisit(d, now);
+        audio::playSfx(audio::Sfx::Purr, voicePitch(d, now));
         showToast(app, str::kMadeUp);
     }
 }

@@ -1,0 +1,371 @@
+#include "app/audio.hpp"
+
+#include <3ds.h>
+#include <tremor/ivorbisfile.h>
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <strings.h>
+
+namespace ec::audio {
+namespace {
+
+constexpr int kMusicCh = 0, kStingerCh = 1, kSfxFirst = 2, kSfxCount = 6;
+constexpr int kBufFrames = 4096;  // per streaming buffer (~128 ms at 32 kHz)
+constexpr int kNumBufs = 3;
+constexpr float kFadeSeconds = 0.7f;
+
+const char* const kSfxFiles[] = {"tap", "confirm", "back", "munch", "brush", "purr", "chirp", "crack", "hatch_pop"};
+static_assert(sizeof(kSfxFiles) / sizeof(kSfxFiles[0]) == static_cast<int>(Sfx::Count), "one file per Sfx");
+
+struct Stream {
+    OggVorbis_File vf;
+    bool open = false;
+    int channels = 2;
+    s64 loopStart = 0;
+    ndspWaveBuf wbuf[kNumBufs];
+    s16* data[kNumBufs] = {};
+};
+
+struct Clip {
+    s16* data = nullptr;
+    u32 frames = 0;
+    u32 rate = 22050;
+    bool stereo = false;
+};
+
+bool g_ok = false;
+Stream g_stream;
+Thread g_thread = nullptr;
+LightEvent g_event;
+LightLock g_lock;
+volatile bool g_quit = false;
+volatile u32 g_dbgLoops = 0, g_dbgSwitches = 0;
+volatile int g_dbgStage = 0;
+
+// Requests from the main thread (guarded by g_lock), applied on the streaming thread.
+char g_wanted[32] = {};     // track the game wants
+char g_current[32] = {};    // track the stream is playing
+volatile bool g_switch = false;
+char g_stingerWanted[32] = {};
+volatile bool g_stingerReq = false;
+
+// Main-thread state.
+char g_sent[32] = {};  // last track handed to the streaming thread (never re-sent while it switches)
+float g_gain = 0.0f;   // fade gain of the loop
+float g_duck = 1.0f;  // lowered while a stinger plays
+float g_musicVol = 0.8f, g_sfxVol = 0.9f;
+
+s16* g_stingerData = nullptr;
+ndspWaveBuf g_stingerBuf;
+Clip g_clips[static_cast<int>(Sfx::Count)];
+ndspWaveBuf g_sfxBufs[kSfxCount];
+int g_nextSfx = 0;
+
+void setMix(int ch, float vol) {
+    float mix[12] = {};
+    mix[0] = mix[1] = vol;
+    ndspChnSetMix(ch, mix);
+}
+
+s64 parseLoopStart(OggVorbis_File* vf) {
+    vorbis_comment* vc = ov_comment(vf, -1);
+    if (!vc) return 0;
+    for (int i = 0; i < vc->comments; ++i)
+        if (strncasecmp(vc->user_comments[i], "LOOPSTART=", 10) == 0) return std::atoll(vc->user_comments[i] + 10);
+    return 0;
+}
+
+// Fill `out` with `frames` frames, looping back to LOOPSTART at the end of the file.
+int decodeInto(Stream& s, s16* out, int frames) {
+    const int want = frames * s.channels * 2;
+    int got = 0, bitstream = 0;
+    char* dst = reinterpret_cast<char*>(out);
+    int loops = 0;
+    while (got < want) {
+        const long r = ov_read(&s.vf, dst + got, want - got, &bitstream);
+        if (r == 0) {  // end of file: jump back to the loop point (sample-accurate)
+            if (++loops > 2 || ov_pcm_seek(&s.vf, s.loopStart) != 0) break;
+            continue;
+        }
+        if (r < 0) continue;  // a hole in the data: keep reading
+        got += static_cast<int>(r);
+    }
+    return got / (s.channels * 2);
+}
+
+void closeStream() {
+    if (g_stream.open) {
+        ndspChnWaveBufClear(kMusicCh);
+        ov_clear(&g_stream.vf);  // also closes the FILE
+        g_stream.open = false;
+    }
+    g_current[0] = '\0';
+}
+
+bool openVorbis(const char* slug, OggVorbis_File* vf) {
+    char path[64];
+    std::snprintf(path, sizeof(path), "romfs:/music/%s.ogg", slug);
+    FILE* f = std::fopen(path, "rb");
+    if (!f) return false;
+    if (ov_open(f, vf, nullptr, 0) != 0) {
+        std::fclose(f);
+        return false;
+    }
+    return true;
+}
+
+void setupChannel(int ch, int channels, long rate) {
+    ndspChnReset(ch);
+    ndspChnSetInterp(ch, NDSP_INTERP_POLYPHASE);
+    ndspChnSetRate(ch, static_cast<float>(rate));
+    ndspChnSetFormat(ch, channels == 2 ? NDSP_FORMAT_STEREO_PCM16 : NDSP_FORMAT_MONO_PCM16);
+}
+
+bool openStream(const char* slug) {
+    if (!openVorbis(slug, &g_stream.vf)) return false;
+    vorbis_info* vi = ov_info(&g_stream.vf, -1);
+    g_stream.channels = vi->channels;
+    g_stream.loopStart = parseLoopStart(&g_stream.vf);
+    g_stream.open = true;
+    setupChannel(kMusicCh, vi->channels, vi->rate);
+    setMix(kMusicCh, 0.0f);
+    for (auto& w : g_stream.wbuf) std::memset(&w, 0, sizeof(w));  // all free
+    std::snprintf(g_current, sizeof(g_current), "%s", slug);
+    return true;
+}
+
+// Stingers are short: decode fully into linear memory, then play once.
+void startStinger(const char* slug) {
+    OggVorbis_File vf;
+    if (!openVorbis(slug, &vf)) return;
+    vorbis_info* vi = ov_info(&vf, -1);
+    const int channels = vi->channels;
+    const s64 total = ov_pcm_total(&vf, -1);
+    ndspChnWaveBufClear(kStingerCh);
+    if (g_stingerData) linearFree(g_stingerData);
+    g_stingerData = static_cast<s16*>(linearAlloc(static_cast<size_t>(total) * channels * 2));
+    if (!g_stingerData) {
+        ov_clear(&vf);
+        return;
+    }
+    char* dst = reinterpret_cast<char*>(g_stingerData);
+    const long want = static_cast<long>(total * channels * 2);
+    long got = 0;
+    int bitstream = 0;
+    while (got < want) {
+        const long r = ov_read(&vf, dst + got, static_cast<int>(want - got), &bitstream);
+        if (r == 0) break;
+        if (r > 0) got += r;
+    }
+    setupChannel(kStingerCh, channels, vi->rate);
+    ov_clear(&vf);
+    std::memset(&g_stingerBuf, 0, sizeof(g_stingerBuf));
+    g_stingerBuf.data_pcm16 = g_stingerData;
+    g_stingerBuf.nsamples = static_cast<u32>(got / (channels * 2));
+    DSP_FlushDataCache(g_stingerData, got);
+    setMix(kStingerCh, g_musicVol);
+    ndspChnWaveBufAdd(kStingerCh, &g_stingerBuf);
+}
+
+void streamThread(void*) {
+    while (!g_quit) {
+        ++g_dbgLoops;
+        if (g_switch) {
+            ++g_dbgSwitches;
+            g_dbgStage = 1;
+            char want[32];
+            LightLock_Lock(&g_lock);
+            std::memcpy(want, g_wanted, sizeof(want));
+            g_switch = false;
+            LightLock_Unlock(&g_lock);
+            closeStream();
+            // A missing track stays silent instead of being retried every frame.
+            if (want[0] && !openStream(want)) {
+                std::snprintf(g_current, sizeof(g_current), "%s", want);
+                g_dbgStage = 3;
+            } else {
+                g_dbgStage = 2;
+            }
+        }
+        if (g_stingerReq) {
+            char want[32];
+            LightLock_Lock(&g_lock);
+            std::memcpy(want, g_stingerWanted, sizeof(want));
+            g_stingerReq = false;
+            LightLock_Unlock(&g_lock);
+            startStinger(want);
+        }
+        if (g_stream.open) {
+            for (int i = 0; i < kNumBufs; ++i) {
+                ndspWaveBuf& w = g_stream.wbuf[i];
+                if (w.status != NDSP_WBUF_FREE && w.status != NDSP_WBUF_DONE) continue;
+                g_dbgStage = 4;
+                const int n = decodeInto(g_stream, g_stream.data[i], kBufFrames);
+                g_dbgStage = 2;
+                if (n <= 0) break;
+                w.data_pcm16 = g_stream.data[i];
+                w.nsamples = static_cast<u32>(n);
+                DSP_FlushDataCache(g_stream.data[i], n * g_stream.channels * 2);
+                ndspChnWaveBufAdd(kMusicCh, &w);
+            }
+        }
+        LightEvent_Wait(&g_event);
+    }
+}
+
+void onDspFrame(void*) { LightEvent_Signal(&g_event); }
+
+// Minimal RIFF/WAVE reader for 16-bit PCM clips.
+bool loadWav(const char* path, Clip& clip) {
+    FILE* f = std::fopen(path, "rb");
+    if (!f) return false;
+    std::fseek(f, 0, SEEK_END);
+    const long size = std::ftell(f);
+    std::fseek(f, 0, SEEK_SET);
+    u8* buf = static_cast<u8*>(std::malloc(static_cast<size_t>(size)));
+    const bool read = buf && std::fread(buf, 1, static_cast<size_t>(size), f) == static_cast<size_t>(size);
+    std::fclose(f);
+    bool ok = false;
+    if (read && size > 12 && std::memcmp(buf, "RIFF", 4) == 0 && std::memcmp(buf + 8, "WAVE", 4) == 0) {
+        u16 channels = 1, bits = 16;
+        u32 rate = 22050;
+        for (long p = 12; p + 8 <= size;) {
+            u32 len;
+            std::memcpy(&len, buf + p + 4, 4);
+            if (std::memcmp(buf + p, "fmt ", 4) == 0) {
+                std::memcpy(&channels, buf + p + 10, 2);
+                std::memcpy(&rate, buf + p + 12, 4);
+                std::memcpy(&bits, buf + p + 22, 2);
+            } else if (std::memcmp(buf + p, "data", 4) == 0 && bits == 16 && p + 8 + static_cast<long>(len) <= size) {
+                clip.data = static_cast<s16*>(linearAlloc(len));
+                if (clip.data) {
+                    std::memcpy(clip.data, buf + p + 8, len);
+                    DSP_FlushDataCache(clip.data, len);
+                    clip.frames = len / (2u * channels);
+                    clip.rate = rate;
+                    clip.stereo = channels == 2;
+                    ok = true;
+                }
+                break;
+            }
+            p += 8 + len + (len & 1);
+        }
+    }
+    std::free(buf);
+    return ok;
+}
+
+}  // namespace
+
+bool init() {
+    if (R_FAILED(ndspInit())) return false;
+    ndspSetOutputMode(NDSP_OUTPUT_STEREO);
+    ndspSetMasterVol(1.0f);
+    for (int i = 0; i < kNumBufs; ++i) {
+        g_stream.data[i] = static_cast<s16*>(linearAlloc(kBufFrames * 2 * sizeof(s16)));
+        if (!g_stream.data[i]) return false;
+    }
+    for (int i = 0; i < static_cast<int>(Sfx::Count); ++i) {
+        char path[64];
+        std::snprintf(path, sizeof(path), "romfs:/sfx/%s.wav", kSfxFiles[i]);
+        loadWav(path, g_clips[i]);  // a missing clip just stays silent
+    }
+    LightEvent_Init(&g_event, RESET_ONESHOT);
+    LightLock_Init(&g_lock);
+    ndspSetCallback(onDspFrame, nullptr);
+    s32 prio = 0x30;
+    svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
+    g_quit = false;
+    g_thread = threadCreate(streamThread, nullptr, 32 * 1024, prio - 1, -2, false);
+    g_ok = g_thread != nullptr;
+    return g_ok;
+}
+
+void shutdown() {
+    if (!g_ok) return;
+    g_quit = true;
+    LightEvent_Signal(&g_event);
+    threadJoin(g_thread, U64_MAX);
+    threadFree(g_thread);
+    closeStream();
+    for (int ch = 0; ch < kSfxFirst + kSfxCount; ++ch) ndspChnWaveBufClear(ch);
+    for (auto* d : g_stream.data) if (d) linearFree(d);
+    for (auto& c : g_clips) if (c.data) linearFree(c.data);
+    if (g_stingerData) linearFree(g_stingerData);
+    ndspExit();
+    g_ok = false;
+}
+
+bool ok() { return g_ok; }
+
+DebugInfo debugInfo() { return {g_dbgLoops, g_dbgSwitches, g_dbgStage, g_gain}; }
+
+void playMusic(const char* slug) {
+    if (!g_ok) return;
+    const char* s = slug ? slug : "";
+    if (std::strcmp(s, g_wanted) == 0) return;
+    LightLock_Lock(&g_lock);
+    std::snprintf(g_wanted, sizeof(g_wanted), "%s", s);
+    LightLock_Unlock(&g_lock);
+}
+
+const char* currentMusic() { return g_current; }
+
+void playStinger(const char* slug) {
+    if (!g_ok || !slug) return;
+    LightLock_Lock(&g_lock);
+    std::snprintf(g_stingerWanted, sizeof(g_stingerWanted), "%s", slug);
+    g_stingerReq = true;
+    LightLock_Unlock(&g_lock);
+    LightEvent_Signal(&g_event);
+}
+
+void playSfx(Sfx s, float pitch) {
+    if (!g_ok) return;
+    const Clip& c = g_clips[static_cast<int>(s)];
+    if (!c.data) return;
+    const int ch = kSfxFirst + g_nextSfx;
+    ndspWaveBuf& w = g_sfxBufs[g_nextSfx];
+    g_nextSfx = (g_nextSfx + 1) % kSfxCount;
+    ndspChnWaveBufClear(ch);
+    setupChannel(ch, c.stereo ? 2 : 1, static_cast<long>(c.rate * pitch));
+    setMix(ch, g_sfxVol);
+    std::memset(&w, 0, sizeof(w));
+    w.data_pcm16 = c.data;
+    w.nsamples = c.frames;
+    ndspChnWaveBufAdd(ch, &w);
+}
+
+void setVolumes(u8 music, u8 sfx) {
+    g_musicVol = music / 100.0f;
+    g_sfxVol = sfx / 100.0f;
+}
+
+void update(float dt) {
+    if (!g_ok) return;
+    // Fade out, switch on the streaming thread, fade back in.
+    const bool pending = std::strcmp(g_wanted, g_current) != 0;
+    if (pending) {
+        g_gain -= dt / kFadeSeconds;
+        if (g_gain <= 0.0f) {
+            g_gain = 0.0f;
+            // Hand the switch over once; while the thread closes/opens, g_current is briefly
+            // empty, and re-sending would restart the stream forever.
+            if (std::strcmp(g_wanted, g_sent) != 0) {
+                std::memcpy(g_sent, g_wanted, sizeof(g_sent));
+                g_switch = true;
+                LightEvent_Signal(&g_event);
+            }
+        }
+    } else if (g_gain < 1.0f) {
+        g_gain += dt / kFadeSeconds;
+        if (g_gain > 1.0f) g_gain = 1.0f;
+    }
+    const float duckTarget = ndspChnIsPlaying(kStingerCh) ? 0.2f : 1.0f;
+    g_duck += (duckTarget - g_duck) * (dt * 4.0f > 1.0f ? 1.0f : dt * 4.0f);
+    setMix(kMusicCh, g_gain * g_duck * g_musicVol);
+}
+
+}  // namespace ec::audio

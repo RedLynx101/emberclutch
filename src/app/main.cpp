@@ -6,9 +6,11 @@
 #include <cstdio>
 
 #include "app/app.hpp"
+#include "app/audio.hpp"
 #include "app/debug.hpp"
 #include "app/scenes.hpp"
 #include "app/theme.hpp"
+#include "core/clock.hpp"
 #include "core/dragon.hpp"
 
 using namespace ec;
@@ -27,6 +29,13 @@ Input readInput() {
     in.tx = touch.px;
     in.ty = touch.py;
     return in;
+}
+
+// Which loop fits the moment (docs/audio/suno-music-brief.md).
+const char* musicFor(const App& app) {
+    if (app.scene != SceneId::Den || !hasDragon(app)) return "title-theme";
+    const Dragon& d = activeDragon(app);
+    return (d.stage == Stage::Egg || isNight(nowLocal(app))) ? "nestsong" : "den-hearth";
 }
 
 bool romfsReady() {
@@ -51,6 +60,7 @@ int main() {
     app.textBuf = C2D_TextBufNew(4096);
     app.romfsOk = romfsMounted && romfsReady();
 
+    audio::init();  // silent if the DSP firmware is missing
     if (loadGame(app.game, app.slots) && hasDragon(app)) {
         const s64 now = nowLocal(app);
         for (u16 i = 0; i < app.game.dragonCount; ++i)
@@ -58,6 +68,8 @@ int main() {
         app.game.lastSim = now;
         markVisit(activeDragon(app), now);
     }
+
+    audio::setVolumes(app.game.settings.musicVolume, app.game.settings.sfxVolume);
 
     u64 lastTick = svcGetSystemTick();
     while (aptMainLoop()) {
@@ -74,6 +86,8 @@ int main() {
 
         const SceneFns& scene = sceneFns(app.scene);
         if (scene.update && !app.devMenu) scene.update(app, in);
+        audio::playMusic(musicFor(app));
+        audio::update(app.dt);
 
         app.stats.reset();
         C2D_TextBufClear(app.textBuf);
@@ -92,6 +106,7 @@ int main() {
     }
 
     if (hasDragon(app)) saveNow(app);
+    audio::shutdown();
     C2D_TextBufDelete(app.textBuf);
     C2D_Fini();
     C3D_Fini();

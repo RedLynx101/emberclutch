@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "app/audio.hpp"
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
@@ -33,6 +34,7 @@ void chooseStarter(App& app, int i) {
     app.game.dragonCount = 1;
     app.game.lastSim = now;
     app.scene = SceneId::Den;
+    audio::playSfx(audio::Sfx::Confirm);
     saveNow(app);
 }
 

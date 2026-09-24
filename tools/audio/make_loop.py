@@ -274,6 +274,28 @@ def build_filtergraph(start: float, end: float, xfade: float, muffle_hz: int) ->
     )
 
 
+def encode_stinger(args) -> None:
+    """One-shot cues (hatching, results): no loop points; the ending rings out naturally."""
+    src: Path = args.input
+    slug = args.slug or src.stem
+    level, _ = level_and_onsets(decode_mono(src))
+    first_sound, _ = detect_bounds(level)
+    start = max(0.0, first_sound - 0.02)
+    graph = f"[0:a]atrim=start={start:.3f},asetpts=PTS-STARTPTS,areverse,silenceremove=start_periods=1:start_threshold=-60dB,afade=t=in:d=0.01,areverse[out]"
+    loud = measure_loudness(src, graph)
+    gain = args.lufs - float(loud["input_i"])
+    if float(loud["input_tp"]) + gain > -1.0:
+        gain = -1.0 - float(loud["input_tp"])
+    args.out_dir.mkdir(parents=True, exist_ok=True)
+    out = args.out_dir / f"{slug}.ogg"
+    channels = ["-ac", "1"] if args.mono else ["-ac", "2"]
+    run([FFMPEG, "-v", "error", "-y", "-i", str(src), "-filter_complex",
+         graph + f";[out]volume={gain:.2f}dB,aresample={args.rate}[final]", "-map", "[final]",
+         *channels, "-c:a", "libvorbis", "-q:a", str(args.quality), "-metadata", f"TITLE={slug}", str(out)])
+    print(f"{slug}: stinger, trimmed {start:.2f}s lead-in, gain {gain:+.1f} dB, "
+          f"{src.stat().st_size / 1e6:.1f} MB -> {out.stat().st_size / 1e6:.2f} MB")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("input", type=Path)
@@ -295,7 +317,12 @@ def main() -> None:
     ap.add_argument("--out-dir", type=Path, default=ROOT / "romfs" / "music")
     ap.add_argument("--preview-dir", type=Path, default=ROOT / "assets" / "audio" / "music" / "previews")
     ap.add_argument("--preview", action="store_true", help="also write a WAV of the seam (6 s either side)")
+    ap.add_argument("--no-loop", action="store_true",
+                    help="stinger mode: trim leading silence, keep the natural ending, level and encode (no loop tags)")
     args = ap.parse_args()
+    if args.no_loop:
+        encode_stinger(args)
+        return
 
     src: Path = args.input
     slug = args.slug or src.stem

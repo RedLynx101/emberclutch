@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-23 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP8 ✅, WP2 sculpt → R1 sent; WP9 next)
+**Updated:** 2026-09-23 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP8 ✅, WP9 ✅, WP2 sculpt → R1 sent; WP3/WP4 next)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -31,10 +31,16 @@
   legacy dev-save import; 5 new PC tests (22 total, 11,383 checks). In Azahar: slots
   alternate, a corrupted newest slot falls back to the older one and is then rewritten.
 
+- ✅ **WP9 audio:** Tremor Ogg streaming on a worker thread with sample-accurate loops
+  (LOOPSTART tag), fades between tracks, stingers that duck the loop, 6-channel sound
+  effects with per-dragon voice pitch; music director (title / den day / nestsong at night
+  and during incubation). Placeholder SFX synthesized (D35). Verified in Azahar (fixed a
+  thread race that restarted the stream forever). `make_loop.py --no-loop` for stingers.
+  Briefs sent: [music batch 2](audio/suno-music-batch-2.md), [SFX](audio/suno-sfx-alpha1.md).
+  Note: the emulator needs `sdmc:/3ds/dspfirm.cdc`; a local dummy file works in Azahar (never commit it).
+
 ## Next actions
-1. WP9 audio: Ogg streaming with loop points; Suno briefs for the hatching stinger and
-   the A1 sound-effect set.
-2. WP3 converter + WP4 renderer (**ask Noah for extra-high effort**).
+1. WP3 converter + WP4 renderer (**ask Noah for extra-high effort**).
 
 ## Current goal (D31)
 **Complete through Alpha 2.** Gates that stop the run:
@@ -47,6 +53,8 @@
   items and storage screens. Tell Noah when to switch.
 
 ## Waiting on Noah
+- Optional, non-blocking: Suno [music batch 2](audio/suno-music-batch-2.md) and the
+  [sound effects](audio/suno-sfx-alpha1.md).
 - **Review R1 (sculpt)**, sent 2026-09-23: [docs/art/reviews/R1-sculpt.md](art/reviews/R1-sculpt.md).
   Texturing waits for it. Everything else continues.
 

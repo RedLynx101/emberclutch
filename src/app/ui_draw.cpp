@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "app/audio.hpp"
 #include "app/theme.hpp"
 #include "core/clock.hpp"
 #include "core/genetics.hpp"
@@ -150,6 +151,7 @@ void panel(const Rect& r, u32 color) {
 
 bool button(App& app, const Rect& r, const char* label, const Input& in) {
     const bool hit = in.tapped && r.contains(in.tx, in.ty);
+    if (hit) audio::playSfx(audio::Sfx::Tap);
     panel(r, hit ? theme::kClutchGold : theme::kShell);
     text(app, label, r.x + r.w / 2, r.y + r.h / 2 - 8, 0.55f, theme::kDenPlum);
     return hit;

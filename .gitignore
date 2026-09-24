@@ -28,3 +28,6 @@ __pycache__/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Large source sound effects (only processed WAVs in romfs/sfx are committed)
+assets/audio/sfx/source/

@@ -4,7 +4,7 @@ Status: **In progress** (Alpha 1 closed 2026-09-24). WP1 done: the den of three 
 and two eggs (D53), and their life together. WP2 done (the Sanctuary and Cold Vault), with
 a first world map. WP3 done (breeding at the Nesting Stone). WP4 done (the Wanderings).
 WP5 done (the Market, Gleam and the pouch). WP6 done (the map's trips). WP7 done (toys and
-decor). WP8 done (the profile and family tree). WP9 done (brief 2's sounds wired, stand-ins until they arrive). Goal (D31): complete through Alpha 2. Scope and assets:
+decor). WP8 done (the profile and family tree). WP9 done (brief 2's sounds wired, stand-ins until they arrive). WP10 done (the emblem icon and the 3D banner). Goal (D31): complete through Alpha 2. Scope and assets:
 [content & assets](content-and-assets.md) (A2 rows); screens: [screens & flow](../design/screens-and-flow.md).
 
 **The order matters** (Noah, 2026-09-24): everything that doesn't depend on how the
@@ -176,6 +176,21 @@ Worked through alone, package by package (D49).
     Python libraries (gltflib, pillow) are downloaded at this step (approved, D50) and
     never committed.
 - Both are shown to Noah at R5 (the banner as renders and a turntable).
+- *Done:* `tools/blender/emblem.py` (the emblem: a glowing heart in an ember-lit egg, a
+  dragon wing curled round it, on a plum badge with a gold rim; 48x48 and a 256 review
+  render) and `tools/blender/banner3d.py`: the textured baby Ember (the den's light model,
+  full-detail eyes) sits in its cracked egg, the cap tipped on its head, looking up at you,
+  the wordmark behind and an ember glow. The posed dragon is frozen and cut into rigid
+  pieces with their pivots at the joints (body, head, eyes, tail, heart); over a 4 second
+  loop the head tilts and nods, the tail wags, it blinks twice and the heart beats (scale,
+  plus a diffuse-colour animation added to the glTF as `KHR_animation_pointer`). The skin
+  is baked to a 128 colour texture, the wordmark is one textured quad. Exported to glTF,
+  converted by pycgfx (fetched into `build/tools`, gltflib and pillow installed for Python
+  3.12, D50): **284 KB** of the 512 KB limit, one `COMMON` model, skeletal and material
+  animations, no skinning. `tools/make_banner.ps1` runs it all;
+  `tools/package_cia.ps1 -Banner3D` packs it (with the `extendedbanner` flag) and the
+  default keeps the flat banner, rendered from the same scene, until WP13 proves the 3D one
+  on the old 3DS. Previews through the HOME Menu's own camera are in the R5 review.
 
 ## Phase B — the style review (R5, blocks)
 

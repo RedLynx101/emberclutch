@@ -1,12 +1,16 @@
 # Packs emberclutch.cia, to install on a 3DS with FBI (Luma3DS): the game with its romfs,
 # the icon (assets/icon.png) and the HOME Menu banner (assets/banner.png with
 # assets/audio/banner.wav). Settings: tools/cia.rsf.
-#   tools\package_cia.ps1 [-NoBuild] [-ToolsDir <folder with makerom\ and bannertool\>]
+#   tools\package_cia.ps1 [-NoBuild] [-Banner3D] [-ToolsDir <folder with makerom\ and bannertool\>]
+# -Banner3D: the animated 3D banner (build/banner/banner.cgfx, from tools\make_banner.ps1)
+# with the SMDH's extendedbanner flag. The emulator can't show HOME Menu banners, so it's
+# proven on the old 3DS first (Alpha 2 WP13); the flat banner stays the default until then.
 # makerom (3DSGuy/Project_CTR) and bannertool (diasurgical/bannertool) aren't kept in this
 # repo: by default they're taken from the 3D-Claw project next to it (3ds-ai\tools\win64),
 # else from PATH.
 param(
     [switch]$NoBuild,
+    [switch]$Banner3D,
     [string]$ToolsDir = "",
     [string]$Version = "0.1.0"
 )
@@ -40,10 +44,19 @@ $smdh = Join-Path $work "emberclutch.smdh"
 $bnr = Join-Path $work "emberclutch.bnr"
 $cia = Join-Path $root "emberclutch.cia"
 
-& $bannertool makesmdh -s "Emberclutch" -l "Emberclutch: raise, breed and fly with dragons" -p "Noah Hicks" `
-    -i (Join-Path $root "assets\icon.png") -o $smdh
+$smdhArgs = @("-s", "Emberclutch", "-l", "Emberclutch: raise, breed and fly with dragons", "-p", "Noah Hicks",
+    "-i", (Join-Path $root "assets\icon.png"), "-o", $smdh)
+$bannerArgs = @("-i", (Join-Path $root "assets\banner.png"))
+if ($Banner3D) {
+    $cgfx = Join-Path $root "build\banner\banner.cgfx"
+    if (-not (Test-Path $cgfx)) { & (Join-Path $PSScriptRoot "make_banner.ps1") -SkipIcon }
+    if ((Get-Item $cgfx).Length -gt 512KB) { throw "banner.cgfx is over 512 KB" }
+    $smdhArgs += @("-f", "visible,allow3d,recordusage,extendedbanner")
+    $bannerArgs = @("-ci", $cgfx)
+}
+& $bannertool makesmdh @smdhArgs
 if ($LASTEXITCODE -ne 0) { throw "bannertool makesmdh failed ($LASTEXITCODE)" }
-& $bannertool makebanner -i (Join-Path $root "assets\banner.png") -a (Join-Path $root "assets\audio\banner.wav") -o $bnr
+& $bannertool makebanner @bannerArgs -a (Join-Path $root "assets\audio\banner.wav") -o $bnr
 if ($LASTEXITCODE -ne 0) { throw "bannertool makebanner failed ($LASTEXITCODE)" }
 
 $v = $Version.Split(".")
@@ -56,4 +69,4 @@ try {
     Pop-Location
 }
 $size = [math]::Round((Get-Item $cia).Length / 1MB, 1)
-"Built $cia ($size MB, version $Version)"
+"Built $cia ($size MB, version $Version, $(if ($Banner3D) { '3D' } else { '2D' }) banner)"

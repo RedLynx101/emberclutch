@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -112,8 +112,10 @@ controls and saves screenshots of every step (`tests/autotest/`).
    tug-of-war included. WP8 ✅: the profile (about it, its stats and looks, its sweet spot
    and favourite once found, a three-generation family tree), also from the Sanctuary and
    the Vault. WP9 ✅: every sound in brief 2 has its slot and plays where it belongs, with
-   a retuned stand-in until its file arrives. Next: the emblem icon and the animated 3D HOME
-   banner (WP10), then R5.
+   a retuned stand-in until its file arrives. WP10 ✅: the emblem app icon and the animated 3D
+   HOME Menu banner (the baby Ember in its cracked egg; 284 KB CGFX via pycgfx, rigid pieces
+   only; packed with `package_cia.ps1 -Banner3D`, the flat banner stays the default until
+   the old 3DS shows the 3D one). Next: **R5**, the three Ember style variants (stop for Noah).
 2. Then the emblem icon and the animated 3D HOME Menu banner (D48, D50).
 3. Then **R5**, three Ember style variants for Noah (blocks, D47); the dragons update in
    the chosen style; the run on Noah's old 3DS (D34).

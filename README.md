@@ -75,7 +75,8 @@ logic and UI, but frame rate must be judged on a real old 3DS.
 - **Install on the HOME Menu (CIA):** `tools\package_cia.ps1` builds `emberclutch.cia`
   (icon, banner and sound included; makerom and bannertool are taken from the 3D-Claw
   project next to this one, or PATH). Copy it to the SD card and install it with **FBI**
-  (Luma3DS).
+  (Luma3DS). `-Banner3D` packs the animated 3D banner instead of the flat one (build it with
+  `tools\make_banner.ps1`, which needs pycgfx in `build\tools\pycgfx`; see the script).
 
 Controls: Continue or New game (your name, then pick an egg: tap twice), rub the egg warm,
 turn it and listen to it, watch it hatch and name it, then care for the hatchling with the

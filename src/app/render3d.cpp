@@ -280,6 +280,17 @@ bool g_headSet[kDenShown] = {};
 Vec3 g_mouths[kDenShown];        // ...and their mouths (a carried ball rides there)
 bool g_mouthSet[kDenShown] = {};
 
+// Poses made ahead of the frame (poseAhead), for the frame whose app.t they were made at.
+struct Ahead {
+    const Dragon* dragon = nullptr;
+    const DenActor* actor = nullptr;
+    int lod = -1;
+    bool ok = false;
+    Posed posed;
+};
+Ahead g_ahead[kDenShown];
+float g_aheadAt = -1.0f;
+
 // The last close-up: hands-on care picks against what it showed (WP7).
 struct CloseUpState {
     bool set = false;
@@ -518,6 +529,21 @@ float animatedGround(const ModelData& m, const Mat34* skin) {
         if (p.z < low) low = p.z;
     }
     return low < 1e8f ? low : 0.0f;
+}
+
+bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Posed& out);
+
+// This frame's pose made ahead for this dragon (poseAhead), else posed now.
+bool posedFor(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Posed& out) {
+    if (g_aheadAt == app.t) {
+        for (const Ahead& a : g_ahead) {
+            if (a.ok && a.dragon == &d && a.actor == actor && a.lod == lod) {
+                out = a.posed;
+                return true;
+            }
+        }
+    }
+    return pose(app, d, actor, now, lod, out);
 }
 
 // Poses a dragon: idle pose + its actor's animation, placed where its behavior stands.
@@ -1479,7 +1505,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
             continue;
         }
         // The first dragon is the one you're caring for: full detail. Others use LOD1.
-        if (!pose(app, *dragons[i].dragon, dragons[i].actor, now, i == 0 ? 0 : 1, g_posed)) continue;
+        if (!posedFor(app, *dragons[i].dragon, dragons[i].actor, now, i == 0 ? 0 : 1, g_posed)) continue;
         modelMatrix(g_posed, model);
         float local[3];
         localLight(g_posed.pos, blend, local);
@@ -1608,6 +1634,20 @@ void drawPair(App& app, const Dragon& a, const DenActor& actorA, const Dragon& b
     end3D();
 }
 
+void poseAhead(App& app, const DenDragon* dragons, int count, s64 now) {
+    if (!g_ready) return;
+    g_aheadAt = app.t;
+    for (int i = 0; i < kDenShown; ++i) {
+        Ahead& a = g_ahead[i];
+        a.ok = false;
+        if (i >= count || dragons[i].dragon->stage == Stage::Egg) continue;
+        a.dragon = dragons[i].dragon;
+        a.actor = dragons[i].actor;
+        a.lod = i == 0 ? 0 : 1;  // as drawDen: the one you care for in full detail
+        a.ok = pose(app, *a.dragon, a.actor, now, a.lod, a.posed);
+    }
+}
+
 void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMotion* egg, s64 now, CloseUpView mode) {
     if (!g_ready) return;
     ++g_frame;
@@ -1626,7 +1666,7 @@ void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMoti
         end3D();
         return;
     }
-    if (!pose(app, d, actor, now, 0, g_posed) || g_posed.form->headBone < 0 || g_posed.form->chestBone < 0) return;
+    if (!posedFor(app, d, actor, now, 0, g_posed) || g_posed.form->headBone < 0 || g_posed.form->chestBone < 0) return;
     C3D_Mtx projection, view, model;
     modelMatrix(g_posed, model);
     const Vec3 head = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());

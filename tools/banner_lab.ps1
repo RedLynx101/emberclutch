@@ -31,8 +31,8 @@ $text = Get-Content (Join-Path $PSScriptRoot "cia.rsf") -Raw
 $text = $text -replace '(?ms)^RomFs:\r?\n  RootPath[^\n]*\n', ''
 $text = $text -replace 'Title                   : "Emberclutch"', 'Title                   : "$(LAB_TITLE)"'
 $text = $text -replace 'ProductCode             : "CTR-P-EMBC"', 'ProductCode             : "CTR-P-EMBL"'
-$text = $text -replace 'UniqueId                : 0xEC0C1', 'UniqueId                : $(LAB_ID)'
-$text = $text -replace 'JumpId                  : 0x000400000EC0C100', 'JumpId                  : $(LAB_JUMP)'
+$text = $text -replace 'UniqueId(\s*): 0x[0-9A-Fa-f]+', 'UniqueId$1: $(LAB_ID)'
+$text = $text -replace 'JumpId(\s*): 0x[0-9A-Fa-f]+', 'JumpId$1: $(LAB_JUMP)'
 Set-Content -Path $rsf -Value $text -Encoding ascii -NoNewline
 
 $id = $FirstId

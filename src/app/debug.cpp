@@ -85,7 +85,7 @@ void devAddDragon(App& app, bool asEgg) {
     } else {
         d.incubationSeconds = kIncubationSeconds;
         tryHatch(d, now, rng);
-        d.denSlot = static_cast<u8>(bedForHatchling(s));
+        d.denSlot = static_cast<u8>(makeRoomForHatchling(s));
         suggestName(d, rng.next(), d.name, sizeof(d.name));
     }
     s.dragons[s.dragonCount++] = d;
@@ -125,7 +125,7 @@ void devAddFamily(App& app) {
     kid.origin = Origin::Bred;
     kid.incubationSeconds = kIncubationSeconds;
     tryHatch(kid, now, rng);
-    kid.denSlot = static_cast<u8>(bedForHatchling(s));
+    kid.denSlot = static_cast<u8>(makeRoomForHatchling(s));
     suggestName(kid, rng.next(), kid.name, sizeof(kid.name));
     s.dragons[s.dragonCount++] = kid;
     saveNow(app);
@@ -215,8 +215,7 @@ bool debugMenu(App& app, const Input& in) {
             }
             case 25:
                 app.game.owned |= 1u << static_cast<int>(ec::Item::FoodBowl);
-                app.game.bowlFood = static_cast<u8>(Food::HearthBread);
-                app.game.bowlLeft = kBowlPortions;
+                for (u8& k : app.game.bowl) k = static_cast<u8>(k == 0xFF ? Food::HearthBread : static_cast<Food>(k));
                 break;
             case 15:  // an adult ready for the Nesting Stone: grown, trusting, content, rested
                 while (d.stage != Stage::Egg && d.stage != Stage::Adult) forceNextStage(d, now);

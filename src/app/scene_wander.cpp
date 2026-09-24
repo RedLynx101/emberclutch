@@ -165,6 +165,7 @@ void drawBottom(App& app, const Input& in) {
             audio::playSfx(audio::Sfx::Trill);
             if (app.finds.gleam > 0) audio::playSfx(audio::Sfx::Coin);
             if (app.finds.wildEgg >= 0) audio::playSfx(audio::Sfx::EggLay);
+            if (app.game.dragons[out].location == Location::Sanctuary) showToast(app, str::kBackToSanctuary);  // its bed was lent
             saveNow(app);
         }
         if (button(app, {176, 200, 128, 34}, str::kMap, in)) openMap(app);

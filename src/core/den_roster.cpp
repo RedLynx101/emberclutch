@@ -96,7 +96,24 @@ bool placeEgg(SaveData& s, Dragon& egg) {
     return true;
 }
 
-int bedForHatchling(const SaveData& s) { return denRoster(s).freeBed(); }
+int bedForHatchling(const SaveData& s) {
+    const DenRoster r = denRoster(s);
+    if (r.freeBed() >= 0) return r.freeBed();
+    for (int b = 0; b < kDenDragons; ++b)
+        if (r.away[b]) return b;
+    return -1;
+}
+
+int makeRoomForHatchling(SaveData& s) {
+    const DenRoster r = denRoster(s);
+    const int bed = bedForHatchling(s);
+    if (bed >= 0 && r.dragon[bed] >= 0) {  // a wanderer's: it'll come home to the Sanctuary
+        Dragon& wanderer = s.dragons[r.dragon[bed]];
+        wanderer.location = Location::Sanctuary;
+        wanderer.denSlot = 0;
+    }
+    return bed;
+}
 
 int vaultCount(const SaveData& s) {
     int n = 0;

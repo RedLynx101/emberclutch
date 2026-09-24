@@ -1,9 +1,11 @@
 # Packs emberclutch.cia, to install on a 3DS with FBI (Luma3DS): the game with its romfs,
 # the icon (assets/icon.png) and the HOME Menu banner (assets/banner.png with
 # assets/audio/banner.wav). Settings: tools/cia.rsf.
-#   tools\package_cia.ps1 [-NoBuild] [-Banner3D] [-ToolsDir <folder with makerom\ and bannertool\>]
-# -Banner3D: the animated 3D banner (build/banner/banner.cgfx, from tools\make_banner.ps1).
-# The emulator can't show HOME Menu banners; it ran on Noah's old 3DS on 2026-09-24.
+#   tools\package_cia.ps1 [-NoBuild] [-Banner2D] [-ToolsDir <folder with makerom\ and bannertool\>]
+# The animated 3D banner (build/banner/banner.cgfx, from tools\make_banner.ps1) is the default
+# since it showed on Noah's old 3DS (banner lab, 2026-09-24; D58, D63); -Banner2D packs the
+# flat one instead. (-Banner3D is still accepted: it's the default.) The emulator can't show
+# HOME Menu banners.
 # A 3D banner needs the SMDH's "extendedbanner" flag, as homebrew 3D banners have: with it the
 # HOME Menu showed ours (0.1.1); without it, it froze opening the new title's present (0.1.2,
 # 2026-09-24). The flat banner keeps bannertool's default flags.
@@ -13,6 +15,7 @@
 param(
     [switch]$NoBuild,
     [switch]$Banner3D,
+    [switch]$Banner2D,
     [string]$ToolsDir = "",
     [string]$Version = "0.1.0"
 )
@@ -49,6 +52,7 @@ $cia = Join-Path $root "emberclutch.cia"
 $smdhArgs = @("-s", "Emberclutch", "-l", "Emberclutch: raise, breed and fly with dragons", "-p", "Noah Hicks",
     "-i", (Join-Path $root "assets\icon.png"), "-o", $smdh)
 $bannerArgs = @("-i", (Join-Path $root "assets\banner.png"))
+$Banner3D = -not $Banner2D
 if ($Banner3D) {
     $cgfx = Join-Path $root "build\banner\banner.cgfx"
     if (-not (Test-Path $cgfx)) { & (Join-Path $PSScriptRoot "make_banner.ps1") -SkipIcon }

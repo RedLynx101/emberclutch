@@ -246,8 +246,11 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
     for (u8 k : data.decor) w.u8v(k);
     for (const auto& p : data.toyPos)
         for (s16 v : p) w.u16v(static_cast<u16>(v));
-    w.u8v(data.bowlFood);
-    w.u8v(data.bowlLeft);
+    int portions = 0;  // the bowl: first as before (its last food and how many, for older builds)...
+    while (portions < kBowlSlots && data.bowl[portions] != 0xFF) ++portions;
+    w.u8v(portions ? data.bowl[portions - 1] : 0xFF);
+    w.u8v(static_cast<u8>(portions));
+    for (u8 k : data.bowl) w.u8v(k);  // ...then every portion (Alpha 2, after run 4)
     w.patchU16(at, static_cast<u16>(w.pos() - start));
 
     // Settings section
@@ -347,8 +350,12 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
         for (u8& k : tmp.decor) k = r.u8v();
         for (auto& p : tmp.toyPos)
             for (s16& v : p) v = static_cast<s16>(r.u16v());
-        tmp.bowlFood = r.u8v();
-        tmp.bowlLeft = r.u8v();
+        const u8 food = r.u8v(), left = r.u8v();
+        if (sectionSize >= 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots) {
+            for (u8& k : tmp.bowl) k = r.u8v();
+        } else {  // older saves: one food, `left` portions of it
+            for (int k = 0; k < kBowlSlots; ++k) tmp.bowl[k] = k < left && k < 3 ? food : 0xFF;
+        }
     }
     r.seek(start + sectionSize);
 

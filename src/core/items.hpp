@@ -58,13 +58,15 @@ Vec2 toyAt(const SaveData& s, int toy);
 void setToyAt(SaveData& s, int toy, Vec2 at);
 Vec2 defaultToySpot(int toy);
 
-// The food bowl: fill it with one food from the pouch (up to kBowlPortions of it), and
-// hungry dragons eat from it on their own, even while you're away.
-constexpr int kBowlPortions = 3;
+// The food bowl: any foods from the pouch, up to kBowlPortions portions, and hungry dragons
+// eat from it on their own, even while you're away.
+constexpr int kBowlPortions = kBowlSlots;
 constexpr float kBowlHungry = 35;  // a dragon's Belly below this sends it to the bowl
-bool fillBowl(SaveData& s, Food f);  // false: no bowl, none in the pouch, or already full of another food
-Food bowlFood(const SaveData& s);    // Food::Count when empty
-// Dragon `i` eats a portion (fills its Belly). False if the bowl is empty or it dislikes the food.
+bool fillBowl(SaveData& s, Food f);  // false: no bowl, none in the pouch, or the bowl is full
+int bowlCount(const SaveData& s);    // portions in it
+Food bowlFood(const SaveData& s);    // the last one put in (what shows on top), Food::Count when empty
+// Dragon `i` eats a portion (fills its Belly): its favourite if that's in there, else the
+// newest one it doesn't dislike. False if the bowl is empty or it dislikes everything in it.
 bool eatFromBowl(SaveData& s, int i, s64 now);
 // Every hungry den dragon eats from the bowl while there's food (the world's tick, and time
 // away). Returns how many ate.

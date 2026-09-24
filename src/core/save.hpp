@@ -18,6 +18,7 @@
 namespace ec {
 
 constexpr u16 kSaveVersion = 1;
+constexpr int kBowlSlots = 6;  // portions the food bowl holds
 constexpr u32 kMaxDragons = 200;
 constexpr std::size_t kSaveHeaderSize = 32;
 
@@ -50,7 +51,10 @@ struct SaveData {
     u32 owned = 0;
     u8 decor[5] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
     s16 toyPos[4][2] = {};
-    u8 bowlFood = 0xFF, bowlLeft = 0;
+    // The food bowl: up to kBowlSlots portions of any foods, in the order they went in (0xFF:
+    // an empty place; the portions are always the first ones). One food at a time before, 3 of
+    // it (Noah wanted to put in whatever he had, 2026-09-24).
+    u8 bowl[kBowlSlots] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
     Settings settings{};
     u16 dragonCount = 0;
     Dragon dragons[kMaxDragons];

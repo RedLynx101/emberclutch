@@ -14,6 +14,13 @@ game crashed at its first 3D frame (a null texture read the emulator hides). Bot
 WP11b); both 3D-banner CIAs froze the HOME Menu, which also turned out to keep an old banner
 per title; Next style froze the 3DS (fixed in 0.1.4).
 
+**Run 6:** J passed, K froze (the hidden triangle matters). **Run 7 (0.1.7):** delete the old
+Emberclutch title in FBI (Titles), then install `emberclutch-3dbanner.cia`: it's a new title
+(0xEC0C2), so the HOME Menu has no old banner for it, and the save on the SD card carries
+over. Check the banner (sparkles glinting, not turning; the theme's bar of music), the egg
+that waited for a bed, the bowl with mixed foods; press Y in the full den and the close-up
+for the profiler's numbers (posing now happens before the frame).
+
 **Run 5 lab 2:** F, G, I passed, H froze: one mesh more than the dragon, egg and wordmark
 is enough (D63). **Run 6:** lab 3 (J = the new banner with its sparkles, K = the same without
 the hidden triangle) in `/cias/lab/`; if J passes, delete the Emberclutch title in FBI and

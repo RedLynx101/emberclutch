@@ -30,8 +30,14 @@ DenRoster denRoster(const SaveData& s);
 // A new egg goes into a free nest, else the Cold Vault. True if it's in the den.
 bool placeEgg(SaveData& s, Dragon& egg);
 
-// The bed a hatchling would take, or -1: with all three beds taken, a ready egg waits.
+// The bed a hatchling would take, or -1: a free bed, else the bed of a dragon out on the
+// Wanderings (it doesn't need it while it's away). With all three beds slept in, a ready egg
+// waits. (A ready egg waited behind a wanderer's empty bed, with no way to see why: Noah,
+// 2026-09-24.)
 int bedForHatchling(const SaveData& s);
+// Frees that bed for the hatchling: if it was a wanderer's, the wanderer moves to the
+// Sanctuary (its trip goes on, and it comes home there). Returns the bed, or -1.
+int makeRoomForHatchling(SaveData& s);
 
 constexpr int kVaultEggs = 50;  // GDD 8
 

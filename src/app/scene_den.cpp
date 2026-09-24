@@ -356,7 +356,7 @@ void pop(App& app, Dragon& d, s64 now) {
     HatchState& h = app.hatch;
     const DenLayout den;
     const Vec2 nest = den.eggNests[h.nest];
-    const int bed = bedForHatchling(app.game);  // checked free before the hatching began
+    const int bed = makeRoomForHatchling(app.game);  // checked before the hatching began (a wanderer's is lent)
     h.popped = true;
     h.t = std::fmax(h.t, kPopAt);
     h.shell = app.eggs[h.nest];  // the empty shell keeps its spin
@@ -570,10 +570,42 @@ void drawProfileTop(App& app, const Dragon& d, s64 now) {
     textCentered(app, line, 200, 18, 0.6f, theme::kClutchGold, 380, Face::Title);
 }
 
+// The den's dragons and eggs as drawDen takes them, in `order` (denOrder).
+int denShown(App& app, const int* order, int count, r3d::DenDragon* shown) {
+    int n = 0;
+    for (int k = 0; k < count; ++k) {
+        const Dragon& o = app.game.dragons[order[k]];
+        if (o.stage == Stage::Egg) {
+            if (!r3d::eggReady()) continue;
+            shown[n++] = {&o, nullptr, &app.eggs[o.denSlot], static_cast<s8>(o.denSlot)};
+        } else {
+            const int bed = o.denSlot;
+            const bool justHatched = order[k] == app.hatch.index && app.hatch.shellTime > 0;
+            shown[n++] = {&o, app.actorId[bed] == o.id ? &app.actors[bed] : nullptr,
+                          justHatched ? &app.hatch.shell : nullptr, static_cast<s8>(app.hatch.nest)};
+        }
+    }
+    return n;
+}
+
+bool profileShown(App& app) {
+    return app.care.profileOpen && activeDragon(app).stage != Stage::Egg && !app.hatch.active;
+}
+
+// Before the frame: the den's dragons posed while the GPU finishes the last one (WP11d).
+void prepare(App& app) {
+    if (!r3d::ready() || profileShown(app)) return;
+    const DenRoster r = denRoster(app.game);
+    int order[r3d::kDenShown];
+    const int count = denOrder(app, r, order);
+    r3d::DenDragon shown[r3d::kDenShown];
+    r3d::poseAhead(app, shown, denShown(app, order, count, shown), nowLocal(app));
+}
+
 void drawTop(App& app) {
     const Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
-    if (app.care.profileOpen && d.stage != Stage::Egg && !app.hatch.active) {
+    if (profileShown(app)) {
         drawProfileTop(app, d, now);
         return;
     }
@@ -595,19 +627,7 @@ void drawTop(App& app) {
     const int count = denOrder(app, r, order);
     if (r3d::ready()) {
         r3d::DenDragon shown[r3d::kDenShown];
-        int n = 0;
-        for (int k = 0; k < count; ++k) {
-            const Dragon& o = app.game.dragons[order[k]];
-            if (o.stage == Stage::Egg) {
-                if (!r3d::eggReady()) continue;
-                shown[n++] = {&o, nullptr, &app.eggs[o.denSlot], static_cast<s8>(o.denSlot)};
-            } else {
-                const int bed = o.denSlot;
-                const bool justHatched = order[k] == app.hatch.index && app.hatch.shellTime > 0;
-                shown[n++] = {&o, app.actorId[bed] == o.id ? &app.actors[bed] : nullptr,
-                              justHatched ? &app.hatch.shell : nullptr, static_cast<s8>(app.hatch.nest)};
-            }
-        }
+        const int n = denShown(app, order, count, shown);
         r3d::drawDen(app, shown, n, now, &app.fx);
         // With company in the den, a little heart floats over the one you're caring for.
         Vec3 head;
@@ -719,6 +739,6 @@ void drawBottom(App& app, const Input& in) {
 
 }  // namespace
 
-const SceneFns kDenScene{update, drawTop, drawBottom};
+const SceneFns kDenScene{update, drawTop, drawBottom, prepare};
 
 }  // namespace ec

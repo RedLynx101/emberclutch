@@ -125,6 +125,7 @@ int main() {
 
         app.stats.reset();
         C2D_TextBufClear(app.textBuf);
+        if (const SceneFns& s = sceneFns(app.scene); s.prepare) s.prepare(app);  // alongside the GPU's last frame
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
         r3d::frameBegun();  // the last frame is drawn: what it read can go now
         autotest::afterFrameBegin();  // last frame's picture is finished now

@@ -47,6 +47,11 @@ constexpr int kDenShown = 5;  // three dragons and two eggs
 // The first dragon is the one being cared for (full detail); the camera follows them. With
 // no dragon out, it looks at the egg nest. Fills app.stats.
 void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Particles* fx);
+// Poses those dragons ahead, before C3D_FrameBegin (which waits for the GPU to finish the last
+// frame, so CPU work done before it runs alongside the GPU's). drawDen and drawCloseUp take
+// this frame's poses from here; without them they pose on the spot. (WP11d: on the 3DS the
+// CPU's and GPU's times added up, 18-22 ms in the full den.)
+void poseAhead(App& app, const DenDragon* dragons, int count, s64 now);
 
 // Bottom-screen close-up of the dragon's head and chest (petting, feeding: Face), or its
 // whole body (grooming, the bath: Body), or of the whole egg you rub; same hand-over.

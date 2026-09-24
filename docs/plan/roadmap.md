@@ -96,6 +96,10 @@ style, the last thing before Noah decides (D47) → the dragons update in the ch
   the opposite sex through the Market or Wanderings.
 
 ## Beta — *A trainer*
+- **Grooming that fits together** (WP12b, moved from Alpha 2): the bath washes grime and
+  leaves the dragon damp, the cloth dries and polishes, the brush clears shed scales; the
+  three tools under one Groom button; judged in the Shine Show.
+- **The Wanderings' next pass:** several dragons out at once, each counting its own steps.
 - Trick learning (gesture then name), skill curves, 12 tricks.
 - Voice: mic capture + MFCC/DTW template matching on a worker thread; cue buttons always.
 - Wing / Wit / Spark stats.

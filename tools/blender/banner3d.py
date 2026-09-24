@@ -696,14 +696,12 @@ def animate(pieces, cap, heart_mat, stars=()):
             key(hp, f + 4, scale=(1.22, 1.22, 1.22))
             key(hp, f + 12, scale=(1, 1, 1))
         key(hp, FRAMES, scale=(1, 1, 1))
-    # The sparkles glint in turn (a quick swell and a slower fade) and turn a quarter turn a
-    # loop (a four-pointed star looks the same after it, so the loop is seamless).
+    # The sparkles glint in turn: a quick swell and a slower fade. (They turned as well; Noah
+    # preferred them still.)
     for o, (_, _, peak) in zip(stars, SPARKLES):
         rest, full = (SPARKLE_REST,) * 3, (1.0, 1.0, 1.0)
         for f, s in ((0, rest), (peak - 10, rest), (peak, full), (peak + 14, rest), (FRAMES, rest)):
             key(o, f, scale=s)
-        for f, spin in ((0, 0), (FRAMES, 90)):
-            key(o, f, rot=(0, spin, 0))
     # A gentle bob.
     b0 = body.location.copy()
     for f, dz in ((0, 0.0), (48, 0.35), (96, 0.0)):

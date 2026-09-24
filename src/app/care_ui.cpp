@@ -797,7 +797,7 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
                                        0.75f));
             drawItem(Item::FoodBowl, kBowlDrop.x + 17, kBowlDrop.y + kBowlDrop.h / 2, 0.42f);
             char left[8];
-            std::snprintf(left, sizeof(left), "%d/%d", app.game.bowlLeft, kBowlPortions);
+            std::snprintf(left, sizeof(left), "%d/%d", bowlCount(app.game), kBowlPortions);
             text(app, left, kBowlDrop.x + kBowlDrop.w - 4, kBowlDrop.y + 10, 0.38f, theme::kShell, C2D_AlignRight);
             onUi = onUi || (kBowlDrop.contains(in.tx, in.ty) && !c.holdingFood);
         }
@@ -866,15 +866,12 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
         const Vec2 lastTouch = c.stroke.last;
         const Stroke end = c.stroke.end();
         if (c.tool == Tool::Food && c.holdingFood && owns(app.game, Item::FoodBowl) && kBowlDrop.contains(lastTouch.x, lastTouch.y)) {
-            const Food f = bowlFood(app.game);
             if (fillBowl(app.game, c.food)) {
                 audio::playSfx(audio::Sfx::BowlClink);
                 showToast(app, str::kIntoBowl);
             } else {
                 audio::playSfx(audio::Sfx::Error);
-                showToast(app, app.game.bowlLeft >= kBowlPortions ? str::kBowlFull
-                               : f != Food::Count && f != c.food ? str::kBowlOneFood
-                                                                 : str::kNoneLeft);
+                showToast(app, bowlCount(app.game) >= kBowlPortions ? str::kBowlFull : str::kNoneLeft);
             }
         }
         if (c.orbHeld && std::hypot(c.orbVel.x, c.orbVel.y) > 120) audio::playSfx(audio::Sfx::OrbRattle);  // off it rolls
@@ -901,11 +898,6 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
 
     // The tool in hand, at the stylus.
     drawFx(app);
-    Vec2 mouth;
-    if (EC_DEV && app.overlay && c.tool == Tool::Food && r3d::mouthOnCloseUp(mouth)) {  // where bites happen
-        C2D_DrawCircleSolid(mouth.x, mouth.y, 0.5f, 3, theme::rgba(0, 255, 120));
-        C2D_DrawCircleSolid(mouth.x, mouth.y, 0.5f, 1.5f, theme::rgba(0, 0, 0));
-    }
     if (in.touching && c.stroke.down) {
         switch (c.tool) {
             case Tool::Hand: sprite(c.hadHit ? care_hand_press_idx : care_hand_idx, in.tx, in.ty - 6, 0.75f); break;

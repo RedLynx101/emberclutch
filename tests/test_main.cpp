@@ -469,25 +469,30 @@ TEST(things_to_keep) {
     s.gleam = 5;
     CHECK(!buyItem(s, Item::PlantFern));  // not enough Gleam
 
-    // The food bowl: filled from the pouch, one food at a time; the hungry eat from it.
+    // The food bowl: any foods from the pouch, six portions; the hungry eat from it.
     CHECK(!fillBowl(s, Food::HearthBread));  // no bowl yet
     s.gleam = 500;
     CHECK(buyItem(s, Item::FoodBowl));
-    const int bread = s.pouch[static_cast<int>(Food::HearthBread)];
+    for (u16& n : s.pouch) n = 5;
     CHECK(fillBowl(s, Food::HearthBread) && fillBowl(s, Food::HearthBread));
-    CHECK(s.pouch[static_cast<int>(Food::HearthBread)] == bread - 2 && s.bowlLeft == 2);
-    CHECK(!fillBowl(s, Food::RoastDrumstick));  // one food at a time
-    CHECK(fillBowl(s, Food::HearthBread) && !fillBowl(s, Food::HearthBread));  // full
+    CHECK(s.pouch[static_cast<int>(Food::HearthBread)] == 3 && bowlCount(s) == 2);
+    CHECK(fillBowl(s, Food::Skyberry) && bowlFood(s) == Food::Skyberry);  // any food, stacked
+    CHECK(fillBowl(s, Food::HearthBread) && fillBowl(s, Food::HearthBread) && fillBowl(s, Food::HearthBread));
+    CHECK(bowlCount(s) == kBowlPortions && !fillBowl(s, Food::HearthBread));  // full
     s.dragons[0].needs.belly = 60;
     CHECK(feedFromBowl(s, kT0) == 0);  // not hungry
     s.dragons[0].needs.belly = 20;
-    CHECK(feedFromBowl(s, kT0) == 1 && s.dragons[0].needs.belly > 20 && s.bowlLeft == 2);
+    CHECK(feedFromBowl(s, kT0) == 1 && s.dragons[0].needs.belly > 20 && bowlCount(s) == kBowlPortions - 1);
     s.dragons[0].location = Location::Sanctuary;
     s.dragons[0].needs.belly = 20;
     CHECK(feedFromBowl(s, kT0) == 0);  // the keepers feed that one
     s.dragons[0].location = Location::Den;
-    CHECK(eatFromBowl(s, 0, kT0) && eatFromBowl(s, 0, kT0) && s.bowlLeft == 0 && bowlFood(s) == Food::Count);
-    CHECK(!eatFromBowl(s, 0, kT0));  // empty
+    // Its favourite goes first, wherever it lies in the bowl (favourites are element foods).
+    s.dragons[0].favoriteFood = static_cast<u8>(Food::Skyberry);
+    CHECK(eatFromBowl(s, 0, kT0));
+    for (int k = 0; k < bowlCount(s); ++k) CHECK(s.bowl[k] != static_cast<u8>(Food::Skyberry));
+    while (bowlCount(s) > 0) CHECK(eatFromBowl(s, 0, kT0));
+    CHECK(bowlFood(s) == Food::Count && !eatFromBowl(s, 0, kT0));  // empty
 
     // Warm stones: eggs cool half as fast.
     Dragon a = makeEgg(9, makePurebred(Element::Tide, rng), Sex::Female, kT0), b = a;
@@ -567,8 +572,8 @@ static SaveData& sampleSave() {
     s.owned = 0x5u;
     s.decor[1] = 12;
     s.toyPos[2][1] = -345;
-    s.bowlFood = 6;
-    s.bowlLeft = 2;
+    s.bowl[0] = 6;
+    s.bowl[1] = 2;
     Rng rng(123);
     s.dragonCount = 5;
     for (int i = 0; i < 5; ++i) {
@@ -663,8 +668,15 @@ TEST(the_den_has_three_beds_and_two_nests) {
 
     Dragon extra = makeEgg(200, makePurebred(Element::Tide, rng), Sex::Male, kT0);
     CHECK(!placeEgg(s, extra) && extra.location == Location::Vault);  // the nests are full
-    s.dragons[r.dragon[0]].location = Location::Sanctuary;  // a bed comes free
+    // A dragon out on the Wanderings lends its bed: the hatchling takes it, the wanderer
+    // comes home to the Sanctuary.
+    s.dragons[r.dragon[0]].wanderSince = kT0;
     CHECK(bedForHatchling(s) == 0);
+    CHECK(makeRoomForHatchling(s) == 0 && s.dragons[r.dragon[0]].location == Location::Sanctuary);
+    CHECK(s.dragons[r.dragon[0]].wanderSince == kT0);  // still out walking
+    CHECK(denRoster(s).freeBed() == 0);
+    s.dragons[r.dragon[0]].wanderSince = 0;
+    CHECK(bedForHatchling(s) == 0);  // (that bed is free now)
     s.dragons[r.egg[1]].location = Location::Vault;
     Dragon egg = makeEgg(201, makePurebred(Element::Gale, rng), Sex::Male, kT0);
     CHECK(placeEgg(s, egg) && egg.location == Location::Den && egg.denSlot == 1);
@@ -722,7 +734,8 @@ TEST(save_round_trip) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + 2 + 5 + 2 + 2 + 5 * (132 + 16 + 9 + 1 + 12 + 2 + 2));
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots + 2 + 5 + 2 + 2 +
+                   5 * (132 + 16 + 9 + 1 + 12 + 2 + 2));
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
@@ -732,7 +745,7 @@ TEST(save_round_trip) {
     CHECK(out.nestA == 11 && out.nestB == 12 && out.nestDay == 77 && out.gleam == 1234 && out.hoard[2] == 5);
     CHECK(out.pouch[4] == 9 && out.pouch[6] == 8 && out.eggBoughtDay == 321);
     CHECK(out.owned == 0x5u && out.decor[1] == 12 && out.decor[0] == 0xFF && out.toyPos[2][1] == -345);
-    CHECK(out.bowlFood == 6 && out.bowlLeft == 2);
+    CHECK(out.bowl[0] == 6 && out.bowl[1] == 2 && out.bowl[2] == 0xFF && bowlCount(out) == 2);
     CHECK(out.settings.musicVolume == 55 && out.settings.seenHatch == 1);
     CHECK(out.dragonCount == 5);
     for (int i = 0; i < 5; ++i) CHECK(sameDragon(out.dragons[i], s.dragons[i]));

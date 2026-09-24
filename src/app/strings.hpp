@@ -62,7 +62,6 @@ inline constexpr const char* kHintOrb = "Roll the orb about: a treat drops out."
 inline constexpr const char* kMoreToys = "More toys at the Market.";
 inline constexpr const char* kIntoBowl = "Into the bowl.";
 inline constexpr const char* kBowlFull = "The bowl is full.";
-inline constexpr const char* kBowlOneFood = "The bowl has other food in it.";
 inline constexpr const char* kTreat = "A treat!";
 inline constexpr const char* kOrbEmpty = "The orb is empty for now.";
 inline constexpr const char* kSplash = "Splash! Squeaky clean.";
@@ -97,7 +96,8 @@ inline constexpr const char* kAnotherName = "Another";
 inline constexpr const char* kOk = "OK";
 inline constexpr const char* kCancel = "Cancel";
 inline constexpr const char* kSayHello = "Say hello to %s!";
-inline constexpr const char* kNoBed = "Ready to hatch, but all three beds are taken.";
+inline constexpr const char* kNoBed = "Ready to hatch, but all three beds are taken: send one to the Sanctuary (its profile).";
+inline constexpr const char* kBackToSanctuary = "Back to a full den: resting in the Sanctuary.";
 inline constexpr const char* kSwitchHint = "X: map     < > : switch";
 inline constexpr const char* kMapHint = "X: map";
 // The world map, the Sanctuary and the Cold Vault (Alpha 2)

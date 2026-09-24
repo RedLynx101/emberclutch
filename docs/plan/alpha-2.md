@@ -348,6 +348,28 @@ the hidden triangle (whether the sparkles alone are enough).
 to measure the performance pass against. **0.1.6:** the new banner (a 3D CIA and a flat one)
 and the look-at's head-chain evaluation.
 
+**Run 6 (2026-09-24):** lab J (the sparkle banner) passed, K (the same without the hidden
+triangle) froze: the triangle is what keeps the HOME Menu happy; the sparkles alone aren't
+enough. From Noah's notes, in **0.1.7**:
+- **The sparkles only glint** (no turning), everything else as J; 316 KB.
+- **A new title ID, 0xEC0C2** (was 0xEC0C1): the HOME Menu kept replaying 0.1.1's banner
+  sound for the old title though every build since 0.1.2 carries the theme clip, even after
+  deleting and reinstalling it. The save lives on the SD card, not with the title: nothing is
+  lost; the old title is deleted once in FBI. Later banner changes may meet the same cache.
+- **The 3D banner is the CIA's default** (`package_cia.ps1 -Banner2D` for the flat one; D58).
+- **A ready egg waited though only two dragons were in the den:** Noah's save (read off the
+  SD card) showed the third bed held by a dragon out on the Wanderings. A wanderer now lends
+  its bed: the hatchling takes it and the wanderer comes home to the Sanctuary (a toast
+  says so); with three dragons really at home, the message says how to make room.
+- **The food bowl takes any foods,** stacked, six portions (it held one food, three of it); a
+  dragon eats its favourite first if it's in there, else the newest it doesn't dislike.
+  Older saves keep what was in their bowl.
+- **No mouth marker when feeding** (a dev-overlay dot; "humans know where their mouth is").
+- **The first hardware profile** (0.1.6, full den + close-up): 18.5–21.7 ms; CPU 8.8–10.5,
+  GPU 7.4–7.9; pose 2.5–3.9, draw calls 0.6, room 1.0, the rest of the top screen 3.0–4.1,
+  of the bottom 1.7–3.4, update 0.3–1.1. citro3d's FrameBegin waits for the GPU to finish the
+  last frame, so the CPU's and GPU's times add up. **Posing moved ahead** (WP11d).
+
 ### WP11d — Hardware performance pass (after run 3; before WP12a, Noah agreed)
 The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 8.3). Target:
 16.7 ms with three dragons, their toys and decor, and the close-up.
@@ -357,6 +379,11 @@ The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 
   the hardware brings back where the milliseconds go. 0.1.5 is the baseline.
 - **First cut:** ✅ the look-at evaluates only the head's bone chain instead of the whole
   skeleton, twice per dragon per frame (a PC test holds it equal to the full evaluation).
+- **Posing ahead:** ✅ (0.1.7) the den's dragons are posed before C3D_FrameBegin, while the
+  GPU still draws the last frame (a scene `prepare` step; `r3d::poseAhead`), and the close-up
+  reuses the cared-for dragon's pose instead of posing it again. On 0.1.6 the full den spent
+  2.5–3.9 ms posing inside the frame: that should come off the frame time. Next, from the
+  hardware profile: the rest of the top screen (3–4 ms), then the GPU (~7.9 ms).
 - **Likely CPU cuts:** evaluate each dragon's pose once a frame (the look-at evaluates the
   whole skeleton again), the ground from the feet bones instead of body vertices, dust
   streams only when dirt changes, background dragons animated at 30 Hz, fewer draw calls
@@ -427,7 +454,7 @@ hatchling sits in it. It also "just hatches": no moment where it breaks out.
 - This replaces the first plan (the newborn curled up inside, an egg of four or five
   shards, the cap riding on its head): simpler, and closer to what Noah pictures.
 
-### WP12b — Grooming that fits together (later; Noah, run 3)
+### WP12b — Grooming that fits together (moved to Beta, with the Shine Show; Noah, run 3)
 **The tray first:** the brush, cloth and sponge go under one **Groom** button that opens its
 own row (as food does), so three tools for one need don't crowd the tray. Then the design
 below, to settle with Noah when WP12b comes up.
@@ -486,6 +513,26 @@ makes a little routine.
   `v0.2.0-alpha2`.
 - The 3D banner becomes `package_cia.ps1`'s default once run 2 confirms the fixes, with
   the flat one behind a switch (agreed with Noah 2026-09-24, D58).
+
+## What's left to close Alpha 2 (2026-09-24)
+Done: WP1–WP10, R5 (WP11), the first hardware runs (WP11b: the game runs on the old 3DS, the
+3D banner shows). In order:
+1. **WP11d, the performance pass** (in progress): check posing-ahead on the 3DS, then the
+   next cuts from the profiler until the full den holds 16.7 ms.
+2. **WP11c, our own boot logo** (small).
+3. **WP12a, the hatching** Noah's way: the egg bursts into bits, the dragon grows out of a
+   white blob.
+4. **WP12, the dragons update** (the big one): looks per dragon with their odds and names
+   (D54), the Dragondex, photo mode, the parts library, all 6 breeds and 15 hybrids, egg
+   shells per element, rare-trait looks; then the budgets measured again.
+5. **WP12c, running clips** (a scamper for babies, a gallop for grown dragons).
+6. **WP11e, the 3D slider** (after WP11d; 30 fps in 3D is fine).
+7. **WP13, the full run on the old 3DS** and **WP14, the wrap-up** (the checklist, docs, the
+   tag `v0.2.0-alpha2`).
+
+Moved past Alpha 2: the grooming redesign and its Groom button (Beta, with the Shine Show),
+several dragons wandering at once (Beta, the Wanderings' next pass), the map's new look and
+the open world, people and campaigns (1.0).
 
 ## Review gates (D47, D49)
 | Review | What | Blocks? |

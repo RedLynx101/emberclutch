@@ -96,28 +96,44 @@ void setToyAt(SaveData& s, int toy, Vec2 at) {
     s.toyPos[toy][1] = centi(at.y);
 }
 
+int bowlCount(const SaveData& s) {
+    int n = 0;
+    while (n < kBowlPortions && s.bowl[n] < static_cast<u8>(Food::Count)) ++n;
+    return n;
+}
+
 Food bowlFood(const SaveData& s) {
-    return s.bowlLeft > 0 && s.bowlFood < static_cast<u8>(Food::Count) ? static_cast<Food>(s.bowlFood) : Food::Count;
+    const int n = bowlCount(s);
+    return n > 0 ? static_cast<Food>(s.bowl[n - 1]) : Food::Count;
 }
 
 bool fillBowl(SaveData& s, Food f) {
     if (!owns(s, Item::FoodBowl) || f >= Food::Count || s.pouch[static_cast<int>(f)] == 0) return false;
-    const Food in = bowlFood(s);
-    if ((in != Food::Count && in != f) || s.bowlLeft >= kBowlPortions) return false;
+    const int n = bowlCount(s);
+    if (n >= kBowlPortions) return false;
     --s.pouch[static_cast<int>(f)];
-    s.bowlFood = static_cast<u8>(f);
-    ++s.bowlLeft;
+    s.bowl[n] = static_cast<u8>(f);
     return true;
 }
 
 bool eatFromBowl(SaveData& s, int i, s64 now) {
-    const Food f = bowlFood(s);
-    if (f == Food::Count || i < 0 || i >= s.dragonCount) return false;
+    const int n = bowlCount(s);
+    if (n == 0 || i < 0 || i >= s.dragonCount) return false;
     Dragon& d = s.dragons[i];
-    const Taste taste = tasteOf(d, f);
-    if (taste == Taste::Disliked) return false;
-    feed(d, foodInfo(f).belly, taste == Taste::Favorite);
-    if (--s.bowlLeft == 0) s.bowlFood = kNone;
+    int pick = -1;
+    for (int k = n - 1; k >= 0; --k) {  // the newest first; a favourite wins outright
+        const Taste taste = tasteOf(d, static_cast<Food>(s.bowl[k]));
+        if (taste == Taste::Favorite) {
+            pick = k;
+            break;
+        }
+        if (taste != Taste::Disliked && pick < 0) pick = k;
+    }
+    if (pick < 0) return false;
+    const Food f = static_cast<Food>(s.bowl[pick]);
+    feed(d, foodInfo(f).belly, tasteOf(d, f) == Taste::Favorite);
+    for (int k = pick; k < n - 1; ++k) s.bowl[k] = s.bowl[k + 1];  // the rest close up
+    s.bowl[n - 1] = kNone;
     (void)now;
     return true;
 }

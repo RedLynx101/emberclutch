@@ -9,6 +9,9 @@ struct SceneFns {
     void (*update)(App&, const Input&);  // simulation, may be null
     void (*drawTop)(App&);
     void (*drawBottom)(App&, const Input&);
+    // Before the frame begins, while the GPU still draws the last one: CPU work drawing will
+    // need (the den poses its dragons, WP11d). May be null.
+    void (*prepare)(App&) = nullptr;
 };
 
 const SceneFns& sceneFns(SceneId id);

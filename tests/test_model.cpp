@@ -29,14 +29,16 @@ std::vector<u8> readFile(const char* path) {
 
 const char* const kFormNames[kFormCount] = {"hatchling", "grown"};
 
-ModelData& model(int form) {
-    static ModelData m[kFormCount];
-    static bool loaded[kFormCount] = {};
-    if (!loaded[form]) {
-        const std::vector<u8> bytes = readFile((std::string("../romfs/models/") + kFormNames[form] + ".ecm").c_str());
-        loaded[form] = !bytes.empty() && loadModel(bytes.data(), bytes.size(), m[form]);
+// lod 0 = <form>.ecm, lod 1 = <form>_lod1.ecm (same skeleton, fewer triangles).
+ModelData& model(int form, int lod = 0) {
+    static ModelData m[kFormCount][2];
+    static bool loaded[kFormCount][2] = {};
+    if (!loaded[form][lod]) {
+        const std::string path = std::string("../romfs/models/") + kFormNames[form] + (lod ? "_lod1.ecm" : ".ecm");
+        const std::vector<u8> bytes = readFile(path.c_str());
+        loaded[form][lod] = !bytes.empty() && loadModel(bytes.data(), bytes.size(), m[form][lod]);
     }
-    return m[form];
+    return m[form][lod];
 }
 
 struct RefReader {
@@ -52,8 +54,9 @@ struct RefReader {
 };
 
 TEST(model_loads_and_is_well_formed) {
-    for (int form = 0; form < kFormCount; ++form) {
-        const ModelData& m = model(form);
+    for (int k = 0; k < kFormCount * 2; ++k) {
+        const int form = k / 2, lod = k % 2;
+        const ModelData& m = model(form, lod);
         CHECK(m.skel.count == 36);
         CHECK(!m.meshes.empty());
         int wingBones = 0;
@@ -82,9 +85,11 @@ TEST(model_loads_and_is_well_formed) {
 }
 
 TEST(dragon_fits_triangle_budget) {
-    // Architecture section 1: LOD0 <= 3,000 triangles, even for the heaviest gene combination.
-    for (int form = 0; form < kFormCount; ++form) {
-        const ModelData& m = model(form);
+    // Architecture section 1: LOD0 <= 3,000 and LOD1 <= 1,200 triangles, even for the heaviest
+    // gene combination.
+    for (int k = 0; k < kFormCount * 2; ++k) {
+        const int form = k / 2, lod = k % 2;
+        const ModelData& m = model(form, lod);
         int worst[8] = {};  // heaviest variant per part group; slot 7 = body
         for (const MeshData& mesh : m.meshes) {
             const int g = mesh.group == kGroupBody ? 7 : mesh.group;
@@ -93,8 +98,24 @@ TEST(dragon_fits_triangle_budget) {
         }
         int total = 0;
         for (int w : worst) total += w;
-        std::printf("  %s: worst case %d triangles\n", kFormNames[form], total);
-        CHECK(total <= 3000);
+        std::printf("  %s LOD%d: worst case %d triangles\n", kFormNames[form], lod, total);
+        CHECK(total <= (lod ? 1200 : 3000));
+    }
+}
+
+TEST(lod1_shares_the_rig) {
+    for (int form = 0; form < kFormCount; ++form) {
+        const ModelData& a = model(form, 0);
+        const ModelData& b = model(form, 1);
+        CHECK(a.skel.count == b.skel.count);
+        float err = 0;
+        for (int i = 0; i < a.skel.count && i < b.skel.count; ++i) {
+            CHECK(a.skel.parent[i] == b.skel.parent[i]);
+            for (int r = 0; r < 3; ++r)
+                for (int c = 0; c < 4; ++c) err = std::fmax(err, std::fabs(a.skel.rest[i].m[r][c] - b.skel.rest[i].m[r][c]));
+            err = std::fmax(err, length(a.hatchScale[i] - b.hatchScale[i]));
+        }
+        CHECK(err < 1e-5f);
     }
 }
 
@@ -274,6 +295,7 @@ TEST(palette_and_ground_offset) {
 void runModelTests() {
     RUN(model_loads_and_is_well_formed);
     RUN(dragon_fits_triangle_budget);
+    RUN(lod1_shares_the_rig);
     RUN(growth_maps_stages_to_forms);
     RUN(euler_matches_blender_convention);
     RUN(rig_matches_blender_deformation);

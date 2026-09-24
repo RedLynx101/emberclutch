@@ -109,6 +109,7 @@ struct Cache {
     u32 lastUsed = 0;  // frame counter, for least-recently-used replacement
     u32 id = 0;
     int form = -1;
+    int lod = 0;
     float t = -1;
     Genome genome{};
     Sex sex = Sex::Female;
@@ -136,7 +137,7 @@ struct Posed {
     Mat34 poseMat[kMaxBones], skin[kMaxBones];
 };
 
-Form g_forms[kFormCount];
+Form g_forms[kFormCount][2];  // [form][lod]: LOD1 draws background dragons in a full den
 Cache g_caches[kCacheSlots];
 u32 g_frame = 0;
 Posed g_posed;
@@ -200,11 +201,11 @@ void idleMotion(const Form& f, float time, BonePose* pose) {
 
 // Rebuilds the merged part mesh, ground offset and framing when the dragon, its growth or
 // its genome changes (growth is slow: days, not frames).
-void refreshCache(Cache& c, const Dragon& d, const Growth& gr, int build) {
-    const bool same = c.valid && c.id == d.id && c.form == gr.form && std::fabs(c.t - gr.t) < 0.002f &&
+void refreshCache(Cache& c, const Dragon& d, const Growth& gr, int build, int lod) {
+    const bool same = c.valid && c.id == d.id && c.form == gr.form && c.lod == lod && std::fabs(c.t - gr.t) < 0.002f &&
                       c.sex == d.sex && std::memcmp(&c.genome, &d.genome, sizeof(Genome)) == 0;
     if (same) return;
-    const Form& f = g_forms[gr.form];
+    const Form& f = g_forms[gr.form][lod];
     c.valid = false;
     if (!buildParts(f.model, d.genome, d.sex, gr.t, g_parts)) return;
     if (!fill(c.parts, static_cast<int>(g_parts.pos.size()), g_parts.pos.data(), g_parts.nrm.data(),
@@ -216,6 +217,7 @@ void refreshCache(Cache& c, const Dragon& d, const Growth& gr, int build) {
 
     c.id = d.id;
     c.form = gr.form;
+    c.lod = lod;
     c.t = gr.t;
     c.genome = d.genome;
     c.sex = d.sex;
@@ -226,7 +228,7 @@ int buildOf(const Dragon& d) { return d.genome.build < kModelBuilds ? d.genome.b
 
 // The dragon's cache slot, refreshed if its growth or genome changed. nullptr if the
 // dragon has no model yet (an egg) or its parts could not be built.
-Cache* cacheFor(const Dragon& d, s64 now) {
+Cache* cacheFor(const Dragon& d, s64 now, int lod) {
     if (d.stage == Stage::Egg) return nullptr;
     Cache* slot = nullptr;
     for (Cache& c : g_caches)
@@ -241,7 +243,7 @@ Cache* cacheFor(const Dragon& d, s64 now) {
             if (c.lastUsed < slot->lastUsed) slot = &c;
         }
     }
-    refreshCache(*slot, d, growthFor(d.stage, stageProgress(d, now)), buildOf(d));
+    refreshCache(*slot, d, growthFor(d.stage, stageProgress(d, now)), buildOf(d), lod);
     slot->lastUsed = g_frame;
     return slot->valid ? slot : nullptr;
 }
@@ -250,10 +252,10 @@ Cache* cacheFor(const Dragon& d, s64 now) {
 // as big while a hatchling still fills a good part of the screen.
 float viewRadius(const Cache& c, float size) { return (0.8f * c.radius + 0.2f * g_adultRadius) * size; }
 
-bool pose(App& app, const Dragon& d, s64 now, Posed& out) {
-    Cache* c = cacheFor(d, now);
+bool pose(App& app, const Dragon& d, s64 now, int lod, Posed& out) {
+    Cache* c = cacheFor(d, now, lod);
     if (!c) return false;
-    const Form& f = g_forms[c->form];
+    const Form& f = g_forms[c->form][lod];
     BonePose bones[kMaxBones];
     idlePose(f.model, c->t, buildOf(d), bones);
     idleMotion(f, app.t + (d.id % 7) * 0.9f, bones);  // dragons breathe out of step
@@ -368,17 +370,20 @@ bool init() {
     C3D_FVec lightDir = FVec4_New(-0.45f, 0.8f, 0.4f, 0.0f);  // view space, directional (w = 0)
     C3D_LightPosition(&g_light, &lightDir);
 
-    g_ready = loadForm("romfs:/models/hatchling.ecm", g_forms[kFormHatchling]) &&
-              loadForm("romfs:/models/grown.ecm", g_forms[kFormGrown]);
-    if (g_ready) g_adultRadius = framingRadius(g_forms[kFormGrown].model, 1.0f, kBuildNeutral, nullptr, nullptr);
+    g_ready = loadForm("romfs:/models/hatchling.ecm", g_forms[kFormHatchling][0]) &&
+              loadForm("romfs:/models/hatchling_lod1.ecm", g_forms[kFormHatchling][1]) &&
+              loadForm("romfs:/models/grown.ecm", g_forms[kFormGrown][0]) &&
+              loadForm("romfs:/models/grown_lod1.ecm", g_forms[kFormGrown][1]);
+    if (g_ready) g_adultRadius = framingRadius(g_forms[kFormGrown][0].model, 1.0f, kBuildNeutral, nullptr, nullptr);
     return g_ready;
 }
 
 void shutdown() {
-    for (Form& f : g_forms) {
-        f.body.release();
-        for (GpuMesh& w : f.wings) w.release();
-    }
+    for (auto& lods : g_forms)
+        for (Form& f : lods) {
+            f.body.release();
+            for (GpuMesh& w : f.wings) w.release();
+        }
     for (Cache& c : g_caches) {
         c.parts.release();
         c.valid = false;
@@ -454,7 +459,7 @@ void drawDen(App& app, const Dragon* const* dragons, int count, s64 now) {
     const Cache* first = nullptr;
     int shown = 0;
     for (int i = 0; i < count; ++i) {
-        const Cache* c = cacheFor(*dragons[i], now);
+        const Cache* c = cacheFor(*dragons[i], now, i == 0 ? 0 : 1);
         if (!c) continue;
         if (!first) first = c;
         const float r = viewRadius(*c, sizeScale(dragons[i]->genome));
@@ -484,7 +489,8 @@ void drawDen(App& app, const Dragon* const* dragons, int count, s64 now) {
 
     begin3D(projection);
     for (int i = 0, slot = 0; i < count; ++i) {
-        if (!pose(app, *dragons[i], now, g_posed)) continue;
+        // The first dragon is the one you're caring for: full detail. Others use LOD1.
+        if (!pose(app, *dragons[i], now, i == 0 ? 0 : 1, g_posed)) continue;
         const Vec3 pos{kSlotX[shown - 1][slot] * spacing, kSlotY[shown - 1][slot] * spacing, 0};
         modelMatrix(g_posed, pos, yaw, model);
         submit(app, g_posed, view, model);
@@ -496,7 +502,7 @@ void drawDen(App& app, const Dragon* const* dragons, int count, s64 now) {
 void drawCloseUp(App& app, const Dragon& d, s64 now) {
     if (!g_ready) return;
     ++g_frame;
-    if (!pose(app, d, now, g_posed) || g_posed.form->headBone < 0 || g_posed.form->chestBone < 0) return;
+    if (!pose(app, d, now, 0, g_posed) || g_posed.form->headBone < 0 || g_posed.form->chestBone < 0) return;
     C3D_Mtx projection, view, model;
     const float yaw = 30.0f * kDegToRad;
     modelMatrix(g_posed, Vec3{0, 0, 0}, yaw, model);

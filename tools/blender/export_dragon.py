@@ -1,7 +1,8 @@
-"""Export the dragon forms for the 3DS: romfs/models/{hatchling,grown}.ecm (+ parity references).
+"""Export the dragon forms for the 3DS: romfs/models/{hatchling,grown}.ecm and their LOD1
+twins {form}_lod1.ecm (+ parity references for LOD0).
 
   blender -b -P tools/blender/export_dragon.py -- --out-dir romfs/models --reference-dir tests/data
-  blender -b -P tools/blender/export_dragon.py -- --form hatchling --out-dir romfs/models
+  blender -b -P tools/blender/export_dragon.py -- --form hatchling --lods 0 --out-dir romfs/models
 
 Builds each form with tools/blender/dragon_model.py, adds every Alpha 1 part variant, and
 writes the .ecm format read by src/core/model.cpp (docs/tech/architecture.md section 5):
@@ -43,6 +44,7 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = Path(arg("--out-dir", str(ROOT / "romfs" / "models")))
 REFERENCE_DIR = arg("--reference-dir")
 FORM_NAMES = [arg("--form")] if arg("--form") else ["hatchling", "grown"]
+LODS = [int(x) for x in arg("--lods", "0,1").split(",")]
 
 KIND_BODY, KIND_WINGS, KIND_PART = 0, 1, 2
 GROUP = {"eyes": 0, "horns": 1, "frill": 2, "spikes": 3, "tail_tip": 4, "heart": 5, "wings": 6, "body": 255}
@@ -334,8 +336,11 @@ def write_reference(path, d, meshes, order, sources, scale):
 
 
 # ---------------------------------------------------------------------------------- main
-def export_form(form):
+def export_form(form, lod):
+    """LOD1 shares the skeleton, growth tables and part layout; only the mesh detail drops,
+    so the LOD0 parity reference covers its rig too."""
     bpy.ops.wm.read_factory_settings(use_empty=True)
+    dm.set_lod(lod)
     d, tagged, wings = build_all(form)
     scale = dm.F["export_scale"]
     arm = d["arm"]
@@ -355,17 +360,18 @@ def export_form(form):
         meshes.append(m)
         sources.append(m.objs)
 
-    path = OUT_DIR / f"{form}.ecm"
+    path = OUT_DIR / (f"{form}.ecm" if lod == 0 else f"{form}_lod{lod}.ecm")
     size = write_ecm(path, d, meshes, order, scale)
     print(f"[export] {path} {size} bytes, {len(order)} bones, {len(meshes)} meshes, scale {scale}")
     for m in meshes:
         print(f"[export]   {m.name:18s} kind {m.kind} verts {len(m.keys[0][0]):5d} tris {len(m.indices) // 3:5d} "
               f"palette {len(m.palette):2d} keys {len(m.keys)}")
-    if REFERENCE_DIR:
+    if REFERENCE_DIR and lod == 0:
         ref = Path(REFERENCE_DIR) / f"{form}_reference.ecr"
         n = write_reference(ref, d, meshes, order, sources, scale)
         print(f"[export] reference {ref}: {n} samples")
 
 
 for _form in FORM_NAMES:
-    export_form(_form)
+    for _lod in LODS:
+        export_form(_form, _lod)

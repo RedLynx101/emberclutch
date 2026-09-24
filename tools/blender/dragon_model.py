@@ -170,6 +170,7 @@ GROWN = dict(
     edges=GROWN_EDGES,
     body="skin",
     body_tris=1680,  # + ~110 for the nostrils and mouth joined into the body
+    body_tris_lod1=600,
     export_scale=1.0,
     # Bone (girth_x, length[, girth_z]) and part scales at t = 0: the juvenile. Lerps to 1 (adult).
     young={
@@ -279,6 +280,7 @@ HATCH = dict(
     meta=HATCH_META,
     body="meta",
     body_tris=1600,
+    body_tris_lod1=560,
     export_scale=1.0,
     young={  # t = 0 is hatch day, t = 1 the end of the hatchling stage
         "bones": {name: ((0.72, 0.72) if name in ("head", "snout") else (0.62, 0.62))
@@ -315,12 +317,25 @@ FORMS = {"grown": GROWN, "hatchling": HATCH}
 STAGE = {"newborn": ("hatchling", 0.0), "hatchling": ("hatchling", 0.75), "juvenile": ("grown", 0.0),
          "adolescent": ("grown", 0.45), "adult": ("grown", 1.0)}
 F = GROWN  # the form being built
+# Level of detail: 0 = full (LOD0, <= 3,000 triangles), 1 = den background (LOD1, ~1,200).
+# LOD1 is the same skeleton and shapes with fewer segments; the exporter writes both.
+LOD = int(arg("--lod", "0"))
 
 
 def use_form(name):
     global F
     F = FORMS[name]
     return F
+
+
+def set_lod(level):
+    global LOD
+    LOD = level
+
+
+def lod(full, low):
+    """The LOD0 value, or the LOD1 one."""
+    return low if LOD else full
 
 
 def lerp(a, b, t):
@@ -479,7 +494,7 @@ def toon_material(name, color, accent=None, emission=0.0, rim=(1.0, 0.72, 0.45))
 # ------------------------------------------------------------------------------ body
 def build_body():
     obj = build_skin_body() if F["body"] == "skin" else build_meta_body()
-    decimate_to(obj, F["body_tris"])
+    decimate_to(obj, lod(F["body_tris"], F["body_tris_lod1"]))
     smooth(obj)
     paint_mask(obj)
     return obj
@@ -721,16 +736,20 @@ def blade(name, base, direction, side, length, width, thickness=0.01):
     d = Vector(direction).normalized()
     s = (Vector(side) - d * Vector(side).dot(d)).normalized()
     b = Vector(base)
+    if LOD:
+        return flat_fan(name, [b, b + d * length * 0.35 + s * width * 0.5, b + d * length,
+                               b + d * length * 0.35 - s * width * 0.5], thickness)
     return flat_fan(name, [b, b + d * length * 0.3 + s * width * 0.5, b + d * length * 0.75 + s * width * 0.38,
                            b + d * length * 0.95 + s * width * 0.14, b + d * length,
                            b + d * length * 0.95 - s * width * 0.14, b + d * length * 0.75 - s * width * 0.38,
                            b + d * length * 0.3 - s * width * 0.5], thickness)
 
 
-def lobed_fin(name, base, out, up, radius, a0, a1, lobes, thickness, n=10):
+def lobed_fin(name, base, out, up, radius, a0, a1, lobes, thickness, n=None):
     """A rounded fin fanning from base between angles a0..a1 (degrees, in the out/up plane)
     with a gently lobed edge."""
     base, out, up = Vector(base), Vector(out).normalized(), Vector(up).normalized()
+    n = n or lod(10, 5)
     pts = [base]
     for j in range(n + 1):
         f = j / n
@@ -779,7 +798,7 @@ def build_eyes(mats):
     (origin at the iris centre, so growth scaling keeps the pieces together). No white
     eyeball: that read as a frog."""
     e = F["eyes"]
-    iseg, irings, pseg, prings = e["seg"]
+    iseg, irings, pseg, prings = lod(e["seg"], (8, 1, 6, 1))
     irx, iry, idepth = e["iris"]
     prx, pry, pdepth = e["pupil"]
     # The pupil's rim sits on the iris surface.
@@ -792,10 +811,10 @@ def build_eyes(mats):
         bm = bmesh.new()
         add_dome(bm, (0, 0, 0), out, up, irx, iry, idepth, iseg, irings, 0)
         add_dome(bm, out * poff, out, up, prx, pry, pdepth, pseg, prings, 1)
-        for gx, gy, gr in e["glints"]:
+        for gx, gy, gr in lod(e["glints"], e["glints"][:1]):
             gx *= -s  # glints sit toward the nose on both eyes
             h = poff + pdepth * math.sqrt(max(0.0, 1 - (gx / prx) ** 2 - (gy / pry) ** 2))
-            add_dome(bm, out * (h + 0.003) + right * gx + up * gy, out, up, gr, gr, gr * 0.3, 8, 1, 2)
+            add_dome(bm, out * (h + 0.003) + right * gx + up * gy, out, up, gr, gr, gr * 0.3, lod(8, 4), 1, 2)
         obj = mesh_object(f"eye_{s}", bm, at)
         for m in ("iris", "pupil", "glint"):
             obj.data.materials.append(mats[m])
@@ -821,7 +840,8 @@ def build_horns(kind, mats):
                 continue  # hatchlings only have the main horn buds
             seg = max(3, spec["seg"] - (2 if h["buds"] else 0))
             o = horn_mesh(f"horn_{s}", spec["len"] * h["k"] * h["horn_len"], spec["r"] * h["k"] * h["horn_r"],
-                          math.radians(spec["curve"]) * h["horn_curve"], seg, spec["ring"])
+                          math.radians(spec["curve"]) * h["horn_curve"], lod(seg, max(2, seg - 3)),
+                          lod(spec["ring"], 4))
             o.location = head_point(spec["at"], s)
             rx, ry, rz = spec["rot"]
             o.rotation_euler = (math.radians(rx), s * math.radians(ry), math.radians(rz))
@@ -886,7 +906,7 @@ def build_ridge(kind, mats):
         size = s0 + s1 * min(1.0, top / top_ref)
         if kind == "spikes":
             lf, rf, curve = r["spike"]
-            o = horn_mesh(f"spike_{i}", size * lf, size * rf, math.radians(curve), 3, 4)
+            o = horn_mesh(f"spike_{i}", size * lf, size * rf, math.radians(curve), lod(3, 2), lod(4, 3))
             o.location = base
             o.rotation_euler = (-math.atan2(up.y, up.z) - math.radians(10), 0, 0)
             o.data.materials.append(mats["horn"])
@@ -923,15 +943,17 @@ def build_tail_tip(kind, mats):
         obj.data.materials.append(mats["horn"])
     elif kind == "fan":
         pts = [Vector((0, y - 0.05 * k, z))]
-        for j in range(7):
-            a = math.radians(-65 + j * 21.6)
+        rays = lod(7, 4)
+        for j in range(rays):
+            a = math.radians(-65 + j * 130 / (rays - 1))
             pts.append(Vector((math.sin(a) * 0.40 * k, y + math.cos(a) * 0.46 * k, z + 0.02 * k)))
         obj = flat_fan("tail_tip", pts, 0.02 * k)
         obj.data.materials.append(mats["membrane"])
     else:  # tuft: a plume of feathers fanning from the tip
         blades = []
         base = Vector((0, y - 0.03 * k, z))
-        for j, (ax, az) in enumerate(((0, 0), (-32, 8), (32, 8), (-16, -14), (16, -14))):
+        for j, (ax, az) in enumerate(lod(((0, 0), (-32, 8), (32, 8), (-16, -14), (16, -14)),
+                                         ((0, 0), (-28, 4), (28, 4)))):
             d = Vector((math.sin(math.radians(ax)), math.cos(math.radians(ax)), math.sin(math.radians(az))))
             side = Vector((math.cos(math.radians(ax)), -math.sin(math.radians(ax)), 0.3))
             blades.append(blade(f"tuft_{j}", base, d, side, (0.5 if j == 0 else 0.42) * k, 0.16 * k, 0.012 * k))
@@ -953,8 +975,9 @@ def build_heart(mats):
     c = V(F["heart"]["at"])
     size = F["heart"]["size"]
     pts = [c]
-    for j in range(17):
-        t = 2 * math.pi * j / 16
+    steps = lod(16, 8)
+    for j in range(steps + 1):
+        t = 2 * math.pi * j / steps
         x = 16 * math.sin(t) ** 3
         zz = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)
         pts.append(c + Vector((x, 0, zz + 2)) * (size / 17))
@@ -973,12 +996,14 @@ def wing_edge(w, style):
 
     edge = [w["body"]]
     for a, b, depth in (("body", "f4", 0.20), ("f4", "f3", 0.26), ("f3", "f2", 0.26), ("f2", "f1", 0.22)):
+        n = lod(3, 1)
         if style == "sail":
-            depths = [-0.05 * math.sin(math.pi * j / 4) for j in range(1, 4)]
+            depths = [-0.05 * math.sin(math.pi * j / (n + 1)) for j in range(1, n + 1)]
         elif style == "plumed":
-            depths = [depth * math.sin(math.pi * j / 6) * (1.0 if j % 2 else 0.35) for j in range(1, 6)]
+            m = lod(5, 3)
+            depths = [depth * math.sin(math.pi * j / (m + 1)) * (1.0 if j % 2 else 0.35) for j in range(1, m + 1)]
         else:
-            depths = [depth * math.sin(math.pi * j / 4) for j in range(1, 4)]
+            depths = [depth * math.sin(math.pi * j / (n + 1)) for j in range(1, n + 1)]
         edge += sag(w[a], w[b], depths) + [w[b]]
     return edge
 
@@ -1008,7 +1033,7 @@ def build_wings(style, mats):
         sub = arm.modifiers.new("sub", "SUBSURF")
         sub.levels = 1
         apply_modifiers(arm)
-        decimate_to(arm, F["wing"]["arm_tris"])
+        decimate_to(arm, lod(F["wing"]["arm_tris"], 56))
         smooth(arm)
         arm.data.materials.append(mats["body_plain"])
         objs.append(arm)
@@ -1048,9 +1073,9 @@ def add_face_details(body):
     for s in (-1, 1):
         loc, nrm, _, _ = bvh.find_nearest(mirror(f["nostril"], s))
         hint = Vector((0, 0, 1)) if abs(nrm.z) < 0.8 else Vector((0, -1, 0))
-        add_dome(bm, loc - nrm * depth * 0.6, nrm, hint, rx, ry, depth, 8, 1, 1)
+        add_dome(bm, loc - nrm * depth * 0.6, nrm, hint, rx, ry, depth, lod(8, 4), 1, 1)
     # Mouth: a thin three-sided tube along the jaw, half sunk into the skin.
-    r, n = f["mouth_r"], 16
+    r, n = f["mouth_r"], lod(16, 6)
     path = []
     for k in range(n + 1):
         u = -1 + 2 * k / n

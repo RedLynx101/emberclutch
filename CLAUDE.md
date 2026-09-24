@@ -18,6 +18,9 @@ Read `docs/plan/decisions.md` before changing design; approved decisions are bin
 - Build: `powershell -ExecutionPolicy Bypass -File tools\build.ps1` (`-Clean` for a clean build)
 - Tests: `powershell -ExecutionPolicy Bypass -File tools\test.ps1`
   (run from PowerShell; MSYS2 bash-launched g++ can't find a temp dir in this sandbox)
+- Emulator: `powershell -ExecutionPolicy Bypass -File tools\emu.ps1` (Azahar; `-ResetSave`, `-NoBuild`).
+  When driving it with synthetic input, hold taps ~0.2 s and hold key chords ~0.3 s, because
+  instant clicks can fall between frames. Dismiss Azahar's update prompt with "Ignore".
 - Push to 3DS: `tools\run.ps1 -Address <ip>` (Homebrew Launcher, press Y) or
   `tools\deploy_ftp.ps1 -FtpHost <ip>` (ftpd, port 5000)
 - Music: `python tools/audio/make_loop.py assets/audio/music/source/<slug>.wav --bpm <bpm> --preview`

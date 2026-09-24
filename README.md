@@ -54,6 +54,13 @@ powershell -ExecutionPolicy Bypass -File tools\test.ps1    # core unit tests on 
 
 Or from an MSYS2 shell: `source /etc/profile.d/devkit-env.sh && make`.
 
+## Running in an emulator
+
+`tools\emu.ps1` builds and opens the game in [Azahar](https://azahar-emu.org/)
+(`winget install AzaharEmu.Azahar`). The mouse is the stylus; R = `W`, X = `Z`,
+A = `A`, START = `M`. Add `-ResetSave` to start fresh. The emulator is fine for checking
+logic and UI, but frame rate must be judged on a real old 3DS.
+
 ## Running on a 3DS (over Wi-Fi)
 
 - **Quick test:** open the Homebrew Launcher, press **Y** (netloader), then run

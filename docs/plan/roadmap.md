@@ -13,6 +13,9 @@ Each phase ends with something playable on a real old 3DS. Phases are ordered by
 - [x] Wi-Fi deploy scripts (3dslink + ftpd).
 - [x] Headless Blender pipeline proven: `tools/blender/dragon_blockout.py` renders and
       exports glTF for any growth value ([v0 renders](../art/blockout/)).
+- [x] First run in the **Azahar emulator** (2026-09-23): title → starter pick → rub egg →
+      day skip → hatch → feed/pet → save → reload all work at 60 fps. Fixed: the hatchling's
+      head covered the heartglow; on-screen messages were too short.
 - [ ] First run on hardware (waiting on 3DS access).
 
 **Blockout v0 findings:** the hatchling reads as cute (the head and eye proportions

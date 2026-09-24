@@ -66,7 +66,10 @@ competitions lean **cool** (sky-teal) with warm accents. Never pure black or pur
   GPU combiner (see [architecture](../tech/architecture.md)). Painted detail is in the
   value channel only, which keeps every color variant looking hand-painted.
 - **Heartglow:** additive emissive region from the mask's alpha channel, with a pulse
-  driven by mood. Cheap and very readable.
+  driven by mood. Cheap and very readable. It always has a **white-hot core** inside the
+  element-colored rim, so it reads even when the glow hue matches the body (an aqua glow
+  on a teal Tide dragon). Keep the chest unoccluded in every idle pose, including the
+  hatchling's big head.
 - **Environments:** vertex-colored low-poly with baked lighting and gradient skies.
   Atmospheric fog hides the short draw distance in Skyreach Valley.
 - **Particles:** a small budget of embers, sparkles, leaves and breath effects.

@@ -167,11 +167,6 @@ void dragonPlaceholder(const Dragon& d, float cx, float groundY, float scale, fl
     // Body + belly
     C2D_DrawEllipseSolid(bodyX - bodyW / 2, bodyY - bodyH / 2 + bob, 0, bodyW, bodyH, baseC);
     C2D_DrawEllipseSolid(bodyX - bodyW * 0.32f, bodyY - bodyH * 0.25f + bob, 0, bodyW * 0.42f, bodyH * 0.7f, accentC);
-    // Heartglow
-    const Rgb glowRgb = heartglowColor(static_cast<Element>(g.elementA));
-    const float level = heartglowLevel(d, t);
-    glow(bodyX - bodyW * 0.1f, bodyY + bob, 16 + 10 * s, fromRgb(glowRgb), level);
-    heart(bodyX - bodyW * 0.1f, bodyY + bob, 12 + 6 * s, fromRgb(glowRgb, static_cast<u8>(140 + 115 * level)));
     // Neck and head: the head shrinks relative to the body as the dragon grows.
     const float neck = 6 + 40 * grow;
     const float headR = 30 * (1.0f - 0.35f * grow) * (0.8f + 0.4f * s);
@@ -198,6 +193,14 @@ void dragonPlaceholder(const Dragon& d, float cx, float groundY, float scale, fl
         C2D_DrawCircleSolid(ex - eyeR * 0.15f, ey + eyeR * 0.1f, 0, eyeR * 0.7f, theme::kDenPlum);
         C2D_DrawCircleSolid(ex - eyeR * 0.35f, ey - eyeR * 0.25f, 0, eyeR * 0.25f, theme::kShell);
     }
+    // Heartglow, drawn last so the hatchling's big head never covers it. White-hot core so it
+    // reads even when the glow matches the body (Tide on teal).
+    const Rgb glowRgb = heartglowColor(static_cast<Element>(g.elementA));
+    const float level = heartglowLevel(d, t);
+    const float heartX = bodyX - bodyW * 0.08f, heartY = bodyY + bodyH * 0.18f + bob;
+    glow(heartX, heartY, 16 + 10 * s, fromRgb(glowRgb), level);
+    heart(heartX, heartY, 12 + 6 * s, fromRgb(glowRgb, static_cast<u8>(140 + 115 * level)));
+    heart(heartX, heartY - 1, (12 + 6 * s) * 0.5f, withAlpha(theme::kShell, 0.35f + 0.6f * level));
 }
 
 // ---------------------------------------------------------------- UI widgets
@@ -242,7 +245,7 @@ void embers(float t, float w) {
 
 void showToast(App& app, const char* msg) {
     app.toast = msg;
-    app.toastTime = 2.0f;
+    app.toastTime = 3.0f;
 }
 
 // ---------------------------------------------------------------- scenes

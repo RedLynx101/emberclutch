@@ -13,13 +13,15 @@ Approved decisions, newest first. "Approved" means the project owner signed off.
 | D21 | **Wanderings (pedometer) is a v1 must-have**; it moves up to Phase 3 with breeding and Market eggs, which together supply opposite-sex partners | Owner review | Approved |
 | D22 | The Suno batch 1 music is processed; both Skyreach takes are kept and alternate during flight | More variety on long rides | Approved (owner handed the music over) |
 | D8, D9 | Breeding/variants and the heartglow theme | "All looks good" in review | Approved |
+| D23 | **Subtle sex differences:** males have bigger horns and crest; females have a longer tail fan and brighter accent sheen. Silhouettes stay close | Owner choice | Approved |
+| D24 | **Egg sex:** bred and wild eggs are a hatch-day surprise; **Market eggs are labeled** so a partner can be bought on purpose | Owner choice | Approved |
+| D25 | Install the **Azahar** emulator (winget) for quick local testing and **3ds-libvorbisidec** for Ogg music. Performance sign-off stays on real old-3DS hardware | Owner approved both installs | Approved |
+| D26 | **Art reviews at milestones:** renders after the sculpt, after texturing, and after rigging/animation | Owner choice | Approved |
 
 ### Open
 
 | # | Question | Proposed default |
 |---|---|---|
-| O1 | Visible differences between males and females? | Subtle: males have larger horns and crest; females have longer tail fans and brighter accent sheen. Silhouettes stay close. |
-| O2 | Can you see an egg's sex before it hatches (e.g. on a Market egg)? | No for bred and wild eggs (a hatch-day surprise); the Market labels its eggs so players can buy a partner on purpose. |
 | O3 | May the player rename dragons, and is there a default name? | Name at hatch with the 3DS keyboard; rename any time at the den. A random name is suggested from a list. |
 
 ## 2026-09-23 — Project kickoff

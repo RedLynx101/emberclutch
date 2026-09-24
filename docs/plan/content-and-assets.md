@@ -49,7 +49,9 @@ Shared by all dragons and retargeted across stages by the same rig.
 | Idle & locomotion | idle breathe, idle look-around, idle scratch, walk, trot, turn in place | A1 |
 | Rest | sit, lie down, curl up to sleep, sleep loop, wake + stretch, yawn, nap flop | A1 |
 | Care reactions | eat (chomp + swallow), favorite-food wiggle, pet head (lean in), pet chin (eyes closed), belly rub (roll over), groom shake-off, happy hop | A1 |
-| Play | pounce, fetch-carry, tail wag | A1 |
+| Play | pounce, tail wag, fetch: pick up, carry, drop and sit-wait, leap-catch | A1 |
+| Hands-on care ([care interactions](../design/care-interactions.md)) | lean into petting, sweet-spot leg kick, sniff and refuse food, lift a wing (brushing), sit up (belly), hop into the tub | A1 |
+| Toys | tug, paw bat (feather), nudge a ball, carry a toy to bed | A2 |
 | Feelings | sulk (turn away, lie in nook), make-up nuzzle, "missed you" greeting, look at the player (name called) | A1 |
 | Egg & hatching | egg wiggle, egg crack, hatch emerge, first blink | A1 |
 | Den life | sniff, play-chase another dragon, nuzzle another dragon, curl around nest | A2 |
@@ -73,8 +75,9 @@ dragon-to-dragon behaviors.
 | Asset | Milestone |
 |---|---|
 | Egg model (shared, tinted) + cracked shell halves | A1 |
-| Stylus hand cursor (2D) and brush/cloth/food held-item sprites | A1 |
-| Ball toy; feather wand; tug rope | A1 ball, B rest |
+| Tool cursors (2D, drawn at the stylus): hand, brush, cloth, sponge, ladle, each food | A1 |
+| Ball toy (3D, fits the jaw); bath tub (3D) | A1 |
+| Feather wand; tug rope; puzzle orb; food bowl | A2 |
 | **Rider** (player avatar for riding): one simple, cute-proportioned model with 3 outfit color sets, sits on the dragon's back bone | 1.0 |
 | Judge and crowd (competitions): 2D cutouts or very low-poly | B |
 | Market keeper (2D portrait) | A2 |
@@ -109,7 +112,10 @@ dragon-to-dragon behaviors.
 - A2: item icons (see §7), Sanctuary grid tiles, egg icons ×6 (+ hybrid swirl),
   family-tree widget, Gleam coin icon.
 - B: cup badges (4 tiers × 5 events), ribbons, trick icons ×12.
-- 1.0: valley map, compass, ring and lantern markers.
+- A2: the illustrated world map with place pins ([map & travel](../design/world-map-and-travel.md)),
+  the tool tray icons.
+- 1.0: the live valley map (top-view render + pins, discovery marks), compass, ring and
+  lantern markers.
 
 ## 6. Audio
 
@@ -132,12 +138,15 @@ dragon-to-dragon behaviors.
 Each batch gets a Suno brief in `docs/audio/` before its milestone starts. Stingers skip
 `make_loop.py` (a `--no-loop` mode will be added: just level + encode).
 
-### 6.2 Sound effects (Suno Sounds first; CC0 fallback)
+### 6.2 Sound effects (generated: ElevenLabs or Suno; CC0 fallback)
 | Group | Sounds | Milestone |
 |---|---|---|
 | Dragon voice | chirp, trill, purr, happy squeak, sad whimper, yawn, sneeze, rumble, roar (each pitch-shifted per dragon and deepened by stage) | A1 (roar B) |
 | Egg | wiggle knock, crack, hatch pop, warm hum | A1 |
-| Care | munch, gulp, brush strokes, polish sparkle, splash, ball bounce | A1 |
+| Care | munch, gulp, brush strokes, polish sparkle, splash, ball bounce (✅ 2026-09-24) | A1 |
+| Hands-on care (next brief) | ball roll on stone, ball pick-up (soft mouth), tub slide / wood knock, suds squish, water pour, happy leg-kick thump, tickle giggle-chirp | A1 |
+| Toys (next brief) | rope creak and tug growl, feather flutter, puzzle orb rattle, treat drop, bowl clink | A2 |
+| Map | map open rustle, fast-travel whoosh | A2 |
 | UI | tap, confirm, back, error, toast, save chime, Gleam coin | A1 |
 | Den ambience | hearth crackle loop, night crickets loop | A1 |
 | Den life / Market | nest settle, market chatter loop, register ding | A2 |
@@ -155,7 +164,8 @@ Prices and exact effects are balanced in Beta; this is the content list.
 | Treats | Ember candy (a make-up helper: counts as a favorite), Glimmer cookie (small bond boost, limited per day) | A1 |
 | Grooming | Brush (Shine), Polish cloth (Shine + sparkle), Bath bucket (Shine; Tide loves, Ember hates) | A1 |
 | Toys | Ball | A1 |
-| Toys | Feather wand, Tug rope, Puzzle orb | A2 |
+| Toys | Feather wand, Tug rope, Puzzle orb, Food bowl | A2 |
+| Toys | Flying disc | 1.0 |
 | Den decor | Rugs ×4, lanterns ×3, perches ×2, plants ×3, banners ×3 | A2 |
 | Nest upgrades | Warm stones (egg Warmth drains slower) | A2 |
 | Trophies | Ribbons and cups (earned, shown in the den) | B |

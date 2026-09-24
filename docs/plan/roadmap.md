@@ -61,7 +61,10 @@ Full plan: [alpha-1.md](alpha-1.md).
 - The dragon: one organic mesh that grows through all stages, the three starter breeds'
   parts, sex differences, procedural textures, rig, ~22 animations.
 - The den in 3D with day/night, nests, the sulk nook.
-- Care loop: feed, pet (touch zones), groom, play, sleep/nap, upset → make-up.
+- Care loop, hands-on like *Nintendogs* ([care interactions](../design/care-interactions.md)):
+  pet with a hand that follows the stylus (lean-in, sweet spot), brush and polish with
+  visible tools and shine regions, bath, hand-feeding into the jaw, throw the ball and
+  the dragon fetches it; sleep/nap, upset → make-up.
 - Egg care and a hatching sequence; naming with the 3DS keyboard; rename in the den.
 - Real save system (versioned A/B + CRC + migrations).
 - Music streaming (Ogg loops) and a first sound-effect set.
@@ -77,6 +80,10 @@ Full plan: [alpha-1.md](alpha-1.md).
   6 base breeds + 15 hybrids.
 - **Wanderings** (pedometer), wild eggs, trinkets and the hoard pile.
 - **Market**: food, grooming, toys, decor, and the daily sex-labeled egg (D24). Gleam.
+- **The world map** with **fast travel** between the Den, Market, Nesting Stone,
+  Sanctuary / Cold Vault and the Wanderings trailheads ([map & travel](../design/world-map-and-travel.md)).
+- More toys (tug rope, feather wand, puzzle orb), the food bowl, toys that stay in the den
+  and dragons that play with them and with each other.
 - Dragon profile with parents (family tree).
 - **Exit:** breeding produces visibly distinct offspring; a player can get a partner of
   the opposite sex through the Market or Wanderings.
@@ -92,7 +99,9 @@ Full plan: [alpha-1.md](alpha-1.md).
 
 ## 1.0 — *The sky*
 - Flight animation set and flight controller; adolescent gliding.
-- **Riding anywhere** in free roam; a rider model.
+- **Riding anywhere** in free roam; a rider model. **Free flight** over the valley with a
+  live map: your position, landmarks discovered by flying near them, and fast travel to
+  any discovered place ([map & travel](../design/world-map-and-travel.md)).
 - **Skyreach Valley**: height-field terrain, fog, lake, cliffs, floating islands, points
   of interest, riding finds.
 - Air competitions: **Sky Rings** and **Lantern Trial** (breath effects for all 6 elements).

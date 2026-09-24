@@ -11,8 +11,12 @@ All checked **in Azahar** (hardware deferred, D28):
    the dragon (swkbd with suggestion) → rename later works.
 2. With the dev time skip, the dragon grows visibly **every day** and reaches **Adult**
    through all stages, with starter-breed parts and sex differences visible.
-3. Every care action has an animation and sound: feed (incl. favorite wiggle), 4 pet zones,
-   groom (brush, polish, bath), play (ball), sleep at night, naps, yawns.
+3. Care is hands-on, *Nintendogs*-style ([care interactions](../design/care-interactions.md)):
+   the tool you hold is drawn where you touch (hand, brush, cloth, sponge, food), the
+   dragon leans into petting and has a sweet spot, brushing fills shine regions you can
+   see, the bath has suds and a shake-off, food is hand-fed into the opening jaw, and a
+   thrown ball bounces around the den while the dragon fetches it and drops it at your
+   feet. Every action has an animation and sound; plus sleep at night, naps, yawns.
 4. Neglect → Upset → sulk nook → make-up (treat + pet) → heartglow re-lights.
 5. Music: title → den day ↔ nestsong at night (crossfade); hatching stinger; seamless loops.
 6. Save survives quit/restart and a simulated power cut mid-save (A/B slots, CRC).
@@ -104,11 +108,33 @@ While waiting on a review, work continues on the non-art packages (engine, save,
   shelves, sulk nook; vertex-color lighting sets for day / evening / night.
 - Particles: embers, sparkles, hearts, crumbs, Zzz, dust.
 
-### WP7 — Interactions
-- Touch zones from projected bone capsules (head, chin, back, belly); stroke detection.
-- Feed: drag from a small food tray (all A1 foods, free); favorite detection.
-- Groom: brush strokes, polish, bath. Play: flick the ball, dragon fetches.
-- Egg: rub, turn, listen; hatching cinematic; naming via swkbd; rename in the den.
+### WP7 — Interactions (the heart of Alpha 1)
+Spec: [care interactions](../design/care-interactions.md) (Noah, 2026-09-24: "more like
+Nintendogs", a full polish of the at-home care). In order:
+- **Touch to dragon:** stylus → ray through the close-up camera → capsules around the posed
+  bones (head, cheeks, chin, neck, back, belly, tail, wings, heartglow); stroke speed,
+  direction, scratch circles, pokes, roughness.
+- **Tool tray and cursors:** hand, food, brush, cloth, sponge, ball; each drawn at the
+  stylus and turned along the stroke.
+- **Procedural layers** on the clips: lean toward the touch, jaw open by food distance
+  (the look-at and eyelids exist).
+- **Petting:** zone reactions, eyes easing shut, rising purr, the per-dragon sweet spot
+  (leg kick), tickles, nose pokes, pulling away when rough, petting a sleeping dragon.
+- **Brushing:** 8 shine regions filled by strokes with the grain, dust puffs on dirty
+  regions, gloss that shows progress, the dragon turning, lifting a wing, sitting up;
+  then the polish cloth and the "gleaming" moment.
+- **Bath:** tub, suds from the sponge, the ladle rinse, the shake-off (element
+  preferences).
+- **Feeding:** hand-feeding into the jaw, one to three bites, favourites and dislikes.
+- **Fetch:** `src/core` prop physics (PC-tested); flick to throw or drag to roll; the top
+  screen follows; chase, pick up in the jaw, carry back, sit and drop at your feet;
+  leap-catch for juveniles and up; personality variations; the ball stays in the den.
+- **Calling:** tap and hold (or A) and the dragon comes to the front and sits.
+- **New clips:** pick up, carry, drop and wait, leap-catch, lean-in, leg kick,
+  sniff-refuse, lift wing, sit up, hop into the tub.
+- **Egg:** rub (done), turn, listen; hatching cinematic; naming via swkbd; rename in the den.
+- *Verify:* in Azahar, every tool on every zone at every stage; a full fetch round trip
+  in each personality; the budget overlay stays green while the ball is in play.
 
 ### WP8 — Save system v1 ⟂
 - `src/core/save.*`: header (`EMBC`, version, CRC32, timestamp), records, migrations;

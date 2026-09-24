@@ -21,7 +21,8 @@ Den (hub) ─┬─ Care tab ─▶ Petting close-up, Feed, Groom, Play
            ├─ Nest tab ─▶ Egg care ─▶ Hatching ─▶ Name your dragon
            ├─ Dragons tab ─▶ Profile ─▶ Rename / Move to Sanctuary        (A2)
            ├─ Pouch tab ─▶ items                                          (A2)
-           └─ Map tab ─┬─ Market                                          (A2)
+           └─ Map tab ─┬─ (tap a place to fast-travel)                    (A2)
+                       ├─ Market                                          (A2)
                        ├─ Sanctuary / Cold Vault                          (A2)
                        ├─ Nesting Stone (breeding)                        (A2)
                        ├─ Wanderings                                      (A2)
@@ -40,7 +41,7 @@ START ─▶ System menu: Save & quit · Settings · (Dev menu in debug builds)
 | **Choose egg** | Selected egg, blurb | Ember / Tide / Gale eggs (tap twice) | A1 |
 | **Den — Care tab** | 3D den, dragons wander, day/night | 4 ember gauges, heartglow orb, Feed / Groom / Play, "Pet" enters close-up | A1 |
 | **Petting close-up** | Den view from behind the player | The dragon rendered close-up; touch zones (head, chin, back, belly) follow its bones | A1 |
-| **Feed / Groom / Play** | Dragon reacts | Drag food to the mouth; brush strokes; flick the ball | A1 |
+| **Feed / Groom / Play** | Dragon reacts; follows a thrown ball | Tool tray (hand, food, brush, cloth, sponge, ball), each drawn at the stylus: hand-feed into the jaw, brush and polish shine regions, bath, flick the ball and it's fetched ([care interactions](care-interactions.md)) | A1 |
 | **Nest tab / Egg care** | Egg in its nest, glow = warmth | Rub to warm, turn, tap to listen; incubation progress | A1 |
 | **Hatching** | Crack → emerge → first blink (cinematic, skippable after first time) | "It's hatching!" | A1 |
 | **Name your dragon** | The new hatchling looking at you | swkbd with a random name suggestion pre-filled (D27) | A1 |
@@ -53,11 +54,12 @@ START ─▶ System menu: Save & quit · Settings · (Dev menu in debug builds)
 | **Cold Vault** | Frosty cave illustration | Grid of eggs; move to a nest | A2 |
 | **Nesting Stone** | The pair on the stone | Pick a male and a female; readiness hint (`breedBlockHint`) | A2 |
 | **Market** | Stall and keeper | Buy / sell tabs; daily egg (sex-labeled); Gleam | A2 |
+| **Map** | The selected place (painted; a 3D flyover in 1.0) | Illustrated valley map; tap a place to fast-travel ([map & travel](world-map-and-travel.md)) | A2 (live in 1.0) |
 | **Wanderings** | Trail map | Pick a dragon, start; on return: steps → finds | A2 |
 | **Pouch** | — | Item grid by category | A2 |
 | **Training yard** | Dragon + trick demo | Trick list, practice, record a voice command | B |
 | **Arena / Event / Results** | Event in 3D | Cues (buttons or map taps); score; cup and ribbon | B, 1.0 |
-| **Skyreach Valley** | Riding/flying view | Minimap, compass, dismount | 1.0 |
+| **Skyreach Valley** | Riding/flying view (free flight) | Live map (position, discovered landmarks, tap to fast-travel), compass, dismount | 1.0 |
 
 ## First-time experience (A1)
 1. Title → New game → type your name.

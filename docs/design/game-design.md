@@ -125,6 +125,9 @@ tail fan and brighter accent sheen.
 
 ## 4. Care interactions (touch-first)
 
+Hands-on like *Nintendogs*: the tool you hold is drawn where you touch and the dragon
+reacts to exactly where and how. The full spec: [care interactions](care-interactions.md).
+
 - **Pet:** stroke with the stylus. Head scratches, chin rubs, and belly rubs each have
   distinct reactions; the heartglow pulses under your stylus.
 - **Feed:** drag food from the pouch to its mouth. Favorite food gets a happy wiggle.
@@ -178,6 +181,8 @@ and bond.
 
 - **Adult dragons can be ridden anywhere in free roam** — on the ground (walk/run) or in
   the air (take off, glide, bank, dive, land).
+- A **world map** fast-travels between places from Alpha 2; in 1.0 it becomes the live
+  map of free flight ([map & travel](world-map-and-travel.md)).
 - **Skyreach Valley** is a small open map: the Den (home), the Market, the Arena, the
   Nesting Grove, cliffs, a lake, and a few floating islands. Short draw distance with
   atmospheric fog to keep it fast on old 3DS.

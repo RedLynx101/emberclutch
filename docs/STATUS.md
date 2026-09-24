@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP5 ✅, WP6 ✅, WP8 ✅, WP9 ✅; WP2 sculpt approved; WP2 rest / WP7 next)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 1 in progress** (WP1 ✅, WP3 ✅, WP4 ✅, WP5 ✅, WP6 ✅, WP8 ✅, WP9 ✅; WP2 sculpt, egg and cuteness pass done, texturing left; WP7, WP10–12 to go)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -10,12 +10,14 @@
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
   Decisions D1–D42 recorded ([log](plan/decisions.md)); nothing open.
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
-  [Alpha 1 plan](plan/alpha-1.md).
+  [Alpha 1 plan](plan/alpha-1.md). New specs (2026-09-24): [hands-on care](design/care-interactions.md)
+  (the *Nintendogs*-style polish for WP7) and [world map & travel](design/world-map-and-travel.md)
+  (fast travel in Alpha 2, free flight in 1.0).
 - **Code:** `src/core` (genetics, needs, mood, growth, eggs, clock, breeding, save, model
   format, skeleton/rig, per-dragon mesh assembly, animation, den behavior, den room,
   daylight, particles) with PC tests (60,664 checks). `src/app` draws the dragons in 3D
   (skinned toon shader) in a 3D den room lit for the time of day, inside themed citro2d
-  screens. Last seen running in Azahar at 60 fps (before WP5/WP6).
+  screens. Runs in Azahar at 60 fps in the den (2026-09-24), sounds and all.
 - **Art:** two dragon forms built by script (`tools/blender/dragon_model.py`): a metaball
   hatchling and the skin-modifier grown body, classic wings, part variants, an opening
   mouth with teeth and a tongue (D41), blinking eyes (D42). Exported to `romfs/models/{hatchling,grown}.ecm`.
@@ -35,7 +37,10 @@
   is done:** a 3D egg (948 triangles) in the egg nest and up close on the bottom screen; it
   rocks when rubbed, the dragon inside knocks near hatching, the light inside brightens
   with warmth, and three stages of glowing cracks appear in the last stretch (sounds on
-  each). Still to do: texturing (review R2, not blocking).
+  each). **Cuteness pass** (Noah, 2026-09-24): bird-like folded wings with membranes that
+  follow the fingers, the chest heart clear of the body, an opening mouth with teeth and a
+  tongue (D41), a centred puppy tail wag, blinking eyes that shut in sleep (D42). Still to
+  do: the walking limp, texturing (review R2, not blocking).
 - ✅ **WP4 renderer:** `dragon.v.pica` (2-bone skinning, palette colours, fragment-light
   outputs) and `render3d` (toon ramp + rim + emissive heartglow with a white-hot core;
   citro3d inside citro2d scenes). Den camera, a bottom-screen petting close-up, per-dragon
@@ -71,8 +76,9 @@
   alternate, a corrupted newest slot falls back to the older one and is then rewritten.
 
 - ✅ **WP9 audio:** Tremor Ogg streaming on a worker thread with sample-accurate loops
-  (LOOPSTART tag), fades between tracks, stingers that duck the loop, 6-channel sound
-  effects with per-dragon voice pitch; music director (title / den day / nestsong at night
+  (LOOPSTART tag), fades between tracks, stingers that duck the loop, 8-channel sound
+  effects with takes and per-dragon voice pitch, looping den beds (all queued in short
+  slices so Azahar keeps full speed); music director (title / den day / nestsong at night
   and during incubation). Placeholder SFX synthesized (D35; replaced by the real set on
   2026-09-24). Verified in Azahar (fixed a
   thread race that restarted the stream forever). `make_loop.py --no-loop` for stingers.
@@ -80,18 +86,22 @@
   Note: the emulator needs `sdmc:/3ds/dspfirm.cdc`; a local dummy file works in Azahar (never commit it).
 
 ## Next actions
-1. **WP2 rest:** texturing (UVs, scale detail, the Pattern gene) → R2.
-2. **WP7 interactions:** touch zones from bone capsules, feeding from a tray, grooming,
-   play with a ball, egg rubbing and the hatching cinematic, naming.
-3. WP10 UI/fonts, WP11 CIA packaging, WP12 wrap-up.
+1. **The walking limp** (Noah): the dragon pops up every couple of steps (suspected cause
+   in the Alpha 1 plan's cuteness pass). Small.
+2. **WP2 texturing** → review R2 (the Pattern gene, scale detail). Not blocking.
+3. **WP7 hands-on care**, the big one: [care interactions](design/care-interactions.md)
+   (petting with the hand and a sweet spot, brushing and polishing with shine regions,
+   bath, hand-feeding into the jaw, fetch with ball physics, calling), then egg turning
+   and listening, the hatching cinematic, naming with the keyboard.
+4. **WP10 UI** (fonts, title Continue/New, system menu, settings, toasts, save icon),
+   **WP11** CIA packaging, **WP12** checklist playthrough and tag → **Alpha 1 done**.
+5. Then the **Alpha 2 plan**: several dragons, breeding, the parts library, Wanderings,
+   the Market, the world map with fast travel, more toys; ending with the run on Noah's
+   old 3DS (D34).
 
-**Emulator checks are paused** (Noah asked for no computer use until he says so). Queued
-for the next session: 3-dragon test triangle count with LOD1, the petting close-up, the
-heartglow core, den life (walking, sitting, sleeping, sulking, reactions, sounds, look-at),
-the den room (cutaway from every camera position, day/evening/night via the dev time skip,
-sunbeam and flames, particles, triangle count ≤ 8k with the 3-dragon test), the 3D egg
-(rubbing rocks it, knocks, cracks via the dev time skip), then everything built since.
-
+Emulator checks resumed on 2026-09-24 (the den, egg, mouth, sounds and speed were checked).
+Still to look at in the emulator: the 3-dragon triangle count with LOD1, a full day/night
+cycle in the den, the tail wag and blinking in motion.
 ## Current goal (D31)
 **Complete through Alpha 2.** Gates that stop the run:
 - **R1 sculpt review blocks** until Noah approves. R2 and R3 are sent but don't block (D32).
@@ -103,8 +113,8 @@ sunbeam and flames, particles, triangle count ≤ 8k with the 3-dragon test), th
   items and storage screens. Tell Noah when to switch.
 
 ## Waiting on Noah
-- Optional, non-blocking: Suno [music batch 2](audio/suno-music-batch-2.md) and the
-  [sound effects](audio/suno-sfx-alpha1.md).
+- A listen: the new sounds in the den, the two UI chimes (confirm should rise, back fall),
+  and the Market loop seam (`assets/audio/music/previews/market-bustle.seam-preview.wav`).
 - Nothing blocking. Comments welcome on R1c (faces, growth),
   **[R3 animation](art/reviews/R3-anim.md)** and **[R4 den and egg](art/reviews/R4-den.md)**.
 

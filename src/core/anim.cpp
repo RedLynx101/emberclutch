@@ -196,9 +196,7 @@ void applyLookAt(const Skeleton& skel, const AnimBinding& bind, BonePose* pose, 
     const int bones[3] = {skel.find("neck2"), skel.find("neck3"), skel.find("head")};
     constexpr float kShare[3] = {0.2f, 0.3f, 0.5f};  // the head turns most, the neck follows
     if (weight <= 0.001f || bones[0] < 0 || bones[1] < 0 || bones[2] < 0) return;
-    Mat34 poseMat[kMaxBones], skin[kMaxBones];
-    evaluatePose(skel, pose, poseMat, skin);
-    const Mat34& h = poseMat[bones[2]];
+    const Mat34 h = bonePoseMatrix(skel, pose, bones[2]);  // the head's chain only, not every bone (WP11d)
     const Vec3 facing = normalize(Vec3{h.m[0][1], h.m[1][1], h.m[2][1]});  // along the head bone
     // Aimed from a little behind the head: a target right at the snout (food held to the mouth,
     // a hand under the chin) turns it gently. Aimed from the head itself, a pixel either side

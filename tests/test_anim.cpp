@@ -210,6 +210,31 @@ TEST(locomotion_speeds_follow_the_body) {
     CHECK(walk[kFormHatchling] < walk[kFormGrown] && trot[kFormHatchling] < trot[kFormGrown]);
 }
 
+TEST(one_bone_chain_matches_the_whole_pose) {
+    // The look-at evaluates only the head's chain (WP11d): it must give what evaluatePose gives.
+    const AnimLibrary& lib = anims();
+    for (int f = 0; f < kFormCount; ++f) {
+        const ModelData& m = form(f);
+        AnimBinding bind;
+        bindAnims(lib, m.skel, bind);
+        BonePose pose[kMaxBones];
+        idlePose(m, 0.6f, kBuildNeutral, pose);
+        Quat delta[kMaxBones];
+        float root[2];
+        sampleClip(lib.clips[lib.find("tail_wag")], bind, m.skel.count, 0.4f, delta, root);
+        applyDeltas(pose, delta, m.skel.count);
+        Mat34 poseMat[kMaxBones], skin[kMaxBones];
+        evaluatePose(m.skel, pose, poseMat, skin);
+        float worst = 0;
+        for (int b = 0; b < m.skel.count; ++b) {
+            const Mat34 one = bonePoseMatrix(m.skel, pose, b);
+            for (int r = 0; r < 3; ++r)
+                for (int c = 0; c < 4; ++c) worst = std::fmax(worst, std::fabs(one.m[r][c] - poseMat[b].m[r][c]));
+        }
+        CHECK(worst < 1e-5f);
+    }
+}
+
 TEST(look_at_turns_the_head_within_limits) {
     const ModelData& m = form(kFormGrown);
     AnimBinding bind;
@@ -296,6 +321,7 @@ void runAnimTests() {
     RUN(animator_crossfades_between_clips);
     RUN(animator_reports_event_markers);
     RUN(locomotion_speeds_follow_the_body);
+    RUN(one_bone_chain_matches_the_whole_pose);
     RUN(look_at_turns_the_head_within_limits);
     RUN(walking_keeps_the_body_level);
     RUN(anim_loader_rejects_bad_files);

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "app/autotest.hpp"
+#include "app/perf.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
 #include "core/anim.hpp"
@@ -521,6 +522,7 @@ float animatedGround(const ModelData& m, const Mat34* skin) {
 
 // Poses a dragon: idle pose + its actor's animation, placed where its behavior stands.
 bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Posed& out) {
+    perf::Scope timed(perf::Pose);
     Cache* c = cacheFor(d, now, lod);
     if (!c) return false;
     const Form& f = g_forms[c->form][lod];
@@ -958,6 +960,7 @@ float flicker(float t) { return 0.84f + 0.1f * std::sin(t * 13.0f) + 0.06f * std
 // The den room with the static program: its opaque parts (one draw) or, after the dragons,
 // its additive glows (sunbeam, flames), lit by the two lighting sets of the time of day.
 void drawRoom(App& app, const C3D_Mtx& projection, const C3D_Mtx& view, const DayBlend& blend, bool glows) {
+    perf::Scope timed(perf::Room);
     if (!g_room.ok) return;
     C3D_BindProgram(&g_staticProgram);
     C3D_SetAttrInfo(&g_staticAttr);
@@ -998,6 +1001,7 @@ void drawRoom(App& app, const C3D_Mtx& projection, const C3D_Mtx& view, const Da
 }
 
 void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model) {
+    perf::Scope timed(perf::Submit);
     C3D_Mtx modelView;
     Mtx_Multiply(&modelView, &view, &model);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &modelView);
@@ -1190,6 +1194,7 @@ C3D_Mtx spanMatrix(Vec3 a, Vec3 b) {
 
 // The toys, the bowl's food and the decor (WP7).
 void drawThings(App& app, const C3D_Mtx& view, const DenThings& t) {
+    perf::Scope timed(perf::Room);
     const Mat34 identity[1] = {Mat34::identity()};
     const float night = 1.0f - t.daylight;
     for (int s = 0; s < kDecorSpots; ++s) {
@@ -1238,6 +1243,7 @@ void drawThings(App& app, const C3D_Mtx& view, const DenThings& t) {
 
 // Draws the ball and the tub (after bindDragons and a lightDragon), and the den's things.
 void drawProps(App& app, const C3D_Mtx& view) {
+    perf::Scope timed(perf::Room);
     if (!g_ballMesh.vbo) makeBallMesh(g_ballMesh);
     if (!g_tubMesh.vbo) makeTubMesh(g_tubMesh);
     const Mat34 identity[1] = {Mat34::identity()};

@@ -34,5 +34,8 @@ struct BonePose {
 
 // poseMat: armature-space bone matrices; skin: poseMat * invRest (what vertices use).
 void evaluatePose(const Skeleton& s, const BonePose* pose, Mat34* poseMat, Mat34* skin);
+// One bone's armature-space matrix, as evaluatePose gives it, from its chain alone (the
+// look-at needs the head's, not all 37).
+Mat34 bonePoseMatrix(const Skeleton& s, const BonePose* pose, int bone);
 
 }  // namespace ec

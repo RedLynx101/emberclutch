@@ -10,6 +10,7 @@ piece animated by node transforms, never skinning. So the posed dragon is frozen
 into pieces at its joints (body, head, eyes, tail, heart), each with its pivot at the joint.
 
   blender -b -P tools/blender/banner3d.py -- [--out build/banner] [--assets assets] [--review build/review] [--debug-rig]
+    [--no-fit] [--keep-glow] [--keep-backdrop] [--anchor]   (banner-lab variants, tools/banner_lab.ps1)
   py -3.12 build/tools/pycgfx/main.py build/banner/banner.gltf build/banner/banner.cgfx
 
 Writes <out>/banner.gltf (+ .bin, the skin texture), <assets>/banner.png (the 2D banner,
@@ -472,6 +473,21 @@ def glow_disc(radius, colour, at):
     return o
 
 
+def anchor():
+    """A small still triangle, first of the scene's objects (glTF lists them by name): the
+    skeleton's first bone is then a static one, as 0.1.1's backdrop was. Hidden in the egg."""
+    bm = bmesh.new()
+    vs = [bm.verts.new(p) for p in ((-0.2, 0.0, 0.0), (0.2, 0.0, 0.0), (0.0, 0.0, 0.3))]
+    bm.faces.new(vs)
+    me = bpy.data.meshes.new("aaa_anchor")
+    bm.to_mesh(me)
+    bm.free()
+    o = link(bpy.data.objects.new("aaa_anchor", me))
+    o.location = (-3.0, 0.0, -10.0)  # inside the egg's cup
+    o.data.materials.append(principled("anchor", SHELL, 0.9))
+    return o
+
+
 def backdrop(width, height, y):
     bm = bmesh.new()
     bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=0.5)
@@ -549,7 +565,7 @@ def build():
     cap.location = (head_top.x, head_top.y + 0.08 * h, head_top.z - 0.12 * h)
     cap.rotation_euler = (math.radians(-16), math.radians(10), 0)
     cap.scale = (0.5, 0.5, 0.5)
-    dy = fit_in_egg(pieces, egg_h, 0.42 * h, rim / egg_h, lo - 0.1 * h)
+    dy = fit_in_egg(pieces, egg_h, 0.42 * h, rim / egg_h, lo - 0.1 * h) if "--no-fit" not in sys.argv else 0.0
     for o in list(pieces.values()) + [cap]:
         o.location.y += dy
 
@@ -566,6 +582,13 @@ def build():
         o.location += shift
     word = wordmark(30.0)
     word.location = (2.0, 5.0, 8.4)
+    # Banner-lab variants (run 3: the new scene froze the HOME Menu, 0.1.1's didn't).
+    if "--keep-glow" in sys.argv:
+        glow_disc(9.8, (0.55, 0.22, 0.12), (-3.0, 16.0, -1.0))
+    if "--keep-backdrop" in sys.argv:
+        backdrop(90, 50, 20.0)
+    if "--anchor" in sys.argv:
+        anchor()
     return pieces, egg, cap, heart_mat, word
 
 
@@ -770,8 +793,10 @@ def main():
         cam.rotation_euler = (math.radians(90), 0, a)
         render(os.path.join(REVIEW, name), 500, 300, 0)
     banner_camera()
-    glow_disc(9.8, (0.55, 0.22, 0.12), (-3.0, 16.0, -1.0))  # the 2D banner is a flat picture:
-    backdrop(90, 50, 20.0)                                   # it keeps its hearth glow and dusk wall
+    if "--keep-glow" not in sys.argv:  # the 2D banner is a flat picture: it keeps its hearth glow
+        glow_disc(9.8, (0.55, 0.22, 0.12), (-3.0, 16.0, -1.0))
+    if "--keep-backdrop" not in sys.argv:  # ...and its dusk wall
+        backdrop(90, 50, 20.0)
     cam = scene.camera  # the 2D banner: the same scene, a little closer (its frame is wider, 2:1)
     cam.data.angle_y = math.radians(24.5)
     cam.location.z -= 0.4

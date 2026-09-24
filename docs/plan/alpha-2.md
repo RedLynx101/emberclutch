@@ -321,17 +321,30 @@ memory 22.9 → 19.6 MB of linear memory free.
   once found). Planned: a small heart on the known favourite in the food row, and an eager
   sniff when an unknown favourite is offered.
 
-**Run 4:** the banner lab first (install the five `Banner lab` CIAs from `/cias/lab/`,
-select each on the HOME Menu, note which freeze, never start them, then delete them in FBI),
-then 0.1.4 with the flat banner. To drop the HOME Menu's cached banner, delete the
-Emberclutch title in FBI before installing (the save is on the SD card and stays).
+**Run 4 (2026-09-24), banner lab 1:** A and B passed, C, D and E froze. So the theme clip
+is fine (B: 0.1.1's scene with it) and the new scene freezes, with either wordmark (D). Every
+dictionary in both CGFX files was checked offline with the runtime's Patricia lookup (all
+names found; the tree isn't it). What's left between the scenes: the dragon moved forward,
+the backdrop and glow disc removed, and so the skeleton's first bone (glTF lists objects by
+name) became the dragon's animated body instead of the still backdrop. **Lab 2** (fresh
+title IDs, `-FirstId 0xEC0E1`, the theme clip in all): F = the new scene with the backdrop
+and glow back; G = the new scene with a small still "anchor" triangle as its first object,
+hidden in the egg; H = the new scene with the dragon not moved; I = the new scene with the
+glow disc only. First bone static: F and G pass. The move: H passes, F, G, I freeze. The flat
+meshes themselves: F and I pass, G freezes.
 
-### WP11d — Hardware performance pass (after run 3)
+**0.1.5** (on the 3DS with the .3dsx): 0.1.4 plus the section profiler (WP11d): the baseline
+to measure the performance pass against.
+
+### WP11d — Hardware performance pass (after run 3; before WP12a, Noah agreed)
 The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 8.3). Target:
 16.7 ms with three dragons, their toys and decor, and the close-up.
-- **Measure first, on the 3DS:** section timers in the dev overlay (pose and look-at, skinning
-  data, the ground search, dust, the room, props, 2D UI, audio) and a "perf" line in the
-  screenshot log, so a Y press on the hardware brings back where the milliseconds go.
+- **Measure first, on the 3DS:** ✅ `src/app/perf` times the frame's sections (the scene's
+  update, audio, posing dragons, their draw calls, the room and props, the rest of each
+  screen), on the dev overlay's fifth line and in every screenshot's log line: a Y press on
+  the hardware brings back where the milliseconds go. 0.1.5 is the baseline.
+- **First cut:** ✅ the look-at evaluates only the head's bone chain instead of the whole
+  skeleton, twice per dragon per frame (a PC test holds it equal to the full evaluation).
 - **Likely CPU cuts:** evaluate each dragon's pose once a frame (the look-at evaluates the
   whole skeleton again), the ground from the feet bones instead of body vertices, dust
   streams only when dirt changes, background dragons animated at 30 Hz, fewer draw calls
@@ -344,8 +357,8 @@ The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 
 ### WP11e — Stereoscopic 3D (the 3D slider; Noah, run 3)
 The top screen is flat today. Rendered per eye when the slider is up: the den, the
 showcases, the map and the title, with the UI at screen depth and the dragons just behind
-it. It draws the top screen's 3D twice, so it waits for WP11d; in 3D it may run at 30 fps on
-the old 3DS (to decide with Noah). The bottom screen can't be 3D.
+it. It draws the top screen's 3D twice, so it waits for WP11d; in 3D it runs at 30 fps on the
+old 3DS (Noah: fine), 60 without. The bottom screen can't be 3D.
 
 ### WP11c — An Emberclutch boot logo (D58)
 The logo the HOME Menu plays as a title starts (the NCCH's logo region; the emulator never
@@ -402,7 +415,10 @@ hatchling sits in it. It also "just hatches": no moment where it breaks out.
 - This replaces the first plan (the newborn curled up inside, an egg of four or five
   shards, the cap riding on its head): simpler, and closer to what Noah pictures.
 
-### WP12b — Grooming that fits together (Noah, run 3; proposal, to settle with him)
+### WP12b — Grooming that fits together (later; Noah, run 3)
+**The tray first:** the brush, cloth and sponge go under one **Groom** button that opens its
+own row (as food does), so three tools for one need don't crowd the tray. Then the design
+below, to settle with Noah when WP12b comes up.
 Today the brush, the cloth and the bath each raise Shine and clear dust, so the bath does it
 all and the others feel pointless. A proposal: each tool has its own job, in an order that
 makes a little routine.

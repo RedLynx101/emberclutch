@@ -36,4 +36,25 @@ void evaluatePose(const Skeleton& s, const BonePose* pose, Mat34* poseMat, Mat34
     }
 }
 
+Mat34 bonePoseMatrix(const Skeleton& s, const BonePose* pose, int bone) {
+    int chain[kMaxBones];
+    int n = 0;
+    for (int b = bone; b >= 0 && n < kMaxBones; b = s.parent[b]) chain[n++] = b;
+    Mat34 m = Mat34::identity();
+    for (int k = n - 1; k >= 0; --k) {  // from the root down, as evaluatePose does
+        const int i = chain[k];
+        const Mat34 chan = fromQuatScale(pose[i].rot, pose[i].scale, Vec3{});
+        if (s.parent[i] < 0) {
+            m = mul(s.rest[i], chan);
+        } else {
+            Mat34 parentRot = m;
+            normalizeColumns(parentRot);
+            Mat34 next = mul(mul(parentRot, s.offs[i]), chan);
+            next.setTranslation(transformPoint(m, s.offs[i].translation()));
+            m = next;
+        }
+    }
+    return m;
+}
+
 }  // namespace ec

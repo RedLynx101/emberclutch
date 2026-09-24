@@ -10,6 +10,7 @@
 #include "app/autotest.hpp"
 #include "app/care_ui.hpp"
 #include "app/keyboard.hpp"
+#include "app/perf.hpp"
 #include "app/debug.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
@@ -110,10 +111,17 @@ int main() {
         if (in.down & KEY_Y) screenshot::request();  // anywhere, in every build: both screens to the SD card
         const bool paused = app.menu != MenuPage::Closed;  // the game waits under the menu
 
+        perf::frameStart();
         const SceneFns& scene = sceneFns(app.scene);
-        if (scene.update && !app.devMenu && !paused) scene.update(app, in);
-        audio::playMusic(musicFor(app));
-        audio::update(app.dt);
+        if (scene.update && !app.devMenu && !paused) {
+            perf::Scope timed(perf::Update);
+            scene.update(app, in);
+        }
+        {
+            perf::Scope timed(perf::Audio);
+            audio::playMusic(musicFor(app));
+            audio::update(app.dt);
+        }
 
         app.stats.reset();
         C2D_TextBufClear(app.textBuf);
@@ -124,19 +132,25 @@ int main() {
 
         C2D_TargetClear(app.top, theme::kDenPlum);
         C2D_SceneBegin(app.top);
-        sceneFns(app.scene).drawTop(app);
-        if (paused) dimTopForMenu(app);
-        drawToast(app);
-        drawSaveIcon(app);
-        debugDrawOverlay(app);
+        {
+            perf::Scope timed(perf::Top);
+            sceneFns(app.scene).drawTop(app);
+            if (paused) dimTopForMenu(app);
+            drawToast(app);
+            drawSaveIcon(app);
+            debugDrawOverlay(app);
+        }
 
         const u32 topTris = app.stats.tris;
         C2D_TargetClear(app.bottom, theme::kDenPlum);
         C2D_SceneBegin(app.bottom);
-        if (paused)
-            drawSystemMenu(app, in);
-        else if (!debugMenu(app, in))
-            sceneFns(app.scene).drawBottom(app, in);
+        {
+            perf::Scope timed(perf::Bottom);
+            if (paused)
+                drawSystemMenu(app, in);
+            else if (!debugMenu(app, in))
+                sceneFns(app.scene).drawBottom(app, in);
+        }
         if (EC_DEV && app.overlay && in.touching) {  // where the game reads the stylus
             C2D_DrawRectSolid(in.tx - 8, in.ty - 0.5f, 0, 17, 1, theme::rgba(0, 255, 120));
             C2D_DrawRectSolid(in.tx - 0.5f, in.ty - 8, 0, 1, 17, theme::rgba(0, 255, 120));

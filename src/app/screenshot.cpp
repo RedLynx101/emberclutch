@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "app/audio.hpp"
+#include "app/perf.hpp"
 #include "app/strings.hpp"
 
 namespace ec::screenshot {
@@ -29,7 +30,7 @@ static_assert(sizeof(kSceneNames) / sizeof(kSceneNames[0]) == static_cast<int>(S
 bool g_wanted = false;
 u8* g_top = nullptr;
 u8* g_bottom = nullptr;
-char g_line[192] = {};  // the log line, with this frame's numbers
+char g_line[256] = {};  // the log line, with this frame's numbers
 int g_next = 0;         // the next free shot number (found on the first shot)
 
 // The SD card is slow: on the 3DS a picture took long enough to stall the game (Noah, run 2).
@@ -37,7 +38,7 @@ int g_next = 0;         // the next free shot number (found on the first shot)
 // goes on, and the toast shows when it's done.
 struct Job {
     std::vector<u8> file;  // the whole BMP
-    char line[192] = {};
+    char line[256] = {};
     int number = 0;
     bool ok = false;
 };
@@ -146,10 +147,11 @@ void beforeFrameEnd(const App& app) {
     char when[24];
     std::strftime(when, sizeof(when), "%Y-%m-%d %H:%M:%S", std::gmtime(&t));  // the 3DS clock is local time
     std::snprintf(g_line, sizeof(g_line),
-                  "%s  %-12s %4.1fms CPU %.1f GPU %.1f  TRI %lu+%lu  LIN %.1fMB  build %s %s", when,
+                  "%s  %-12s %4.1fms CPU %.1f GPU %.1f  TRI %lu+%lu  LIN %.1fMB  [%s]  build %s %s", when,
                   kSceneNames[static_cast<int>(app.scene)], app.frameMs, C3D_GetProcessingTime(), C3D_GetDrawingTime(),
                   static_cast<unsigned long>(app.stats.tris - app.bottomTris),
-                  static_cast<unsigned long>(app.bottomTris), linearSpaceFree() / 1048576.0f, __DATE__, __TIME__);
+                  static_cast<unsigned long>(app.bottomTris), linearSpaceFree() / 1048576.0f, perf::line(), __DATE__,
+                  __TIME__);
 }
 
 void afterFrameBegin(App& app) {

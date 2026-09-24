@@ -2,13 +2,15 @@
 # game's own title (the HOME Menu caches a title's banner, and a banner that freezes it costs a
 # restart). Each variant is its own title ("Banner lab A", "B", ...; unique IDs 0xEC0D1 up),
 # holding the game's code but no romfs: select them on the HOME Menu, never start them.
-#   tools\banner_lab.ps1 -Variants "A=<cgfx>;<wav>", "B=..." [-Deploy <3ds-ip>]
+#   tools\banner_lab.ps1 -Variants "A=<cgfx>;<wav>", "B=..." [-FirstId 0xEC0D1] [-Deploy <3ds-ip>]
+# Each round takes fresh IDs (-FirstId): the HOME Menu may keep a deleted title's banner.
 # A variant's banner is a CGFX (3D) or a PNG (flat) and a WAV. The CIAs land in build/lab/;
 # -Deploy uploads them to sdmc:/cias/lab/ (FBI can install a whole folder at once). Remove
 # them afterwards in FBI: Titles, "Banner lab ...", Delete Title.
 param(
     [Parameter(Mandatory = $true)][string[]]$Variants,
     [string]$Deploy = "",
+    [int]$FirstId = 0xEC0D1,
     [string]$ToolsDir = ""
 )
 
@@ -33,7 +35,8 @@ $text = $text -replace 'UniqueId                : 0xEC0C1', 'UniqueId           
 $text = $text -replace 'JumpId                  : 0x000400000EC0C100', 'JumpId                  : $(LAB_JUMP)'
 Set-Content -Path $rsf -Value $text -Encoding ascii -NoNewline
 
-$id = 0xEC0D1
+$id = $FirstId
+$built = @()
 foreach ($v in $Variants) {
     $name, $spec = $v -split "=", 2
     $banner, $wav = $spec -split ";", 2
@@ -50,12 +53,13 @@ foreach ($v in $Variants) {
     & $makerom -f cia -o $cia -elf $elf -icon $smdh -banner $bnr -rsf $rsf -target t -DAPP_ENCRYPTED=false `
         ("-DLAB_TITLE=$title") ("-DLAB_ID=0x{0:X}" -f $id) ("-DLAB_JUMP=0x00040000{0:X6}00" -f $id) -major 0 -minor 0 -micro 1
     if ($LASTEXITCODE -ne 0) { throw "makerom failed for $name" }
+    $built += Get-Item $cia
     "{0}: {1} ({2:N1} MB, title 00040000{3:X6}00) <- {4} + {5}" -f $title, (Split-Path $cia -Leaf), ((Get-Item $cia).Length / 1MB), $id, (Split-Path $banner -Leaf), (Split-Path $wav -Leaf)
     $id++
 }
 
 if ($Deploy) {
-    foreach ($c in Get-ChildItem $lab -Filter "banner-lab-*.cia") {
+    foreach ($c in $built) {
         $uri = "ftp://${Deploy}:5000/cias/lab/$($c.Name)"
         try {
             $mk = [System.Net.FtpWebRequest]::Create("ftp://${Deploy}:5000/cias/lab")

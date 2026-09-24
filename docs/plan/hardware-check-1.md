@@ -14,6 +14,10 @@ game crashed at its first 3D frame (a null texture read the emulator hides). Bot
 WP11b); both 3D-banner CIAs froze the HOME Menu, which also turned out to keep an old banner
 per title; Next style froze the 3DS (fixed in 0.1.4).
 
+**Run 4 lab 1:** A and B passed, C, D and E froze: the new scene, not the sound. **Run 5:**
+the banner lab's second round (F, G, H, I, in `/cias/lab/`, same steps as below), and 0.1.5
+(the flat banner, with the section profiler: press Y in the full den and the close-up).
+
 **Run 4** (0.1.4, 2026-09-24):
 1. **The banner lab.** In FBI: SD → cias → lab → install the five `banner-lab-*.cia`. On the
    HOME Menu, open each `Banner lab A`…`E` present and select it; if it freezes, hold POWER

@@ -1,0 +1,28 @@
+# The dev overlay's section timings (WP11d) with a full den, and a screenshot with them in its log line.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+key SELECT
+wait 4
+shot p1-full-den
+key Y
+wait 2
+quit

@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "app/audio.hpp"
+#include "app/perf.hpp"
 #include "app/render3d.hpp"
 #include "app/strings.hpp"
 #include "core/den_roster.hpp"
@@ -43,7 +44,7 @@ void debugDrawOverlay(App& app) {
     if (!EC_DEV || !app.overlay) return;
     const RenderStats& s = app.stats;
     char buf[96];
-    C2D_DrawRectSolid(0, 0, 0, 262, 57, withAlpha(theme::kDenPlum, 0.75f));
+    C2D_DrawRectSolid(0, 0, 0, 262, 70, withAlpha(theme::kDenPlum, 0.75f));
     std::snprintf(buf, sizeof(buf), "%4.1fms  CPU %.1f  GPU %.1f  CMD %d%%", app.frameMs, C3D_GetProcessingTime(),
                   C3D_GetDrawingTime(), static_cast<int>(C3D_GetCmdBufUsage() * 100));
     line(app, 2, buf, okOr(app.frameMs <= kBudgetFrameMs));
@@ -64,6 +65,7 @@ void debugDrawOverlay(App& app) {
                   audio::currentMusic()[0] ? audio::currentMusic() : "-", static_cast<unsigned long>(ai.loops),
                   static_cast<unsigned long>(ai.switches), ai.stage, ai.gain);
     line(app, 41, buf, okOr(audio::ok()));
+    line(app, 54, perf::line(), theme::kShell);  // where the CPU time goes (WP11d)
 }
 
 // Alpha 2 WP1 before breeding and the Market: a random starter dragon into a free bed (or an

@@ -8,17 +8,17 @@
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),
   [theme](design/theme-and-art-direction.md), [screens & flow](design/screens-and-flow.md).
-  Decisions D1–D40 recorded ([log](plan/decisions.md)); nothing open.
+  Decisions D1–D41 recorded ([log](plan/decisions.md)); nothing open.
 - **Plan:** [roadmap](plan/roadmap.md) (milestones A1 → 1.0 → 2.0), [content & assets](plan/content-and-assets.md),
   [Alpha 1 plan](plan/alpha-1.md).
 - **Code:** `src/core` (genetics, needs, mood, growth, eggs, clock, breeding, save, model
   format, skeleton/rig, per-dragon mesh assembly, animation, den behavior, den room,
-  daylight, particles) with PC tests (60,126 checks). `src/app` draws the dragons in 3D
+  daylight, particles) with PC tests (60,645 checks). `src/app` draws the dragons in 3D
   (skinned toon shader) in a 3D den room lit for the time of day, inside themed citro2d
   screens. Last seen running in Azahar at 60 fps (before WP5/WP6).
 - **Art:** two dragon forms built by script (`tools/blender/dragon_model.py`): a metaball
-  hatchling and the skin-modifier grown body, classic wings, part variants. Exported to
-  `romfs/models/{hatchling,grown}.ecm`.
+  hatchling and the skin-modifier grown body, classic wings, part variants, an opening
+  mouth with teeth and a tongue (D41). Exported to `romfs/models/{hatchling,grown}.ecm`.
 - **Audio:** music batch 1 processed into `romfs/music/` (6 loops); placeholder SFX until the Suno batch arrives.
 - **Hardware:** never run on a real 3DS yet (deferred, D28).
 

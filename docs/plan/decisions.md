@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-24 — Cuteness pass
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D41 | **The dragons have an opening mouth.** A `jaw` bone hinged behind the mouth corners, parented to the snout, parallel to it and grown by the snout's tables; the snout is slit along the mouth line, with a dark pocket inside, little teeth on both lips (two small fangs show when closed) and a tongue as a new part group. The body draw grows from 24 to 25 bones (shader uniforms 95 of 96), so the model format goes to `.ecm` v2 (32-byte bone palettes). The inside of the mouth mixes the pupil colour with a new tongue palette slot; teeth mix glint white with the horn colour | Noah asked for "an animated mouth with little teeth lining them, and maybe a little tongue". Growing the jaw exactly like the snout keeps the lips together at every growth stage and build without new tables; giving the snout's skin to the head instead would have lost its growth and build shaping | Default (owner can change) |
+
 ## 2026-09-24 — Den scene (WP6)
 
 | # | Decision | Why | Status |

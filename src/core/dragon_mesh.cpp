@@ -42,6 +42,7 @@ int selectParts(const ModelData& m, const Genome& g, Sex sex, const MeshData* ou
     };
     add(firstOf(m, kGroupEyes, s, {0}));
     add(firstOf(m, kGroupHeart, s, {0}));
+    add(firstOf(m, kGroupMouth, s, {0}));
     add(firstOf(m, kGroupHorns, s, {g.horns, kHornsSwept}));
     if (g.frill != kFrillNone) add(firstOf(m, kGroupFrill, s, {g.frill}));
     add(firstOf(m, kGroupSpikes, s, {g.frill, kFrillNone}));  // the ridge follows the frill gene
@@ -112,6 +113,7 @@ void dragonPalette(const Genome& g, Rgb out[kPalCount]) {
     out[kPalPupil] = {18, 10, 16};
     out[kPalGlint] = {255, 255, 255};
     out[kPalGlow] = heartglowColor(static_cast<Element>(g.elementA));
+    out[kPalTongue] = {236, 116, 140};
 }
 
 }  // namespace ec

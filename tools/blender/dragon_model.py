@@ -145,7 +145,7 @@ GROWN = dict(
     nodes=GROWN_NODES,
     edges=GROWN_EDGES,
     body="skin",
-    body_tris=1680,  # + ~110 for the nostrils and mouth joined into the body
+    body_tris=1630,  # + ~160 for the nostrils, mouth line and mouth pocket joined into the body
     body_tris_lod1=600,
     export_scale=1.0,
     # Bone (girth_x, length[, girth_z]) and part scales at t = 0: the juvenile. Lerps to 1 (adult).
@@ -185,6 +185,12 @@ GROWN = dict(
     # Face details (R1b): nostrils on the snout tip and a jaw line, projected onto the body.
     face=dict(nostril=(0.05, -2.20, 2.52), nostril_r=(0.024, 0.015, 0.008), mouth_r=0.012,
               mouth=lambda side, a: (side * 0.15 * a ** 0.7, -2.25 + 0.47 * a ** 1.5, 2.41 + 0.06 * a * a)),
+    # The opening mouth (Noah 2026-09-24): the jaw's hinge (behind the mouth corners); how
+    # deep and wide the lower jaw reaches, how far behind the corners the throat stretches
+    # with it; teeth (radius, length), front fangs, tongue half-size.
+    jaw_hinge=(0, -1.68, 2.45),
+    mouth_detail=dict(depth=0.30, fade=0.22, width=0.40, tooth=(0.010, 0.018), fang=(0.014, 0.036),
+                      tongue=(0.07, 0.14, 0.016)),
 )
 
 # ------------------------------------------------------------------------------ hatchling form
@@ -286,6 +292,9 @@ HATCH = dict(
     inset={"eyes": 0.032, "horns": 0.02, "spikes": 0.012, "frill": 0.06, "heart": -0.03},  # heart: see the grown form
     face=dict(nostril=(0.05, -1.00, 1.03), nostril_r=(0.026, 0.017, 0.009), mouth_r=0.011,
               mouth=lambda side, a: (side * 0.15 * a ** 0.8, -1.03 + 0.2 * a ** 1.6, 0.915 + 0.035 * a * a)),
+    jaw_hinge=(0, -0.76, 0.93),
+    mouth_detail=dict(depth=0.16, fade=0.12, width=0.30, tooth=(0.007, 0.012), fang=(0.010, 0.024),
+                      tongue=(0.055, 0.085, 0.012)),
 )
 
 FORMS = {"grown": GROWN, "hatchling": HATCH}
@@ -322,15 +331,23 @@ def base_key(name):
     return name.rsplit("_", 1)[0] if name.endswith(("_L", "_R")) else name
 
 
+SCALE_LIKE = {"jaw": "snout"}  # bones that grow like another (the jaw sits in the snout)
+
+
+def scale_key(name):
+    """The growth and build table entry a bone uses."""
+    return SCALE_LIKE.get(base_key(name), base_key(name))
+
+
 def scales_for_t(t, build):
     """Bone scales (girth_x, length, girth_z) and part scales at growth t within the current
     form. The runtime computes exactly this from the tables exported in the .ecm."""
     bones = {}
     for name, *_ in BONES:
-        h = F["young"]["bones"].get(base_key(name), (1.0, 1.0))
+        h = F["young"]["bones"].get(scale_key(name), (1.0, 1.0))
         gx, l, gz = (h[0], h[1], h[0]) if len(h) == 2 else h
         gx, l, gz = lerp(gx, 1.0, t), lerp(l, 1.0, t), lerp(gz, 1.0, t)
-        bg, bl = F["builds"][build].get(base_key(name), (1.0, 1.0))
+        bg, bl = F["builds"][build].get(scale_key(name), (1.0, 1.0))
         bones[name] = (gx * bg, l * bl, gz * bg)
     parts = {k: lerp(v, 1.0, t) for k, v in F["young"]["parts"].items()}
     for name in WING_BONES:
@@ -601,6 +618,16 @@ def wing_points(side):
     return {k: root + (span * u + chord * v) * w["scale"] for k, (u, v) in WING_LAYOUT.items()}
 
 
+def jaw_points():
+    """The jaw bone: from the hinge, parallel to the snout bone and as long. With the snout's
+    axes and growth scales (SCALE_LIKE) and the snout as parent, the jaw's skinning matches
+    the snout's until it rotates, so the lips meet at every stage and build."""
+    nodes = F["nodes"]
+    muzzle, tip = V(nodes["muzzle"][0]), V(nodes["snout"][0])
+    hinge = V(F["jaw_hinge"])
+    return {"jaw_hinge": hinge, "jaw_tip": hinge + (tip - muzzle)}
+
+
 def build_armature():
     arm_data = bpy.data.armatures.new("rig")
     arm = link(bpy.data.objects.new("rig", arm_data))
@@ -619,8 +646,9 @@ def build_armature():
         b.inherit_scale = "NONE"
         eb[name] = b
 
+    jaw = jaw_points()
     for name, h, t, parent in BONES:
-        add(name, V(nodes[h][0]), V(nodes[t][0]), parent)
+        add(name, V(jaw[h] if h in jaw else nodes[h][0]), V(jaw[t] if t in jaw else nodes[t][0]), parent)
     for side in ("L", "R"):
         w = wing_points(side)
         for name, h, t, parent in WING_CHAIN:
@@ -1033,13 +1061,212 @@ def make_materials(b):
         "pupil": toon_material("pupil", (0.06, 0.03, 0.05)),
         "glint": toon_material("glint", (1, 1, 1), emission=2.0),
         "heart": toon_material("heart", b["glow"], emission=1.4),
+        "tooth": toon_material("tooth", (0.97, 0.95, 0.90)),
+        "tongue": toon_material("tongue", (0.93, 0.45, 0.55)),
+        "mouth": toon_material("mouth", (0.36, 0.11, 0.16)),
     }
 
 
-def add_face_details(body):
+# ------------------------------------------------------------------------------ mouth
+def mouth_plane():
+    """The plane through the mouth line (its front and both corners): a point on it, its up
+    normal, and the corners' y (the slit runs in front of them)."""
+    m = F["face"]["mouth"]
+    a, b, c = Vector(m(1, 0.0)), Vector(m(1, 1.0)), Vector(m(-1, 1.0))
+    n = (b - a).cross(c - a).normalized()
+    return a, (n if n.z > 0 else -n), b.y
+
+
+def cut_mouth(body):
+    """Slit the snout along the mouth line so the jaw can open: bisect the snout with the
+    mouth plane in front of the corners, then rip the cut into two lips. (The body object
+    sits at the origin, so its mesh is in rig space.)"""
+    co, no, y_corner = mouth_plane()
+    md = F["mouth_detail"]
+    bm = bmesh.new()
+    bm.from_mesh(body.data)
+    faces = []
+    for f in bm.faces:
+        c = f.calc_center_median()
+        if c.y < y_corner and abs(c.x) < md["width"] and abs((c - co).dot(no)) < md["depth"]:
+            faces.append(f)
+    geom = faces + list({e for f in faces for e in f.edges}) + list({v for f in faces for v in f.verts})
+    cut = bmesh.ops.bisect_plane(bm, geom=geom, plane_co=co, plane_no=no, dist=1e-6)["geom_cut"]
+    bmesh.ops.split_edges(bm, edges=[e for e in cut if isinstance(e, bmesh.types.BMEdge)])
+    bm.to_mesh(body.data)
+    bm.free()
+
+
+def lip_chains(body):
+    """The slit's two lips, each ordered corner -> front -> corner: (upper, lower) vertex
+    indices. The corners, where the lips meet, are in both."""
+    co, no, y_corner = mouth_plane()
+    me = body.data
+    sides = {}
+    for p in me.polygons:
+        s = (Vector(p.center) - co).dot(no)
+        for v in p.vertices:
+            sides.setdefault(v, []).append(s)
+    upper, lower = [], []
+    for v in me.vertices:
+        if abs((v.co - co).dot(no)) > 1e-4 or v.co.y > y_corner + 1e-3 or abs(v.co.x) > F["mouth_detail"]["width"]:
+            continue
+        s = sides.get(v.index, [0.0])
+        if max(s) > 0:
+            upper.append(v.index)
+        if min(s) < 0:
+            lower.append(v.index)
+    behind = Vector((0, y_corner + 1.0, 0))
+    order = lambda i: math.atan2(me.vertices[i].co.x, behind.y - me.vertices[i].co.y)  # noqa: E731
+    return sorted(upper, key=order), sorted(lower, key=order)
+
+
+def chain_point(pts, f):
+    """The point a fraction f of the way along a polyline (by length)."""
+    lengths = [0.0]
+    for a, b in zip(pts, pts[1:]):
+        lengths.append(lengths[-1] + (b - a).length)
+    t = f * lengths[-1]
+    for k in range(len(pts) - 1):
+        if lengths[k + 1] >= t:
+            u = (t - lengths[k]) / max(1e-6, lengths[k + 1] - lengths[k])
+            return pts[k].lerp(pts[k + 1], u)
+    return pts[-1].copy()
+
+
+def mouth_back():
+    """The middle of the mouth's back edge (between the corners), on the mouth plane."""
+    co, no, y_corner = mouth_plane()
+    return Vector((0, y_corner, co.z - no.y * (y_corner - co.y) / no.z))
+
+
+def weight_jaw(body):
+    """The lower lip and chin follow the jaw; behind the corners the throat fades back to
+    its own weights, so it stretches as the mouth opens. The dark mouth line (and nostrils)
+    stay with the upper snout."""
+    co, no, y_corner = mouth_plane()
+    md = F["mouth_detail"]
+    me = body.data
+    jaw = body.vertex_groups.get("jaw") or body.vertex_groups.new(name="jaw")
+    below = {}
+    for p in me.polygons:
+        s = (Vector(p.center) - co).dot(no)
+        for v in p.vertices:
+            below.setdefault(v, []).append((s, p.material_index))
+    for v in me.vertices:
+        info = below.get(v.index, [])
+        if not info or any(m == 1 for _, m in info):  # the mouth line and nostrils
+            continue
+        s = (v.co - co).dot(no)
+        if abs(s) < 1e-4:
+            s = sum(x for x, _ in info) / len(info)  # a lip: which side its faces are on
+        if s >= 0 or s < -md["depth"] or abs(v.co.x) > md["width"] or v.co.y > y_corner + md["fade"]:
+            continue
+        w = 1.0 if v.co.y <= y_corner else 1.0 - (v.co.y - y_corner) / md["fade"]
+        # Two bones per vertex (the runtime's limit): the jaw and the strongest of the old.
+        old = sorted(((g.group, g.weight) for g in v.groups if g.group != jaw.index), key=lambda g: -g[1])
+        for gi, _ in old:
+            body.vertex_groups[gi].remove([v.index])
+        if old and w < 1.0:
+            body.vertex_groups[old[0][0]].add([v.index], 1.0 - w, "REPLACE")
+        jaw.add([v.index], w, "REPLACE")
+
+
+def build_mouth_pocket(body, upper, lower):
+    """The inside of the mouth (dark): a roof under the upper lip and a floor on the lower
+    one, fanned from the middle of the back edge. Closed, they lie flat on each other inside
+    the head; as the jaw opens the floor drops with it. Each rim vertex moves exactly as its
+    lip vertex. Material slot 2 is the mouth colour."""
+    co, no, _ = mouth_plane()
+    me = body.data
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bm.verts.ensure_lookup_table()
+    deform = bm.verts.layers.deform.verify()
+    head, jaw = body.vertex_groups["head"].index, body.vertex_groups["jaw"].index
+
+
+    def fan(lip, facing):
+        rim = []
+        for src in lip:
+            v = bm.verts.new(src.co)
+            for k, x in src[deform].items():
+                v[deform][k] = x
+            rim.append(v)
+        for a, b in zip(rim, rim[1:]):
+            f = bm.faces.new((back, a, b))
+            f.normal_update()
+            if f.normal.dot(facing) < 0:
+                f.normal_flip()
+            f.material_index = 2
+    upper, lower = [bm.verts[i] for i in upper], [bm.verts[i] for i in lower]
+    back = bm.verts.new(mouth_back())
+    back[deform][head] = back[deform][jaw] = 0.5
+    fan(upper, -no)
+    fan(lower, no)
+    bm.to_mesh(me)
+    bm.free()
+
+
+def build_mouth_parts(body, upper, lower, mats):
+    """Little teeth along both lips (two front fangs on the upper lip peek out even with the
+    mouth closed) and a tongue on the floor of the mouth. Returns [(object, bone)]."""
+    co, no, _ = mouth_plane()
+    md = F["mouth_detail"]
+    me = body.data
+    back = mouth_back()
+    front = Vector(F["face"]["mouth"](1, 0.0))
+    along = lambda chain, f: chain_point([me.vertices[i].co for i in chain], f)  # noqa: E731
+
+    def tooth(bm, base, down, r, length):
+        inward = back - base
+        inward = (inward - no * inward.dot(no)).normalized()
+        side = inward.cross(no).normalized()
+        ring = [bm.verts.new(base + (inward * math.cos(a) + side * math.sin(a)) * r)
+                for a in (0.0, 2.0944, 4.1888)]
+        tip = bm.verts.new(base + inward * r * 0.4 + down * length)
+        for k in range(3):
+            f = bm.faces.new((ring[k], ring[(k + 1) % 3], tip))
+            f.normal_update()
+            if f.normal.dot(f.calc_center_median() - base - down * length * 0.3) < 0:
+                f.normal_flip()
+
+    out = []
+    for chain, bone, down, fracs, fangs in (
+            (upper, "snout", -no, lod([0.14, 0.25, 0.36, 0.64, 0.75, 0.86], [0.2, 0.8]), [0.43, 0.57]),
+            (lower, "jaw", no, lod([0.2, 0.32, 0.68, 0.8], [0.3, 0.7]), [])):
+        bm = bmesh.new()
+        for fr in fracs:
+            p = along(chain, fr)
+            tooth(bm, p + (back - p).normalized() * md["tooth"][0] * 2.4, down, *md["tooth"])  # hidden when closed
+        for fr in fangs:  # right on the lip, so they peek over the lower lip when closed
+            tooth(bm, along(chain, fr) + (back - along(chain, fr)).normalized() * md["fang"][0] * 0.6,
+                  down, *md["fang"])
+        obj = mesh_object(f"teeth_{bone}", bm)
+        obj.data.materials.append(mats["tooth"])
+        out.append((obj, bone))
+    # The tongue: a soft flat oval lying on the floor of the mouth, pointing forward.
+    w, l, h = md["tongue"]
+    bm = bmesh.new()
+    geom = bmesh.ops.create_uvsphere(bm, u_segments=lod(6, 5), v_segments=lod(4, 3), radius=1.0)
+    fwd = (front - back)
+    fwd = (fwd - no * fwd.dot(no)).normalized()
+    side = fwd.cross(no).normalized()
+    centre = back.lerp(front, 0.33) + no * h * 0.1  # sunk in the floor: hidden when closed
+    for v in geom["verts"]:
+        x, y, z = v.co
+        v.co = centre + side * (x * w) + fwd * (y * l) + no * (z * h)
+    obj = mesh_object("tongue", bm)
+    obj.data.materials.append(mats["tongue"])
+    out.append((obj, "jaw"))
+    return out
+
+
+def add_face_details(body, lip):
     """Nostrils and a mouth line (R1b: "certainly a nose", "consider a mouth"). They are
     projected onto the finished body and joined into it, so they deform exactly like the
-    skin around them. Material slot 1 is the dark pupil colour."""
+    skin around them. The mouth line runs along the upper lip of the slit (lip: its points,
+    corner to corner), covering the seam. Material slot 1 is the dark pupil colour."""
     f = F["face"]
     bpy.context.view_layer.update()
     bvh = BVHTree.FromObject(body, bpy.context.evaluated_depsgraph_get())
@@ -1054,8 +1281,8 @@ def add_face_details(body):
     r, n = f["mouth_r"], lod(16, 6)
     path = []
     for k in range(n + 1):
-        u = -1 + 2 * k / n
-        loc, nrm, _, _ = bvh.find_nearest(Vector(f["mouth"](1 if u >= 0 else -1, abs(u))))
+        loc = chain_point(lip, k / n)
+        _, nrm, _, _ = bvh.find_nearest(loc)
         path.append((loc - nrm * r * 0.35, nrm))
     rings = []
     for k, (p, nrm) in enumerate(path):
@@ -1125,9 +1352,15 @@ def build_dragon(breed, form="grown"):
     body = build_body()
     body.data.materials.append(mats["body"])
     body.data.materials.append(mats["pupil"])
-    add_face_details(body)
+    body.data.materials.append(mats["mouth"])
+    cut_mouth(body)
+    upper, lower = lip_chains(body)  # vertex indices: adding the face details keeps them
+    add_face_details(body, [body.data.vertices[i].co.copy() for i in upper])
     arm = build_armature()
-    bind(body, arm, lambda n: not n.startswith("wing"))
+    bind(body, arm, lambda n: not n.startswith("wing") and n != "jaw")  # weight_jaw paints the jaw
+    weight_jaw(body)
+    mouth_parts = build_mouth_parts(body, upper, lower, mats)
+    build_mouth_pocket(body, upper, lower)
 
     wings = build_wings(b["wings"], mats)
     for wobj in wings:
@@ -1135,7 +1368,7 @@ def build_dragon(breed, form="grown"):
         if wobj.name.startswith("membrane"):
             weight_membrane(wobj, wobj.name.split("_")[1][0])
 
-    groups = {"eyes": [], "horns": [], "frill": [], "spikes": [], "tail_tip": [], "heart": []}
+    groups = {"eyes": [], "horns": [], "frill": [], "spikes": [], "tail_tip": [], "heart": [], "mouth": []}
     snap = {"eyes": [], "horns": [], "frill": [], "spikes": [], "heart": []}
     d = dict(body=body, arm=arm, wings=wings, groups=groups, snap=snap, breed=b, mats=mats, form=form)
     for e in build_eyes(mats):
@@ -1149,6 +1382,8 @@ def build_dragon(breed, form="grown"):
     attach(d, "tail_tip", build_tail_tip(b["tail"], mats), "tail4")
     for h in build_heart(mats):
         attach(d, "heart", h, "chest")
+    for o, bone in mouth_parts:
+        attach(d, "mouth", o, bone)
     return d
 
 
@@ -1269,6 +1504,22 @@ def pose_stage(d, t, build, sit=False):
     ground(d)
 
 
+def open_jaw(d, degrees):
+    """Previews: open the mouth by this many degrees (the sign that lowers the chin)."""
+    arm = d["arm"]
+    pb = arm.pose.bones["jaw"]
+    pb.rotation_mode = "XYZ"
+    base = pb.rotation_euler.x
+    bpy.context.view_layer.update()
+    chin = (arm.matrix_world @ pb.tail).z
+    pb.rotation_euler.x = base + math.radians(degrees)
+    bpy.context.view_layer.update()
+    if (arm.matrix_world @ pb.tail).z > chin:
+        pb.rotation_euler.x = base - math.radians(degrees)
+        bpy.context.view_layer.update()
+    print(f"[model] jaw open {degrees} deg: local X {math.degrees(pb.rotation_euler.x - base):+.0f}")
+
+
 # ------------------------------------------------------------------------------ scene & render
 def setup_scene():
     scene = bpy.context.scene
@@ -1311,7 +1562,7 @@ def visible_points(ds):
 
 VIEWS = {"three_quarter": Vector((-0.75, -0.95, 0.38)), "side": Vector((-1, 0, 0.12)),
          "front": Vector((-0.15, -1, 0.2)), "top": Vector((-0.2, 0.3, 1.0)),
-         "back_quarter": Vector((-0.8, 0.9, 0.5))}
+         "back_quarter": Vector((-0.8, 0.9, 0.5)), "mouth": Vector((-0.55, -1, -0.05))}
 
 
 def head_points(d):
@@ -1334,6 +1585,10 @@ def frame_camera(cam, ds, view, lens=55, margin=1.55):
     """Frame the visible dragon(s) from a named view direction ('portrait' = head close-up)."""
     if view == "portrait":
         pts, view, margin = head_points(ds[0]), "three_quarter", 1.3
+    elif view == "mouth":  # the snout and jaw, from the front and a little below
+        arm = ds[0]["arm"]
+        pts = [arm.matrix_world @ getattr(arm.pose.bones[b], end) for b in ("snout", "jaw") for end in ("head", "tail")]
+        view, margin = "mouth", 2.6
     else:
         pts = visible_points(ds)
     lo = Vector((min(p.x for p in pts), min(p.y for p in pts), min(p.z for p in pts)))
@@ -1381,6 +1636,8 @@ def main():
                         bpy.data.objects.remove(o, do_unlink=True)
             built = build_dragon(BREED, form)
         pose_stage(built, t, built["breed"]["build"], sit="--sit" in argv)
+        if arg("--jaw"):
+            open_jaw(built, float(arg("--jaw")))
         report(built, stage)
         for view in views:
             frame_camera(cam, [built], view)

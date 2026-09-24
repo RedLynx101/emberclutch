@@ -7,7 +7,7 @@ twins {form}_lod1.ecm (+ parity references for LOD0).
 Builds each form with tools/blender/dragon_model.py, adds every Alpha 1 part variant, and
 writes the .ecm format read by src/core/model.cpp (docs/tech/architecture.md section 5):
 
-  * skeleton (body bones first = one 24-bone draw, then 12 wing bones), rest matrices;
+  * skeleton (body bones first = one 25-bone draw, then 12 wing bones), rest matrices;
   * growth tables: bone scales at t = 0 (runtime lerps to 1 by growth t), build multipliers
     (sturdy/sleek/long), the idle pose (Euler XYZ) and the young head lift;
   * meshes: body (1 key), wing variants (1 key), part variants baked at 4 growth keys
@@ -47,7 +47,8 @@ FORM_NAMES = [arg("--form")] if arg("--form") else ["hatchling", "grown"]
 LODS = [int(x) for x in arg("--lods", "0,1").split(",")]
 
 KIND_BODY, KIND_WINGS, KIND_PART = 0, 1, 2
-GROUP = {"eyes": 0, "horns": 1, "frill": 2, "spikes": 3, "tail_tip": 4, "heart": 5, "wings": 6, "body": 255}
+GROUP = {"eyes": 0, "horns": 1, "frill": 2, "spikes": 3, "tail_tip": 4, "heart": 5, "wings": 6, "mouth": 7,
+         "body": 255}
 SEX_ANY, SEX_MALE, SEX_FEMALE = 0, 1, 2
 # Variant ids match the genome enums in src/core/genetics.hpp. The dorsal ridge (group
 # "spikes") is picked by the frill gene: 0 spikes, 1 fin sail, 3 plumes (leaf falls back to 0).
@@ -57,13 +58,16 @@ RIDGE = {"spikes": 0, "fin": 1, "feather": 3}
 WINGS = {"classic": 0, "plumed": 1, "sail": 2}
 TAIL = {"plain": 0, "spade": 1, "tuft": 2, "fan": 3}
 # Palette slots (src/core/model.hpp kPal*): colours are set per dragon at runtime.
-PAL_BASE, PAL_ACCENT, PAL_PATTERN, PAL_HORN, PAL_MEMBRANE, PAL_IRIS, PAL_PUPIL, PAL_GLINT, PAL_GLOW = range(9)
+PAL_BASE, PAL_ACCENT, PAL_PATTERN, PAL_HORN, PAL_MEMBRANE, PAL_IRIS, PAL_PUPIL, PAL_GLINT, PAL_GLOW, PAL_TONGUE = range(10)
+PALETTE_FIELD = 32  # palette bytes per mesh in the file (src/core/model.hpp kPaletteField)
 MATERIAL_PAINT = {  # material name -> (palette A, palette B, emissive 0..255)
     "body": (PAL_BASE, PAL_ACCENT, 0), "body_plain": (PAL_BASE, PAL_BASE, 0),
     "accent_flat": (PAL_ACCENT, PAL_ACCENT, 0), "membrane": (PAL_MEMBRANE, PAL_MEMBRANE, 0),
     "horn": (PAL_HORN, PAL_HORN, 0), "iris": (PAL_IRIS, PAL_IRIS, 0), "pupil": (PAL_PUPIL, PAL_PUPIL, 0),
     "glint": (PAL_GLINT, PAL_GLINT, 200), "heart": (PAL_GLINT, PAL_GLOW, 255),
+    "tooth": (PAL_GLINT, PAL_HORN, 0), "tongue": (PAL_TONGUE, PAL_TONGUE, 0), "mouth": (PAL_PUPIL, PAL_TONGUE, 0),
 }
+MATERIAL_MIX = {"tooth": 60, "mouth": 110}  # fixed A -> B mix: ivory teeth, a dark rosy mouth
 HEART_CORE = 0.55  # the heartglow is white-hot inside this fraction of its radius, glow-coloured at the rim
 SEX_SCALE = {"horns": {SEX_MALE: 1.15, SEX_FEMALE: 1.0}, "frill": {SEX_MALE: 1.12, SEX_FEMALE: 1.0},
              "tail_tip": {SEX_MALE: 1.0, SEX_FEMALE: 1.15}}
@@ -90,6 +94,7 @@ def build_all(form):
     tag("eyes", 0, SEX_ANY, d["groups"]["eyes"])
     tag("spikes", RIDGE["spikes"], SEX_ANY, d["groups"]["spikes"])
     tag("heart", 0, SEX_ANY, d["groups"]["heart"])
+    tag("mouth", 0, SEX_ANY, d["groups"]["mouth"])
 
     def add_part(group, variant, sex, pieces):
         """pieces: [(object, bone)]"""
@@ -155,6 +160,8 @@ def mesh_arrays(objs, palette_of, matrix_of, scale):
             skin.append(palette_of(o, v))
             if vmat[v.index] == "heart":  # radial white-hot core (the object origin is the heart's centre)
                 mix = int(round(255 * min(1.0, v.co.length / (reach * HEART_CORE))))
+            elif vmat[v.index] in MATERIAL_MIX:
+                mix = MATERIAL_MIX[vmat[v.index]]
             else:
                 mix = int(round(mask.data[v.index].color[1] * 255)) if (mask and pa != pb) else 0
             paint.append((pa, pb, mix, emissive))
@@ -229,7 +236,7 @@ def part_meshes(d, tagged, bone_index, scale):
 def write_ecm(path, d, meshes, order, scale):
     arm = d["arm"]
     out = bytearray()
-    out += b"ECM1" + struct.pack("<HH", 1, len(order))
+    out += b"ECM1" + struct.pack("<HH", 2, len(order))
     index = {n: i for i, n in enumerate(order)}
     for name in order:
         bone = arm.data.bones[name]
@@ -245,7 +252,7 @@ def write_ecm(path, d, meshes, order, scale):
         out += struct.pack("<3f", *young[name])
     for build in ("sturdy", "sleek", "long"):
         for name in order:
-            out += struct.pack("<2f", *dm.F["builds"][build].get(dm.base_key(name), (1.0, 1.0)))
+            out += struct.pack("<2f", *dm.F["builds"][build].get(dm.scale_key(name), (1.0, 1.0)))
     for name in order:
         out += struct.pack("<3f", *dm.F["base_pose"].get(name, (0.0, 0.0, 0.0)))
     for name in order:
@@ -253,12 +260,12 @@ def write_ecm(path, d, meshes, order, scale):
     # meshes
     out += struct.pack("<H", len(meshes))
     for m in meshes:
-        pal = list(m.palette) + [0] * (24 - len(m.palette))
-        assert len(m.palette) <= 24, m.name
+        pal = list(m.palette) + [0] * (PALETTE_FIELD - len(m.palette))
+        assert len(m.palette) <= 25, m.name  # the shader's bone budget (src/core/model.hpp kMaxPalette)
         n_verts = len(m.keys[0][0])
         assert n_verts < 65536 and len(m.indices) < 65536, m.name
         ts = list(m.key_ts) + [0.0] * (4 - len(m.key_ts))
-        out += struct.pack("<16sBBBBB24sB3x4fHH", m.name.encode()[:15], m.kind, m.group, m.variant, m.sex,
+        out += struct.pack(f"<16sBBBBB{PALETTE_FIELD}sB3x4fHH", m.name.encode()[:15], m.kind, m.group, m.variant, m.sex,
                            len(m.palette), bytes(pal), len(m.keys), *ts, n_verts, len(m.indices))
         for pos, nrm in m.keys:
             for p in pos:
@@ -346,7 +353,7 @@ def export_form(form, lod):
     arm = d["arm"]
     order = bone_order(arm)
     bone_index = {n: i for i, n in enumerate(order)}
-    assert all(not n.startswith("wing") for n in order[:24]), "body bones must come first"
+    assert all(not n.startswith("wing") for n in order[:len(dm.BONES)]), "body bones must come first"
 
     meshes, sources = [], []
     meshes.append(skinned_mesh("body", KIND_BODY, GROUP["body"], 0, [d["body"]], bone_index,

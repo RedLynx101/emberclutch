@@ -19,7 +19,7 @@ bool loadModel(const u8* data, std::size_t size, ModelData& out) {
     char magic[4];
     c.bytes(magic, 4);
     if (!c.ok() || std::memcmp(magic, "ECM1", 4) != 0) return false;
-    if (c.u16v() != 1) return false;  // version
+    if (c.u16v() != 2) return false;  // version
     const u16 boneCount = c.u16v();
     if (boneCount == 0 || boneCount > kMaxBones) return false;
 
@@ -58,6 +58,7 @@ bool loadModel(const u8* data, std::size_t size, ModelData& out) {
         m.sex = c.u8v();
         m.paletteCount = c.u8v();
         c.bytes(m.palette, kMaxPalette);
+        c.skip(kPaletteField - kMaxPalette);
         m.keyCount = c.u8v();
         c.skip(3);
         for (float& t : m.keyT) t = c.f32();

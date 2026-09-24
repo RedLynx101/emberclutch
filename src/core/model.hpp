@@ -19,6 +19,7 @@ enum PartGroup : u8 {
     kGroupTailTip = 4,
     kGroupHeart = 5,
     kGroupWings = 6,
+    kGroupMouth = 7,  // teeth and tongue
     kGroupBody = 255,
 };
 enum PartSex : u8 { kSexAny = 0, kSexMale = 1, kSexFemale = 2 };
@@ -34,10 +35,12 @@ enum Palette : u8 {
     kPalPupil,
     kPalGlint,
     kPalGlow,
+    kPalTongue,  // also mixed into the inside of the mouth
     kPalCount,
 };
 
-constexpr int kMaxPalette = 24;  // bones per draw call (vertex shader uniform budget)
+constexpr int kMaxPalette = 25;    // bones per draw call (vertex shader uniform budget)
+constexpr int kPaletteField = 32;  // palette bytes per mesh in the file (format version 2)
 constexpr int kMaxKeys = 4;
 constexpr int kModelBuilds = 3;  // sturdy, sleek, long (genome Build order)
 

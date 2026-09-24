@@ -38,4 +38,7 @@ shows the same motion. The camera stays put, so a hop or a pounce moves through 
 - Walking legs don't bend around obstacles or slopes (flat den floor for now).
 
 ## Noah's verdict
-*(pending)*
+- 2026-09-24: folded wings clipped into the back and weren't cute: redone as a bird-like
+  fold with the membrane following the fingers (done). The **tail wag** pivots near the
+  back of the dragon: redo it centred on the body with cute leg movement (planned, see the
+  Alpha 1 plan's cuteness pass).

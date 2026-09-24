@@ -230,7 +230,7 @@ def decal_line(m, pts, width, bone, paint):
 
 def write_ecm(path, m):
     """.ecm v1 (src/core/model.cpp), two bones and one body mesh."""
-    out = bytearray(b"ECM1" + struct.pack("<HH", 1, 2))
+    out = bytearray(b"ECM1" + struct.pack("<HH", 2, 2))  # version 2: 32-byte palettes
     for name, parent, z in (("root", -1, 0.0), ("cap", 0, SEAM * H)):
         out += struct.pack("<16sbB2x", name.encode(), parent, 0)
         for row in ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, z)):
@@ -241,7 +241,7 @@ def write_ecm(path, m):
     out += struct.pack("<f", 0) * 2                       # young head lift
     out += struct.pack("<H", 1)
     assert len(m.pos) < 65536 and len(m.idx) < 65536
-    out += struct.pack("<16sBBBBB24sB3x4fHH", b"shell", 0, 255, 0, 0, 2, bytes([0, 1] + [0] * 22), 1,
+    out += struct.pack("<16sBBBBB32sB3x4fHH", b"shell", 0, 255, 0, 0, 2, bytes([0, 1] + [0] * 30), 1,
                        1.0, 0.0, 0.0, 0.0, len(m.pos), len(m.idx))
     for p in m.pos:
         out += struct.pack("<3f", *p)

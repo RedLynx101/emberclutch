@@ -72,18 +72,24 @@ the whole simulation deterministic and testable without hardware (`make -C tests
   blended on the CPU each frame.
 - The PICA200 vertex shader has 96 float constant registers. A 3×4 bone matrix takes 3,
   so after the projection and model-view matrices there is room for about 28 bones per
-  draw call. The rig targets **≤ 24 bones per draw**. The body and wings are separate
-  draw calls with their own bone sets if the full rig grows past that.
+  draw call. The body draw uses **25 bones** (the 24 of the body plus the jaw); the wings
+  are a separate draw with their own bone set.
 - Skinning happens in a picasso vertex shader (`src/app/dragon.v.pica`), with 2 bone
   weights per vertex (limited in Blender, so the parity test matches exactly). The shader
   reads bone rows by relative addressing (`a0` = bone index × 3); uniforms are projection
-  (4) + model-view (4) + 24 bones (72) + palette (9) + 2 constants = 91 of 96.
+  (4) + model-view (4) + 25 bones (75) + palette (10) + 2 constants = 95 of 96.
+- **The mouth** (D41): a `jaw` bone parented to the snout, parallel to it and scaled by
+  the snout's growth and build tables, so the closed lips meet at every stage; clips open
+  it by rotating it about a hinge behind the mouth corners. The snout is slit along the
+  mouth line; the lower lip and chin are weighted to the jaw, fading back to the throat
+  behind the corners. A dark pocket (roof and floor) fills the opening, and the teeth and
+  tongue are a rigid part group.
 - **LOD1** (`{form}_lod1.ecm`): the same skeleton, growth tables and part layout with
   fewer segments. A PC test checks it shares the LOD0 rig.
 - **Pose math** (`src/core/skeleton.cpp`) copies Blender's rule for bones with scale
   inheritance off: a child's joint follows the parent's full, scaled matrix, but its
   orientation ignores the parent's scale.
-- Parts (eyes, horns, frill, dorsal ridge, tail tip, heartglow) are rigid meshes attached to
+- Parts (eyes, horns, frill, dorsal ridge, tail tip, heartglow, teeth and tongue) are rigid meshes attached to
   fixed bones, re-baked into one per-dragon buffer when growth changes. Only the genome's
   variants (and the dragon's sex, D23) are drawn; the ridge variant follows the Frill gene
   (D38), falling back to spikes. Three draws per dragon: body, parts, wings (the wing draw
@@ -220,7 +226,8 @@ tools/audio/make_placeholder_sfx.py         --> romfs/sfx/*.wav
 - **Why not glTF:** the growth tables, the per-stage surface-snapped part offsets, part
   variants and sex differences live in the Blender scene and have no glTF equivalent, so
   the exporter writes the game format directly.
-- **`.ecm` v1** (little-endian, read by `src/core/model.cpp`):
+- **`.ecm` v2** (little-endian, read by `src/core/model.cpp`; v2 widened the bone palette
+  field to 32 bytes, of which at most 25 are used):
   header `ECM1`, version, bone count; bones (name, parent, flags, 3x4 rest matrix);
   growth tables (bone scales at the form's t = 0, build multipliers, idle pose Euler XYZ,
   young head lift); meshes (name, kind body/wings/part, group, variant, sex, bone palette,

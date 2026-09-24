@@ -55,8 +55,14 @@ While waiting on a review, work continues on the non-art packages (engine, save,
 - **Cuteness pass** (Noah, 2026-09-24, after seeing the den in the emulator):
   - ✅ Folded wings tuck like a bird's (a Z: upper arm up, forearm down and forward, hand
     back), clear of the spine; solved from bone directions (`tools/blender/fold_solver.py`).
-  - An animated mouth: a jaw that opens for eating, yawning, greeting and happy panting,
-    with little teeth lining it and a small tongue.
+  - ✅ An animated mouth (D41): a jaw that opens for eating (it chomps on each bite),
+    yawning, greeting, petting, the favourite-food wiggle, belly rubs, pounces and a
+    little pant when trotting. Little teeth line both lips (two tiny fangs peek out when
+    it's closed), with a pink tongue and a dark rosy mouth. Previews:
+    `dragon_model.py -- --views mouth --jaw 28`.
+  - Redo the **tail wag** (Noah): it pivots near the back of the dragon. Centre the wiggle
+    on the body (hips and shoulders swaying against each other) and add cute leg movement
+    (little paddling steps).
   - "A bit more cute" in general (candidates: blinking, softer expressions).
   - Then texturing (the Pattern gene, scale detail) → R2.
 - *Verify:* script prints tris/bones per part vs budget; renders saved to `docs/art/`.

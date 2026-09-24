@@ -181,7 +181,7 @@ GROWN = dict(
               radii={"root": 0.10, "elbow": 0.075, "wrist": 0.06, "finger": 0.022, "tip": 0.008},
               arm_tris=180, thickness=0.014),
     mask=dict(max_x=0.34, max_z=2.35, min_z=-1.0, tail_cut=(1.2, 0.3)),
-    inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.02, "frill": 0.09, "heart": -0.012},
+    inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.02, "frill": 0.09, "heart": -0.065},  # heart: proud of the chest, which bulges when sitting (part_clearance.py)
     # Face details (R1b): nostrils on the snout tip and a jaw line, projected onto the body.
     face=dict(nostril=(0.05, -2.20, 2.52), nostril_r=(0.024, 0.015, 0.008), mouth_r=0.012,
               mouth=lambda side, a: (side * 0.15 * a ** 0.7, -2.25 + 0.47 * a ** 1.5, 2.41 + 0.06 * a * a)),
@@ -283,7 +283,7 @@ HATCH = dict(
               radii={"root": 0.045, "elbow": 0.035, "wrist": 0.03, "finger": 0.011, "tip": 0.005},
               arm_tris=120, thickness=0.008),
     mask=dict(max_x=0.22, max_z=1.06, min_z=0.13, tail_cut=None),
-    inset={"eyes": 0.032, "horns": 0.02, "spikes": 0.012, "frill": 0.06, "heart": -0.008},
+    inset={"eyes": 0.032, "horns": 0.02, "spikes": 0.012, "frill": 0.06, "heart": -0.03},  # heart: see the grown form
     face=dict(nostril=(0.05, -1.00, 1.03), nostril_r=(0.026, 0.017, 0.009), mouth_r=0.011,
               mouth=lambda side, a: (side * 0.15 * a ** 0.8, -1.03 + 0.2 * a ** 1.6, 0.915 + 0.035 * a * a)),
 )

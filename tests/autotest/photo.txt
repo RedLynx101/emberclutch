@@ -1,0 +1,45 @@
+# Photo mode (D66, WP12): the camera under the heartglow, the den held still, a snap saved to
+# sdmc:/3ds/emberclutch/photos/ in its frame (name and date).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+wait 0.3
+tap 238 131
+key SELECT
+name Rill
+wait 12
+tap 299 50
+wait 0.5
+shot p1-open
+wait 1.5
+shot p2-still
+key A
+wait 0.1
+shot p3-flash
+wait 2
+shot p4-saved
+key X
+wait 2
+shot p5-close
+key A
+wait 2
+key RIGHT
+wait 2
+tap 160 110
+wait 2
+shot p6-second
+tap 84 216
+wait 2
+shot p7-wide
+key B
+wait 1
+shot p8-back
+quit

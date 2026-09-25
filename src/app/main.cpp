@@ -146,9 +146,11 @@ int main() {
                 sceneFns(app.scene).drawTop(app);
                 if (paused) dimTopForMenu(app);
             }
-            drawToast(app);
-            drawSaveIcon(app);
-            debugDrawOverlay(app);
+            if (!app.photo.snap) {  // the photo's picture has nothing over it
+                drawToast(app);
+                drawSaveIcon(app);
+                if (!app.photo.active) debugDrawOverlay(app);
+            }
         }
 
         const u32 topTris = app.stats.tris;

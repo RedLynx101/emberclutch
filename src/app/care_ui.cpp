@@ -7,6 +7,7 @@
 
 #include "app/audio.hpp"
 #include "app/perf.hpp"
+#include "app/photo.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
@@ -736,11 +737,17 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
         drawProfile(app, in, d, now);
         return;
     }
+    // The camera under it: photo mode (D66).
+    if (photo::cameraButton(app, in) && !c.stroke.down) {
+        photo::open(app);
+        return;
+    }
 
     // The tray.
     panel({0, kTrayY - 2, 320, 42}, withAlpha(theme::kDenPlum, 0.82f));
     const Vec2 touch{in.tx, in.ty};
-    bool onUi = in.ty >= kTrayY - 2;
+    bool onUi = in.ty >= kTrayY - 2 ||
+                Rect{photo::kButtonX, photo::kButtonY, photo::kButtonW, photo::kButtonH}.contains(in.tx, in.ty);
     int toys = 1;  // the ball, and the Market's toys bought
     for (Tool t : {Tool::Feather, Tool::Rope, Tool::Orb}) toys += owns(app.game, toyItem(t));
     for (int i = 0; i < kToolCount; ++i) {

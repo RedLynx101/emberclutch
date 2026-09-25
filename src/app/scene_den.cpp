@@ -7,6 +7,7 @@
 #include "app/audio.hpp"
 #include "app/autotest.hpp"
 #include "app/care_ui.hpp"
+#include "app/photo.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
@@ -589,6 +590,10 @@ void denThings(App& app, const DenRoster& r, s64 now) {
 }
 
 void update(App& app, const Input& in) {
+    if (photo::active(app)) {  // the den holds still for the picture
+        photo::update(app, in);
+        return;
+    }
     // Dev time skip (also in the dev menu): R+A = +1 hour, R+X = +1 day.
     if ((in.held & KEY_R) && (in.down & KEY_A)) app.game.devOffset += kHour;
     if ((in.held & KEY_R) && (in.down & KEY_X)) app.game.devOffset += kDay;
@@ -703,16 +708,21 @@ void drawTop(App& app) {
     if (r3d::ready()) {
         r3d::DenDragon shown[r3d::kDenShown];
         const int n = denShown(app, order, count, shown);
+        r3d::setDenClose(photo::active(app) && app.photo.close);
         r3d::drawDen(app, shown, n, now, &app.fx);
         // With company in the den, a little heart floats over the one you're caring for.
         Vec3 head;
         float hx, hy, ppu;
-        if (count > 1 && r3d::headOf(0, head) && r3d::project({head.x, head.y, head.z + 0.35f}, hx, hy, ppu)) {
+        if (count > 1 && !photo::active(app) && r3d::headOf(0, head) && r3d::project({head.x, head.y, head.z + 0.35f}, hx, hy, ppu)) {
             const float bob = 2.0f * std::sin(app.t * 3.0f);
             heart(hx, hy - 6 + bob, 9, withAlpha(theme::kClutchGold, 0.9f));
         }
     }
 
+    if (photo::active(app)) {  // no names or hints: the frame, when it's the picture
+        photo::drawTop(app, d, now);
+        return;
+    }
     char line[96];
     if (d.stage == Stage::Egg) {
         const float progress = static_cast<float>(d.incubationSeconds) / kIncubationSeconds;
@@ -799,6 +809,10 @@ void drawHatchBottom(App& app, const Dragon& d) {
 
 void drawBottom(App& app, const Input& in) {
     fixCare(app);
+    if (photo::active(app)) {
+        photo::drawBottom(app, in);
+        return;
+    }
     Dragon& d = activeDragon(app);
     const s64 now = nowLocal(app);
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);

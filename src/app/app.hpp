@@ -121,6 +121,15 @@ struct HatchState {
     ShellBurst burst;       // the pieces of the shell
 };
 
+// The den's photo mode (D66, src/app/photo.cpp): the den holds still while it's open.
+struct PhotoState {
+    bool active = false;
+    bool snap = false;  // this frame is the picture: drawn in its frame, nothing else over it
+    float flash = 0;    // the shutter's white flash after, fading (1 .. 0)
+    bool close = false; // the camera on the one you care for (else the whole den)
+    bool tapped = false; // the big button: snapped at the next update (the top is drawn first)
+};
+
 // The 3DS keyboard runs between frames (it takes over both screens): main.cpp opens it for
 // whatever a scene asked (src/app/keyboard.cpp).
 enum class KeyboardFor : u8 { None, PlayerName, NameHatchling, Rename };
@@ -172,6 +181,7 @@ struct App {
     Ball ball;
     EggCare eggCare;
     HatchState hatch;
+    PhotoState photo;
     KeyboardFor keyboard = KeyboardFor::None;
     u32 nameRoll = 0;  // the next name suggestion
 

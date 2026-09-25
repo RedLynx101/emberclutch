@@ -114,6 +114,8 @@ int forceLook();
 int lookFor(const Dragon& d);
 // The den camera watches this point too (a thrown ball) while `weight` > 0.
 void followInDen(Vec3 at, float weight);
+// Photo mode (D66): the den camera frames the one you care for (drawn first) alone.
+void setDenClose(bool close);
 
 // Projects a den-space point with the last den camera: top-screen pixels and pixels per
 // den unit at that depth. False before the first drawDen or behind the camera.

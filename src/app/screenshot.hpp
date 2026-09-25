@@ -12,6 +12,10 @@ namespace ec::screenshot {
 
 // Y was pressed: this frame is the picture, as drawn.
 void request();
+// The den's photo mode (D66): this frame's top screen alone, as
+// sdmc:/3ds/emberclutch/photos/photo_NNNN.bmp (400 x 240, no log line). False while the last
+// picture is still being written.
+bool requestPhoto();
 // Around each frame, like the autotest's shots: after both screens are drawn, which
 // framebuffers the picture lands in (and the numbers for the log); once the next frame has
 // begun (the transfer is done), copying it and starting a thread to write it to the SD card

@@ -332,6 +332,7 @@ Vec3 g_follow;          // the den camera also watches this (a thrown ball)
 const DenThings* g_things = nullptr;
 GpuMesh g_toyMeshes[kToys], g_bowlFoodMesh, g_decorMeshes[kItems], g_homeRugMesh, g_breedBannerMesh;
 float g_followWeight = 0;
+bool g_denClose = false;  // photo mode's close framing: the one cared for alone
 
 // Toon ramp on L.N (signed): plum shadow, a mid band, full light.
 float toonRamp(float x, float) { return x < 0.12f ? 0.0f : (x < 0.45f ? 0.62f : 1.0f); }
@@ -1552,6 +1553,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
     float maxRadius = 0, spread = 0;
     Vec2 mid{0, 0}, at[kDenShown];
     bool drawn[kDenShown] = {};
+    float rad[kDenShown] = {};
     int shown = 0;
     for (int i = 0; i < count; ++i) {
         const Dragon& d = *dragons[i].dragon;
@@ -1567,6 +1569,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
             at[i] = dragons[i].actor ? dragons[i].actor->behavior.pos : Vec2{};
         }
         maxRadius = std::fmax(maxRadius, r);
+        rad[i] = r;
         mid.x += at[i].x;
         mid.y += at[i].y;
         drawn[i] = true;
@@ -1590,7 +1593,12 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         mid.y += (g_follow.y - mid.y) * 0.45f * g_followWeight;
         radius = std::fmax(radius, (apart * 0.6f + maxRadius * 0.6f) * g_followWeight + radius * (1 - g_followWeight));
     }
-    const Vec3 want{mid.x, mid.y, radius * 0.62f};  // feet land low on the screen
+    if (g_denClose && drawn[0]) {  // photo mode, close: the one you care for fills the picture
+        mid = at[0];
+        radius = rad[0] * 0.8f;
+    }
+    // Feet land low on the screen (close up, a little higher: above the photo's name plate).
+    const Vec3 want{mid.x, mid.y, radius * (g_denClose ? 0.4f : 0.62f)};
     const float k = g_camRadius > 0 ? std::fmin(1.0f, app.dt * 2.5f) : 1.0f;
     g_camTarget = lerp(g_camTarget, want, k);
     g_camRadius += (radius - g_camRadius) * k;
@@ -2003,6 +2011,8 @@ void setForceLook(int look) {
 }
 
 int forceLook() { return g_forceLook; }
+
+void setDenClose(bool close) { g_denClose = close; }
 
 void followInDen(Vec3 at, float weight) {
     g_follow = at;

@@ -202,6 +202,14 @@ inline constexpr const char* kDenFull = "The den is full (three beds).";
 inline constexpr const char* kEggToVault = "The nests are full: it went to the Vault.";
 inline constexpr const char* kScreenshotSaved = "Screenshot %s saved.";  // Y, anywhere
 inline constexpr const char* kScreenshotFailed = "Couldn't save the screenshot. Is the SD card full?";
+// Photo mode (D66)
+inline constexpr const char* kPhotoMode = "Photo mode";
+inline constexpr const char* kPhotoHint = "The den holds still for the picture.";
+inline constexpr const char* kSnap = "Snap (A)";
+inline constexpr const char* kPhotoClose = "Closer (X)";
+inline constexpr const char* kPhotoWide = "The den (X)";
+inline constexpr const char* kPhotoSaved = "Photo %s saved to the SD card.";
+inline constexpr const char* kPhotoFailed = "Couldn't save the photo. Is the SD card full?";
 
 // Title, system menu and settings (WP10)
 inline constexpr const char* kContinue = "Continue";

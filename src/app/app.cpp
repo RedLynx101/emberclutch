@@ -94,6 +94,7 @@ void tickWorld(App& app) {
 }
 
 void openMap(App& app) {
+    app.photo.active = false;
     // The places' order on the map (scene_map kPlaces): den, sanctuary, vault, stone, market, trails.
     switch (app.scene) {
         case SceneId::Sanctuary: app.mapFrom = 1; break;

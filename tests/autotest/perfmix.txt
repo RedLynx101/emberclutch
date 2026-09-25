@@ -1,0 +1,66 @@
+# WP12's budgets: a full den of three grown dragons in three looks (dev menu page 2: Mix looks),
+# the overlay on, a screenshot (its log line has the timings, triangles and free memory).
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+key SELECT
+wait 0.3
+key RIGHT
+wait 0.5
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.3
+key RIGHT
+wait 0.5
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key R
+wait 0.3
+tap 82 181
+wait 0.3
+key SELECT
+wait 5
+shot q1-mixed-den
+key Y
+wait 2
+tap 30 221
+wait 3
+shot q2-mixed-closeup
+key Y
+wait 2
+quit

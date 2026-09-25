@@ -182,7 +182,7 @@ bool debugMenu(App& app, const Input& in) {
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
         {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26}, {"Next look", 27},
-        {"Force look", 28}, {"GPU probe", 29}, {"Next rare", 30}, {"Dex: this breed", 31},
+        {"Force look", 28}, {"GPU probe", 29}, {"Next rare", 30}, {"Dex: this breed", 31}, {"Mix looks", 32},
     };
     const Entry* items = app.devPage ? kPage2 : kPage1;
     const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
@@ -240,6 +240,13 @@ bool debugMenu(App& app, const Input& in) {
                 const int breed = breedIndex(d.genome);
                 for (int l = 0; l < kLookCount; ++l) dexSee(app.game, dexDragon(breed, l));
                 showToastf(app, "Dragondex: %s complete", breedName(d.genome));
+                break;
+            }
+            case 32: {  // WP12's budgets: the den's dragons in three different looks (not classic)
+                const DenRoster r = denRoster(app.game);
+                for (int bed = 0; bed < kDenDragons; ++bed)
+                    if (r.dragon[bed] >= 0) app.game.dragons[r.dragon[bed]].look = static_cast<u8>(1 + bed % 3);
+                showToast(app, "Looks: Pebbleback, Tallneck, wild");
                 break;
             }
             case 29:  // WP11d: each part's share of the GPU's time, one left out at a time

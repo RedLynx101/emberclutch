@@ -10,7 +10,8 @@ WP1), run 15 (after flying, the map and a few places), run 16 (the whole milesto
 30 fps? The valley is a placeholder (a height field, cone trees, a lake, a block for the
 den's cliff, fog, the day's sky); the real landscape comes in step 2 with the look you pick
 at R7. 0.1.15 also carries 0.1.14 (run 13's fixes), which hasn't been on the 3DS yet.
-About 20–25 minutes. Press **Y** wherever a step says so, or whenever something looks off:
+About 20–25 minutes; the checklists page (its link is in STATUS) has these steps with boxes to
+tick and room for the numbers. Press **Y** wherever a step says so, or whenever something looks off:
 each Y saves both screens and writes the frame time, the triangles and memory to the log,
 and I copy them off afterwards (`tools\pull_shots.ps1`). It's a dev build: SELECT opens the
 dev menu, L/R turn its pages.
@@ -22,9 +23,9 @@ triangles) ran 17–18 ms on this 3DS in run 13. The emulator can't say how long
 takes to build the ground as you fly (up to 2 tiles a frame); that's the main question.
 
 ## 0. Install
-Once the files are on the SD card (tell me when the 3DS is on the network): in **FBI**,
-SD → cias → `emberclutch.cia` → Install CIA, over the game (the save stays). The `.3dsx`
-is at `sdmc:/3ds/emberclutch/emberclutch.3dsx` too.
+The files are on the SD card (sent 2026-09-25 to the 3DS at .51): in **FBI**, SD → cias →
+`emberclutch.cia` → Install CIA, over the game (the save stays). The `.3dsx` is at
+`sdmc:/3ds/emberclutch/emberclutch.3dsx` too.
 
 ## 1. Run 13's fixes (0.1.14), quickly
 1. **3D:** slider up, open a dragon's profile (tap the heartglow): the platform should sit

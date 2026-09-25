@@ -2,6 +2,13 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-25 — R7: the valley's look, and new dragons
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D76 | **New dragons before Beta goes on.** Four wholly new dragon silhouettes in the new look, crossing the cozy life-sim softness with a dragon film's lovable, readable dragons and a touch of awe and majesty in the adults; shown in every stage (review [R11](../art/reviews/R11-new-dragons.md): concept sheets first, then the models, built with Opus 5.5 subagents). Questions to Noah before the models are made; the rest of Beta (step 2 on) waits until the dragons are settled. Supersedes D73's 8A ("the dragons' look carried over") | Noah, 2026-09-25: "create 4 variants of dragons (wholly new silhouettes) that also share the new art style ... We'll figure out the dragon stuff before moving on with Beta" | Approved (details pending R11) |
+| D75 | **R7: look A, storybook, in the way of a cozy life-sim** (*Animal Crossing* as the reference for textures, feel, speech and player movement), with dragons and fantasy: hand-painted soft textures, round chunky shapes, a rolling-log curve to the ground on foot, people about 2–2.5 heads tall, analog walking with a run button, speech voiced letter by letter and pitched per speaker, the valley's music leaning laid-back and playful. The places, people and palette as in the concept images; more villagers later lean into high fantasy, not only humans. Spelled out in [look and feel](../design/look-and-feel.md) | Noah's R7 answers (2026-09-25): "1 A ... 2 Looks good. 3 Looks good, we can add more later. Mayb lean into high fantasy ... 4 Looks great" | Approved |
+
 ## 2026-09-25 — Run 13: the Alpha 2 review
 
 | # | Decision | Why | Status |

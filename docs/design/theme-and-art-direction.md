@@ -1,6 +1,8 @@
 # Theme & Art Direction
 
-Status: **v0.2 — approved** (2026-09-23, review round 1)
+Status: **v0.2 — approved** (2026-09-23, review round 1). **Beta (D75):** the storybook look of
+a cozy life-sim, spelled out in [look and feel](look-and-feel.md); where the two differ, that
+page wins. The dragons are being redesigned to match ([R11](../art/reviews/R11-new-dragons.md), D76).
 
 ## 1. The idea in one line
 
@@ -73,7 +75,9 @@ competitions lean **cool** (sky-teal) with warm accents. Never pure black or pur
   on a teal Tide dragon). Keep the chest unoccluded in every idle pose, including the
   hatchling's big head.
 - **Environments:** vertex-colored low-poly with baked lighting and gradient skies.
-  Atmospheric fog hides the short draw distance in Skyreach Valley.
+  Atmospheric fog hides the short draw distance in Skyreach Valley. From Beta (D75):
+  small hand-painted tiling textures tinted by the vertex colour, round chunky props, and
+  the ground curving away on foot (the rolling log).
 - **Particles:** a small budget of embers, sparkles, leaves and breath effects.
 - Stereoscopic 3D is supported but optional. The game must look complete in 2D mode.
 
@@ -112,6 +116,8 @@ competitions lean **cool** (sky-teal) with warm accents. Never pure black or pur
 - **Dragon voices:** chirps and trills for hatchlings, deepening to rumbles and calls as
   they grow. Voices are pitch-shifted per individual so no two dragons sound identical.
 - **Den:** a crackling hearth and distant wind. The valley: open wind and birdsong.
+- **People (Beta, D75):** speech voiced letter by letter from one recorded alphabet, sped
+  up and pitched per speaker; dragons never talk.
 
 ## 10. Concept art
 

@@ -1,5 +1,11 @@
 # Emberclutch — Suno Music Brief, Batch 3 (Beta: *The valley*)
 
+> **Updated after R7 (D75):** the valley goes the storybook way of a cozy life-sim, so
+> `valley-day`, `valley-night` and `village-green` now lean laid-back and playful (soft
+> piano, marimba, guitar, brushed drums) with the game's fantasy colour. Takes already made
+> from the first prompts are fine too. The working checklist with copy buttons is the
+> Emberclutch checklists page (link in STATUS).
+
 **For Noah, 2026-09-25** (Beta WP15, sent early so the music arrives ahead of the valley
 work). Same setup as [batch 1](suno-music-brief.md): **Suno v5.5, paid plan, Custom Mode,
 Instrumental ON**, Weirdness ~30%, Style Influence ~75%, the same Exclude Styles list
@@ -47,23 +53,23 @@ would tie the game together. Fresh takes are fine too.
 
 ## 1. "Valley Day" — out in Skyreach Valley
 **Slug:** `valley-day` · **Plays:** loop, on foot in the valley by day (flying keeps
-`skyreach`) · **Mood:** open, breezy, curious; a gentle adventure, room to breathe
+`skyreach`) · **Mood:** sunny, carefree, playful; a lazy afternoon wander
 
 **Style**
 ```
-Pastoral fantasy exploration music, open and breezy, 96 BPM, G major, acoustic guitar fingerpicking, warm tin whistle and flute melody, light strings, soft hand drums and shaker, sense of wide green valley and blue sky, cozy handheld adventure game overworld loop, instrumental, no vocals
+Laid-back cozy life-sim overworld music, playful and sunny, 96 BPM, G major, soft piano and marimba melody, acoustic guitar strums, pizzicato strings, light brushed drums and shaker, whistled tin whistle counter-melody, a touch of harp, carefree afternoon in a green fantasy valley, handheld game loop, instrumental, no vocals
 ```
 
 **Lyrics**
 ```
 [Instrumental]
-[Intro: acoustic guitar fingerpicking, light]
-[Melody: tin whistle, open and airy]
-[Groove: soft hand drums and shaker join]
-[Melody: flute answers, strings swell gently]
-[Groove: full, steady and warm]
-[Instrumental Break: guitar and strings]
-[Melody: tin whistle returns]
+[Intro: soft piano and acoustic guitar]
+[Melody: marimba, bouncy and light]
+[Groove: brushed drums and pizzicato join]
+[Melody: tin whistle answers the marimba]
+[Groove: easy and warm]
+[Instrumental Break: piano and harp]
+[Melody: marimba returns]
 ```
 
 **Keep a take that:** walks at an even pace with an airy melody and no big climaxes (it
@@ -77,21 +83,21 @@ flights (quieter than `skyreach`) · **Mood:** hushed, starry, safe; lanterns an
 
 **Style**
 ```
-Gentle nocturnal fantasy ambient music, calm and starry, 70 BPM, E minor to G major, soft celesta and harp arpeggios, warm low strings, airy synth pad, distant flute, slow and spacious, peaceful night meadow with fireflies, cozy handheld game night loop, instrumental, no vocals
+Mellow cozy night music, gentle jazzy lullaby, 72 BPM, F major, soft electric piano and vibraphone, upright bass, very soft brushed drums, harp and celesta twinkles, fireflies over a quiet fantasy valley, calm and safe, handheld life-sim night loop, instrumental, no vocals
 ```
 
 **Lyrics**
 ```
 [Instrumental]
-[Intro: harp arpeggios, hushed]
-[Melody: celesta, slow and twinkling]
-[Pad: warm low strings and airy pad]
-[Melody: distant flute]
-[Pad: harp and celesta together, calm]
+[Intro: soft electric piano, hushed]
+[Melody: vibraphone, slow and warm]
+[Groove: upright bass and soft brushes]
+[Melody: celesta and harp twinkles]
+[Groove: calm and easy]
 [Instrumental Break]
 ```
 
-**Keep a take that:** stays soft throughout (no drums, or only the faintest), so it sits
+**Keep a take that:** stays soft throughout (only the faintest brushes), so it sits
 under wind and water sounds and works at a glide as well as a stroll.
 
 ---
@@ -126,17 +132,17 @@ afternoon; people going about their day
 
 **Style**
 ```
-Cozy fantasy village music, friendly and homely, 92 BPM, C major, accordion and acoustic guitar, playful fiddle melody, upright bass, light tambourine and wood block, warm and sunny, small village square, cozy handheld game town loop, instrumental, no vocals
+Cheerful cozy village music, easygoing bossa nova groove, 92 BPM, C major, nylon acoustic guitar and accordion, playful clarinet and whistle melody, upright bass, light shaker and wood block, sunny friendly fantasy town square, handheld life-sim town loop, instrumental, no vocals
 ```
 
 **Lyrics**
 ```
 [Instrumental]
-[Intro: acoustic guitar and upright bass]
-[Melody: fiddle, friendly]
-[Groove: accordion joins, tambourine]
-[Melody: accordion answers the fiddle]
-[Groove: full band, relaxed]
+[Intro: nylon guitar and upright bass]
+[Melody: clarinet, friendly]
+[Groove: accordion joins, shaker]
+[Melody: whistle answers the clarinet]
+[Groove: relaxed and sunny]
 [Instrumental Break]
 ```
 

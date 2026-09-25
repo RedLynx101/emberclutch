@@ -154,7 +154,7 @@ through `make_loop.py --no-loop` (trim, level, encode).
 | Den life / Market | nest settle, market chatter loop, register ding (in brief 2) | A2 |
 | The valley and flying ([brief 3](../audio/sfx-batch-3.md)) | high wind, meadow, valley night, waterfall, stream and lake loops; wingbeat, take-off, landing, dive whoosh, wing flutter, water skim, big splash | B, first |
 | On foot and the places ([brief 3](../audio/sfx-batch-3.md)) | footsteps (grass, stone, wood; the dragon's), mounting, a wooden door, the village bell and ambience, a find's sparkle | B |
-| Villagers ([brief 3](../audio/sfx-batch-3.md)) | a gibberish babble per villager (six) | B |
+| Villagers ([brief 3](../audio/sfx-batch-3.md)) | one recorded alphabet, voiced letter by letter and pitched per speaker (D75) | B |
 | Competition ([brief 3](../audio/sfx-batch-3.md)) | whistle, crowd cheer, crowd "aww", ring pass chime, lantern ignite, fruit toss and catch | B |
 | Breath ([brief 3](../audio/sfx-batch-3.md)) | flame, mist, gust, spore burst, frost, light | B (Lantern Trial) |
 | Campaign ([brief 3](../audio/sfx-batch-3.md)) | a festival lantern relit, the quest log's page, a falling star | B |

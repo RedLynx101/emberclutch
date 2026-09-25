@@ -4,7 +4,9 @@ Status: **Settled** (D73, D74; 2026-09-25): the sit-down's answers and the plan'
 are decided. **Phase A ("prove it") is done** (2026-09-25): the flyable valley (WP1), the
 concept images for [R7](../art/reviews/R7-valley-concepts.md) (WP2) and the music and sound
 briefs (WP15); run 14 is ready ([steps](hardware-check-3.md)). Next, once Noah has made
-the music and sounds: step 2, the valley. Alpha 2 is done (`v0.2.0-alpha2`, D72). The
+the music and sounds: step 2, the valley. **R7 decided (D75):** look A, storybook in the way
+of a cozy life-sim ([look and feel](../design/look-and-feel.md)). **Before step 2 (D76):** new
+dragons to match, four wholly new silhouettes ([R11](../art/reviews/R11-new-dragons.md)). Alpha 2 is done (`v0.2.0-alpha2`, D72). The
 sit-down (D73, [brief](beta-sitdown.md)) put the valley first: an open world to walk and fly
 in, the places rebuilt inside it, a new map, flying, the first challenges, people and a
 first campaign. Training, voice and the ground cups move to 1.0 ([roadmap](roadmap.md)).
@@ -118,11 +120,22 @@ Checked in Azahar, then on Noah's old 3DS (D34):
   dawn, day, dusk and night next to the dragons. Noah picks the direction.
 - ✅ **Done (2026-09-25, `69e06d9`):** `tools/concept/make_concepts.py`, ten images in look A
   (storybook) and three in look B (faceted low-poly), on the review page
-  [R7](../art/reviews/R7-valley-concepts.md) with the valley test beside them. Waiting on
-  Noah's pick.
+  [R7](../art/reviews/R7-valley-concepts.md) with the valley test beside them. **Decided
+  (D75):** look A, the storybook look of a cozy life-sim: hand-painted textures, round
+  shapes, the ground rolling away on foot, people about two heads tall, speech letter by
+  letter, an analog walk with a run button ([look and feel](../design/look-and-feel.md)).
+
+### WP2b — New dragons (review R11, D76; before step 2)
+- Four wholly new silhouettes in the new look, every stage from the egg to the adult:
+  concept sheets first ([R11](../art/reviews/R11-new-dragons.md)), Noah's answers, then the
+  models, built in Blender by script with Opus 5.5 subagents (one per kind), rendered in
+  every stage, and then into the game.
 
 ## Phase B — the valley
 ### WP3 — The valley's landscape (review R8: the blockout)
+- In the look of D75: small hand-painted tiling textures per material (grass motif, path,
+  rock, bark, water) tinted by vertex colour and the time of day; round chunky props; the
+  rolling-log curve in the vertex shader on foot.
 - `tools/blender/valley_model.py`: the height field (a painted height map plus scripted
   shaping: the river valley, cliffs, the lake, the hilltop), vertex-colour painting by slope
   and height, cut into tiles with two detail levels, exported to romfs; props (trees,
@@ -142,6 +155,9 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 ### WP5 — Getting about: on foot, gliding, flying, riding
 - On foot (D74): you walk and run in the third person; the dragon follows at your side,
   hops and glides, and sniffs things out; A calls it, the stylus points it at things.
+  Moving as in a cozy life-sim (D75): speed follows the circle pad, B held runs, quick
+  turns with a little arc, a bouncy step, dust puffs and footprints, no jumping; the
+  camera at one fixed angle looking north, tilted down (to confirm at R11).
 - Adolescents glide off ledges and slopes; grown dragons take off (from the ground or a
   ledge), flap to climb (A), dive (B), bank (L/R), glide on release, land on flat ground,
   with stamina that grows with Wing and bond.
@@ -178,14 +194,15 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 
 ## Phase D — people and the first campaign
 ### WP12 — The player character (review R9)
-- One model and rig through the dragons' pipeline (cute, rounded proportions, about 500
-  triangles), walk, run, idle, wave, mount and ride poses; the creator (D74) after
+- One model and rig through the dragons' pipeline (cute, rounded proportions about 2–2.5
+  heads tall, round hands, big eyes, D75; about 500 triangles), walk, run, idle, wave, mount and ride poses; the creator (D74) after
   the naming at a new game (and from the settings for existing saves).
 ### WP13 — Villagers
 - Five or six: the old keeper (your guide), the Market's keeper, the Sanctuary's keeper, the
   arena's steward, a child who follows the dragons about, a traveller at the trailhead. Low
   poly, idle and talk animations, a portrait each; a dialogue box on the bottom screen with
-  choices.
+  choices, the speaker's name on a tab, lines voiced letter by letter and pitched per
+  speaker (D75). Later rounds lean into high-fantasy folk, not only humans (Noah, R7).
 ### WP14 — The first campaign (review R10: the outline)
 - *The Lantern Festival* (outline above): eight quests through the places and the
   challenges, a quest log, rewards (Gleam, decor, the star-born egg at the end), all dialogue
@@ -195,12 +212,12 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 ### WP15 — Music and sound
 - A Suno brief (batch 3): the valley by day and by night, the Market village, the arena's
   results stingers, a quest jingle; an ElevenLabs/Suno brief for wind, wingbeats, water,
-  footsteps on grass and stone, villagers' voices (babble); stand-ins until they arrive
+  footsteps on grass and stone, villagers' voices (letter by letter, D75); stand-ins until they arrive
   (D35). The flight loops `skyreach`/`skyreach-2` and `cup-day` are in hand from batch 1.
 - ✅ **Briefs sent (2026-09-25):** [music batch 3](../audio/suno-music-batch-3.md) (the valley
   by day and night, a place-found stinger, the village, four results stingers, a quest
   jingle, an optional festival loop) and [sounds batch 3](../audio/sfx-batch-3.md) (wind,
-  wings, water, footsteps, the villagers' babble, the challenges, the campaign).
+  wings, water, footsteps, the villagers' alphabet, the challenges, the campaign).
 ### WP16 — Saves and settings
 - New save sections (your look, where you are, discoveries, cups and ribbons, quests); an
   Alpha 2 save starts outside the den's cliff with everything it had.
@@ -215,13 +232,14 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 ## Reviews
 | Review | What | Blocks |
 |---|---|---|
-| R7 | Concept images: valley, places, people, palette | The world's art (WP3 on) |
+| R7 | Concept images: valley, places, people, palette (decided: look A, D75) | The world's art (WP3 on) |
+| R11 | The new dragons: concept sheets, then the models in every stage (D76) | Step 2 and on |
 | R8 | The valley blockout, from the air and in the game | Detailing the landscape |
 | R9 | The player character and one villager | The other villagers |
 | R10 | The campaign outline | Writing the dialogue |
 
 ## Order of work
-1. ✅ **Prove it:** WP1 (the flyable valley, measured in the emulator) and WP2 (concept
+1. ✅ **Prove it** (then R7 decided, D75; **the new dragons, WP2b, R11, before step 2**): WP1 (the flyable valley, measured in the emulator) and WP2 (concept
    images for R7) side by side, and the sound briefs of WP15 early so the music can arrive
    in time. Then run 14 on the old 3DS, and Noah makes the music and sounds.
 2. **The valley:** WP3 (landscape, R8) → WP5 (getting about) → WP6 (the map) → WP4 (the

@@ -1,5 +1,9 @@
 # Emberclutch — Sound Effects Brief, Batch 3 (Beta: *The valley*)
 
+> **Updated after R7 (D75):** the villagers speak letter by letter (one recorded alphabet
+> instead of six babbles). The working checklist with copy buttons is the Emberclutch
+> checklists page (link in STATUS).
+
 **For Noah, 2026-09-25** (Beta WP15, sent early). For **ElevenLabs Sound Effects** (or Suno
 Sounds), like [batch 1](suno-sfx-alpha1.md) and [batch 2](sfx-batch-2.md). Drop the files in
 a folder and tell me; I match them to the slugs, trim, level and convert them
@@ -54,23 +58,18 @@ and height, so an even, featureless take is better than an exciting one.
 (Your own footsteps and the dragon's are mixed quietly under the music; `step` and `thump`
 from batch 1 stay for the den.)
 
-## 3. The villagers' voices
-Animal Crossing–style babble: **gibberish syllables, no real words and no recognisable
-language**, cute, the length of a short sentence. The game plays a snippet as each line of
-dialogue types out, pitched a little per line. One voice per villager:
+## 3. The villagers' voices (letter by letter, D75)
+Speech works as in a cozy life-sim: each letter of a line plays a short sound, very fast and
+pitched per speaker, so it babbles along with the words (the old keeper low and slow, the
+child high and quick). So instead of a babble per villager, **one alphabet voices everyone**:
 
 | Slug | Prompt | Kind | Length |
 |---|---|---|---|
-| `babble-keeper` | Kind elderly person speaking cute gibberish syllables, slow, warm, a little creaky, no real words | one-shot | 1.5–2.5 s |
-| `babble-market` | Cheerful shopkeeper speaking cute gibberish syllables, quick and bubbly, no real words | one-shot | 1.5–2.5 s |
-| `babble-sanctuary` | Gentle soft-spoken person speaking cute gibberish syllables, calm and soothing, no real words | one-shot | 1.5–2.5 s |
-| `babble-steward` | Brisk confident announcer speaking cute gibberish syllables, clipped and upbeat, no real words | one-shot | 1.5–2.5 s |
-| `babble-child` | Excited young child speaking cute gibberish syllables, high and fast, no real words | one-shot | 1.5–2.5 s |
-| `babble-traveller` | Relaxed traveller speaking cute gibberish syllables, easy-going and drawling, no real words | one-shot | 1.5–2.5 s |
+| `voice-alphabet` | The 26 letters A to Z said one at a time, about one a second, clear, bright and friendly, one take | recording (I slice it) | ~30 s |
+| `voice-alphabet-2` (optional) | The same in a second voice (softer, or deeper), for more variety | recording | ~30 s |
 
-If the generator won't do gibberish well, **recording your own voice** saying nonsense
-syllables in six styles works just as well (the game pitches and chops it); or one good
-take could serve everyone, pitched per villager.
+How: **your own voice** is perfect (a phone voice memo: "A … B … C …" with a short gap), or
+an ElevenLabs text-to-speech voice reading "A. B. C. …". Pitch and speed do the rest.
 
 ## 4. Challenges (later in Beta: WP8–WP11)
 | Slug | Prompt | Kind | Length |

@@ -1,0 +1,387 @@
+<title>Emberclutch Checklists</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=JetBrains+Mono:wght@500&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+:root {
+  --bg: #FBF4E6; --panel: #FFFDF8; --ink: #34233F; --muted: #74647A; --line: #E8DAC3;
+  --accent: #C9521B; --accent-soft: #FBE4D3; --gold: #B8860B; --gold-soft: #FCEFC8;
+  --teal: #2A8586; --teal-soft: #DCF0EE; --code: #F4EBDC; --focus: #3FA7A8;
+  --display: "Cinzel Decorative", Georgia, "Times New Roman", serif;
+  --body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #1E1427; --panel: #2A1D34; --ink: #FFF3DC; --muted: #B8A6B7; --line: #43324E;
+    --accent: #F28C57; --accent-soft: #46271F; --gold: #F5C451; --gold-soft: #3D3120;
+    --teal: #62C6C3; --teal-soft: #1C3739; --code: #231829; --focus: #62C6C3;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1E1427; --panel: #2A1D34; --ink: #FFF3DC; --muted: #B8A6B7; --line: #43324E;
+  --accent: #F28C57; --accent-soft: #46271F; --gold: #F5C451; --gold-soft: #3D3120;
+  --teal: #62C6C3; --teal-soft: #1C3739; --code: #231829; --focus: #62C6C3;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--body); padding-inline: 16px; padding-block: 0 64px; }
+.wrap { max-width: 860px; margin: 0 auto; }
+header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 18px 12px; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.brand h1 { margin: 0; font: 700 26px/1.1 var(--display); letter-spacing: .01em; color: var(--accent); }
+.brand h1 span { color: var(--ink); font-family: var(--body); font-weight: 800; font-size: 20px; margin-left: 6px; }
+.status { margin-left: auto; font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.status.ok::before { background: var(--teal); }
+.status.warn::before { background: var(--gold); }
+.status.err::before { background: var(--accent); }
+.tabs { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.tab { font: 700 14px var(--body); color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tab .count { font: 500 12px var(--mono); opacity: .8; font-variant-numeric: tabular-nums; }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.chip { font: 600 13px var(--body); color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+.chip[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+main { padding-top: 8px; }
+section.block { margin-top: 26px; }
+.block > h2 { font: 800 19px/1.25 var(--body); margin: 0 0 4px; text-wrap: balance; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.block > h2 .prog { font: 500 12.5px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; margin: 6px 0 12px; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--teal); transition: width .25s ease; }
+.lede { color: var(--muted); margin: 0 0 10px; max-width: 68ch; }
+.lede p { margin: 0 0 8px; }
+h3.group { font: 800 15px var(--body); margin: 20px 0 6px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+h3.group small { font-weight: 600; color: var(--muted); font-size: 12.5px; }
+.note { font-size: 13.5px; color: var(--muted); margin: 4px 0 8px; max-width: 70ch; }
+.list { display: grid; gap: 6px; }
+.item { display: grid; grid-template-columns: 28px 1fr auto; gap: 4px 10px; align-items: start; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.item input[type="checkbox"] { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--teal); cursor: pointer; }
+.item.done { background: var(--teal-soft); border-color: transparent; }
+.item.done .body > *:not(.actions):not(.prompts) { opacity: .6; }
+.item.done .slug { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.row1 { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.slug { font: 500 13.5px var(--mono); color: var(--ink); background: var(--code); border-radius: 5px; padding: 1px 6px; }
+.name { font-weight: 800; }
+.tag { font: 700 12px var(--body); color: var(--gold); }
+.meta { font-size: 12.5px; color: var(--muted); }
+.badge { font: 800 11px var(--body); letter-spacing: .06em; text-transform: uppercase; border-radius: 5px; padding: 1px 6px; }
+.badge.first { color: var(--accent); background: var(--accent-soft); }
+.badge.opt { color: var(--muted); border: 1px solid var(--line); }
+.prompt { margin: 3px 0 0; max-width: 70ch; }
+.actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.btn { font: 700 12.5px var(--body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 7px; padding: 4px 10px; cursor: pointer; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn.copied { color: var(--teal); border-color: var(--teal); }
+.prompts { margin-top: 8px; }
+.prompts h4 { margin: 8px 0 3px; font: 800 11.5px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+pre { margin: 0; background: var(--code); border-radius: 8px; padding: 8px 10px; font: 500 12.5px/1.5 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+.keep { margin: 8px 0 0; font-size: 13.5px; }
+details.how { margin-top: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+details.how summary { font-weight: 800; cursor: pointer; }
+details.how p, details.how li { font-size: 14px; max-width: 70ch; }
+details.how ul { padding-left: 18px; margin: 6px 0; }
+code { font: 500 .92em var(--mono); background: var(--code); border-radius: 4px; padding: 0 4px; }
+.notes { margin-top: 10px; }
+.notes label { display: block; font: 800 12px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+textarea { width: 100%; min-height: 64px; resize: vertical; font: 400 14px/1.5 var(--body); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.asks { margin: 4px 0 8px; padding-left: 18px; max-width: 70ch; }
+.intro p { max-width: 70ch; margin: 0 0 10px; }
+.hidden-by-filter { display: none; }
+.empty { color: var(--muted); font-style: italic; }
+@media (max-width: 520px) {
+  .item { grid-template-columns: 26px 1fr; }
+  .item > .copy { grid-column: 2; justify-self: start; }
+  .status { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Emberclutch <span>Checklists</span></h1>
+      <span class="status" id="status" role="status">Loading…</span>
+    </div>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-audio" aria-controls="audio" aria-selected="true">Music &amp; sounds <span class="count" id="count-audio"></span></button>
+      <button class="tab" role="tab" id="tab-run" aria-controls="run" aria-selected="false"><span id="run-name">Run</span> on the 3DS <span class="count" id="count-run"></span></button>
+    </div>
+  </header>
+
+  <main>
+    <div id="audio" role="tabpanel" aria-labelledby="tab-audio">
+      <div class="filters" role="group" aria-label="Show">
+        <button class="chip" data-filter="all" aria-pressed="true">Everything</button>
+        <button class="chip" data-filter="todo" aria-pressed="false">Still to do</button>
+        <button class="chip" data-filter="first" aria-pressed="false">Needed first</button>
+      </div>
+      <details class="how" id="how">
+        <summary>How to make them, and where they go</summary>
+        <p><strong>Music:</strong> <span id="music-setup"></span></p>
+        <p>Exclude Styles: <code id="exclude"></code> <button class="btn" id="copy-exclude">Copy</button></p>
+        <ul>
+          <li>Loops: 2–3 minutes, a steady groove; Suno's tempo drift doesn't matter. Stingers: short, with a clean, ringing end.</li>
+          <li>2–4 takes per prompt; keep the steadiest. Download <strong>WAV</strong>, named by the slug, into <code>assets/audio/music/source/</code>.</li>
+          <li><strong>Sounds:</strong> ElevenLabs Sound Effects (or Suno Sounds): short and clean, no music, no long reverb. Loops 10–20 s with nothing that stands out. Put them all in one folder and tell Claude; takes can be named anything.</li>
+          <li>Tick a box once a take you like is saved. Anything to tell Claude goes in the notes at the bottom.</li>
+        </ul>
+      </details>
+      <section class="block" id="music-block">
+        <h2>Music · batch 3 <span class="prog" id="prog-music"></span></h2>
+        <div class="bar"><i id="bar-music"></i></div>
+        <p class="lede">Batch 2's music is all in the game. These are Beta's cues; the valley's lean laid-back and playful (R7).</p>
+        <div class="list" id="music-list"></div>
+      </section>
+      <div id="sound-blocks"></div>
+      <section class="block">
+        <h2>Notes for Claude</h2>
+        <div class="notes"><label for="note-audio">Takes, file names, anything odd</label>
+          <textarea id="note-audio" data-note="audio.general" placeholder="For example: valley-day take 2 is the one; the wind loops came out gusty."></textarea></div>
+      </section>
+    </div>
+
+    <div id="run" role="tabpanel" aria-labelledby="tab-run" hidden>
+      <section class="block">
+        <h2 id="run-title"></h2>
+        <div class="bar"><i id="bar-run"></i></div>
+        <div class="intro" id="run-intro"></div>
+      </section>
+      <div id="run-sections"></div>
+    </div>
+  </main>
+</div>
+
+<script type="application/json" id="data">/*DATA*/</script>
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById("data").textContent);
+  const LOCAL = "emberclutch-checklists";
+  const state = { checks: {}, notes: {} };
+  let db = null;
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const html = (tag, cls, markup) => { const e = el(tag, cls); e.innerHTML = markup; return e; };  // markup made by the generator, escaped there
+
+  // ---------- saving ----------
+  const status = document.getElementById("status");
+  function setStatus(text, kind) { status.textContent = text; status.className = "status " + (kind || ""); }
+  function readLocal() { try { const j = JSON.parse(localStorage.getItem(LOCAL) || "{}"); return j && typeof j === "object" ? j : {}; } catch (e) { return {}; } }
+  function writeLocal() { try { localStorage.setItem(LOCAL, JSON.stringify(state)); } catch (e) {} }
+  const queues = {};
+  function write(path, body) {  // one write at a time per document
+    if (!db) { writeLocal(); return; }
+    const prev = queues[path] || Promise.resolve();
+    queues[path] = prev.then(() => db.doc(path).set(body)).then(
+      () => setStatus("Saved to this page", "ok"),
+      (e) => setStatus("Couldn't save (" + ((e && e.code) || "error") + "); try again in a moment", "err"));
+  }
+  function setCheck(id, done) {
+    state.checks[id] = done;
+    write("checks/" + id, { done: done, at: new Date().toISOString() });
+    refresh();
+  }
+  const noteTimers = {};
+  function setNote(id, text) {
+    state.notes[id] = text;
+    clearTimeout(noteTimers[id]);
+    noteTimers[id] = setTimeout(() => write("notes/" + id, { text: text, at: new Date().toISOString() }), 700);
+  }
+
+  // ---------- copying ----------
+  function copy(btn, text) {
+    const done = () => { const t = btn.textContent; btn.textContent = "Copied"; btn.classList.add("copied"); setTimeout(() => { btn.textContent = t; btn.classList.remove("copied"); }, 1300); };
+    const fallback = () => {
+      const ta = el("textarea"); ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+      ta.remove(); if (ok) done(); else { btn.textContent = "Select the text to copy"; }
+    };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch (e) { fallback(); }
+  }
+  function copyBtn(label, text) { const b = el("button", "btn copy", label); b.type = "button"; b.addEventListener("click", () => copy(b, text)); return b; }
+
+  // ---------- building ----------
+  const rows = [];  // {id, node, first, tab}
+  function tick(id, label) {
+    const box = el("input"); box.type = "checkbox"; box.id = "c-" + id; box.setAttribute("aria-label", label);
+    box.addEventListener("change", () => setCheck(id, box.checked));
+    return box;
+  }
+
+  const music = DATA.music;
+  document.getElementById("music-setup").innerHTML = music.setup;
+  document.getElementById("exclude").textContent = music.exclude;
+  const ex = document.getElementById("copy-exclude"); ex.addEventListener("click", () => copy(ex, music.exclude));
+  const mlist = document.getElementById("music-list");
+  music.items.forEach((m) => {
+    const item = el("article", "item cue");
+    item.appendChild(tick(m.id, m.slug));
+    const body = el("div", "body");
+    const r1 = el("div", "row1");
+    r1.append(el("span", "slug", m.slug), el("span", "name", m.title));
+    if (m.first) r1.appendChild(el("span", "badge first", "Needed first"));
+    if (m.optional) r1.appendChild(el("span", "badge opt", "Optional"));
+    body.appendChild(r1);
+    body.appendChild(el("div", "meta", [m.kind, m.plays, m.needed].filter(Boolean).join(" · ")));
+    if (m.mood) body.appendChild(html("p", "prompt", "<strong>Mood:</strong>" + m.mood));
+    const actions = el("div", "actions");
+    actions.append(copyBtn("Copy style", m.style), copyBtn("Copy lyrics", m.lyrics));
+    const more = el("button", "btn", "Show prompts"); more.type = "button"; more.setAttribute("aria-expanded", "false");
+    actions.appendChild(more);
+    body.appendChild(actions);
+    const prompts = el("div", "prompts"); prompts.hidden = true;
+    prompts.append(el("h4", null, "Style"), el("pre", null, m.style), el("h4", null, "Lyrics"), el("pre", null, m.lyrics));
+    if (m.keep) prompts.appendChild(html("p", "keep", "<strong>Keep a take that:</strong> " + m.keep));
+    body.appendChild(prompts);
+    more.addEventListener("click", () => { prompts.hidden = !prompts.hidden; more.setAttribute("aria-expanded", String(!prompts.hidden)); more.textContent = prompts.hidden ? "Show prompts" : "Hide prompts"; });
+    item.appendChild(body);
+    mlist.appendChild(item);
+    rows.push({ id: m.id, node: item, first: m.first, tab: "audio", block: "music" });
+  });
+
+  const blocks = document.getElementById("sound-blocks");
+  DATA.sounds.forEach((b) => {
+    const sec = el("section", "block"); sec.id = "sounds-" + b.batch;
+    const h = el("h2", null, "Sounds · batch " + b.batch + " "); const p = el("span", "prog"); p.id = "prog-s" + b.batch; h.appendChild(p);
+    const bar = el("div", "bar"); const i = el("i"); i.id = "bar-s" + b.batch; bar.appendChild(i);
+    sec.append(h, bar);
+    if (b.batch === 2) sec.appendChild(el("p", "lede", "Still open from Alpha 2: the game plays stand-ins for these until they arrive."));
+    b.groups.forEach((g) => {
+      const gh = el("h3", "group", g.title + " ");
+      if (g.sub) gh.appendChild(el("small", null, g.sub));
+      if (g.first) gh.appendChild(el("span", "badge first", "Needed first"));
+      const wrapG = el("div", "grp"); wrapG.dataset.first = g.first ? "1" : "0";
+      wrapG.appendChild(gh);
+      g.notes.forEach((n) => wrapG.appendChild(html("p", "note", n)));
+      const list = el("div", "list");
+      g.items.forEach((s) => {
+        const item = el("div", "item sfx");
+        item.appendChild(tick(s.id, s.slug));
+        const body = el("div", "body");
+        const r1 = el("div", "row1");
+        r1.appendChild(el("span", "slug", s.slug));
+        if (s.tag) r1.appendChild(el("span", "tag", s.tag));
+        r1.appendChild(el("span", "meta", s.kind + " · " + s.length));
+        body.append(r1, el("p", "prompt", s.prompt));
+        item.append(body, copyBtn("Copy prompt", s.prompt));
+        list.appendChild(item);
+        rows.push({ id: s.id, node: item, first: g.first, tab: "audio", block: "s" + b.batch });
+      });
+      wrapG.appendChild(list);
+      sec.appendChild(wrapG);
+    });
+    blocks.appendChild(sec);
+  });
+
+  const run = DATA.run;
+  document.getElementById("run-name").textContent = run.title;
+  document.getElementById("run-title").textContent = run.title;
+  const intro = document.getElementById("run-intro");
+  run.intro.forEach((p) => intro.appendChild(html("p", null, p)));
+  const rs = document.getElementById("run-sections");
+  run.sections.forEach((s) => {
+    const sec = el("section", "block");
+    const h = el("h2", null, s.title + " ");
+    if (s.steps.length) { const p = el("span", "prog"); p.dataset.sec = s.id; h.appendChild(p); }
+    sec.appendChild(h);
+    s.lead.forEach((p) => sec.appendChild(html("p", "note", p)));
+    if (s.asks.length) { const ul = el("ul", "asks"); s.asks.forEach((a) => ul.appendChild(html("li", null, a))); sec.appendChild(ul); }
+    if (s.steps.length) {
+      const list = el("div", "list");
+      s.steps.forEach((st) => {
+        const item = el("div", "item step");
+        item.appendChild(tick(st.id, st.text.replace(/<[^>]+>/g, "").slice(0, 60)));
+        item.appendChild(html("div", "body", st.text));
+        list.appendChild(item);
+        rows.push({ id: st.id, node: item, first: false, tab: "run", block: s.id });
+      });
+      sec.appendChild(list);
+    }
+    const notes = el("div", "notes");
+    const lab = el("label", null, s.asks.length ? "Your answers" : "Numbers and notes"); lab.htmlFor = "note-" + s.id;
+    const ta = el("textarea"); ta.id = "note-" + s.id; ta.dataset.note = s.id;
+    ta.placeholder = s.asks.length ? "Anything you'd like to tell me after the run." : "What you saw, and the numbers from Y (ms, worst, slow).";
+    notes.append(lab, ta);
+    sec.appendChild(notes);
+    rs.appendChild(sec);
+  });
+  document.querySelectorAll("textarea[data-note]").forEach((ta) => ta.addEventListener("input", () => setNote(ta.dataset.note, ta.value)));
+
+  // ---------- showing ----------
+  let filter = "all";
+  function refresh() {
+    const tally = {};
+    rows.forEach((r) => {
+      const done = !!state.checks[r.id];
+      const box = document.getElementById("c-" + r.id);
+      if (box.checked !== done) box.checked = done;
+      r.node.classList.toggle("done", done);
+      const t = tally[r.block] || (tally[r.block] = [0, 0]); t[1]++; if (done) t[0]++;
+      const tt = tally["tab:" + r.tab] || (tally["tab:" + r.tab] = [0, 0]); tt[1]++; if (done) tt[0]++;
+      const hide = r.tab === "audio" && ((filter === "todo" && done) || (filter === "first" && !r.first));
+      r.node.classList.toggle("hidden-by-filter", hide);
+    });
+    document.querySelectorAll(".grp").forEach((g) => {
+      const any = [...g.querySelectorAll(".item")].some((n) => !n.classList.contains("hidden-by-filter"));
+      g.classList.toggle("hidden-by-filter", !any);
+    });
+    const put = (key, progId, barId) => {
+      const t = tally[key] || [0, 0];
+      if (progId) { const p = document.getElementById(progId); if (p) p.textContent = t[0] + " of " + t[1]; }
+      if (barId) { const b = document.getElementById(barId); if (b) b.style.width = (t[1] ? 100 * t[0] / t[1] : 0) + "%"; }
+      return t;
+    };
+    put("music", "prog-music", "bar-music"); put("s2", "prog-s2", "bar-s2"); put("s3", "prog-s3", "bar-s3");
+    const a = put("tab:audio", null, null), r = put("tab:run", null, "bar-run");
+    document.getElementById("count-audio").textContent = a[0] + "/" + a[1];
+    document.getElementById("count-run").textContent = r[0] + "/" + r[1];
+    document.querySelectorAll(".prog[data-sec]").forEach((p) => { const t = tally[p.dataset.sec] || [0, 0]; p.textContent = t[0] + " of " + t[1]; });
+  }
+  function showNotes() {
+    document.querySelectorAll("textarea[data-note]").forEach((ta) => {
+      const v = state.notes[ta.dataset.note] || "";
+      if (document.activeElement !== ta && ta.value !== v) ta.value = v;
+    });
+  }
+
+  // tabs and filters (remembered in this browser)
+  const tabs = { audio: document.getElementById("tab-audio"), run: document.getElementById("tab-run") };
+  function showTab(name) {
+    Object.keys(tabs).forEach((k) => { tabs[k].setAttribute("aria-selected", String(k === name)); document.getElementById(k).hidden = k !== name; });
+    document.querySelector(".filters").hidden = name !== "audio";
+    try { localStorage.setItem(LOCAL + "-tab", name); } catch (e) {}
+  }
+  tabs.audio.addEventListener("click", () => showTab("audio"));
+  tabs.run.addEventListener("click", () => showTab("run"));
+  document.querySelectorAll(".chip").forEach((c) => c.addEventListener("click", () => {
+    filter = c.dataset.filter;
+    document.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", String(x === c)));
+    refresh();
+  }));
+  let startTab = location.hash === "#run" ? "run" : location.hash === "#audio" ? "audio" : null;
+  if (!startTab) { try { startTab = localStorage.getItem(LOCAL + "-tab"); } catch (e) {} }
+  showTab(startTab === "run" ? "run" : "audio");
+
+  // start from this browser's copy, then the page's own store when it answers
+  const local = readLocal();
+  Object.assign(state.checks, local.checks || {}); Object.assign(state.notes, local.notes || {});
+  refresh(); showNotes();
+  setStatus("Saved in this browser only", "warn");
+  const use = window.claude && window.claude.use ? window.claude.use("db") : Promise.resolve(null);
+  use.then((d) => {
+    if (!d) return;
+    db = d;
+    setStatus("Saved to this page", "ok");
+    db.collection("checks").onSnapshot((snap) => {
+      snap.docs.forEach((doc) => { const v = doc.data(); if (v) state.checks[doc.id] = !!v.done; });
+      refresh();
+    }, (e) => setStatus("Ticks stopped syncing (" + e.code + "); reload the page", "err"));
+    db.collection("notes").onSnapshot((snap) => {
+      snap.docs.forEach((doc) => { const v = doc.data(); if (v && typeof v.text === "string") state.notes[doc.id] = v.text; });
+      showNotes();
+    }, (e) => setStatus("Notes stopped syncing (" + e.code + "); reload the page", "err"));
+  }, () => {});
+})();
+</script>

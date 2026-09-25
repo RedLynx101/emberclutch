@@ -2,10 +2,12 @@
 from them ships (everything in the game is built by script in Blender, as always).
 
   python tools/concept/make_concepts.py [--only name,name] [--model gpt-image-1] [--quality medium]
+  python tools/concept/make_concepts.py --lowpoly ...    (R7's look B)
+  python tools/concept/make_concepts.py --dragons ...    (R11: the new dragons' growth sheets)
 
 Calls the OpenAI images API with the standard library only (the key from OPENAI_API_KEY),
 writes the full images to build/concept/<name>.png; tools/concept/to_jpg.ps1 makes the small
-JPGs the review page shows.
+JPGs the review pages show.
 """
 import base64
 import json
@@ -78,6 +80,68 @@ PROMPTS = {
         "the lake at sunset, a floating island above, the village lights coming on below, a sense of freedom."),
 }
 
+# R11 (after R7 picked look A, D75): four wholly new dragon silhouettes in the storybook look,
+# a cozy life-sim feel crossed with a dragon-riding film's lovable, readable dragons, and a
+# touch of majesty. One growth sheet per kind, then all four side by side.
+STYLE_DRAGONS = ("Concept art sheet for a cozy handheld dragon-raising game, soft storybook 3D style of a cozy "
+                 "life-sim game: chunky rounded toy-like shapes, hand-painted soft textures with simple patterns "
+                 "(spots, stripes, soft gradients; no fine scale detail), soft warm lighting with gentle shading, rich "
+                 "friendly colours, big glossy expressive eyes, clean readable silhouettes. Every dragon has a soft "
+                 "heart-shaped glow in its chest. The dragons are wholly original designs that resemble no existing "
+                 "film or game character. The background is one plain, flat, pale cream colour across the whole image (no "
+                 "coloured backdrop, no vignette). No text, no labels, no logos, no UI.")
+GROWTH = ("A growth lineup on one line, all in side view facing left, the same individual at each age, growing in "
+          "size from left to right: its egg, the tiny hatchling, the juvenile, the adolescent, and the grown adult "
+          "(much larger, at the right). ")
+DRAGON_PROMPTS = {
+    "dragon_pouncer": GROWTH + (
+        "The kind: a sleek, cat-like dragon, ember orange with a cream belly and darker stripes. Egg: smooth, "
+        "cream with orange flame speckles. Hatchling: a round kitten-like baby with an oversized head, huge round "
+        "eyes, tiny paws, stubby wing nubs, a little tail with a leaf-shaped fin. Juvenile: a lanky, playful "
+        "kitten-like dragon with soft swept-back horns and half-grown wings. Adolescent: long-legged and agile. "
+        "Adult: a graceful panther-like dragon, low and lithe, a long tail ending in twin fins, large bat-like "
+        "wings with scalloped edges, swept-back horns, a calm proud pose; cool and awe-inspiring but kind."),
+    "dragon_puffback": GROWTH + (
+        "The kind: a round, gentle giant of a dragon, leaf green with a cream belly and a mossy back. Egg: "
+        "almost round, mossy green with pale spots. Hatchling: a nearly spherical baby like a round bun, tiny stubby "
+        "legs, tiny wings, a short thick tail, a little leaf sprout on its head. Juvenile: a chubby round pup-like "
+        "dragon with small fast wings. Adolescent: bigger and sturdier, the first rounded plates on its back. Adult: "
+        "a huge, round, heavy and very gentle dragon like a walking hill, a broad back covered with rounded mossy "
+        "plates, little flowers and ferns growing on them, small wings that look too small for it, a club-like "
+        "tail, stout legs, a kind sleepy face; awe from its size and calm."),
+    "dragon_crestwing": GROWTH + (
+        "The kind: a feathered dragon, slate blue with gold, clearly a dragon and not a bird: a dragon's snout with "
+        "nostrils and a gentle smile (no beak), a scaled body and belly, four legs (strong hind legs and smaller "
+        "front legs with little claws, both always visible), a long dragon tail; feathers only as a crest on the "
+        "head, feathered wing edges and plumes at the tail's end. Egg: tall, pale blue with gold speckles. "
+        "Hatchling: a fluffy baby dragon with a downy crest, huge eyes, stubby four legs, tiny wings. Juvenile: "
+        "gangly and leggy, a growing crest of soft feather-like spines. Adolescent: taller, its tail plumes growing. "
+        "Adult: a tall, elegant dragon with a long graceful neck, a crest of feather-like spines, wide wings with "
+        "feathered edges, a fan of long flowing plumes at the end of its tail in gold and blue; pretty and "
+        "majestic, like a crane or a peacock made dragon."),
+    "dragon_ribbontail": GROWTH + (
+        "The kind: a long, serpentine dragon, sea teal with pearly white. Egg: pearly with a soft spiral pattern "
+        "like a seashell. Hatchling: a little noodle-shaped baby with a round head, big eyes, four tiny legs, "
+        "fin-like ear frills, curled up. Juvenile: longer and wiggly, small fin-wings. Adolescent: long, with "
+        "ribbon-like fins along its back. Adult: a long flowing serpentine dragon with four short legs, flowing "
+        "ribbon-like fins along its back and tail, long soft whiskers, frilled fin-wings, drifting gracefully in "
+        "the air in an S-curve; majestic and pretty, like a river spirit."),
+    "dragon_adults": (
+        "Four grown dragons side by side, full body, to scale: a sleek panther-like ember orange dragon with bat-like "
+        "wings and a twin-finned tail; a huge round leaf-green gentle giant with mossy flowering plates on its back "
+        "and small wings; a tall, elegant slate blue feathered dragon on four long legs (a dragon's snout, no beak) "
+        "with a feather-spine crest, wings with gold feathered edges and long gold plumes at its tail's end; a long serpentine sea-teal dragon with ribbon fins and whiskers "
+        "floating in an S-curve. A small cute keeper character stands beside them for scale. All four have the same "
+        "kind of rounded dragon head with a short snout, nostrils and a gentle smile; none has a beak. The feathered "
+        "one is a dragon with scales on its body and belly and a long dragon tail, feathers only on its crest, wing "
+        "edges and tail tip."),
+    "dragon_hatchlings": (
+        "Four baby dragons playing together on a soft grassy patch: a round kitten-like ember orange baby with huge "
+        "eyes and wing nubs; a round bun-shaped leaf-green baby with a leaf sprout on its head; a fluffy slate blue "
+        "baby dragon with a downy crest, a little snout (no beak) and four stubby legs; a little noodle-shaped sea-teal baby with fin-like ear "
+        "frills. Adorable, bouncy, each clearly its own silhouette."),
+}
+
 
 def generate(name, prompt, model, quality, size, style=STYLE):
     body = json.dumps({"model": model, "prompt": style + "\n\n" + prompt, "size": size, "quality": quality,
@@ -106,6 +170,12 @@ def main():
     model, quality = arg("--model", "gpt-image-1"), arg("--quality", "medium")
     ok = 0
     lowpoly = "--lowpoly" in argv  # look B: written as <name>_lowpoly.png
+    if "--dragons" in argv:  # R11: the new dragons' sheets
+        only = arg("--only", "").split(",") if "--only" in argv else list(DRAGON_PROMPTS)
+        for name in only:
+            ok += generate(name, DRAGON_PROMPTS[name], model, quality, "1536x1024", STYLE_DRAGONS)
+        print(f"[concept] {ok} of {len(only)} made")
+        return
     for name in only:
         size = "1536x1024"
         ok += generate(name + ("_lowpoly" if lowpoly else ""), PROMPTS[name], model, quality, size,

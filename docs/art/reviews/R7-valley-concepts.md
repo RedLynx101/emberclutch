@@ -1,5 +1,11 @@
 # Review R7 — the valley's look (Beta WP2, blocks the world's art)
 
+> **Decided 2026-09-25 (D75):** look **A**, storybook, "with Animal Crossing like textures, feel,
+> speech, player movement, etc, but with dragons and such". The places, the people and the
+> palette as they are here; more villagers later lean into high fantasy, not only humans.
+> What it means part by part: [look and feel](../../design/look-and-feel.md). The dragons get
+> a new look to match ([R11](R11-new-dragons.md), D76).
+
 **For Noah, 2026-09-25.** Concept images for Beta, *The valley*: the places, the people and
 the times of day, to pick a direction before any of the valley's art is built. They're
 AI-generated as **reference only** (D74): nothing in them ships; the game's art is built by

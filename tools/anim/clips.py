@@ -323,6 +323,49 @@ clip("shake", 1.0).pose(0.0, WINGS_FOLDED).pose(1.0, WINGS_FOLDED).wave(shake_wa
  .root(0.0).root(0.65).root(0.85, up=0.45).root(1.05).root(1.4)  # the den behavior moves it forward
  .event(0.75, "squeak").event(1.05, "land"))
 
+# Play between dragons (Noah after run 13: "more playing animations and options between
+# dragons"). The play bow asks for a game: front down, rump up, tail going. Sparring: reared
+# up a little on the hind legs, batting with the front paws in turn, mouth open, bouncing.
+# Stalking: a low creep with the head down and the tail tip twitching, before the pounce.
+# Chasing its own tail: curled round to one side, hopping after it (the den turns it round).
+PLAY_BOW = merge(WINGS_HALF, {  # hips pitch - tips the front down (as eating does); the hind legs kept upright
+    "hips": (-18, 0, 0), "chest": (-6, 0, 0),
+    "arm_up*": (44, 0, 10), "arm_lo*": (-64, 0, 0), "hand*": (34, 0, 0),
+    "leg_up*": (18, 0, 0), "leg_lo*": (-6, 0, 0),
+    "neck1": (26, 0, 0), "neck2": (8, 0, 0), "head": (-10, 0, 0),
+    "tail1": (30, 0, 0), "tail2": (12, 0, 0), "jaw": (-14, 0, 0)})
+(clip("play_bow", 1.2).pose(0.0, WINGS_FOLDED).pose(0.3, PLAY_BOW).pose(0.9, PLAY_BOW).pose(1.2, WINGS_FOLDED)
+ .wave(lambda t: {f"tail{k}": (0, 22 * sin01(t, 0.25, -0.1 * k), 0) for k in range(2, 5)} if 0.25 < t < 0.95 else {})
+ .event(0.35, "call"))
+SPAR = merge(WINGS_HALF, {  # reared up on the haunches (hips pitch +, as sitting), hind legs under it
+    "hips": (24, 0, 0), "chest": (6, 0, 0), "leg_up*": (-4, 0, 0), "leg_lo*": (-40, 0, 0), "foot*": (28, 0, 0),
+    "neck1": (-6, 0, 0), "head": (-10, 0, 0), "tail1": (-24, 0, 0), "tail2": (-6, 0, 0)})
+
+
+def spar_wave(t):
+    s, c = sin01(t, 0.5), sin01(t, 0.5, 0.25)
+    return {"arm_up_L": (40 + 30 * s, 0, 12), "arm_lo_L": (-40 - 20 * s, 0, 0), "hand_L": (-20 * s, 0, 0),
+            "arm_up_R": (40 - 30 * s, 0, -12), "arm_lo_R": (-40 + 20 * s, 0, 0), "hand_R": (20 * s, 0, 0),
+            "head": (6 * c, 8 * s, 0), "neck2": (0, 6 * s, 0), "jaw": (-14 - 6 * c, 0, 0),
+            **{f"tail{k}": (0, 16 * sin01(t, 0.5, -0.1 * k), 0) for k in range(1, 5)}}
+
+
+(clip("spar", 1.0, loop=True).pose(0.0, SPAR).wave(spar_wave)
+ .root(0.0, up=0.0).root(0.25, up=0.05).root(0.5, up=0.0).root(0.75, up=0.05)
+ .event(0.1, "squeak").event(0.6, "thump"))
+STALK = merge(WINGS_FOLDED, CROUCH_BODY, {"neck1": (-10, 0, 0), "neck2": (-6, 0, 0), "head": (4, 0, 0)})
+stalk = clip("stalk", 1.2, loop=True, speed=0.25).pose(0.0, STALK)
+stalk.wave(leg_cycle(1.2, 14, 26, WALK_PHASES, bob=0.6))
+stalk.wave(lambda t: {"tail4": (0, 20 * sin01(t, 0.3), 0), "tail3": (0, 6 * sin01(t, 0.3, -0.1), 0)})
+TAIL_CHASE = merge(WINGS_HALF, {
+    "neck1": (0, 30, 0), "neck2": (0, 28, 0), "neck3": (0, 20, 0), "head": (-6, 18, 10),
+    "chest": (0, 12, 0), "hips": (0, 10, 0),
+    "tail1": (0, 30, 0), "tail2": (0, 34, 0), "tail3": (0, 34, 0), "tail4": (0, 30, 0), "jaw": (-16, 0, 0)})
+tail_chase = clip("tail_chase", 0.6, loop=True).pose(0.0, TAIL_CHASE)
+tail_chase.wave(leg_cycle(0.6, 22, 36, TROT_PHASES, bob=2.5)).wave(pant(6.0, 0.3))
+tail_chase.root(0.0, up=0.0).root(0.15, up=0.1).root(0.3, up=0.0).root(0.45, up=0.1)
+footsteps(tail_chase, 0.6, {"a": 0.0, "b": 0.5})
+
 
 def happy_wag(t):
     """A puppy's happy wiggle (Noah: the old wag pivoted on the hips, the root, which swung

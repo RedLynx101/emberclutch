@@ -1,6 +1,7 @@
-# Stereoscopic 3D (WP11e): the top screen flat, then as the right eye sees it at the slider's
-# top (dev menu page 2: Stereo preview; the emulator shows one eye), with the den held still
-# by photo mode so the two compare.
+# Stereoscopic 3D (WP11e, run 13): the top screen flat, then as the right eye sees it at the
+# slider's top (dev menu page 2: Stereo preview; the emulator shows one eye), with the den held
+# still by photo mode; then the profile (its platform at the dragon's depth) and the heart
+# over the chosen dragon.
 overlay off
 wait 2.5
 name Noah
@@ -28,27 +29,27 @@ wait 0.3
 key SELECT
 wait 3
 tap 299 50
-wait 1.5
+wait 3
 shot s1-flat
 key SELECT
 wait 0.3
 key R
 wait 0.3
-tap 238 206
+tap 82 206
 wait 0.3
 key SELECT
 wait 0.5
 shot s2-right-eye
-key X
+key B
+wait 0.5
+tap 298 16
 wait 2
-shot s3-close-right-eye
+shot s3-profile-right-eye
 key SELECT
 wait 0.3
-key R
-wait 0.3
-tap 238 206
+tap 82 206
 wait 0.3
 key SELECT
 wait 0.5
-shot s4-close-flat
+shot s4-profile-flat
 quit

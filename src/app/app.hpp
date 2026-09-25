@@ -81,6 +81,7 @@ struct CareState {
     Tool toy = Tool::Ball;
     bool toyRow = false;
     float swatWait = 0, tugWait = 0;  // between swats; between growls on the rope
+    float ballTug = 0;                // seconds of pulling on the ball in its mouth (Noah, run 13)
     bool featherNear = false;         // the feather was close to its face when let go
     // The puzzle orb, rolled about the close-up (screen pixels): a treat drops out after
     // enough rolling, then it's empty for a while.

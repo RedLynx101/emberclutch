@@ -182,7 +182,7 @@ bool debugMenu(App& app, const Input& in) {
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
         {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26}, {"Next look", 27},
-        {"Force look", 28}, {"GPU probe", 29}, {"Next rare", 30}, {"Dex: this breed", 31}, {"Mix looks", 32}, {"Zoomies", 33}, {"Stereo preview", 34},
+        {"Force look", 28}, {"GPU probe", 29}, {"Next rare", 30}, {"Dex: this breed", 31}, {"Mix looks", 32}, {"Zoomies", 33}, {"Stereo preview", 34}, {"Next game", 35},
     };
     const Entry* items = app.devPage ? kPage2 : kPage1;
     const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
@@ -245,8 +245,31 @@ bool debugMenu(App& app, const Input& in) {
             case 34:  // WP11e: the top screen as the right eye sees it at full depth (the emulator
                       // shows one eye)
                 app.stereoPreview = !app.stereoPreview;
-                showToastf(app, "Stereo preview: %s", app.stereoPreview ? "right eye" : "off");
+                if (app.stereoPreview) {  // and the right eye's shift at the subject, twice and four times as far
+                    r3d::setEye(1.0f);
+                    char how[48];
+                    std::snprintf(how, sizeof(how), "right eye: %+.1f %+.1f %+.1f px", r3d::eyeShift(0.8f),
+                                  r3d::eyeShift(1.0f), r3d::eyeShift(2.0f));
+                    r3d::setEye(0.0f);
+                    showToastf(app, "Stereo preview: %s", how);
+                } else {
+                    showToast(app, "Stereo preview: off");
+                }
                 break;
+            case 35: {  // run 13: the den's games in turn (the first two dragons), and tail chasing (this one)
+                static int game = 0;
+                static const Activity kGames[] = {Activity::Spar, Activity::Stalk, Activity::Chase, Activity::Nuzzle,
+                                                  Activity::TailChase};
+                static const char* const kNames[] = {"spar", "stalk and pounce", "chase", "nuzzle", "tail chase"};
+                const int k = game++ % 5;
+                if (kGames[k] == Activity::TailChase) {
+                    if (DenActor* a = careActor(app)) a->behavior.force(Activity::TailChase);
+                } else {
+                    app.social.next = kGames[k];
+                }
+                showToastf(app, "Game: %s", kNames[k]);
+                break;
+            }
             case 33:  // WP12c: a burst of laps round the den at a run
                 if (DenActor* a = careActor(app)) a->behavior.force(Activity::Zoomies);
                 break;

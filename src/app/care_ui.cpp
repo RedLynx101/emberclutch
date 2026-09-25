@@ -401,6 +401,41 @@ void useRope(App& app, const Input& in, Dragon& d, float moved) {
     }
 }
 
+// The ball in its mouth (Noah, run 13): take hold near its mouth and pull to win it back; a
+// playful one hangs on longer, a shy one lets go soon. Let go first and it keeps it.
+void tugBall(App& app, const Input& in, Dragon& d, float moved) {
+    CareState& c = app.care;
+    DenBehavior& b = actor(app).behavior;
+    if (!b.holdingBall) {
+        c.ballTug = 0;
+        return;
+    }
+    Vec2 mouth;
+    const bool tugging = b.activity == Activity::Fetch && b.step == 8;
+    if (!tugging && !(r3d::mouthOnCloseUp(mouth) && std::hypot(in.tx - mouth.x, in.ty - mouth.y) < 60)) return;
+    b.care(Care::BallTug, d);
+    if (b.activity != Activity::Fetch || b.step != 8) return;
+    if (moved > 2) c.ballTug += app.dt;
+    if (moved > 3 && c.tugWait <= 0) {
+        c.tugWait = 0.6f;
+        audio::playSfx(app.rng.chance(1, 2) ? audio::Sfx::Grumble : audio::Sfx::RopeTug);
+        emit(app, kFxDust, {in.tx, in.ty}, 1);
+    }
+    const float hold = d.personality == Personality::Playful ? 2.4f
+                       : d.personality == Personality::Brave ? 1.8f
+                       : d.personality == Personality::Shy   ? 0.7f
+                                                             : 1.3f;
+    if (c.ballTug < hold) return;
+    c.ballTug = 0;
+    b.care(Care::BallWon, d);
+    app.ball.held = false;
+    app.ball.active = false;  // in your hand: flick it to throw again
+    audio::playSfx(audio::Sfx::BallPickup);
+    play(d, 5);
+    markVisit(d, nowLocal(app));
+    emit(app, kFxHeart, {in.tx, in.ty - 10}, 2);
+}
+
 // The puzzle orb: pushed about the close-up; after enough rolling a treat drops out and the
 // dragon gobbles it.
 void stepOrb(App& app, Dragon& d) {
@@ -870,6 +905,7 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
                 case Tool::Sponge: useSponge(app, in, d, hit, moved); break;
                 case Tool::Feather: useFeather(app, in, d); break;
                 case Tool::Rope: useRope(app, in, d, moved); break;
+                case Tool::Ball: tugBall(app, in, d, moved); break;
                 case Tool::Orb: useOrb(app, in, moved); break;
                 default: break;
             }
@@ -925,6 +961,8 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
             case Tool::Sponge: sprite(care_sponge_idx, in.tx, in.ty - 4, 0.62f); break;
             case Tool::Ball:
                 if (!app.ball.held) sprite(care_ball_idx, in.tx, in.ty, 0.5f);
+                else if (b.activity == Activity::Fetch && b.step == 8)  // hanging on to it
+                    sprite(care_hand_press_idx, in.tx, in.ty - 6, 0.75f);
                 break;
             case Tool::Feather:  // the wand swings with the stroke
                 sprite(care_item_featherwand_idx, in.tx - 14, in.ty + 12, 0.85f,

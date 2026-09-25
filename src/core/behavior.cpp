@@ -30,6 +30,7 @@ constexpr const char* kActivityNames[] = {
     "GoSulk", "Sulk", "MakeUp", "Greet",
     "Fetch", "HandFeed", "Refuse", "Bath", "Groomed", "Kick", "Sneeze", "PullAway", "Come", "Hatch",
     "Chase", "Flee", "Nuzzle", "Bask", "Bat", "Tug", "ToyRun", "Play", "Bowl", "TugWar", "Zoomies",
+    "Spar", "Stalk", "Unaware", "TailChase",
 };
 static_assert(sizeof(kActivityNames) / sizeof(kActivityNames[0]) == static_cast<int>(Activity::Count),
               "one name per activity");
@@ -40,7 +41,7 @@ constexpr const char* kClipNames[] = {
     "roll_over", "belly_rub", "shake", "hop", "pounce", "tail_wag", "wing_flutter", "sulk", "sulk_loop",
     "nuzzle", "greet",
     "pick_up", "drop_wait", "leap_catch", "leg_kick", "sniff_refuse", "lift_wing", "sneeze", "pull_away",
-    "paw_bat", "tug", "scamper", "gallop",
+    "paw_bat", "tug", "scamper", "gallop", "play_bow", "spar", "stalk", "tail_chase",
 };
 static_assert(sizeof(kClipNames) / sizeof(kClipNames[0]) == static_cast<int>(ClipId::Count), "one name per clip");
 
@@ -148,8 +149,13 @@ Vec2 DenBehavior::steerTarget(Vec2 goal) const {
 bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
     const float dist = distance(pos, goal);
     if (dist < 0.2f * moveScale + 0.05f) return true;
-    // Another dragon is standing on the spot: close enough (not when curling up beside it).
-    for (int i = 0; i < crowdCount && !(activity == Activity::GoNap && snuggle); ++i)
+    // Another dragon is standing on the spot: close enough.
+    // Not for its own sulking spot (one only passing by stood in for it), nor for its end of a
+    // game with another (the partner heading for the next spot stood in for it: a tug from
+    // across the room). Run 13's tests.
+    const bool ownSpot = activity == Activity::GoSulk || activity == Activity::TugWar || activity == Activity::Spar ||
+                         (activity == Activity::GoNap && snuggle);
+    for (int i = 0; i < crowdCount && !ownSpot; ++i)
         if (distance(goal, crowd[i].at) < crowd[i].radius + kBodyRadius * size &&
             dist < crowd[i].radius + kBodyRadius * size + 0.3f)
             return true;
@@ -291,6 +297,10 @@ void DenBehavior::start(Activity a) {
             }
             break;
         }
+        case Activity::Spar: trot = true; break;
+        case Activity::Stalk: walkClip = ClipId::Walk; break;
+        case Activity::Unaware: setClip(ClipId::Idle, 0.3f); break;
+        case Activity::TailChase: setClip(ClipId::TailChase, 0.2f); timer = between(rng, 2.5f, 4.0f); break;
         case Activity::Zoomies:  // three or four laps' worth of turns, at a run
             step = 3 + static_cast<int>(rng.below(2));
             target = zoomPoint();
@@ -421,6 +431,20 @@ void DenBehavior::fetch(const Dragon& d, float moveScale, float dt) {
                 timer = 0;
                 step = holdingBall ? 3 : 1;
                 walkClip = holdingBall ? ClipId::Carry : ClipId::Walk;
+            }
+            break;
+        case 8:  // a tug-of-war over the ball, facing you, while you hold on (Noah, run 13)
+            walkClip = ClipId::Carry;
+            if (turnTo(0.0f, dt) && clip != ClipId::Tug) setClip(ClipId::Tug, 0.2f);
+            if (petTimer <= 0) {  // you let go: it keeps it, and a playful one runs off with it
+                timer = 0;
+                if (d.personality == Personality::Playful || rng.chance(1, 3)) {
+                    step = 7;
+                    const float ang = between(rng, -kPi, kPi);
+                    target = {den.home.x + std::sin(ang) * den.radius * 0.6f, den.home.y + std::cos(ang) * den.radius * 0.5f};
+                } else {
+                    step = 3;
+                }
             }
             break;
         case 7:  // keep-away: trot off with it and sit, until called (or it gives up)
@@ -563,6 +587,12 @@ void DenBehavior::chooseAmbient(const Dragon& d, float moveScale) {
         }
         pick -= w[i];
     }
+    // Now and then, chasing its own tail: playful ones and babies most (Noah, run 13).
+    const int tailOdds = d.personality == Personality::Playful ? 10 : (d.stage == Stage::Hatchling ? 14 : 30);
+    if (d.needs.energy > 40 && moodOf(d) != Mood::Sulky && rng.chance(1, tailOdds)) {
+        start(Activity::TailChase);
+        return;
+    }
     // Toys on the floor (WP7): hungry, the food bowl; otherwise now and then a game.
     if (toys) {
         if (toys->here[kBowl] && toys->bowlFood && d.needs.belly < kBowlHungry) {
@@ -634,6 +664,75 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
             break;
         case Activity::Favorite:  // a favourite food: sometimes a burst of zoomies after the wiggle
             if (clipDone) start(rng.chance(d.personality == Personality::Playful ? 2 : 1, 3) ? Activity::Zoomies : Activity::Idle);
+            break;
+        case Activity::Spar:  // meet face to face, a play bow, then spar, until one rolls over
+            timer += dt;
+            if (partner < 0 || partnerDoing != Activity::Spar || (step < 2 && timer > 9.0f)) {
+                partner = -1;
+                start(Activity::TailWag);
+            } else if (step == 0) {
+                if (walkTo(target, true, moveScale, dt) || (timer > 4.0f && distance(pos, target) < 0.8f * moveScale + 0.3f))
+                    step = 1;
+            } else if (step == 1) {
+                if (turnTo(headingTo(pos, partnerAt), dt) && partnerStep >= 1) {
+                    step = 2;
+                    timer = 0;
+                    setClip(ClipId::PlayBow, 0.2f, true);
+                }
+            } else if (step == 2) {
+                if (clipDone) {
+                    step = 3;
+                    timer = 0;
+                    setClip(ClipId::Spar, 0.25f);
+                }
+            } else if (step == 3) {
+                turnTo(headingTo(pos, partnerAt), dt);
+                if (timer > 4.0f) {  // the one that loses rolls over; the winner bounces
+                    step = 4;
+                    setClip(tugWinner ? ClipId::Hop : ClipId::RollOver, 0.3f, true);
+                }
+            } else if (clipDone) {
+                partner = -1;
+                start(Activity::TailWag);
+            }
+            break;
+        case Activity::Stalk:  // creep up low on one that isn't looking, then pounce: a chase is on
+            timer += dt;
+            if (step == 0) {
+                if (partner < 0 || partnerDoing != Activity::Unaware || timer > 12.0f) {
+                    partner = -1;
+                    start(Activity::Idle);
+                    break;
+                }
+                const float reach = kBodyRadius * size * 2.2f + 0.6f * size;
+                const float err = wrapAngle(headingTo(pos, partnerAt) - heading);
+                if (distance(pos, partnerAt) < reach && std::fabs(err) < 0.3f) {
+                    step = 1;
+                    timer = 0;
+                    setClip(ClipId::Pounce, 0.2f, true);
+                    break;
+                }
+                setClip(ClipId::Stalk, 0.3f);  // slow and low: the steps match a creep
+                heading = wrapAngle(heading + clampf(err, -kSteerRate * dt, kSteerRate * dt));
+                speed = walkSpeed * 0.45f * gait;
+                pos.x += std::sin(heading) * speed * dt;
+                pos.y -= std::cos(heading) * speed * dt;
+            } else if (clipDone) {  // landed: after it!
+                start(Activity::Chase);
+            }
+            break;
+        case Activity::Unaware:  // not watching its back until the stalker pounces
+            timer += dt;
+            if (partner < 0 || timer > 14.0f || partnerDoing != Activity::Stalk) {
+                partner = -1;
+                start(Activity::Idle);
+            } else if (partnerStep >= 1) {
+                start(Activity::Flee);  // pounced on: bolt
+            }
+            break;
+        case Activity::TailChase:  // round and round after its own tail
+            heading = wrapAngle(heading + 4.5f * dt);
+            if ((timer -= dt) <= 0) start(rng.chance(1, 2) ? Activity::Hop : Activity::TailWag);
             break;
         case Activity::Zoomies:
             timer += dt;
@@ -857,7 +956,8 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
         }
         case Activity::Flee:  // darting away from the chaser, never into a corner
             timer += dt;
-            if (partner < 0 || partnerDoing != Activity::Chase || timer > 8.0f) {
+            // (a pounce from a stalker comes first: the chase follows it)
+            if (partner < 0 || (partnerDoing != Activity::Chase && partnerDoing != Activity::Stalk) || timer > 8.0f) {
                 partner = -1;
                 start(Activity::Hop);
                 break;
@@ -948,8 +1048,9 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
                 !toys || (!toys->here[kRope] && step < 2 && partnerStep < 2)) {  // (the rope's gone to someone else)
                 partner = -1;
                 start(Activity::Idle);
-            } else if (step == 0) {
-                if (walkTo(target, true, moveScale, dt)) step = 1;
+            } else if (step == 0) {  // (near enough will do after a while: the rope's end can lie by a wall)
+                if (walkTo(target, true, moveScale, dt) || (timer > 4.0f && distance(pos, target) < 0.8f * moveScale + 0.3f))
+                    step = 1;
             } else if (step == 1) {
                 if (turnTo(headingTo(pos, partnerAt), dt) && partnerStep >= 1) {
                     step = 2;
@@ -1038,7 +1139,7 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
 void DenBehavior::join(Activity a, s8 withPartner, Vec2 at) {
     partner = withPartner;
     start(a);
-    if (a == Activity::Nuzzle || a == Activity::Bask || a == Activity::TugWar) target = at;
+    if (a == Activity::Nuzzle || a == Activity::Bask || a == Activity::TugWar || a == Activity::Spar) target = at;
 }
 
 bool DenBehavior::sociable() const {
@@ -1102,16 +1203,23 @@ void startTogether(DenSocial& s, DenBehavior* const* bs, const Dragon* const* ds
     } else if (paired == 1) {
         bs[pair[0]]->snuggle = false;
     }
-    if (night || n < 2 || (s.clock -= dt) > 0) return;
+    Activity forced = Activity::Count;  // the dev menu's pick
+    if (s.next != Activity::Count && n >= 2 && !night) {
+        forced = s.next;
+        s.next = Activity::Count;
+    } else if (night || n < 2 || (s.clock -= dt) > 0) {
+        return;
+    }
     s.clock = between(rng, 8.0f, 16.0f);
 
     int free[DenLayout::kSpots], count = 0;
     for (int i = 0; i < n && count < DenLayout::kSpots; ++i)
-        if (bs[i]->sociable() && !ds[i]->upset && ds[i]->needs.energy > 25) free[count++] = i;
+        if (forced != Activity::Count ? i < 2 : bs[i]->sociable() && !ds[i]->upset && ds[i]->needs.energy > 25)
+            free[count++] = i;
     // By bright day, the sunbeam: one goes to lie in it, and another may join.
     int basking = 0;
     for (int i = 0; i < n; ++i) basking += bs[i]->activity == Activity::Bask;
-    if (daylight > 0.6f && count > 0 && basking < 2 && rng.chance(1, basking ? 3 : 4)) {
+    if (forced == Activity::Count && daylight > 0.6f && count > 0 && basking < 2 && rng.chance(1, basking ? 3 : 4)) {
         const int i = free[rng.below(static_cast<u32>(count))];
         const Vec2 sun = bs[i]->den.sunSpot;
         const float off = basking ? 1.1f * bs[i]->size + 0.3f : 0.0f;
@@ -1121,6 +1229,7 @@ void startTogether(DenSocial& s, DenBehavior* const* bs, const Dragon* const* ds
     if (count < 2) return;
     int a = free[rng.below(static_cast<u32>(count))], b = a;
     while (b == a) b = free[rng.below(static_cast<u32>(count))];
+    if (forced != Activity::Count) a = 0, b = 1;
     // Playful ones love a chase; the shy and the sleepy would rather have a nuzzle.
     auto playful = [&](int i) {
         const Personality p = ds[i]->personality;
@@ -1128,10 +1237,37 @@ void startTogether(DenSocial& s, DenBehavior* const* bs, const Dragon* const* ds
                                                    : (p == Personality::Shy || p == Personality::Sleepy) ? 0.5f : 1.0f);
     };
     const float chase = playful(a) + playful(b), nuzzle = 1.6f;
+    const float spar = chase * 0.7f, stalk = chase * 0.5f;  // more games (Noah, run 13)
     DenToys* toys = bs[a]->toys;
     const float tug = toys && toys->here[1] ? chase * 0.8f : 0.0f;  // the rope's out: tug-of-war!
-    const float roll = unit(rng) * (chase + nuzzle + tug);
-    if (roll >= chase + nuzzle) {  // each takes an end, facing across the rope
+    float roll = unit(rng) * (chase + nuzzle + spar + stalk + tug);
+    if (forced == Activity::Chase) roll = 0;
+    else if (forced == Activity::Nuzzle) roll = chase;
+    else if (forced == Activity::Spar) roll = chase + nuzzle;
+    else if (forced == Activity::Stalk) roll = chase + nuzzle + spar;
+    if (roll >= chase + nuzzle && roll < chase + nuzzle + spar) {  // a play bow, then sparring
+        const Vec2 pa = bs[a]->pos, pb = bs[b]->pos;
+        const Vec2 mid{(pa.x + pb.x) * 0.5f, (pa.y + pb.y) * 0.5f};
+        float dx = pb.x - pa.x, dy = pb.y - pa.y;
+        const float len = std::hypot(dx, dy);
+        dx = len > 1e-3f ? dx / len : 1.0f;
+        dy = len > 1e-3f ? dy / len : 0.0f;
+        const float ra = kBodyRadius * bs[a]->size + 0.35f * bs[a]->size, rb = kBodyRadius * bs[b]->size + 0.35f * bs[b]->size;
+        bs[a]->join(Activity::Spar, static_cast<s8>(b), {mid.x - dx * ra, mid.y - dy * ra});
+        bs[b]->join(Activity::Spar, static_cast<s8>(a), {mid.x + dx * rb, mid.y + dy * rb});
+        const bool aWins = rng.chance(1, 2);
+        bs[a]->tugWinner = aWins;
+        bs[b]->tugWinner = !aWins;
+        return;
+    }
+    if (roll >= chase + nuzzle + spar && roll < chase + nuzzle + spar + stalk) {  // a stalk and a pounce
+        if (playful(b) > playful(a)) std::swap(a, b);  // the more playful one stalks
+        bs[a]->join(Activity::Stalk, static_cast<s8>(b), {});
+        bs[b]->join(Activity::Unaware, static_cast<s8>(a), {});
+        return;
+    }
+    if (roll >= chase + nuzzle + spar + stalk) roll -= spar + stalk;  // (the rope: below)
+    if (roll >= chase + nuzzle && tug > 0) {  // each takes an end, facing across the rope
         const Vec2 r = toys->at[1];
         const Vec2 pa = bs[a]->pos, pb = bs[b]->pos;
         float ux = pb.x - pa.x, uy = pb.y - pa.y;
@@ -1139,6 +1275,20 @@ void startTogether(DenSocial& s, DenBehavior* const* bs, const Dragon* const* ds
         ux = len > 1e-3f ? ux / len : 1.0f;
         uy = len > 1e-3f ? uy / len : 0.0f;
         const float ra = 0.45f + 0.8f * bs[a]->size, rb = 0.45f + 0.8f * bs[b]->size;
+        // Both ends on open floor: turned round the rope if one falls in the hearth, the hoard
+        // or a wall (a dragon stopped short there and pulled from across the room).
+        const DenLayout& den = bs[a]->den;
+        for (int k = 0; k < 8; ++k) {
+            const float ang = (k % 2 ? -1.0f : 1.0f) * kPi / 4 * ((k + 1) / 2);
+            const float vx = ux * std::cos(ang) - uy * std::sin(ang), vy = ux * std::sin(ang) + uy * std::cos(ang);
+            const Vec2 ea{r.x - vx * ra, r.y - vy * ra}, eb{r.x + vx * rb, r.y + vy * rb};
+            if (bs[a]->clearAt(ea, 0.4f * bs[a]->size) && bs[b]->clearAt(eb, 0.4f * bs[b]->size) &&
+                distance(ea, den.home) < den.radius * 0.85f && distance(eb, den.home) < den.radius * 0.85f) {
+                ux = vx;
+                uy = vy;
+                break;
+            }
+        }
         bs[a]->join(Activity::TugWar, static_cast<s8>(b), {r.x - ux * ra, r.y - uy * ra});
         bs[b]->join(Activity::TugWar, static_cast<s8>(a), {r.x + ux * rb, r.y + uy * rb});
         const bool aWins = rng.chance(1, 2);
@@ -1346,6 +1496,20 @@ void DenBehavior::care(Care c, const Dragon& d, PetZone zone) {
             break;
         case Care::TugLetGo:
             if (activity == Activity::Tug) start(Activity::ToyRun);
+            break;
+        case Care::BallTug:
+            if (!holdingBall || activity != Activity::Fetch) break;
+            if (step != 8) {
+                step = 8;
+                timer = 0;
+            }
+            petTimer = kToyHold;
+            break;
+        case Care::BallWon:
+            if (!holdingBall) break;
+            holdingBall = false;  // no drop: it's in your hand
+            walkClip = ClipId::Walk;
+            start(Activity::Hop);  // a happy bounce: that was a good game
             break;
     }
 }

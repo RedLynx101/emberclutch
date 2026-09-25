@@ -89,6 +89,10 @@ enum class Activity : u8 {
     Bat, Tug, ToyRun, Play, Bowl, TugWar,
     // running (WP12c): a happy burst of laps round the den, after a bath or a favourite food
     Zoomies,
+    // more play (Noah, run 13): sparring (a play bow, paws batting, one rolls over), stalking
+    // one that isn't looking (Unaware) and pouncing, which starts a chase; alone, chasing its
+    // own tail
+    Spar, Stalk, Unaware, TailChase,
     Count,
 };
 const char* activityName(Activity a);
@@ -100,6 +104,7 @@ enum class ClipId : u8 {
     PickUp, DropWait, LeapCatch, LegKick, SniffRefuse, LiftWing, Sneeze, PullAway,
     PawBat, Tug,
     Scamper, Gallop,  // running (WP12c): a hatchling's bounding scamper, a grown dragon's gallop
+    PlayBow, Spar, Stalk, TailChase,  // play (run 13)
     Count,
 };
 const char* clipName(ClipId c);  // the clip's name in the .eca
@@ -126,6 +131,8 @@ enum class Care : u8 {
     Swat,        // the feather flicked near its face: a paw swat
     TugPull,     // the rope held (every frame): it bites on and tugs
     TugLetGo,    // let go of the rope: it trots off with it, proud
+    BallTug,     // the ball in its mouth held (every frame): it hangs on and tugs (Noah, run 13)
+    BallWon,     // pulled it free: the ball is yours again
 };
 
 struct DenBehavior {
@@ -252,6 +259,8 @@ struct DenSocial {
     float clock = 6.0f;          // seconds to the next chance of something together
     bool wasNight = false;
     bool snuggleTonight = false;
+    // Dev: this game between the first two, at once (Chase, Nuzzle, Spar or Stalk; Count: none).
+    Activity next = Activity::Count;
 };
 void denSocial(DenSocial& s, DenBehavior* const* dragons, const Dragon* const* who, int count, bool night,
                float daylight, float dt, Rng& rng);

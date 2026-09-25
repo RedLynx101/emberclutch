@@ -210,6 +210,39 @@ TEST(dragons_fetch_the_ball_and_bring_it_back) {
     }
 }
 
+// Fighting for the ball back (Noah, run 13): held near its mouth it hangs on and tugs; let go
+// and it keeps it; pull long enough (the scene decides when) and the ball is yours.
+TEST(tug_of_war_over_the_ball) {
+    const DenLayout den;
+    DenActor a;
+    a.reset(den, 41);
+    Dragon d = contentDragon();
+    d.personality = Personality::Brave;
+    Ball ball;
+    a.behavior.ball = &ball;
+    ball.launch({den.player.x, den.player.y, 1.0f}, {0.4f, 3.0f, 2.0f});
+    a.behavior.care(Care::Throw, d);
+    u8 ev[16];
+    auto frame = [&] {
+        ball.step(den, 1.0f / 30);
+        a.update(d, false, 1.0f, 1.0f / 30, world().lib, world().clips, ev, 16);
+        if (a.behavior.holdingBall) ball.pos = {a.behavior.pos.x, a.behavior.pos.y - 0.8f, 0.5f};
+    };
+    for (int f = 0; f < 30 * 20 && !a.behavior.holdingBall; ++f) frame();
+    CHECK(a.behavior.holdingBall);
+    for (int f = 0; f < 30; ++f) {  // a second of pulling
+        a.behavior.care(Care::BallTug, d);
+        frame();
+    }
+    CHECK(a.behavior.activity == Activity::Fetch && a.behavior.step == 8 && a.behavior.clip == ClipId::Tug);
+    for (int f = 0; f < 30; ++f) frame();  // let go: it keeps it
+    CHECK(a.behavior.holdingBall && a.behavior.step != 8);
+    a.behavior.care(Care::BallTug, d);
+    frame();
+    a.behavior.care(Care::BallWon, d);  // pulled free
+    CHECK(!a.behavior.holdingBall && !a.behavior.dropBall && a.behavior.activity == Activity::Hop);
+}
+
 TEST(hands_on_care_reactions) {
     const DenLayout den;
     Dragon d = contentDragon();
@@ -446,6 +479,7 @@ TEST(den_dragons_live_together) {
     DenSocial social;
     Rng rng(5);
     bool chased = false, caught = false, nuzzled = false, basked = false, galloped = false;
+    bool sparred = false, rolled = false, pounced = false, ambushChase = false, tailChased = false;  // run 13
     for (int f = 0; f < 6 * 60 * 30; ++f) {
         shareCrowd(bs, 3);
         denSocial(social, bs, ds, 3, false, 1.0f, 1.0f / 30, rng);
@@ -455,6 +489,14 @@ TEST(den_dragons_live_together) {
             if (b.activity == Activity::Chase && b.partner >= 0 && bs[b.partner]->activity == Activity::Flee) chased = true;
             if (chased && b.activity == Activity::Hop) caught = true;
             if (b.activity == Activity::Chase && b.clip == ClipId::Gallop) galloped = true;  // at a run (WP12c)
+            if (b.activity == Activity::Spar && b.step == 3 && b.partner >= 0 && bs[b.partner]->activity == Activity::Spar &&
+                bs[b.partner]->step == 3 && dist(b.pos, bs[b.partner]->pos) < 4.0f)
+                sparred = true;
+            if (b.activity == Activity::Spar && b.step == 4 && b.clip == ClipId::RollOver) rolled = true;
+            if (b.activity == Activity::Stalk && b.step == 1) pounced = true;
+            if (pounced && b.activity == Activity::Flee && b.partner >= 0 && bs[b.partner]->activity == Activity::Chase)
+                ambushChase = true;
+            if (b.activity == Activity::TailChase && b.clip == ClipId::TailChase) tailChased = true;
             if (b.activity == Activity::Nuzzle && b.step == 2 && b.partner >= 0 &&
                 bs[b.partner]->activity == Activity::Nuzzle && dist(b.pos, bs[b.partner]->pos) < 3.0f)
                 nuzzled = true;
@@ -464,6 +506,9 @@ TEST(den_dragons_live_together) {
     std::printf("  a bright day: chase %d (ending in a hop %d), nuzzle %d, sunbeam %d\n", chased, caught, nuzzled,
                 basked);
     CHECK(chased && caught && nuzzled && basked && galloped);
+    std::printf("  more play: spar %d (one rolls over %d), stalk and pounce %d (then a chase %d), tail chase %d\n",
+                sparred, rolled, pounced, ambushChase, tailChased);
+    CHECK(sparred && rolled && pounced && ambushChase && tailChased);
 
     // Night: once two snuggle, they sleep side by side in the big nest.
     bool together = false;
@@ -699,6 +744,7 @@ TEST(zoomies_run_laps_round_the_den) {
 
 void runBehaviorTests() {
     RUN(zoomies_run_laps_round_the_den);
+    RUN(tug_of_war_over_the_ball);
     RUN(behavior_clips_exist_in_the_clip_file);
     RUN(a_content_dragon_leads_a_varied_life_on_the_floor);
     RUN(an_upset_dragon_sulks_in_the_nook_until_you_make_up);

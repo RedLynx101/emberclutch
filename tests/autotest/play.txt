@@ -1,0 +1,82 @@
+# More play between dragons (Noah, run 13): two grown dragons spar (a play bow, paws batting,
+# one rolls over), then a stalk and pounce that turns into a chase, then tail chasing (dev
+# menu page 2: Next game, in turn).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 238 131
+wait 0.3
+key SELECT
+wait 0.3
+key RIGHT
+wait 0.5
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key R
+wait 0.3
+tap 238 206
+wait 0.3
+key SELECT
+wait 3
+shot y1-spar-meet
+wait 1.2
+shot y2-spar-bow
+wait 1.5
+shot y3-spar
+wait 1.5
+shot y4-spar-b
+wait 2
+shot y5-rollover
+wait 3
+key SELECT
+wait 0.3
+tap 238 206
+wait 0.3
+key SELECT
+wait 2
+shot y6-stalk
+wait 2
+shot y7-stalk-b
+wait 2
+shot y8-pounce
+wait 1.5
+shot y9-chase
+key SELECT
+wait 0.3
+tap 238 206
+wait 0.3
+tap 238 206
+wait 0.3
+tap 238 206
+wait 0.3
+key SELECT
+wait 1
+shot y10-tailchase
+wait 0.5
+shot y11-tailchase-b
+quit

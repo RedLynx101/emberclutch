@@ -14,6 +14,11 @@ game crashed at its first 3D frame (a null texture read the emulator hides). Bot
 WP11b); both 3D-banner CIAs froze the HOME Menu, which also turned out to keep an old banner
 per title; Next style froze the 3DS (fixed in 0.1.4).
 
+**Run 12:** X passed ("looks great"), Y passed, Z froze: X is the banner (D71). **Now:**
+install `/cias/emberclutch.cia` (0.1.12) over the game: the banner stands still facing you
+and the dragon moves; the splash; the wordmark 5 px lower. (The lab titles X, Y, Z can go
+in FBI; their files are gone from the SD card.)
+
 **Run 11:** V and W froze; 0.1.10's banner works but doesn't move, the wordmark 5 px too high.
 (The tested lab titles' files are gone from the SD card; delete their titles in FBI too.)
 **Run 12:**

@@ -3,17 +3,16 @@
 # (build/banner/banner.cgfx), built by Blender and converted by pycgfx.
 #   tools\make_banner.ps1 [-SkipIcon] [-SkipBanner] [-Mode still|turn|spin]
 # -Mode: how the 3D banner copes with the HOME Menu turning every banner (tools/blender/banner3d.py):
-#   still  one still piece facing the camera, only the heart's glow moving (the default: it held
-#          still on the 3DS in run 10, lab 6's T)
-#   turn   the dragon keeps all its motion and the egg turns it back against the HOME Menu's turn
-#          (lab 8's X, run 12; the default once it's seen working)
+#   turn   the dragon keeps all its motion; its body and egg turn it back against the HOME
+#          Menu's turn (the default: lab 8's X held still on the 3DS, run 12)
+#   still  one still piece facing the camera, only the heart's glow moving (lab 6's T, run 10)
 #   spin   the old banner, turning with the HOME Menu
 # pycgfx is a build tool, never committed: git clone --depth 1 https://github.com/skyfloogle/pycgfx build\tools\pycgfx
 # with gltflib and pillow for Python 3.12 (py -3.12 -m pip install gltflib pillow). Approved for this step (D50).
 param(
     [switch]$SkipIcon,
     [switch]$SkipBanner,
-    [ValidateSet("still", "turn", "spin")][string]$Mode = "still"
+    [ValidateSet("still", "turn", "spin")][string]$Mode = "turn"
 )
 
 Set-StrictMode -Version Latest

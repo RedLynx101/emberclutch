@@ -478,6 +478,17 @@ no child before its parent). **Lab 8** tells these apart:
 - **Y:** P's own layout and motions, 10 s loop, no counter-turn: does a 600-frame loop freeze?
 - **Z:** P's layout, 4 s loop, only the egg turning whole turns: does a full turn freeze?
 
+**Run 12 (lab 8): X passed ("looks great"), Y passed, Z froze.** So the 10 s loop is fine (Y),
+and the counter-turn works at P's depth (X): the banner stands still facing you while the
+dragon tilts its head, wags, blinks, beats and glints. Why Z froze (whole turns every 4 s on a
+childless egg) isn't known; X is kept exactly as tested. **The banner is done:**
+`make_banner.ps1` defaults to `-Mode turn`, and **0.1.12** ships lab X's banner byte for byte
+(the CIA's banner checked against it: Blender's wordmark render differs by a few pixels
+between runs, so the tested file is kept, not rebuilt). Rules learned, for any later banner:
+stereo 16-bit PCM sound at 32/44.1 kHz ≤ 3 s; no skinning; at most three levels deep; no
+animated billboards or billboards over animated nodes; one extra mesh beyond dragon, egg and
+wordmark (the hidden anchor); and the 10 s counter-turn on nodes whose pivots sit on the axis.
+
 ### WP11d — Hardware performance pass (after run 3; before WP12a, Noah agreed)
 The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 8.3). Target:
 16.7 ms with three dragons, their toys and decor, and the close-up.
@@ -653,20 +664,23 @@ makes a little routine.
 - The 3D banner becomes `package_cia.ps1`'s default once run 2 confirms the fixes, with
   the flat one behind a switch (agreed with Noah 2026-09-24, D58).
 
-## What's left to close Alpha 2 (2026-09-24)
-Done: WP1–WP10, R5 (WP11), the first hardware runs (WP11b: the game runs on the old 3DS, the
-3D banner shows). In order:
-1. **WP11d, the performance pass** (in progress): check posing-ahead on the 3DS, then the
-   next cuts from the profiler until the full den holds 16.7 ms.
-2. **WP11c, our own boot logo** (small).
-3. **WP12a, the hatching** Noah's way: the egg bursts into bits, the dragon grows out of a
+## What's left to close Alpha 2 (updated 2026-09-24, after run 12)
+Done: WP1–WP10, R5 (WP11), the hardware runs so far (WP11b, runs 1–12: the game runs on the
+old 3DS; the 3D banner stands still and animates, with its sound; screenshots with Y), the
+boot splash (WP11c's replacement), and the checks before anything goes on the 3DS. In order:
+1. **WP11d, the performance pass** (in progress): the full den with the close-up runs
+   17.6–18.3 ms (CPU 5.0 + 2.5 posing, GPU 8.1). Next: LOD1 sooner for the dragons further
+   back and a lighter close-up (the GPU), fewer 2D draws, cheaper posing, until it holds
+   16.7 ms.
+2. **WP12a, the hatching** Noah's way: the egg bursts into bits, the dragon grows out of a
    white blob.
-4. **WP12, the dragons update** (the big one): looks per dragon with their odds and names
-   (D54), the Dragondex, photo mode, the parts library, all 6 breeds and 15 hybrids, egg
-   shells per element, rare-trait looks; then the budgets measured again.
-5. **WP12c, running clips** (a scamper for babies, a gallop for grown dragons).
-6. **WP11e, the 3D slider** (after WP11d; 30 fps in 3D is fine).
-7. **WP13, the full run on the old 3DS** and **WP14, the wrap-up** (the checklist, docs, the
+3. **WP12, the dragons update** (the big one): looks per dragon with their odds and names
+   (D54), random looks for existing dragons (D66), the Dragondex (Gleam + a breed-coloured
+   banner per breed, D66), photo mode (the camera button, D66), the parts library, all 6
+   breeds and 15 hybrids, egg shells per element, rare-trait looks; then the budgets again.
+4. **WP12c, running clips** (a scamper for babies, a gallop for grown dragons).
+5. **WP11e, the 3D slider** (after WP11d; 30 fps in 3D is fine).
+6. **WP13, the full run on the old 3DS** and **WP14, the wrap-up** (the checklist, docs, the
    tag `v0.2.0-alpha2`).
 
 Then **the Beta sit-down** with Noah (D65) before any Beta work: Claude brings a brief.

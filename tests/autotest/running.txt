@@ -1,0 +1,54 @@
+# Running (WP12c): a hatchling's zoomies (the scamper), then grown (the gallop); dev menu
+# page 2: Zoomies. The top screen follows them round the den.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 238 181
+wait 0.3
+key SELECT
+wait 0.8
+shot r1-scamper-a
+wait 0.25
+shot r2-scamper-b
+wait 0.25
+shot r3-scamper-c
+wait 6
+key SELECT
+wait 0.3
+key L
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key R
+wait 0.3
+tap 238 181
+wait 0.3
+key SELECT
+wait 0.8
+shot r4-gallop-a
+wait 0.25
+shot r5-gallop-b
+wait 0.25
+shot r6-gallop-c
+wait 8
+shot r7-after
+quit

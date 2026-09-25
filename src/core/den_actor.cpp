@@ -100,6 +100,9 @@ void DenActor::updateSpeeds(const ModelData& m, const AnimBinding& bind, const A
     if (walk < 0 || trot < 0) return;
     behavior.walkSpeed = locomotionSpeed(m, bind, lib.clips[walk], t, build) * size;
     behavior.trotSpeed = locomotionSpeed(m, bind, lib.clips[trot], t, build) * size;
+    behavior.baby = form == 0;  // the hatchling's body scampers, the grown one gallops
+    const int run = clipIndex[static_cast<int>(behavior.baby ? ClipId::Scamper : ClipId::Gallop)];
+    if (run >= 0) behavior.runSpeed = locomotionSpeed(m, bind, lib.clips[run], t, build) * size;
     speedForm = form;
     speedT = t;
 }
@@ -121,7 +124,10 @@ int DenActor::update(const Dragon& d, bool night, float moveScale, float dt, con
         playedSerial = behavior.clipSerial;
     }
     const ClipId c = behavior.clip;
-    anim.rate = c == ClipId::Walk || c == ClipId::Trot || c == ClipId::Carry ? behavior.gait : 1.0f;
+    anim.rate = c == ClipId::Walk || c == ClipId::Trot || c == ClipId::Carry || c == ClipId::Scamper ||
+                        c == ClipId::Gallop
+                    ? behavior.gait
+                    : 1.0f;
     return anim.update(lib, dt, events, maxEvents);
 }
 

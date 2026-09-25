@@ -444,7 +444,7 @@ TEST(den_dragons_live_together) {
     a[2].behavior.pos = {2.0f, 1.3f};
     DenSocial social;
     Rng rng(5);
-    bool chased = false, caught = false, nuzzled = false, basked = false;
+    bool chased = false, caught = false, nuzzled = false, basked = false, galloped = false;
     for (int f = 0; f < 6 * 60 * 30; ++f) {
         shareCrowd(bs, 3);
         denSocial(social, bs, ds, 3, false, 1.0f, 1.0f / 30, rng);
@@ -453,6 +453,7 @@ TEST(den_dragons_live_together) {
             const DenBehavior& b = *bs[i];
             if (b.activity == Activity::Chase && b.partner >= 0 && bs[b.partner]->activity == Activity::Flee) chased = true;
             if (chased && b.activity == Activity::Hop) caught = true;
+            if (b.activity == Activity::Chase && b.clip == ClipId::Gallop) galloped = true;  // at a run (WP12c)
             if (b.activity == Activity::Nuzzle && b.step == 2 && b.partner >= 0 &&
                 bs[b.partner]->activity == Activity::Nuzzle && dist(b.pos, bs[b.partner]->pos) < 3.0f)
                 nuzzled = true;
@@ -461,7 +462,7 @@ TEST(den_dragons_live_together) {
     }
     std::printf("  a bright day: chase %d (ending in a hop %d), nuzzle %d, sunbeam %d\n", chased, caught, nuzzled,
                 basked);
-    CHECK(chased && caught && nuzzled && basked);
+    CHECK(chased && caught && nuzzled && basked && galloped);
 
     // Night: once two snuggle, they sleep side by side in the big nest.
     bool together = false;
@@ -666,7 +667,37 @@ TEST(every_activity_is_reachable_and_settles) {
 
 }  // namespace
 
+// Zoomies (WP12c): a burst of laps round the den at a run (a scamper for a baby, a gallop
+// for a grown one), then a happy wag; a favourite food or a bath can set them off.
+TEST(zoomies_run_laps_round_the_den) {
+    const DenLayout den;
+    for (int baby = 0; baby < 2; ++baby) {
+        DenActor a;
+        a.reset(den, 91 + baby, 0);
+        const Dragon d = contentDragon();
+        a.behavior.baby = baby != 0;
+        a.behavior.force(Activity::Zoomies);
+        const ClipId want = baby ? ClipId::Scamper : ClipId::Gallop;
+        bool ran = false;
+        float travelled = 0;
+        Vec2 last = a.behavior.pos;
+        const bool done = run(a, d, false, 14, [&](const DenBehavior& b) {
+            ran = ran || b.clip == want;
+            travelled += dist(b.pos, last);
+            last = b.pos;
+            return b.activity == Activity::TailWag;
+        });
+        std::printf("  zoomies (%s): %.1f units, done %d\n", baby ? "baby" : "grown", travelled, done);
+        CHECK(done && ran && travelled > den.radius);
+        for (int k = 0; k < 20; ++k) {
+            const Vec2 p = a.behavior.zoomPoint();
+            CHECK(dist(p, den.home) < den.radius * 0.75f);
+        }
+    }
+}
+
 void runBehaviorTests() {
+    RUN(zoomies_run_laps_round_the_den);
     RUN(behavior_clips_exist_in_the_clip_file);
     RUN(a_content_dragon_leads_a_varied_life_on_the_floor);
     RUN(an_upset_dragon_sulks_in_the_nook_until_you_make_up);

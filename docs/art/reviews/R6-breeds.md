@@ -58,6 +58,17 @@ muddy all over, bathed. `mud.txt`.
 
 ![Clean, dusty, muddy](R6-mud-01.jpg)
 
+## Running (WP12c)
+A hatchling scampers (bounding, a hop every stride, mouth open); a grown dragon gallops (a
+four-beat with a moment in the air, the back flexing, the folded wings bouncing). Top row
+the scamper, then the gallop, then the old trot for comparison (Blender previews,
+`preview_anims.py`). They run in chases, for a far throw, on toy runs and in a burst of
+zoomies after a bath or a favourite food; in the den below, grown zoomies
+(`running.txt`, dev menu page 2: Zoomies).
+
+![Scamper, gallop, trot](R6-running.jpg)
+![Grown zoomies in the den](R6-running-den.jpg)
+
 ## Budgets with mixed looks
 Three grown dragons in three looks in the den (`perfmix.txt`, dev menu: Mix looks): 6,814
 triangles on the top screen and 2,954 on the bottom (of 8,000 and 3,500), 13 draws, 17.8 MB

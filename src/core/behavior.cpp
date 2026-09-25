@@ -29,7 +29,7 @@ constexpr const char* kActivityNames[] = {
     "GoNap", "Sleep", "Wake", "Eat", "Favorite", "PetHead", "PetChin", "BellyRub", "Shake", "Hop", "Pounce",
     "GoSulk", "Sulk", "MakeUp", "Greet",
     "Fetch", "HandFeed", "Refuse", "Bath", "Groomed", "Kick", "Sneeze", "PullAway", "Come", "Hatch",
-    "Chase", "Flee", "Nuzzle", "Bask", "Bat", "Tug", "ToyRun", "Play", "Bowl", "TugWar",
+    "Chase", "Flee", "Nuzzle", "Bask", "Bat", "Tug", "ToyRun", "Play", "Bowl", "TugWar", "Zoomies",
 };
 static_assert(sizeof(kActivityNames) / sizeof(kActivityNames[0]) == static_cast<int>(Activity::Count),
               "one name per activity");
@@ -40,7 +40,7 @@ constexpr const char* kClipNames[] = {
     "roll_over", "belly_rub", "shake", "hop", "pounce", "tail_wag", "wing_flutter", "sulk", "sulk_loop",
     "nuzzle", "greet",
     "pick_up", "drop_wait", "leap_catch", "leg_kick", "sniff_refuse", "lift_wing", "sneeze", "pull_away",
-    "paw_bat", "tug",
+    "paw_bat", "tug", "scamper", "gallop",
 };
 static_assert(sizeof(kClipNames) / sizeof(kClipNames[0]) == static_cast<int>(ClipId::Count), "one name per clip");
 
@@ -160,8 +160,9 @@ bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
         return false;
     }
     heading = wrapAngle(heading + clampf(err, -kSteerRate * dt, kSteerRate * dt));
-    setClip(trotting ? ClipId::Trot : walkClip, 0.3f);
-    speed = (trotting ? trotSpeed : walkSpeed * haste) * gait;
+    const bool running = trotting && sprint;
+    setClip(running ? (baby ? ClipId::Scamper : ClipId::Gallop) : trotting ? ClipId::Trot : walkClip, 0.3f);
+    speed = (running ? runSpeed : trotting ? trotSpeed : walkSpeed * haste) * gait;
     const float step = std::fmin(speed * dt, dist);
     pos.x += std::sin(heading) * step;
     pos.y -= std::cos(heading) * step;
@@ -184,6 +185,7 @@ void DenBehavior::start(Activity a) {
     activity = a;
     step = 0;
     timer = 0;
+    sprint = a == Activity::Chase || a == Activity::Flee || a == Activity::ToyRun || a == Activity::Zoomies;
     switch (a) {
         case Activity::Idle: setClip(ClipId::Idle, 0.5f); timer = between(rng, 4.0f, 9.0f); break;
         case Activity::LookAround: setClip(ClipId::LookAround, 0.3f, true); break;
@@ -289,8 +291,23 @@ void DenBehavior::start(Activity a) {
             }
             break;
         }
+        case Activity::Zoomies:  // three or four laps' worth of turns, at a run
+            step = 3 + static_cast<int>(rng.below(2));
+            target = zoomPoint();
+            break;
         case Activity::Count: break;
     }
+}
+
+Vec2 DenBehavior::zoomPoint() {
+    // A quarter to a half turn on round the den from where it is, on a ring inside the walls.
+    const float at = std::atan2(pos.x - den.home.x, pos.y - den.home.y);
+    for (int tries = 0; tries < 10; ++tries) {
+        const float ang = at + between(rng, 1.4f, 2.4f), r = den.radius * between(rng, 0.45f, 0.7f);
+        const Vec2 p{den.home.x + std::sin(ang) * r, den.home.y + std::cos(ang) * r};
+        if (clearAt(p, kClearance * size)) return p;
+    }
+    return den.home;
 }
 
 void DenBehavior::grab() {
@@ -341,10 +358,12 @@ void DenBehavior::fetch(const Dragon& d, float moveScale, float dt) {
             if (distance(pos, b) < reach && !airborne) {
                 step = 2;
                 timer = 0;
+                sprint = false;  // it brings it back at a trot
                 heading = headingTo(pos, b);
                 setClip(ClipId::PickUp, 0.2f, true);
                 break;
             }
+            sprint = distance(pos, b) > 2.5f * std::fmax(0.6f, size);  // a far throw: it runs for it
             walkTo(ball->resting ? b : ballHeading(*ball, 0.5f), true, moveScale, dt);
             if (timer > 12.0f) start(Activity::Idle);  // lost interest
             break;
@@ -613,11 +632,24 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
                 }
             }
             break;
+        case Activity::Favorite:  // a favourite food: sometimes a burst of zoomies after the wiggle
+            if (clipDone) start(rng.chance(d.personality == Personality::Playful ? 2 : 1, 3) ? Activity::Zoomies : Activity::Idle);
+            break;
+        case Activity::Zoomies:
+            timer += dt;
+            if (walkTo(target, true, moveScale, dt)) {
+                if (--step <= 0) {
+                    start(Activity::TailWag);
+                    break;
+                }
+                target = zoomPoint();
+            }
+            if (timer > 10.0f) start(Activity::TailWag);
+            break;
         case Activity::LookAround:
         case Activity::Scratch:
         case Activity::Yawn:
         case Activity::Flutter:
-        case Activity::Favorite:
         case Activity::Shake:
         case Activity::Hop:
         case Activity::Greet:
@@ -748,8 +780,8 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
                     step = 4;
                     setClip(ClipId::Shake, 0.2f, true);
                 }
-            } else if (clipDone) {  // ...and shake off
-                start(Activity::Idle);
+            } else if (clipDone) {  // ...and shake off, and most often a burst of zoomies
+                start(rng.chance(2, 3) ? Activity::Zoomies : Activity::Idle);
             }
             break;
         case Activity::Groomed:

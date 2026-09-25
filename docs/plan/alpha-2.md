@@ -641,6 +641,13 @@ makes a little routine.
   grown dragons, used in chase games, fetch (a far throw), toy runs and a happy burst of
   zoomies after a bath or a favourite food. The walk and trot stay; run speed matches the
   new clip's stride, as the others do.
+  *Done:* `scamper` (0.4 s, bounding, a hop per stride) and `gallop` (0.5 s, rotary
+  four-beat, a suspension, the spine flexing and the wings bouncing) in `tools/anim/clips.py`;
+  the den runs at their measured stride speed (2.17 and 4.23 units a second against trots
+  of about half that). A chase and its flight, a far throw (over 2.5 body lengths), toy runs
+  and the new Zoomies activity (three or four turns round the den, then a wag) run; zoomies
+  follow two baths in three and a favourite food one time in three (two for the playful).
+  Dev menu page 2: Zoomies; `running.txt`; previews in [R6](../art/reviews/R6-breeds.md).
 
 ### WP12 — The dragons update: every look, every breed (D54)
 - **Looks per dragon (D54):** the current look and V1–V3 all ship. A look gene per dragon
@@ -710,7 +717,7 @@ boot splash (WP11c's replacement), and the checks before anything goes on the 3D
    random looks for existing dragons (D66), the Dragondex (Gleam and a breed-coloured
    banner per breed), photo mode (the camera button), the parts library, all 21 breeds, egg
    shells per element, rare-trait looks, mud spots; the budgets with mixed looks; R6 sent.
-4. **WP12c, running clips** (a scamper for babies, a gallop for grown dragons).
+4. ✅ **WP12c, running clips** (a scamper for babies, a gallop for grown dragons, zoomies).
 5. **WP11e, the 3D slider** (after WP11d; 30 fps in 3D is fine).
 6. **WP13, the full run on the old 3DS** and **WP14, the wrap-up** (the checklist, docs, the
    tag `v0.2.0-alpha2`).

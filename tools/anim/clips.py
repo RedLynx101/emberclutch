@@ -188,6 +188,44 @@ trot = clip("trot", 0.56, loop=True, speed=1.8).pose(0.0, WINGS_FOLDED)
 trot.wave(leg_cycle(0.56, 22, 46, TROT_PHASES, bob=3.0)).wave(tail_sway(1.4, 0.56)).wave(pant(6.0, 0.28))
 footsteps(trot, 0.56, {"a": 0.0, "b": 0.5})
 
+# Running (WP12c, Noah after run 3): chases, a far throw, toy runs and a burst of zoomies.
+# A hatchling scampers: it bounds, the hind feet pushing off together and the front pair
+# landing, a hop in every stride, mouth open. A grown dragon gallops: a rotary four-beat with
+# a moment in the air, the spine flexing, the neck reaching and the folded wings bouncing.
+SCAMPER_PHASES = {"leg_up_L": 0.0, "leg_up_R": 0.06, "arm_up_L": 0.5, "arm_up_R": 0.56}
+GALLOP_PHASES = {"leg_up_L": 0.0, "leg_up_R": 0.12, "arm_up_R": 0.42, "arm_up_L": 0.54}
+
+
+def spine_flex(period, chest=8.0, hips=6.0, phase=0.0):
+    """The back arches and stretches with each stride (chest and hips opposite)."""
+    def fn(t):
+        s = sin01(t, period, phase)
+        return {"chest": (chest * s, 0, 0), "hips": (-hips * s, 0, 0), "tail1": (4 * s, 0, 0)}
+    return fn
+
+
+def wing_bounce(period, amount=5.0, phase=0.0):
+    """Folded wings lifting a little as the body drops."""
+    def fn(t):
+        s = sin01(t, period, phase) * amount
+        return {"wing_arm_R": (s, 0, -0.5 * s), "wing_arm_L": (s, 0, 0.5 * s)}
+    return fn
+
+
+scamper = clip("scamper", 0.4, loop=True, speed=2.4).pose(
+    0.0, merge(WINGS_FOLDED, {"neck1": (-6, 0, 0), "head": (8, 0, 0), "tail1": (10, 0, 0)}))
+scamper.wave(leg_cycle(0.4, 40, 55, SCAMPER_PHASES, bob=4.0)).wave(spine_flex(0.4, 9, 7, 0.1))
+scamper.wave(tail_sway(1.0, 0.4)).wave(pant(8.0, 0.2)).wave(wing_bounce(0.4, 7.0, 0.3))
+scamper.root(0.0, up=0.0).root(0.14, up=0.2).root(0.28, up=0.04)
+footsteps(scamper, 0.4, {"hind": 0.0, "front": 0.5})
+
+gallop = clip("gallop", 0.5, loop=True, speed=3.4).pose(
+    0.0, merge(WINGS_FOLDED, {"neck1": (-10, 0, 0), "neck2": (-4, 0, 0), "head": (10, 0, 0), "tail1": (8, 0, 0)}))
+gallop.wave(leg_cycle(0.5, 36, 60, GALLOP_PHASES, bob=3.5)).wave(spine_flex(0.5, 7, 6, 0.2))
+gallop.wave(tail_sway(0.8, 0.5)).wave(pant(4.0, 0.25)).wave(wing_bounce(0.5, 5.0, 0.4))
+gallop.root(0.0, up=0.03).root(0.12, up=0.0).root(0.3, up=0.02).root(0.4, up=0.1)
+footsteps(gallop, 0.5, GALLOP_PHASES)
+
 shuffle = clip("shuffle", 0.9, loop=True).pose(0.0, WINGS_FOLDED)
 shuffle.wave(leg_cycle(0.9, 10, 22, WALK_PHASES, bob=1.0))
 footsteps(shuffle, 0.9, WALK_PHASES)

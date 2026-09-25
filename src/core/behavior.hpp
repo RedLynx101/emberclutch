@@ -87,6 +87,8 @@ enum class Activity : u8 {
     // proudly with a toy in its mouth and dropping it; on its own, playing with a toy on the
     // floor, eating from the food bowl, and a tug-of-war with another dragon (denSocial)
     Bat, Tug, ToyRun, Play, Bowl, TugWar,
+    // running (WP12c): a happy burst of laps round the den, after a bath or a favourite food
+    Zoomies,
     Count,
 };
 const char* activityName(Activity a);
@@ -97,6 +99,7 @@ enum class ClipId : u8 {
     WingFlutter, Sulk, SulkLoop, Nuzzle, Greet,
     PickUp, DropWait, LeapCatch, LegKick, SniffRefuse, LiftWing, Sneeze, PullAway,
     PawBat, Tug,
+    Scamper, Gallop,  // running (WP12c): a hatchling's bounding scamper, a grown dragon's gallop
     Count,
 };
 const char* clipName(ClipId c);  // the clip's name in the .eca
@@ -168,7 +171,11 @@ struct DenBehavior {
     ClipId walkClip = ClipId::Walk;  // what walking looks like (carrying a toy: Carry)
     // Ground speeds (den units per second) that match the walk and trot cycles for this
     // dragon's body, so its feet stay planted (see locomotionSpeed in core/den_actor).
-    float walkSpeed = 0.55f, trotSpeed = 1.8f;
+    float walkSpeed = 0.55f, trotSpeed = 1.8f, runSpeed = 3.0f;
+    // Running (WP12c): this activity's trotting goes at a run (a chase, a far throw, a toy run,
+    // zoomies); a hatchling scampers, anything bigger gallops (DenActor sets `baby` with the
+    // form).
+    bool sprint = false, baby = false;
     // Small dragons step quicker (DenActor sets it from their size): walking and trotting play
     // this much faster, and cover ground this much faster, so the feet still stay planted.
     float gait = 1.0f;
@@ -209,6 +216,7 @@ struct DenBehavior {
     void join(Activity a, s8 withPartner, Vec2 at);
     // True while it's free to start something with another dragon.
     bool sociable() const;
+    Vec2 zoomPoint();  // the next lap's turn for the zoomies: round the den, clear of things
     // How much the dragon looks at the player right now (0..1): full when idle or greeting,
     // none while eating, sleeping or sulking.
     float lookWeight() const;

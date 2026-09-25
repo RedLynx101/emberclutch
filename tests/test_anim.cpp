@@ -208,6 +208,18 @@ TEST(locomotion_speeds_follow_the_body) {
         CHECK(young > 0 && young < walk[f]);  // shorter legs, shorter strides
     }
     CHECK(walk[kFormHatchling] < walk[kFormGrown] && trot[kFormHatchling] < trot[kFormGrown]);
+    // Running (WP12c): the hatchling's scamper and the grown dragon's gallop outrun their trots.
+    for (int f = 0; f < kFormCount; ++f) {
+        const ModelData& m = form(f);
+        AnimBinding bind;
+        bindAnims(lib, m.skel, bind);
+        const int run = lib.find(f == kFormHatchling ? "scamper" : "gallop");
+        CHECK(run >= 0);
+        if (run < 0) continue;
+        const float speed = locomotionSpeed(m, bind, lib.clips[run], 1.0f, kBuildNeutral);
+        std::printf("  %s: runs at %.2f units/s\n", f == kFormHatchling ? "hatchling" : "grown", speed);
+        CHECK(speed > trot[f] * 1.3f && speed < trot[f] * 3.0f);
+    }
 }
 
 TEST(one_bone_chain_matches_the_whole_pose) {

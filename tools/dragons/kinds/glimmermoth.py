@@ -843,6 +843,16 @@ def parts(kit, d):
         fr.data.materials.append(mats["horn"])
         ants.append((fr, f"antenna_{side}"))
     out.append(("horns", 0, ants))
+    # The baby's fuzz: a little cowlick of soft tufts between its antennae, curling forward.
+    if baby:
+        tufts = []
+        for j, (x, lean, ln) in enumerate(((0.0, 0.0, 1.0), (-0.07, -0.6, 0.78), (0.07, 0.6, 0.78))):
+            basep = kit.head_point((x, -0.02, 0.31))
+            dvec = V((lean * 0.45, -0.8, 0.6)).normalized()
+            tf = kit.blade(f"cowlick_{j}", basep, dvec, V((1, 0, 0)), 0.26 * ln, 0.12 * ln, 0.012)
+            tf.data.materials.append(mats["accent_flat"])
+            tufts.append((tf, "head"))
+        out.append(("frill", 0, tufts))
     # The tail's fluffy tip: a soft lumpy puff.
     tdir = (kit.node("tail_tip") - kit.node("tail4")).normalized()
     k = 0.6 if baby else 1.0

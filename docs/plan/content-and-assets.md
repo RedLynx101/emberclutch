@@ -78,7 +78,8 @@ dragon-to-dragon behaviors.
 | Tool cursors (2D, drawn at the stylus): hand, brush, cloth, sponge, ladle, each food | A1 |
 | Ball toy (3D, fits the jaw); bath tub (3D) | A1 |
 | Feather wand; tug rope; puzzle orb; food bowl | A2 |
-| **Rider** (player avatar for riding): one simple, cute-proportioned model with 3 outfit color sets, sits on the dragon's back bone | 1.0 |
+| **Player character** (D73): one cute-proportioned model and rig (~500 triangles), walk, run, ride poses; a creator (2 body shapes, 6 hair styles and colours, 5 skin tones, 3 outfit colours) | B |
+| **Villagers** (D73): the old keeper, the Market's and Sanctuary's keepers, the arena's steward, a child, a traveller; low poly, idle and talk, a portrait each | B |
 | Judge and crowd (competitions): 2D cutouts or very low-poly | B |
 | Market keeper (2D portrait) | A2 |
 | Equine base mesh and rig (reuses wing module) | 2.0 |
@@ -93,16 +94,16 @@ dragon-to-dragon behaviors.
 | Wanderings | 2D trail map with step progress | A2 |
 | Training yard | Grassy clearing outside the den, props for tricks | B |
 | Arena | One arena reused by events with different props (judge stand, fruit stand, show podium) | B |
-| **Skyreach Valley** | Height-field terrain (32×32-quad chunks), lake, cliffs, 3 floating islands, the den entrance, market, arena as landmarks; sky dome; fog | 1.0 |
-| Sky Rings course | Ring props in the valley | 1.0 |
-| Lantern Trial | Crystal lanterns (react to any element) | 1.0 |
+| **Skyreach Valley** (D73) | About 1 km across: height-field tiles streamed from romfs, lake, river, cliffs, floating islands, trees and rocks, sky dome with the day's light, fog; the places standing in it (den cliff and waterfall, Market village, Nesting Stone hilltop, Sanctuary meadow, Cold Vault cave, trailheads, arena) | B |
+| Sky Rings course | Ring props in the valley | B |
+| Lantern Trial | Crystal lanterns (react to any element) | B |
 
 ## 4. Effects (particles and shaders)
 - A1: embers (den), heartglow pulse, sparkles (joy, polish), hearts (petting), crumbs
   (eating), Zzz (sleep), dust puff (landing), egg glow and crack light.
 - B: trick sparkle, ribbon burst, cup confetti.
-- 1.0: breath effects ×6 (flame, mist, gust, spore bloom, frost, sunbeam), wind streaks,
-  water splash, cloud wisps.
+- B (D73; were 1.0): breath effects ×6 (flame, mist, gust, spore bloom, frost, sunbeam), wind
+  streaks, water splash, cloud wisps.
 
 ## 5. UI art
 - A1: eggshell panels, ember need gauges (4 icons: drumstick, moon, sparkle, ball),
@@ -114,8 +115,8 @@ dragon-to-dragon behaviors.
 - B: cup badges (4 tiers × 5 events), ribbons, trick icons ×12.
 - A2: the illustrated world map with place pins ([map & travel](../design/world-map-and-travel.md)),
   the tool tray icons.
-- 1.0: the live valley map (top-view render + pins, discovery marks), compass, ring and
-  lantern markers.
+- B (D73; were 1.0): the painted valley map (top-view render, stylised, pins, fog of the
+  unexplored), compass, ring and lantern markers, dialogue box and portraits, quest log.
 
 ## 6. Audio
 
@@ -132,7 +133,7 @@ dragon-to-dragon behaviors.
 | **Wanderings return** (stinger) | Finds revealed | Batch 2 — A2 |
 | **Training yard** (loop, light) | Training | Batch 3 — B |
 | **Cup won / cup lost** (stingers) | Competition results | Batch 3 — B |
-| **Valley at night** (loop) | Riding at night | Batch 4 — 1.0 |
+| **Valley by day / at night** (loops), **Market village** (loop), **quest jingle** | Exploring the valley | Batch 3 — B (D73) |
 | **Evening den** (loop, optional) | Dusk transition | Batch 4 — 1.0 |
 
 Each batch gets a Suno brief in `docs/audio/` before its milestone starts. Stingers skip

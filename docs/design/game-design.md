@@ -164,6 +164,9 @@ Competition performance = stat × mood multiplier × bond confidence, plus playe
 
 ## 6. Competitions (never ridden)
 
+*Beta (D73) brings Sky Rings, Lantern Trial and Fruit Catch with the valley; whether Sky
+Rings is ridden is open point 2 of the [Beta plan](../plan/beta.md).*
+
 The player is always on the ground or on a tower, cueing the dragon — **riding is
 disabled in all training and competitions.** Each event has four cups:
 **Ember → Flame → Blaze → Starfire**. Winning earns Gleam, ribbons (den decorations)
@@ -178,6 +181,10 @@ and bond.
 | **Lantern Trial** | Grounded | Adult | Crystal lanterns light up in a pattern; cue the dragon's breath to light them in order. Every element works (fire, mist, gust, spores, frost, light). |
 
 ## 7. Riding and Skyreach Valley
+
+*Moved to Beta (D73, [plan](../plan/beta.md)): about 1 km across, 6–8 places standing in it,
+arcade flying. With a player character and villagers now in Beta (7C), the rider is no
+longer the only time the player is seen (open point 1).*
 
 - **Adult dragons can be ridden anywhere in free roam** — on the ground (walk/run) or in
   the air (take off, glide, bank, dive, land).

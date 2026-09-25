@@ -23,12 +23,12 @@ of Alpha 2 at the latest**, before content volume makes a rendering change expen
 | **Foundations** | Design, tools, proof of pipeline | Phase 0 | ✅ Done 2026-09-23 |
 | **Alpha 1** | *A living pet* | Phases 1–2: 3D dragon, care, growth, naming, real saves, music, CIA | ✅ Done (2026-09-24, `v0.1.0-alpha1`) |
 | **Alpha 2** | *A den* | Phase 3: several dragons, breeding, eggs, Sanctuary/Vault, Market, Wanderings, map with fast travel; style review R5; first hardware runs | ✅ Done (2026-09-25, `v0.2.0-alpha2`; [plan](alpha-2.md), [checklist](alpha-2-checklist.md)) |
-| **Beta** | *A trainer* | Phase 4 + ground half of Phase 5: tricks, voice, 3 ground competitions, economy | Planned · **sit-down first** |
-| **1.0** | *The sky* | Phase 6 + air half of Phase 5 + Phase 7 polish: flight, riding, valley, Sky Rings, Lantern Trial, public release | Planned · **sit-down first** |
+| **Beta** | *The valley* | Phase 6 + air half of Phase 5 (moved up, D73): the open valley, the places in it, the painted map, flying and riding, Sky Rings, Lantern Trial, Fruit Catch, the player character, villagers and a first campaign | Sit-down done (D73) · [plan](beta.md) awaiting sign-off |
+| **1.0** | *A trainer* | Phase 4 + ground half of Phase 5 + Phase 7 polish: tricks, voice, the training yard, Command Trial, Shine Show, grooming, economy, more campaign, public release | Planned · **sit-down first** |
 | **1.x** | *Friends* | Sky Visits (local wireless) | Later · **sit-down first** |
 | **2.0** | *The meadow* | Equine line: horse, pegasus, unicorn, alicorn | Later · **sit-down first** |
 
-**Next: the sit-down ([brief](beta-sitdown.md)).** Noah wants the places redesigned, the map, the open world, flying and challenges next (run 13, D72): the brief's first question is whether the valley comes before training.
+**Next: Beta, *The valley*** ([plan](beta.md), awaiting Noah's sign-off). The sit-down (D73, [brief](beta-sitdown.md)) put the valley before training: Noah wants the places redesigned, the map, the open world, flying, challenges, people and a first campaign next. Training, voice and the ground cups move to 1.0.
 
 **Every milestone after Alpha 2 opens with a design sit-down with Noah (D65), and no work
 on it starts until he has passed it.** The sit-down happens when the milestone before it is
@@ -105,54 +105,44 @@ style, the last thing before Noah decides (D47) → the dragons update in the ch
 - **Exit:** breeding produces visibly distinct offspring; a player can get a partner of
   the opposite sex through the Market or Wanderings.
 
-## Beta — *A trainer*
-**Sit-down first (after Alpha 2):** how training works (tricks, gestures, voice, skills),
-the ground competitions and their cups, the economy and progression (Gleam, what's earned
-and spent, how a dragon grows as a trainee), grooming (below), the Wanderings' next pass,
-what Beta leaves out. Nothing below is built until it's passed.
-- **Grooming that fits together** (WP12b, moved from Alpha 2): the bath washes grime and
-  leaves the dragon damp, the cloth dries and polishes, the brush clears shed scales; the
-  three tools under one Groom button; judged in the Shine Show.
-- **The Wanderings' next pass:** several dragons out at once, each counting its own steps;
-  and the trip shown **in flight** rather than walking (Noah, run 10): the dragon flaps and
-  glides over the trail, with the flap loop and glide taken early from 1.0's flight set (a
-  hatchling too small to fly flutters and hops).
-- Trick learning (gesture then name), skill curves, 12 tricks.
+## Beta — *The valley*
+**Sit-down done (D73), 2026-09-25; detailed plan: [beta.md](beta.md).** Moved ahead of the
+trainer content because it's what Noah wants to play next and it's the riskiest thing left
+on an old 3DS (a big 3D space, streaming, draw distance).
+- **Skyreach Valley:** about 1 km across, a height field in streamed tiles with fog, water,
+  cliffs, floating islands, the day's light; 30 fps while flying.
+- **The places in the world**, each entered to its own scene: the den in a cliff by a
+  waterfall, the Market village, the Nesting Stone hilltop, the Sanctuary meadow and Cold
+  Vault cave, the trailheads, the arena, the lake.
+- **The painted map:** fogged until explored, live position, fast travel to found places.
+- **Getting about:** on foot with a young dragon, adolescents gliding, grown dragons flown
+  with you riding (arcade controls, stamina).
+- **Challenges:** Sky Rings, Lantern Trial (breath for all six elements), Fruit Catch; the
+  Ember → Starfire cups, ribbons, trophies.
+- **People:** the player character and a creator, villagers who run the places, **a first
+  campaign** of 6–8 quests.
+- **The Wanderings in the world:** trailheads as places, trips shown in flight, finds from
+  real spots.
+- Reviews R7 (concepts), R8 (the valley blockout), R9 (people), R10 (the campaign outline);
+  hardware runs 14 (a technical test first), 15 and 16.
+
+## 1.0 — *A trainer*
+**Sit-down first (after Beta):** how training works (tricks, gestures, voice, skills), the
+ground competitions and their cups, the economy and progression across the whole game, the
+grooming redesign, the Wanderings' next pass, more of the campaign, and the public
+release's scope. Nothing below is built until it's passed.
+- Trick learning (gesture then name), skill curves, 12 tricks; the Wing / Wit / Spark stats.
 - Voice: mic capture + MFCC/DTW template matching on a worker thread; cue buttons always.
-- Wing / Wit / Spark stats.
-- Training yard scene; arena scene.
-- Ground competitions: **Command Trial**, **Fruit Catch**, **Shine Show**, with the
-  Ember → Flame → Blaze → Starfire cups, ribbons and den trophies.
-- Music batch 2 and the full sound-effect set.
-
-## 1.0 — *The sky*
-**Sit-down first (after Beta, Noah's ask, 2026-09-24):** the open world's scale and mechanics
-(how big the valley is, what's in it, how exploring on foot, gliding, flying and riding
-work), the map (how it looks and how it blends into the open world), campaign writing and
-story, progression across the whole game, people (the player character, the valley's NPCs),
-the air competitions, and the scope of the public release. Nothing below is built until
-it's passed; the list below is the starting point for that conversation, not a plan.
-- Flight animation set and flight controller; adolescent gliding.
-- **Exploring with a young dragon** before it can carry you (follow it, hops and glides, D44).
-- **Riding anywhere** in free roam; a rider model. **Free flight** over the valley with a
-  live map: your position, landmarks discovered by flying near them, and fast travel to
-  any discovered place ([map & travel](../design/world-map-and-travel.md)).
-- **Skyreach Valley**: height-field terrain, fog, lake, cliffs, floating islands, points
-  of interest, riding finds.
-- Air competitions: **Sky Rings** and **Lantern Trial** (breath effects for all 6 elements).
+- The training yard; the ground competitions **Command Trial** and **Shine Show** with their
+  cups (Fruit Catch comes with Beta).
+- **Grooming that fits together** (WP12b, from Alpha 2): the bath washes grime and leaves
+  the dragon damp, the cloth dries and polishes, the brush clears shed scales; the three
+  tools under one Groom button; judged in the Shine Show.
+- **The Wanderings' next pass:** several dragons out at once, each counting its own steps.
+- More of the campaign (stories round the cups and the places), people's second pass.
 - Release polish: tutorial pass, settings, balance pass, performance pass on hardware.
-- Check that no AI-concept-derived asset ships (the placeholder icon is replaced in
-  Alpha 1 and Alpha 2, D48).
+- Check that no AI-concept-derived asset ships (concept images stay reference only).
 - **Public open-source release** (repo goes public, CIA + 3DSX on GitHub Releases).
-
-**From Noah's run-3 notes (2026-09-24), toward 1.0:** the world map needs to look better (it
-works, and the heart travelling the path is liked), and the destination pictures on the top
-screen are far too simple; both are redone when the valley becomes an open world to fly
-over, which the map should blend into. With it, **people**: cute, Nintendo-like human
-characters for the valley's NPCs and for the player, their animations, and the start of
-**campaigns** (stories and quests around the places and the cups). To explore once the
-valley's first pass exists: style, a rig shared with the dragons' pipeline, the triangle
-budget next to the dragons.
 
 ## 1.x — *Friends*
 **Sit-down first (after 1.0):** what friends do together over local wireless, what's shared

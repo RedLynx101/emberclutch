@@ -115,3 +115,28 @@ with a touch of awe and majesty in the grown adults (D75–D77):
    sunk, no holes, no parts through the body in any clip, wings folding neatly, the face
    cute, the adult majestic, matching the concept's spirit.
 4. The kind file and the plan read clearly (a short docstring saying what the kind is).
+
+## Gotchas (learned building the first nine, DR2)
+Things that tripped the builders; the kit may fix some later, until then work with them:
+- **EGG colours are display (sRGB) values**; VARIANTS colours are linear. Pick egg colours
+  as you'd see them in a paint program.
+- **WING_BODY must include the parent of the first wing bone** (usually the chest), or
+  `weight_membrane` divides by zero; a kind with no body-joined membrane still needs one.
+- **`base_pose` values are always (pitch, yaw, roll) tuples**, never a bare number; they
+  apply to the rest pose in the armature's axes. Clip keys are deltas on top of the idle
+  pose, in the same convention as `fold.py` prints.
+- **No fangs:** `fangs=[]` in a form turns them off (the storybook look has none).
+- **Two groups with the same (group, variant)** are merged by the exporter; the game finds a
+  part group by name, so one mesh per group and variant is what it sees.
+- **Contacts are the plan's** (`CONTACTS`: the four bones that touch the floor in a walk);
+  a wyvern's are its wing thumbs, a serpent's its lower legs. Every `tail*` bone is kept off
+  the floor contact, so a long tail may drag without lifting the body.
+- **Care zones:** bones named `ear*` and `antenna*` count as the head for stroking.
+- **Known, not fixed yet** (work around them): `snap_parts` takes the outermost hit when a
+  ray leaves and re-enters the body (seat parts on convex spots, or nudge them by hand);
+  `weight_membrane` has one strut list for all membranes (a four-winged kind weights each
+  pair itself); `wing_arm` branches its fingers only from a point named `wrist`; the UV
+  unwrap can leave tiny islands on thin parts (give them a flat material); bones used only
+  by parts still get skin weights (keep them away from the body); there's no hook after
+  decimation; `review.py`'s clip strips are a fixed list; `glow_flat` previews flat in
+  Blender but glows in the game.

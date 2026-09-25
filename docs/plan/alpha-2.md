@@ -466,6 +466,18 @@ animated children (U) freezes the HOME Menu; a still billboard is fine (T).
 - **0.1.10:** the game's banner is T's layout, centred (`make_banner.ps1 -Mode still`, the
   default until V is seen working; then `-Mode turn`), with the splash and the stereo sound.
 
+**Run 11 (lab 7, 0.1.10):** V and W both froze. 0.1.10's banner shows, still and centred, but
+doesn't move; the wordmark wants to come down about 5 px (now 0.5 units lower, 0.1.11). What
+the frozen banners share: U, V and W hang the body one level deeper (scene root > world/egg >
+body > head > eyes: four levels), where P (never froze) went three deep; V and W also run a
+10 s skeletal loop (600 frames) where P ran 4 s. Bone order is sound in all of them (checked:
+no child before its parent). **Lab 8** tells these apart:
+- **X:** the counter-turn at P's depth: the body (its pivot moved onto the turning axis; head,
+  tail and heart under it) and the egg (the sparkles and wordmark under it) each turn once the
+  other way over 10 s. The one to ship if it holds.
+- **Y:** P's own layout and motions, 10 s loop, no counter-turn: does a 600-frame loop freeze?
+- **Z:** P's layout, 4 s loop, only the egg turning whole turns: does a full turn freeze?
+
 ### WP11d — Hardware performance pass (after run 3; before WP12a, Noah agreed)
 The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 8.3). Target:
 16.7 ms with three dragons, their toys and decor, and the close-up.

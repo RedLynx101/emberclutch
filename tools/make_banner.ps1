@@ -6,7 +6,7 @@
 #   still  one still piece facing the camera, only the heart's glow moving (the default: it held
 #          still on the 3DS in run 10, lab 6's T)
 #   turn   the dragon keeps all its motion and the egg turns it back against the HOME Menu's turn
-#          (lab 7's V, run 11; the default once it's seen working)
+#          (lab 8's X, run 12; the default once it's seen working)
 #   spin   the old banner, turning with the HOME Menu
 # pycgfx is a build tool, never committed: git clone --depth 1 https://github.com/skyfloogle/pycgfx build\tools\pycgfx
 # with gltflib and pillow for Python 3.12 (py -3.12 -m pip install gltflib pillow). Approved for this step (D50).
@@ -23,14 +23,22 @@ $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $blender = "C:\Program Files (x86)\Steam\steamapps\common\Blender\blender.exe"
 $pycgfx = Join-Path $root "build\tools\pycgfx\main.py"
 
+# Blender writes deprecation warnings to stderr: under "Stop" a caller's 2>&1 would turn them
+# into errors, so it runs under "Continue" and only its [tag] lines are shown.
+function Invoke-Blender([string]$script, [string[]]$blenderArgs, [string]$tag) {
+    $ErrorActionPreference = "Continue"
+    & $blender -b -P $script @blenderArgs 2>&1 | ForEach-Object { "$_" } | Select-String $tag
+    $ErrorActionPreference = "Stop"
+}
+
 if (-not $SkipIcon) {
-    & $blender -b -P (Join-Path $root "tools\blender\emblem.py") | Select-String "\[emblem\]"
+    Invoke-Blender (Join-Path $root "tools\blender\emblem.py") @() "\[emblem\]"
     if ($LASTEXITCODE -ne 0) { throw "emblem.py failed" }
 }
 if (-not $SkipBanner) {
     $blenderArgs = @{ still = @("--", "--still"); turn = @("--", "--turn"); spin = @() }[$Mode]
-    $cgfxArgs = @{ still = @("--billboard", "world"); turn = @("--turn", "egg:1"); spin = @() }[$Mode]
-    & $blender -b -P (Join-Path $root "tools\blender\banner3d.py") @blenderArgs | Select-String "\[banner\]"
+    $cgfxArgs = @{ still = @("--billboard", "world"); turn = @("--turn", "body*:1,egg:1"); spin = @() }[$Mode]
+    Invoke-Blender (Join-Path $root "tools\blender\banner3d.py") $blenderArgs "\[banner\]"
     if ($LASTEXITCODE -ne 0) { throw "banner3d.py failed" }
     if (-not (Test-Path $pycgfx)) { throw "pycgfx missing: git clone --depth 1 https://github.com/skyfloogle/pycgfx build\tools\pycgfx" }
     $gltf = Join-Path $root "build\banner\banner.gltf"

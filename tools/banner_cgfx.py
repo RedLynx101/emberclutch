@@ -6,14 +6,14 @@
   can't say), always facing the camera however the HOME Menu turns the scene (run 10; see
   tools/blender/banner3d.py). Names may end in * ("sparkle_*"). A billboard that's animated,
   or has animated children, froze the HOME Menu (run 10).
-- --turn <node>:<turns>: that node's placeholder rotation becomes <turns> whole turns about
-  the vertical over the loop, as two keys (pycgfx takes rotations through quaternions to Euler
-  angles, which can't pass 90 degrees about the vertical smoothly). --turn egg:1 undoes the
-  HOME Menu's own turn (tools/blender/banner3d.py --turn).
+- --turn <node>:<turns>[,...]: each node's placeholder rotation becomes <turns> whole turns
+  about the vertical over the loop, as two keys (pycgfx takes rotations through quaternions to
+  Euler angles, which can't pass 90 degrees about the vertical smoothly). Names may end in *.
+  --turn "body*:1,egg:1" undoes the HOME Menu's own turn (tools/blender/banner3d.py --turn).
 And it refuses to write a banner the HOME Menu is known to freeze on: any skinning, or bone
 indices or weights in a vertex stream (gbatemp thread 683412).
 
-  py -3.12 tools/banner_cgfx.py [build/banner/banner.gltf] [build/banner/banner.cgfx] [--billboard a,b*] [--turn egg:1]
+  py -3.12 tools/banner_cgfx.py [build/banner/banner.gltf] [build/banner/banner.cgfx] [--billboard a,b*] [--turn "body*:1,egg:1"]
 
 pycgfx is a build tool, never committed (see tools/make_banner.ps1): build/tools/pycgfx.
 """
@@ -46,6 +46,19 @@ def refuse_skinning(model):
             for s in streams:
                 if s.usage in (VertexAttributeUsage.BoneIndex, VertexAttributeUsage.BoneWeight):
                     sys.exit(f"banner_cgfx: {shape.name} carries bone indices or weights")
+
+
+def set_turns(cgfx, spec):
+    anim = cgfx.data.skeletal_animations["COMMON"]
+    names = list(anim.member_animations_data) if anim is not None else []
+    done = []
+    for item in spec:
+        pattern, turns = item.rsplit(":", 1)
+        hits = [n for n in names if fnmatch.fnmatchcase(n, pattern)]
+        if len(hits) != 1:
+            sys.exit(f"banner_cgfx: --turn {pattern} matches {hits or 'no animated node'}")
+        done.append(set_turn(cgfx, hits[0], float(turns)))
+    return "; ".join(done)
 
 
 def set_turn(cgfx, node, turns):
@@ -81,7 +94,7 @@ def convert(src, dst, billboards=(), turn=None):
         for n in hits:
             model.skeleton.bones[n].billboard_mode = BillboardMode.YAxial
             made.append(n)
-    turned = set_turn(cgfx, turn[0], turn[1]) if turn else "none"
+    turned = set_turns(cgfx, turn) if turn else "none"
     refuse_skinning(model)
     data = pycgfx.write(cgfx)
     with open(dst, "wb") as f:
@@ -100,8 +113,7 @@ if __name__ == "__main__":
     turn = None
     if "--turn" in args:
         i = args.index("--turn")
-        node, turns = args[i + 1].split(":")
-        turn = (node, float(turns))
+        turn = [t for t in args[i + 1].split(",") if t]
         del args[i:i + 2]
     src = args[0] if args else os.path.join(ROOT, "build", "banner", "banner.gltf")
     dst = args[1] if len(args) > 1 else os.path.splitext(src)[0] + ".cgfx"

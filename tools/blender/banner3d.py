@@ -13,21 +13,25 @@ into pieces at its joints (body, head, eyes, tail, heart), each with its pivot a
 
   blender -b -P tools/blender/banner3d.py -- [--out build/banner] [--assets assets] [--review build/review] [--debug-rig]
     [--no-fit] [--keep-glow] [--keep-backdrop] [--no-anchor] [--no-sparkles]   (banner-lab variants, tools/banner_lab.ps1)
-    [--turn | --still]   (holding the banner still: see below)
-  py -3.12 tools/banner_cgfx.py build/banner/banner.gltf build/banner/banner.cgfx [--turn egg:1 | --billboard world]
+    [--turn | --still] [--short-loop] [--spin-egg]   (holding the banner still: see below)
+  py -3.12 tools/banner_cgfx.py build/banner/banner.gltf build/banner/banner.cgfx [--turn "body*:1,egg:1" | --billboard world]
 
 The HOME Menu turns every 3D banner round, once every 10 s, clockwise seen from above (faster
 while you blow on the mic): measured on pycgfx's own HOME Menu recording (10.03 s a turn), and
 a Nintendo-SDK artist on polycount (2012) held a banner still with "a reverse-360 spin over 600
 frames" (10 s at the CGFX's 60 frames a second). Two ways to hold ours still:
-  --turn   everything but the hidden anchor is parented to the egg, whose origin is on the
-           turning axis; tools/banner_cgfx.py --turn egg:1 then turns the egg once the other
-           way over the loop, so the dragon keeps all its motion (lab 7, run 11).
+  --turn   the body (its pivot moved onto the turning axis; head, tail and heart under it) and
+           the egg (the sparkles and the wordmark under it) each get a placeholder turn, which
+           tools/banner_cgfx.py --turn "body*:1,egg:1" makes one whole turn the other way over
+           the loop, so the dragon keeps all its motion. (Lab 7 hung everything on the egg,
+           four levels deep, and froze, as U did: P, three deep, never froze. Lab 8, run 12.)
   --still  the dragon, its egg, the wordmark and the sparkles joined into one piece, "world",
            made a Y-axis billboard (--billboard world): nothing moves but the heart's glow
            (lab 6's T: no freeze, no turning, run 10).
 Run 10 also found what freezes the HOME Menu: billboards that are animated (S: the sparkles
 glinting as billboards) or have animated children (U: the whole scene under one).
+Lab 8's checks: --short-loop keeps the old 4 s loop (96 frames); --spin-egg turns only the
+egg (flat, three deep, 4 s), to tell a whole-turn rotation from the hierarchy if X freezes.
 
 Writes <out>/banner.gltf (+ .bin, the skin texture), <assets>/banner.png (the 2D banner,
 256x128) and review renders of the 3D banner through the HOME Menu's camera.
@@ -55,6 +59,8 @@ FONT = os.path.join(ROOT, "assets", "fonts", "cinzel-decorative", "CinzelDecorat
 
 FPS, FRAMES = 24, 240         # a 10 second loop: one turn of the HOME Menu's camera
 CYCLE = 120                   # the dragon's motions, twice a loop (written on a 96-frame count)
+if "--short-loop" in sys.argv:
+    FRAMES = CYCLE = 96       # the old 4 second loop (a lab check)
 SKIN = 128                    # the skin texture (RGBA4 in the CGFX: 32 KB)
 TALL = 18.0                   # the dragon and its egg, in banner units (the view is 40 x 24)
 # The HOME Menu's banner camera (pycgfx banner-camera.gltf): glTF (0, 1, 44.786), looking
@@ -649,7 +655,7 @@ def build():
     for o in world_objs:
         o.location += shift
     word = wordmark(30.0)
-    word.location = (0.0, 5.0, 8.4)
+    word.location = (0.0, 5.0, 7.9)  # 5 px lower on the 3DS than 8.4 (Noah, run 11)
     # Banner-lab variants (run 3: the new scene froze the HOME Menu, 0.1.1's didn't).
     if "--keep-glow" in sys.argv:
         glow_disc(9.8, (0.55, 0.22, 0.12), (0.0, 16.0, -1.0))
@@ -702,20 +708,30 @@ def still_world(pieces, egg, cap, word, stars):
     print(f"[banner] still: one piece of {len(join)} ({len(world.data.polygons)} faces)")
 
 
-def turn_with_egg(pieces, egg, cap, word, stars):
-    """--turn: everything but the anchor under the egg, whose origin is on the turning axis
-    (the scene is centred), and a placeholder turn on the egg (10 degrees over the loop) that
-    tools/banner_cgfx.py --turn replaces with a whole turn: pycgfx keeps rotations as Euler
-    angles taken from quaternions, which can't pass 90 degrees about the vertical smoothly."""
-    bpy.context.view_layer.update()  # the wordmark and sparkles were placed without one: parent() reads matrix_world
-    for o in list(pieces.values()) + [cap, word] + list(stars):
+def turn_setup(pieces, egg, word, stars):
+    """--turn, before animating: the body's pivot moved onto the turning axis (the scene is
+    centred; only its depth is off), and the sparkles and the wordmark put under the egg,
+    whose origin is on the axis. Nothing goes deeper than P's body > head > eyes."""
+    body = pieces["body"]
+    dy = body.location.y
+    body.data.transform(Matrix.Translation((0.0, dy, 0.0)))
+    body.location.y = 0.0
+    bpy.context.view_layer.update()  # parent() reads matrix_world (lab 7 lost the wordmark without this)
+    for o in [word] + list(stars):
         parent(o, egg)
     bpy.context.view_layer.update()
-    egg.rotation_euler = (0, 0, 0)
-    egg.keyframe_insert("rotation_euler", frame=0)
-    egg.rotation_euler = (0, 0, math.radians(10))
-    egg.keyframe_insert("rotation_euler", frame=FRAMES)
-    egg.rotation_euler = (0, 0, 0)
+    print(f"[banner] turn: body pivot moved {dy:+.2f} onto the axis; {len(stars)} sparkles and the wordmark under the egg")
+
+
+def placeholder_turn(o):
+    """10 degrees about the vertical over the loop, which tools/banner_cgfx.py --turn replaces
+    with whole turns: pycgfx keeps rotations as Euler angles taken from quaternions, which
+    can't pass 90 degrees about the vertical smoothly."""
+    o.rotation_euler = (0, 0, 0)
+    o.keyframe_insert("rotation_euler", frame=0)
+    o.rotation_euler = (0, 0, math.radians(10))
+    o.keyframe_insert("rotation_euler", frame=FRAMES)
+    o.rotation_euler = (0, 0, 0)
 
 
 def animate(pieces, cap, heart_mat, stars=()):
@@ -890,8 +906,14 @@ def main():
         still_world(pieces, egg, cap, word, stars)
         pieces, stars = {}, []
     elif "--turn" in sys.argv:
-        turn_with_egg(pieces, egg, cap, word, stars)
+        turn_setup(pieces, egg, word, stars)
+    body = pieces.get("body")
     animate(pieces, cap, heart_mat, stars)
+    if "--turn" in sys.argv:  # after animate(), which hangs the head, tail and heart on the body
+        placeholder_turn(body)
+        placeholder_turn(egg)
+    elif "--spin-egg" in sys.argv:
+        placeholder_turn(egg)
     tris = 0
     for o in bpy.context.scene.objects:
         if o.type == "MESH":

@@ -6,20 +6,25 @@ Design notes
   * Baby: a little round pebble, half curled: a big round head with huge eyes and a long
     button snout, a round tummy, stubby legs, the thick little tail curled round its side,
     tiny overlapping plates down its back and three amber crystal buds on its head.
-  * Adult: low, long and sturdy, a calm and dependable mountain guardian. Rounded stone
-    plates overlap down the back and the thick tail like a pangolin's scales, in staggered
-    rows, each seated on the skin with its rear edge lifted over the next; the skin between
-    them is painted with softer scutes. A long, gentle digging snout with a small kind mouth,
-    big digging front claws, a thick tail ending in a rounded stone club, a crown of warm
-    amber crystals on its head and a few crystal points peeking out between the plates.
-    Short, broad wings fold flat along its flanks, tucked under the lowest plates.
+  * Adult: low, long and sturdy under a high domed back, a calm and dependable mountain
+    guardian. Rounded stone plates overlap down the back and the thick tail like a pangolin's
+    scales, in staggered rows, each draped on the skin with its free rear edge lifted over the
+    next and rimmed in the pattern colour (the rims keep plates apart where the toon light
+    alone would merge them); the skin between them is painted with softer scutes and shadowed
+    under the plates. A long, gentle digging snout with a small, kind, fangless mouth, big
+    eyes, big digging front claws, a thick tail ending in a rounded stone club, a crown of
+    warm amber crystals (glowing with its heart) and a few crystal points peeking out between
+    the plates. Short, broad wings fold flat along its flanks, tucked under the lowest plates.
   * Motion (plans/curlstone.py): a low, steady waddle and a determined trot; it tucks and
-    rolls like a boulder to run; it curls into a ball to sleep, to sulk and when shy.
-  * Colours: Sandstone (warm sand with slate plates and strata bands), Granite (speckled
-    grey with a pink feldspar belly), Basalt (near-black with rusty veins and belly) and the
-    rare Geode: dusky violet stone, glowing amethyst seams, and bigger amethyst crystal
-    clusters on its crown and between its plates.
-  * Egg: a smooth river stone with sandy bands.
+    rolls like a boulder to run; it curls into a ball to sleep and to sulk, hides its face in
+    a half curl when shy, sits up like a pangolin and rocks on its round back for a rub.
+  * Colours: Sandstone (sandstone plates rimmed in sienna on slate-grey skin with faint
+    strata), Granite (grey plates rimmed in charcoal, speckled pale skin, a pink feldspar
+    belly), Basalt (near-black stone with rusty rims, veins and belly) and the rare Geode:
+    dusky violet stone, plates rimmed in amethyst, glowing amethyst seams and bigger
+    amethyst crystal clusters on its crown and between its plates (heart and crystals
+    glowing violet).
+  * Egg: a smooth river stone with sandy bands, in each colouring's own stones.
 """
 import math
 
@@ -66,29 +71,29 @@ def _mirrored(center, sides):
 
 
 # ------------------------------------------------------------------------------ grown
-# Faces -Y, Z up; about 6 units long. radius = (side, vertical). Low and long: the back arches
-# highest over the loins, the head is carried low on a short, thick neck.
+# Faces -Y, Z up; about 6 units long. radius = (side, vertical). Low and long on short legs:
+# the back arches highest over the loins, the head held up on a short, thick neck.
 GROWN_NODES = _mirrored({
-    "tail_tip": ((0, 3.36, 0.42), (0.19, 0.19)),
-    "tail4": ((0, 2.98, 0.52), (0.28, 0.27)),
-    "tail3": ((0, 2.50, 0.74), (0.39, 0.37)),
-    "tail2": ((0, 1.92, 1.02), (0.52, 0.50)),
-    "hips": ((0, 1.22, 1.28), (0.66, 0.70)),
-    "loin": ((0, 0.58, 1.44), (0.80, 0.84)),
-    "belly": ((0, -0.08, 1.36), (0.82, 0.84)),
-    "chest": ((0, -0.74, 1.14), (0.72, 0.74)),
-    "neck2": ((0, -1.32, 1.16), (0.52, 0.52)),
-    "neck3": ((0, -1.68, 1.34), (0.42, 0.42)),
-    "head": ((0, -2.02, 1.50), (0.50, 0.44)),
-    "muzzle": ((0, -2.44, 1.34), (0.27, 0.25)),
-    "snout": ((0, -2.78, 1.18), (0.18, 0.16)),
+    "tail_tip": ((0, 3.36, 0.28), (0.19, 0.19)),
+    "tail4": ((0, 2.98, 0.38), (0.28, 0.27)),
+    "tail3": ((0, 2.50, 0.60), (0.39, 0.37)),
+    "tail2": ((0, 1.92, 0.88), (0.52, 0.50)),
+    "hips": ((0, 1.22, 1.16), (0.68, 0.76)),
+    "loin": ((0, 0.58, 1.36), (0.82, 0.94)),
+    "belly": ((0, -0.08, 1.28), (0.84, 0.92)),
+    "chest": ((0, -0.74, 1.02), (0.74, 0.78)),
+    "neck2": ((0, -1.32, 1.02), (0.52, 0.52)),
+    "neck3": ((0, -1.68, 1.20), (0.42, 0.42)),
+    "head": ((0, -2.02, 1.36), (0.50, 0.44)),
+    "muzzle": ((0, -2.44, 1.20), (0.27, 0.25)),
+    "snout": ((0, -2.78, 1.04), (0.18, 0.16)),
 }, {
-    "shoulder": ((0.50, -0.66, 0.92), (0.31, 0.34)),
-    "elbow": ((0.64, -0.76, 0.53), (0.25, 0.25)),
+    "shoulder": ((0.50, -0.66, 0.80), (0.31, 0.34)),
+    "elbow": ((0.64, -0.76, 0.46), (0.25, 0.25)),
     "wrist": ((0.64, -0.82, 0.19), (0.20, 0.20)),
     "toe_f": ((0.66, -1.12, 0.10), (0.24, 0.10)),
-    "hipj": ((0.50, 1.16, 1.06), (0.39, 0.44)),
-    "knee": ((0.62, 0.90, 0.60), (0.29, 0.29)),
+    "hipj": ((0.50, 1.16, 0.94), (0.39, 0.44)),
+    "knee": ((0.62, 0.90, 0.53), (0.29, 0.29)),
     "ankle": ((0.62, 1.20, 0.21), (0.21, 0.21)),
     "toe_b": ((0.64, 0.94, 0.10), (0.24, 0.10)),
 })
@@ -119,10 +124,10 @@ GROWN_PLATES = [
     ("head", -0.30, (0, 48, -48), (0.40, 0.42, 0.10), 0.06),
     ("neck3", 0.40, (-28, 28, 82, -82), (0.46, 0.50, 0.12), 0.07),
     ("neck2", 0.45, (0, 58, -58), (0.56, 0.60, 0.14), 0.09),
-    ("chest", 0.45, (-26, 26, 78, -78), (0.74, 0.94, 0.20), 0.12),
-    ("belly", 0.50, (0, 50, -50, 98, -98), (0.78, 1.00, 0.21), 0.12),
-    ("loin", 0.50, (-25, 25, 75, -75), (0.80, 1.00, 0.21), 0.12),
-    ("hips", 0.50, (0, 50, -50, 98, -98), (0.72, 0.94, 0.20), 0.12),
+    ("chest", 0.45, (-26, 26, 78, -78), (0.76, 0.96, 0.22), 0.12),
+    ("belly", 0.50, (0, 50, -50, 98, -98), (0.80, 1.02, 0.24), 0.13),
+    ("loin", 0.50, (-25, 25, 75, -75), (0.82, 1.02, 0.24), 0.13),
+    ("hips", 0.50, (0, 50, -50, 98, -98), (0.74, 0.96, 0.22), 0.12),
     ("tail1", 0.50, (-30, 30, 88, -88), (0.62, 0.84, 0.17), 0.10),
     ("tail2", 0.50, (0, 60, -60), (0.54, 0.76, 0.15), 0.09),
     ("tail3", 0.50, (-34, 34), (0.44, 0.66, 0.13), 0.08),
@@ -130,7 +135,7 @@ GROWN_PLATES = [
 
 GROWN = dict(
     name="grown", nodes=GROWN_NODES, edges=GROWN_EDGES, body="skin", relax=0.45,
-    body_tris=1150, body_tris_lod1=430, export_scale=1.0,
+    body_tris=1150, body_tris_lod1=380, export_scale=1.0,
     young={
         "bones": {
             "head": (1.08, 1.0, 1.08), "snout": (0.9, 0.74, 0.94),
@@ -148,13 +153,13 @@ GROWN = dict(
     young_pose={"neck2": -8, "head": -6},
     base_pose={"neck2": (-14, 0, 0), "neck3": (-8, 0, 0), "head": (12, 0, 0)},
     builds=BUILDS,
-    eyes=dict(at=(0.29, -2.28, 1.62), out=(0.52, -0.80, 0.26), iris=(0.165, 0.185, 0.08),
+    eyes=dict(at=(0.29, -2.28, 1.48), out=(0.52, -0.80, 0.26), iris=(0.165, 0.185, 0.08),
               pupil=(0.10, 0.124, 0.03), slit=(0.3, 1.1),
               glints=((-0.022, 0.034, 0.016), (0.016, -0.034, 0.008)), seg=(12, 2, 8, 2)),
-    head=dict(origin=(0, -2.02, 1.50), k=1.45, horn_len=1.0, horn_r=1.0, horn_curve=1.0, buds=False),
+    head=dict(origin=(0, -2.02, 1.36), k=1.45, horn_len=1.0, horn_r=1.0, horn_curve=1.0, buds=False),
     tail_k=1.0,
-    heart=dict(at=(0, -1.42, 0.82), size=0.13),
-    wing=dict(root=(0.46, -0.55, 1.62), scale=1.1, dihedral=30, droop=8,
+    heart=dict(at=(0, -1.42, 0.68), size=0.13),
+    wing=dict(root=(0.46, -0.55, 1.48), scale=1.1, dihedral=30, droop=8,
               layout={"root": (0.0, 0.0), "elbow": (0.62, 0.22), "wrist": (1.12, -0.02), "f1": (1.92, 0.30),
                       "f2": (1.74, 0.94), "f3": (1.22, 1.38), "body": (0.0, 1.15)},
               radii={"root": 0.10, "elbow": 0.078, "wrist": 0.064, "finger": 0.034, "tip": 0.014},
@@ -162,9 +167,9 @@ GROWN = dict(
     mask=dict(max_x=0.56, max_z=1.0, min_z=-1.0, tail_cut=None),
     inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.012, "frill": 0.03, "heart": -0.05, "runes": 0.03,
            "tail_tip": 0.1},
-    face=dict(nostril=(0.062, -2.93, 1.26), nostril_r=(0.03, 0.02, 0.01), mouth_r=0.013,
-              mouth=lambda side, a: (side * 0.19 * a ** 0.7, -2.88 + 0.52 * a ** 1.5, 1.10 + 0.10 * a * a)),
-    jaw_hinge=(0, -2.26, 1.21),
+    face=dict(nostril=(0.062, -2.93, 1.12), nostril_r=(0.03, 0.02, 0.01), mouth_r=0.013,
+              mouth=lambda side, a: (side * 0.19 * a ** 0.7, -2.88 + 0.52 * a ** 1.5, 0.96 + 0.10 * a * a)),
+    jaw_hinge=(0, -2.26, 1.07),
     mouth_detail=dict(depth=0.18, fade=0.16, width=0.28, tooth=(0.01, 0.017), fang=(0.013, 0.028),
                       tongue=(0.065, 0.15, 0.016), fangs=[]),
     skin=dict(stripe=0.26, spot_cell=0.09, crack_cell=0.42, scute=0.2, strata_z=0.8, strata_y=-1.45, ao=0.6),
@@ -351,7 +356,8 @@ def _plate(kit, bvh, name, centre, normal, back, size, lift, domed=True):
         return sx, sy
 
     bm = bmesh.new()
-    angles = [2 * math.pi * (i + 0.5) / n for i in range(n)]
+    # (four corners at LOD1: a broad diamond, front, sides and the free rear point)
+    angles = [2 * math.pi * (i + (0.0 if n == 4 else 0.5)) / n for i in range(n)]
     rim_top, rim_bot, mid_top, mid_rim = [], [], [], []
     for a in angles:
         sx, sy = outline(a, 1.0)
@@ -416,12 +422,11 @@ def plates(kit, d, bands, material="horn", rim="pattern_flat", scale=1.0, bvh=No
     out = []
     for bone, t, angles, size, lift in bands:
         for ang in angles:
-            if kit.LOD and abs(ang) >= 95:  # the den's far view: the lowest row is left out
-                continue
             hit, normal, axis = surface_point(kit, bvh, bone, t, ang)
             if hit is None:
                 continue
-            sz = tuple(s * scale for s in size)
+            grow = kit.lod(1.0, 1.3)  # LOD1's four-cornered plates are grown to cover as much
+            sz = (size[0] * scale * grow, size[1] * scale * grow, size[2] * scale)
             domed = sz[0] >= kit.F.get("domed_from", 0.6) and abs(ang) < 90
             o = _plate(kit, bvh, f"plate_{bone}_{ang}", hit, normal, axis, sz, lift * scale, domed=domed)
             o.data.materials.append(mats[material])
@@ -577,7 +582,7 @@ def wings(kit, d, rare):
         w = kit.wing_points(side)
         arm = kit.wing_arm(side, ["root", "elbow", "wrist", "f1", "f2", "f3"],
                            [wr["root"], wr["elbow"], wr["wrist"]] + [wr["finger"]] * 3,
-                           kit.lod(F["wing"]["arm_tris"], 40), mats, material="horn")
+                           kit.lod(F["wing"]["arm_tris"], 30), mats, material="horn")
         objs.append(arm)
 
         def edge(a, b, bulge, n):

@@ -238,15 +238,20 @@ TUCK_LEGS = {"arm_up*": (30, 0, 10), "arm_lo*": (-130, 0, 0), "hand*": (50, 0, 0
 BALL_TAIL = {"tail1": (-45, 75, 0), "tail2": (-20, 125, 0), "tail3": (5, 165, 0), "tail4": (20, 205, 0)}
 # The ball: the back arched round, the head tucked down with its crown to the front, the legs
 # folded in, the tail wrapped round its side to lie by its nose.
-BALL_BENDS = (40, 42, 42, 44, 40, 34)
-CURL = ball_pose(100, BALL_BENDS, BALL_TAIL, TUCK_LEGS)
+BALL_BENDS = (52, 54, 54, 54, 46, 38)
+CURL = ball_pose(116, BALL_BENDS, BALL_TAIL, TUCK_LEGS, wing=80)
 # Rolling, its paws brace round the inside of the ball (hidden by it) instead of bunching in
 # the middle: the game measures a run's speed from the lowest paw (den_actor locomotionSpeed),
 # so paws spread round the rim make the ball travel about as fast as it turns.
-ROLL = ball_pose(100, BALL_BENDS, BALL_TAIL, dict(expand(TUCK_LEGS), **{
-    "arm_up_R": (138, 0, 10), "arm_lo_R": (-22, 0, 0), "arm_up_L": (60, 0, -10), "arm_lo_L": (8, 0, 0),
-    "leg_up_R": (96, 0, 10), "leg_lo_R": (38, 0, 0), "leg_up_L": (-162, 0, -10), "leg_lo_L": (-148, 0, 0)}))
-BALL_CENTRE = (-0.549, 0.715)   # the ball's middle from the hips joint (y back, z up), grown form
+ROLL = ball_pose(116, BALL_BENDS, BALL_TAIL, dict(expand(TUCK_LEGS), **{
+    "arm_up_R": (138, 0, 10), "arm_lo_R": (20, 0, 0), "arm_up_L": (84, 0, -10), "arm_lo_L": (8, 0, 0),
+    "leg_up_R": (84, 0, 10), "leg_lo_R": (38, 0, 0), "leg_up_L": (-66, 0, -10), "leg_lo_L": (-58, 0, 0)}),
+    wing=80)
+BALL_CENTRE = (-0.306, 0.566)   # the ball's middle from the hips joint (y back, z up), grown form
+BALL_LIFT = 0.1                 # the plates stand this far off the skin: the ball rests on them
+# Where each paw sits round the rolling ball (degrees from straight down, rolling forward
+# carries it toward the back): each paw scrabbles backward as it comes round underneath.
+ROLL_PAWS = {"arm_up_R": -133, "arm_up_L": -86, "leg_up_R": 107, "leg_up_L": 6}
 
 # Hiding its face: a half curl, the head tucked under its chest, the tail drawn round.
 SHY = body_pose({"hips": (30, 0, 0), "loin": (10, 0, 0), "belly": (-12, 0, 0), "chest": (-36, 0, 0),
@@ -254,6 +259,15 @@ SHY = body_pose({"hips": (30, 0, 0), "loin": (10, 0, 0), "belly": (-12, 0, 0), "
                  "tail1": (-20, 50, 0), "tail2": (-10, 100, 0), "tail3": (0, 140, 0), "tail4": (10, 170, 0)},
                 {"leg_up*": (20, 0, 0), "leg_lo*": (-60, 0, 0), "foot*": (30, 0, 0),
                  "arm_up*": (30, 0, 0), "arm_lo*": (-70, 0, 0), "hand*": (30, 0, 0)}, wing=30)
+# The hatchling's round little body curls with a gentler bend and its short tail kept low
+# (the grown one's rising tail would stand its tiny plates on end).
+BABY_TAIL = {"tail1": (-8, 70, 0), "tail2": (2, 120, 0), "tail3": (10, 160, 0), "tail4": (18, 200, 0)}
+BABY_CURL = ball_pose(90, (34, 38, 38, 30, 24, 18), BABY_TAIL, TUCK_LEGS, wing=40)
+BABY_SHY = body_pose({"hips": (26, 0, 0), "loin": (8, 0, 0), "belly": (-12, 0, 0), "chest": (-32, 0, 0),
+                      "neck2": (-58, 0, 0), "neck3": (-80, 0, 0), "head": (-96, 0, 0),
+                      "tail1": (-6, 50, 0), "tail2": (0, 95, 0), "tail3": (6, 135, 0), "tail4": (12, 165, 0)},
+                     {"leg_up*": (20, 0, 0), "leg_lo*": (-60, 0, 0), "foot*": (30, 0, 0),
+                      "arm_up*": (30, 0, 0), "arm_lo*": (-70, 0, 0), "hand*": (30, 0, 0)}, wing=20)
 # Sitting up on its haunches like a pangolin, propped on its tail, front paws held up.
 SIT = body_pose({"hips": (52, 0, 0), "loin": (43, 0, 0), "belly": (33, 0, 0), "chest": (21, 0, 0),
                  "neck2": (8, 0, 0), "neck3": (0, 0, 0), "head": (-12, 0, 0),
@@ -352,15 +366,21 @@ def pant(amount=6.0, period=0.3):
     return lambda t: {"jaw": (-amount - 2 * sin01(t, period), 0, 0)}
 
 
-def rolling(clip, period, centre=BALL_CENTRE, keys=16):
+def rolling(clip, period, centre=BALL_CENTRE, keys=16, paws=None, scrabble=50.0, lift=BALL_LIFT):
     """Roll the whole curled body forward once per period about the hips joint, with a root
-    track that keeps the ball's middle gliding level (the game grounds the lowest point)."""
+    track that keeps the ball's middle gliding level (the game grounds the lowest point) and
+    lifts it onto its plates. Each paw in `paws` sweeps backward as it passes underneath."""
     clip.wave(lambda t: {"hips": (-360.0 * t / period, 0, 0)})
+    if paws:
+        def fn(t):
+            a = 360.0 * t / period
+            return {b: (-scrabble * math.sin(math.radians(th + a)), 0, 0) for b, th in paws.items()}
+        clip.wave(fn)
     dy, dz = centre
     for i in range(keys):
         t = period * i / keys
         a = 2 * math.pi * t / period
-        clip.root(t, forward=(dy * math.cos(a) - dz * math.sin(a)) - dy)
+        clip.root(t, forward=(dy * math.cos(a) - dz * math.sin(a)) - dy, up=lift)
     return clip
 
 
@@ -394,7 +414,7 @@ def build():
            if 0.5 < t < 1.6 else {}))
     # A low, steady waddle: short heavy steps, the shoulders rolling over each planted paw.
     walk = clip("walk", 1.2, loop=True, speed=0.8).pose(0.0, STAND)
-    walk.wave(leg_cycle(1.2, 30, 40, WALK_PHASES, bob=1.6, roll=4.0)).wave(tail_sway(1.4, 1.2))
+    walk.wave(leg_cycle(1.2, 34, 42, WALK_PHASES, bob=1.6, roll=4.0)).wave(tail_sway(1.4, 1.2))
     footsteps(walk, 1.2, WALK_PHASES)
     # A hatchling toddles: quick little steps, the big head bobbing, rocking side to side.
     walk_h = clip("walk_h", 0.58, loop=True, speed=0.5).pose(0.0, STAND)
@@ -418,7 +438,7 @@ def build():
     carry_h.wave(leg_cycle(0.56, 36, 48, WALK_PHASES, bob=3.0, roll=4.0, head=0.3)).wave(tail_sway(1.8, 0.28))
     footsteps(carry_h, 0.56, WALK_PHASES)
     # To run, a grown Curlstone tucks into a ball and rolls like a boulder.
-    gallop = rolling(clip("gallop", 1.2, loop=True, speed=4.0).pose(0.0, ROLL), 1.2)
+    gallop = rolling(clip("gallop", 1.2, loop=True, speed=4.0).pose(0.0, ROLL), 1.2, paws=ROLL_PAWS)
     gallop.event(0.05, "thump").event(0.65, "thump")
     # A hatchling scampers: a round little pebble bounding along, the hind paws pushing off
     # together, a hop in every stride, the big head bobbing.
@@ -458,12 +478,34 @@ def build():
                       "hand_L": (6 * sin01(t, 3.6, 0.5), 0, 0)}))
     clip("lie_down", 1.2).pose(0.0, STAND).pose(0.6, CROUCH).pose(1.2, LIE).event(1.0, "thump")
     clip("lie_loop", 4.0, loop=True).pose(0.0, LIE).wave(breathe(1.2, 4.0)).wave(tail_sway(0.4, 4.0))
-    # Curling up: the head tucks, the back rounds, the tail wraps over.
-    clip("curl_up", 1.8).pose(0.0, LIE).pose(0.8, blend(LIE, SHY, 0.8)).pose(1.8, CURL).event(1.6, "thump")
-    clip("sleep", 5.0, loop=True).pose(0.0, CURL).wave(breathe(1.8, 5.0))
     yawn_lie = merge(LIE, {"neck2": (18, 0, 0), "neck3": (8, 0, 0), "head": (22, 0, 0), "jaw": (-30, 0, 0)})
-    (clip("wake", 2.8).pose(0.0, CURL).pose(0.8, blend(CURL, SHY, 0.7)).pose(1.3, LIE).pose(1.7, yawn_lie)
-     .pose(2.1, LIE).pose(2.8, STAND).event(1.7, "yawn"))
+
+    def curling(sfx, curl, shy, lift):
+        """Everything done curled up, for a body (sfx "_h": the hatchling's own ball). Curled,
+        it rests on its plates (the game stands it on its skin): lifted by `lift`."""
+        # Curling up: the head tucks, the back rounds, the tail wraps over.
+        (clip("curl_up" + sfx, 1.8).pose(0.0, LIE).pose(0.8, blend(LIE, shy, 0.8)).pose(1.8, curl)
+         .root(0.0).root(0.8, up=lift * 0.3).root(1.8, up=lift).event(1.6, "thump"))
+        clip("sleep" + sfx, 5.0, loop=True).pose(0.0, curl).wave(breathe(1.8, 5.0)).root(0.0, up=lift)
+        (clip("wake" + sfx, 2.8).pose(0.0, curl).pose(0.8, blend(curl, shy, 0.7)).pose(1.3, LIE).pose(1.7, yawn_lie)
+         .pose(2.1, LIE).pose(2.8, STAND).root(0.0, up=lift).root(0.8, up=lift * 0.5).root(1.3).event(1.7, "yawn"))
+        # Rolling over: it tucks into a ball, tips onto its back and opens up, paws in the air.
+        tip = merge(blend(curl, shy, 0.5), {"hips": (0, 0, 70)})
+        (clip("roll_over" + sfx, 1.4).pose(0.0, STAND).pose(0.4, shy).pose(0.85, tip).pose(1.4, BELLY_UP)
+         .root(0.0).root(0.85, up=lift * 0.5).root(1.4, up=lift).event(0.9, "thump"))
+        # Sulking, it curls up into a stone and won't come out, only peeking now and then.
+        (clip("sulk" + sfx, 1.6).pose(0.0, STAND).pose(0.6, shy).pose(1.6, curl).event(0.5, "whimper")
+         .root(0.0).root(0.6, up=lift * 0.3).root(1.6, up=lift).event(1.4, "thump"))
+        (clip("sulk_loop" + sfx, 5.0, loop=True).pose(0.0, curl).root(0.0, up=lift)
+         .wave(lambda t: {"chest": (2 * sin01(t, 5.0), 0, 0),
+                          "neck2": (18 * bump(t, 2.4, 3.8), 0, 0), "neck3": (14 * bump(t, 2.4, 3.8), 0, 0),
+                          "head": (16 * bump(t, 2.5, 3.7), 0, 0)}))
+        # Too much: it ducks its head under and half curls, then peeks back out.
+        (clip("pull_away" + sfx, 1.1).pose(0.0, STAND).pose(0.3, blend(STAND, shy, 0.85))
+         .pose(0.7, blend(STAND, shy, 0.7)).pose(1.1, STAND).event(0.2, "whimper"))
+
+    curling("", CURL, SHY, BALL_LIFT)
+    curling("_h", BABY_CURL, BABY_SHY, BALL_LIFT * 0.4)
     yawn_up = merge(STAND, {"neck2": (14, 0, 0), "neck3": (8, 0, 0), "head": (24, 0, 0), "jaw": (-32, 0, 0)})
     clip("yawn", 1.6).pose(0.0, STAND).pose(0.6, yawn_up).pose(1.1, yawn_up).pose(1.6, STAND).event(0.6, "yawn")
     clip("nap_flop", 0.8).pose(0.0, STAND).pose(0.35, CROUCH).pose(0.8, LIE).event(0.65, "thump")
@@ -488,11 +530,7 @@ def build():
     chin = merge(STAND, {"neck2": (14, 0, 0), "neck3": (8, 0, 0), "head": (22, 0, 0), "jaw": (-8, 0, 0)})
     (clip("pet_chin", 1.8, loop=True).pose(0.0, chin)
      .wave(lambda t: {"head": (4 * sin01(t, 1.8), 0, 0)}).wave(tail_sway(0.8, 0.9)).event(0.4, "purr"))
-    # Rolling over: it tucks into a ball, tips onto its back and opens up, paws in the air.
-    tip = merge(blend(CURL, SHY, 0.5), {"hips": (0, 0, 70)})
-    (clip("roll_over", 1.4).pose(0.0, STAND).pose(0.4, SHY).pose(0.85, tip).pose(1.4, BELLY_UP)
-     .event(0.9, "thump"))
-    (clip("belly_rub", 1.6, loop=True).pose(0.0, BELLY_UP)
+    (clip("belly_rub", 1.6, loop=True).pose(0.0, BELLY_UP).root(0.0, up=BALL_LIFT * 0.7)
      .wave(lambda t: {"leg_up_L": (10 * sin01(t, 0.8), 0, 0), "leg_up_R": (10 * sin01(t, 0.8, 0.5), 0, 0),
                       "arm_up_L": (8 * sin01(t, 0.8, 0.25), 0, 0), "arm_up_R": (8 * sin01(t, 0.8, 0.75), 0, 0),
                       "hips": (0, 0, 7 * sin01(t, 1.6))})
@@ -517,9 +555,9 @@ def build():
      .wave(lambda t: {"hips": (0, 5 * sin01(t, 0.15), 0)} if 0.35 < t < 0.65 else {})
      .root(0.0).root(0.65).root(0.85, up=0.28).root(1.05).root(1.4).event(0.75, "squeak").event(1.05, "land"))
     # The play bow of a digger: chest down, rump and club up, front claws scraping the ground.
-    bow = merge(STAND, {"hips": (-14, 0, 0), "chest": (-6, 0, 0), "arm_up*": (40, 0, 10), "arm_lo*": (-60, 0, 0),
-                        "hand*": (30, 0, 0), "leg_up*": (14, 0, 0), "neck2": (22, 0, 0), "head": (-8, 0, 0),
-                        "tail1": (-24, 0, 0), "tail2": (-10, 0, 0), "jaw": (-12, 0, 0)})
+    bow = merge(STAND, {"hips": (-10, 0, 0), "chest": (-6, 0, 0), "arm_up*": (40, 0, 10), "arm_lo*": (-60, 0, 0),
+                        "hand*": (30, 0, 0), "leg_up*": (10, 0, 0), "neck2": (20, 0, 0), "head": (-8, 0, 0),
+                        "tail1": (-8, 0, 0), "tail2": (-4, 0, 0), "jaw": (-12, 0, 0)})
     (clip("play_bow", 1.3).pose(0.0, STAND).pose(0.3, bow).pose(1.0, bow).pose(1.3, STAND)
      .wave(lambda t: {"arm_up_L": (12 * sin01(t, 0.35), 0, 0), "hand_L": (-14 * sin01(t, 0.35), 0, 0),
                       "arm_up_R": (12 * sin01(t, 0.35, 0.5), 0, 0), "hand_R": (-14 * sin01(t, 0.35, 0.5), 0, 0),
@@ -559,12 +597,6 @@ def build():
      .pose(0.65, WINGS_OPEN).pose(1.2, STAND).event(0.25, "flap").event(0.65, "flap"))
 
     # ---------------------------------------------------------------- feelings
-    # Sulking, it curls up into a stone and won't come out, only peeking now and then.
-    clip("sulk", 1.6).pose(0.0, STAND).pose(0.6, SHY).pose(1.6, CURL).event(0.5, "whimper").event(1.4, "thump")
-    (clip("sulk_loop", 5.0, loop=True).pose(0.0, CURL)
-     .wave(lambda t: {"chest": (2 * sin01(t, 5.0), 0, 0),
-                      "neck2": (18 * bump(t, 2.4, 3.8), 0, 0), "neck3": (14 * bump(t, 2.4, 3.8), 0, 0),
-                      "head": (16 * bump(t, 2.5, 3.7), 0, 0)}))
     (clip("nuzzle", 1.4, loop=True).pose(0.0, merge(STAND, {"neck2": (8, 0, 0), "head": (-6, 0, 0)}))
      .wave(lambda t: {"head": (0, 10 * sin01(t, 1.4), 12 * sin01(t, 1.4)), "neck3": (0, 6 * sin01(t, 1.4, 0.1), 0)})
      .wave(tail_sway(1.5, 0.7)).event(0.3, "purr"))
@@ -605,9 +637,6 @@ def build():
      .pose(0.28, merge(STAND, {"neck2": (6, 0, 0), "head": (14, 0, 0), "jaw": (-8, 0, 0)}))
      .pose(0.42, merge(STAND, {"neck2": (-6, 0, 0), "head": (-16, 0, 0), "jaw": (-4, 0, 0)}))
      .pose(0.8, STAND).event(0.4, "sneeze"))
-    # Too much: it ducks its head under and half curls, then peeks back out.
-    (clip("pull_away", 1.1).pose(0.0, STAND).pose(0.3, blend(STAND, SHY, 0.85)).pose(0.7, blend(STAND, SHY, 0.7))
-     .pose(1.1, STAND).event(0.2, "whimper"))
     # Batting at a toy: a scrape of the big digging claws.
     bow2 = merge(STAND, {"hips": (-4, 0, 0), "arm_up*": (26, 0, 0), "arm_lo*": (-44, 0, 0), "hand*": (18, 0, 0),
                          "chest": (-8, 0, 0), "neck2": (-6, 0, 0), "head": (8, 0, 0)})

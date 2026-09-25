@@ -19,7 +19,7 @@ namespace {
 constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
-enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Shot, ShotIn, Name, Skip, Overlay, Quit };
+enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Shot, ShotIn, Name, Skip, Overlay, Splash, Quit };
 
 struct Cmd {
     Op op = Op::Wait;
@@ -87,6 +87,7 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "name") { c.op = Op::Name; c.text = rest; }
     else if (w == "skip") { c.op = Op::Skip; nums(1); }
     else if (w == "overlay") { c.op = Op::Overlay; c.a[0] = std::strcmp(rest, "on") == 0; }
+    else if (w == "splash") { c.op = Op::Splash; }
     else if (w == "quit") { c.op = Op::Quit; }
     else return false;
     return true;
@@ -191,6 +192,7 @@ Input next(App& app) {
             case Op::Name: g_names += c.text + "\n"; done = true; break;
             case Op::Skip: app.game.devOffset += static_cast<s64>(c.a[0] * kHour); done = true; break;
             case Op::Overlay: app.overlay = c.a[0] != 0; done = true; break;
+            case Op::Splash: app.splash = kSplashSeconds; done = true; break;
             case Op::Quit: app.quit = true; done = true; break;
         }
         if (!done) {

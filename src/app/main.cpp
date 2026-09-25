@@ -94,6 +94,7 @@ int main() {
 
     audio::setVolumes(app.game.settings.musicVolume, app.game.settings.sfxVolume);
     autotest::start(app);  // dev builds: a scripted run if sdmc:/3ds/emberclutch/autotest.txt exists
+    if (autotest::active()) app.splash = 0;  // scripts start at the title (`splash` shows it)
 
     u64 lastTick = svcGetSystemTick();
     while (aptMainLoop()) {

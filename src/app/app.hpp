@@ -23,6 +23,8 @@
 namespace ec {
 
 constexpr float kTopW = 400, kBotW = 320, kScreenH = 240;
+// The splash before the title (D68): our gold wordmark, just after the system's homebrew logo.
+constexpr float kSplashSeconds = 2.6f;
 
 struct Input {
     u32 down = 0, held = 0;
@@ -173,6 +175,7 @@ struct App {
     MenuPage menu = MenuPage::Closed;
     bool quit = false;        // Save & quit: leave after this frame
     u8 titleConfirm = 0;      // the title's "start over?" steps (0 none, 1 asked, 2 really?)
+    float splash = kSplashSeconds;  // seconds of the splash left (scene_title.cpp); scripted runs skip it
     // The world map (Alpha 2): the place picked, and a trip under way (seconds left, where to).
     u8 mapPick = 0;
     u8 mapFrom = 0;   // where you are (the trip starts there)

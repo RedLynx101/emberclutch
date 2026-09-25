@@ -495,8 +495,11 @@ Built 2026-09-24 (0.1.8): makerom's homebrew logo with EMBERCLUTCH drawn in plac
 ends in an HMAC-SHA256 over its darc whose key is Nintendo's, so a changed logo can't be
 signed (see WP11b, run 9). `make_logo.py` is gone (it's in git history, f3ee65f); the CIA
 uses makerom's homebrew logo again, and `tools/check_3ds.py` passes only logos known to work.
-**Instead (to agree with Noah):** our gold EMBERCLUTCH as the game's own first screen, a
-second after the system logo. The old plan, for the record:
+**Instead (Noah agreed, 2026-09-24): ✅ a splash in the game.** EMBERCLUTCH in Cinzel gold on
+black with a soft ember glow, straight after the system's homebrew logo: it rises and fades in,
+holds, fades, and the title fades up from black (2.6 s; any button or a tap skips it; scripted
+runs skip it, and the autotest command `splash` shows it: `tests/autotest/splash.txt`). In the
+build after 0.1.9. The old plan, for the record:
 The logo the HOME Menu plays as a title starts (the NCCH's logo region; the emulator never
 shows it). Since 0.1.2 that's makerom's *homebrew* logo: a small layout (an LZ11-compressed
 darc of `blyt/*.bclyt`, `anim/*.bclan` and `timg/*.bclim`: the word "homebrew" on a

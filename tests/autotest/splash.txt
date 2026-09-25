@@ -1,0 +1,17 @@
+# The splash before the title (D68): EMBERCLUTCH in gold, then the title fades up.
+splash
+wait 0.2
+shot splash_in
+wait 0.8
+shot splash_full
+wait 1.35
+shot splash_reveal
+wait 0.6
+shot splash_title
+# Skipping: any button goes straight to the fade.
+splash
+wait 0.5
+key B
+wait 0.6
+shot splash_skipped
+quit

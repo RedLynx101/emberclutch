@@ -92,6 +92,7 @@ int pickCapsule(const ScreenCapsule* caps, int n, Vec2 touch, float& t, float& a
 
 PetZone zoneOf(const char* bone, Vec3 outward, float t) {
     if (std::strcmp(bone, "jaw") == 0) return PetZone::Chin;
+    if (startsWith(bone, "antenna") || startsWith(bone, "ear")) return PetZone::Head;  // a kind's own head bones (D77)
     if (std::strcmp(bone, "head") == 0 || std::strcmp(bone, "snout") == 0 || std::strcmp(bone, "eyes") == 0) {
         if (outward.z < -0.35f) return PetZone::Chin;
         if (std::fabs(outward.x) > 0.6f && outward.z < 0.5f) return PetZone::Cheek;
@@ -108,7 +109,7 @@ PetZone zoneOf(const char* bone, Vec3 outward, float t) {
 
 int regionOf(const char* bone, Vec3 outward) {
     if (std::strcmp(bone, "head") == 0 || std::strcmp(bone, "snout") == 0 || std::strcmp(bone, "jaw") == 0 ||
-        std::strcmp(bone, "eyes") == 0)
+        std::strcmp(bone, "eyes") == 0 || startsWith(bone, "antenna") || startsWith(bone, "ear"))
         return kRegionHead;
     if (startsWith(bone, "neck")) return kRegionNeck;
     if (startsWith(bone, "tail")) return kRegionTail;

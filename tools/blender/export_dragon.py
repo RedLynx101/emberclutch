@@ -134,7 +134,7 @@ def build_all(form):
     for kind in ("plumed", "sail"):
         objs = dm.build_wings(kind, mats)
         for o in objs:
-            dm.bind(o, arm, dm.wing_keep)
+            dm.bind_wing(o, arm)
         wings[kind] = objs
     return d, tagged, wings
 

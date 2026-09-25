@@ -1,0 +1,85 @@
+# The wings' roots on grown dragons (Noah, 2026-09-24: "the very beginning of the wing meant
+# to come from their back isn't attached correctly"). An adult Ember, Tide and Gale, each in
+# the body close-up (resting, then walking) and in the den.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+# Grown up: Next stage x3.
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 3
+shot w1-ember-den
+tap 134 221
+wait 2
+shot w1-ember-body
+key SELECT
+wait 0.3
+tap 82 131
+wait 0.3
+key SELECT
+wait 0.8
+shot w1-ember-body-walk-a
+wait 0.35
+shot w1-ember-body-walk-b
+tap 30 221
+wait 1
+# Next breed: Tide.
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 3
+shot w2-tide-den
+tap 134 221
+wait 2
+shot w2-tide-body
+key SELECT
+wait 0.3
+tap 82 131
+wait 0.3
+key SELECT
+wait 0.8
+shot w2-tide-body-walk-a
+wait 0.35
+shot w2-tide-body-walk-b
+tap 30 221
+wait 1
+# Next breed: Gale.
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 3
+shot w3-gale-den
+tap 134 221
+wait 2
+shot w3-gale-body
+key SELECT
+wait 0.3
+tap 82 131
+wait 0.3
+key SELECT
+wait 0.8
+shot w3-gale-body-walk-a
+wait 0.35
+shot w3-gale-body-walk-b
+quit

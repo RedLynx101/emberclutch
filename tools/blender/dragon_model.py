@@ -73,6 +73,14 @@ WING_DRAW_BODY_BONES = ("chest", "belly", "hips")  # the membrane's flank edge f
 WING_LAYOUT = {"root": (0.0, 0.0), "elbow": (0.95, 0.35), "wrist": (1.75, -0.15), "thumb": (1.82, -0.42),
                "f1": (3.40, 0.15), "f2": (3.30, 1.20), "f3": (2.65, 2.05), "f4": (1.60, 2.45),
                "body": (0.0, 1.40)}
+# Where the wing meets the body (Noah, 2026-09-24: on many adults "the very beginning of the
+# wing meant to come from their back isn't attached"; tools/blender/wing_gap.py measured the
+# root 0.05-0.11 off the skin and the membrane's inner edge up to 0.22). The authored root
+# and flank point are only guides: seat_wings() moves both onto the body's surface.
+WING_SINK = 0.6    # the wing's root joint sits this many root radii under the skin
+WING_STUB = 1.8    # the arm tube carries on this many root radii into the body, on the chest
+WEB_SINK = 4.5     # the membrane's inner edge sits this many membrane thicknesses under the skin (the
+                   # flank moves with the legs as the dragon walks: 1.5 left it 0.06 proud on sturdy builds)
 
 
 def mirrored_nodes(center, sides):
@@ -701,15 +709,59 @@ def paint_mask(obj):
 
 
 # ------------------------------------------------------------------------------ armature
-def wing_points(side):
-    """WING_LAYOUT placed in 3D: the span axis rises by the dihedral, the chord axis droops."""
+def wing_points(side, authored=False):
+    """WING_LAYOUT placed in 3D: the span axis rises by the dihedral, the chord axis droops.
+    Once seat_wings() has run, the root and the flank point are the seated ones (authored=True
+    gives the layout as written, which seat_wings() starts from)."""
     w = F["wing"]
     s = -1 if side == "L" else 1
     th, ph = math.radians(w["dihedral"]), math.radians(w["droop"])
     span = Vector((s * math.cos(th), 0, math.sin(th)))
     chord = Vector((0, math.cos(ph), -math.sin(ph)))
-    root = mirror(w["root"], s)
-    return {k: root + (span * u + chord * v) * w["scale"] for k, (u, v) in WING_LAYOUT.items()}
+    seat = None if authored else w.get("seat")
+    root = mirror(seat["root"] if seat else w["root"], s)
+    pts = {k: root + (span * u + chord * v) * w["scale"] for k, (u, v) in WING_LAYOUT.items()}
+    if seat:
+        pts["body"] = mirror(seat["body"], s)
+    return pts
+
+
+def seat_wings(body):
+    """Moves the wing's root joint just under the body's skin (WING_SINK root radii) and its
+    flank point onto the skin (WEB_SINK), from the nearest points on the surface, so the arm
+    grows out of the back and the membrane's inner edge lies along the flank. Measured on
+    the LOD0 body once per form (both LODs share one skeleton): an LOD1 build makes a LOD0
+    body to measure and throws it away."""
+    w = F["wing"]
+    if "seat" in w:
+        return
+    probe = body
+    if LOD:
+        was = LOD
+        set_lod(0)
+        probe = build_body()
+        set_lod(was)
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    bvh = BVHTree.FromObject(probe.evaluated_get(dg), dg)
+    to_local, to_world = probe.matrix_world.inverted(), probe.matrix_world
+
+    def onto_skin(p, sink):
+        hit, nrm, _, _ = bvh.find_nearest(to_local @ p)
+        n = (to_world.to_3x3() @ nrm).normalized()
+        return (to_world @ hit) - n * sink, n
+
+    guide = wing_points("R", authored=True)
+    # No further back than the hips: bigger wings (the v2 look) put it over the tail, where
+    # the skin follows the tail and legs, not the three body bones the wing draw can use.
+    guide["body"].y = min(guide["body"].y, F["nodes"]["hips"][0][1])
+    root, normal = onto_skin(guide["root"], WING_SINK * w["radii"]["root"])
+    flank, _ = onto_skin(guide["body"], WEB_SINK * w["thickness"])
+    w["seat"] = dict(root=tuple(root), body=tuple(flank), inward=tuple(-normal))
+    if probe is not body:
+        bpy.data.objects.remove(probe, do_unlink=True)
+    print(f"[dragon] {F['name']}: wing root seated {(root - guide['root']).length:.3f} from its guide, "
+          f"flank point {(flank - guide['body']).length:.3f}")
 
 
 def extra_points():
@@ -1118,11 +1170,15 @@ def build_wings(style, mats):
     objs = []
     for side in ("L", "R"):
         w = wing_points(side)
+        s = -1 if side == "L" else 1
+        # A stub into the body first (WING_STUB, weighted to the chest: weight_wingarm), so the
+        # arm always comes out of the skin, however far the shoulder turns.
+        inward = mirror(F["wing"]["seat"]["inward"], s) if "seat" in F["wing"] else Vector((-s, 0, -1)).normalized()
         names = ["root", "elbow", "wrist", "thumb", "f1", "f2", "f3", "f4"]
-        pos = [w[n] for n in names]
-        rad = [wr["root"], wr["elbow"], wr["wrist"], wr["tip"] * 2.5] + [wr["finger"]] * 4
-        edges = [(0, 1), (1, 2), (2, 3), (2, 4), (2, 5), (2, 6), (2, 7)]
-        for fi in range(4, 8):  # claw tips poke past the membrane
+        pos = [w["root"] + inward * (WING_STUB * wr["root"])] + [w[n] for n in names]
+        rad = [wr["root"], wr["root"], wr["elbow"], wr["wrist"], wr["tip"] * 2.5] + [wr["finger"]] * 4
+        edges = [(0, 1), (1, 2), (2, 3), (3, 4), (3, 5), (3, 6), (3, 7), (3, 8)]
+        for fi in range(5, 9):  # claw tips poke past the membrane
             pos.append(pos[fi] + (pos[fi] - w["wrist"]) * 0.07)
             rad.append(wr["tip"])
             edges.append((fi, len(pos) - 1))
@@ -1416,10 +1472,10 @@ def weight_membrane(mem, side):
     a sparse fan (the wrist and its outline), and heat weights leaked its outline points onto
     the arm and body bones, so a folded wing left its panels behind its fingers."""
     w = wing_points(side)
-    mid = w["root"].lerp(w["body"], 0.5)
+    mid, back = w["root"].lerp(w["body"], 0.45), w["root"].lerp(w["body"], 0.8)
     struts = [(f"wing_f{k}_{side}", w["wrist"], w[f"f{k}"]) for k in range(1, 5)]
     struts += [(f"wing_fore_{side}", w["elbow"], w["wrist"]), (f"wing_arm_{side}", w["root"], w["elbow"]),
-               ("chest", w["root"], mid), ("belly", mid, w["body"])]
+               ("chest", w["root"], mid), ("belly", mid, back), ("hips", back, w["body"])]  # the flank end sits by the hips
 
     def gap(p, a, b):
         ab = b - a
@@ -1441,8 +1497,43 @@ def weight_membrane(mem, side):
             groups[n1].add([v.index], 1.0 - w0, "REPLACE")
 
 
+def weight_wingarm(arm_obj, side):
+    """The arm tube's stub (behind the root joint, inside the body) follows the chest, and
+    hands over to the upper arm across the joint, so the arm stays rooted in the back: heat
+    weights gave the stub to the upper arm, which swung it out of the body when the wing
+    folded."""
+    w = wing_points(side)
+    root, axis = w["root"], (w["elbow"] - w["root"]).normalized()
+    r = F["wing"]["radii"]["root"]
+    lo, hi = -0.2 * r, 0.5 * r  # the hand-over, along the arm, around the joint
+    chest = arm_obj.vertex_groups.get("chest") or arm_obj.vertex_groups.new(name="chest")
+    upper = arm_obj.vertex_groups[f"wing_arm_{side}"]
+    for v in arm_obj.data.vertices:
+        t = (arm_obj.matrix_world @ v.co - root).dot(axis)
+        if t >= hi:
+            continue
+        for g in list(v.groups):
+            arm_obj.vertex_groups[g.group].remove([v.index])
+        a = max(0.0, min(1.0, (t - lo) / (hi - lo)))
+        chest.add([v.index], 1.0 - a, "REPLACE")
+        if a > 0.0:
+            upper.add([v.index], a, "REPLACE")
+
+
 def wing_keep(name):
     return name.startswith("wing") or name in WING_DRAW_BODY_BONES
+
+
+def bind_wing(obj, arm):
+    """Binds one wing object (every wing style: the exporter's plumed and sail variants too,
+    which had heat weights alone): heat weights, then the membrane's strut weights or the arm's
+    chest-rooted stub."""
+    bind(obj, arm, wing_keep)
+    side = obj.name.split("_")[1][0]
+    if obj.name.startswith("membrane"):
+        weight_membrane(obj, side)
+    else:
+        weight_wingarm(obj, side)
 
 
 def build_dragon(breed, form="grown"):
@@ -1450,6 +1541,7 @@ def build_dragon(breed, form="grown"):
     b = BREEDS[breed]
     mats = make_materials(b)
     body = build_body()
+    seat_wings(body)  # before the rig: the wing bones start from the seated root
     body.data.materials.append(mats["body"])
     body.data.materials.append(mats["pupil"])
     body.data.materials.append(mats["mouth"])
@@ -1466,9 +1558,7 @@ def build_dragon(breed, form="grown"):
 
     wings = build_wings(b["wings"], mats)
     for wobj in wings:
-        bind(wobj, arm, wing_keep)
-        if wobj.name.startswith("membrane"):
-            weight_membrane(wobj, wobj.name.split("_")[1][0])
+        bind_wing(wobj, arm)
 
     groups = {"eyes": [], "horns": [], "frill": [], "spikes": [], "tail_tip": [], "heart": [], "mouth": []}
     snap = {"eyes": [], "horns": [], "frill": [], "spikes": [], "heart": []}

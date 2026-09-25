@@ -567,14 +567,15 @@ def wing_arm(side, names, radii, tris, mats, material="body_plain", claws=True):
 def build_wings(style, mats):
     """Classic four-finger dragon wings (styles classic, plumed, sail): an arm, forearm, a thumb
     claw and four fingers spread across the whole membrane, which reaches back along the
-    flank. Needs the classic wing layout and chain (plans/pouncer.py)."""
+    flank. Needs the classic wing layout and chain (plans/pouncer.py). The form's wing
+    "claws": False leaves off the claw tips (a baby's soft wing buds)."""
     wr = F["wing"]["radii"]
     objs = []
     for side in ("L", "R"):
         w = wing_points(side)
         arm = wing_arm(side, ["root", "elbow", "wrist", "thumb", "f1", "f2", "f3", "f4"],
                        [wr["root"], wr["elbow"], wr["wrist"], wr["tip"] * 2.5] + [wr["finger"]] * 4,
-                       lod(F["wing"]["arm_tris"], 56), mats)
+                       lod(F["wing"]["arm_tris"], 56), mats, claws=F["wing"].get("claws", True))
         objs.append(arm)
         pts = [w["wrist"], w["elbow"], w["root"]] + wing_edge(w, style)
         mem = flat_fan(f"membrane_{side}", pts, F["wing"]["thickness"])

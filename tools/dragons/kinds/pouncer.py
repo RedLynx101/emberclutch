@@ -27,16 +27,16 @@ META = dict(
 
 VARIANTS = [
     dict(name="Ember", base=(0.93, 0.42, 0.12), accent=(1.0, 0.88, 0.66), pattern=(0.62, 0.20, 0.07),
-         horn=(0.98, 0.80, 0.52), membrane=(0.96, 0.58, 0.30), iris=(0.55, 0.30, 0.08), glow=(1.0, 0.62, 0.20),
+         horn=(0.52, 0.24, 0.12), membrane=(0.96, 0.58, 0.30), iris=(0.55, 0.30, 0.08), glow=(1.0, 0.62, 0.20),
          pattern_channel="r", glow_channel=None),
     dict(name="Tabby", base=(0.92, 0.66, 0.36), accent=(1.0, 0.93, 0.78), pattern=(0.55, 0.30, 0.13),
-         horn=(0.95, 0.86, 0.66), membrane=(0.93, 0.72, 0.48), iris=(0.36, 0.52, 0.18), glow=(1.0, 0.68, 0.28),
+         horn=(0.50, 0.33, 0.20), membrane=(0.93, 0.72, 0.48), iris=(0.36, 0.52, 0.18), glow=(1.0, 0.68, 0.28),
          pattern_channel="r", glow_channel=None),
     dict(name="Cinder", base=(0.30, 0.27, 0.29), accent=(0.92, 0.62, 0.40), pattern=(0.16, 0.14, 0.16),
-         horn=(0.86, 0.72, 0.58), membrane=(0.52, 0.34, 0.30), iris=(0.95, 0.62, 0.18), glow=(1.0, 0.55, 0.18),
+         horn=(0.14, 0.12, 0.13), membrane=(0.52, 0.34, 0.30), iris=(0.95, 0.62, 0.18), glow=(1.0, 0.55, 0.18),
          pattern_channel="g", glow_channel=None),
     dict(name="Emberblaze", base=(0.58, 0.10, 0.08), accent=(1.0, 0.78, 0.34), pattern=(1.0, 0.72, 0.26),
-         horn=(1.0, 0.86, 0.50), membrane=(0.86, 0.26, 0.10), iris=(1.0, 0.72, 0.22), glow=(1.0, 0.58, 0.14),
+         horn=(0.26, 0.06, 0.05), membrane=(0.86, 0.26, 0.10), iris=(1.0, 0.72, 0.22), glow=(1.0, 0.58, 0.14),
          pattern_channel=None, glow_channel="b"),
 ]
 
@@ -47,28 +47,28 @@ EGG = dict(height=1.0, width=0.37, point=1.0, speckle="spots",
 # ------------------------------------------------------------------------------ grown
 # Faces -Y, Z up; units ~ metres at adult size. radius = (side, vertical).
 GROWN_NODES = _mirrored({
-    "tail_tip": ((0, 3.80, 1.52), (0.03, 0.03)),
-    "tail4": ((0, 3.18, 1.20), (0.075, 0.075)),
-    "tail3": ((0, 2.48, 1.04), (0.13, 0.12)),
-    "tail2": ((0, 1.72, 1.02), (0.21, 0.20)),
-    "hips": ((0, 0.92, 1.16), (0.40, 0.42)),
-    "belly": ((0, 0.20, 1.17), (0.40, 0.45)),
-    "chest": ((0, -0.50, 1.26), (0.43, 0.54)),
-    "neck1": ((0, -0.98, 1.64), (0.28, 0.30)),
-    "neck2": ((0, -1.20, 1.96), (0.22, 0.23)),
-    "neck3": ((0, -1.32, 2.24), (0.20, 0.20)),
-    "head": ((0, -1.46, 2.50), (0.31, 0.28)),
-    "muzzle": ((0, -1.72, 2.42), (0.18, 0.15)),
-    "snout": ((0, -1.94, 2.36), (0.11, 0.09)),
+    "tail_tip": ((0, 3.88, 1.22), (0.04, 0.04)),
+    "tail4": ((0, 3.26, 1.02), (0.09, 0.09)),
+    "tail3": ((0, 2.50, 0.90), (0.15, 0.14)),
+    "tail2": ((0, 1.72, 0.92), (0.24, 0.23)),
+    "hips": ((0, 0.92, 1.06), (0.44, 0.46)),
+    "belly": ((0, 0.20, 1.06), (0.46, 0.50)),
+    "chest": ((0, -0.50, 1.12), (0.48, 0.56)),
+    "neck1": ((0, -1.00, 1.42), (0.31, 0.33)),
+    "neck2": ((0, -1.20, 1.60), (0.27, 0.28)),
+    "neck3": ((0, -1.34, 1.76), (0.25, 0.25)),
+    "head": ((0, -1.52, 1.95), (0.38, 0.34)),
+    "muzzle": ((0, -1.80, 1.87), (0.22, 0.18)),
+    "snout": ((0, -2.02, 1.81), (0.13, 0.11)),
 }, {
-    "shoulder": ((0.33, -0.50, 1.02), (0.20, 0.24)),
-    "elbow": ((0.37, -0.58, 0.56), (0.13, 0.13)),
-    "wrist": ((0.37, -0.64, 0.16), (0.10, 0.10)),
-    "toe_f": ((0.38, -0.88, 0.07), (0.115, 0.065)),
-    "hipj": ((0.34, 0.94, 0.98), (0.27, 0.31)),
-    "knee": ((0.40, 0.62, 0.56), (0.16, 0.16)),
-    "ankle": ((0.40, 1.02, 0.20), (0.105, 0.105)),
-    "toe_b": ((0.41, 0.78, 0.07), (0.115, 0.065)),
+    "shoulder": ((0.36, -0.50, 0.90), (0.22, 0.26)),
+    "elbow": ((0.40, -0.56, 0.50), (0.15, 0.15)),
+    "wrist": ((0.40, -0.62, 0.14), (0.115, 0.115)),
+    "toe_f": ((0.41, -0.86, 0.07), (0.13, 0.07)),
+    "hipj": ((0.36, 0.94, 0.90), (0.30, 0.34)),
+    "knee": ((0.42, 0.66, 0.52), (0.18, 0.18)),
+    "ankle": ((0.42, 1.02, 0.18), (0.12, 0.12)),
+    "toe_b": ((0.43, 0.80, 0.07), (0.13, 0.07)),
 })
 GROWN_EDGES = [("tail_tip", "tail4"), ("tail4", "tail3"), ("tail3", "tail2"), ("tail2", "hips"),
                ("hips", "belly"), ("belly", "chest"), ("chest", "neck1"), ("neck1", "neck2"),
@@ -99,16 +99,16 @@ def _grown_sculpt(kit, obj):
     bm.from_mesh(obj.data)
     for v in bm.verts:
         x, y, z = v.co
-        if -0.9 < y < -0.1 and z < 1.2 and abs(x) < 0.34:  # chest keel
-            k = (1 - abs(x) / 0.34) * max(0.0, (1.2 - z) / 0.45)
-            v.co.z -= 0.08 * k
-        if 0.0 < y < 0.75 and z < 1.0 and abs(x) < 0.32:  # tucked belly
-            k = (1 - abs(x) / 0.32) * max(0.0, (1.0 - z) / 0.3)
-            v.co.z += 0.07 * k
-        if -1.62 < y < -1.3 and 2.38 < z < 2.62:  # round cheeks
+        if -0.9 < y < -0.1 and z < 1.05 and abs(x) < 0.36:  # chest keel
+            k = (1 - abs(x) / 0.36) * max(0.0, (1.05 - z) / 0.45)
+            v.co.z -= 0.07 * k
+        if 0.0 < y < 0.75 and z < 0.9 and abs(x) < 0.34:  # tucked belly
+            k = (1 - abs(x) / 0.34) * max(0.0, (0.9 - z) / 0.3)
+            v.co.z += 0.06 * k
+        if -1.66 < y < -1.36 and 1.79 < z < 2.09:  # round cheeks
             v.co.x *= 1.1
-        if y < -1.62 and z > 2.44:  # soft short muzzle, a little flatter on top
-            t = min(1.0, (-1.62 - y) / 0.3)
+        if y < -1.71 and z > 1.89:  # soft short muzzle, a little flatter on top
+            t = min(1.0, (-1.71 - y) / 0.3)
             v.co.z -= 0.025 * t
     bm.to_mesh(obj.data)
     bm.free()
@@ -130,29 +130,29 @@ GROWN = dict(
                   "tail_tip": 0.7, "heart": 0.85, "runes": 0.7},
     },
     young_pose={"neck1": -18, "neck2": -6, "neck3": 4, "head": 18},
-    base_pose={"neck1": (-4, 0, 0), "neck2": (6, 0, 0), "neck3": (10, 0, 0), "head": (-8, 0, 0),
-               "tail1": (8, 0, 0), "tail2": (4, 0, 6), "tail3": (8, 0, 10), "tail4": (14, 0, 12)},
+    base_pose={"neck1": (-2, 0, 0), "neck2": (4, 0, 0), "neck3": (6, 0, 0), "head": (-6, 0, 0),
+               "tail1": (6, 0, 0), "tail2": (2, 0, 6), "tail3": (4, 0, 10), "tail4": (8, 0, 12)},
     builds=BUILDS,
-    eyes=dict(at=(0.16, -1.70, 2.56), out=(0.58, -0.80, 0.12), iris=(0.082, 0.092, 0.046),
-              pupil=(0.046, 0.060, 0.018), slit=(0.3, 1.12),
+    eyes=dict(at=(0.19, -1.78, 2.02), out=(0.60, -0.78, 0.15), iris=(0.105, 0.118, 0.058),
+              pupil=(0.068, 0.084, 0.02), slit=(0.26, 1.08),
               glints=((-0.022, 0.034, 0.016), (0.016, -0.034, 0.008)), seg=(12, 2, 8, 2)),
-    head=dict(origin=(0, -1.46, 2.50), k=1.0, horn_len=0.8, horn_r=0.9, horn_curve=1.1, buds=False,
+    head=dict(origin=(0, -1.52, 1.95), k=1.0, horn_len=1.0, horn_r=1.0, horn_curve=1.0, buds=False,
               frill_k=1.0, feather_w=1.0),
     tail_k=1.0,
-    heart=dict(at=(0, -0.98, 1.30), size=0.105),
-    wing=dict(root=(0.30, -0.42, 1.62), scale=1.12, dihedral=50, droop=10,
+    heart=dict(at=(0, -0.98, 1.18), size=0.11),
+    wing=dict(root=(0.32, -0.42, 1.52), scale=1.1, dihedral=50, droop=10,
               radii={"root": 0.095, "elbow": 0.07, "wrist": 0.056, "finger": 0.021, "tip": 0.008},
               arm_tris=180, thickness=0.014, style="classic"),
-    mask=dict(max_x=0.3, max_z=2.36, min_z=-1.0, tail_cut=(1.3, 0.95)),
+    mask=dict(max_x=0.32, max_z=1.9, min_z=-1.0, tail_cut=(1.3, 0.8)),
     inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.03, "frill": 0.05, "heart": -0.06, "runes": -0.012},
-    face=dict(nostril=(0.045, -2.03, 2.41), nostril_r=(0.022, 0.014, 0.008), mouth_r=0.011,
-              mouth=lambda side, a: (side * 0.14 * a ** 0.7, -2.06 + 0.42 * a ** 1.5, 2.32 + 0.07 * a * a)),
-    jaw_hinge=(0, -1.56, 2.35),
+    face=dict(nostril=(0.045, -2.13, 1.86), nostril_r=(0.024, 0.015, 0.008), mouth_r=0.011,
+              mouth=lambda side, a: (side * 0.15 * a ** 0.7, -2.14 + 0.42 * a ** 1.5, 1.75 + 0.06 * a * a)),
+    jaw_hinge=(0, -1.64, 1.79),
     mouth_detail=dict(depth=0.26, fade=0.2, width=0.36, tooth=(0.009, 0.016), fang=(0.013, 0.032),
                       tongue=(0.065, 0.13, 0.015)),
     skin=dict(stripe=0.42, spot_cell=0.3, ao=0.6),
-    ridge=dict(path=[("neck2", 0.22), ("neck1", 0.29), ("chest", 0.52), ("belly", 0.44), ("hips", 0.4),
-                     ("tail2", 0.2), ("tail3", 0.13)],
+    ridge=dict(path=[("neck2", 0.24), ("neck1", 0.31), ("chest", 0.54), ("belly", 0.48), ("hips", 0.44),
+                     ("tail2", 0.22), ("tail3", 0.14)],
                size=(0.07, 0.06, 0.3), fin=(2.4, 2.0, 0.018)),
     sculpt=_grown_sculpt,
 )
@@ -226,13 +226,13 @@ HATCH = dict(
               frill_k=0.6, feather_w=1.6),
     tail_k=0.42,
     heart=dict(at=(0, -0.40, 0.53), size=0.075),
-    wing=dict(root=(0.13, -0.10, 0.77), scale=0.19, dihedral=35, droop=5,
+    wing=dict(root=(0.15, 0.02, 0.72), scale=0.16, dihedral=30, droop=5,
               radii={"root": 0.045, "elbow": 0.035, "wrist": 0.03, "finger": 0.011, "tip": 0.005},
-              arm_tris=120, thickness=0.008, style="classic"),
+              arm_tris=120, thickness=0.008, style="sail", claws=False),
     mask=dict(max_x=0.22, max_z=1.06, min_z=0.13, tail_cut=None),
     inset={"eyes": 0.032, "horns": 0.02, "spikes": 0.012, "frill": 0.03, "heart": -0.03, "runes": -0.01},
     face=dict(nostril=(0.042, -0.905, 1.005), nostril_r=(0.024, 0.016, 0.009), mouth_r=0.011,
-              mouth=lambda side, a: (side * 0.13 * a ** 0.8, -0.93 + 0.19 * a ** 1.6, 0.925 + 0.03 * a * a)),
+              mouth=lambda side, a: (side * 0.11 * a ** 0.8, -0.93 + 0.17 * a ** 1.6, 0.925 + 0.03 * a * a)),
     jaw_hinge=(0, -0.70, 0.93),
     mouth_detail=dict(depth=0.15, fade=0.11, width=0.28, tooth=(0.007, 0.012), fang=(0.010, 0.022),
                       tongue=(0.052, 0.08, 0.012)),
@@ -245,14 +245,38 @@ FORMS = {"grown": GROWN, "hatchling": HATCH}
 
 
 # ------------------------------------------------------------------------------ hooks
-def _ear(kit, name, base, out, up, length, width, thickness):
-    """A pointed cat ear: a thick rounded triangle, leaning back."""
+def _ear_frame(kit, out, up):
+    """The ear's axes: s across it, front (facing forward) and u along it."""
     V = kit.V
-    b, o, u = V(base), V(out).normalized(), V(up).normalized()
+    o, u = V(out).normalized(), V(up).normalized()
     s = o.cross(u).normalized()
-    pts = [b, b + s * width * 0.5, b + s * width * 0.42 + u * length * 0.55, b + u * length,
-           b - s * width * 0.42 + u * length * 0.55, b - s * width * 0.5]
-    return kit.flat_fan(name, pts, thickness)
+    front = u.cross(s).normalized()
+    if front.y > 0:
+        front, s = -front, -s
+    return s, front, u
+
+
+def _ear(kit, name, base, out, up, length, width, depth, material):
+    """A pointed cat ear: a flattened, gently curved cone (a real volume: flat fans showed
+    star-shaped shading edge-on), leaning back."""
+    import mathutils
+    s, front, u = _ear_frame(kit, out, up)
+    o = kit.horn_mesh(name, length, width * 0.5, 0.35, kit.lod(5, 3), kit.lod(7, 5), taper=0.75, tip=0.04)
+    o.rotation_euler = mathutils.Matrix((-s, -front, u)).transposed().to_euler()  # a proper rotation: +Y (its curve) back
+    o.location = kit.V(base)
+    o.scale = (1.0, depth / (width * 0.4), 1.0)
+    o.data.materials.append(material)
+    return o, s, front, u
+
+
+def _inner_ear(kit, name, base, s, front, u, length, width, material):
+    """The inner ear: a flat, rounded triangle on the ear's front face."""
+    b = kit.V(base)
+    pts = [b, b + s * width * 0.5, b + s * width * 0.4 + u * length * 0.55, b + u * length,
+           b - s * width * 0.4 + u * length * 0.55, b - s * width * 0.5]
+    o = kit.flat_fan(name, pts, 0.008)
+    o.data.materials.append(material)
+    return o
 
 
 def parts(kit, d):
@@ -261,22 +285,21 @@ def parts(kit, d):
     out = []
     # Ears: tall and pointed, leaning out and back; the inner ear in the accent colour.
     ears = []
-    for s in (-1, 1):
-        base = kit.head_point((0.17, 0.08, 0.2) if not baby else (0.2, 0.06, 0.22), s)
-        e = _ear(kit, f"ear_{s}", base, (s * 0.35, 0.25, 0.9), (s * 0.55, 0.45, 0.72),
-                 (0.42 if not baby else 0.34) * F["head"]["k"], (0.28 if not baby else 0.3) * F["head"]["k"],
-                 0.045 * F["head"]["k"])
-        e.data.materials.append(mats["body_plain"])
-        inner = _ear(kit, f"earin_{s}", base + V((0, -0.02, 0.02)) * F["head"]["k"], (s * 0.35, 0.25, 0.9),
-                     (s * 0.55, 0.45, 0.72), (0.3 if not baby else 0.24) * F["head"]["k"],
-                     (0.17 if not baby else 0.19) * F["head"]["k"], 0.06 * F["head"]["k"])
-        inner.data.materials.append(mats["accent_flat"])
+    k = F["head"]["k"]
+    for sd in (-1, 1):
+        base = kit.head_point((0.2, 0.06, 0.24) if not baby else (0.2, 0.06, 0.22), sd)
+        length, width = (0.5 if not baby else 0.34) * k, (0.34 if not baby else 0.3) * k
+        e, s_ax, front, u = _ear(kit, f"ear_{sd}", base, (sd * 0.35, 0.25, 0.9), (sd * 0.55, 0.45, 0.72),
+                                 length, width, 0.07 * k, mats["body_plain"])
+        inner = _inner_ear(kit, f"earin_{sd}", base + front * 0.034 * k + u * 0.03 * k, s_ax, front, u,
+                           length * 0.72, width * 0.6, mats["accent_flat"])
         ears += [(e, "head"), (inner, "head")]
     out.append(("frill", 0, ears))
-    # Swept-back horns behind the ears (buds on a hatchling).
-    horns = kit.build_horns([dict(len=0.5, r=0.07, curve=62, seg=5, ring=5, at=(0.1, 0.16, 0.12), rot=(-40, 8, 0))],
-                            mats)
-    out.append(("horns", 0, [(h, "head") for h in horns]))
+    # Swept-back horns behind the ears (the grown only: a kitten's head stays round and soft).
+    if not baby:
+        horns = kit.build_horns([dict(len=0.46, r=0.085, curve=70, seg=5, ring=5, at=(0.11, 0.18, 0.1),
+                                      rot=(-42, 10, 0))], mats)
+        out.append(("horns", 0, [(h, "head") for h in horns]))
     # The tail's end: twin fins, a leaf on the baby.
     x, y, z = F["nodes"]["tail_tip"][0]
     k = F["tail_k"]
@@ -288,8 +311,8 @@ def parts(kit, d):
     else:
         fins = []
         for s in (-1, 1):
-            f = kit.lobed_fin(f"tailfin_{s}", (0, y - 0.12 * k, z - 0.02), (s * 0.55, 0.8, 0.25), (0, 0, 1),
-                              0.34 * k, 70, -35, 2, 0.016)
+            f = kit.lobed_fin(f"tailfin_{s}", (0, y - 0.1 * k, z - 0.01), (s * 0.5, 0.86, 0.1), (0, 0, 1),
+                              0.28 * k, 55, -30, 2, 0.016)
             f.data.materials.append(mats["membrane"])
             fins.append((f, "tail4"))
         out.append(("tail_tip", 0, fins))

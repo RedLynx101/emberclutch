@@ -592,6 +592,7 @@ static SaveData& sampleSave() {
         d.wanderSteps = static_cast<u32>(i * 100);
         d.origin = static_cast<Origin>(i % static_cast<int>(Origin::Count));
         d.known = static_cast<u8>(i & 3);
+        d.look = static_cast<u8>(i % kLookCount);
         d.lastTurnedAt = kT0 + i * kHour;
         d.motherId = i;
         d.location = static_cast<Location>(i % 2);
@@ -609,7 +610,7 @@ static bool sameDragon(const Dragon& a, const Dragon& b) {
            a.upset == b.upset && a.napping == b.napping &&
            std::memcmp(a.dirt, b.dirt, sizeof(a.dirt)) == 0 && a.eggTurns == b.eggTurns &&
            a.lastTurnedAt == b.lastTurnedAt && a.denSlot == b.denSlot && a.wanderSince == b.wanderSince &&
-           a.wanderSteps == b.wanderSteps && a.origin == b.origin && a.known == b.known;
+           a.wanderSteps == b.wanderSteps && a.origin == b.origin && a.known == b.known && a.look == b.look;
 }
 
 // Dust settles over a day or two, faster on the belly than the wings; grooming, brushing a
@@ -735,7 +736,7 @@ TEST(save_round_trip) {
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
     CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots + 2 + 5 + 2 + 2 +
-                   5 * (132 + 16 + 9 + 1 + 12 + 2 + 2));
+                   5 * (132 + 16 + 9 + 1 + 12 + 2 + 2 + 1));
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
@@ -792,6 +793,82 @@ TEST(save_picks_newest_valid_slot) {
     CHECK(pickNewestSlot(nullptr, 0, a.data(), na) == 1);
 }
 
+// The looks (D54): the base odds, inheritance with surprises (wild rare unless a parent is
+// wild), the same look every time for an old save's dragon, the names, and the save field
+// (records from before it get their look from the id).
+TEST(the_looks) {
+    Rng rng(77);
+    int base[kLookCount] = {};
+    for (int i = 0; i < 20000; ++i) ++base[rollLook(rng)];
+    std::printf("  base odds: %d %d %d %d (of 20000)\n", base[0], base[1], base[2], base[3]);
+    CHECK(std::abs(base[0] - 6200) < 400 && std::abs(base[1] - 6200) < 400 && std::abs(base[2] - 6000) < 400 &&
+          std::abs(base[3] - 1600) < 250);
+    auto wildShare = [&](u8 a, u8 b) {
+        int wild = 0, same = 0;
+        for (int i = 0; i < 20000; ++i) {
+            const Look l = inheritLook(a, b, rng);
+            wild += l == kLookWild;
+            same += l == a || l == b;
+        }
+        return std::pair<float, float>(wild / 20000.0f, same / 20000.0f);
+    };
+    const auto plain = wildShare(kLookClassic, kLookTallneck);
+    const auto oneWild = wildShare(kLookWild, kLookPebbleback);
+    const auto bothWild = wildShare(kLookWild, kLookWild);
+    std::printf("  inherited: common parents %.1f%% wild (%.0f%% a parent's), one wild %.1f%%, both %.1f%%\n",
+                plain.first * 100, plain.second * 100, oneWild.first * 100, bothWild.first * 100);
+    CHECK(plain.first < 0.03f && plain.second > 0.8f);  // usually a parent's; wild stays rare
+    CHECK(oneWild.first > 0.21f && oneWild.first < 0.29f && bothWild.first > 0.21f && bothWild.first < 0.29f);
+    CHECK(lookForOldDragon(12345) == lookForOldDragon(12345));
+    int old[kLookCount] = {};
+    for (u32 id = 1; id <= 4000; ++id) ++old[lookForOldDragon(id)];
+    CHECK(old[3] > 200 && old[3] < 450 && old[0] > 1000 && old[1] > 1000 && old[2] > 1000);
+
+    Genome ember = makePurebred(Element::Ember, rng), tide = makePurebred(Element::Tide, rng);
+    char name[40];
+    lookBreedName(kLookClassic, ember, name, sizeof(name));
+    CHECK(std::strcmp(name, "Classic Ember") == 0);
+    lookBreedName(kLookPebbleback, tide, name, sizeof(name));
+    CHECK(std::strcmp(name, "Pebbleback Tide") == 0);
+    lookBreedName(kLookWild, ember, name, sizeof(name));
+    CHECK(std::strcmp(name, "Cinderveined Ember") == 0);
+    lookBreedName(kLookWild, tide, name, sizeof(name));
+    CHECK(std::strcmp(name, "Glimmertide") == 0);
+    Genome squall = tide;
+    squall.elementB = static_cast<u8>(Element::Gale);
+    lookBreedName(kLookWild, squall, name, sizeof(name));
+    CHECK(std::strcmp(name, "Glimmertide Squall") == 0);
+    Genome steam = ember;
+    steam.elementB = static_cast<u8>(Element::Tide);
+    lookBreedName(kLookWild, steam, name, sizeof(name));
+    CHECK(std::strcmp(name, "Cinderveined Steam") == 0);
+    Dragon egg = makeEgg(5, tide, Sex::Male, kT0, kLookTallneck);
+    kindName(egg, name, sizeof(name));
+    CHECK(egg.look == kLookTallneck && std::strcmp(name, "Tide") == 0);  // a surprise until it hatches
+    egg.stage = Stage::Hatchling;
+    kindName(egg, name, sizeof(name));
+    CHECK(std::strcmp(name, "Tallneck Tide") == 0);
+
+    // A record from before the looks: cut the field off, and its look comes from its id.
+    SaveData& s = sampleSave();
+    s.dragonCount = 1;
+    s.dragons[0].look = kLookWild;
+    std::vector<u8> buf(maxEncodedSize());
+    const std::size_t n = encodeSave(s, 1, kT0, buf.data(), buf.size());
+    std::vector<u8> old1(buf.begin(), buf.begin() + n);
+    const std::size_t rec = n - (132 + 16 + 9 + 1 + 12 + 2 + 1) - 2;  // the one record's size field (before its body)
+    old1[rec] = static_cast<u8>(old1[rec] - 1);
+    old1.pop_back();
+    // Fix up the header's payload size and checksum for the shorter payload.
+    const u32 payload = static_cast<u32>(old1.size() - kSaveHeaderSize);
+    std::memcpy(&old1[12], &payload, 4);
+    const u32 crc = crc32(old1.data() + kSaveHeaderSize, payload);
+    std::memcpy(&old1[16], &crc, 4);
+    static SaveData out;
+    CHECK(decodeSave(old1.data(), old1.size(), out) == LoadResult::Ok);
+    CHECK(out.dragons[0].look == lookForOldDragon(out.dragons[0].id));
+}
+
 TEST(save_full_capacity_fits) {
     static SaveData s;
     s = SaveData{};
@@ -838,6 +915,7 @@ int main() {
     RUN(save_rejects_out_of_range_data);
     RUN(save_picks_newest_valid_slot);
     RUN(save_full_capacity_fits);
+    RUN(the_looks);
     runModelTests();
     runAnimTests();
     runBehaviorTests();

@@ -1,5 +1,6 @@
 #include "core/dragon.hpp"
 
+#include <cstdio>
 #include <initializer_list>
 
 #include "core/clock.hpp"
@@ -144,10 +145,18 @@ Stage stageFor(int days, int stars) {
 
 Sex rollSex(Rng& rng) { return rng.chance(1, 2) ? Sex::Male : Sex::Female; }
 
-Dragon makeEgg(u32 id, const Genome& g, Sex sex, s64 now) {
+void kindName(const Dragon& d, char* out, int cap) {
+    if (d.stage == Stage::Egg)
+        std::snprintf(out, static_cast<std::size_t>(cap), "%s", breedName(d.genome));
+    else
+        lookBreedName(d.look, d.genome, out, cap);
+}
+
+Dragon makeEgg(u32 id, const Genome& g, Sex sex, s64 now, u8 look) {
     Dragon d;
     d.id = id;
     d.genome = g;
+    d.look = look < kLookCount ? look : static_cast<u8>(kLookClassic);
     d.sex = sex;
     d.stage = Stage::Egg;
     d.laidAt = now;

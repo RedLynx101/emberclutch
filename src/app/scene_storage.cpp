@@ -100,7 +100,9 @@ void drawTop(App& app) {
         std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", breedName(d.genome), str::kEggSuffix,
                       static_cast<int>(eggProgress(d) * 100), str::kIncubated);
     } else {
-        std::snprintf(line, sizeof(line), "%s  -  %s %s %s", d.name, sexName(d.sex), breedName(d.genome), stageName(d.stage));
+        char kind[40];
+    kindName(d, kind, sizeof(kind));
+    std::snprintf(line, sizeof(line), "%s  -  %s %s %s", d.name, sexName(d.sex), kind, stageName(d.stage));
     }
     textCentered(app, line, 200, 16, 0.6f, theme::kShell, 390);
 }

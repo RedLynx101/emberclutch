@@ -121,6 +121,7 @@ void writeDragon(Writer& w, const Dragon& d) {
     w.u32v(d.wanderSteps);
     w.u8v(static_cast<u8>(d.origin));  // Alpha 2: the profile (where its egg came from, what you know)
     w.u8v(d.known);
+    w.u8v(d.look);  // Alpha 2 WP12: its look (D54)
     w.patchU16(sizeAt, static_cast<u16>(w.pos() - start));
 }
 
@@ -185,6 +186,12 @@ bool readDragon(Reader& r, Dragon& d) {
         d.known = r.u8v();
     } else if (d.motherId != 0) {
         d.origin = Origin::Bred;
+    }
+    if (r.pos() + 1 <= start + size) {  // older records: a look by the base odds, fixed by its id (D66)
+        const u8 look = r.u8v();
+        d.look = look < kLookCount ? look : static_cast<u8>(kLookClassic);
+    } else {
+        d.look = lookForOldDragon(d.id);
     }
     r.seek(start + size);  // skip fields from newer builds
 

@@ -1,5 +1,7 @@
 #include "core/genetics.hpp"
 
+#include <cstdio>
+
 namespace ec {
 namespace {
 
@@ -119,6 +121,37 @@ const char* breedName(const Genome& g) {
 
 bool isHybrid(const Genome& g) { return g.elementA != g.elementB; }
 
+int breedIndex(const Genome& g) {
+    int i = g.elementA % kElementCount, j = g.elementB % kElementCount;
+    if (i > j) {
+        const int t = i;
+        i = j;
+        j = t;
+    }
+    if (i == j) return i;
+    int index = kElementCount;
+    for (int a = 0; a < kElementCount; ++a)
+        for (int b = a + 1; b < kElementCount; ++b, ++index)
+            if (a == i && b == j) return index;
+    return 0;
+}
+
+void breedAlleles(int index, u8& a, u8& b) {
+    if (index < kElementCount) {
+        a = b = static_cast<u8>(index < 0 ? 0 : index);
+        return;
+    }
+    int k = kElementCount;
+    for (int i = 0; i < kElementCount; ++i)
+        for (int j = i + 1; j < kElementCount; ++j, ++k)
+            if (k == index) {
+                a = static_cast<u8>(i);
+                b = static_cast<u8>(j);
+                return;
+            }
+    a = b = 0;
+}
+
 Genome makePurebred(Element e, Rng& rng) {
     const u8 el = static_cast<u8>(e);
     const BreedProfile& p = profile(el);
@@ -184,6 +217,51 @@ Rgb heartglowColor(Element e) {
 }
 
 float sizeScale(const Genome& g) { return 0.90f + 0.20f * (static_cast<float>(g.size) / 255.0f); }
+
+Look rollLook(Rng& rng) {
+    const u32 roll = rng.below(100);
+    return roll < 31 ? kLookClassic : (roll < 62 ? kLookPebbleback : (roll < 92 ? kLookTallneck : kLookWild));
+}
+
+Look inheritLook(u8 a, u8 b, Rng& rng) {
+    const Look la = a < kLookCount ? static_cast<Look>(a) : kLookClassic;
+    const Look lb = b < kLookCount ? static_cast<Look>(b) : kLookClassic;
+    if ((la == kLookWild || lb == kLookWild) && rng.chance(25, 100)) return kLookWild;
+    if (rng.chance(20, 100)) {  // a surprise: a fresh look (wild at the base odds, unless a parent is wild)
+        const Look fresh = rollLook(rng);
+        if (fresh != kLookWild || (la != kLookWild && lb != kLookWild)) return fresh;
+    }
+    const Look pick = rng.chance(1, 2) ? la : lb;  // one parent's
+    if (pick != kLookWild) return pick;
+    const Look other = pick == la ? lb : la;
+    return other != kLookWild ? other : static_cast<Look>(rng.below(3));  // both wild: a common one this time
+}
+
+Look lookForOldDragon(u32 id) {
+    Rng rng(0x9E3779B97F4A7C15ull ^ (static_cast<std::uint64_t>(id) * 0x2545F4914F6CDD1Dull));
+    rng.next();
+    return rollLook(rng);
+}
+
+const char* lookName(u8 look, const Genome& g) {
+    static constexpr const char* kWild[kElementCount] = {"Cinderveined", "Glimmertide", "Stormstreak",
+                                                         "Mossglow",     "Rimelight",   "Starveined"};
+    switch (look) {
+        case kLookPebbleback: return "Pebbleback";
+        case kLookTallneck: return "Tallneck";
+        case kLookWild: return kWild[g.elementA % kElementCount];
+        default: return "Classic";
+    }
+}
+
+void lookBreedName(u8 look, const Genome& g, char* out, int cap) {
+    // Cinderveined is a description (Cinderveined Ember); the other wild words name the dragon.
+    const bool standsAlone = look == kLookWild && g.elementA != static_cast<u8>(Element::Ember) && !isHybrid(g);
+    if (standsAlone)
+        std::snprintf(out, static_cast<std::size_t>(cap), "%s", lookName(look, g));
+    else
+        std::snprintf(out, static_cast<std::size_t>(cap), "%s %s", lookName(look, g), breedName(g));
+}
 
 int rareCount(u8 flags) {
     int n = 0;

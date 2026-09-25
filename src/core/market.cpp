@@ -52,6 +52,7 @@ DailyEgg dailyEgg(const SaveData& s, s32 day) {
     const Element el = static_cast<Element>(rng.chance(2, 3) ? 3 + rng.below(3) : rng.below(3));
     e.genome = makePurebred(el, rng);
     e.sex = rollSex(rng);
+    e.look = rollLook(rng);
     e.price = kDailyEggPrice;
     return e;
 }
@@ -60,7 +61,7 @@ int buyDailyEgg(SaveData& s, s64 now) {
     const s32 today = dayIndex(now);
     if (s.eggBoughtDay == today || s.gleam < kDailyEggPrice || s.dragonCount >= static_cast<int>(kMaxDragons)) return -1;
     const DailyEgg e = dailyEgg(s, today);
-    Dragon egg = makeEgg(s.nextId++, e.genome, e.sex, now);
+    Dragon egg = makeEgg(s.nextId++, e.genome, e.sex, now, e.look);
     egg.origin = Origin::Market;
     if (!placeEgg(s, egg) && vaultCount(s) >= kVaultEggs) {
         --s.nextId;

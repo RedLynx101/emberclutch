@@ -155,6 +155,7 @@ struct Cache {
     u32 id = 0;
     int form = -1;
     int lod = 0;
+    int look = 0;
     float t = -1;
     Genome genome{};
     Sex sex = Sex::Female;
@@ -232,7 +233,8 @@ int g_locSProjection = -1, g_locSModelView = -1, g_locSBlend = -1, g_locSTint = 
 C3D_AttrInfo g_staticAttr;
 C3D_LightEnv g_lightEnv;
 C3D_Light g_light;
-C3D_LightLut g_lutToon, g_lutRim;
+C3D_LightLut g_lutToon[3], g_lutRim[2];  // per look: the classic ramp, V1's soft one, V3's hard one; the rims
+int g_litLook = -1;                        // the look whose ramps are bound
 constexpr int kCacheSlots = 4;
 
 // Lighting (architecture section 4): primary = plum-tinted ambient, secondary = toon ramp on
@@ -262,7 +264,13 @@ struct Posed {
     Mat34 poseMat[kMaxBones], skin[kMaxBones];
 };
 
-Form g_forms[kFormCount][2];  // [form][lod]: LOD1 draws background dragons in a full den
+// [look][form][lod] (D54: every look is in the game, per dragon; each look's models in its
+// own folder). LOD1 draws background dragons in a full den. The classic look loads at start,
+// the others one form a frame while the splash plays (loadNextLook), or when first needed.
+Form g_forms[kLookCount][kFormCount][2];
+bool g_lookLoaded[kLookCount] = {};
+bool g_lookFailed[kLookCount] = {};  // a look whose models are missing: drawn classic, not retried
+int g_forceLook = -1;  // dev: every dragon in one look (-1: their own)
 Cache g_caches[kCacheSlots];
 u32 g_frame = 0;
 Posed g_posed;
@@ -272,7 +280,7 @@ bool g_ready = false;
 AnimLibrary g_anims;
 int g_clipIndex[kFormCount][static_cast<int>(ClipId::Count)];
 bool g_animsOk = false;
-AnimBinding g_bind[kFormCount];  // LOD1 shares its form's skeleton
+AnimBinding g_bind[kLookCount][kFormCount];  // LOD1 shares its form's skeleton; each look has its own
 Room g_room;
 EggForm g_egg;      // full detail: the close-up, and a lone egg in the den
 EggForm g_eggLod1;  // the den's egg when there's more to draw (tools/blender/egg_model.py --lod 1)
@@ -332,9 +340,8 @@ float toonRampSoft(float x, float) { return x < 0.05f ? 0.0f : (x < 0.3f ? 0.5f 
 float rimWide(float x, float) { return x < 0.33f ? 1.0f : (x < 0.46f ? 0.45f : 0.0f); }
 float toonRampHard(float x, float) { return x < 0.2f ? 0.0f : (x < 0.5f ? 0.5f : 1.0f); }
 
-int g_style = 0;  // review R5 (D47): 0 current, 1 surface, 2 shape, 3 bold
-const char* const kStyleDir[kStyleCount] = {"romfs:/models/", "romfs:/models/v1/", "romfs:/models/v2/",
-                                            "romfs:/models/v3/"};
+const char* const kLookDir[kLookCount] = {"romfs:/models/", "romfs:/models/v1/", "romfs:/models/v2/",
+                                          "romfs:/models/v3/"};
 
 bool loadTexture(const char* path, C3D_Tex& tex) {
     FILE* file = std::fopen(path, "rb");
@@ -471,11 +478,12 @@ float framingRadius(const ModelData& m, float t, int build, Vec3* center, float*
 
 // Rebuilds the merged part mesh, ground offset and framing when the dragon, its growth or
 // its genome changes (growth is slow: days, not frames).
-void refreshCache(Cache& c, const Dragon& d, const Growth& gr, int build, int lod) {
-    const bool same = c.valid && c.id == d.id && c.form == gr.form && c.lod == lod && std::fabs(c.t - gr.t) < 0.002f &&
-                      c.sex == d.sex && std::memcmp(&c.genome, &d.genome, sizeof(Genome)) == 0;
+void refreshCache(Cache& c, const Dragon& d, const Growth& gr, int build, int lod, int look) {
+    const bool same = c.valid && c.id == d.id && c.form == gr.form && c.lod == lod && c.look == look &&
+                      std::fabs(c.t - gr.t) < 0.002f && c.sex == d.sex &&
+                      std::memcmp(&c.genome, &d.genome, sizeof(Genome)) == 0;
     if (same) return;
-    const Form& f = g_forms[gr.form][lod];
+    const Form& f = g_forms[look][gr.form][lod];
     c.valid = false;
     if (!buildParts(f.model, d.genome, d.sex, gr.t, g_parts)) return;
     if (!fill(c.parts, static_cast<int>(g_parts.pos.size()), g_parts.pos.data(), g_parts.nrm.data(),
@@ -488,6 +496,7 @@ void refreshCache(Cache& c, const Dragon& d, const Growth& gr, int build, int lo
     c.id = d.id;
     c.form = gr.form;
     c.lod = lod;
+    c.look = look;
     c.t = gr.t;
     c.genome = d.genome;
     c.sex = d.sex;
@@ -495,6 +504,16 @@ void refreshCache(Cache& c, const Dragon& d, const Growth& gr, int build, int lo
 }
 
 int buildOf(const Dragon& d) { return d.genome.build < kModelBuilds ? d.genome.build : kBuildNeutral; }
+
+bool loadLook(int look);
+
+// The look a dragon is drawn in: its own (or the dev menu's), loaded on the spot if the
+// splash hasn't got to it yet; the classic look if its models are missing.
+int lookOf(const Dragon& d) {
+    int look = g_forceLook >= 0 ? g_forceLook : (d.look < kLookCount ? static_cast<int>(d.look) : 0);
+    if (!g_lookLoaded[look] && !loadLook(look)) look = kLookClassic;
+    return look;
+}
 
 // The dragon's cache slot, refreshed if its growth or genome changed. nullptr if the
 // dragon has no model yet (an egg) or its parts could not be built.
@@ -513,7 +532,7 @@ Cache* cacheFor(const Dragon& d, s64 now, int lod) {
             if (c.lastUsed < slot->lastUsed) slot = &c;
         }
     }
-    refreshCache(*slot, d, growthFor(d.stage, stageProgress(d, now)), buildOf(d), lod);
+    refreshCache(*slot, d, growthFor(d.stage, stageProgress(d, now)), buildOf(d), lod, lookOf(d));
     slot->lastUsed = g_frame;
     return slot->valid ? slot : nullptr;
 }
@@ -563,7 +582,8 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
     perf::Scope timed(perf::Pose);
     Cache* c = cacheFor(d, now, lod);
     if (!c) return false;
-    const Form& f = g_forms[c->form][lod];
+    const Form& f = g_forms[c->look][c->form][lod];
+    const AnimBinding& bind = g_bind[c->look][c->form];
     updateDust(*c, f, d);
     out.size = sizeScale(d.genome);
     out.scale = growthScale(growthFor(d.stage, stageProgress(d, now))) * out.size;
@@ -577,7 +597,7 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
     out.root[0] = out.root[1] = 0;
     if (actor && g_animsOk) {
         Quat delta[kMaxBones];
-        actor->anim.sample(g_anims, g_bind[c->form], f.model.skel.count, delta, out.root);
+        actor->anim.sample(g_anims, bind, f.model.skel.count, delta, out.root);
         applyDeltas(bones, delta, f.model.skel.count);
         // Look at the player: the den camera, brought into the dragon's armature space
         // (the inverse of modelMatrix, with last frame's floor contact).
@@ -589,15 +609,15 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
             local.y += out.root[0] * out.scale;
             local = local * (1.0f / out.size);
             local.z += c->groundNow;
-            applyLookAt(f.model.skel, g_bind[c->form], bones, local, actor->look * (1.0f - actor->gazeWeight));
+            applyLookAt(f.model.skel, bind, bones, local, actor->look * (1.0f - actor->gazeWeight));
         }
         // Hands-on care: it looks at the food you hold out, or leans toward your hand.
         if (actor->gazeWeight > 0.01f)
-            applyLookAt(f.model.skel, g_bind[c->form], bones, actor->gazeLocal, actor->gazeWeight);
+            applyLookAt(f.model.skel, bind, bones, actor->gazeLocal, actor->gazeWeight);
     }
     if (actor && f.jawBone >= 0 && actor->jawOpen > 0.01f) {  // opening for the food
         const Quat q = quatFromPitchYawRoll(-actor->jawOpen * 30.0f * kDegToRad, 0, 0);
-        const Quat& rest = g_bind[c->form].rest[f.jawBone];
+        const Quat& rest = bind.rest[f.jawBone];
         bones[f.jawBone].rot = mul(bones[f.jawBone].rot, mul(mul(conjugate(rest), q), rest));
     }
     if (actor && f.eyesBone >= 0) bones[f.eyesBone].scale.z *= 1.0f - kBlinkSquash * actor->eyes.shut;  // blinks
@@ -637,7 +657,7 @@ Vec3 apply(const C3D_Mtx& m, Vec3 v) {
             m.r[2].x * v.x + m.r[2].y * v.y + m.r[2].z * v.z + m.r[2].w};
 }
 
-void dragonPattern(u8 pattern, Rgb color);
+void dragonPattern(u8 pattern, Rgb color, bool veins = false);
 
 // The dragon colour chain (architecture §4), texture 0 = the form's skin (R stripes, G
 // spots, B dapple, A scale detail), texture 1 = the dust ramp read at the dust stream:
@@ -684,11 +704,12 @@ void setupTexEnv() {
 }
 
 // Stage 0 for one dragon: its Pattern gene picks a skin channel and blends the pattern
-// colour in by it (Runes, until Alpha 2 draws them, and Solid show no pattern).
-void dragonPattern(u8 pattern, Rgb color) {
+// colour in by it (Runes, until Alpha 2 draws them, and Solid show no pattern). The wild look
+// (the V3 models) has no pattern: its veins (skin B) glow after the light, in place of the rim.
+void dragonPattern(u8 pattern, Rgb color, bool veins) {
     C3D_TexEnv* env = C3D_GetTexEnv(0);
     C3D_TexEnvInit(env);
-    if (g_style == 3) {  // v3: no pattern on the scales; the veins (skin B) glow after the light, in place of the rim
+    if (veins) {
         C3D_TexEnvSrc(env, C3D_Both, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
         C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
         env = C3D_GetTexEnv(5);
@@ -727,23 +748,58 @@ void bindSkin(const Form* f) {
 
 u8 toByte(float v) { return static_cast<u8>(v <= 0 ? 0 : (v >= 1 ? 255 : v * 255.0f + 0.5f)); }
 
-// The style's colours on top of the genome's (review R5): v3 turns the scales dark and lets
-// the fire show through: the veins (the pattern colour), the eyes and the wings glow.
-void stylePalette(Rgb pal[kPalCount]) {
-    if (g_style != 3) return;
+// The look's colours on top of the genome's (D54). The wild look is its element showing
+// through the cracks: the veins (the pattern colour), the eyes and the wings glow in the base
+// element's light (allele A, as the body's colour) over scales that suit it: the Ember's are
+// dark, embers underneath (V3); Tide's deep-sea dark with its light; Gale's storm-slate with
+// lightning; Grove's dark bark with moss glow; Frost's pale crystal lit ice-blue; Lumen's
+// night blue with starlight.
+void lookPalette(int look, const Genome& g, Rgb pal[kPalCount]) {
+    if (look != kLookWild) return;
     auto scale = [](Rgb c, float k, int add) {
         return Rgb{toByte(c.r * k / 255.0f + add / 255.0f), toByte(c.g * k / 255.0f + add / 255.0f),
                    toByte(c.b * k / 255.0f + add / 255.0f)};
     };
-    const Rgb glow = pal[kPalGlow];
-    const Rgb base = scale(pal[kPalBase], 0.2f, 8);
-    pal[kPalAccent] = {static_cast<u8>(base.r / 2 + pal[kPalAccent].r / 8), static_cast<u8>(base.g / 2 + pal[kPalAccent].g / 8),
-                       static_cast<u8>(base.b / 2 + pal[kPalAccent].b / 8)};
+    auto blend = [](Rgb a, Rgb b, float t) {
+        return Rgb{toByte((a.r + (b.r - a.r) * t) / 255.0f), toByte((a.g + (b.g - a.g) * t) / 255.0f),
+                   toByte((a.b + (b.b - a.b) * t) / 255.0f)};
+    };
+    static constexpr Rgb kLight[kElementCount] = {
+        {255, 140, 40},   // Ember: fire
+        {70, 225, 235},   // Tide: deep-sea light
+        {205, 240, 255},  // Gale: lightning
+        {140, 245, 90},   // Grove: moss glow
+        {95, 175, 255},   // Frost: ice-blue (deep enough to read on its pale scales)
+        {255, 236, 170},  // Lumen: starlight
+    };
+    static constexpr Rgb kScales[kElementCount] = {
+        {0, 0, 0},      // Ember: its own base colour, darkened (V3)
+        {12, 30, 52},   // Tide: deep sea
+        {38, 44, 62},   // Gale: storm slate
+        {34, 30, 20},   // Grove: bark
+        {226, 222, 240},// Frost: pale crystal
+        {22, 20, 58},   // Lumen: night
+    };
+    const int e = g.elementA % kElementCount;
+    const Rgb glow = kLight[e];
+    const Rgb base = e == 0 ? scale(pal[kPalBase], 0.2f, 8) : blend(kScales[e], pal[kPalBase], 0.12f);
+    pal[kPalAccent] = blend(base, pal[kPalAccent], e == 4 ? 0.3f : 0.12f);
     pal[kPalBase] = base;
-    pal[kPalHorn] = {33, 23, 26};
+    pal[kPalHorn] = e == 4 ? Rgb{190, 215, 245} : Rgb{33, 23, 26};
     pal[kPalIris] = glow;
     pal[kPalPattern] = scale(glow, 1.1f, 0);
-    pal[kPalMembrane] = scale(glow, 0.62f, 0);
+    pal[kPalMembrane] = e == 4 ? blend(base, glow, 0.35f) : scale(glow, 0.62f, 0);
+    pal[kPalGlow] = glow;
+}
+
+// The look's shading ramps: V1 (Pebbleback) softer with three bands and a wider rim, the
+// wild look (V3) harder; bound only when the look changes between draws.
+void lookShading(int look) {
+    if (look == g_litLook) return;
+    g_litLook = look;
+    C3D_LightEnvLut(&g_lightEnv, GPU_LUT_D0, GPU_LUTINPUT_LN, true,
+                    &g_lutToon[look == kLookPebbleback ? 1 : (look == kLookWild ? 2 : 0)]);
+    C3D_LightEnvLut(&g_lightEnv, GPU_LUT_FR, GPU_LUTINPUT_NV, false, &g_lutRim[look == kLookPebbleback ? 1 : 0]);
 }
 
 // The light on one dragon: the time of day, scaled per channel by `local` (the room's light
@@ -889,10 +945,13 @@ bool init() {
 
     C3D_LightEnvInit(&g_lightEnv);
     C3D_LightEnvMaterial(&g_lightEnv, &kMaterial);
-    LightLut_FromFunc(&g_lutToon, toonRamp, 0.0f, true);
-    C3D_LightEnvLut(&g_lightEnv, GPU_LUT_D0, GPU_LUTINPUT_LN, true, &g_lutToon);
-    LightLut_FromFunc(&g_lutRim, rimBand, 0.0f, false);
-    C3D_LightEnvLut(&g_lightEnv, GPU_LUT_FR, GPU_LUTINPUT_NV, false, &g_lutRim);
+    LightLut_FromFunc(&g_lutToon[0], toonRamp, 0.0f, true);
+    LightLut_FromFunc(&g_lutToon[1], toonRampSoft, 0.0f, true);
+    LightLut_FromFunc(&g_lutToon[2], toonRampHard, 0.0f, true);
+    LightLut_FromFunc(&g_lutRim[0], rimBand, 0.0f, false);
+    LightLut_FromFunc(&g_lutRim[1], rimWide, 0.0f, false);
+    g_litLook = -1;
+    lookShading(kLookClassic);
     C3D_LightEnvFresnel(&g_lightEnv, GPU_SEC_ALPHA_FRESNEL);
     C3D_LightInit(&g_light, &g_lightEnv);
     C3D_LightDiffuse(&g_light, 0, 0, 0);
@@ -901,20 +960,14 @@ bool init() {
     C3D_FVec lightDir = FVec4_New(-0.45f, 0.8f, 0.4f, 0.0f);  // view space, directional (w = 0)
     C3D_LightPosition(&g_light, &lightDir);
 
-    g_ready = g_texOk &&
-              loadForm("romfs:/models/hatchling.ecm", "romfs:/models/hatchling_skin.t3x",
-                       g_forms[kFormHatchling][0]) &&
-              loadForm("romfs:/models/hatchling_lod1.ecm", "romfs:/models/hatchling_lod1_skin.t3x",
-                       g_forms[kFormHatchling][1]) &&
-              loadForm("romfs:/models/grown.ecm", "romfs:/models/grown_skin.t3x", g_forms[kFormGrown][0]) &&
-              loadForm("romfs:/models/grown_lod1.ecm", "romfs:/models/grown_lod1_skin.t3x", g_forms[kFormGrown][1]);
-    if (g_ready) g_adultRadius = framingRadius(g_forms[kFormGrown][0].model, 1.0f, kBuildNeutral, nullptr, nullptr);
+    g_ready = g_texOk && loadLook(kLookClassic);
+    if (g_ready) g_adultRadius = framingRadius(g_forms[kLookClassic][kFormGrown][0].model, 1.0f, kBuildNeutral, nullptr, nullptr);
     if (g_ready) {
         std::vector<u8> bytes;
         g_animsOk = readFile("romfs:/anims/dragon.eca", bytes) && loadAnims(bytes.data(), bytes.size(), g_anims) &&
                     resolveClips(g_anims, kFormHatchling, g_clipIndex[kFormHatchling]) &&
                     resolveClips(g_anims, kFormGrown, g_clipIndex[kFormGrown]);
-        for (int f = 0; f < kFormCount; ++f) bindAnims(g_anims, g_forms[f][0].model.skel, g_bind[f]);
+        for (int f = 0; f < kFormCount; ++f) bindAnims(g_anims, g_forms[kLookClassic][f][0].model.skel, g_bind[kLookClassic][f]);
         loadRoom("romfs:/models/den.esm");  // without it, dragons stand on the 2D backdrop
         loadEgg("romfs:/models/egg.ecm", g_egg);  // without it, eggs stay 2D
         loadEgg("romfs:/models/egg_lod1.ecm", g_eggLod1);
@@ -925,13 +978,15 @@ bool init() {
 void frameBegun() { bury(); }
 
 void shutdown() {
-    for (auto& lods : g_forms)
-        for (Form& f : lods) {
-            f.body.release();
-            for (GpuMesh& w : f.wings) w.release();
-            if (f.skinOk) retireTex(f.skin);
-            f.skinOk = false;
-        }
+    for (auto& forms : g_forms)
+        for (auto& lods : forms)
+            for (Form& f : lods) {
+                f.body.release();
+                for (GpuMesh& w : f.wings) w.release();
+                if (f.skinOk) retireTex(f.skin);
+                f.skinOk = false;
+            }
+    for (bool& l : g_lookLoaded) l = false;
     for (Cache& c : g_caches) {
         c.parts.release();
         retire(c.dust);
@@ -1050,9 +1105,11 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
     Mtx_Multiply(&modelView, &view, &model);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &modelView);
     const Dragon& d = *p.dragon;
+    const int look = p.cache->look;
+    lookShading(look);
     Rgb pal[kPalCount];
     dragonPalette(d.genome, pal);
-    stylePalette(pal);
+    lookPalette(look, d.genome, pal);
     const float glow = 0.55f + 0.45f * heartglowLevel(d, app.t);  // the heartglow pulses with mood
     pal[kPalGlow] = {static_cast<u8>(pal[kPalGlow].r * glow), static_cast<u8>(pal[kPalGlow].g * glow),
                      static_cast<u8>(pal[kPalGlow].b * glow)};
@@ -1060,7 +1117,7 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
         C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, pal[i].r / 255.0f, pal[i].g / 255.0f, pal[i].b / 255.0f,
                       1.0f);
     bindSkin(p.form);
-    dragonPattern(d.genome.pattern, pal[kPalPattern]);
+    dragonPattern(d.genome.pattern, pal[kPalPattern], look == kLookWild);
     const bool blob = p.morph != 1.0f && p.form->chestBone >= 0;
     if (blob) {  // taking shape out of a white blob round its chest (dragon.v.pica)
         const Vec3 c = p.poseMat[p.form->chestBone].translation();
@@ -1076,6 +1133,7 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
 // An egg's palette with each slot's glow in the alpha (`boost` scales the pulse), on the
 // skin's clean corner: no pattern, no dust.
 void eggColours(App& app, const Dragon& d, float boost) {
+    lookShading(kLookClassic);
     Rgb pal[kPalCount];
     float glow[kPalCount];
     eggPalette(d, (0.85f + 0.15f * std::sin(app.t * 2.2f)) * boost, pal, glow, app.t);
@@ -1316,6 +1374,7 @@ void drawThings(App& app, const C3D_Mtx& view, const DenThings& t) {
 
 // Draws the ball and the tub (after bindDragons and a lightDragon), and the den's things.
 void drawProps(App& app, const C3D_Mtx& view) {
+    lookShading(kLookClassic);  // the props' own shading, whatever look the last dragon had
     perf::Scope timed(perf::Room);
     if (!g_ballMesh.vbo) makeBallMesh(g_ballMesh);
     if (!g_tubMesh.vbo) makeTubMesh(g_tubMesh);
@@ -1868,77 +1927,62 @@ void releaseForm(Form& f) {
     f.model = ModelData{};
 }
 
-void releaseForms() {
-    for (auto& lods : g_forms)
-        for (Form& f : lods) releaseForm(f);
-    for (Cache& c : g_caches) c.valid = false;  // every dragon is rebuilt from the new forms
-}
-
-Form g_probe[kStyleCount][kFormCount][2];  // probeAllLooks
-bool g_probing = false;
-
-bool loadForms(int s) {
-    auto one = [s](const char* form, int lod, Form& f) {
-        char ecm[64], skin[64];
-        std::snprintf(ecm, sizeof(ecm), "%s%s%s.ecm", kStyleDir[s], form, lod ? "_lod1" : "");
-        std::snprintf(skin, sizeof(skin), "%s%s%s_skin.t3x", kStyleDir[s], form, lod ? "_lod1" : "");
-        return loadForm(ecm, skin, f);
-    };
-    return one("hatchling", 0, g_forms[kFormHatchling][0]) && one("hatchling", 1, g_forms[kFormHatchling][1]) &&
-           one("grown", 0, g_forms[kFormGrown][0]) && one("grown", 1, g_forms[kFormGrown][1]);
-}
-
-void styleLight(int s) {
-    LightLut_FromFunc(&g_lutToon, s == 1 ? toonRampSoft : (s == 3 ? toonRampHard : toonRamp), 0.0f, true);
-    C3D_LightEnvLut(&g_lightEnv, GPU_LUT_D0, GPU_LUTINPUT_LN, true, &g_lutToon);
-    LightLut_FromFunc(&g_lutRim, s == 1 ? rimWide : rimBand, 0.0f, false);
-    C3D_LightEnvLut(&g_lightEnv, GPU_LUT_FR, GPU_LUTINPUT_NV, false, &g_lutRim);
-}
-
-}  // namespace
-
-bool setStyle(int s) {
-    if (!g_ready || s < 0 || s >= kStyleCount || s == g_style) return s == g_style;
-    releaseForms();
-    const bool ok = loadForms(s);
-    if (!ok) {  // missing: back to the style that was
-        releaseForms();
-        loadForms(g_style);
-    } else {
-        g_style = s;
-    }
-    g_adultRadius = framingRadius(g_forms[kFormGrown][0].model, 1.0f, kBuildNeutral, nullptr, nullptr);
-    for (int f = 0; f < kFormCount; ++f) bindAnims(g_anims, g_forms[f][0].model.skel, g_bind[f]);
-    styleLight(g_style);
-    return ok;
-}
-
-int style() { return g_style; }
-
-bool probeAllLooks() {
-    for (auto& forms : g_probe)
-        for (auto& lods : forms)
-            for (Form& f : lods) releaseForm(f);
-    g_probing = !g_probing;
-    if (!g_probing) return false;
-    for (int s = 0; s < kStyleCount; ++s) {
-        if (s == g_style) continue;  // already loaded
-        for (int form = 0; form < kFormCount; ++form)
-            for (int lod = 0; lod < 2; ++lod) {
-                char ecm[64], skin[64];
-                const char* name = form == kFormHatchling ? "hatchling" : "grown";
-                std::snprintf(ecm, sizeof(ecm), "%s%s%s.ecm", kStyleDir[s], name, lod ? "_lod1" : "");
-                std::snprintf(skin, sizeof(skin), "%s%s%s_skin.t3x", kStyleDir[s], name, lod ? "_lod1" : "");
-                loadForm(ecm, skin, g_probe[s][form][lod]);
-            }
+// One form of one look: its model and skin (form order: hatchling LOD0, LOD1, grown LOD0, LOD1).
+bool loadLookForm(int look, int k) {
+    const int form = k < 2 ? kFormHatchling : kFormGrown, lod = k % 2;
+    Form& f = g_forms[look][form][lod];
+    if (f.ok) return true;
+    char ecm[64], skin[64];
+    const char* name = form == kFormHatchling ? "hatchling" : "grown";
+    std::snprintf(ecm, sizeof(ecm), "%s%s%s.ecm", kLookDir[look], name, lod ? "_lod1" : "");
+    std::snprintf(skin, sizeof(skin), "%s%s%s_skin.t3x", kLookDir[look], name, lod ? "_lod1" : "");
+    if (!loadForm(ecm, skin, f)) {
+        releaseForm(f);
+        return false;
     }
     return true;
 }
 
-const char* styleName(int s) {
-    static const char* const kNames[kStyleCount] = {"current", "V1 surface", "V2 shape", "V3 bold"};
-    return s >= 0 && s < kStyleCount ? kNames[s] : "?";
+// A whole look (its four forms and their animation bindings). False if a model is missing.
+bool loadLook(int look) {
+    if (look < 0 || look >= kLookCount || g_lookFailed[look]) return false;
+    if (g_lookLoaded[look]) return true;
+    for (int k = 0; k < 4; ++k)
+        if (!loadLookForm(look, k)) {
+            g_lookFailed[look] = true;
+            return false;
+        }
+    if (g_animsOk)
+        for (int f = 0; f < kFormCount; ++f) bindAnims(g_anims, g_forms[look][f][0].model.skel, g_bind[look][f]);
+    g_lookLoaded[look] = true;
+    return true;
 }
+
+}  // namespace
+
+bool loadNextLook() {
+    if (!g_ready) return false;
+    for (int look = 0; look < kLookCount; ++look) {
+        if (g_lookLoaded[look] || g_lookFailed[look]) continue;
+        for (int k = 0; k < 4; ++k) {
+            const int form = k < 2 ? kFormHatchling : kFormGrown;
+            if (!g_forms[look][form][k % 2].ok) {  // one form a call
+                if (!loadLookForm(look, k)) g_lookFailed[look] = true;
+                return true;
+            }
+        }
+        loadLook(look);  // all four in: bind its animations
+        return true;
+    }
+    return false;
+}
+
+void setForceLook(int look) {
+    g_forceLook = look >= 0 && look < kLookCount ? look : -1;
+    for (Cache& c : g_caches) c.valid = false;
+}
+
+int forceLook() { return g_forceLook; }
 
 void followInDen(Vec3 at, float weight) {
     g_follow = at;
@@ -1976,7 +2020,16 @@ u32 backdrop(s64 now) {
 
 const AnimLibrary* anims() { return g_animsOk ? &g_anims : nullptr; }
 const int* clipIndex(int form) { return g_clipIndex[form == kFormHatchling ? kFormHatchling : kFormGrown]; }
-const ModelData* model(int form) { return g_ready && form >= 0 && form < kFormCount ? &g_forms[form][0].model : nullptr; }
-const AnimBinding* binding(int form) { return g_animsOk && form >= 0 && form < kFormCount ? &g_bind[form] : nullptr; }
+int lookFor(const Dragon& d) { return g_ready ? lookOf(d) : kLookClassic; }
+const ModelData* model(int form, int look) {
+    return g_ready && form >= 0 && form < kFormCount && look >= 0 && look < kLookCount && g_lookLoaded[look]
+               ? &g_forms[look][form][0].model
+               : nullptr;
+}
+const AnimBinding* binding(int form, int look) {
+    return g_animsOk && form >= 0 && form < kFormCount && look >= 0 && look < kLookCount && g_lookLoaded[look]
+               ? &g_bind[look][form]
+               : nullptr;
+}
 
 }  // namespace ec::r3d

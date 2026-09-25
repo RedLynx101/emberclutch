@@ -140,11 +140,13 @@ const int* clipsFor(const Dragon& d, s64 now) { return r3d::clipIndex(growthFor(
 // Walk and trot at the speed this dragon's feet actually move (no skating).
 void matchSpeeds(DenActor& actor, const Dragon& d, s64 now) {
     const Growth g = growthFor(d.stage, stageProgress(d, now));
-    const ModelData* m = r3d::model(g.form);
-    const AnimBinding* bind = r3d::binding(g.form);
+    const int look = r3d::lookFor(d);  // a Tallneck's legs aren't a Classic's
+    const ModelData* m = r3d::model(g.form, look);
+    const AnimBinding* bind = r3d::binding(g.form, look);
     if (!m || !bind) return;
     const int build = d.genome.build < kModelBuilds ? d.genome.build : kBuildNeutral;
-    actor.updateSpeeds(*m, *bind, *r3d::anims(), r3d::clipIndex(g.form), g.form, g.t, build, sizeScale(d.genome));
+    actor.updateSpeeds(*m, *bind, *r3d::anims(), r3d::clipIndex(g.form), g.form * kLookCount + look, g.t, build,
+                       sizeScale(d.genome));
 }
 
 // Moves the den's dragons along: behavior decides, animation follows (core/den_actor). Each
@@ -391,11 +393,13 @@ void pop(App& app, Dragon& d, s64 now) {
     saveNow(app);
 }
 
-// "It's a Tide!" / "It's an Ember!"
+// Its look revealed (D54): "It's a Pebbleback Tide!", "It's a Cinderveined Ember!", "It's a
+// Glimmertide!", "It's an Aurora..."
 void announce(App& app, const Dragon& d) {
-    const char* breed = breedName(d.genome);
-    const bool vowel = std::strchr("AEIOUaeiou", breed[0]) != nullptr;
-    showToastf(app, vowel ? str::kItsAn : str::kItsA, breed);
+    char kind[40];
+    kindName(d, kind, sizeof(kind));
+    const bool vowel = std::strchr("AEIOUaeiou", kind[0]) != nullptr;
+    showToastf(app, vowel ? str::kItsAn : str::kItsA, kind);
 }
 
 // The hatching, a few seconds long: the egg shakes harder and harder, stills glowing, and
@@ -600,8 +604,9 @@ void drawProfileTop(App& app, const Dragon& d, s64 now) {
     C2D_DrawEllipseSolid(80, 150, 0, 240, 70, withAlpha(fromRgb(glow), 0.18f));
     C2D_DrawEllipseSolid(130, 196, 0, 140, 22, withAlpha(theme::rgba(0, 0, 0), 0.25f));
     if (r3d::ready()) r3d::drawShowcase(app, d, nullptr, now, 0.6f * std::sin(app.t * 0.35f));
-    char line[64];
-    std::snprintf(line, sizeof(line), "%s  -  %s %s", d.name, breedName(d.genome), stageName(d.stage));
+    char line[64], kind[40];
+    kindName(d, kind, sizeof(kind));
+    std::snprintf(line, sizeof(line), "%s  -  %s %s", d.name, kind, stageName(d.stage));
     textCentered(app, line, 200, 18, 0.6f, theme::kClutchGold, 380, Face::Title);
 }
 
@@ -689,9 +694,11 @@ void drawTop(App& app) {
         if (!r3d::ready()) dragonPlaceholder(d, 200, 205, bodyScale(d, now), app.t);
         if (app.hatch.active)  // no name yet
             std::snprintf(line, sizeof(line), "%s  -  %s %s", str::kHatching, sexName(d.sex), breedName(d.genome));
-        else
-            std::snprintf(line, sizeof(line), "%s  -  %s %s %s", d.name, sexName(d.sex), breedName(d.genome),
-                          stageName(d.stage));
+        else {
+            char kind[40];
+            kindName(d, kind, sizeof(kind));
+            std::snprintf(line, sizeof(line), "%s  -  %s %s %s", d.name, sexName(d.sex), kind, stageName(d.stage));
+        }
         text(app, line, 200, 8, 0.6f, theme::kShell);
         std::snprintf(line, sizeof(line), "%s %d  -  %s  -  %s%s%s", str::kDay, daysSinceHatch(d, now) + 1,
                       moodName(moodOf(d)), personalityName(d.personality), d.napping ? "  -  " : "",

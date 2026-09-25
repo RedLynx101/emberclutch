@@ -113,6 +113,7 @@ int main() {
         const bool paused = app.menu != MenuPage::Closed;  // the game waits under the menu
 
         perf::frameStart();
+        if (r3d::ready()) r3d::loadNextLook();  // the other looks, a form a frame (the splash hides it)
         const SceneFns& scene = sceneFns(app.scene);
         if (scene.update && !app.devMenu && !paused) {
             perf::Scope timed(perf::Update);

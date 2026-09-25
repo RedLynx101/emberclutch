@@ -96,7 +96,9 @@ WanderFinds comeBack(SaveData& s, int index, u32 stepCount, s64 now, Rng& rng) {
     for (u32 i = 0; i < eggRolls && !egg; ++i) egg = rng.chance(3, 100);
     if (egg && s.dragonCount < static_cast<int>(kMaxDragons)) {
         const Element e = static_cast<Element>(rng.chance(3, 4) ? 3 + rng.below(3) : rng.below(3));
-        Dragon wild = makeEgg(s.nextId++, makePurebred(e, rng), rollSex(rng), now);
+        const Genome g = makePurebred(e, rng);
+        const Sex sex = rollSex(rng);
+        Dragon wild = makeEgg(s.nextId++, g, sex, now, rollLook(rng));
         wild.origin = Origin::Wild;
         placeEgg(s, wild);
         s.dragons[s.dragonCount] = wild;

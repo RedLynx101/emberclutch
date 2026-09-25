@@ -1,0 +1,101 @@
+# The looks (D54, WP12): an adult and two others in the den in their own looks; then every
+# look forced in turn (dev menu page 2: Force look); then the wild look for each element
+# (Next breed): Cinderveined Ember, Glimmertide, Stormstreak, Mossglow, Rimelight, Starveined.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+key SELECT
+wait 4
+shot l0-own-looks
+# Every look in turn: Classic, Pebbleback, Tallneck, wild.
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 82 131
+wait 0.5
+key SELECT
+wait 3
+shot l1-classic
+key SELECT
+wait 0.3
+tap 82 131
+wait 0.5
+key SELECT
+wait 3
+shot l2-pebbleback
+key SELECT
+wait 0.3
+tap 82 131
+wait 0.5
+key SELECT
+wait 3
+shot l3-tallneck
+key SELECT
+wait 0.3
+tap 82 131
+wait 0.5
+key SELECT
+wait 3
+shot l4-wild-ember
+# The wild look per element: Next breed (page 1) for the cared-for adult.
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.5
+shot l5-wild-2
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.5
+shot l6-wild-3
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.5
+shot l7-wild-4
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.5
+shot l8-wild-5
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.5
+shot l9-wild-6
+quit

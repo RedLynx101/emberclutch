@@ -119,6 +119,9 @@ void eggPalette(const Dragon& d, float pulse, Rgb out[kPalCount], float glow[kPa
         if (k < open) {
             out[slots[k]] = crackDim;
             glow[slots[k]] = pulse;
+        } else if (d.look == kLookWild) {  // a wild egg (D54): a faint glowing crack pattern from the start
+            out[slots[k]] = mixRgb(shell, crack, 0.45f);
+            glow[slots[k]] = 0.3f * pulse;
         }
 }
 

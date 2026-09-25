@@ -36,6 +36,7 @@ struct Dragon {
     BodyPlan bodyPlan = BodyPlan::Draconic;
     u8 modules = kModWings | kModBreath;
     Genome genome{};
+    u8 look = kLookClassic;          // core/genetics Look (D54): set when laid, revealed at hatching
     Sex sex = Sex::Female;           // rolled when the egg is laid, shown at hatch
     u32 motherId = 0, fatherId = 0;  // 0 = starter / wild / Market egg
     Origin origin = Origin::Starter;
@@ -87,7 +88,10 @@ int stageMinDay(Stage s);
 int stageMinStars(Stage s);
 
 Sex rollSex(Rng& rng);
-Dragon makeEgg(u32 id, const Genome& g, Sex sex, s64 now);
+// What kind of dragon it is, as the game says it: an egg's breed ("Ember"; the look is a
+// surprise until it hatches), a hatched dragon's look and breed ("Pebbleback Ember").
+void kindName(const Dragon& d, char* out, int cap);
+Dragon makeEgg(u32 id, const Genome& g, Sex sex, s64 now, u8 look = kLookClassic);
 // Hatches the egg if incubation is complete. Returns true if it hatched.
 bool tryHatch(Dragon& d, s64 now, Rng& rng);
 // The personality it will hatch with, fixed from its id (listening to the egg hints at it).

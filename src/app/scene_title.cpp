@@ -72,7 +72,9 @@ void drawBottom(App& app, const Input& in) {
                 audio::playSfx(audio::Sfx::Confirm);
             }
             char line[48];
-            std::snprintf(line, sizeof(line), "%s  -  %s", activeDragon(app).name, breedName(activeDragon(app).genome));
+            char kind[40];
+            kindName(activeDragon(app), kind, sizeof(kind));
+            std::snprintf(line, sizeof(line), "%s  -  %s", activeDragon(app).name, kind);
             textCentered(app, line, 160, 122, 0.45f, withAlpha(theme::kShell, 0.75f), 280);
             if (button(app, {90, 146, 140, 34}, str::kNewGame, in)) app.titleConfirm = 1;
         } else if (button(app, {60, 84, 200, 46}, str::kNewGame, in) || (in.down & KEY_A)) {

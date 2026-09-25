@@ -134,6 +134,11 @@ TEST(egg_cracks_open_on_schedule) {
     }
     CHECK(glow[kPalBase] == 0 && glow[kPalGlow] > 0);
     const float coolGlow = glow[kPalGlow];
+    Dragon wild = anEgg(0.5f, 60);  // a wild egg (D54): its cracks glow faintly before they open
+    wild.look = kLookWild;
+    eggPalette(wild, 1.0f, pal, glow);
+    CHECK(glow[kPalPattern] > 0 && glow[kPalPattern] < 0.5f && glow[kPalMembrane] > 0);
+    eggPalette(anEgg(0.5f, 60), 1.0f, pal, glow);
     eggPalette(anEgg(0.95f, 100), 1.0f, pal, glow);
     CHECK(glow[kPalPattern] > 0 && glow[kPalHorn] > 0 && glow[kPalMembrane] == 0);
     CHECK(pal[kPalPattern].r != pal[kPalBase].r || pal[kPalPattern].b != pal[kPalBase].b);

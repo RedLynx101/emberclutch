@@ -99,16 +99,16 @@ struct DenThings {
     float daylight = 1;  // 0 night .. 1 day: lanterns and moonflowers glow brighter at night
 };
 void setDenThings(const DenThings* things);
-// Review R5 (D47): the dragons' style. 0 the current look, 1 surface, 2 shape, 3 bold (the
-// ember-veined dragon); the variants' models are in romfs:/models/v1..v3. Dev builds switch
-// it from the dev menu. False if a style's models are missing (the style stays as it was).
-constexpr int kStyleCount = 4;
-bool setStyle(int style);
-int style();
-const char* styleName(int style);
-// Dev (D54, before WP12): the other looks' forms loaded as well, as a den of mixed looks will
-// need, so the budget overlay shows the memory on the hardware. Toggles; true while loaded.
-bool probeAllLooks();
+// The looks (D54): each dragon is drawn in its own (core/genetics Look), from its look's models
+// (romfs:/models/, v1/, v2/, v3/). The classic look loads with init(); call loadNextLook() once
+// a frame (it loads one form each time, false when every look is in) so the rest arrive while
+// the splash plays; a look needed before that loads on the spot.
+bool loadNextLook();
+// Dev: every dragon drawn in one look (-1: their own).
+void setForceLook(int look);
+int forceLook();
+// The look a dragon is drawn in (its own, the dev menu's, or classic if missing).
+int lookFor(const Dragon& d);
 // The den camera watches this point too (a thrown ball) while `weight` > 0.
 void followInDen(Vec3 at, float weight);
 
@@ -124,8 +124,9 @@ u32 backdrop(s64 now);
 // and the library index of each behavior clip for a body form.
 const AnimLibrary* anims();
 const int* clipIndex(int form);
-// A body form's model (LOD0) and its clip binding, for measuring walking speeds.
-const ModelData* model(int form);
-const AnimBinding* binding(int form);
+// A body form's model (LOD0) and its clip binding in a look, for measuring walking speeds
+// (nullptr until that look is loaded).
+const ModelData* model(int form, int look = 0);
+const AnimBinding* binding(int form, int look = 0);
 
 }  // namespace ec::r3d

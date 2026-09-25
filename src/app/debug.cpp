@@ -33,9 +33,12 @@ void forceNextStage(Dragon& d, s64 now) {
 
 // Swap the dragon to the next starter breed (keeps sex, stage and care): for checking
 // every breed's parts in the renderer.
+// Through all 21 breeds: the purebreds, then the hybrids (a purebred of each parent element, bred).
 void nextBreed(Dragon& d, Rng& rng) {
-    const u8 next = static_cast<u8>((d.genome.elementA + 1) % 3);  // Ember -> Tide -> Gale
-    d.genome = makePurebred(static_cast<Element>(next), rng);
+    u8 a, b;
+    breedAlleles((breedIndex(d.genome) + 1) % kBreedCount, a, b);
+    d.genome = a == b ? makePurebred(static_cast<Element>(a), rng)
+                      : breed(makePurebred(static_cast<Element>(a), rng), makePurebred(static_cast<Element>(b), rng), rng);
 }
 
 }  // namespace
@@ -94,7 +97,9 @@ void devAddDragon(App& app, bool asEgg) {
     }
     const s64 now = nowLocal(app);
     Rng& rng = app.rng;
-    Dragon d = makeEgg(s.nextId++, makePurebred(static_cast<Element>(rng.below(3)), rng), rollSex(rng), now);
+    const Genome g = makePurebred(static_cast<Element>(rng.below(3)), rng);
+    const Sex sex = rollSex(rng);
+    Dragon d = makeEgg(s.nextId++, g, sex, now, rollLook(rng));
     if (asEgg) {
         if (!placeEgg(s, d)) showToast(app, str::kEggToVault);
     } else {
@@ -118,7 +123,8 @@ void devAddFamily(App& app) {
     const s64 now = nowLocal(app);
     Rng& rng = app.rng;
     auto adult = [&](Element e, Sex sex, u32 mother, u32 father) {
-        Dragon d = makeEgg(s.nextId++, makePurebred(e, rng), sex, now - 30 * kDay);
+        const Genome g = makePurebred(e, rng);
+        Dragon d = makeEgg(s.nextId++, g, sex, now - 30 * kDay, rollLook(rng));
         d.incubationSeconds = kIncubationSeconds;
         tryHatch(d, now - 29 * kDay, rng);
         d.stage = Stage::Adult;
@@ -133,8 +139,11 @@ void devAddFamily(App& app) {
     const u32 a = adult(Element::Ember, Sex::Female, 0, 0), b = adult(Element::Tide, Sex::Male, 0, 0);
     const u32 c = adult(Element::Gale, Sex::Female, 0, 0), e = adult(Element::Frost, Sex::Male, 0, 0);
     const u32 mum = adult(Element::Ember, Sex::Female, a, b), dad = adult(Element::Gale, Sex::Male, c, e);
-    Dragon kid = makeEgg(s.nextId++, breed(s.dragons[s.dragonCount - 2].genome, s.dragons[s.dragonCount - 1].genome, rng),
-                         rollSex(rng), now);
+    const Dragon& mother = s.dragons[s.dragonCount - 2];
+    const Dragon& father = s.dragons[s.dragonCount - 1];
+    const Genome g = breed(mother.genome, father.genome, rng);
+    const Sex sex = rollSex(rng);
+    Dragon kid = makeEgg(s.nextId++, g, sex, now, inheritLook(mother.look, father.look, rng));
     kid.motherId = mum;
     kid.fatherId = dad;
     kid.origin = Origin::Bred;
@@ -170,8 +179,8 @@ bool debugMenu(App& app, const Input& in) {
     };
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
-        {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26}, {"Next style (R5)", 27},
-        {"Probe: all looks", 28}, {"GPU probe", 29},
+        {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26}, {"Next look", 27},
+        {"Force look", 28}, {"GPU probe", 29},
     };
     const Entry* items = app.devPage ? kPage2 : kPage1;
     const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
@@ -219,17 +228,17 @@ bool debugMenu(App& app, const Input& in) {
                 app.gpuProbe = static_cast<u8>((app.gpuProbe + 1) % 5);
                 showToastf(app, "GPU probe: %s", app.gpuProbe ? gpuProbeName(app.gpuProbe) : "everything drawn");
                 break;
-            case 28: {  // before WP12 (D54): every look's models in memory at once, measured
-                const float before = linearSpaceFree() / 1048576.0f;
-                const bool on = r3d::probeAllLooks();
-                char msg[64];
-                std::snprintf(msg, sizeof(msg), "%.1f -> %.1f MB linear free", before, linearSpaceFree() / 1048576.0f);
-                showToastf(app, on ? "All looks loaded: %s" : "Probe released: %s", msg);
+            case 28: {  // every dragon in one look, in turn, then their own again
+                const int next = r3d::forceLook() + 1 < kLookCount ? r3d::forceLook() + 1 : -1;
+                r3d::setForceLook(next);
+                showToastf(app, "Looks: %s", next < 0 ? "their own" : lookName(static_cast<u8>(next), d.genome));
                 break;
             }
-            case 27: {  // review R5 (D47): the current look and the three variants, in turn
-                const int next = (r3d::style() + 1) % r3d::kStyleCount;
-                showToastf(app, r3d::setStyle(next) ? "Style: %s" : "Style %s: models missing", r3d::styleName(next));
+            case 27: {  // this dragon's own look (D54), in turn
+                d.look = static_cast<u8>((d.look + 1) % kLookCount);
+                char name[40];
+                lookBreedName(d.look, d.genome, name, sizeof(name));
+                showToastf(app, "Look: %s", name);
                 break;
             }
             case 25:
@@ -263,7 +272,7 @@ bool debugMenu(App& app, const Input& in) {
     const DenBehavior& b = (careActor(app) ? *careActor(app) : app.actors[0]).behavior;
     std::snprintf(buf, sizeof(buf), "+%lldh  stars %d  %s  %s/%d  (%.1f, %.1f)  v%.2f  %s", static_cast<long long>(app.game.devOffset / kHour),
                   d.careStars, stageName(d.stage), careActor(app) ? activityName(b.activity) : "-", b.step, b.pos.x,
-                  b.pos.y, b.speed, r3d::styleName(r3d::style()));
+                  b.pos.y, b.speed, lookName(d.look, d.genome));
     text(app, buf, 160, 226, 0.4f, theme::kAsh);
     return true;
 }

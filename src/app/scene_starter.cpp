@@ -31,7 +31,9 @@ void chooseStarter(App& app, int i) {
     const s64 now = nowLocal(app);
     // A scripted run (autotest) gets the same dragons every time.
     app.rng = Rng(autotest::active() ? 0xA070ull : static_cast<std::uint64_t>(osGetTime()) ^ 0xEC0DDull);
-    app.game.dragons[0] = makeEgg(app.game.nextId++, makePurebred(kStarters[i], app.rng), rollSex(app.rng), now);
+    const Genome g = makePurebred(kStarters[i], app.rng);
+    const Sex sex = rollSex(app.rng);
+    app.game.dragons[0] = makeEgg(app.game.nextId++, g, sex, now, rollLook(app.rng));
     std::snprintf(app.game.dragons[0].name, sizeof(app.game.dragons[0].name), "%s", str::kDefaultName);
     app.game.dragonCount = 1;
     app.game.pouch[static_cast<int>(kStarters[i])] = 3;  // a few of the breed's favourite food

@@ -68,7 +68,8 @@ int layDueEgg(SaveData& s, s64 now, Rng& rng) {
 Dragon layEgg(u32 id, Dragon& a, Dragon& b, s64 now, Rng& rng) {
     Dragon& mother = a.sex == Sex::Female ? a : b;
     Dragon& father = a.sex == Sex::Female ? b : a;
-    Dragon egg = makeEgg(id, breed(mother.genome, father.genome, rng), rollSex(rng), now);
+    Dragon egg = makeEgg(id, breed(mother.genome, father.genome, rng), rollSex(rng), now,
+                         inheritLook(mother.look, father.look, rng));
     egg.origin = Origin::Bred;
     egg.motherId = mother.id;
     egg.fatherId = father.id;

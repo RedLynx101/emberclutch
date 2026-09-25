@@ -186,7 +186,9 @@ void drawBottom(App& app, const Input& in) {
             const Rect r{60, 64.0f + k * 36, 200, 32};
             const bool picked = list[k] == app.wanderPick;
             panel(r, picked ? theme::kClutchGold : withAlpha(theme::kShell, 0.2f));
-            std::snprintf(line, sizeof(line), "%s  (%s %s)", d.name, breedName(d.genome), stageName(d.stage));
+            char kind[40];
+    kindName(d, kind, sizeof(kind));
+    std::snprintf(line, sizeof(line), "%s  (%s %s)", d.name, kind, stageName(d.stage));
             textCentered(app, line, r.x + r.w / 2, r.y + r.h / 2, 0.46f, picked ? theme::kDenPlum : theme::kShell, r.w - 10);
             if (in.released && r.contains(in.rx, in.ry)) {
                 app.wanderPick = list[k];

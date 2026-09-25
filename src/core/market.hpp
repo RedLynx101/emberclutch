@@ -24,6 +24,7 @@ bool sellTrinket(SaveData& s, Trinket t);
 struct DailyEgg {
     Genome genome;
     Sex sex = Sex::Female;
+    u8 look = kLookClassic;  // the base odds (D54); a surprise at hatching
     u32 price = 0;
 };
 // Today's egg, the same all day for everyone with this save (from the day and the save's

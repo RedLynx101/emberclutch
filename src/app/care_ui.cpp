@@ -503,7 +503,9 @@ void profileAbout(App& app, const Dragon& d, s64 now) {
         textCentered(app, originText(d), 160, 134, 0.42f, withAlpha(theme::kShell, 0.75f), 300);
         return;
     }
-    std::snprintf(line, sizeof(line), "%s %s %s  -  %s %d", sexName(d.sex), breedName(d.genome), stageName(d.stage),
+    char kind[40];
+    kindName(d, kind, sizeof(kind));
+    std::snprintf(line, sizeof(line), "%s %s %s  -  %s %d", sexName(d.sex), kind, stageName(d.stage),
                   str::kDay, daysSinceHatch(d, now) + 1);
     textCentered(app, line, 160, 76, 0.46f, theme::kShell, 304);
     std::snprintf(line, sizeof(line), "%s  -  %s", personalityName(d.personality), str::kBond);

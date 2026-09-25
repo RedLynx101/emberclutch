@@ -126,6 +126,52 @@ DRAGON_PROMPTS = {
         "ribbon-like fins along its back. Adult: a long flowing serpentine dragon with four short legs, flowing "
         "ribbon-like fins along its back and tail, long soft whiskers, frilled fin-wings, drifting gracefully in "
         "the air in an S-curve; majestic and pretty, like a river spirit."),
+    # R11b (D78): the other four base breeds and the first crossbreed, by the same recipe.
+    "dragon_flurrytail": GROWTH + (
+        "The kind: a snow-fox dragon (Frost), snow white with pale ice-blue markings and silver-lilac tips. Egg: "
+        "round, frosted white with pale blue snowflake speckles. Hatchling: a round fluffball with a huge "
+        "pom-pom tail, big eyes, tiny crystal antler buds, stubby legs. Juvenile: fox-like and bouncy, a soft "
+        "fluffy chest ruff, the plumed tail growing bigger than its body. Adolescent: leggier, small crystal "
+        "antlers. Adult: an elegant fox-like dragon with a thick fluffy mane and chest ruff, a huge fluffy plumed "
+        "tail curling up over its back, branching ice-crystal antlers, medium wings with frosted scalloped edges "
+        "like icicles, snowflake-like markings on its flanks; majestic like a snow spirit."),
+    "dragon_curlstone": GROWTH + (
+        "The kind: an armoured stone dragon (Stone) like a pangolin or armadillo, warm sandstone and slate grey "
+        "with glowing amber geode crystals peeking between its plates. Egg: a smooth river-stone egg, grey with "
+        "sandy bands. Hatchling: a little round pebble of a baby, curled half into a ball, tiny overlapping plates, "
+        "big eyes and a long button snout. Juvenile: low and long, rows of rounded overlapping plates down its back "
+        "and tail, a longish snout for digging, strong front claws, tiny wings tucked under the plates. Adolescent: "
+        "bigger plates, small crystal points along its spine. Adult: a low, long, sturdy dragon covered in "
+        "rounded overlapping stone plates like a pangolin, a long gentle snout, big digging claws, a thick tail "
+        "ending in a rounded stone club, short sturdy wings folded under the plates, a crown of amber crystals "
+        "on its head; a calm mountain guardian."),
+    "dragon_glimmermoth": GROWTH + (
+        "The kind: a moth dragon of light (Lumen), cream white and soft gold with sunny yellow eyespots. Egg: "
+        "pearly cream, softly glowing, with gold rings. Hatchling: a round fuzzy baby with a fluffy collar, tiny "
+        "feathery antennae, four little rounded wing buds, huge dark shiny eyes. Juvenile: slender and fuzzy, "
+        "two pairs of small rounded wings. Adolescent: longer wings with the first glowing eyespots. Adult: a "
+        "slender, graceful dragon with a big fluffy white collar ruff, long feathery antennae, FOUR broad soft "
+        "moth wings (a pair of forewings and a pair of hindwings) with glowing golden sun-ring eyespots, the "
+        "hindwings ending in long trailing tails like a luna moth, a long thin tail with a fluffy tip; luminous "
+        "and majestic."),
+    "dragon_duskwing": GROWTH + (
+        "The kind: a bat-winged night dragon (Shade), deep indigo and violet with a soft lavender belly and tiny "
+        "glowing star speckles on its wings. It is a wyvern: it stands on two strong hind legs and its forelegs "
+        "ARE its wings, and it walks on the wings' folded wrists like a bat. Egg: dark indigo with tiny silver "
+        "star speckles. Hatchling: a round fluffball with enormous bat ears, huge eyes, tiny wing-arms, stubby "
+        "hind legs. Juvenile: big ears, a fluffy neck ruff, leathery wing-arms it leans on. Adolescent: longer "
+        "wings, a long whip tail. Adult: a sleek, elegant wyvern with tall bat ears, a fluffy neck ruff, huge "
+        "wing-arms whose membranes look like a night sky full of little stars, a long whip tail ending in a "
+        "crescent-moon shape; mysterious and majestic but kind."),
+    "dragon_blazeplume": GROWTH + (
+        "The kind: a phoenix-like crossbreed of a sleek cat-like dragon and a feathered dragon (Ember and Gale). It "
+        "has a CAT-LIKE dragon head with a short rounded snout, whiskers and pointed ears (no beak), four sturdy cat "
+        "legs of equal length, and a lithe, cat-like body in flame orange and scarlet with a golden belly, feathered wings whose feathers "
+        "shade from gold to scarlet to a hot orange tip, a crest of flame-shaped feathers on its head, and a long "
+        "tail ending in a spray of fiery tail plumes that glow at the tips. Egg: warm gold with red flame "
+        "swirls. Hatchling: a round kitten-like chick with fluffy flame-coloured down and a little feather "
+        "crest. Juvenile: lanky and cat-like with half-grown feathered wings. Adolescent: longer plumes. Adult: "
+        "a graceful, majestic firebird dragon, cat-like and proud, wings of flame-coloured feathers spread wide."),
     "dragon_adults": (
         "Four grown dragons side by side, full body, to scale: a sleek panther-like ember orange dragon with bat-like "
         "wings and a twin-finned tail; a huge round leaf-green gentle giant with mossy flowering plates on its back "

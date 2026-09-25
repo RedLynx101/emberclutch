@@ -2,6 +2,7 @@
 
   python tools/blender/egg_model.py --out romfs/models/egg.ecm
   python tools/blender/egg_model.py --lod 1 --out romfs/models/egg_lod1.ecm   (~300 triangles, for the den)
+  python tools/blender/egg_model.py --kind pouncer [--lod 1]   (a kind's own egg: romfs/dragons/<kind>/egg[_lod1].ecm)
   blender -b -P tools/blender/egg_model.py -- --render C:/abs/prefix     (preview renders)
 
 Writes romfs/models/egg.ecm (the dragons' format, src/core/model.cpp) with two bones:
@@ -42,6 +43,21 @@ LOD = int(arg("--lod", "0"))  # 1: the den's egg (small on the top screen, two o
 
 H = 1.0          # egg height (adult units: a newborn hatchling is about this tall curled up)
 R = 0.37         # widest radius (low on the egg)
+ASYM = 0.14      # how much narrower the top is than the bottom (0: an ellipsoid)
+SPECKLE = dict(style="spots", count=22, size=(0.014, 0.038))
+KIND = arg("--kind")
+if KIND:  # a kind's egg (tools/dragons/kinds/<kind>.py EGG): its shape and markings
+    import os as _os
+    _root = _os.path.abspath(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", ".."))
+    sys.path.insert(0, _os.path.join(_root, "tools"))
+    import dragons as _dragons
+    _egg = _dragons.kind(KIND).EGG
+    H = _egg.get("height", H)
+    R = _egg.get("width", R)
+    ASYM = _egg.get("asym", ASYM)
+    SPECKLE = dict(SPECKLE, **_egg.get("speckle_params", {}), style=_egg.get("speckle", "spots"))
+    if not OUT:
+        OUT = _os.path.join(_root, "romfs", "dragons", KIND, "egg_lod1.ecm" if int(arg("--lod", "0")) else "egg.ecm")
 SEAM = 0.63      # where the cap splits off (fraction of the height)
 ZIG = 0.04       # zigzag of the seam
 THICK = 0.022    # shell thickness
@@ -60,7 +76,7 @@ GROUP_SHARDS = 8               # src/core/model.hpp kGroupShards
 def radius(u):
     """Profile: wider low down, narrower toward the top."""
     x = 2 * u - 1
-    return R * math.sqrt(max(0.0, 1 - x * x)) * (1 - 0.14 * x)
+    return R * math.sqrt(max(0.0, 1 - x * x)) * (1 - ASYM * x)
 
 
 def slope(u):
@@ -174,16 +190,7 @@ def build():
         k1 = (k + 1) % SEGS
         m.quad(rim_out[k], rim_in[k], rim_in[k1], rim_out[k1])
 
-    # speckles: small hexagons scattered over the shell, clear of the seam
-    rng = random.Random(7)
-    placed = 0
-    while placed < (22 if LOD == 0 else 6):
-        u, th = 0.12 + 0.78 * rng.random(), rng.random() * 2 * math.pi
-        if abs(u - SEAM) < ZIG + 0.06:
-            continue
-        size = 0.014 + 0.024 * rng.random()
-        decal_disc(m, u, th, size, CAP if u > SEAM else ROOT, (ACCENT, ACCENT, 0, 0))
-        placed += 1
+    markings(m)
 
     # cracks: 1 and 2 zigzag down the front of the cap, 3 runs round the seam
     crack1 = [(0.86, FRONT + 0.05), (0.81, FRONT - 0.06), (0.77, FRONT + 0.03), (0.73, FRONT - 0.08)]
@@ -195,6 +202,63 @@ def build():
     seam = [(seam_u(k), 2 * math.pi * k / SEGS) for k in range(SEGS + 1)]
     decal_line(m, seam, 0.02, ROOT, (CRACK3, CRACK3, 0, 255))
     return m
+
+
+def markings(m):
+    """The shell's markings in the accent colour, by SPECKLE["style"]:
+      spots   small hexagons scattered over the shell (the classic egg)
+      stars   many tiny dots (a night sky)
+      bands   soft rings round the egg (a river stone)
+      rings   two broad rings, low and high (a glowing sun-egg)
+      swirl   curling flame-like strokes rising up the egg
+      flakes  little six-armed snowflakes
+    Everything stays clear of the seam, so the cap splits cleanly."""
+    rng = random.Random(7)
+    style, count, (s0, s1) = SPECKLE["style"], SPECKLE["count"], SPECKLE["size"]
+    paint = (ACCENT, ACCENT, 0, 0)
+
+    def clear(u):
+        return abs(u - SEAM) >= ZIG + 0.06
+
+    if style in ("spots", "stars"):
+        n = count if LOD == 0 else SPECKLE.get("count_lod1", 6)
+        placed = 0
+        while placed < n:
+            u, th = 0.12 + 0.78 * rng.random(), rng.random() * 2 * math.pi
+            if not clear(u):
+                continue
+            decal_disc(m, u, th, s0 + (s1 - s0) * rng.random(), CAP if u > SEAM else ROOT, paint)
+            placed += 1
+    elif style in ("bands", "rings"):
+        levels = SPECKLE.get("levels", [0.22, 0.4, 0.82] if style == "bands" else [0.3, 0.8])
+        for u0 in levels:
+            if not clear(u0):
+                continue
+            wob = [(u0 + 0.018 * math.sin(3 * t + u0 * 9), t) for t in
+                   (2 * math.pi * k / SEGS for k in range(SEGS + 1))]
+            decal_line(m, wob, s1 * (2.2 if style == "rings" else 1.4), CAP if u0 > SEAM else ROOT, paint)
+    elif style == "swirl":
+        for k in range(SPECKLE.get("strokes", 5)):
+            th0 = 2 * math.pi * k / 5
+            for lo, hi, bone in ((0.1, SEAM - 0.08, ROOT), (SEAM + 0.08, 0.9, CAP)):
+                pts = [(lo + (hi - lo) * f, th0 + 0.9 * f + 0.15 * math.sin(6 * f)) for f in (0, 0.25, 0.5, 0.75, 1.0)]
+                decal_line(m, pts, s1 * 0.9, bone, paint)
+    elif style == "flakes":
+        n = count if LOD == 0 else max(3, count // 4)
+        placed = 0
+        while placed < n:
+            u, th = 0.14 + 0.74 * rng.random(), rng.random() * 2 * math.pi
+            if not clear(u):
+                continue
+            size = s0 + (s1 - s0) * rng.random()
+            bone = CAP if u > SEAM else ROOT
+            du = size / (H * 1.0)
+            dth = size / max(0.05, radius(u))
+            for a in range(3):  # three crossing strokes: a six-armed flake
+                ang = math.pi * a / 3
+                pts = [(u - du * math.sin(ang), th - dth * math.cos(ang)), (u + du * math.sin(ang), th + dth * math.cos(ang))]
+                decal_line(m, pts, size * 0.28, bone, paint)
+            placed += 1
 
 
 def build_shards():
@@ -428,6 +492,9 @@ def preview(m, prefix):
     cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
     light_dir = Vector((-0.4, -0.6, 0.7)).normalized()
     shell, speck, inner, glow = (0.98, 0.93, 0.86), (0.62, 0.33, 0.22), (0.92, 0.82, 0.72), (1.0, 0.55, 0.16)
+    if KIND:  # the kind's egg in its first variant's colours (EGG["colors"])
+        shell, speck = _egg["colors"][int(arg("--variant", "0"))]
+        world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.40, 0.34, 0.42, 1)
     hot = (0.82, 0.5, 0.2)  # as eggPalette: the glow, a little golden (the glow doubles it)
     for shot, cracks, lift in (("warm", 0, 0.0), ("cracked", 3, 0.0), ("open", 3, 1.0)):
         slot = {BASE: (shell, 0), ACCENT: (speck, 0), INNER: (inner, 0), GLOW: (glow, 0.9)}

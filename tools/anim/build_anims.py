@@ -1,6 +1,8 @@
-"""Build romfs/anims/dragon.eca from the clips in tools/anim/clips.py (pure Python).
+"""Build the animation libraries (pure Python).
 
-  python tools/anim/build_anims.py [--out path]
+  python tools/anim/build_anims.py [--out path]          romfs/anims/dragon.eca (the classic dragon, tools/anim/clips.py)
+  python tools/anim/build_anims.py --plan pouncer        romfs/anims/pouncer.eca (a body plan, tools/dragons/plans)
+  python tools/anim/build_anims.py --plans               every body plan
 """
 import os
 import sys
@@ -9,9 +11,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "tools", "blender"))
-import clips  # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, "tools"))
 from eca import q_from_pyr, write_eca  # noqa: E402
-from rig_layout import BONE_ORDER  # noqa: E402
 
 
 def rotate(q, v):
@@ -30,19 +31,38 @@ def check_conventions():
     assert up[2] > 0.99 and left[0] > 0.99 and lean[0] < -0.99, (up, left, lean)
 
 
+def build(clip_list, order, out):
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    names = [c.name for c in clip_list]
+    assert len(names) == len(set(names)), "duplicate clip names"
+    size = write_eca(out, clip_list, order)
+    total = sum(c.length for c in clip_list)
+    print(f"[anims] {out}: {len(clip_list)} clips, {total:.1f} s, {size} bytes, {len(order)} bones")
+    if "--verbose" in sys.argv:
+        for c in clip_list:
+            print(f"[anims]   {c.name:14s} {c.length:4.2f}s {'loop' if c.loop else '    '} "
+                  f"{'root' if c.root_keys else '    '} events {len(c.events)}")
+
+
+def build_plan(name, out=None):
+    import dragons
+    plan = dragons.plan(name)
+    build(plan.clips(), plan.BONE_ORDER, out or os.path.join(ROOT, "romfs", "anims", f"{plan.NAME}.eca"))
+
+
 def main():
     check_conventions()
-    out = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else \
-        os.path.join(ROOT, "romfs", "anims", "dragon.eca")
-    os.makedirs(os.path.dirname(out), exist_ok=True)
-    names = [c.name for c in clips.CLIPS]
-    assert len(names) == len(set(names)), "duplicate clip names"
-    size = write_eca(out, clips.CLIPS, BONE_ORDER)
-    total = sum(c.length for c in clips.CLIPS)
-    print(f"[anims] {out}: {len(clips.CLIPS)} clips, {total:.1f} s, {size} bytes")
-    for c in clips.CLIPS:
-        print(f"[anims]   {c.name:14s} {c.length:4.2f}s {'loop' if c.loop else '    '} "
-              f"{'root' if c.root_keys else '    '} events {len(c.events)}")
+    out = sys.argv[sys.argv.index("--out") + 1] if "--out" in sys.argv else None
+    if "--plan" in sys.argv:
+        build_plan(sys.argv[sys.argv.index("--plan") + 1], out)
+    elif "--plans" in sys.argv:
+        for f in sorted(os.listdir(os.path.join(ROOT, "tools", "dragons", "plans"))):
+            if f.endswith(".py") and not f.startswith("_"):
+                build_plan(f[:-3])
+    else:
+        import clips
+        from rig_layout import BONE_ORDER
+        build(clips.CLIPS, BONE_ORDER, out or os.path.join(ROOT, "romfs", "anims", "dragon.eca"))
 
 
 if __name__ == "__main__":

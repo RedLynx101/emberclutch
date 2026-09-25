@@ -1,0 +1,63 @@
+# Rare traits (WP12): an adult Tide through each (dev menu page 2: Next rare).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key R
+wait 0.3
+tap 82 131
+wait 0.3
+key SELECT
+wait 2
+tap 134 221
+wait 2
+shot r0-none
+key SELECT
+wait 0.3
+tap 82 156
+wait 0.3
+key SELECT
+wait 1.5
+shot r-iridescent-a
+key SELECT
+wait 0.3
+tap 82 156
+wait 0.3
+key SELECT
+wait 1.5
+shot r-melanistic
+key SELECT
+wait 0.3
+tap 82 156
+wait 0.3
+key SELECT
+wait 1.5
+shot r-leucistic
+key SELECT
+wait 0.3
+tap 82 156
+wait 0.3
+key SELECT
+wait 1.5
+shot r-starspeckle
+wait 1.2
+shot r-starspeckle-b
+quit

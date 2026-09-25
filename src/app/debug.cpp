@@ -180,7 +180,7 @@ bool debugMenu(App& app, const Input& in) {
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
         {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26}, {"Next look", 27},
-        {"Force look", 28}, {"GPU probe", 29},
+        {"Force look", 28}, {"GPU probe", 29}, {"Next rare", 30},
     };
     const Entry* items = app.devPage ? kPage2 : kPage1;
     const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
@@ -224,6 +224,16 @@ bool debugMenu(App& app, const Input& in) {
                 }
                 break;
             case 26: devAddFamily(app); break;
+            case 30: {  // the rare traits in turn (WP12): none, iridescent, melanistic, leucistic, starspeckle
+                static const u8 kRares[] = {0, kRareIridescent, kRareMelanistic, kRareLeucistic, kRareStarspeckle};
+                static const char* const kRareNames[] = {"none", "iridescent", "melanistic", "leucistic", "starspeckle"};
+                int k = 0;
+                while (k < 5 && kRares[k] != d.genome.rareFlags) ++k;
+                k = (k + 1) % 5;
+                d.genome.rareFlags = kRares[k];
+                showToastf(app, "Rare trait: %s", kRareNames[k]);
+                break;
+            }
             case 29:  // WP11d: each part's share of the GPU's time, one left out at a time
                 app.gpuProbe = static_cast<u8>((app.gpuProbe + 1) % 5);
                 showToastf(app, "GPU probe: %s", app.gpuProbe ? gpuProbeName(app.gpuProbe) : "everything drawn");

@@ -293,6 +293,8 @@ Vec3 g_heads[kDenShown];         // den dragons' heads in the last drawDen (an e
 bool g_headSet[kDenShown] = {};
 Vec3 g_mouths[kDenShown];        // ...and their mouths (a carried ball rides there)
 bool g_mouthSet[kDenShown] = {};
+Vec3 g_backs[kDenShown][2];      // ...and their backs, chest to hips (Starspeckle's glints)
+bool g_backSet[kDenShown] = {};
 
 // Poses made ahead of the frame (poseAhead), for the frame whose app.t they were made at.
 struct Ahead {
@@ -1108,8 +1110,10 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
     const int look = p.cache->look;
     lookShading(look);
     Rgb pal[kPalCount];
-    dragonPalette(d.genome, pal);
-    lookPalette(look, d.genome, pal);
+    const Genome shown = (d.genome.rareFlags & kRareIridescent) ? shimmer(d.genome, app.t + d.id * 0.37f) : d.genome;
+    dragonPalette(shown, pal);
+    lookPalette(look, shown, pal);
+    rarePalette(d.genome.rareFlags, pal);
     const float glow = 0.55f + 0.45f * heartglowLevel(d, app.t);  // the heartglow pulses with mood
     pal[kPalGlow] = {static_cast<u8>(pal[kPalGlow].r * glow), static_cast<u8>(pal[kPalGlow].g * glow),
                      static_cast<u8>(pal[kPalGlow].b * glow)};
@@ -1600,7 +1604,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         C2D_Flush();
     }
     bindDragons(projection);
-    for (int i = 0; i < kDenShown; ++i) g_headSet[i] = g_mouthSet[i] = false;
+    for (int i = 0; i < kDenShown; ++i) g_headSet[i] = g_mouthSet[i] = g_backSet[i] = false;
     for (int i = 0; i < count; ++i) {
         if (!drawn[i] || app.gpuProbe == 2) continue;
         if (dragons[i].dragon->stage == Stage::Egg) {
@@ -1622,6 +1626,12 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         if (g_posed.form->headBone >= 0) {
             g_heads[i] = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
             g_headSet[i] = true;
+        }
+        if (g_posed.form->chestBone >= 0) {  // the top of the back: the spine's joints, lifted to the skin
+            const float lift = 0.35f * g_posed.scale;
+            g_backs[i][0] = apply(model, g_posed.poseMat[g_posed.form->chestBone].translation()) + Vec3{0, 0, lift};
+            g_backs[i][1] = apply(model, g_posed.poseMat[0].translation()) + Vec3{0, 0, lift};
+            g_backSet[i] = true;
         }
         Vec3 mouth;
         if (mouthLocal(g_posed, mouth)) {
@@ -1991,6 +2001,13 @@ void followInDen(Vec3 at, float weight) {
 
 bool project(Vec3 p, float& x, float& y, float& pixelsPerUnit) {
     return g_denViewSet && projectWith(g_denView, p, x, y, pixelsPerUnit);
+}
+
+bool backOf(int i, Vec3& chest, Vec3& hips) {
+    if (i < 0 || i >= kDenShown || !g_backSet[i]) return false;
+    chest = g_backs[i][0];
+    hips = g_backs[i][1];
+    return true;
 }
 
 bool headOf(int i, Vec3& out) {

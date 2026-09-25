@@ -117,6 +117,8 @@ void followInDen(Vec3 at, float weight);
 bool project(Vec3 p, float& x, float& y, float& pixelsPerUnit);
 // Den dragon i's head (den space) in the last drawDen; false if it was not drawn.
 bool headOf(int i, Vec3& out);
+// ...and the top of its back, from its chest to its hips.
+bool backOf(int i, Vec3& chest, Vec3& hips);
 // The dark beyond the room for the time of day (a citro2d colour).
 u32 backdrop(s64 now);
 

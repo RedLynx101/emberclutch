@@ -472,11 +472,29 @@ void hatchLife(App& app, const Input& in, s64 now) {
 
 // Particles move on; the room adds its own life: embers over the hearth, motes in the
 // sunbeam, glints on the hoard.
+int denShown(App& app, const int* order, int count, r3d::DenDragon* shown);
+
 void denEffects(App& app, s64 now) {
     if (r3d::roomReady()) {
         const DayBlend light = dayBlend(now);
         const float daylight = light.weight(kLightDay) + 0.4f * light.weight(kLightEvening);
         app.ambience.update(app.fx, DenLayout{}, daylight, app.dt);
+    }
+    // Starspeckle (a rare trait): tiny specks twinkling across its back.
+    const DenRoster r = denRoster(app.game);
+    int order[r3d::kDenShown];
+    r3d::DenDragon shown[r3d::kDenShown];
+    const int n = denShown(app, order, denOrder(app, r, order), shown);
+    for (int i = 0; i < n; ++i) {
+        const Dragon& d = *shown[i].dragon;
+        Vec3 chest, hips;
+        if (d.stage == Stage::Egg || !(d.genome.rareFlags & kRareStarspeckle) || !app.rng.chance(1, 9) ||
+            !r3d::backOf(i, chest, hips))
+            continue;
+        const float t = app.rng.below(1000) / 1000.0f;
+        const Vec3 at = lerp(chest, hips, t);
+        const float side = (app.rng.below(1000) / 1000.0f - 0.5f) * 0.5f * bodyScale(d, now);
+        app.fx.emit(Fx::Glint, {at.x + side, at.y - side * 0.5f, at.z}, 1, 0.35f);
     }
     app.fx.update(app.dt);
 }

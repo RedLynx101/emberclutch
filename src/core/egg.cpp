@@ -97,14 +97,27 @@ void eggPalette(const Dragon& d, float pulse, Rgb out[kPalCount], float glow[kPa
     if (d.genome.elementB != d.genome.elementA)  // two elements: the light drifts between them
         light = mixRgb(light, heartglowColor(static_cast<Element>(d.genome.elementB)),
                        0.5f + 0.5f * std::sin(t * 0.9f));
+    // Each element's shell (WP12): its own tint and speckles; a hybrid's speckles are its
+    // second element's, so the shell hints at both.
+    static constexpr Rgb kShell[kElementCount] = {
+        {252, 236, 214},  // Ember: warm cream
+        {226, 244, 240},  // Tide: pale sea-glass
+        {236, 243, 252},  // Gale: sky white
+        {232, 238, 210},  // Grove: sage cream
+        {240, 236, 250},  // Frost: frosted lavender
+        {252, 244, 218},  // Lumen: gold cream
+    };
+    static constexpr Rgb kSpeckle[kElementCount] = {
+        {150, 62, 34}, {38, 116, 128}, {92, 128, 198}, {92, 100, 52}, {146, 136, 206}, {196, 148, 58},
+    };
     const Rgb breed = hsvToRgb(d.genome.baseH, d.genome.baseS, d.genome.baseV);
-    const Rgb shell = mixRgb({250, 240, 225}, breed, 0.16f);
+    const Rgb shell = mixRgb(kShell[d.genome.elementA % kElementCount], breed, 0.1f);
     const float warm = d.warmth / 100.0f;
     for (int i = 0; i < kPalCount; ++i) {
         out[i] = shell;
         glow[i] = 0;
     }
-    out[kPalAccent] = mixRgb(breed, {52, 35, 63}, 0.35f);        // speckles
+    out[kPalAccent] = mixRgb(kSpeckle[d.genome.elementB % kElementCount], breed, 0.2f);  // speckles
     out[kPalIris] = mixRgb(shell, {200, 170, 150}, 0.35f);       // the inside of the shell
     out[kPalGlow] = mixRgb(shell, light, 0.3f + 0.7f * warm);    // the light inside
     glow[kPalGlow] = (0.2f + 0.6f * warm + 0.2f * eggProgress(d)) * pulse;

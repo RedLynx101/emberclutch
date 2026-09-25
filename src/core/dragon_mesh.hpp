@@ -44,5 +44,11 @@ float groundOffset(const ModelData& m, const Mat34* skin);
 // Per-dragon colours for the model's palette slots (kPal*). Base follows element A, accent
 // element B (breeds-and-genetics.md), iris and heartglow come from the elements.
 void dragonPalette(const Genome& g, Rgb out[kPalCount]);
+// Rare traits on the colours (breeds-and-genetics section 3; WP12): melanistic scales near
+// black with a brighter glow; leucistic pale pastels, the glow tinted pink.
+void rarePalette(u8 rareFlags, Rgb pal[kPalCount]);
+// Iridescent: the genome's hues turned by a slow wave (t in seconds), so the scales shimmer
+// through their neighbouring colours as it moves.
+Genome shimmer(const Genome& g, float t);
 
 }  // namespace ec

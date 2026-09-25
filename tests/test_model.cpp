@@ -8,6 +8,7 @@
 
 #include "check.hpp"
 #include "core/dragon_mesh.hpp"
+#include "core/egg.hpp"
 #include "core/model.hpp"
 #include "core/rig.hpp"
 
@@ -286,6 +287,51 @@ TEST(parts_follow_the_genome_and_merge_into_one_draw) {
     }
 }
 
+// Rare traits (WP12): melanistic dark with a brighter glow, leucistic pale with a pink glow,
+// iridescent hues that drift with time (and only a little).
+TEST(rare_traits_change_the_colours) {
+    Rng rng(8);
+    const Genome g = makePurebred(Element::Tide, rng);
+    Rgb plain[kPalCount], dark[kPalCount], pale[kPalCount];
+    dragonPalette(g, plain);
+    std::memcpy(dark, plain, sizeof(plain));
+    std::memcpy(pale, plain, sizeof(plain));
+    rarePalette(kRareMelanistic, dark);
+    rarePalette(kRareLeucistic, pale);
+    auto lum = [](Rgb c) { return c.r * 0.3f + c.g * 0.59f + c.b * 0.11f; };
+    CHECK(lum(dark[kPalBase]) < 0.35f * lum(plain[kPalBase]) && lum(dark[kPalGlow]) > lum(plain[kPalGlow]));
+    CHECK(lum(pale[kPalBase]) > lum(plain[kPalBase]) && pale[kPalGlow].r > plain[kPalGlow].r);
+    Rgb still[kPalCount];
+    std::memcpy(still, plain, sizeof(plain));
+    rarePalette(0, still);
+    CHECK(std::memcmp(still, plain, sizeof(plain)) == 0);  // no rare trait: untouched
+    const Genome a = shimmer(g, 0.0f), b = shimmer(g, 2.2f);
+    const int turned = static_cast<int>(static_cast<s8>(static_cast<u8>(b.baseH - g.baseH)));
+    CHECK(a.baseH == g.baseH && b.baseH != g.baseH && turned >= -22 && turned <= 22);
+}
+
+// Each element's egg has its own shell and speckles; a hybrid's speckles are its second element's.
+TEST(eggs_show_their_elements) {
+    Rng rng(9);
+    Rgb pal[kElementCount][kPalCount];
+    float glow[kPalCount];
+    for (int e = 0; e < kElementCount; ++e) {
+        Dragon d = makeEgg(1, makePurebred(static_cast<Element>(e), rng), Sex::Female, 0);
+        eggPalette(d, 1.0f, pal[e], glow);
+    }
+    bool distinct = true;
+    for (int i = 0; i < kElementCount; ++i)
+        for (int j = i + 1; j < kElementCount; ++j)
+            distinct = distinct && (pal[i][kPalAccent].r != pal[j][kPalAccent].r || pal[i][kPalAccent].g != pal[j][kPalAccent].g ||
+                                    pal[i][kPalAccent].b != pal[j][kPalAccent].b);
+    CHECK(distinct);
+    Genome steam = makePurebred(Element::Ember, rng);
+    steam.elementB = static_cast<u8>(Element::Tide);
+    Rgb hybrid[kPalCount];
+    eggPalette(makeEgg(2, steam, Sex::Male, 0), 1.0f, hybrid, glow);
+    CHECK(hybrid[kPalAccent].b > hybrid[kPalAccent].r);  // teal speckles on an Ember-coloured shell
+}
+
 TEST(palette_and_ground_offset) {
     Rng rng(5);
     Rgb pal[kPalCount];
@@ -321,5 +367,7 @@ void runModelTests() {
     RUN(rig_matches_blender_deformation);
     RUN(part_keys_blend_between_stages);
     RUN(parts_follow_the_genome_and_merge_into_one_draw);
+    RUN(rare_traits_change_the_colours);
+    RUN(eggs_show_their_elements);
     RUN(palette_and_ground_offset);
 }

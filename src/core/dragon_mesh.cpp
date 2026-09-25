@@ -1,5 +1,6 @@
 #include "core/dragon_mesh.hpp"
 
+#include <cmath>
 #include <initializer_list>
 
 #include "core/rig.hpp"
@@ -104,6 +105,30 @@ float groundOffset(const ModelData& m, const Mat34* skin) {
         if (p.z < low) low = p.z;
     }
     return low;
+}
+
+void rarePalette(u8 rareFlags, Rgb pal[kPalCount]) {
+    if (rareFlags & kRareMelanistic) {
+        for (u8 slot : {kPalBase, kPalAccent, kPalPattern, kPalHorn, kPalMembrane})
+            pal[slot] = mix(scaled(pal[slot], 0.18f), {20, 14, 22}, 0.3f);
+        const Rgb g = pal[kPalGlow];  // the glow looks brighter against the dark
+        pal[kPalGlow] = {static_cast<u8>(g.r + (255 - g.r) / 3), static_cast<u8>(g.g + (255 - g.g) / 3),
+                         static_cast<u8>(g.b + (255 - g.b) / 3)};
+    } else if (rareFlags & kRareLeucistic) {
+        for (u8 slot : {kPalBase, kPalAccent, kPalPattern, kPalHorn, kPalMembrane})
+            pal[slot] = mix(pal[slot], {250, 244, 246}, 0.62f);
+        pal[kPalGlow] = mix(pal[kPalGlow], {255, 150, 190}, 0.55f);
+        pal[kPalIris] = mix(pal[kPalIris], {235, 120, 150}, 0.5f);
+    }
+}
+
+Genome shimmer(const Genome& g, float t) {
+    Genome out = g;
+    const int turn = static_cast<int>(22.0f * std::sin(t * 0.7f));  // about +-30 degrees
+    out.baseH = static_cast<u8>(g.baseH + turn);
+    out.accentH = static_cast<u8>(g.accentH - turn);
+    out.patternH = static_cast<u8>(g.patternH + 2 * turn);
+    return out;
 }
 
 void dragonPalette(const Genome& g, Rgb out[kPalCount]) {

@@ -19,6 +19,8 @@ mousing dive: a rump wiggle, a spring nose-up off the hind legs, a high arc, the
 and forepaws first, the plume arched high. A little spring in every step (root bounces) and
 higher hops keep it light and bouncy. Same names, events and lengths as the classic clips
 (the game times things against them), but for the idle: 4.8 s, one slow sway per loop.
+The grown form carries its neck upright (the kind's base_pose); the grown clips that bring
+the head down take that lift back exactly (LIFT, lowered()), their baby versions don't.
 
 A tail bone points backward, so in the clips' armature-axis convention (made for bones that
 point forward) pitch + swings it down and yaw + swings it to the right: bend() takes the
@@ -31,7 +33,6 @@ from dragons.clipkit import Clip
 
 NAME = "flurrytail"
 
-TAIL = [f"tail{k}" for k in range(1, 7)]
 
 BONES = [
     ("hips", "hips", "chest", None),

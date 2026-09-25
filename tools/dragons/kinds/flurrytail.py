@@ -59,7 +59,7 @@ VARIANTS = [
 ]
 
 EGG = dict(height=1.0, width=0.41, asym=0.08, point=1.0, speckle="flakes",
-           speckle_params=dict(count=14, size=(0.035, 0.06)),
+           speckle_params=dict(count=19, size=(0.04, 0.075)),
            colors=[((0.95, 0.97, 1.0), (0.45, 0.65, 0.95)), ((0.80, 0.80, 0.88), (0.62, 0.48, 0.88)),
                    ((1.0, 0.90, 0.80), (0.95, 0.60, 0.34)), ((0.18, 0.22, 0.46), (0.36, 1.0, 0.74))])
 
@@ -128,10 +128,11 @@ WING_LAYOUT = {"root": (0.0, 0.0), "elbow": (1.05, 0.35), "wrist": (2.0, -0.1), 
 
 
 def _even(kit, obj):
-    """Retopologise the metaball body into even, flowing quads (QuadriFlow, mirrored), a
-    little under the kit's triangle target so it doesn't decimate again. Toon bands run
-    straight across each triangle, so a collapse-decimated blob of fur shades like crumpled
-    paper; quads that follow the forms shade in clean, soft bands.
+    """The form's sculpt hook: retopologise the metaball body into even, flowing quads
+    (QuadriFlow, mirrored) at about twice the triangle target, then decimate it (mirrored)
+    to a little under the target, so the kit doesn't decimate again. Toon bands run straight
+    across each triangle, so a collapse-decimated blob of fur shades like crumpled paper;
+    a mesh that follows the forms shades in clean, soft bands, the same on both sides.
     The mirrored mesh has an edge seam exactly on the midline, and the kit's seating ray for a
     part on the midline (the heart) runs in that plane and can slip between the seam's
     triangles, leaving the part unseated: the hearts are authored 2 mm off the midline."""
@@ -473,11 +474,12 @@ SNOWFLAKE = []
 for _a in (90, 30, 150):
     _c, _s = math.cos(math.radians(_a)) * 0.5, math.sin(math.radians(_a)) * 0.5
     SNOWFLAKE.append(((0.5 - _c, 0.5 - _s), (0.5 + _c, 0.5 + _s)))
-for _a in range(6):  # a little crossbar on each arm
+for _a in range(6):  # each arm forks into a little V toward its tip
     _t = math.radians(90 + 60 * _a)
-    _cx, _cy = 0.5 + 0.3 * math.cos(_t), 0.5 + 0.3 * math.sin(_t)
-    _px, _py = -math.sin(_t) * 0.12, math.cos(_t) * 0.12
-    SNOWFLAKE.append(((_cx - _px, _cy - _py), (_cx + _px, _cy + _py)))
+    _cx, _cy = 0.5 + 0.28 * math.cos(_t), 0.5 + 0.28 * math.sin(_t)
+    for _f in (-1, 1):
+        _u = _t + _f * math.radians(45)
+        SNOWFLAKE.append(((_cx, _cy), (_cx + 0.17 * math.cos(_u), _cy + 0.17 * math.sin(_u))))
 
 
 def parts(kit, d):
@@ -507,7 +509,7 @@ def parts(kit, d):
     # Snowflakes on the thighs, below the folded wings (glowing on the rare one). glow_marks
     # faces them out from the hips' joint; each then rides its own thigh.
     if not baby:
-        flakes = [("hips", (0.41, 0.62, 1.06), 0, 0.28)]
+        flakes = [("hipj_R", (0.41, 0.62, 1.04), 0, 0.26)]  # faced out from the thigh joint
         for v, material in ((0, "pattern_flat"), (1, "glow_flat")):
             marks = kit.glow_marks(mats, flakes, material=material, glyphs=[SNOWFLAKE])
             out.append(("runes", v, [(o, "leg_up_L" if o.location.x < 0 else "leg_up_R") for o, _ in marks]))

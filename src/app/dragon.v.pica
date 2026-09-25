@@ -8,19 +8,25 @@
 ;     lighting (toon ramp LUT on L.N, rim from a Fresnel LUT on N.V).
 ;   * texcoord0 = the skin texture UV; texcoord1 = (dust level / 255, 0.5) into the dust
 ;     ramp texture, which hands the level back to the colour combiner (render3d).
-; Uniform budget: 4 + 4 + 75 (25 bones) + 10 + 2 constants = 95 of 96 float registers.
+;   * The hatching (WP12a): `blob` = (centre xyz in model space, w = morph). Below w = 1
+;     each vertex is pulled toward a small sphere round the centre (radius consts2.y) and
+;     toward white, glowing: the hatchling takes shape out of a white blob as w goes 0 -> 1.
+;     Every other draw has w = 1 and skips it.
+; Uniform budget: 4 + 4 + 75 (25 bones) + 10 + 1 + 2 constants = 96 of 96 float registers.
 
 .fvec projection[4], modelView[4]
 .fvec bones[75]
 .fvec palette[10]
+.fvec blob
 
 .constf consts(0.0, 1.0, 0.5, 3.0)
-.constf consts2(0.00392156862745, 0.0, 0.0, 0.0)
+.constf consts2(0.00392156862745, 0.16, 0.0, 0.0)
 .alias  zeros  consts.xxxx
 .alias  ones   consts.yyyy
 .alias  half   consts.zzzz
 .alias  three  consts.wwww
 .alias  inv255 consts2.xxxx
+.alias  blobr  consts2.yyyy
 
 .out outpos  position
 .out outnq   normalquat
@@ -66,6 +72,22 @@
 	mul r5.xyz, r1.xxxx, r5.xyz
 	mad r5.xyz, r1.yyyy, r6.xyz, r5.xyz
 
+	; the hatching: toward the blob (skipped at morph 1). r15 keeps `blob` for the colour below;
+	; a uniform can't be an add's or cmp's second operand.
+	mov r15, blob
+	cmp ones, eq, eq, r15.wwww
+	jmpc cmp.x, formed
+	add r12.xyz, -r15.xyz, r3.xyz       ; from the centre
+	dp3 r12.w, r12.xyz, r12.xyz
+	rsq r12.w, r12.w
+	mul r12.xyz, r12.xyz, r12.wwww      ; its direction: the sphere's normal there
+	mad r13.xyz, r12.xyz, blobr, r15.xyz  ; the sphere's point
+	add r14.xyz, r3.xyz, -r13.xyz
+	mad r3.xyz, r15.wwww, r14.xyz, r13.xyz  ; sphere + (skinned - sphere) * morph
+	add r14.xyz, r5.xyz, -r12.xyz
+	mad r5.xyz, r15.wwww, r14.xyz, r12.xyz
+formed:
+
 	; view space
 	dp4 r7.x, modelView[0], r3
 	dp4 r7.y, modelView[1], r3
@@ -88,6 +110,12 @@
 	mad r8, r10.xxxx, r9, r8
 	mul r10.y, inv255, inpaint.w
 	mul r8.w, r8.w, r10.y
+	; the hatching: white and glowing, the colours coming in with the shape
+	cmp ones, eq, eq, r15.wwww
+	jmpc cmp.x, coloured
+	add r9, -ones, r8
+	mad r8, r15.wwww, r9, ones
+coloured:
 	mov outclr, r8
 
 	; texture coordinates: the skin, and the dust level as a ramp coordinate

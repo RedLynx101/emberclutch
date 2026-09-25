@@ -1,16 +1,20 @@
 // Egg tests (WP2): the model (romfs/models/egg.ecm, tools/blender/egg_model.py) loads with
 // its two bones; it rests, rocks on its round bottom and opens; cracks appear on schedule
-// and stay invisible until then; the dragon inside knocks as hatching nears.
+// and stay invisible until then; the dragon inside knocks as hatching nears. The hatching
+// (WP12a): the shell bursts into pieces that land in the room and lie flat, and the
+// hatchling takes shape out of a blob that starts where the egg stood.
 #include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <vector>
 
 #include "check.hpp"
+#include "core/behavior.hpp"
 #include "core/dragon_mesh.hpp"
 #include "core/egg.hpp"
 #include "core/genetics.hpp"
 #include "core/names.hpp"
+#include "core/shell_burst.hpp"
 
 using namespace ec;
 
@@ -44,9 +48,9 @@ Dragon anEgg(float progress, float warmth) {
 
 TEST(egg_model_loads_with_its_cap) {
     const ModelData& m = eggModel();
-    CHECK(m.skel.count == 2 && m.skel.find("root") == 0 && m.skel.find("cap") == 1);
+    CHECK(m.skel.count == 2 + kShards && m.skel.find("root") == 0 && m.skel.find("cap") == 1);
     const MeshData* shell = m.findMesh(kMeshBody, kGroupBody, 0);
-    CHECK(shell != nullptr && m.meshes.size() == 1);
+    CHECK(shell != nullptr && m.meshes.size() == 2);
     if (!shell) return;
     std::printf("  egg: %d vertices, %d triangles\n", shell->vertexCount, static_cast<int>(shell->indices.size() / 3));
     CHECK(shell->indices.size() / 3 <= 1000);
@@ -162,7 +166,9 @@ TEST(the_den_egg_is_light) {
     }
     ModelData m;
     CHECK(loadModel(data.data(), data.size(), m));
-    CHECK(m.skel.count == 2 && m.skel.find("cap") == 1);
+    CHECK(m.skel.count == 2 + kShards && m.skel.find("cap") == 1);
+    const MeshData* shards = m.findMesh(kMeshPart, kGroupShards, 0);  // no heavier than the egg it replaces
+    CHECK(shards && shards->indices.size() / 3 <= 300);
     const MeshData* shell = m.findMesh(kMeshBody, kGroupBody, 0);
     CHECK(shell != nullptr);
     if (!shell) return;
@@ -251,6 +257,122 @@ TEST(hatchlings_get_name_suggestions) {
 
 }  // namespace
 
+// The shell's pieces fit back together into the egg, each on its own bone, in one draw.
+TEST(the_shell_breaks_into_pieces) {
+    const ModelData& m = eggModel();
+    const MeshData* mesh = m.findMesh(kMeshPart, kGroupShards, 0);
+    CHECK(mesh != nullptr);
+    if (!mesh) return;
+    CHECK(mesh->paletteCount == kShards && kShards <= kMaxPalette);
+    std::printf("  shards: %d vertices, %d triangles\n", mesh->vertexCount, static_cast<int>(mesh->indices.size() / 3));
+    ShardShape shapes[kShards];
+    CHECK(shardShapes(m, shapes));
+    bool onEgg = true, curved = true;
+    for (int i = 0; i < kShards; ++i) {
+        const Vec3 c = shapes[i].centre;
+        onEgg = onEgg && c.z > -0.01f && c.z < 1.01f && std::hypot(c.x, c.y) < 0.4f;
+        curved = curved && shapes[i].outDrop > 0.01f && shapes[i].outDrop < 0.25f;
+    }
+    CHECK(onEgg && curved);
+}
+
+// Burst from either egg nest: every piece flies up and out, never through the floor or the
+// straw, lands inside the room and lies flat within seconds; skipping lays them down at once.
+TEST(the_egg_bursts_into_bits) {
+    ShardShape shapes[kShards];
+    if (!shardShapes(eggModel(), shapes)) return;
+    const DenLayout den;
+    for (int n = 0; n < DenLayout::kNests; ++n) {
+        BurstGround g;
+        g.nest = den.eggNests[n];
+        g.room = den.room;
+        g.wallRadius = den.wallRadius;
+        Rng rng(40 + n);
+        ShellBurst b;
+        b.start({g.nest.x, g.nest.y, kEggNestFloor}, shapes, g, rng);
+        float highest = 0, farthest = 0, secs = 0;
+        bool above = true;
+        for (int f = 0; f < 60 * 8 && !b.allSettled(); ++f) {
+            b.update(1.0f / 60);
+            secs += 1.0f / 60;
+            for (const Shard& s : b.shard) {
+                highest = std::fmax(highest, s.pos.z);
+                above = above && s.pos.z >= g.heightAt({s.pos.x, s.pos.y}) - 1e-4f;
+            }
+        }
+        CHECK(above);
+        CHECK(b.allSettled());
+        bool inRoom = true, flat = true, resting = true;
+        for (const Shard& s : b.shard) {
+            inRoom = inRoom && std::hypot(s.pos.x - g.room.x, s.pos.y - g.room.y) < g.wallRadius;
+            farthest = std::fmax(farthest, std::hypot(s.pos.x - g.nest.x, s.pos.y - g.nest.y));
+            flat = flat && std::fabs(rotate(s.rot, s.normal).z) > 0.99f;
+            const float h = g.heightAt({s.pos.x, s.pos.y});
+            resting = resting && s.pos.z >= h && s.pos.z < h + 0.25f;
+        }
+        std::printf("  nest %d: up to %.2f, out to %.2f, all down in %.1f s\n", n, highest, farthest, secs);
+        CHECK(inRoom && flat && resting);
+        CHECK(highest > 1.1f && farthest > 0.7f && farthest < 4.0f);  // up and out, not across the room
+        CHECK(secs < 4.0f);
+
+        ShellBurst skipped;  // skipping: everything lands at once
+        Rng rng2(40 + n);
+        skipped.start({g.nest.x, g.nest.y, kEggNestFloor}, shapes, g, rng2);
+        skipped.settleNow();
+        CHECK(skipped.allSettled());
+        // After the naming they sink away and are gone.
+        b.vanish();
+        for (int f = 0; f < 60 * 2; ++f) b.update(1.0f / 60);
+        CHECK(!b.active);
+    }
+}
+
+// The blob: small, then swelling, then shaping (a little past, then back), and exactly the
+// dragon at the end (the shader's morph skips at exactly 1).
+TEST(the_hatchling_takes_shape) {
+    const BlobShape start = blobAt(0), done = blobAt(kBlobSwell + kBlobShape), later = blobAt(30);
+    CHECK(start.morph == 0.0f && start.scale > 0.2f && start.scale < 0.4f);
+    CHECK(done.morph == 1.0f && done.scale == 1.0f && later.morph == 1.0f && later.scale == 1.0f);
+    float peak = 0, last = 0;
+    bool grows = true, finite = true;
+    for (float t = 0; t < kBlobSwell + kBlobShape; t += 0.005f) {
+        const BlobShape b = blobAt(t);
+        peak = std::fmax(peak, b.morph);
+        grows = grows && b.scale >= last - 1e-6f;
+        last = b.scale;
+        finite = finite && std::isfinite(b.morph) && std::isfinite(b.scale) && b.morph >= 0;
+    }
+    CHECK(grows && finite);
+    CHECK(peak > 1.0f && peak < 1.15f);
+    CHECK(std::fabs(blobAt(kBlobSwell - 1e-4f).scale - blobAt(kBlobSwell + 1e-4f).scale) < 0.01f);
+    CHECK(blobAt(kBlobSwell + 1e-4f).morph < 0.01f);
+
+    // It starts inside where the egg stood: the hatchling's chest, scaled down to the blob,
+    // is within the egg's height and girth (the blob is a ball round it).
+    std::vector<u8> data;
+    if (FILE* f = std::fopen("../romfs/models/hatchling.ecm", "rb")) {
+        std::fseek(f, 0, SEEK_END);
+        data.resize(static_cast<std::size_t>(std::ftell(f)));
+        std::fseek(f, 0, SEEK_SET);
+        if (std::fread(data.data(), 1, data.size(), f) != data.size()) data.clear();
+        std::fclose(f);
+    }
+    ModelData baby;
+    CHECK(loadModel(data.data(), data.size(), baby));
+    const int chest = baby.skel.find("chest");
+    const MeshData* body = baby.findMesh(kMeshBody, kGroupBody, 0);
+    CHECK(chest >= 0 && body != nullptr);
+    if (chest < 0 || !body) return;
+    float ground = 1e9f;
+    for (int v = 0; v < body->vertexCount; ++v) ground = std::fmin(ground, body->pos[v].z);
+    const Vec3 c = baby.skel.rest[chest].translation();
+    const float k = start.scale * 1.2f;  // the biggest genome size
+    const float blobR = 0.16f * k;       // dragon.v.pica consts2.y
+    std::printf("  blob: centre %.2f up, %.2f forward; radius %.2f (the egg: 1.0 tall, 0.37 round)\n", (c.z - ground) * k,
+                c.y * k, blobR);
+    CHECK((c.z - ground) * k + blobR < 1.0f && std::fabs(c.y) * k + blobR < 0.37f);
+}
+
 void runEggTests() {
     RUN(egg_model_loads_with_its_cap);
     RUN(egg_rests_rocks_and_opens);
@@ -260,4 +382,7 @@ void runEggTests() {
     RUN(turning_the_egg);
     RUN(listening_to_the_egg);
     RUN(hatchlings_get_name_suggestions);
+    RUN(the_shell_breaks_into_pieces);
+    RUN(the_egg_bursts_into_bits);
+    RUN(the_hatchling_takes_shape);
 }

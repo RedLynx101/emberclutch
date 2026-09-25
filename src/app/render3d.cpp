@@ -19,6 +19,7 @@
 #include "core/daylight.hpp"
 #include "core/dragon_mesh.hpp"
 #include "core/egg.hpp"
+#include "core/shell_burst.hpp"
 #include "core/prop_mesh.hpp"
 #include "core/rig.hpp"
 #include "core/static_mesh.hpp"
@@ -203,18 +204,22 @@ struct Room {
     }
 };
 
-// The egg (romfs:/models/egg.ecm): one skinned shell mesh with two bones (core/egg).
+// The egg (romfs:/models/egg.ecm): one skinned shell mesh with two bones (core/egg), and the
+// shell in pieces for the hatching, a bone each (core/shell_burst).
 struct EggForm {
     ModelData model;
     GpuMesh shell;
     bool ok = false;
+    GpuMesh shards;
+    ShardShape shapes[kShards];
+    bool shardsOk = false;
 };
 
-constexpr float kNestFloor = 0.07f;  // eggs sit on the egg nest's straw
+constexpr float kNestFloor = kEggNestFloor;  // eggs sit on the egg nest's straw
 
 DVLB_s* g_dvlb = nullptr;
 shaderProgram_s g_program;
-int g_locProjection = -1, g_locModelView = -1, g_locBones = -1, g_locPalette = -1;
+int g_locProjection = -1, g_locModelView = -1, g_locBones = -1, g_locPalette = -1, g_locBlob = -1;
 C3D_AttrInfo g_attr;       // the body: v5 (dust) from each dragon's buffer
 C3D_AttrInfo g_attrFixed;  // everything else: v5 fixed (the wings' dust, or none)
 int g_dustFixed = -1;      // that fixed attribute's index
@@ -252,7 +257,8 @@ struct Posed {
     float heading = 0;          // 0 faces -Y
     float root[2] = {0, 0};     // clip root offset (forward, up), adult units
     float ground = 0;           // floor contact, armature space
-    float lift = 0;             // DenActor::lift (a hatchling climbing out of its shell)
+    float lift = 0;             // DenActor::lift
+    float morph = 1, blobScale = 1;  // DenActor's: the hatchling taking shape (WP12a)
     Mat34 poseMat[kMaxBones], skin[kMaxBones];
 };
 
@@ -299,6 +305,10 @@ struct CloseUpState {
     Posed posed;
 };
 CloseUpState g_close;
+
+// The hatching's burst egg (WP12a): its pieces, and the dragon whose egg it was (its colours).
+const ShellBurst* g_burst = nullptr;
+const Dragon* g_burstOf = nullptr;
 
 // Props (WP7): the ball and the bath tub, drawn with the dragon program (one bone).
 GpuMesh g_ballMesh, g_tubMesh;
@@ -384,7 +394,9 @@ bool loadEgg(const char* path, EggForm& egg) {
     std::vector<u8> bytes;
     if (!readFile(path, bytes) || !loadModel(bytes.data(), bytes.size(), egg.model)) return false;
     const MeshData* shell = egg.model.findMesh(kMeshBody, kGroupBody, 0);
-    egg.ok = shell && egg.model.skel.count == 2 && fillStatic(egg.shell, *shell);
+    egg.ok = shell && egg.model.skel.count >= 2 && fillStatic(egg.shell, *shell);
+    const MeshData* shards = egg.model.findMesh(kMeshPart, kGroupShards, 0);
+    egg.shardsOk = egg.ok && shards && shardShapes(egg.model, egg.shapes) && fillStatic(egg.shards, *shards);
     return egg.ok;
 }
 
@@ -558,6 +570,8 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
     out.pos = actor ? actor->behavior.pos : Vec2{};
     out.heading = actor ? actor->behavior.heading : 0.0f;
     out.lift = actor ? actor->lift : 0.0f;
+    out.morph = actor ? actor->morph : 1.0f;
+    out.blobScale = actor ? actor->blobScale : 1.0f;
     BonePose bones[kMaxBones];
     idlePose(f.model, c->t, buildOf(d), bones);
     out.root[0] = out.root[1] = 0;
@@ -612,7 +626,8 @@ void modelMatrix(const Posed& p, C3D_Mtx& out) {
     Mtx_Translate(&out, p.pos.x, p.pos.y, p.root[1] * p.scale + p.lift, true);
     Mtx_RotateZ(&out, p.heading, true);
     Mtx_Translate(&out, 0, -p.root[0] * p.scale, 0, true);  // forward is -Y
-    Mtx_Scale(&out, p.size, p.size, p.size);
+    const float s = p.size * p.blobScale;  // a hatchling's blob swells from its feet
+    Mtx_Scale(&out, s, s, s);
     Mtx_Translate(&out, 0, 0, -p.ground, true);
 }
 
@@ -846,6 +861,7 @@ bool init() {
     g_locModelView = shaderInstanceGetUniformLocation(g_program.vertexShader, "modelView");
     g_locBones = shaderInstanceGetUniformLocation(g_program.vertexShader, "bones");
     g_locPalette = shaderInstanceGetUniformLocation(g_program.vertexShader, "palette");
+    g_locBlob = shaderInstanceGetUniformLocation(g_program.vertexShader, "blob");
 
     for (C3D_AttrInfo* a : {&g_attr, &g_attrFixed}) {
         AttrInfo_Init(a);
@@ -967,6 +983,7 @@ void bindDragons(const C3D_Mtx& projection) {
     C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
     C3D_CullFace(GPU_CULL_BACK_CCW);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locProjection, &projection);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locBlob, 0, 0, 0, 1);  // no blob: every dragon as it is
 }
 
 // Hands the GPU back to citro2d.
@@ -1044,10 +1061,29 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
                       1.0f);
     bindSkin(p.form);
     dragonPattern(d.genome.pattern, pal[kPalPattern]);
+    const bool blob = p.morph != 1.0f && p.form->chestBone >= 0;
+    if (blob) {  // taking shape out of a white blob round its chest (dragon.v.pica)
+        const Vec3 c = p.poseMat[p.form->chestBone].translation();
+        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locBlob, c.x, c.y, c.z, p.morph);
+    }
     drawBody(app, p.form->body, p.skin, *p.cache);
     drawMesh(app, p.cache->parts, p.skin);
     if (const MeshData* wings = selectWings(p.form->model, d.genome))
         drawMesh(app, p.form->wings[wings->variant], p.skin, dustValue(d, kRegionWings));
+    if (blob) C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locBlob, 0, 0, 0, 1);
+}
+
+// An egg's palette with each slot's glow in the alpha (`boost` scales the pulse), on the
+// skin's clean corner: no pattern, no dust.
+void eggColours(App& app, const Dragon& d, float boost) {
+    Rgb pal[kPalCount];
+    float glow[kPalCount];
+    eggPalette(d, (0.85f + 0.15f * std::sin(app.t * 2.2f)) * boost, pal, glow, app.t);
+    for (int i = 0; i < kPalCount; ++i)
+        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, pal[i].r / 255.0f, pal[i].g / 255.0f, pal[i].b / 255.0f,
+                      glow[i]);
+    bindSkin(nullptr);
+    dragonPattern(kPatternSolid, {0, 0, 0});
 }
 
 // An egg: its palette with each slot's glow in the alpha, rocking and cap from its motion,
@@ -1060,15 +1096,24 @@ void submitEgg(App& app, const EggForm& egg, const Dragon& d, const EggMotion& m
     Mtx_Translate(&model, at.x, at.y, at.z - groundOffset(egg.model, skin), true);
     Mtx_Multiply(&modelView, &view, &model);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &modelView);
-    Rgb pal[kPalCount];
-    float glow[kPalCount];
-    eggPalette(d, 0.85f + 0.15f * std::sin(app.t * 2.2f), pal, glow, app.t);
-    for (int i = 0; i < kPalCount; ++i)
-        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, pal[i].r / 255.0f, pal[i].g / 255.0f, pal[i].b / 255.0f,
-                      glow[i]);
-    bindSkin(nullptr);  // the shell sits on the clean corner: no pattern, no dust
-    dragonPattern(kPatternSolid, {0, 0, 0});
+    eggColours(app, d, 1.0f + 1.4f * motion.glowBoost);  // the hatching turns its light up
     drawMesh(app, egg.shell, skin);
+}
+
+// The burst egg's pieces (WP12a), all in one draw: each bone is its piece's transform (den
+// space) times the bone's inverse rest.
+void submitShards(App& app, const EggForm& egg, const C3D_Mtx& view) {
+    if (!g_burst || !g_burst->active || !g_burstOf || !egg.shardsOk) return;
+    const MeshData* mesh = egg.model.findMesh(kMeshPart, kGroupShards, 0);
+    if (!mesh) return;
+    Mat34 skin[kMaxBones];
+    for (int i = 0; i < kShards; ++i) {
+        const int bone = mesh->palette[i];
+        skin[bone] = mul(g_burst->transform(i), egg.model.skel.invRest[bone]);
+    }
+    C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &view);  // the pieces are in den space
+    eggColours(app, *g_burstOf, 1.0f);
+    drawMesh(app, egg.shards, skin);
 }
 
 // ------------------------------------------------------------------------------ props (WP7)
@@ -1515,13 +1560,6 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         localLight(g_posed.pos, blend, local);
         lightDragon(light, local);
         submit(app, g_posed, view, model);
-        if (dragons[i].egg && g_egg.ok) {  // just hatched: the empty shell is still in the nest
-            const Vec2 n = nestAt(dragons[i].nest);
-            float nest[3];
-            localLight(n, blend, nest);
-            lightDragon(light, nest);
-            submitEgg(app, denEgg, *dragons[i].dragon, *dragons[i].egg, view, {n.x, n.y, kNestFloor});
-        }
         if (g_posed.form->headBone >= 0) {
             g_heads[i] = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
             g_headSet[i] = true;
@@ -1531,6 +1569,12 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
             g_mouths[i] = apply(model, mouth);
             g_mouthSet[i] = true;
         }
+    }
+    if (g_burst && g_burst->active) {  // the hatching's shell pieces, lit where they fell
+        float nest[3];
+        localLight(g_burst->ground.nest, blend, nest);
+        lightDragon(light, nest);
+        submitShards(app, denEgg.shardsOk ? denEgg : g_egg, view);
     }
     {
         const float plain[3] = {1, 1, 1};
@@ -1718,6 +1762,7 @@ void drawCloseUp(App& app, const Dragon& d, const DenActor* actor, const EggMoti
     const float plain[3] = {1, 1, 1};
     lightDragon(dragonLight(dayBlend(now)), plain);
     submit(app, g_posed, view, model);
+    submitShards(app, g_egg, view);  // the hatching: its shell pieces round it
     drawProps(app, view);
     end3D();
     g_close.set = true;
@@ -1912,6 +1957,13 @@ bool headOf(int i, Vec3& out) {
 
 bool roomReady() { return g_room.ok; }
 bool eggReady() { return g_egg.ok; }
+
+void setBurst(const ShellBurst* burst, const Dragon* of) {
+    g_burst = burst;
+    g_burstOf = of;
+}
+
+const ShardShape* eggShards() { return g_egg.shardsOk ? g_egg.shapes : nullptr; }
 
 u32 backdrop(s64 now) {
     if (!g_room.ok) return theme::kDenPlum;

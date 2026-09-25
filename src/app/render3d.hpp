@@ -10,6 +10,7 @@
 #include "core/items.hpp"
 #include "core/particles.hpp"
 #include "core/props.hpp"
+#include "core/shell_burst.hpp"
 
 namespace ec::r3d {
 
@@ -24,6 +25,11 @@ void frameBegun();
 bool ready();
 bool roomReady();
 bool eggReady();  // romfs:/models/egg.ecm loaded: eggs are 3D
+// The hatching (WP12a): the burst egg's pieces, drawn in the den and up close with the colours
+// of `of`'s egg (nullptr: none), and the pieces' shapes to burst them from (nullptr if the egg
+// model has none).
+void setBurst(const ShellBurst* burst, const Dragon* of);
+const ShardShape* eggShards();
 
 // Puts citro2d in the state the 3D pass relies on: 2D draws never write depth, so the
 // depth buffer stays clear for dragons and 2D overlays always land on top. Call after
@@ -31,13 +37,12 @@ bool eggReady();  // romfs:/models/egg.ecm loaded: eggs are 3D
 void prepare2D();
 
 // A dragon in the den and the actor animating it (nullptr: stands in its idle pose). An egg
-// sits in the egg nest, moved by its EggMotion (eggs without one are skipped); a hatched
-// dragon with an EggMotion has just hatched, and its empty shell sits in the nest.
+// sits in the egg nest, moved by its EggMotion (eggs without one are skipped).
 struct DenDragon {
     const Dragon* dragon;
     const DenActor* actor;
     const EggMotion* egg = nullptr;
-    s8 nest = 0;  // the egg nest an egg (or a hatchling's empty shell) sits in
+    s8 nest = 0;  // the egg nest an egg sits in
 };
 constexpr int kDenShown = 5;  // three dragons and two eggs
 

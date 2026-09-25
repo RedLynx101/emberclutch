@@ -1,0 +1,44 @@
+# The hatching (WP12a, Noah's direction): the egg shakes harder, stills glowing, flashes and
+# bursts into bits; the hatchling takes shape out of a white blob in the nest, blinks, cries
+# ("It's an Ember!"), and is named; the pieces lie in the nest, then sink away.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+name Cinder
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+wait 0.2
+shot h00-shaking
+wait 1.2
+shot h01-shaking-harder
+wait 1.0
+shot h02-still-glowing
+wait 0.35
+shot h03-flash-burst
+wait 0.15
+shot h04-pieces-flying
+wait 0.25
+shot h05-blob-swelling
+wait 0.35
+shot h06-taking-shape
+wait 0.2
+shot h06b-half-shaped
+wait 0.2
+shot h07-shaping
+wait 0.4
+shot h08-shaped
+wait 0.6
+shot h09-first-blink
+wait 1.5
+shot h10-named
+wait 1.2
+shot h11-pieces-sinking
+wait 2.0
+shot h12-gone
+quit

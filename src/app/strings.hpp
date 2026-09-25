@@ -88,6 +88,8 @@ inline constexpr const char* kHeartTemperament[6] = {
     "A slow, drowsy heartbeat. Zzz...",            // Sleepy
     "A busy heartbeat that keeps changing pace.",  // Curious
 };
+inline constexpr const char* kItsA = "It's a %s!";   // the hatching: its breed, as it blinks
+inline constexpr const char* kItsAn = "It's an %s!";
 inline constexpr const char* kHatching = "It's hatching!";
 inline constexpr const char* kSkipHint = "A: skip";
 inline constexpr const char* kNameHint = "Name your dragon";

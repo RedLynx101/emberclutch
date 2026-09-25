@@ -20,6 +20,7 @@ enum PartGroup : u8 {
     kGroupHeart = 5,
     kGroupWings = 6,
     kGroupMouth = 7,  // teeth and tongue
+    kGroupShards = 8, // the egg's shell in pieces, for the hatching (egg.ecm; core/shell_burst)
     kGroupBody = 255,
 };
 enum PartSex : u8 { kSexAny = 0, kSexMale = 1, kSexFemale = 2 };

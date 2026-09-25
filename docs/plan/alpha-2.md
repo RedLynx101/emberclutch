@@ -572,7 +572,22 @@ darc of `blyt/*.bclyt`, `anim/*.bclan` and `timg/*.bclim`: the word "homebrew" o
 - **Checked on the 3DS** in the next run: the logo shows and the game starts. If the HOME
   Menu rejects it, the fallback ships and the logo waits.
 
-### WP12a — The hatching, reworked (Noah 2026-09-24; his direction after run 2)
+### WP12a — The hatching, reworked (Noah 2026-09-24; his direction after run 2) ✅ done
+**Done 2026-09-24**, as planned below, with these specifics: the shell breaks into 24 jagged
+pieces (`egg_model.py`: a "shards" mesh in egg.ecm, one bone each; 1,368 triangles up close,
+264 in the den, under the egg's own 312), thrown by `core/shell_burst` (up to ~1.6 high, out
+to ~2.3, all down in under 2 s, lying flat outside or inside up, sinking away once named) and
+drawn in one call with the egg's colours. The hatchling grows out of a white blob: the dragon
+shader's one spare register (`blob`: centre + morph; a branch skips it for every other draw),
+the blob swelling from its feet for 0.35 s, then shaping itself over 1.3 s (ease in and out,
+a little past and back) as its colours come in. The egg glows brighter as it shakes, holds
+still and glowing for 0.4 s, then the burst's warm flash on both screens; the first blink
+and cry come with "It's an Ember!" (the look's name joins it with WP12). The bottom screen
+shows the whole hatchling taking shape among the pieces, then its face. PC tests: the
+pieces fit the egg, fly up and out from both nests, never through the floor or straw, land
+in the room and lie flat; skipping lays them down at once; the blob starts inside the egg's
+space and ends exactly on the dragon. `tests/autotest/hatch.txt` captures it frame by frame.
+The first plan, as written:
 **The problem:** the hatchling appears whole inside an intact shell. A newborn is 0.79 wide
 and 1.34–1.47 long; the egg is 0.74 wide and 1.0 tall. So the body, wings and tail poke
 through the shell walls, and the shell stays in the nest (for three minutes) while the
@@ -668,11 +683,10 @@ makes a little routine.
 Done: WP1–WP10, R5 (WP11), the hardware runs so far (WP11b, runs 1–12: the game runs on the
 old 3DS; the 3D banner stands still and animates, with its sound; screenshots with Y), the
 boot splash (WP11c's replacement), and the checks before anything goes on the 3DS. In order:
-1. **WP11d, the performance pass** (in progress): the full den with the close-up runs
-   17.6–18.3 ms (CPU 5.0 + 2.5 posing, GPU 8.1). Next: LOD1 sooner for the dragons further
-   back and a lighter close-up (the GPU), fewer 2D draws, cheaper posing, until it holds
-   16.7 ms.
-2. **WP12a, the hatching** Noah's way: the egg bursts into bits, the dragon grows out of a
+1. ~~WP11d, the performance pass~~: accepted as it is (Noah, after run 12: the den won't
+   hold more dragons; no lower detail for the ones further back); revisit later if needed.
+   The wings' roots fixed on the way (they stood off the body; `wing_gap.py`).
+2. ✅ **WP12a, the hatching** Noah's way: the egg bursts into bits, the dragon grows out of a
    white blob.
 3. **WP12, the dragons update** (the big one): looks per dragon with their odds and names
    (D54), random looks for existing dragons (D66), the Dragondex (Gleam + a breed-coloured

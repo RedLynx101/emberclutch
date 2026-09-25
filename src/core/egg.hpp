@@ -12,6 +12,7 @@
 namespace ec {
 
 constexpr float kEggPivot = 0.3f;  // rocking pivot height: about the centre of the bottom's curve
+constexpr float kEggNestFloor = 0.07f;  // an egg's base in the den: on the egg nest's straw
 constexpr int kEggCracks = 3;
 
 struct EggMotion {
@@ -21,6 +22,7 @@ struct EggMotion {
     float capLift = 0;  // 0 closed .. 1 off; on to 2 it flies up and is gone (the hatching drives it)
     float knockIn = 3;  // seconds until the dragon inside may knock again
     float yaw = 0, yawGoal = 0;  // turning: its spin about its long axis, radians, easing to the goal
+    float glowBoost = 0;         // 0..1: the hatching turns its light and cracks up
 
     // A stylus stroke: amount ~ its length in pixels / 100; (dx, dy) its direction on
     // screen. Sideways strokes rock the egg side to side.

@@ -10,6 +10,7 @@
 #include "core/den_roster.hpp"
 #include "core/dragon.hpp"
 #include "core/egg.hpp"
+#include "core/shell_burst.hpp"
 #include "core/particles.hpp"
 #include "core/props.hpp"
 #include "core/rng.hpp"
@@ -99,6 +100,9 @@ struct EggCare {
 
 // The hatching (WP7): the egg shakes harder and harder, the cap pops off, the hatchling climbs
 // out of the shell, blinks at its first light, looks at you; then it's named.
+// The hatching (WP12a): the egg shakes harder and harder, stills, flashes and bursts into
+// bits; the hatchling takes shape out of a white blob where it stood, blinks, cries, and is
+// named. The pieces lie in the nest until then, then sink away (scene_den.cpp).
 struct HatchState {
     bool active = false;
     int index = -1;         // the hatching egg (SaveData::dragons)
@@ -106,12 +110,13 @@ struct HatchState {
     float t = 0;            // seconds into it
     float nextKnock = 0;
     bool skippable = false; // seen once before (settings.seenHatch)
-    bool popped = false;    // the cap is off: it has hatched
+    bool popped = false;    // the egg has burst: it has hatched
     bool blinked = false;
     bool asked = false;     // the keyboard was asked for
     bool named = false;     // the keyboard is done
-    EggMotion shell;        // the empty shell left in the nest
-    float shellTime = 0;    // seconds it stays there
+    float flash = 0;        // the burst's warm flash, fading (1 .. 0)
+    float sparkIn = 0;      // seconds to the next sparkle round the blob
+    ShellBurst burst;       // the pieces of the shell
 };
 
 // The 3DS keyboard runs between frames (it takes over both screens): main.cpp opens it for

@@ -2,6 +2,7 @@
 // lit for the time of day, the dragons' life, and the particles that go with it.
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 
 #include "app/audio.hpp"
 #include "app/autotest.hpp"
@@ -286,13 +287,13 @@ void eggLife(App& app, const DenRoster& r) {
 }
 
 // ------------------------------------------------------------------ egg care and the hatching
-constexpr float kPopAt = 2.6f;       // the cap comes off
-constexpr float kRiseFrom = 2.9f;    // the hatchling starts climbing out...
-constexpr float kRiseTime = 1.2f;    // ...for this long
-constexpr float kBlinkAt = 4.8f;     // its first blink
-constexpr float kNameAt = 6.2f;      // then the keyboard
-constexpr float kSink = 0.45f;       // how deep in the shell it starts (den units)
-constexpr float kShellStays = 180;   // seconds the empty shell stays in the nest
+// The hatching's moments (Noah's direction, WP12a): shaking, a held breath, the burst.
+constexpr float kStillAt = 2.6f;     // it stops shaking, glowing its brightest...
+constexpr float kBurstAt = 3.0f;     // ...then flashes and bursts into bits
+constexpr float kShapedAt = kBurstAt + kBlobSwell + kBlobShape;  // the hatchling has its shape
+constexpr float kBlinkAt = kShapedAt + 0.45f;  // its first blink and cry
+constexpr float kNameAt = kBlinkAt + 1.3f;     // then the keyboard
+constexpr float kFlashTime = 0.45f;
 constexpr Rect kEggArea{100, 60, 120, 120};
 
 // Listening: the heartbeat inside, a "lub-dub" at its pace, clearer as the egg grows; and
@@ -351,17 +352,24 @@ void startHatch(App& app, int index, int nest) {
     showToast(app, str::kHatching);
 }
 
-// The cap comes off: it has hatched, and its den life begins in the nest.
+// The burst: the egg flies apart in a warm flash, and where it stood a small white blob starts
+// to swell (it has hatched: its den life begins in the nest).
 void pop(App& app, Dragon& d, s64 now) {
     HatchState& h = app.hatch;
     const DenLayout den;
     const Vec2 nest = den.eggNests[h.nest];
     const int bed = makeRoomForHatchling(app.game);  // checked before the hatching began (a wanderer's is lent)
     h.popped = true;
-    h.t = std::fmax(h.t, kPopAt);
-    h.shell = app.eggs[h.nest];  // the empty shell keeps its spin
-    h.shell.capLift = 0;
-    h.shellTime = kShellStays;
+    h.t = std::fmax(h.t, kBurstAt);
+    h.flash = 1.0f;
+    if (const ShardShape* shapes = r3d::eggShards()) {
+        BurstGround ground;
+        ground.nest = nest;
+        ground.room = den.room;
+        ground.wallRadius = den.wallRadius;
+        h.burst.start({nest.x, nest.y, kEggNestFloor}, shapes, ground, app.rng);
+        r3d::setBurst(&h.burst, &d);  // its egg's colours
+    }
     tryHatch(d, now, app.rng);  // incubation is complete: it hatches
     d.denSlot = static_cast<u8>(bed >= 0 ? bed : 0);
     markVisit(d, now);
@@ -369,20 +377,30 @@ void pop(App& app, Dragon& d, s64 now) {
     app.eggCracks[h.nest] = -1;
     audio::playSfx(audio::Sfx::EggCrack);
     audio::playSfx(audio::Sfx::EggHatch);
-    app.fx.emit(Fx::Sparkle, {nest.x, nest.y, 0.9f}, 16, 0.7f);
-    app.fx.emit(Fx::Puff, {nest.x, nest.y, 0.3f}, 8, 0.7f);
+    app.fx.emit(Fx::Sparkle, {nest.x, nest.y, 0.6f}, 18, 0.9f);
+    app.fx.emit(Fx::Puff, {nest.x, nest.y, 0.3f}, 10, 0.8f);
     DenActor& a = app.actors[d.denSlot];
     a.reset(den, d.id * 2654435761u + 17, d.denSlot);
     a.behavior.hatchAt = nest;
     a.behavior.force(Activity::Hatch);
-    a.lift = -kSink;
+    a.lift = 0;
+    const BlobShape blob = blobAt(0);
+    a.morph = blob.morph;
+    a.blobScale = blob.scale;
     app.actorId[d.denSlot] = d.id;
     saveNow(app);
 }
 
-// The hatching, a few seconds long: the egg shakes harder and harder, the cap pops, the
-// hatchling climbs out, shakes off, blinks at its first light and looks at you; then the
-// keyboard names it. Skippable (A, B or a tap) once it has been seen.
+// "It's a Tide!" / "It's an Ember!"
+void announce(App& app, const Dragon& d) {
+    const char* breed = breedName(d.genome);
+    const bool vowel = std::strchr("AEIOUaeiou", breed[0]) != nullptr;
+    showToastf(app, vowel ? str::kItsAn : str::kItsA, breed);
+}
+
+// The hatching, a few seconds long: the egg shakes harder and harder, stills glowing, and
+// bursts in a warm flash; the hatchling takes shape out of a white blob in the nest, blinks at
+// its first light and cries; then the keyboard names it. Skippable (A, B or a tap) once seen.
 void hatchLife(App& app, const Input& in, s64 now) {
     HatchState& h = app.hatch;
     if (h.index < 0 || h.index >= app.game.dragonCount) {
@@ -393,27 +411,42 @@ void hatchLife(App& app, const Input& in, s64 now) {
     h.t += app.dt;
     const bool skip = h.skippable && ((in.down & (KEY_A | KEY_B)) || in.tapped);
     const DenLayout den;
+    const Vec2 nest = den.eggNests[h.nest];
     if (!h.popped) {
-        if ((h.nextKnock -= app.dt) <= 0) {  // shaking harder and harder
-            const float k = std::fmin(1.0f, h.t / kPopAt);
+        EggMotion& egg = app.eggs[h.nest];
+        egg.glowBoost = std::fmin(1.0f, h.t / kStillAt);  // the cracks and the light inside, brighter
+        if (h.t < kStillAt && (h.nextKnock -= app.dt) <= 0) {  // shaking harder and harder
+            const float k = std::fmin(1.0f, h.t / kStillAt);
             h.nextKnock = 0.5f - 0.3f * k;
-            app.eggs[h.nest].knock(0.06f + 0.2f * k, app.rng.below(628) * 0.01f);
+            egg.knock(0.06f + 0.2f * k, app.rng.below(628) * 0.01f);
             audio::playSfx(k > 0.6f && app.rng.chance(1, 2) ? audio::Sfx::EggCrack : audio::Sfx::EggKnock,
                            0.9f + 0.3f * k);
-            app.fx.emit(Fx::Puff, {den.eggNests[h.nest].x, den.eggNests[h.nest].y, 0.1f}, 1, 0.5f);
+            app.fx.emit(Fx::Puff, {nest.x, nest.y, 0.1f}, 1, 0.5f);
         }
-        if (h.t >= kPopAt || skip) pop(app, d, now);
-        return;
+        if (h.t >= kBurstAt || skip) pop(app, d, now);  // after a held breath, still and glowing
+        if (!skip) return;
     }
     DenActor& a = app.actors[d.denSlot < kDenDragons ? d.denSlot : 0];
-    if (skip && h.t < kNameAt) h.t = kNameAt;
-    h.shell.capLift = std::fmin(2.0f, h.shell.capLift + app.dt / 0.35f);  // pops, flies up, gone
-    const float rise = std::fmin(1.0f, std::fmax(0.0f, (h.t - kRiseFrom) / kRiseTime));
-    a.lift = -kSink * (1.0f - rise * (2.0f - rise));  // eased out: it climbs, then settles
+    if (skip && h.t < kNameAt) {  // straight to the naming: the hatchling whole, the pieces landed
+        h.t = kNameAt;
+        h.flash = 0;
+        h.burst.settleNow();
+    }
+    h.flash = std::fmax(0.0f, h.flash - app.dt / kFlashTime);
+    const BlobShape blob = blobAt(h.t - kBurstAt);
+    a.morph = blob.morph;
+    a.blobScale = blob.scale;
+    if (h.t < kShapedAt && (h.sparkIn -= app.dt) <= 0) {  // sparkles as it takes shape
+        h.sparkIn = 0.07f;
+        const float ang = app.rng.below(628) * 0.01f, r = 0.25f + 0.25f * blob.scale;
+        app.fx.emit(Fx::Sparkle, {nest.x + r * std::cos(ang), nest.y + r * std::sin(ang), 0.25f + 0.4f * blob.scale}, 1,
+                    0.5f);
+    }
     if (!h.blinked && h.t >= kBlinkAt) {
         h.blinked = true;
         a.eyes.blink = 0;  // its first blink
         audio::playSfx(audio::Sfx::HatchCry, voicePitch(d, now));  // its very first cry
+        announce(app, d);
         Vec3 head;
         if (r3d::headOf(0, head)) app.fx.emit(Fx::Heart, head, 2, 0.5f);
     }
@@ -424,6 +457,8 @@ void hatchLife(App& app, const Input& in, s64 now) {
     if (h.named) {
         h.active = false;
         a.lift = 0;
+        a.morph = a.blobScale = 1;
+        h.burst.vanish();  // the pieces sink into the straw
         a.behavior.care(Care::Greet, d);  // out of the nest to say hello
         app.game.settings.seenHatch = 1;
         showToastf(app, str::kSayHello, d.name);
@@ -552,9 +587,9 @@ void update(App& app, const Input& in) {
                 break;
             }
     if (app.hatch.active) hatchLife(app, in, nowLocal(app));
-    if (app.hatch.shellTime > 0) {  // the empty shell settles in the nest, then is cleared away
-        app.hatch.shellTime -= app.dt;
-        app.hatch.shell.update(app.dt, 0.0f, app.rng);
+    if (app.hatch.burst.active) {  // the pieces fly, land, lie in the nest, then sink away
+        app.hatch.burst.update(app.dt);
+        if (!app.hatch.burst.active) r3d::setBurst(nullptr, nullptr);
     }
 }
 
@@ -580,9 +615,7 @@ int denShown(App& app, const int* order, int count, r3d::DenDragon* shown) {
             shown[n++] = {&o, nullptr, &app.eggs[o.denSlot], static_cast<s8>(o.denSlot)};
         } else {
             const int bed = o.denSlot;
-            const bool justHatched = order[k] == app.hatch.index && app.hatch.shellTime > 0;
-            shown[n++] = {&o, app.actorId[bed] == o.id ? &app.actors[bed] : nullptr,
-                          justHatched ? &app.hatch.shell : nullptr, static_cast<s8>(app.hatch.nest)};
+            shown[n++] = {&o, app.actorId[bed] == o.id ? &app.actors[bed] : nullptr};
         }
     }
     return n;
@@ -668,6 +701,8 @@ void drawTop(App& app) {
     if (!app.hatch.active)  // the map, and how to switch
         text(app, count > 1 ? str::kSwitchHint : str::kMapHint, 392, 226, 0.4f, withAlpha(theme::kShell, 0.6f),
              C2D_AlignRight);
+    if (app.hatch.flash > 0)  // the burst's warm flash
+        C2D_DrawRectSolid(0, 0, 0, kTopW, kScreenH, withAlpha(theme::rgba(255, 214, 150), 0.85f * app.hatch.flash));
 }
 
 void drawEggBottom(App& app, const Input& in, Dragon& d, s64 now) {
@@ -724,9 +759,14 @@ void drawBottom(App& app, const Input& in) {
     const s64 now = nowLocal(app);
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
     const int nest = careNest(app);
-    if (r3d::ready())  // pet the dragon itself, or rub the egg
-        r3d::drawCloseUp(app, d, careActor(app), nest >= 0 ? &app.eggs[nest] : nullptr, now,
-                         app.hatch.active ? r3d::CloseUpView::Face : care::view(app));
+    // Pet the dragon itself, or rub the egg. The hatching: the whole hatchling taking shape
+    // among its shell's pieces, then its face for the first blink.
+    const r3d::CloseUpView view = !app.hatch.active          ? care::view(app)
+                                  : app.hatch.t < kBlinkAt - 0.25f ? r3d::CloseUpView::Body
+                                                                   : r3d::CloseUpView::Face;
+    if (r3d::ready()) r3d::drawCloseUp(app, d, careActor(app), nest >= 0 ? &app.eggs[nest] : nullptr, now, view);
+    if (app.hatch.flash > 0)
+        C2D_DrawRectSolid(0, 0, 0, kBotW, kScreenH, withAlpha(theme::rgba(255, 214, 150), 0.7f * app.hatch.flash));
     if (app.hatch.active) {
         drawHatchBottom(app, d);
     } else if (d.stage == Stage::Egg) {

@@ -10,6 +10,11 @@ Writes romfs/models/egg.ecm (the dragons' format, src/core/model.cpp) with two b
 of revolution computed here directly (no Blender scene), so the script also runs under plain
 Python; Blender is only needed for previews.
 
+A second mesh ("shards", kind part, group 8) is the same shell broken into SHARDS jagged
+pieces for the hatching (Alpha 2 WP12a: the egg bursts into bits), each on its own bone
+("s00".., after root and cap, resting at the piece's centre) so src/core/shell_burst.cpp can
+throw them about and the renderer draws them all in one call.
+
 One mesh ("shell", kind body): the outer shell, its inner surface and the rim at the seam
 (seen once the cap is off), speckle decals and crack decals. Colours are palette slots set
 per egg at runtime (src/core/egg.cpp eggPalette):
@@ -46,6 +51,10 @@ FRONT = math.radians(-105)  # cracks face the den and close-up cameras (-Y, a li
 
 BASE, ACCENT, CRACK1, CRACK2, CRACK3, INNER, GLOW = 0, 1, 2, 3, 4, 5, 8  # palette slots (kPal*)
 ROOT, CAP = 0, 1                                                        # palette-local bones
+BANDS, SECTORS = 4, 6          # the shell breaks into BANDS x SECTORS pieces
+SHARDS = BANDS * SECTORS       # (src/core/shell_burst.hpp kShards; <= 25 bones per draw)
+SHARD_GRID = 3 if LOD == 0 else 1  # quads along each side of a piece (the den's: plain quads, <= the egg's 300 triangles)
+GROUP_SHARDS = 8               # src/core/model.hpp kGroupShards
 
 
 def radius(u):
@@ -188,6 +197,111 @@ def build():
     return m
 
 
+def build_shards():
+    """The shell broken into SHARDS pieces: a jittered grid of BANDS x SECTORS patches on the
+    egg (shared corners, so they fit back together), each edge zigzagged, each piece with its
+    outside (the shell's colours), its inside (glowing) and thin walls between. Returns the
+    mesh and each piece's centre (its bone's rest position)."""
+    rng = random.Random(11)
+    n = SHARD_GRID
+    band_u = [0.0, 0.25, 0.49, 0.72, 1.0]
+    # corners: (band boundary b, sector boundary k), jittered away from the poles
+    cu = [[band_u[b] + (rng.uniform(-0.045, 0.045) if 0 < b < BANDS else 0.0) for k in range(SECTORS)]
+          for b in range(BANDS + 1)]
+    ct = [[2 * math.pi * (k + rng.uniform(-0.18, 0.18)) / SECTORS for k in range(SECTORS)] for b in range(BANDS + 1)]
+
+    def corner(b, k):
+        kk = k % SECTORS
+        th = ct[b][kk] + (2 * math.pi if k == SECTORS else 0.0)
+        return cu[b][kk], th
+
+    # zigzag along each shared edge: (u, theta) offsets for its inner points, keyed by the edge
+    zig = {}
+
+    def edge(a, b):
+        key = (a, b) if a <= b else (b, a)
+        if key not in zig:
+            zig[key] = [(rng.uniform(-0.03, 0.03), rng.uniform(-0.09, 0.09)) for _ in range(n - 1)]
+        pts = zig[key]
+        return pts if key == (a, b) else pts[::-1]
+
+    def edge_curve(a, b, pa, pb, flat=False):
+        """n + 1 (u, theta) points from corner pa to pb, the inner ones zigzagged (not round
+        the poles: nothing meets them there, so a zigzag would leave a hole)."""
+        offs = [(0.0, 0.0)] * (n - 1) if flat else edge(a, b)
+        out = [pa]
+        for i in range(1, n):
+            f = i / n
+            du, dt = offs[i - 1]
+            out.append((pa[0] + (pb[0] - pa[0]) * f + du, pa[1] + (pb[1] - pa[1]) * f + dt))
+        return out + [pb]
+
+    m = Mesh()
+    centres = []
+    for b in range(BANDS):
+        for k in range(SECTORS):
+            bone = b * SECTORS + k
+            c00, c10, c01, c11 = corner(b, k), corner(b, k + 1), corner(b + 1, k), corner(b + 1, k + 1)
+            ids = [("c", b, k), ("c", b, k + 1), ("c", b + 1, k), ("c", b + 1, k + 1)]
+            bottom = edge_curve(("h", b, k), ("h", b, k + 1), c00, c10, flat=b == 0)
+            top = edge_curve(("h", b + 1, k), ("h", b + 1, k + 1), c01, c11, flat=b + 1 == BANDS)
+            left = edge_curve(("v", b, k), ("v", b + 1, k), c00, c01)
+            right = edge_curve(("v", b, k + 1), ("v", b + 1, k + 1), c10, c11)
+            del ids
+
+            def param(i, j):
+                """Coons patch over the four zigzag edges: i across the sector, j up the band."""
+                s, t = i / n, j / n
+                u = ((1 - t) * bottom[i][0] + t * top[i][0] + (1 - s) * left[j][0] + s * right[j][0]
+                     - ((1 - s) * (1 - t) * c00[0] + s * (1 - t) * c10[0] + (1 - s) * t * c01[0] + s * t * c11[0]))
+                th = ((1 - t) * bottom[i][1] + t * top[i][1] + (1 - s) * left[j][1] + s * right[j][1]
+                      - ((1 - s) * (1 - t) * c00[1] + s * (1 - t) * c10[1] + (1 - s) * t * c01[1] + s * t * c11[1]))
+                return min(1.0, max(0.0, u)), th
+
+            grid = [[param(i, j) for i in range(n + 1)] for j in range(n + 1)]
+            outer = [[m.vert(*surface(u, th), bone, shell_paint(u)) for (u, th) in row] for row in grid]
+            inner_paint = (INNER, GLOW, 140, 255)
+            inner = []
+            for row in grid:
+                r = []
+                for (u, th) in row:
+                    p, nn = surface(u, th, THICK)
+                    r.append(m.vert(p, (-nn[0], -nn[1], -nn[2]), bone, inner_paint))
+                inner.append(r)
+            for j in range(n):
+                for i in range(n):
+                    m.quad(outer[j][i], outer[j][i + 1], outer[j + 1][i + 1], outer[j + 1][i])
+                    m.quad(inner[j][i], inner[j + 1][i], inner[j + 1][i + 1], inner[j][i + 1])
+            # the walls round the piece (the broken edge, shell-coloured)
+            ring = ([(i, 0) for i in range(n)] + [(n, j) for j in range(n)] +
+                    [(i, n) for i in range(n, 0, -1)] + [(0, j) for j in range(n, 0, -1)])
+            pts = [m.pos[v] for row in outer for v in row]
+            centre = tuple(sum(p[x] for p in pts) / len(pts) for x in range(3))
+            centres.append(centre)
+            sub = lambda p, q: (p[0] - q[0], p[1] - q[1], p[2] - q[2])  # noqa: E731
+            cross = lambda p, q: (p[1] * q[2] - p[2] * q[1], p[2] * q[0] - p[0] * q[2], p[0] * q[1] - p[1] * q[0])  # noqa: E731
+            dot = lambda p, q: p[0] * q[0] + p[1] * q[1] + p[2] * q[2]  # noqa: E731
+            for a, c in zip(ring, ring[1:] + ring[:1]):
+                pa, pc = m.pos[outer[a[1]][a[0]]], m.pos[outer[c[1]][c[0]]]
+                qa, qc = m.pos[inner[a[1]][a[0]]], m.pos[inner[c[1]][c[0]]]
+                if dot(sub(pc, pa), sub(pc, pa)) < 1e-12:
+                    continue  # a pole: nothing to wall
+                na = m.nrm[outer[a[1]][a[0]]]
+                mid = tuple((pa[x] + pc[x]) / 2 for x in range(3))
+                away = sub(mid, centre)  # out of the piece, along the shell
+                away = sub(away, tuple(na[x] * dot(away, na) for x in range(3)))
+                ls = math.sqrt(dot(away, away)) or 1.0
+                side = tuple(v / ls for v in away)
+                wall = (BASE, BASE, 0, 0)
+                o0, o1 = m.vert(pa, side, bone, wall), m.vert(pc, side, bone, wall)
+                i0, i1 = m.vert(qa, side, bone, wall), m.vert(qc, side, bone, wall)
+                if dot(cross(sub(qa, pa), sub(qc, pa)), side) >= 0:  # front face out of the piece
+                    m.quad(o0, i0, i1, o1)
+                else:
+                    m.quad(o0, o1, i1, i0)
+    return m, centres
+
+
 def tangent_frame(u, th):
     p, n = surface(u, th)
     up = (-n[2] * n[0], -n[2] * n[1], 1 - n[2] * n[2])  # z projected onto the tangent plane
@@ -230,21 +344,33 @@ def decal_line(m, pts, width, bone, paint):
         m.quad(ar, br, bl, al)
 
 
-def write_ecm(path, m):
-    """.ecm v3 (src/core/model.cpp), two bones and one body mesh."""
-    out = bytearray(b"ECM1" + struct.pack("<HH", 3, 2))  # v2: 32-byte palettes; v3: UVs and regions
-    for name, parent, z in (("root", -1, 0.0), ("cap", 0, SEAM * H)):
+def write_ecm(path, m, shards, centres):
+    """.ecm v3 (src/core/model.cpp): the root and cap bones and a bone per shard, the shell
+    mesh (kind body) and the shards mesh (kind part, group GROUP_SHARDS)."""
+    bones = [("root", -1, (0.0, 0.0, 0.0)), ("cap", 0, (0.0, 0.0, SEAM * H))]
+    bones += [(f"s{i:02d}", 0, c) for i, c in enumerate(centres)]
+    out = bytearray(b"ECM1" + struct.pack("<HH", 3, len(bones)))  # v2: 32-byte palettes; v3: UVs and regions
+    for name, parent, (x, y, z) in bones:
         out += struct.pack("<16sbB2x", name.encode(), parent, 0)
-        for row in ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, z)):
+        for row in ((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z)):
             out += struct.pack("<4f", *row)
-    out += struct.pack("<3f", 1, 1, 1) * 2                # hatchling bone scales
-    out += struct.pack("<2f", 1, 1) * 2 * 3               # build multipliers
-    out += struct.pack("<3f", 0, 0, 0) * 2                # idle pose
-    out += struct.pack("<f", 0) * 2                       # young head lift
-    out += struct.pack("<H", 1)
-    assert len(m.pos) < 65536 and len(m.idx) < 65536
-    out += struct.pack("<16sBBBBB32sB3x4fHH", b"shell", 0, 255, 0, 0, 2, bytes([0, 1] + [0] * 30), 1,
-                       1.0, 0.0, 0.0, 0.0, len(m.pos), len(m.idx))
+    nb = len(bones)
+    out += struct.pack("<3f", 1, 1, 1) * nb               # hatchling bone scales
+    out += struct.pack("<2f", 1, 1) * nb * 3              # build multipliers
+    out += struct.pack("<3f", 0, 0, 0) * nb               # idle pose
+    out += struct.pack("<f", 0) * nb                      # young head lift
+    out += struct.pack("<H", 2)
+    write_mesh(out, m, b"shell", 0, 255, [ROOT, CAP])
+    write_mesh(out, shards, b"shards", 2, GROUP_SHARDS, [2 + i for i in range(len(centres))])
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_bytes(bytes(out))
+    return len(out)
+
+
+def write_mesh(out, m, name, kind, group, palette):
+    assert len(m.pos) < 65536 and len(m.idx) < 65536 and len(palette) <= 25
+    out += struct.pack("<16sBBBBB32sB3x4fHH", name, kind, group, 0, 0, len(palette),
+                       bytes(palette + [0] * (32 - len(palette))), 1, 1.0, 0.0, 0.0, 0.0, len(m.pos), len(m.idx))
     for p in m.pos:
         out += struct.pack("<3f", *p)
     for n in m.nrm:
@@ -258,9 +384,6 @@ def write_ecm(path, m):
     out += struct.pack("<2f", 0.97, 0.97) * len(m.pos)
     out += bytes([8] * len(m.pos))
     out += struct.pack(f"<{len(m.idx)}H", *m.idx)
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_bytes(bytes(out))
-    return len(out)
 
 
 def preview(m, prefix):
@@ -338,9 +461,11 @@ def preview(m, prefix):
 
 def main():
     m = build()
-    print(f"[egg] {len(m.pos)} vertices, {len(m.idx) // 3} triangles")
+    shards, centres = build_shards()
+    print(f"[egg] {len(m.pos)} vertices, {len(m.idx) // 3} triangles; "
+          f"{SHARDS} shards: {len(shards.pos)} vertices, {len(shards.idx) // 3} triangles")
     if OUT:
-        print(f"[egg] {OUT}: {write_ecm(OUT, m)} bytes")
+        print(f"[egg] {OUT}: {write_ecm(OUT, m, shards, centres)} bytes")
     if RENDER:
         preview(m, RENDER)
 

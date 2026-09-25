@@ -38,7 +38,9 @@ struct DenActor {
     Vec3 gazeLocal;
     float gazeWeight = 0;  // 0..1
     float jawOpen = 0;     // 0..1
-    float lift = 0;        // raised (or, climbing out of its egg, sunk) this far, den units
+    float lift = 0;        // raised this far, den units
+    float morph = 1;       // the hatching (WP12a): 0 a white blob .. 1 itself (core/shell_burst blobAt)
+    float blobScale = 1;   // ...and the blob swelling from small
     u16 playedSerial = 0xFFFF;
     int speedForm = -1;  // the body the walking speeds were measured on
     float speedT = -1;

@@ -1,7 +1,6 @@
 # Dragons, Version 2: Thirty-Six Kinds (D76–D77)
 
-Status: **decided in outline, 2026-09-25** (Noah's R11 answers, D77); the open points at the
-end go to Noah before the work starts. It replaces the dragons' side of
+Status: **decided, 2026-09-25** (Noah's R11 answers, D77, and the revamp's questions, D78). It replaces the dragons' side of
 [breeds & genetics](breeds-and-genetics.md) and the looks of D54 as the new dragons land;
 until then the old dragons stay in the game.
 
@@ -21,6 +20,23 @@ majestic. Time and care go into every kind; nothing is a recolour of another.
   modelled as a kind of its own (not a blend of parts): 28 when all eight exist.
 - **36 kinds** in all (8 + 28). The old dragons (six elements, 21 breeds, the looks) are
   replaced (D77).
+- **Past the 36 (D78):** new dragons come as a **second layer of crossbreeds**, a kind born
+  of two particular crossbreeds (a recipe, as Palworld's special pairs), not as more base
+  breeds, so the roster never multiplies. Not every first crossbreed needs one.
+
+## 2b. Elements: each dragon's type (D78)
+- **Each base breed has one element**, a one-word type: **Pouncer Ember, Puffback Grove,
+  Crestwing Gale, Ribbontail Tide**; bases five to eight take **Frost, Lumen** and two new
+  one-word elements (chosen at R13; Stone and Shade are my suggestion). **A crossbreed has
+  both of its parents' elements**, shown as two types ("Ember · Tide"); a second-layer
+  kind has the two its recipe gives it.
+- **What elements do, now and as the game grows:** the heartglow's colour; favourite
+  foods; the breath (the Lantern Trial now, breath tricks in 1.0); where wild eggs turn
+  up in the valley (Tide by the lake, Frost up the cold heights, Grove in the meadow…);
+  moods by time and weather (Lumen livelier by day, Shade by night); traits that favour
+  an element; the Market's eggs; and **later, battles in the way of Pokémon** (a type chart
+  of the eight elements, strengths and weaknesses), planned much later in the game's life
+  (roadmap) but designed for now: elements, stats, manners and traits are all ready for it.
 
 ## 3. Variants: four of each kind
 - **Three common variants:** the same model, different painted textures (colourings).
@@ -37,20 +53,35 @@ majestic. Time and care go into every kind; nothing is a recolour of another.
 - The variant is inherited like the looks are (usually a parent's, sometimes a fresh roll),
   and the rare variant stays rare.
 - Sex, size (a little each way within the breed's size) and the heartglow carry over.
+- **The kind is stored on the dragon** beside its two alleles, so a second-layer kind
+  (from a recipe) can be told apart from what its alleles alone would make.
+- **Colours (D78):** each variant's painted colours, with a small shift per dragon so no
+  two are quite alike.
+- **The rare variant:** about 1 in 20, better with a rare parent (D78).
 - **Sizes between breeds:** up to ±50% from the smallest grown breed to the largest (Noah:
   "+-50% from smallest to largest"); the den, beds and cameras frame each by its size.
 
-## 5. Stats, manners and traits (in the way of Pokémon or Palworld)
-- **Base stats per breed:** each breed has its own base values, and each dragon its own
-  potential on top (fixed at hatching), grown by care and training. **Rarer dragons have
-  better base stats** (crossbreeds above bases, the rare variant above its kind).
-- **Manners:** the personality every dragon already has (Brave, Shy, Playful, Proud, Sleepy,
-  Curious), each breed **prone to some** more than others.
-- **Traits:** passive abilities (for example *Swift* flies faster, *Treasure Nose* finds
-  more on the Wanderings, *Night Owl* is livelier after dark, *Sturdy* tires slowly, *Tidy*
-  stays clean), from common to very rare. **Each breed is prone to some traits**, and the
-  rarer dragons get at **rarer traits**. Traits are inherited with a chance from the parents.
-- Open: the stat list, how many traits, more manners (below).
+## 5. Stats, manners and traits (in the way of Pokémon or Palworld; D78)
+- **Five stats**, each named for what it does:
+  - **Wing:** flight speed and agility (riding, Sky Rings).
+  - **Wit:** obedience and tricks (the Command Trial in 1.0).
+  - **Might:** strength (carrying, tugging, Fruit Catch).
+  - **Breath:** the power of its element's breath (the Lantern Trial; was *Spark*).
+  - **Stamina:** endurance: how long it flies, plays and works (was *Heart*).
+  In battles later: Stamina the health, Might and Breath the two kinds of attack, Wing the
+  speed, Wit the dragon's reliability; defence comes with that design.
+- **Base stats per breed**, and each dragon's own potential on top (fixed at hatching),
+  grown by care and training. **Rarer dragons have better base stats** (crossbreeds above
+  bases, the rare variant above its kind).
+- **Manners:** the six personalities grow to ten (Brave, Shy, Playful, Proud, Sleepy,
+  Curious, and Gentle, Mischievous, Greedy, Stubborn), each nudging one stat up and one
+  down a little, as Pokémon's natures do; each breed is **prone to some**.
+- **Traits:** up to **two** per dragon (**three** on a rare variant), from about 30 in four
+  tiers (common, uncommon, rare, legendary): for example *Swift* flies faster, *Treasure
+  Nose* finds more on the Wanderings, *Night Owl* is livelier after dark, *Sturdy* tires
+  slowly, *Tidy* stays clean. **Each breed is prone to some traits**, the rarer dragons reach
+  the **rarer tiers**, and traits pass to eggs with a chance from each parent. Found out
+  by caring for the dragon, shown on its profile.
 
 ## 6. Bodies and animation
 - **Different skeletons are welcome** (Noah), as long as every body has **the same kinds
@@ -85,7 +116,6 @@ by who it is (the same result every time), keeping its name, bond, age, stage, n
 personality and history (D77, Noah's 3B). While only the first kinds exist, the pick is
 among those.
 
-## 9. Open points (to Noah)
-Elements and the eight bases; colours per dragon; the stat list; how many traits; more
-manners; the rare variant's odds; the order of the work. See the questions in the
-[revamp plan](../plan/dragon-revamp.md#questions).
+## 9. Still to settle
+Bases five to eight and their two new elements (R13); the trait list and each breed's
+tendencies and base stats (DR3, with numbers for Noah to see); the battle design, much later.

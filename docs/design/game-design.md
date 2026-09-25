@@ -154,11 +154,15 @@ reacts to exactly where and how. The full spec: [care interactions](care-interac
 
 ### 5.1 Stats
 
-Three stats, grown by training and competing, flavored by breed aptitude.
+Five stats (D78), grown by care, training and competing, from each breed's base values
+and each dragon's own potential ([dragons, version 2](dragons-v2.md) §5).
 
-- **Wing** — flight speed and control. Grows from flying practice and Sky Rings.
+- **Wing** — flight speed and agility. Grows from flying and Sky Rings.
 - **Wit** — obedience and trick reliability. Grows from tricks and Command Trial.
-- **Spark** — breath and flair. Grows from Lantern Trial, Shine Show, breath practice.
+- **Might** — strength: carrying, tugging, Fruit Catch.
+- **Breath** — the power of its element's breath (was *Spark*). Grows from Lantern Trial,
+  Shine Show, breath practice.
+- **Stamina** — endurance: how long it flies, plays and works.
 
 Competition performance = stat × mood multiplier × bond confidence, plus player skill.
 

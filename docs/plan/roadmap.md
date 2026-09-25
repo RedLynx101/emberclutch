@@ -52,8 +52,8 @@ Alpha 1 and Alpha 2 are done. What's left, in order, with the gates that hold ea
    now, D74); the tag.
 
 **1.0 — *A trainer*** (sit-down first, after Beta). Tag `v1.0.0`, the public release.
-- Tricks (gesture, then the name), voice commands, the training yard, the Wing / Wit / Spark
-  stats; the Command Trial and Shine Show with their cups; grooming that fits together;
+- Tricks (gesture, then the name), voice commands, the training yard, the five stats (Wing, Wit, Might,
+  Breath, Stamina; D78); the Command Trial and Shine Show with their cups; grooming that fits together;
   several wanderers at once; more of the campaign; the economy and progression across the
   whole game.
 - Release polish: tutorial, settings, balance, a performance pass on the hardware, no
@@ -61,6 +61,10 @@ Alpha 1 and Alpha 2 are done. What's left, in order, with the gates that hold ea
 
 **1.x — *Friends*** (sit-down first): Sky Visits over local wireless (visit a den, play
 together, gifts, local competitions; a cross-den clutch as a stretch).
+
+**Later — battles** (sit-down first, much later; D78): Pokémon-style battles between
+dragons, built on the elements as types (a chart of strengths and weaknesses), the five
+stats, manners and traits that the dragon revamp puts in place.
 
 **2.0 — *The meadow*** (sit-down first): the equine line (horse, pegasus, unicorn,
 alicorn), as an expansion or its own game.
@@ -169,7 +173,7 @@ on an old 3DS (a big 3D space, streaming, draw distance).
 ground competitions and their cups, the economy and progression across the whole game, the
 grooming redesign, the Wanderings' next pass, more of the campaign, and the public
 release's scope. Nothing below is built until it's passed.
-- Trick learning (gesture then name), skill curves, 12 tricks; the Wing / Wit / Spark stats.
+- Trick learning (gesture then name), skill curves, 12 tricks; the five stats (Wing, Wit, Might, Breath, Stamina; D78).
 - Voice: mic capture + MFCC/DTW template matching on a worker thread; cue buttons always.
 - The training yard; the ground competitions **Command Trial** and **Shine Show** with their
   cups (Fruit Catch comes with Beta).

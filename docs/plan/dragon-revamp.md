@@ -1,10 +1,11 @@
 # The Dragon Revamp: Work Plan (D76–D77)
 
-Status: **draft, 2026-09-25**; the questions below go to Noah before the work starts. What
+Status: **settled, 2026-09-25** (D78: the questions below answered); ready to start with DR1. What
 the dragons become is in [dragons, version 2](../design/dragons-v2.md): 8 base breeds and 28
 crossbreeds (36 kinds), each with three painted variants and a rare one, their own bodies,
 babies, eggs and animations, stats, manners and traits, all rideable. It comes before the
-rest of Beta (D76); Beta's step 2 waits for it (the order is question 7).
+rest of Beta (D76): the four bases, into the game, and their six crossbreeds; then Beta
+resumes, with bases five to eight and their crossbreeds in waves alongside it (D78).
 
 ## How the work is shared
 - **Me (the lead):** the shared pipeline and the engine, the checks, merging, building and
@@ -64,27 +65,20 @@ body in every pose (as the spine test does now); the textures' sizes; loads and 
 Azahar with no unmapped memory access; the den at 60 fps with three dragons of the heaviest
 kinds; a review sheet.
 
-## Questions
-1. **Elements** (the heartglow's colour, favourite foods, the Lantern Trial's breath):
-   A) each base breed has one element (Pouncer Ember, Puffback Grove, Crestwing Gale,
-   Ribbontail Tide; the next four Frost, Lumen and two new ones, chosen at R13), and a
-   crossbreed carries both *(my pick)*; B) elements apart from breeds (any breed, any
-   element).
-2. **Colours per dragon:** A) the variant's painted colours with a small shift per dragon, so
-   no two are quite alike *(my pick)*; B) full colour genes on top (any colour on any kind);
-   C) exactly the variant's colours.
-3. **Stats:** A) the design's three (Wing, Wit, Spark) plus Might (carrying, tugging, Fruit
-   Catch) and Heart (bond and stamina) *(my pick)*; B) the three only.
-4. **Traits per dragon:** A) up to two (three on a rare variant), from about 30 in four
-   tiers from common to legendary *(my pick)*; B) one; C) up to four, as in Palworld.
-5. **Manners:** A) the six personalities grow to about ten (adding Gentle, Mischievous,
-   Greedy and Stubborn), each nudging one stat up and one down a little, as Pokémon's
-   natures do *(my pick)*; B) keep the six, with no effect on stats.
-6. **The rare variant's odds:** A) about 1 in 20, better with a rare parent *(my pick)*;
-   B) rarer (1 in 50); C) commoner (1 in 10).
-7. **The order:** A) the four bases, into the game with run 15, then their six crossbreeds;
-   then Beta resumes, with bases five to eight and their 22 crossbreeds made in waves
-   alongside it *(my pick)*; B) all 36 before Beta goes on; C) the four bases only, then Beta.
-8. **Reviews:** A) a sheet per kind (every stage and variant, a turntable, a strip of its
-   key animations) to approve or note, then the game on the 3DS *(my pick)*; B) only the
-   game on the 3DS.
+## Past the 36
+New dragons after the 36 are **second-layer crossbreeds** (a kind from two particular
+crossbreeds, a recipe), never more base breeds; not every first crossbreed gets one (D78).
+
+## Questions (answered 2026-09-25, D78)
+1. **Elements: A**, each base breed one element, a crossbreed both; one-word types ("Ember",
+   "Gale", "Frost"), shown as two for a crossbreed. Elements are attached now and used more as
+   the game grows, up to Pokémon-style battles much later.
+2. **Colours: A**, the variant's colours with a small shift per dragon.
+3. **Stats: A**, with functional names: Wing, Wit, Might, **Breath** (was Spark), **Stamina**
+   (was Heart).
+4. **Traits: A**, up to two (three on a rare variant), about 30 in four tiers.
+5. **Manners: A**, ten, each nudging one stat up and one down.
+6. **Rare variant: A**, about 1 in 20, better with a rare parent.
+7. **Order: A**, the four bases, run 15, their six crossbreeds, then Beta, with the rest
+   planned (DR5) and made in waves alongside it; later additions as a second layer.
+8. **Reviews: A**, a sheet per kind to approve or note, then the game on the 3DS.

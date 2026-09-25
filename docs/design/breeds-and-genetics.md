@@ -1,5 +1,11 @@
 # Breeds & Genetics
 
+> **Being replaced (D77–D78):** the new dragons, 8 base breeds with one element each and a
+> crossbreed for every pair, with variants, five stats (Wing, Wit, Might, Breath, Stamina),
+> manners and traits, are in [dragons, version 2](dragons-v2.md). This page describes the
+> dragons in the game until the revamp lands (DR3).
+
+
 Status: **v0.2 — approved** (2026-09-23, review round 1)
 
 Goal: lots of visibly different dragons from a **small, understandable** rule set that is

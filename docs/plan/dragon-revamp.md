@@ -1,6 +1,8 @@
 # The Dragon Revamp: Work Plan (D76–D77)
 
-Status: **settled, 2026-09-25** (D78: the questions below answered); ready to start with DR1. What
+Status: **under way, 2026-09-25.** DR1 done (the kit, the engine's groundwork, the Pouncer);
+DR2 widened by D79: **all eight base breeds and the first crossbreed** now, by eight Opus 5.5
+subagents in parallel, then R11b. What
 the dragons become is in [dragons, version 2](../design/dragons-v2.md): 8 base breeds and 28
 crossbreeds (36 kinds), each with three painted variants and a rare one, their own bodies,
 babies, eggs and animations, stats, manners and traits, all rideable. It comes before the
@@ -17,7 +19,13 @@ resumes, with bases five to eight and their crossbreeds in waves alongside it (D
   matches. I merge each kind once it passes, and keep the shared library steady during a
   wave (changes to it go through me).
 
-## DR1 — The pipeline and the engine's groundwork (me)
+## DR1 — The pipeline and the engine's groundwork (me) ✅
+Done 2026-09-25: `tools/blender/dragonkit/` (model, texture, export, review), `tools/dragons/`
+(kinds, plans, clipkit, check, lore, gen_tables), per-kind eggs, `docs/tech/dragon-kit.md`; in
+the game `src/core/kinds` (generated tables, colourings, part selection) and the renderer
+taking kinds as look slots with each plan's clips (dev menu page 1: Next kind, Kind
+colouring); `tests/test_kinds.cpp`; `tests/autotest/kinds.txt`. The Pouncer is the first kind.
+
 - **A kit for kinds** (`tools/blender/dragonkit/`): building a skeleton from a body plan's
   description, skinning, the growth stages (baby; young, adolescent, grown), parts seated in
   the idle pose, the hand-painted texture baker, the exporter, the review renders (stages,
@@ -33,7 +41,10 @@ resumes, with bases five to eight and their crossbreeds in waves alongside it (D
 - **Engine:** a table of kinds (name, body plan, size, base stats, tendencies), the models
   and clips by kind and plan, eyes whose pupils follow the mood, a rider's seat per plan.
 
-## DR2 — The four base breeds (four subagents in parallel)
+## DR2 — The base breeds (D79: all eight, and the first crossbreed; eight subagents in parallel)
+- Common: Pouncer (Ember, the lead), Puffback (Grove), Curlstone (Stone); harder to get:
+  Crestwing (Gale), Ribbontail (Tide), Flurrytail (Frost); rare: Glimmermoth (Lumen),
+  Duskwing (Shade); crossbreed: Blazeplume (Pouncer x Crestwing).
 - Each: its body plan (skeleton and every clip, grown and baby), its egg, baby and grown
   body through the stages, three painted variants and the rare variant's model, the checks
   passed, the renders.

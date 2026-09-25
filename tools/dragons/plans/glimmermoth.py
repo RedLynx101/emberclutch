@@ -255,7 +255,7 @@ WINGS_BELLY = raised(-26, -30)                     # spread flat on the floor (l
 ANT_REST = {"antenna*": (0.0, 0.0, 0.0)}
 ANT_PERK = {"antenna*": (-14.0, 0.0, 4.0)}          # forward and up: curious, eager
 ANT_BACK = {"antenna*": (26.0, 0.0, -6.0)}          # laid back: content, or wary
-ANT_SLEEP = {"antenna*": (40.0, 0.0, -14.0)}        # flat back along the neck
+ANT_SLEEP = {"antenna*": (62.0, 0.0, -10.0)}        # flat back along the neck
 ANT_DROOP = {"antenna*": (18.0, 0.0, -26.0)}        # drooping out to the sides: sad
 
 
@@ -491,6 +491,102 @@ def _own_clips():
     fd = Clip("fly_dive", 1.0, loop=True).pose(0.0, dive)
     fd.wave(wingbeat(0.25, 3.0, sweep=0.0, flex=3.0, tail=12.0, hind_low=0.0, bob=0.0)).wave(tail_sway(0.4, 0.5))
     out.append(fd)
+    out += _resting_clips(cl)
+    return out
+
+
+# The neck this plan is made for, as rest directions (bone head to tail, dragon space): an upright
+# neck rising from the chest, the head level. aim() poses a chain along target directions.
+NECK_REST = [("neck1", (0.0, -0.45, 0.89)), ("neck2", (0.0, -0.33, 0.94)), ("neck3", (0.0, -0.43, 0.9)),
+             ("head", (0.0, -0.95, -0.3))]
+
+
+def _between(a, b):
+    """The shortest rotation taking direction a onto b."""
+    a, b = _unit(a), _unit(b)
+    axis = _cross(a, b)
+    s = math.sqrt(_dot(axis, axis))
+    c = max(-1.0, min(1.0, _dot(a, b)))
+    if s < 1e-9:
+        return [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    return _rot(axis, math.degrees(math.atan2(s, c)))
+
+
+def aim(chain, targets, roll=None):
+    """(pitch, yaw, roll) keys pointing each bone of a parent-to-child chain along its target
+    direction (the parent's turn carries the child; each key is what's left for the child).
+    roll: {bone: degrees} of twist about the bone after aiming (a head tilting)."""
+    keys, parent = {}, [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    for (bone, rest), target in zip(chain, targets):
+        world = _between(rest, target)
+        if roll and bone in roll:
+            world = _mm(_rot(target, roll[bone]), world)
+        keys[bone] = pyr(_mm(_transpose(parent), world))
+        parent = world
+    return keys
+
+
+def _resting_clips(cl):
+    """Lying down, curling up to sleep, sulking: a long upright neck has to come down before
+    it can curl round (the classic neck, nearly level, just turns), so these have their own
+    poses: lying with the head held up, curled in a ring with the head resting by the tail
+    and the antennae laid flat back, and sulking with the head low and turned away."""
+    Clip = clipkit.Clip
+    F = WINGS_FOLDED
+    legs = {k: v for k, v in _body(cl.LIE).items() if k.rstrip("*") in ("arm_up", "arm_lo", "hand", "leg_up",
+                                                                           "leg_lo", "foot")}
+    lie = merge(F, legs, ANT_BACK, {"neck1": (-26, 0, 0), "neck2": (-8, 0, 0), "neck3": (8, 0, 0), "head": (14, 0, 0),
+                                    "tail1": (-6, 0, 0), "tail2": (0, 14, 0), "tail3": (0, 20, 0), "tail4": (0, 24, 0)})
+    # Curled up: the neck sweeps down and round to its left (the den camera's side), the head
+    # laid back beside the forelegs, cheek down; the tail curls round the same way to meet it.
+    curl = merge(F, legs, ANT_SLEEP, aim(NECK_REST, [(-0.3, -0.7, -0.65), (-0.85, -0.15, -0.5), (-0.6, 0.75, -0.25),
+                                                     (-0.15, 0.97, -0.12)], roll={"head": -26}),
+                 {"tail1": (0, -30, 0), "tail2": (0, -34, 0), "tail3": (0, -36, 0), "tail4": (0, -34, 0)})
+    # A baby's big head can't come round: it tucks its chin down on its paws, head tilted.
+    curl_h = merge(F, legs, ANT_SLEEP, {"neck1": (-18, -8, 0), "neck2": (-10, -6, 0), "neck3": (-6, 0, 0),
+                                        "head": (-20, -10, -14), "tail1": (0, -30, 0), "tail2": (0, -34, 0),
+                                        "tail3": (0, -36, 0), "tail4": (0, -34, 0)})
+    sulk = merge(F, legs, ANT_DROOP, {"neck1": (-42, -24, 0), "neck2": (-12, -16, 0), "neck3": (0, -10, 0),
+                                      "head": (4, -14, -12),
+                                      "tail1": (0, -30, 0), "tail2": (0, -30, 0), "tail3": (0, -28, 0), "tail4": (0, -26, 0)})
+    crouch = merge(F, _body(cl.CROUCH_BODY), ANT_BACK)
+    belly = merge(WINGS_BELLY, _body(cl.BELLY_UP), ANT_BACK)
+    stretch = merge(lie, WINGS_STRETCH, {"arm_up*": (20, 0, 0), "arm_lo*": (-20, 0, 0), "hips": (-14, 0, 0),
+                                         "leg_up*": (30, 0, 0), "leg_lo*": (-50, 0, 0), "neck1": (40, 0, 0),
+                                         "neck2": (8, 0, 0), "head": (14, 0, 0), "snout": (6, 0, 0),
+                                         "jaw": (-32, 0, 0)}, {"antenna*": (-40, 0, 10)})
+    rise = merge(WINGS_HALF, ANT_PERK, {"arm_up*": (22, 0, 0), "hips": (-10, 0, 0), "neck1": (10, 0, 0),
+                                        "head": (6, 0, 0)})
+    stretch_h = merge(stretch, {"neck1": (-26, 0, 0), "neck2": (-8, 0, 0), "head": (6, 0, 0)})
+    sulk_h = merge(F, legs, ANT_DROOP, {"neck1": (-14, -10, 0), "neck2": (-6, -8, 0), "head": (-16, -16, 6),
+                                        "tail1": (0, -30, 0), "tail2": (0, -30, 0), "tail3": (0, -28, 0),
+                                        "tail4": (0, -26, 0)})
+    rest = merge(F, ANT_REST)
+    out = [
+        Clip("lie_down", 1.1).pose(0.0, rest).pose(0.55, crouch).pose(1.1, lie).event(0.9, "thump"),
+        Clip("lie_loop", 4.0, loop=True).pose(0.0, lie).wave(breathe(1.2, 4.0)).wave(tail_sway(0.4, 4.0))
+        .wave(fanning(4.0, 6.0)).wave(antenna_sway(2.0, 4.0)),
+        Clip("curl_up", 1.4).pose(0.0, lie).pose(0.7, merge(lie, {"neck1": (-34, -14, 0), "neck2": (-8, -12, 0)}))
+        .pose(1.4, curl),
+        Clip("sleep", 4.8, loop=True).pose(0.0, curl).wave(breathe(1.8, 4.8)).wave(fanning(4.8, 4.0, lag=0.2))
+        .wave(antenna_sway(1.0, 4.8)),
+        Clip("wake", 2.6).pose(0.0, curl).pose(0.6, lie).pose(1.3, stretch).pose(1.9, rise).pose(2.6, rest)
+        .wave(flutter(1.35, 1.85, 10.0)).event(1.3, "yawn"),
+        Clip("curl_up_h", 1.4).pose(0.0, lie).pose(1.4, curl_h),
+        Clip("sleep_h", 4.8, loop=True).pose(0.0, curl_h).wave(breathe(1.8, 4.8)).wave(fanning(4.8, 4.0, lag=0.2))
+        .wave(antenna_sway(1.0, 4.8)),
+        Clip("wake_h", 2.6).pose(0.0, curl_h).pose(0.6, lie).pose(1.3, stretch_h).pose(1.9, rise).pose(2.6, rest)
+        .wave(flutter(1.35, 1.85, 10.0)).event(1.3, "yawn"),
+        Clip("sulk_h", 1.5).pose(0.0, rest).pose(0.7, crouch).pose(1.5, sulk_h).event(0.5, "whimper")
+        .event(1.2, "thump"),
+        Clip("sulk_loop_h", 5.0, loop=True).pose(0.0, sulk_h)
+        .wave(lambda t: {"chest": (3 * max(0.0, sin01(t, 5.0)), 0, 0), "head": (-2 * max(0.0, sin01(t, 5.0)), 0, 0)}),
+        Clip("nap_flop", 0.7).pose(0.0, rest).pose(0.7, lie).event(0.55, "thump"),
+        Clip("sulk", 1.5).pose(0.0, rest).pose(0.7, crouch).pose(1.5, sulk).event(0.5, "whimper").event(1.2, "thump"),
+        Clip("sulk_loop", 5.0, loop=True).pose(0.0, sulk)
+        .wave(lambda t: {"chest": (3 * max(0.0, sin01(t, 5.0)), 0, 0), "head": (-2 * max(0.0, sin01(t, 5.0)), 0, 0)}),
+        Clip("roll_over", 1.1).pose(0.0, rest).pose(0.45, lie).pose(1.1, belly).event(0.8, "thump"),
+    ]
     return out
 
 

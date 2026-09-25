@@ -52,10 +52,10 @@ META = dict(
 )
 
 VARIANTS = [
-    dict(name="Lumen", base=(0.99, 0.90, 0.70), accent=(1.0, 0.97, 0.88), pattern=(0.95, 0.72, 0.32),
-         horn=(0.97, 0.80, 0.44), membrane=(1.0, 0.88, 0.56), iris=(0.075, 0.042, 0.026), glow=(1.0, 0.84, 0.40),
+    dict(name="Lumen", base=(1.0, 0.85, 0.54), accent=(1.0, 0.96, 0.84), pattern=(0.93, 0.62, 0.22),
+         horn=(0.98, 0.78, 0.38), membrane=(1.0, 0.85, 0.46), iris=(0.075, 0.042, 0.026), glow=(1.0, 0.84, 0.40),
          pupil=(0.04, 0.02, 0.02), pattern_channel="r", glow_channel=None),
-    dict(name="Rosy Maple", base=(1.0, 0.86, 0.44), accent=(1.0, 0.95, 0.74), pattern=(0.92, 0.42, 0.56),
+    dict(name="Rosy Maple", base=(1.0, 0.9, 0.4), accent=(1.0, 0.97, 0.76), pattern=(0.92, 0.42, 0.56),
          horn=(0.95, 0.56, 0.62), membrane=(0.97, 0.60, 0.68), iris=(0.085, 0.03, 0.045), glow=(1.0, 0.88, 0.52),
          pupil=(0.05, 0.02, 0.03), pattern_channel="g", glow_channel=None),
     dict(name="Luna", base=(0.84, 0.95, 0.82), accent=(0.97, 1.0, 0.94), pattern=(0.60, 0.44, 0.66),
@@ -844,17 +844,18 @@ def parts(kit, d):
     puff = _puff(kit, "tail_puff", base, tdir, 0.36 * k, 0.12 * k)
     puff.data.materials.append(mats["accent_flat"])
     out.append(("tail_tip", 0, [(puff, "tail4")]))
-    # Rare (Sunburst): a crown of glowing sun-ray plumes behind the antennae.
+    # Rare (Sunburst): a glowing sunburst halo behind the antennae, long and short rays
+    # fanned in a half circle.
     crown = []
-    rays = kit.lod([(-62, 0.62), (-31, 0.8), (0, 0.92), (31, 0.8), (62, 0.62)], [(-45, 0.7), (0, 0.9), (45, 0.7)])
+    rays = kit.lod([(-84, 0.62), (-56, 0.9), (-28, 0.66), (0, 1.0), (28, 0.66), (56, 0.9), (84, 0.62)],
+                   [(-60, 0.8), (0, 1.0), (60, 0.8)])
     h = F["head"]
     for j, (ang, ln) in enumerate(rays):
         a = math.radians(ang)
-        basep = kit.head_point((0.07 * math.sin(a), 0.12, 0.17))
-        dvec = V((math.sin(a) * 0.9, 0.55, 0.75 * math.cos(a) + 0.2)).normalized()
-        L = ln * (0.34 if baby else 0.5) * h["k"]
-        pl = kit.blade(f"sunray_{j}", basep, dvec, V((math.cos(a), 0.0, -math.sin(a) * 0.5)), L, L * 0.34,
-                       0.012)
+        out_dir = V((math.sin(a), 0.5, math.cos(a))).normalized()    # up and out, leaning back
+        basep = kit.head_point((0.13 * math.sin(a), 0.14, 0.06 + 0.12 * math.cos(a)))
+        L = ln * (0.38 if baby else 0.66) * h["k"]
+        pl = kit.blade(f"sunray_{j}", basep, out_dir, V((math.cos(a), 0.0, -math.sin(a))), L, L * 0.36, 0.012)
         pl.data.materials.append(mats["rune"])
         crown.append((pl, "head"))
     out.append(("spikes", 1, crown))

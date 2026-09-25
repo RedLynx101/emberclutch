@@ -3,14 +3,33 @@ its folded wings, like a bat; it has no front legs (no arm_* bones).
 
 Skeleton (38 bones): 24 body bones (hips, belly, chest, a three-bone neck, head, snout, jaw,
 eyes, a six-bone whip tail, the hind legs, and two ear bones so the tall bat ears can
-swivel) and 7 wing bones a side (arm, forearm, the thumb it leans on, four fingers).
+swivel; they carry only the ear parts, no skin) and 7 wing bones a side (arm, forearm, the
+thumb it leans on, four fingers). The body draw counts 23 bones (its skin uses 21: not the
+ears), the wing draw 17 (the wing bones and chest, belly, hips for the membrane's flank).
 CONTACTS: the wing thumbs (wrist to thumb claw, on the ground when it stands) and the feet.
+The baby (the hatchling form) stands up on its hind legs; its tiny wing-arms don't reach the
+ground, so its thumbs are contacts in name only.
 
-The wing poses (standing on the wrists, the cloak, the walk's strides...) are solved in
-Blender from targets (where the wrist goes, which way each bone points, which way the
-folded membrane faces) against the Duskwing's grown form, and kept below as keys:
-  blender -b -P tools/dragons/plans/duskwing.py -- --solve [--render pose,pose] [--stage adult]
-rewrites the SOLVED block of this file (and renders the poses into build/kit/duskwing/).
+Poses. Every wing pose is solved in Blender from targets (where the wrist goes, by two-bone
+IK, and which way each bone points and the folded membrane faces) against the kind's body in
+that pose, and kept below as keys (SOLVED for the grown form, SOLVED_H for the baby's own):
+  blender -b -P tools/dragons/plans/duskwing.py -- --solve [--stage hatchling] [--poses a,b]
+          [--render all|a,b --views three_quarter,side --texture --variant 3 --out C:/abs/prefix]
+rewrites the SOLVED block of this file (and renders the poses and a sheet).
+  stand       on the wrists, the fingers folded up along the forearms: a high-collared cloak
+  walk_*      the crawl-walk's stride (lift, plant, push); run_*: the bound (both wings at once)
+  crouch, eat, stalk_*   low; eating with the wrists wide and the elbows up
+  sit         sitting up like a cat, wrists before the feet, the folded wings round it
+  lie, curl   lying with the wings folded like a bird's along the flanks; asleep with them
+              drawn up over the back like a blanket
+  bow, flare, stretch, rear, open   play and display: fanned low, flared, one wing spread,
+              reared up to spar, spread wide
+  fly, glide, dive, belly_up
+The baby's table (H_POSES): sit (its tiny wings wrapped round its tummy), curl (asleep sitting
+up, cloaked), lie (flopped on its tummy), eat, crouch, open, stretch, rear, bow, belly_up.
+
+Clips: one clip builder (_clip_set) and two pose tables (_tables): the grown set, and the baby's
+own versions ("<name>_h", BABY_CLIPS) of every clip that poses the body, plus its scamper.
 """
 import math
 import os
@@ -182,13 +201,15 @@ H_SIT_BODY = {"leg_up*": (52, 0, 0), "leg_lo*": (-46, 0, 0), "foot*": (14, 0, 0)
 H_LIE_BODY = {"hips": (-62, 0, 0), "leg_up*": (-12, 0, 0), "leg_lo*": (-24, 0, 0), "foot*": (10, 0, 0),
               "neck1": (20, 0, 0), "neck3": (14, 0, 0), "head": (24, 0, 0), "tail1": (20, 0, 0), "tail2": (0, 14, 0),
               "tail3": (0, 18, 0), "tail4": (0, 18, 0)}
-H_CROUCH_BODY = {"leg_up*": (40, 0, 0), "leg_lo*": (-60, 0, 0), "foot*": (22, 0, 0), "hips": (-6, 0, 0), "head": (4, 0, 0)}
+H_CROUCH_BODY = {"leg_up*": (40, 0, 0), "leg_lo*": (-60, 0, 0), "foot*": (22, 0, 0), "hips": (-6, 0, 0),
+                 "head": (4, 0, 0)}
 H_POSES = {
     "sit": dict(body=H_SIT_BODY, wing=_stand((0.12, -0.36, 0.26), pole=(0.6, 0.5, -0.1), thumb=(-0.3, -0.85, 0.3),
                                            normal=(0.6, -0.8, 0.1))),
     "curl": dict(body=dict(H_SIT_BODY, **{"hips": (4, 0, 0), "neck1": (-10, 0, 0), "neck3": (-10, 0, 0),
                                           "head": (-18, 0, 10), "ear*": (46, 24, -30)}),
-                 wing=_stand((0.07, -0.36, 0.2), pole=(0.6, 0.6, 0.0), thumb=(-0.3, -0.85, 0.3), normal=(0.5, -0.85, 0.2),
+                 wing=_stand((0.07, -0.36, 0.2), pole=(0.6, 0.6, 0.0), thumb=(-0.3, -0.85, 0.3),
+                             normal=(0.5, -0.85, 0.2),
                              f1=("fold", (-0.1, 0.0, 0.25)), f2=("fold", (-0.05, 0.1, 0.2)))),
     "lie": dict(body=H_LIE_BODY, wing=_stand((0.34, -0.62, 0.04), pole=(0.3, 0.7, 0.6), thumb=(0.0, -0.95, -0.3),
                                            normal=(0.6, 0.0, 0.8))),
@@ -201,7 +222,8 @@ H_POSES = {
                           "head": (14, 0, 0), "tail1": (24, 0, 0)},
                     wing=dict(rest=(-4, 16, 8))),
     "rear": dict(body={"hips": (6, 0, 0), "head": (-4, 0, 0)},
-                 wing=_stand((0.16, -0.5, 0.62), pole=(0.5, 0.4, -0.5), thumb=(0.0, -0.7, 0.7), normal=(0.8, -0.5, 0.2))),
+                 wing=_stand((0.16, -0.5, 0.62), pole=(0.5, 0.4, -0.5), thumb=(0.0, -0.7, 0.7),
+                             normal=(0.8, -0.5, 0.2))),
     "bow": dict(body={"hips": (-40, 0, 0), "leg_up*": (30, 0, 0), "leg_lo*": (-20, 0, 0), "neck1": (18, 0, 0),
                       "neck3": (10, 0, 0), "head": (16, 0, 0), "tail1": (30, 0, 0), "tail2": (16, 0, 0)},
                 wing=dict(wrist=(0.34, -0.62, 0.03), pole=(0.3, 0.5, 0.8), thumb=(0.1, -0.9, -0.4),
@@ -216,44 +238,112 @@ H_POSES = {
 
 # --- solved poses (generated by --solve; do not edit by hand) ---
 SOLVED = {
-    "stand": {"wing_arm": (-117.1, 33.2, -27.2), "wing_fore": (-6.2, -114.2, 9.7), "wing_thumb": (14.3, 2.9, 19.1), "wing_f1": (-34.7, 139.6, -54.5), "wing_f2": (-13.1, 114.5, -58.3), "wing_f3": (7.5, 91.9, -49.4), "wing_f4": (19.2, 63.8, -29.6)},
-    "walk_lift": {"wing_arm": (-19.8, -150.3, 95.4), "wing_fore": (-53.0, -163.0, -8.2), "wing_thumb": (12.1, 6.2, 8.9), "wing_f1": (-34.9, 139.4, -54.0), "wing_f2": (-13.7, 113.9, -58.6), "wing_f3": (6.8, 91.3, -50.5), "wing_f4": (19.1, 63.4, -31.5)},
-    "walk_plant": {"wing_arm": (33.0, -123.8, 46.7), "wing_fore": (-38.9, 99.3, -63.2), "wing_thumb": (7.8, -5.9, 17.6), "wing_f1": (-34.6, 139.1, -54.1), "wing_f2": (-13.5, 113.8, -58.4), "wing_f3": (6.8, 91.3, -50.1), "wing_f4": (18.8, 63.3, -31.0)},
-    "walk_push": {"wing_arm": (-107.7, 49.4, -51.2), "wing_fore": (-37.1, -102.7, 1.5), "wing_thumb": (15.1, 26.6, -5.7), "wing_f1": (-34.9, 139.4, -54.0), "wing_f2": (-13.8, 113.8, -58.6), "wing_f3": (6.8, 91.3, -50.6), "wing_f4": (19.2, 63.4, -31.7)},
-    "run_lift": {"wing_arm": (-135.3, 20.4, -112.5), "wing_fore": (-53.0, -170.9, -36.9), "wing_thumb": (10.3, 15.8, -6.2), "wing_f1": (-35.6, 139.8, -53.4), "wing_f2": (-14.6, 113.5, -59.2), "wing_f3": (6.2, 91.0, -52.2), "wing_f4": (19.6, 63.5, -34.1)},
-    "run_plant": {"wing_arm": (33.5, -126.0, 36.9), "wing_fore": (-25.7, 96.6, -60.2), "wing_thumb": (9.9, -1.8, 12.9), "wing_f1": (-35.0, 139.4, -54.0), "wing_f2": (-13.8, 113.8, -58.7), "wing_f3": (6.8, 91.3, -50.7), "wing_f4": (19.2, 63.4, -31.7)},
-    "run_push": {"wing_arm": (-113.5, 35.4, -74.2), "wing_fore": (-43.9, -108.6, -1.5), "wing_thumb": (14.1, 28.6, -8.4), "wing_f1": (-34.8, 139.2, -53.9), "wing_f2": (-13.8, 113.6, -58.6), "wing_f3": (6.6, 91.1, -50.7), "wing_f4": (19.0, 63.2, -31.9)},
-    "crouch": {"wing_arm": (-121.0, 25.9, -105.6), "wing_fore": (-53.2, -169.6, -35.8), "wing_thumb": (9.7, 3.8, -0.9), "wing_f1": (-35.7, 140.0, -53.3), "wing_f2": (-14.8, 113.4, -59.3), "wing_f3": (6.1, 91.0, -52.5), "wing_f4": (19.6, 63.6, -34.7)},
-    "stalk_lift": {"wing_arm": (-115.9, 25.2, -107.5), "wing_fore": (-53.0, -170.0, -36.1), "wing_thumb": (8.8, 15.9, -10.4), "wing_f1": (-36.0, 140.3, -53.0), "wing_f2": (-15.2, 113.4, -59.5), "wing_f3": (5.7, 91.0, -53.0), "wing_f4": (19.5, 63.8, -35.5)},
-    "stalk_plant": {"wing_arm": (-114.1, 29.1, -99.6), "wing_fore": (-53.0, -170.9, -36.9), "wing_thumb": (11.6, 12.1, -4.2), "wing_f1": (-36.0, 140.5, -53.2), "wing_f2": (-15.0, 113.9, -59.4), "wing_f3": (5.9, 91.5, -52.6), "wing_f4": (19.5, 64.3, -34.8)},
-    "stalk_push": {"wing_arm": (-128.0, 24.1, -110.8), "wing_fore": (-53.5, -167.9, -34.7), "wing_thumb": (7.5, 23.9, -14.3), "wing_f1": (-35.5, 139.4, -53.3), "wing_f2": (-14.7, 113.0, -59.4), "wing_f3": (6.2, 90.6, -52.5), "wing_f4": (19.7, 63.2, -34.7)},
-    "eat": {"wing_arm": (-155.7, 29.4, -47.6), "wing_fore": (-38.8, -141.5, 32.4), "wing_thumb": (10.7, -0.4, 12.7), "wing_f1": (-35.0, 139.5, -54.0), "wing_f2": (-13.7, 113.9, -58.7), "wing_f3": (6.9, 91.4, -50.6), "wing_f4": (19.2, 63.5, -31.6)},
-    "sit": {"wing_arm": (8.9, 177.0, 67.4), "wing_fore": (-54.0, -165.1, -35.0), "wing_thumb": (23.6, -18.1, 27.0), "wing_f1": (-34.5, 138.7, -54.9), "wing_f2": (-12.2, 113.8, -60.6), "wing_f3": (10.0, 92.6, -53.1), "wing_f4": (24.8, 65.3, -33.3)},
-    "lie": {"wing_arm": (27.8, -72.7, -31.4), "wing_fore": (-31.8, 132.9, -54.3), "wing_thumb": (-13.7, -6.6, -4.4), "wing_f1": (-34.6, 137.0, -50.7), "wing_f2": (-17.4, 117.1, -59.0), "wing_f3": (1.7, 102.6, -55.8), "wing_f4": (16.3, 85.7, -43.1)},
-    "curl": {"wing_arm": (3.5, -83.7, -20.3), "wing_fore": (-36.4, 143.3, -62.3), "wing_thumb": (-30.1, 1.2, -14.6), "wing_f1": (-26.1, 125.5, -42.2), "wing_f2": (-13.2, 105.4, -51.1), "wing_f3": (3.1, 91.6, -50.2), "wing_f4": (16.7, 78.2, -40.3)},
-    "bow": {"wing_arm": (-9.2, 26.8, 17.9), "wing_fore": (6.1, -102.5, -40.2), "wing_thumb": (39.8, 33.7, 16.7), "wing_f1": (49.5, 94.7, -15.1), "wing_f2": (45.3, 85.3, -25.1), "wing_f3": (55.1, 70.1, -21.1), "wing_f4": (62.7, 45.3, 4.4)},
-    "stretch": {"wing_arm": (17.2, 14.5, 5.6), "wing_fore": (-0.0, -0.0, 0.0), "wing_thumb": (-0.0, -0.0, 0.0), "wing_f1": (0.0, 0.0, -0.0), "wing_f2": (-0.0, -0.0, 0.0), "wing_f3": (-0.0, -0.0, 0.0), "wing_f4": (-0.0, -0.0, 0.0)},
-    "flare": {"wing_arm": (-138.2, 22.4, -34.6), "wing_fore": (-10.7, -127.4, 22.0), "wing_thumb": (12.9, 0.8, 20.4), "wing_f1": (-37.0, 141.8, -54.5), "wing_f2": (-6.4, 106.0, -52.2), "wing_f3": (15.5, 69.4, -32.3), "wing_f4": (18.7, 29.6, -3.5)},
-    "rear": {"wing_arm": (-111.3, 62.0, -38.5), "wing_fore": (-56.2, -98.7, 13.5), "wing_thumb": (26.4, -26.1, 11.9), "wing_f1": (-36.5, 142.6, -53.0), "wing_f2": (-15.7, 115.5, -60.7), "wing_f3": (5.6, 94.2, -55.3), "wing_f4": (20.6, 68.7, -38.8)},
-    "open": {"wing_arm": (-47.5, -11.6, 11.0), "wing_fore": (0.0, 0.0, -0.0), "wing_thumb": (-0.0, -0.0, 0.0), "wing_f1": (-0.0, 0.0, -0.0), "wing_f2": (-0.0, -0.0, 0.0), "wing_f3": (-0.0, 0.0, 0.0), "wing_f4": (-0.0, -0.0, 0.0)},
-    "fly": {"wing_arm": (-0.0, -0.0, -0.0), "wing_fore": (0.0, 0.0, -0.0), "wing_thumb": (-0.0, -0.0, 0.0), "wing_f1": (-0.0, -0.0, 0.0), "wing_f2": (-0.0, -0.0, 0.0), "wing_f3": (-0.0, 0.0, 0.0), "wing_f4": (-0.0, -0.0, 0.0)},
-    "glide": {"wing_arm": (-0.0, -4.0, -6.0), "wing_fore": (0.0, 0.0, 0.0), "wing_thumb": (-0.0, -0.0, -0.0), "wing_f1": (-0.0, 0.0, -0.0), "wing_f2": (-0.0, -0.0, 0.0), "wing_f3": (-0.0, -0.0, 0.0), "wing_f4": (-0.0, -0.0, 0.0)},
-    "dive": {"wing_arm": (-31.8, 14.1, -15.6), "wing_fore": (0.0, 39.1, -33.3), "wing_thumb": (-3.7, -84.3, 26.0), "wing_f1": (0.6, 1.9, -8.8), "wing_f2": (-0.1, -25.1, -8.7), "wing_f3": (1.0, -51.1, -3.2), "wing_f4": (-2.8, -75.1, 6.8)},
-    "belly_up": {"wing_arm": (-24.8, 168.0, -20.1), "wing_fore": (7.6, 29.8, -10.0), "wing_thumb": (-2.7, 96.1, -35.6), "wing_f1": (-12.4, -35.5, -0.4), "wing_f2": (-29.7, -90.6, -6.8), "wing_f3": (-33.4, -150.1, -26.3), "wing_f4": (-22.6, 157.5, -38.6)},
+    "stand": {"wing_arm": (-117.1, 33.2, -27.2), "wing_fore": (-6.2, -114.2, 9.7), "wing_thumb": (14.3, 2.9, 19.1),
+        "wing_f1": (-34.7, 139.6, -54.5), "wing_f2": (-13.1, 114.5, -58.3), "wing_f3": (7.5, 91.9, -49.4),
+        "wing_f4": (19.2, 63.8, -29.6)},
+    "walk_lift": {"wing_arm": (-19.8, -150.3, 95.4), "wing_fore": (-53.0, -163.0, -8.2),
+        "wing_thumb": (12.1, 6.2, 8.9), "wing_f1": (-34.9, 139.4, -54.0), "wing_f2": (-13.7, 113.9, -58.6),
+        "wing_f3": (6.8, 91.3, -50.5), "wing_f4": (19.1, 63.4, -31.5)},
+    "walk_plant": {"wing_arm": (33.0, -123.8, 46.7), "wing_fore": (-38.9, 99.3, -63.2),
+        "wing_thumb": (7.8, -5.9, 17.6), "wing_f1": (-34.6, 139.1, -54.1), "wing_f2": (-13.5, 113.8, -58.4),
+        "wing_f3": (6.8, 91.3, -50.1), "wing_f4": (18.8, 63.3, -31.0)},
+    "walk_push": {"wing_arm": (-107.7, 49.4, -51.2), "wing_fore": (-37.1, -102.7, 1.5),
+        "wing_thumb": (15.1, 26.6, -5.7), "wing_f1": (-34.9, 139.4, -54.0), "wing_f2": (-13.8, 113.8, -58.6),
+        "wing_f3": (6.8, 91.3, -50.6), "wing_f4": (19.2, 63.4, -31.7)},
+    "run_lift": {"wing_arm": (-135.3, 20.4, -112.5), "wing_fore": (-53.0, -170.9, -36.9),
+        "wing_thumb": (10.3, 15.8, -6.2), "wing_f1": (-35.6, 139.8, -53.4), "wing_f2": (-14.6, 113.5, -59.2),
+        "wing_f3": (6.2, 91.0, -52.2), "wing_f4": (19.6, 63.5, -34.1)},
+    "run_plant": {"wing_arm": (33.5, -126.0, 36.9), "wing_fore": (-25.7, 96.6, -60.2),
+        "wing_thumb": (9.9, -1.8, 12.9), "wing_f1": (-35.0, 139.4, -54.0), "wing_f2": (-13.8, 113.8, -58.7),
+        "wing_f3": (6.8, 91.3, -50.7), "wing_f4": (19.2, 63.4, -31.7)},
+    "run_push": {"wing_arm": (-113.5, 35.4, -74.2), "wing_fore": (-43.9, -108.6, -1.5),
+        "wing_thumb": (14.1, 28.6, -8.4), "wing_f1": (-34.8, 139.2, -53.9), "wing_f2": (-13.8, 113.6, -58.6),
+        "wing_f3": (6.6, 91.1, -50.7), "wing_f4": (19.0, 63.2, -31.9)},
+    "crouch": {"wing_arm": (-121.0, 25.9, -105.6), "wing_fore": (-53.2, -169.6, -35.8),
+        "wing_thumb": (9.7, 3.8, -0.9), "wing_f1": (-35.7, 140.0, -53.3), "wing_f2": (-14.8, 113.4, -59.3),
+        "wing_f3": (6.1, 91.0, -52.5), "wing_f4": (19.6, 63.6, -34.7)},
+    "stalk_lift": {"wing_arm": (-115.9, 25.2, -107.5), "wing_fore": (-53.0, -170.0, -36.1),
+        "wing_thumb": (8.8, 15.9, -10.4), "wing_f1": (-36.0, 140.3, -53.0), "wing_f2": (-15.2, 113.4, -59.5),
+        "wing_f3": (5.7, 91.0, -53.0), "wing_f4": (19.5, 63.8, -35.5)},
+    "stalk_plant": {"wing_arm": (-114.1, 29.1, -99.6), "wing_fore": (-53.0, -170.9, -36.9),
+        "wing_thumb": (11.6, 12.1, -4.2), "wing_f1": (-36.0, 140.5, -53.2), "wing_f2": (-15.0, 113.9, -59.4),
+        "wing_f3": (5.9, 91.5, -52.6), "wing_f4": (19.5, 64.3, -34.8)},
+    "stalk_push": {"wing_arm": (-128.0, 24.1, -110.8), "wing_fore": (-53.5, -167.9, -34.7),
+        "wing_thumb": (7.5, 23.9, -14.3), "wing_f1": (-35.5, 139.4, -53.3), "wing_f2": (-14.7, 113.0, -59.4),
+        "wing_f3": (6.2, 90.6, -52.5), "wing_f4": (19.7, 63.2, -34.7)},
+    "eat": {"wing_arm": (-155.7, 29.4, -47.6), "wing_fore": (-38.8, -141.5, 32.4), "wing_thumb": (10.7, -0.4, 12.7),
+        "wing_f1": (-35.0, 139.5, -54.0), "wing_f2": (-13.7, 113.9, -58.7), "wing_f3": (6.9, 91.4, -50.6),
+        "wing_f4": (19.2, 63.5, -31.6)},
+    "sit": {"wing_arm": (8.9, 177.0, 67.4), "wing_fore": (-54.0, -165.1, -35.0), "wing_thumb": (23.6, -18.1, 27.0),
+        "wing_f1": (-34.5, 138.7, -54.9), "wing_f2": (-12.2, 113.8, -60.6), "wing_f3": (10.0, 92.6, -53.1),
+        "wing_f4": (24.8, 65.3, -33.3)},
+    "lie": {"wing_arm": (27.8, -72.7, -31.4), "wing_fore": (-31.8, 132.9, -54.3), "wing_thumb": (-13.7, -6.6, -4.4),
+        "wing_f1": (-34.6, 137.0, -50.7), "wing_f2": (-17.4, 117.1, -59.0), "wing_f3": (1.7, 102.6, -55.8),
+        "wing_f4": (16.3, 85.7, -43.1)},
+    "curl": {"wing_arm": (3.5, -83.7, -20.3), "wing_fore": (-36.4, 143.3, -62.3), "wing_thumb": (-30.1, 1.2, -14.6),
+        "wing_f1": (-26.1, 125.5, -42.2), "wing_f2": (-13.2, 105.4, -51.1), "wing_f3": (3.1, 91.6, -50.2),
+        "wing_f4": (16.7, 78.2, -40.3)},
+    "bow": {"wing_arm": (-9.2, 26.8, 17.9), "wing_fore": (6.1, -102.5, -40.2), "wing_thumb": (39.8, 33.7, 16.7),
+        "wing_f1": (49.5, 94.7, -15.1), "wing_f2": (45.3, 85.3, -25.1), "wing_f3": (55.1, 70.1, -21.1),
+        "wing_f4": (62.7, 45.3, 4.4)},
+    "stretch": {"wing_arm": (17.2, 14.5, 5.6), "wing_fore": (-0.0, -0.0, 0.0), "wing_thumb": (-0.0, -0.0, 0.0),
+        "wing_f1": (0.0, 0.0, -0.0), "wing_f2": (-0.0, -0.0, 0.0), "wing_f3": (-0.0, -0.0, 0.0),
+        "wing_f4": (-0.0, -0.0, 0.0)},
+    "flare": {"wing_arm": (-138.2, 22.4, -34.6), "wing_fore": (-10.7, -127.4, 22.0), "wing_thumb": (12.9, 0.8, 20.4),
+        "wing_f1": (-37.0, 141.8, -54.5), "wing_f2": (-6.4, 106.0, -52.2), "wing_f3": (15.5, 69.4, -32.3),
+        "wing_f4": (18.7, 29.6, -3.5)},
+    "rear": {"wing_arm": (-111.3, 62.0, -38.5), "wing_fore": (-56.2, -98.7, 13.5), "wing_thumb": (26.4, -26.1, 11.9),
+        "wing_f1": (-36.5, 142.6, -53.0), "wing_f2": (-15.7, 115.5, -60.7), "wing_f3": (5.6, 94.2, -55.3),
+        "wing_f4": (20.6, 68.7, -38.8)},
+    "open": {"wing_arm": (-47.5, -11.6, 11.0), "wing_fore": (0.0, 0.0, -0.0), "wing_thumb": (-0.0, -0.0, 0.0),
+        "wing_f1": (-0.0, 0.0, -0.0), "wing_f2": (-0.0, -0.0, 0.0), "wing_f3": (-0.0, 0.0, 0.0),
+        "wing_f4": (-0.0, -0.0, 0.0)},
+    "fly": {"wing_arm": (-0.0, -0.0, -0.0), "wing_fore": (0.0, 0.0, -0.0), "wing_thumb": (-0.0, -0.0, 0.0),
+        "wing_f1": (-0.0, -0.0, 0.0), "wing_f2": (-0.0, -0.0, 0.0), "wing_f3": (-0.0, 0.0, 0.0),
+        "wing_f4": (-0.0, -0.0, 0.0)},
+    "glide": {"wing_arm": (-0.0, -4.0, -6.0), "wing_fore": (0.0, 0.0, 0.0), "wing_thumb": (-0.0, -0.0, -0.0),
+        "wing_f1": (-0.0, 0.0, -0.0), "wing_f2": (-0.0, -0.0, 0.0), "wing_f3": (-0.0, -0.0, 0.0),
+        "wing_f4": (-0.0, -0.0, 0.0)},
+    "dive": {"wing_arm": (-31.8, 14.1, -15.6), "wing_fore": (0.0, 39.1, -33.3), "wing_thumb": (-3.7, -84.3, 26.0),
+        "wing_f1": (0.6, 1.9, -8.8), "wing_f2": (-0.1, -25.1, -8.7), "wing_f3": (1.0, -51.1, -3.2),
+        "wing_f4": (-2.8, -75.1, 6.8)},
+    "belly_up": {"wing_arm": (-24.8, 168.0, -20.1), "wing_fore": (7.6, 29.8, -10.0),
+        "wing_thumb": (-2.7, 96.1, -35.6), "wing_f1": (-12.4, -35.5, -0.4), "wing_f2": (-29.7, -90.6, -6.8),
+        "wing_f3": (-33.4, -150.1, -26.3), "wing_f4": (-22.6, 157.5, -38.6)},
 }
 # --- end of solved poses ---
 # --- solved baby poses (generated by --solve --stage hatchling) ---
 SOLVED_H = {
-    "sit": {"wing_arm": (-31.6, -80.5, -120.2), "wing_fore": (-20.4, -62.5, 28.7), "wing_thumb": (35.6, -15.6, 8.8), "wing_f1": (-30.1, 147.0, -50.7), "wing_f2": (-10.4, 119.8, -58.0), "wing_f3": (10.3, 97.7, -52.9), "wing_f4": (25.3, 71.3, -36.7)},
-    "curl": {"wing_arm": (-15.6, -76.4, -114.7), "wing_fore": (-23.6, -38.5, 31.7), "wing_thumb": (41.3, -22.0, 20.2), "wing_f1": (-32.9, 159.8, -45.0), "wing_f2": (-13.9, 129.9, -55.6), "wing_f3": (11.4, 99.0, -53.2), "wing_f4": (26.9, 72.9, -36.4)},
-    "lie": {"wing_arm": (42.9, -20.9, -33.3), "wing_fore": (-18.9, -51.2, -30.3), "wing_thumb": (26.2, 23.0, 18.3), "wing_f1": (-30.0, 145.2, -50.5), "wing_f2": (-7.6, 120.1, -54.7), "wing_f3": (13.2, 97.6, -45.9), "wing_f4": (25.2, 69.4, -25.3)},
-    "eat": {"wing_arm": (55.7, -61.7, -43.7), "wing_fore": (6.4, 22.8, -10.9), "wing_thumb": (12.1, 11.3, 3.0), "wing_f1": (-29.9, 144.8, -50.0), "wing_f2": (-10.6, 117.6, -54.1), "wing_f3": (7.8, 93.1, -46.8), "wing_f4": (18.7, 64.5, -29.6)},
-    "crouch": {"wing_arm": (3.2, -24.9, -37.2), "wing_fore": (16.1, -19.6, -51.2), "wing_thumb": (16.1, 14.8, 6.9), "wing_f1": (-29.8, 144.9, -50.4), "wing_f2": (-10.1, 118.1, -54.1), "wing_f3": (8.4, 93.7, -46.1), "wing_f4": (18.9, 65.0, -28.3)},
-    "open": {"wing_arm": (-6.0, -6.0, 24.0), "wing_fore": (-0.0, -0.0, -0.0), "wing_thumb": (-0.0, -0.0, 0.0), "wing_f1": (0.0, -0.0, 0.0), "wing_f2": (0.0, -0.0, 0.0), "wing_f3": (0.0, -0.0, 0.0), "wing_f4": (-0.0, 0.0, 0.0)},
-    "stretch": {"wing_arm": (19.0, 16.9, 1.2), "wing_fore": (-0.0, -0.0, -0.0), "wing_thumb": (-0.0, -0.0, 0.0), "wing_f1": (-0.0, -0.0, 0.0), "wing_f2": (-0.0, -0.0, 0.0), "wing_f3": (-0.0, -0.0, 0.0), "wing_f4": (-0.0, -0.0, 0.0)},
-    "rear": {"wing_arm": (-19.9, -56.0, -95.2), "wing_fore": (-21.1, -81.9, 25.0), "wing_thumb": (34.0, -4.0, 6.1), "wing_f1": (-30.6, 149.2, -49.5), "wing_f2": (-12.4, 122.4, -56.0), "wing_f3": (6.4, 100.5, -51.1), "wing_f4": (19.4, 75.3, -36.6)},
-    "bow": {"wing_arm": (17.5, -60.5, -18.3), "wing_fore": (-31.8, -14.3, -22.5), "wing_thumb": (42.8, 43.1, 4.6), "wing_f1": (46.8, 104.3, -23.3), "wing_f2": (42.4, 95.6, -33.1), "wing_f3": (52.4, 84.1, -33.0), "wing_f4": (62.4, 64.8, -14.1)},
-    "belly_up": {"wing_arm": (65.0, -68.7, 35.6), "wing_fore": (15.8, 44.3, -8.7), "wing_thumb": (1.7, 94.7, -44.1), "wing_f1": (-18.9, -36.3, 7.2), "wing_f2": (-39.5, -95.4, -11.6), "wing_f3": (-34.1, -159.5, -41.7), "wing_f4": (-12.3, 154.1, -50.4)},
+    "sit": {"wing_arm": (-31.6, -80.5, -120.2), "wing_fore": (-20.4, -62.5, 28.7), "wing_thumb": (35.6, -15.6, 8.8),
+        "wing_f1": (-30.1, 147.0, -50.7), "wing_f2": (-10.4, 119.8, -58.0), "wing_f3": (10.3, 97.7, -52.9),
+        "wing_f4": (25.3, 71.3, -36.7)},
+    "curl": {"wing_arm": (-15.6, -76.4, -114.7), "wing_fore": (-23.6, -38.5, 31.7), "wing_thumb": (41.3, -22.0, 20.2),
+        "wing_f1": (-32.9, 159.8, -45.0), "wing_f2": (-13.9, 129.9, -55.6), "wing_f3": (11.4, 99.0, -53.2),
+        "wing_f4": (26.9, 72.9, -36.4)},
+    "lie": {"wing_arm": (42.9, -20.9, -33.3), "wing_fore": (-18.9, -51.2, -30.3), "wing_thumb": (26.2, 23.0, 18.3),
+        "wing_f1": (-30.0, 145.2, -50.5), "wing_f2": (-7.6, 120.1, -54.7), "wing_f3": (13.2, 97.6, -45.9),
+        "wing_f4": (25.2, 69.4, -25.3)},
+    "eat": {"wing_arm": (55.7, -61.7, -43.7), "wing_fore": (6.4, 22.8, -10.9), "wing_thumb": (12.1, 11.3, 3.0),
+        "wing_f1": (-29.9, 144.8, -50.0), "wing_f2": (-10.6, 117.6, -54.1), "wing_f3": (7.8, 93.1, -46.8),
+        "wing_f4": (18.7, 64.5, -29.6)},
+    "crouch": {"wing_arm": (3.2, -24.9, -37.2), "wing_fore": (16.1, -19.6, -51.2), "wing_thumb": (16.1, 14.8, 6.9),
+        "wing_f1": (-29.8, 144.9, -50.4), "wing_f2": (-10.1, 118.1, -54.1), "wing_f3": (8.4, 93.7, -46.1),
+        "wing_f4": (18.9, 65.0, -28.3)},
+    "open": {"wing_arm": (-6.0, -6.0, 24.0), "wing_fore": (-0.0, -0.0, -0.0), "wing_thumb": (-0.0, -0.0, 0.0),
+        "wing_f1": (0.0, -0.0, 0.0), "wing_f2": (0.0, -0.0, 0.0), "wing_f3": (0.0, -0.0, 0.0),
+        "wing_f4": (-0.0, 0.0, 0.0)},
+    "stretch": {"wing_arm": (19.0, 16.9, 1.2), "wing_fore": (-0.0, -0.0, -0.0), "wing_thumb": (-0.0, -0.0, 0.0),
+        "wing_f1": (-0.0, -0.0, 0.0), "wing_f2": (-0.0, -0.0, 0.0), "wing_f3": (-0.0, -0.0, 0.0),
+        "wing_f4": (-0.0, -0.0, 0.0)},
+    "rear": {"wing_arm": (-19.9, -56.0, -95.2), "wing_fore": (-21.1, -81.9, 25.0), "wing_thumb": (34.0, -4.0, 6.1),
+        "wing_f1": (-30.6, 149.2, -49.5), "wing_f2": (-12.4, 122.4, -56.0), "wing_f3": (6.4, 100.5, -51.1),
+        "wing_f4": (19.4, 75.3, -36.6)},
+    "bow": {"wing_arm": (17.5, -60.5, -18.3), "wing_fore": (-31.8, -14.3, -22.5), "wing_thumb": (42.8, 43.1, 4.6),
+        "wing_f1": (46.8, 104.3, -23.3), "wing_f2": (42.4, 95.6, -33.1), "wing_f3": (52.4, 84.1, -33.0),
+        "wing_f4": (62.4, 64.8, -14.1)},
+    "belly_up": {"wing_arm": (65.0, -68.7, 35.6), "wing_fore": (15.8, 44.3, -8.7), "wing_thumb": (1.7, 94.7, -44.1),
+        "wing_f1": (-18.9, -36.3, 7.2), "wing_f2": (-39.5, -95.4, -11.6), "wing_f3": (-34.1, -159.5, -41.7),
+        "wing_f4": (-12.3, 154.1, -50.4)},
 }
 # --- end of solved baby poses ---
 
@@ -267,9 +357,6 @@ def wing_pose(name, side=None, baby=False):
 
 
 # ------------------------------------------------------------------------------ clips
-TAILS = [f"tail{k}" for k in range(1, 7)]
-
-
 def merge(*poses):
     out = {}
     for p in poses:
@@ -406,6 +493,9 @@ BOUND_LEGS = {"L": 0.5, "R": 0.55}                  # the bound: both wings, the
 BOUND_WINGS = {"L": 0.0, "R": 0.04}
 
 
+YAWNING = {"neck1": (18, 0, 0), "head": (20, 0, 0), "snout": (6, 0, 0), "jaw": (-30, 0, 0), "ear*": (20, 0, 0)}
+
+
 def _tables():
     """The poses the two clip sets are built from: the grown dragon's and the baby's (it stands
     up like a bat pup, so its sitting, lying, sleeping and play poses are its own)."""
@@ -425,7 +515,7 @@ def _tables():
                       "chest": (-4, 0, 0), "neck1": (-26, 0, 0), "neck2": (-10, 0, 0), "head": (6, 0, 0),
                       "jaw": (-5, 0, 0), "tail1": (18, 0, 0), "ear*": (20, 0, 0)},
                  POUNCE_BODY={"hips": (-30, 0, 0), "leg_up*": (-26, 0, 0), "leg_lo*": (14, 0, 0), "tail1": (30, 0, 0)},
-                 STRETCH=merge(POSES["stretch"]["body"], wing_pose("bow", "L"), wing_pose("stretch", "R"), {"neck1": (18, 0, 0), "head": (20, 0, 0), "snout": (6, 0, 0), "jaw": (-30, 0, 0), "ear*": (20, 0, 0)}))
+                 STRETCH=merge(POSES["stretch"]["body"], wing_pose("bow", "L"), wing_pose("stretch", "R"), YAWNING))
     baby = dict(STAND=P("stand"), SIT=H("sit"), LIE=H("lie"), CURL=H("curl"), CROUCH=H("crouch"), FLARE=P("flare"),
                 OPEN=H("open"), REAR=H("rear"), EAT=H("eat"), BOW=H("bow"), BELLY=H("belly_up"),
                 CROUCH_BODY=H_POSES["crouch"]["body"], OPEN_R=wing_pose("open", "R", baby=True),
@@ -438,7 +528,7 @@ def _tables():
                      "neck1": (-6, 0, 0), "head": (-14, 0, 0), "jaw": (-5, 0, 0), "ear*": (20, 0, 0)},
                 POUNCE_BODY={"hips": (-40, 0, 0), "leg_up*": (-30, 0, 0), "leg_lo*": (10, 0, 0), "tail1": (30, 0, 0)},
                 STRETCH=merge(H_POSES["stretch"]["body"], wing_pose("bow", "L", baby=True),
-                              wing_pose("stretch", "R", baby=True), {"neck1": (18, 0, 0), "head": (20, 0, 0), "snout": (6, 0, 0), "jaw": (-30, 0, 0), "ear*": (20, 0, 0)}))
+                              wing_pose("stretch", "R", baby=True), YAWNING))
     return grown, baby
 
 
@@ -459,7 +549,8 @@ def _clip_set(T, baby):
         return c
 
     STAND, SIT, LIE, CURL, CROUCH = T["STAND"], T["SIT"], T["LIE"], T["CURL"], T["CROUCH"]
-    FLARE, OPEN, REAR, EAT, BOW, BELLY, SULK = T["FLARE"], T["OPEN"], T["REAR"], T["EAT"], T["BOW"], T["BELLY"], T["SULK"]
+    FLARE, OPEN, REAR, EAT = T["FLARE"], T["OPEN"], T["REAR"], T["EAT"]
+    BOW, BELLY, SULK = T["BOW"], T["BELLY"], T["SULK"]
 
     # ---------------------------------------------------------------- idle & looking
     clip("idle", 3.4, loop=True).pose(0.0, STAND).wave(breathe()).wave(tail_sway()).wave(ear_flicks())
@@ -502,7 +593,8 @@ def _clip_set(T, baby):
         stride(shuffle, 1.0, WALK_PHASES_WINGS)
         shuffle.wave(hind_legs(1.0, 8, 22, WALK_PHASES_LEGS, bob=0.8))
         footsteps(shuffle, 1.0, WALK_PHASES_WINGS)
-    carry = clip("carry", wk, loop=True, speed=0.5 if baby else 0.55).pose(0.0, {"neck1": (12, 0, 0), "head": (-8, 0, 0)})
+    carry = clip("carry", wk, loop=True, speed=0.5 if baby else 0.55).pose(0.0, {"neck1": (12, 0, 0),
+                                                                                  "head": (-8, 0, 0)})
     stride(carry, wk, WALK_PHASES_WINGS)
     carry.wave(hind_legs(wk, 30 if baby else 18, 40 if baby else 34, WALK_PHASES_LEGS)).wave(tail_sway(1.6, wk / 2))
     carry.wave(waddle)
@@ -510,7 +602,8 @@ def _clip_set(T, baby):
         # Running: a bat's bound. Both wrists plant and throw the body forward, the back arches,
         # then both hind feet land under it; the folded wings bounce, the ears stream back.
         gallop = clip("gallop", 0.56, loop=True, speed=3.4).pose(
-            0.0, {"neck1": (-10, 0, 0), "neck2": (-4, 0, 0), "head": (12, 0, 0), "tail1": (8, 0, 0), "ear*": (26, 0, 0)})
+            0.0, {"neck1": (-10, 0, 0), "neck2": (-4, 0, 0), "head": (12, 0, 0), "tail1": (8, 0, 0),
+                  "ear*": (26, 0, 0)})
         stride(gallop, 0.56, BOUND_WINGS, BOUND)
         gallop.wave(hind_legs(0.56, 30, 56, BOUND_LEGS, bob=3.0))
         gallop.wave(lambda t: {"chest": (7 * sin01(t, 0.56, 0.1), 0, 0), "hips": (-6 * sin01(t, 0.56, 0.1), 0, 0),
@@ -536,7 +629,8 @@ def _clip_set(T, baby):
     if baby:  # from its tummy it sits up and nods off, wrapped in its wings
         clip("curl_up", 1.8).pose(0.0, LIE).pose(0.8, SIT).pose(1.8, CURL)
     else:
-        clip("curl_up", 1.6).pose(0.0, LIE).pose(0.7, merge(LIE, {"neck1": (-6, 16, 0), "head": (-10, 6, 6)})).pose(1.6, CURL)
+        (clip("curl_up", 1.6).pose(0.0, LIE).pose(0.7, merge(LIE, {"neck1": (-6, 16, 0), "head": (-10, 6, 6)}))
+         .pose(1.6, CURL))
     sleep = clip("sleep", 5.0, loop=True).pose(0.0, CURL).wave(breathe(1.8, 5.0))
     if baby:  # a sleepy nod
         sleep.wave(lambda t: {"head": (-4 * max(0.0, sin01(t, 5.0)), 0, 2 * sin01(t, 5.0)),
@@ -588,7 +682,8 @@ def _clip_set(T, baby):
 
     (clip("shake", 1.1).pose(0.0, STAND).pose(0.2, FLARE).pose(0.9, FLARE).pose(1.1, STAND).wave(shake_wave)
      .event(0.4, "shake"))
-    (clip("hop", 1.0).pose(0.0, STAND).pose(0.25, CROUCH).pose(0.45, merge(OPEN, {"neck1": (6, 0, 0), "head": (8, 0, 0)}))
+    (clip("hop", 1.0).pose(0.0, STAND).pose(0.25, CROUCH)
+     .pose(0.45, merge(OPEN, {"neck1": (6, 0, 0), "head": (8, 0, 0)}))
      .pose(0.72, CROUCH).pose(1.0, STAND)
      .root(0.0).root(0.25).root(0.45, up=0.55).root(0.7).root(1.0).event(0.7, "land").event(0.35, "squeak")
      .event(0.4, "flap"))
@@ -598,12 +693,14 @@ def _clip_set(T, baby):
                                                 "ear*": (26, 0, 0)})
     (clip("pounce", 1.4).pose(0.0, STAND).pose(0.35, CROUCH).pose(0.65, CROUCH).pose(0.85, POUNCE_AIR)
      .pose(1.05, CROUCH).pose(1.4, STAND)
-     .wave(lambda t: {"hips": (0, 6 * sin01(t, 0.15), 0), "tail6": (0, 20 * sin01(t, 0.15), 0)} if 0.35 < t < 0.65 else {})
+     .wave(lambda t: {"hips": (0, 6 * sin01(t, 0.15), 0), "tail6": (0, 20 * sin01(t, 0.15), 0)}
+           if 0.35 < t < 0.65 else {})
      .root(0.0).root(0.65).root(0.85, up=0.45).root(1.05).root(1.4)
      .event(0.75, "squeak").event(0.8, "flap").event(1.05, "land"))
     PLAY_BOW = merge(BOW, {"jaw": (-14, 0, 0), "ear*": (-8, 14, 0)})
     (clip("play_bow", 1.2).pose(0.0, STAND).pose(0.3, PLAY_BOW).pose(0.9, PLAY_BOW).pose(1.2, STAND)
-     .wave(lambda t: {f"tail{k}": (0, 20 * sin01(t, 0.25, -0.1 * k), 0) for k in range(2, 7)} if 0.25 < t < 0.95 else {})
+     .wave(lambda t: {f"tail{k}": (0, 20 * sin01(t, 0.25, -0.1 * k), 0) for k in range(2, 7)}
+           if 0.25 < t < 0.95 else {})
      .event(0.35, "call"))
 
     def spar_wave(t):
@@ -720,12 +817,14 @@ def _clip_set(T, baby):
         fly_flap = clip("fly_flap", 0.9, loop=True).pose(0.0, P("fly"))
         fly_flap.wave(wingbeat(0.9, 46)).wave(tail_sway(0.5, 1.8)).event(0.12, "flap")
         (clip("fly_glide", 3.0, loop=True).pose(0.0, P("glide")).wave(wingbeat(3.0, 4, fold=0.2))
-         .wave(tail_sway(0.6, 3.0)).wave(lambda t: {"ear_R": (0, 3 * sin01(t, 1.5), 0), "ear_L": (0, -3 * sin01(t, 1.5), 0)}))
+         .wave(tail_sway(0.6, 3.0))
+         .wave(lambda t: {"ear_R": (0, 3 * sin01(t, 1.5), 0), "ear_L": (0, -3 * sin01(t, 1.5), 0)}))
         (clip("fly_dive", 1.0, loop=True).pose(0.0, P("dive", ears(44, 6, -10))).wave(wingbeat(0.25, 2, fold=0.1))
          .wave(tail_sway(0.3, 0.5)))
     else:
         # the baby's run: a scamper, bouncing along on its hind legs with its wing-arms out
-        scamper = clip("scamper", 0.4, loop=True, speed=2.4).pose(0.0, merge(wing_pose("open", baby=True), ears(18, 0, 0)))
+        scamper = clip("scamper", 0.4, loop=True, speed=2.4).pose(0.0, merge(wing_pose("open", baby=True),
+                                                                             ears(18, 0, 0)))
         scamper.wave(hind_legs(0.4, 36, 50, {"L": 0.0, "R": 0.5}, bob=4.0)).wave(pant(8.0, 0.2))
         scamper.wave(tail_sway(1.2, 0.4)).wave(lambda t: {"wing_arm_R": (0, 0, 10 * sin01(t, 0.2)),
                                                           "wing_arm_L": (0, 0, -10 * sin01(t, 0.2)),
@@ -911,8 +1010,15 @@ def _solve_main():
         b = text.index(end)
         lines = [start]
         for name, keys in solved.items():
-            body = ", ".join(f'"{k}": ({v[0]}, {v[1]}, {v[2]})' for k, v in keys.items())
-            lines.append(f'    "{name}": {{{body}}},')
+            items = [f'"{k}": ({v[0]}, {v[1]}, {v[2]})' for k, v in keys.items()]
+            line = f'    "{name}": {{'
+            for i, item in enumerate(items):
+                piece = item + ("}," if i == len(items) - 1 else ", ")
+                if len(line) + len(piece.rstrip()) > 118:
+                    lines.append(line.rstrip())
+                    line = " " * 8
+                line += piece
+            lines.append(line)
         lines.append("}")
         text = text[:a] + "\n".join(lines) + "\n" + text[b:]
         open(path, "w", encoding="utf-8", newline="\n").write(text)

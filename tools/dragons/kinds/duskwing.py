@@ -10,12 +10,17 @@ Design notes
   hang at its sides like a cloak; spread, the membranes are a night sky full of little stars.
   Mysterious and majestic, but kind: big gentle eyes, a calm brow, no horns.
 - Colours are a sky at dusk: darker on top, the horizon's glow on the belly and ruff.
-  Variants: Dusk (indigo and lavender), Twilight (plum and rose), Moonshadow (charcoal and
-  silver), and the rare Eclipse: black-violet with a golden corona glowing round the wing
-  edges, golden stars that glow, bigger ears with glowing rims and a crescent crest.
-- Motion (plans/duskwing.py): a bat's crawl-walk on wrists and feet, sitting up with the
-  wings wrapped round like a cloak, sleeping cloaked in them, quiet glides and deep wingbeats,
-  ears that swivel.
+  Variants: Dusk (indigo and lavender, a night-blue mantle down the back), Twilight (plum and
+  rose, gold star freckles), Moonshadow (charcoal and silver, silver freckles), and the rare
+  Eclipse: black-violet, its stars and star-dust glowing gold, a golden corona along the
+  wings' trailing edges, bigger ears rimmed in glowing gold, a gold crescent tail and a
+  crescent-moon crown on its brow (its frill, tail tip and horns groups replace the common).
+- Motion (plans/duskwing.py): a bat's crawl-walk on wrists and feet, a bounding run, sitting up
+  with the folded wings round it like a cloak, sleeping with them drawn over it, quiet glides
+  and deep wingbeats, ears that swivel.
+How it's built: the ears sit on their own bones (the skin there follows the head); the stars
+are poked into the membranes and pinned to them, so they stay on the wing however it folds;
+the ruff is a ring of fur tufts; the tail's crescent and the crown are crescent meshes.
 Concept: docs/art/concept/dragons/dragon_duskwing.jpg (reference only, D74).
 """
 import math
@@ -460,7 +465,8 @@ def parts(kit, d):
     # The Eclipse's crest: a crescent moon standing on its brow, horns up, facing forward.
     r = 0.15 if not baby else 0.12
     centre = kit.head_point((0, -0.10, 0.36) if not baby else (0, -0.06, 0.42))
-    crest = _crescent(kit, "crest", centre, (1, 0, 0), (0, 0.25, 1.0), r, r * 0.84, r * 0.52, 0.035 if not baby else 0.03)
+    crest = _crescent(kit, "crest", centre, (1, 0, 0), (0, 0.25, 1.0), r, r * 0.84, r * 0.52,
+                      0.035 if not baby else 0.03)
     _origin_to(kit, crest, centre - kit.V((0, 0.25, 1.0)).normalized() * r)  # seated by its lowest point
     crest.data.materials.append(mats["glow_flat"])
     out.append(("horns", 1, [(crest, "head")]))
@@ -501,7 +507,8 @@ def _pin_stars(kit, d):
                         if b.index not in seen:
                             seen.add(b.index)
                             stack.append(b)
-                centre = sum((stars.matrix_world @ stars.data.vertices[i].co for i in island), kit.V((0, 0, 0))) / len(island)
+                centre = sum((stars.matrix_world @ stars.data.vertices[i].co for i in island),
+                             kit.V((0, 0, 0))) / len(island)
                 _, j, _ = tree.find(centre)
                 weights = [(names[g.group], g.weight) for g in mem.data.vertices[j].groups if g.weight > 0]
                 for g in stars.vertex_groups:
@@ -754,6 +761,7 @@ def texture(tx, nt, p, form):
                tx.madd(nt, tx.blotches(nt, 1.2, (0.3, 0.7), 2.0, where=tx.const(nt, 1.0)), 0.25, 0.75))
     g = tx.maxi(nt, tx.spots(nt, p["spot_cell"] * 0.8, keep=0.5, size=(0.24, 0.15), where=tx.top(nt)),
                 tx.spots(nt, p["spot_cell"] * 1.6, keep=0.75, size=(0.2, 0.12), where=tx.top(nt), seed_offset=3.7))
-    b = tx.maxi(nt, tx.spots(nt, p["spot_cell"] * 0.7, keep=0.45, size=(0.24, 0.15), where=tx.upper(nt), seed_offset=2.3),
+    b = tx.maxi(nt, tx.spots(nt, p["spot_cell"] * 0.7, keep=0.45, size=(0.24, 0.15), where=tx.upper(nt),
+                             seed_offset=2.3),
                 tx.spots(nt, p["spot_cell"] * 1.4, keep=0.7, size=(0.2, 0.12), where=tx.top(nt), seed_offset=5.1))
     return {"r": r, "g": g, "b": b}

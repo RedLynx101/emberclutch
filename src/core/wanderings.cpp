@@ -1,5 +1,7 @@
 #include "core/wanderings.hpp"
 
+#include <cmath>
+
 #include "core/den_roster.hpp"
 #include "core/genetics.hpp"
 
@@ -104,11 +106,12 @@ WanderFinds comeBack(SaveData& s, int index, u32 stepCount, s64 now, Rng& rng) {
         s.dragons[s.dragonCount] = wild;
         f.wildEgg = s.dragonCount++;
     }
-    // Home muddy: the legs, the belly and the tail most of all (D46; the bath sorts it out).
+    // Home muddy: spots on the legs, the belly and the tail most of all, and a little dust
+    // (D46; the bath sorts it out).
     const float mud = static_cast<float>(f.steps) / 60.0f;
     auto dirty = [&](int region, float k) {
-        const float v = d.dirt[region] + mud * k;
-        d.dirt[region] = v > 100 ? 100 : v;
+        d.mud[region] = std::fmin(100.0f, d.mud[region] + mud * k);
+        d.dirt[region] = std::fmin(100.0f, d.dirt[region] + 0.3f * mud * k);
     };
     dirty(kRegionBelly, 1.0f);
     dirty(kRegionLeft, 0.8f);

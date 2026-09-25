@@ -10,6 +10,7 @@
 #include "core/dragon_mesh.hpp"
 #include "core/egg.hpp"
 #include "core/model.hpp"
+#include "core/mud.hpp"
 #include "core/rig.hpp"
 
 using namespace ec;
@@ -358,7 +359,25 @@ TEST(palette_and_ground_offset) {
 
 }  // namespace
 
+// Mud spots (D46) on the real bodies: blotches over part of each, never all or none.
+TEST(mud_spots_cover_part_of_each_body) {
+    for (int form = 0; form < kFormCount; ++form) {
+        const MeshData* body = model(form).findMesh(kMeshBody, kGroupBody, 0);
+        CHECK(body != nullptr);
+        if (!body) continue;
+        int spotted = 0, dirtyable = 0;
+        for (int v = 0; v < body->vertexCount; ++v) {
+            if (body->region[v] >= kRegionCount) continue;
+            ++dirtyable;
+            spotted += mudSpots(body->pos[v]) > 0.5f;
+        }
+        std::printf("  %s: mud spots on %d of %d vertices\n", kFormNames[form], spotted, dirtyable);
+        CHECK(spotted > dirtyable / 5 && spotted < dirtyable * 7 / 10);
+    }
+}
+
 void runModelTests() {
+    RUN(mud_spots_cover_part_of_each_body);
     RUN(model_loads_and_is_well_formed);
     RUN(dragon_fits_triangle_budget);
     RUN(lod1_shares_the_rig);

@@ -6,8 +6,8 @@
 ;     heartglow, eye glints, the egg's light).
 ;   * Outputs the view-space normal as a quaternion + the view vector for fragment
 ;     lighting (toon ramp LUT on L.N, rim from a Fresnel LUT on N.V).
-;   * texcoord0 = the skin texture UV; texcoord1 = (dust level / 255, 0.5) into the dust
-;     ramp texture, which hands the level back to the colour combiner (render3d).
+;   * texcoord0 = the skin texture UV; texcoord1 = (dust, mud) / 255 into the dirt ramp
+;     texture, whose texel is the colour to blend toward and how far (render3d, core/mud).
 ;   * The hatching (WP12a): `blob` = (centre xyz in model space, w = morph). Below w = 1
 ;     each vertex is pulled toward a small sphere round the centre (radius consts2.y) and
 ;     toward white, glowing: the hatchling takes shape out of a white blob as w goes 0 -> 1.
@@ -40,7 +40,7 @@
 .alias inskin  v2  ; ubyte x4: bone0, bone1 (palette-local), w0, w1
 .alias inpaint v3  ; ubyte x4: palette A, palette B, mix, emissive
 .alias inuv    v4  ; float x2: skin texture UV
-.alias indust  v5  ; x = dust level 0..255 (the dragon's buffer, or a fixed value)
+.alias indust  v5  ; x = dust level, y = mud, 0..255 (the dragon's buffer, or a fixed value)
 
 .proc main
 	; a0.x = bone0 * 3, a0.y = bone1 * 3 (rows of the 3x4 bone matrices)
@@ -118,10 +118,9 @@ formed:
 coloured:
 	mov outclr, r8
 
-	; texture coordinates: the skin, and the dust level as a ramp coordinate
+	; texture coordinates: the skin, and the dust and mud as a ramp coordinate
 	mov outtc0, inuv
-	mul r11.x, inv255, indust.x
-	mov r11.y, half
+	mul r11.xy, inv255, indust.xy
 	mov outtc1, r11
 
 	; view-space normal -> quaternion (as in the devkitPro fragment_light example)

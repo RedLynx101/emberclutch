@@ -17,6 +17,7 @@
 #include "core/anim.hpp"
 #include "core/care.hpp"
 #include "core/daylight.hpp"
+#include "core/mud.hpp"
 #include "core/dragon_mesh.hpp"
 #include "core/egg.hpp"
 #include "core/shell_burst.hpp"
@@ -44,9 +45,9 @@ struct GpuVertex {
 static_assert(sizeof(GpuVertex) == 40, "shared with the shader's attribute layout");
 
 // Dust (D46): a fully dirty region moves this far toward the dust colour (dragon_texture.py
-// DIRT_MAX, DIRT_COLOR).
+// DIRT_MAX, DIRT_COLOR; core/mud kDustColor). Mud goes over it in spots (core/mud).
 constexpr float kDirtMax = 0.4f;
-constexpr u32 kDirtColor = 0xFF758594;  // ABGR of (148, 133, 117)
+constexpr int kMudRows = 32;  // the dirt ramp's mud levels
 
 // GPU memory is freed only once the GPU is done with it. The last frame is still being drawn
 // while the next one's update runs, and a change mid-frame (the dev menu draws with the bottom
@@ -168,6 +169,7 @@ struct Cache {
     u8* dust = nullptr;        // per body vertex: its region's dust level (4 bytes each, linear memory)
     int dustCount = 0;
     float dustShown[kRegionCount] = {};  // the levels in `dust` (-1: not built)
+    float mudShown[kRegionCount] = {};
 };
 
 void updateDust(Cache& c, const Form& f, const Dragon& d);
@@ -224,7 +226,7 @@ int g_locProjection = -1, g_locModelView = -1, g_locBones = -1, g_locPalette = -
 C3D_AttrInfo g_attr;       // the body: v5 (dust) from each dragon's buffer
 C3D_AttrInfo g_attrFixed;  // everything else: v5 fixed (the wings' dust, or none)
 int g_dustFixed = -1;      // that fixed attribute's index
-C3D_Tex g_dustRamp;        // 256x8 L8: texel i = i, so the dust stream (as u) reads back as a factor
+C3D_Tex g_dustRamp;        // 256 x kMudRows RGBA8: (dust, mud) -> the colour to blend toward, alpha how far
 C3D_Tex g_cleanSkin;       // 8x8 white: stands in when a form's skin texture is missing
 bool g_texOk = false;
 DVLB_s* g_staticDvlb = nullptr;
@@ -359,7 +361,9 @@ bool loadTexture(const char* path, C3D_Tex& tex) {
     return true;
 }
 
-// Texel (x, y) of an 8x8-tiled L8 texture (the GPU's Morton order inside each tile).
+u32 toByteFast(float v) { return static_cast<u32>(v <= 0 ? 0 : (v >= 1 ? 255 : v * 255.0f + 0.5f)); }
+
+// Texel (x, y) of an 8x8-tiled texture (the GPU's Morton order inside each tile).
 std::size_t tiledIndex(int x, int y, int width) {
     const int tile = (y / 8) * (width / 8) + x / 8;
     int m = 0;
@@ -367,12 +371,19 @@ std::size_t tiledIndex(int x, int y, int width) {
     return std::size_t(tile) * 64 + m;
 }
 
-// The dust ramp and the clean stand-in skin (rgba8: no pattern in R, G, B; detail 1 in A).
+// The dirt ramp and the clean stand-in skin (rgba8: no pattern in R, G, B; detail 1 in A).
 bool makeTextures() {
-    if (!C3D_TexInit(&g_dustRamp, 256, 8, GPU_L8) || !C3D_TexInit(&g_cleanSkin, 8, 8, GPU_RGBA8)) return false;
-    u8* ramp = static_cast<u8*>(g_dustRamp.data);
-    for (int y = 0; y < 8; ++y)
-        for (int x = 0; x < 256; ++x) ramp[tiledIndex(x, y, 256)] = static_cast<u8>(x);
+    if (!C3D_TexInit(&g_dustRamp, 256, kMudRows, GPU_RGBA8) || !C3D_TexInit(&g_cleanSkin, 8, 8, GPU_RGBA8))
+        return false;
+    u32* ramp = static_cast<u32*>(g_dustRamp.data);
+    for (int y = 0; y < kMudRows; ++y)
+        for (int x = 0; x < 256; ++x) {
+            Rgb c;
+            float a;
+            dirtTexel(x / 255.0f, y / static_cast<float>(kMudRows - 1), c, a);
+            // the texture's first row is its top: v = 0 (no mud) reads the last
+            ramp[tiledIndex(x, kMudRows - 1 - y, 256)] = (u32(c.r) << 24) | (u32(c.g) << 16) | (u32(c.b) << 8) | toByteFast(a);
+        }
     C3D_TexFlush(&g_dustRamp);
     C3D_TexSetFilter(&g_dustRamp, GPU_NEAREST, GPU_NEAREST);
     C3D_TexSetWrap(&g_dustRamp, GPU_CLAMP_TO_EDGE, GPU_CLAMP_TO_EDGE);
@@ -665,7 +676,7 @@ void dragonPattern(u8 pattern, Rgb color, bool veins = false);
 // The dragon colour chain (architecture §4), texture 0 = the form's skin (R stripes, G
 // spots, B dapple, A scale detail), texture 1 = the dust ramp read at the dust stream:
 //   0: albedo = vertex colour, patterned (dragonPattern sets it per dragon)
-//   1: dusted: toward the dust colour by the dust level
+//   1: dirty: toward the dirt ramp's colour (dust, and mud in spots) by its alpha
 //   2: x scale detail
 //   3: lit: x (ambient + toon), alpha = rim (Fresnel)
 //   4: + vertex colour x emissive (vertex alpha): heartglow, eye glints
@@ -673,10 +684,9 @@ void dragonPattern(u8 pattern, Rgb color, bool veins = false);
 void setupTexEnv() {
     C3D_TexEnv* env = C3D_GetTexEnv(1);
     C3D_TexEnvInit(env);
-    C3D_TexEnvSrc(env, C3D_RGB, GPU_CONSTANT, GPU_PREVIOUS, GPU_TEXTURE1);
-    C3D_TexEnvOpRgb(env, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_R);
+    C3D_TexEnvSrc(env, C3D_RGB, GPU_TEXTURE1, GPU_PREVIOUS, GPU_TEXTURE1);
+    C3D_TexEnvOpRgb(env, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_ALPHA);
     C3D_TexEnvFunc(env, C3D_RGB, GPU_INTERPOLATE);
-    C3D_TexEnvColor(env, kDirtColor);
     env = C3D_GetTexEnv(2);
     C3D_TexEnvInit(env);
     C3D_TexEnvSrc(env, C3D_RGB, GPU_PREVIOUS, GPU_TEXTURE0, GPU_PRIMARY_COLOR);
@@ -854,16 +864,21 @@ void updateDust(Cache& c, const Form& f, const Dragon& d) {
         c.dust = static_cast<u8*>(linearAlloc(std::size_t(body->vertexCount) * 4));
         c.dustCount = c.dust ? body->vertexCount : 0;
         for (float& s : c.dustShown) s = -1.0f;
+        for (float& s : c.mudShown) s = -1.0f;
     }
     if (!c.dust) return;
     bool changed = false;
-    for (int r = 0; r < kRegionCount; ++r) changed |= std::fabs(d.dirt[r] - c.dustShown[r]) > 0.5f;
+    for (int r = 0; r < kRegionCount; ++r)
+        changed |= std::fabs(d.dirt[r] - c.dustShown[r]) > 0.5f || std::fabs(d.mud[r] - c.mudShown[r]) > 0.5f;
     if (!changed) return;
-    for (int r = 0; r < kRegionCount; ++r) c.dustShown[r] = d.dirt[r];
+    for (int r = 0; r < kRegionCount; ++r) c.dustShown[r] = d.dirt[r], c.mudShown[r] = d.mud[r];
     for (int v = 0; v < body->vertexCount; ++v) {
         u8* o = c.dust + std::size_t(v) * 4;
-        o[0] = static_cast<u8>(dustValue(d, body->region[v]) + 0.5f);
-        o[1] = o[2] = o[3] = 0;
+        const int region = body->region[v];
+        o[0] = static_cast<u8>(dustValue(d, region) + 0.5f);
+        const float mud = region < kRegionCount && d.mud[region] > 0 ? d.mud[region] / 100.0f * mudSpots(body->pos[v]) : 0;
+        o[1] = toByte(mud);
+        o[2] = o[3] = 0;
     }
     GSPGPU_FlushDataCache(c.dust, std::size_t(c.dustCount) * 4);
 }

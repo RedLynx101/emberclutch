@@ -177,7 +177,7 @@ bool debugMenu(App& app, const Input& in) {
         {"+1 hour", 0},   {"+1 day", 1},     {"+7 days", 2},      {"Fill needs", 3},
         {"Drain needs", 4}, {"Hatch now", 5}, {"Next stage", 6},   {"Next breed", 10},
         {"Next activity", 12}, {"Add dragon", 11}, {"Overlay", 7}, {"Save now", 8},
-        {"Reset save", 9}, {"Dusty / bath", 13}, {"Add egg", 14}, {"Breed-ready", 15},
+        {"Reset save", 9}, {"Dust/mud/bath", 13}, {"Add egg", 14}, {"Breed-ready", 15},
     };
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
@@ -271,10 +271,15 @@ bool debugMenu(App& app, const Input& in) {
                 d.upset = false;
                 d.lastBredAt = 0;
                 break;
-            case 13: {  // see the dust (D46) without waiting a day: all dusty, then a bath
-                const bool dusty = d.dirt[kRegionBack] > 50.0f;
-                if (dusty) bathe(d);
-                else for (float& dust : d.dirt) dust = 100.0f;
+            case 13: {  // see the dirt (D46) without waiting: all dusty, then muddy too, then a bath
+                if (d.mud[kRegionBelly] > 50.0f) {
+                    bathe(d);
+                } else if (d.dirt[kRegionBack] > 50.0f) {
+                    static const float kWet[kRegionCount] = {100, 100, 100, 100, 100, 100, 100, 40};  // all over, to see it
+                    for (int r = 0; r < kRegionCount; ++r) d.mud[r] = kWet[r];
+                } else {
+                    for (float& dust : d.dirt) dust = 100.0f;
+                }
                 break;
             }
             case 12: {  // every behavior state is reachable from here (WP5)

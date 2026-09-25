@@ -14,6 +14,7 @@
 #include "core/dragondex.hpp"
 #include "core/items.hpp"
 #include "core/market.hpp"
+#include "core/mud.hpp"
 #include "core/profile.hpp"
 #include "core/wanderings.hpp"
 #include "core/save.hpp"
@@ -360,7 +361,8 @@ TEST(the_wanderings) {
         CHECK(s.hoard[k] == f.trinkets[k]);
     }
     CHECK(s.gleam == 50 + f.gleam && f.gleam + trinkets > 0);  // on top of the starting 50
-    CHECK(s.dragons[1].dirt[kRegionBelly] > 50 && s.dragons[1].dirt[kRegionBelly] > s.dragons[1].dirt[kRegionBack]);
+    CHECK(s.dragons[1].mud[kRegionBelly] > 50 && s.dragons[1].mud[kRegionBelly] > s.dragons[1].mud[kRegionBack]);
+    CHECK(s.dragons[1].dirt[kRegionBelly] > 20);  // and a little dusty
 
     // Long trips sometimes bring a wild egg, mostly Grove, Frost or Lumen.
     int eggs = 0, newBreeds = 0;
@@ -640,6 +642,44 @@ TEST(dirt_settles_and_grooming_clears_it) {
     CHECK(d.dirt[kRegionBelly] < 10.0f);
 }
 
+// Mud (D46, WP12): brushing lifts it at half the dust's rate, the bath at once, and it flakes
+// off by itself over a few days. The dirt ramp puts the mud over the dust.
+TEST(mud_brushes_out_and_washes_off) {
+    Rng rng(6);
+    Dragon d = makeEgg(1, makePurebred(Element::Tide, rng), Sex::Male, kT0);
+    d.incubationSeconds = kIncubationSeconds;
+    tryHatch(d, kT0 + 8 * kHour, rng);
+    for (float m : d.mud) CHECK(m == 0.0f);
+    d.mud[kRegionBelly] = 80;
+    d.mud[kRegionTail] = 50;
+    cleanRegion(d, kRegionBelly, 40);
+    CHECK(d.mud[kRegionBelly] == 60.0f && d.mud[kRegionTail] == 50.0f);
+    simulate(d, kT0 + 8 * kHour, kT0 + 32 * kHour);  // a day: 36 flaked off
+    CHECK(std::fabs(d.mud[kRegionBelly] - 24.0f) < 0.5f && d.mud[kRegionTail] < 15.0f);
+    groom(d, 20);
+    CHECK(std::fabs(d.mud[kRegionBelly] - 9.0f) < 0.5f && d.mud[kRegionTail] == 0.0f);
+    d.mud[kRegionLeft] = 100;
+    bathe(d);
+    for (float m : d.mud) CHECK(m == 0.0f);
+    Rgb c;
+    float a;
+    dirtTexel(0, 0, c, a);
+    CHECK(a == 0.0f);
+    dirtTexel(0.4f, 0, c, a);
+    CHECK(std::fabs(a - 0.4f) < 1e-4f && c.r == kDustColor.r && c.g == kDustColor.g && c.b == kDustColor.b);
+    dirtTexel(0, 1, c, a);
+    CHECK(std::fabs(a - kMudMax) < 1e-4f && c.r == kMudColor.r && c.g == kMudColor.g && c.b == kMudColor.b);
+    dirtTexel(0.4f, 0.5f, c, a);
+    CHECK(a > 0.4f && a < 1.0f && c.r < kDustColor.r && c.r > kMudColor.r);
+    // Spots: some of the surface, not all of it, and the same every time.
+    int spotted = 0, samples = 0;
+    for (float x = -0.6f; x <= 0.6f; x += 0.013f)
+        for (float z = 0.1f; z <= 0.7f; z += 0.031f, ++samples) spotted += mudSpots({x, 0.07f, z}) > 0.5f;
+    std::printf("  mud spots over %.0f%% of a slice\n", 100.0f * spotted / samples);
+    CHECK(spotted > samples / 5 && spotted < samples * 7 / 10);
+    CHECK(mudSpots({0.21f, -0.1f, 0.4f}) == mudSpots({0.21f, -0.1f, 0.4f}));
+}
+
 // The den (Alpha 2 WP1): three dragons, one to a bed, and two eggs, one to a nest; places are
 // kept; whoever doesn't fit moves out; a ready egg waits for a free bed.
 TEST(the_den_has_three_beds_and_two_nests) {
@@ -737,7 +777,7 @@ TEST(save_round_trip) {
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
     CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots + kBreedCount + 6 + 2 + 5 + 2 + 2 +
-                   5 * (132 + 16 + 9 + 1 + 12 + 2 + 2 + 1));
+                   5 * (132 + 16 + 9 + 1 + 12 + 2 + 2 + 1 + kRegionCount));
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
@@ -857,9 +897,9 @@ TEST(the_looks) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 1, kT0, buf.data(), buf.size());
     std::vector<u8> old1(buf.begin(), buf.begin() + n);
-    const std::size_t rec = n - (132 + 16 + 9 + 1 + 12 + 2 + 1) - 2;  // the one record's size field (before its body)
-    old1[rec] = static_cast<u8>(old1[rec] - 1);
-    old1.pop_back();
+    const std::size_t rec = n - (132 + 16 + 9 + 1 + 12 + 2 + 1 + kRegionCount) - 2;  // the one record's size field
+    old1[rec] = static_cast<u8>(old1[rec] - 1 - kRegionCount);  // no look, no mud
+    old1.resize(old1.size() - 1 - kRegionCount);
     // Fix up the header's payload size and checksum for the shorter payload.
     const u32 payload = static_cast<u32>(old1.size() - kSaveHeaderSize);
     std::memcpy(&old1[12], &payload, 4);
@@ -951,6 +991,7 @@ int main() {
     RUN(neglect_upsets_but_never_harms);
     RUN(sanctuary_keeps_needs_safe);
     RUN(dirt_settles_and_grooming_clears_it);
+    RUN(mud_brushes_out_and_washes_off);
     RUN(body_scale_grows_every_day);
     RUN(breeding_needs_one_male_and_one_female);
     RUN(breeding_requirements);

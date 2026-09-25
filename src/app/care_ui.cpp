@@ -272,7 +272,7 @@ void useGroomTool(App& app, const Input& in, Dragon& d, bool hit, const TouchHit
     if (c.tool == Tool::Brush) {
         const Vec2 dir = c.stroke.dir;
         const bool withGrain = dir.x * h.grain.x + dir.y * h.grain.y > 0.2f;
-        const float dusty = d.dirt[h.region];
+        const float dusty = h.region < kRegionCount ? d.dirt[h.region] + d.mud[h.region] : 0.0f;
         if (c.groom.brush(d, h.region, moved / 520.0f * brushRate(app.game), withGrain)) {  // the silver brush: faster
             emit(app, kFxSparkle, at, 6);
             audio::playSfx(audio::Sfx::Toast);

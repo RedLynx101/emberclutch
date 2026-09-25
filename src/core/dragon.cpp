@@ -4,6 +4,7 @@
 #include <initializer_list>
 
 #include "core/clock.hpp"
+#include "core/mud.hpp"
 
 namespace ec {
 namespace {
@@ -87,6 +88,7 @@ void stepHatched(Dragon& d, s64 t, float hours) {
     // on the wings; the keepers keep Sanctuary dragons tidy.
     static const float kDirtRate[kRegionCount] = {0.8f, 0.8f, 0.9f, 1.3f, 1.1f, 1.1f, 1.2f, 0.6f};
     for (int r = 0; r < kRegionCount; ++r) d.dirt[r] = clamp100(d.dirt[r] + 2.6f * kDirtRate[r] * hours * scale);
+    for (float& m : d.mud) m = clamp100(m - kMudFlakesPerHour * hours);  // mud flakes off, slowly
 
     if (sanctuary) {
         // Keepers tend stored dragons: needs never fall below 50, mood holds.
@@ -228,15 +230,19 @@ void pet(Dragon& d, float amount) {
 void groom(Dragon& d, float amount) {
     d.needs.shine = clamp100(d.needs.shine + amount);
     for (float& dust : d.dirt) dust = clamp100(dust - amount * 1.5f);
+    for (float& m : d.mud) m = clamp100(m - amount * 0.75f);
     addBond(d, 1);
 }
 
 void cleanRegion(Dragon& d, int region, float amount) {
-    if (region >= 0 && region < kRegionCount) d.dirt[region] = clamp100(d.dirt[region] - amount);
+    if (region < 0 || region >= kRegionCount) return;
+    d.dirt[region] = clamp100(d.dirt[region] - amount);
+    d.mud[region] = clamp100(d.mud[region] - amount * 0.5f);  // mud takes longer to brush out
 }
 
 void bathe(Dragon& d) {
     for (float& dust : d.dirt) dust = 0;
+    for (float& m : d.mud) m = 0;
     d.needs.shine = clamp100(d.needs.shine + 30);
     addBond(d, 1);
 }

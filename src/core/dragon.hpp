@@ -69,6 +69,7 @@ struct Dragon {
     bool napping = false;
     float sulkyHours = 0;
     float dirt[kRegionCount] = {};  // 0 clean .. 100 dusty, per body region (D46)
+    float mud[kRegionCount] = {};   // 0 clean .. 100 muddy, per body region (D46, core/mud)
 
     // Current-day accounting for care stars
     s32 day = 0;

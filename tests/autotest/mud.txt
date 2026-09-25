@@ -1,0 +1,59 @@
+# Dirt (D46, WP12): an adult clean, dusty, dusty and muddy (spots, as from the Wanderings),
+# then bathed (dev menu page 1: Dust/mud/bath), in the grooming body view.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 2
+tap 134 221
+wait 1
+key R
+wait 0.4
+key R
+wait 1.5
+shot m0-clean
+key SELECT
+wait 0.3
+tap 238 181
+wait 0.3
+key SELECT
+wait 1.5
+shot m1-dusty
+key SELECT
+wait 0.3
+tap 238 181
+wait 0.3
+key SELECT
+wait 1.5
+shot m2-muddy
+wait 2
+tap 30 221
+wait 2.5
+shot m3-muddy-face
+key SELECT
+wait 0.3
+tap 238 181
+wait 0.3
+key SELECT
+wait 1.5
+shot m4-bathed-face
+quit

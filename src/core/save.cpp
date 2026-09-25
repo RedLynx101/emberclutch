@@ -122,6 +122,7 @@ void writeDragon(Writer& w, const Dragon& d) {
     w.u8v(static_cast<u8>(d.origin));  // Alpha 2: the profile (where its egg came from, what you know)
     w.u8v(d.known);
     w.u8v(d.look);  // Alpha 2 WP12: its look (D54)
+    for (float m : d.mud) w.u8v(static_cast<u8>(m + 0.5f));  // Alpha 2 WP12: mud (D46)
     w.patchU16(sizeAt, static_cast<u16>(w.pos() - start));
 }
 
@@ -193,6 +194,11 @@ bool readDragon(Reader& r, Dragon& d) {
     } else {
         d.look = lookForOldDragon(d.id);
     }
+    if (r.pos() + kRegionCount <= start + size)  // older records: no mud
+        for (float& m : d.mud) {
+            const u8 v = r.u8v();
+            m = v > 100 ? 100.0f : v;
+        }
     r.seek(start + size);  // skip fields from newer builds
 
     if (!inRange(plan, 2) || !inRange(sex, 2) || !inRange(personality, static_cast<u8>(Personality::Count)) ||

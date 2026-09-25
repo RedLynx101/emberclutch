@@ -107,6 +107,8 @@ bool loadModel(const u8* data, std::size_t size, ModelData& out) {
         for (u8 r : m.region)
             if (r > kRegionClean) return false;
     }
+    const char* const feet[4] = {"hand_L", "hand_R", "foot_L", "foot_R"};
+    for (int i = 0; i < 4; ++i) out.contacts[i] = static_cast<s8>(out.skel.find(feet[i]));
     return c.ok();
 }
 

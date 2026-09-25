@@ -79,6 +79,9 @@ struct ModelData {
     Vec3 poseEulerDeg[kMaxBones];           // idle pose (Euler XYZ degrees)
     float hatchPoseXDeg[kMaxBones];         // extra X rotation at t = 0 (babies hold heads up)
     std::vector<MeshData> meshes;
+    // The bones that meet the ground (front left, front right, back left, back right): hand_*
+    // and foot_* when loaded; a kind's plan names its own (core/kinds PlanInfo::contacts). -1: none.
+    s8 contacts[4] = {-1, -1, -1, -1};
 
     // First mesh matching kind/group/variant/sex (kSexAny matches either), or nullptr.
     const MeshData* findMesh(u8 kind, u8 group, u8 variant, u8 sex = kSexAny) const;

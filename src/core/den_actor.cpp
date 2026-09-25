@@ -31,7 +31,7 @@ bool resolveClips(const AnimLibrary& lib, int form, int out[static_cast<int>(Cli
 }
 
 float locomotionSpeed(const ModelData& m, const AnimBinding& bind, const AnimClip& clip, float t, int build) {
-    const int feet[4] = {m.skel.find("hand_L"), m.skel.find("hand_R"), m.skel.find("foot_L"), m.skel.find("foot_R")};
+    const int feet[4] = {m.contacts[0], m.contacts[1], m.contacts[2], m.contacts[3]};  // the plan's (core/kinds)
     for (int f : feet)
         if (f < 0) return clip.speed;
     BonePose idle[kMaxBones], pose[kMaxBones];

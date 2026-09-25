@@ -614,10 +614,8 @@ float animatedGround(const ModelData& m, const Mat34* skin) {
     const MeshData* body = m.findMesh(kMeshBody, kGroupBody, 0);
     if (!body) return 0;
     bool tail[kMaxPalette] = {};
-    for (const char* name : {"tail1", "tail2", "tail3", "tail4"}) {
-        const int bone = m.skel.find(name);
-        for (int i = 0; i < body->paletteCount && bone >= 0; ++i) tail[i] = tail[i] || body->palette[i] == bone;
-    }
+    for (int i = 0; i < body->paletteCount; ++i)  // every tail bone (a Ribbontail has eight)
+        tail[i] = std::strncmp(m.skel.name[body->palette[i]], "tail", 4) == 0;
     float low = 1e9f;
     for (int v = 0; v < body->vertexCount; v += 3) {
         const u8* w = &body->skin[std::size_t(v) * 4];
@@ -2090,6 +2088,10 @@ bool loadLookForm(int look, int k) {
     if (!loadForm(ecm, skin, f)) {
         releaseForm(f);
         return false;
+    }
+    if (isKind(look)) {  // its plan names the bones on the ground (a wyvern stands on its wings)
+        const PlanInfo& plan = planInfo(planOfSlot(look));
+        for (int i = 0; i < 4; ++i) f.model.contacts[i] = static_cast<s8>(f.model.skel.find(plan.contacts[i]));
     }
     return true;
 }

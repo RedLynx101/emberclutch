@@ -164,8 +164,9 @@ Competition performance = stat × mood multiplier × bond confidence, plus playe
 
 ## 6. Competitions (never ridden)
 
-*Beta (D73) brings Sky Rings, Lantern Trial and Fruit Catch with the valley; whether Sky
-Rings is ridden is open point 2 of the [Beta plan](../plan/beta.md).*
+*Beta (D73) brings Sky Rings, Lantern Trial and Fruit Catch with the valley. **Sky Rings is
+ridden** (D74): you fly the course yourself, the dragon's Wing setting speed and turning;
+the others stay unmounted.*
 
 The player is always on the ground or on a tower, cueing the dragon — **riding is
 disabled in all training and competitions.** Each event has four cups:
@@ -183,8 +184,8 @@ and bond.
 ## 7. Riding and Skyreach Valley
 
 *Moved to Beta (D73, [plan](../plan/beta.md)): about 1 km across, 6–8 places standing in it,
-arcade flying. With a player character and villagers now in Beta (7C), the rider is no
-longer the only time the player is seen (open point 1).*
+arcade flying. **You're seen on foot** (D74): a third-person player walking with the dragon
+at their side, riding it once it's grown; villagers and a first campaign join you.*
 
 - **Adult dragons can be ridden anywhere in free roam** — on the ground (walk/run) or in
   the air (take off, glide, bank, dive, land).

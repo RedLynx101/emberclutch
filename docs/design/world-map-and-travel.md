@@ -4,8 +4,9 @@ Status: **Plan v1** (2026-09-24; Noah's answers: follow your young dragon, D44; 
 **Update (2026-09-25, D73):** the valley, free flight and the new map move to **Beta**
 ([plan](../plan/beta.md)). The map becomes a painted valley map on the bottom screen while
 exploring, fogged until explored, with fast travel to found places; the places stand in the
-world and are entered to their own scenes. Whether you're seen on foot (§4 has you unseen,
-following your dragon) is open point 1 of the Beta plan. Noah: "have a game map that you can fast travel in, or
+world and are entered to their own scenes. **You're seen on foot** (D74), walking with your
+dragon at your side: §4's unseen follow camera is replaced; the young dragon still hops,
+glides and finds things beside you. Noah: "have a game map that you can fast travel in, or
 fly around in freely". This page ties the Map tab ([screens & flow](screens-and-flow.md)),
 Skyreach Valley ([GDD §7](game-design.md#7-riding-and-skyreach-valley)) and the places of
 each milestone together.

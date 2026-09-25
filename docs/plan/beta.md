@@ -1,36 +1,50 @@
 # Beta — *The valley*: Work Plan
 
-Status: **Draft for Noah's sign-off** (D65). Alpha 2 is done (`v0.2.0-alpha2`, D72). The
+Status: **Settled** (D73, D74; 2026-09-25): the sit-down's answers and the plan's open points
+are decided; work starts with WP1. Alpha 2 is done (`v0.2.0-alpha2`, D72). The
 sit-down (D73, [brief](beta-sitdown.md)) put the valley first: an open world to walk and fly
 in, the places rebuilt inside it, a new map, flying, the first challenges, people and a
 first campaign. Training, voice and the ground cups move to 1.0 ([roadmap](roadmap.md)).
-Nothing here is built until Noah has signed this plan off; the open points just below are
-settled first.
+**No hardware pushes for now** (D74): the runs below wait until Noah asks; budgets are
+measured in the emulator against the den's hardware numbers meanwhile.
 
-## Open points for Noah (before work starts)
-Each has a recommendation; they're repeated in chat.
-1. **On foot.** With a player character (7C) and walking beside your young dragon (5A),
-   you'd be seen on foot in the valley, where D44 and the design doc had you unseen (the
-   camera following your dragon) and only ever shown as a rider. **Recommended:** a
-   third-person player walking with the dragon at their side (it follows, hops and glides,
-   and you can send it to sniff things out), riding once it's grown.
-2. **Sky Rings: ridden or cued?** The design has every competition unmounted (you cue the
-   dragon from the ground). **Recommended:** ride Sky Rings yourself (flying skill, the
-   dragon's Wing stat sets its speed and turning); Lantern Trial and Fruit Catch stay cued
-   from the ground.
-3. **The first campaign.** Options: **A** *The Lantern Festival*: the valley's festival
-   lanterns have gone dark; relight them at each place, ending at the festival with the
-   Lantern Trial. **B** *The keeper's apprentice*: the valley's old dragon keeper takes you
-   on, and you earn the title through the cups and the villagers' favours. **C** *The first
-   Starfire*: sightings of a star-born dragon over the floating islands lead to a rare egg.
-   **Recommended:** A, with the old keeper from B as your guide; 6–8 quests, 2–3 hours.
-4. **Concept images (R7):** made with AI image generation as reference only, like the
-   Phase 0 concepts, then built in Blender by script as always. **Recommended:** yes.
-5. **The player creator:** a name (as now), two body shapes, six hair styles and colours,
-   five skin tones, three outfit colours. **Recommended:** as listed; more later.
-6. **The Wanderings in the world** (your "Sure" on 9, read as): the trailheads become
-   places in the valley; a pedometer trip is shown as your dragon flying over the valley;
-   what it finds comes from real spots it passes, which also mark themselves on your map.
+## Decided at the sign-off (D74)
+1. **On foot:** you're seen, in the third person, walking with your dragon at your side (it
+   follows, hops and glides, and you can send it to sniff things out); you ride it once it's
+   grown. This replaces D44's unseen follow camera.
+2. **Sky Rings is ridden:** you fly the course yourself; the dragon's Wing sets its speed and
+   turning. Lantern Trial and Fruit Catch stay cued from the ground.
+3. **The first campaign weaves all three premises** (outline below, reviewed as R10).
+4. **Concept images** by AI image generation, reference only; everything built stays
+   scripted Blender.
+5. **The creator:** a name (as now), two body shapes, six hair styles and colours, five skin
+   tones, three outfit colours.
+6. **The Wanderings in the world:** the trailheads are places in the valley; a pedometer
+   trip is shown as your dragon flying over the valley; its finds come from real spots it
+   passes, which mark themselves on your map.
+
+## The first campaign: *The Lantern Festival* (outline for R10)
+The valley's old dragon keeper takes you on as an apprentice (B). The festival's lanterns,
+one at each place, have gone dark; relighting them is your apprenticeship (A). As they come
+back, a star-born dragon is seen over the floating islands, and at the festival it leaves a
+rare egg (C). Eight quests, about 2–3 hours, each teaching a part of the valley:
+1. **The keeper's apprentice.** Out of the den with your young dragon; meet the old keeper at
+   the waterfall; walk the valley's first path; the first lantern, by the den.
+2. **Market day.** The Market village's lantern; help its keeper with a Fruit Catch (the
+   first challenge, Ember cup).
+3. **The hilltop.** The Nesting Stone's lantern; the keeper's story of the festival and of a
+   dragon that fell from the stars.
+4. **The meadow.** The Sanctuary's lantern; find a stray dragon in the meadow with your
+   dragon sniffing it out.
+5. **The cold heights.** The Cold Vault's lantern, up a path a young dragon can glide from;
+   first glide.
+6. **Wings.** Your dragon is grown: the keeper teaches you to ride; Sky Rings to the high
+   lantern on the floating islands; the first sighting of the star-born dragon.
+7. **The trailhead.** The traveller's lantern at the trailhead; a Wanderings trip that brings
+   back a star shard.
+8. **The Lantern Festival.** The Lantern Trial at the arena, every lantern lit; the
+   star-born dragon comes down and leaves an egg; the keeper names you the valley's keeper.
+The star-born egg (its breed or look, and what it hatches into) is settled at R10.
 
 ## Definition of done
 Checked in Azahar, then on Noah's old 3DS (D34):
@@ -46,21 +60,21 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 3. **The map** (4A): a painted valley map on the bottom screen while exploring, fogged until
    explored; your position and heading; places found by coming near; fast travel to any
    found place with the travelling heart; full screen with X.
-4. **Getting about** (5A): on foot with a young dragon; adolescents glide from heights;
-   grown dragons fly with you riding (take off, flap, glide, dive, bank, land anywhere flat,
-   stamina); the camera follows.
+4. **Getting about** (5A, D74): you on foot in the third person with your dragon at your
+   side; adolescents glide from heights; grown dragons fly with you riding (take off, flap,
+   glide, dive, bank, land anywhere flat, stamina); the camera follows.
 5. **Challenges** (6A): the arena; **Sky Rings**, **Lantern Trial** (breath for all six
    elements) and **Fruit Catch** (a hop version for juveniles); the Ember → Flame → Blaze →
    Starfire cups; ribbons and trophies in the den; Gleam.
 6. **People** (7C): the player character with a simple creator, riding and walking; a
-   handful of villagers who run the places, with portraits and dialogue; **a first
-   campaign** of 6–8 quests with a quest log.
+   handful of villagers who run the places, with portraits and dialogue; **the first
+   campaign**, *The Lantern Festival* (eight quests, D74), with a quest log.
 7. **The Wanderings in the world** (9): trailheads as places; trips shown flying over the
    valley; finds from real spots.
 8. **Saves carry over:** every dragon, egg, item and the Dragondex from Alpha 2; the new
    world state (position, discoveries, cups, quests, your look) added.
 9. **Reviews passed:** R7 concepts, R8 the valley blockout, R9 people, R10 the campaign
-   outline (below).
+   outline (below). The hardware runs happen when Noah asks for them (D74).
 10. Tests green, no build warnings, docs, STATUS and RedWiki updated, tagged `v0.3.0-beta`.
 
 ## Budgets (proposed; WP1 measures them on the 3DS)
@@ -74,17 +88,18 @@ Checked in Azahar, then on Noah's old 3DS (D34):
   exteriors resident, dragons' looks as now (17.8 MB of linear memory free with all four).
 
 ## Phase A — prove it first (risk first)
-### WP1 — A flyable valley on the 3DS (technical test, run 14)
+### WP1 — A flyable valley (technical test; on the 3DS as run 14 when Noah asks)
 - A placeholder height field (a few tiles, fog, a sky dome), one place standing in it (the
   den's cliff as a block), the current grown dragon flying it with the arcade controls, a
   follow camera, and the budget overlay. Tile streaming from romfs, near/far detail.
-- On the old 3DS: frame time flying low and high, over the busiest tile, with the 3D slider
-  up; memory. The numbers set the real budgets above before any art is made.
+- In the emulator now (D74): the triangles, draws and memory flying low and high over the
+  busiest tile, against the den's hardware numbers (a full den of about 9,800 triangles ran
+  17–18 ms on the old 3DS). On the old 3DS when Noah asks: frame time, the 3D slider up.
 - Also measures the cost of the terrain shader (vertex colours + fog; one tiling detail
   texture if it fits).
 
 ### WP2 — Concept images (review R7, blocks the world's art)
-- Reference images (AI, reference only, open point 4): the valley from above, the den's cliff
+- Reference images (AI, reference only, D74): the valley from above, the den's cliff
   and waterfall, the Market village, the arena, the Nesting Stone hilltop, the floating
   islands, and the player character and three villagers; a palette sheet of the valley at
   dawn, day, dusk and night next to the dragons. Noah picks the direction.
@@ -108,8 +123,8 @@ Checked in Azahar, then on Noah's old 3DS (D34):
   get replaced).
 
 ### WP5 — Getting about: on foot, gliding, flying, riding
-- On foot (open point 1): the player walks and runs, the young dragon follows, hops and
-  sniffs; A calls it, the stylus points it at things.
+- On foot (D74): you walk and run in the third person; the dragon follows at your side,
+  hops and glides, and sniffs things out; A calls it, the stylus points it at things.
 - Adolescents glide off ledges and slopes; grown dragons take off (from the ground or a
   ledge), flap to climb (A), dive (B), bank (L/R), glide on release, land on flat ground,
   with stamina that grows with Wing and bond.
@@ -126,7 +141,7 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 ### WP7 — Discovery, finds and the Wanderings
 - Landmarks discovered by coming near (a bit each in the save), with a find at many (Gleam,
   trinkets, rarely a wild egg), some reachable only from the air.
-- The Wanderings (open point 6): the trailheads in the valley; the pedometer trip shown as the
+- The Wanderings (D74): the trailheads in the valley; the pedometer trip shown as the
   dragon flying over the valley; its finds from the spots it passes.
 
 ## Phase C — challenges
@@ -134,7 +149,7 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 - The arena's scene, entering a challenge, the four cups per challenge with their
   requirements, scoring, results, ribbons (den decor) and trophies, Gleam; the cup day music
   (batch 1 has it) and results stingers.
-### WP9 — Sky Rings (ridden, open point 2)
+### WP9 — Sky Rings (ridden, D74)
 - Ring courses over the valley per cup (longer and trickier higher up), a clock and a ghost
   of your best run; the dragon's Wing sets speed and turn.
 ### WP10 — Lantern Trial
@@ -147,7 +162,7 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 ## Phase D — people and the first campaign
 ### WP12 — The player character (review R9)
 - One model and rig through the dragons' pipeline (cute, rounded proportions, about 500
-  triangles), walk, run, idle, wave, mount and ride poses; the creator (open point 5) after
+  triangles), walk, run, idle, wave, mount and ride poses; the creator (D74) after
   the naming at a new game (and from the settings for existing saves).
 ### WP13 — Villagers
 - Five or six: the old keeper (your guide), the Market's keeper, the Sanctuary's keeper, the
@@ -155,9 +170,9 @@ Checked in Azahar, then on Noah's old 3DS (D34):
   poly, idle and talk animations, a portrait each; a dialogue box on the bottom screen with
   choices.
 ### WP14 — The first campaign (review R10: the outline)
-- The premise (open point 3), 6–8 quests through the places and the challenges, a quest log,
-  rewards (Gleam, decor, a rare egg at the end), all dialogue written for the game's warm
-  tone. R10 reviews the outline before the dialogue is written.
+- *The Lantern Festival* (outline above): eight quests through the places and the
+  challenges, a quest log, rewards (Gleam, decor, the star-born egg at the end), all dialogue
+  written for the game's warm tone. R10 reviews the outline before the dialogue is written.
 
 ## Phase E — sound, saves, hardware, wrap-up
 ### WP15 — Music and sound
@@ -169,8 +184,9 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 - New save sections (your look, where you are, discoveries, cups and ribbons, quests); an
   Alpha 2 save starts outside the den's cliff with everything it had.
 ### WP17 — Performance and the hardware runs
-- Run 14 (WP1, the technical test), run 15 (after WP5–6: flying, the map, a few places),
-  run 16 (the full milestone). Bundled, with the steps written up as before.
+- Planned: run 14 (WP1, the technical test), run 15 (after WP5–6: flying, the map, a few
+  places), run 16 (the full milestone), bundled, with the steps written up as before. **Held
+  until Noah asks (D74)**; until then the emulator's counters keep to the budgets.
 ### WP18 — Wrap-up
 - The checklist, docs, the tag `v0.3.0-beta`; then the 1.0 sit-down.
 
@@ -183,9 +199,16 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 | R10 | The campaign outline | Writing the dialogue |
 
 ## Order of work
-WP1 → (run 14, R7) → WP3 → WP5 → WP6 → WP4 → WP7 → (run 15) → WP8 → WP9 → WP10 → WP11 →
-WP12 → WP13 → WP14 → WP15 (briefs early, so the music can arrive in time) → WP16 → run 16 →
-WP18. Work goes package by package, committed, with STATUS and RedWiki kept up.
+1. **Now:** WP1 (the flyable valley, measured in the emulator) and WP2 (concept images for
+   R7) side by side, and the sound briefs of WP15 early so the music can arrive in time.
+2. **The valley:** WP3 (landscape, R8) → WP5 (getting about) → WP6 (the map) → WP4 (the
+   places) → WP7 (discovery, the Wanderings).
+3. **Challenges:** WP8 (the arena and cups) → WP9 (Sky Rings) → WP10 (Lantern Trial) →
+   WP11 (Fruit Catch).
+4. **People and the campaign:** WP12 (you, R9) → WP13 (villagers) → WP14 (the campaign, R10).
+5. **Close:** WP16 (saves) → WP18 (checklist, tag `v0.3.0-beta`), with the hardware runs of
+   WP17 wherever Noah asks for them.
+Work goes package by package, committed, with STATUS and RedWiki kept up.
 
 ## After Beta
 **1.0 — *A trainer*** (sit-down first): tricks, voice commands, the training yard, the

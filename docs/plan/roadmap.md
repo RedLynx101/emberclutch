@@ -23,12 +23,45 @@ of Alpha 2 at the latest**, before content volume makes a rendering change expen
 | **Foundations** | Design, tools, proof of pipeline | Phase 0 | ✅ Done 2026-09-23 |
 | **Alpha 1** | *A living pet* | Phases 1–2: 3D dragon, care, growth, naming, real saves, music, CIA | ✅ Done (2026-09-24, `v0.1.0-alpha1`) |
 | **Alpha 2** | *A den* | Phase 3: several dragons, breeding, eggs, Sanctuary/Vault, Market, Wanderings, map with fast travel; style review R5; first hardware runs | ✅ Done (2026-09-25, `v0.2.0-alpha2`; [plan](alpha-2.md), [checklist](alpha-2-checklist.md)) |
-| **Beta** | *The valley* | Phase 6 + air half of Phase 5 (moved up, D73): the open valley, the places in it, the painted map, flying and riding, Sky Rings, Lantern Trial, Fruit Catch, the player character, villagers and a first campaign | Sit-down done (D73) · [plan](beta.md) awaiting sign-off |
+| **Beta** | *The valley* | Phase 6 + air half of Phase 5 (moved up, D73): the open valley, the places in it, the painted map, flying and riding, Sky Rings, Lantern Trial, Fruit Catch, the player character, villagers and a first campaign | Settled (D73–D74) · [plan](beta.md) · **next** |
 | **1.0** | *A trainer* | Phase 4 + ground half of Phase 5 + Phase 7 polish: tricks, voice, the training yard, Command Trial, Shine Show, grooming, economy, more campaign, public release | Planned · **sit-down first** |
 | **1.x** | *Friends* | Sky Visits (local wireless) | Later · **sit-down first** |
 | **2.0** | *The meadow* | Equine line: horse, pegasus, unicorn, alicorn | Later · **sit-down first** |
 
-**Next: Beta, *The valley*** ([plan](beta.md), awaiting Noah's sign-off). The sit-down (D73, [brief](beta-sitdown.md)) put the valley before training: Noah wants the places redesigned, the map, the open world, flying, challenges, people and a first campaign next. Training, voice and the ground cups move to 1.0.
+## The road from here (2026-09-25)
+Alpha 1 and Alpha 2 are done. What's left, in order, with the gates that hold each step:
+
+**Beta — *The valley*** ([plan](beta.md), settled D73–D74). Tag `v0.3.0-beta`.
+1. **Prove it:** a flyable valley in the emulator (streamed height-field tiles, fog, sky,
+   one place, the arcade flight controller, the follow camera) measured against the den's
+   hardware numbers; concept images (AI, reference only) → **R7** (blocks the world's art);
+   the music and sound briefs sent early.
+2. **The valley:** the landscape → **R8** (the blockout) → getting about (you on foot with
+   your dragon, gliding, flying, riding) → the painted map with fog and fast travel → the
+   places standing in the valley, entered to their scenes → discovery, finds and the
+   Wanderings in the world.
+3. **Challenges:** the arena and the Ember → Starfire cups → Sky Rings (ridden) → Lantern
+   Trial (six breaths) → Fruit Catch.
+4. **People and the campaign:** you and the creator → **R9** → villagers with dialogue →
+   *The Lantern Festival* → **R10** (the outline) → its eight quests.
+5. **Close:** saves carry over; the checklist; hardware runs whenever Noah asks (held for
+   now, D74); the tag.
+
+**1.0 — *A trainer*** (sit-down first, after Beta). Tag `v1.0.0`, the public release.
+- Tricks (gesture, then the name), voice commands, the training yard, the Wing / Wit / Spark
+  stats; the Command Trial and Shine Show with their cups; grooming that fits together;
+  several wanderers at once; more of the campaign; the economy and progression across the
+  whole game.
+- Release polish: tutorial, settings, balance, a performance pass on the hardware, no
+  AI-derived asset shipped; the repo goes public with the CIA and 3DSX on GitHub Releases.
+
+**1.x — *Friends*** (sit-down first): Sky Visits over local wireless (visit a den, play
+together, gifts, local competitions; a cross-den clutch as a stretch).
+
+**2.0 — *The meadow*** (sit-down first): the equine line (horse, pegasus, unicorn,
+alicorn), as an expansion or its own game.
+
+**Now:** Beta's first step (WP1 and WP2), with the sound briefs.
 
 **Every milestone after Alpha 2 opens with a design sit-down with Noah (D65), and no work
 on it starts until he has passed it.** The sit-down happens when the milestone before it is
@@ -106,7 +139,7 @@ style, the last thing before Noah decides (D47) → the dragons update in the ch
   the opposite sex through the Market or Wanderings.
 
 ## Beta — *The valley*
-**Sit-down done (D73), 2026-09-25; detailed plan: [beta.md](beta.md).** Moved ahead of the
+**Sit-down done and plan settled (D73–D74), 2026-09-25; detailed plan: [beta.md](beta.md).** Moved ahead of the
 trainer content because it's what Noah wants to play next and it's the riskiest thing left
 on an old 3DS (a big 3D space, streaming, draw distance).
 - **Skyreach Valley:** about 1 km across, a height field in streamed tiles with fog, water,

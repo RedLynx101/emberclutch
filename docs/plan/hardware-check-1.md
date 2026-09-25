@@ -14,7 +14,26 @@ game crashed at its first 3D frame (a null texture read the emulator hides). Bot
 WP11b); both 3D-banner CIAs froze the HOME Menu, which also turned out to keep an old banner
 per title; Next style froze the 3DS (fixed in 0.1.4).
 
-**Run 8:** everything turned and played the old sound (cached by product code). **Run 9:**
+**Run 9:** P, Q, R turned and chirped alike (the sound was mono: every banner we'd made played
+beeps); 0.1.8's own logo stopped it at start (a logo can't be re-signed). **Run 10:**
+1. In FBI (Titles), delete any "Banner lab" titles still installed. Then from `/cias/lab/`
+   install only **S, T and U** (the older files there are the earlier labs). For each: does it
+   turn, and what does it play?
+   - S: the dragon, egg and name should hold still; the sparkles may circle round them.
+     Sound: a sparkle, a baby's chirp and trill.
+   - T: nothing should move but the heart's glow. Sound: a chime, a trill, a sparkle.
+   - U: the old moving banner (tail, head, blinks) under one still node: it may still turn.
+     Sound: two quick chirps and a sparkle.
+   If one freezes the HOME Menu, hold POWER and carry on. Which one looks best?
+2. Install `/cias/emberclutch.cia` (0.1.9) over the game. Don't use `emberclutch-2d.cia`:
+   that's 0.1.8, which stops at start (delete it if you like). The startup logo is makerom's
+   again. The banner still turns; its sound should now be the sparkle-chirp (the HOME Menu may
+   keep the old one until it refreshes its cache).
+3. The GPU probe (run 9's step 3, which 0.1.8 couldn't reach): in the full den with the
+   close-up, overlay on, press Y; then dev menu page 2, "GPU probe", and Y after each of its
+   four presses. Five screenshots.
+
+**Run 8:** everything turned and played the old sound. **Run 9 (planned):**
 1. Lab 5 in `/cias/lab/`: P, Q, R. Each: does it turn, and what does it play (P and Q a
    sparkle and a baby's chirp, R the theme's bar)? Q and R have no extendedbanner flag: if
    they freeze, hold POWER and carry on. Delete them after.

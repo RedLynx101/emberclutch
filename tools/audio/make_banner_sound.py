@@ -1,5 +1,8 @@
 """The HOME Menu banner's sound: what plays when the Emberclutch icon is selected. Writes
-assets/audio/banner.wav (16-bit mono, under three seconds, the banner's limit).
+assets/audio/banner.wav: 16-bit PCM, stereo, 32000 Hz (--rate 44100 for the other rate known to
+work), under three seconds. Until run 9 it was mono at 22050 Hz, and the HOME Menu played every
+one of them as the same short high chirp (gbatemp threads 398072 and 399472 describe the same
+beeping; stereo 16-bit PCM at 32000 or 44100 Hz fixed theirs). tools/check_3ds.py checks it.
 
 Noah asked for "a cuter sound" (first 3DS run, 2026-09-24). A bar of the title theme was tried
 first (--theme); on the 3DS he still wanted a cute sound effect (run 7), so the default is a
@@ -7,7 +10,7 @@ little mix of the game's own sounds: a sparkle (the banner's sparkles), a baby's
 trill, pitched up, and a soft sparkle to end ("sparkle-chirp"). The other mixes in MIXES and
 the theme's bars stay for comparing.
 
-  python tools/audio/make_banner_sound.py [--mix <name>] [--theme [--start <seconds>]] [--candidates]
+  python tools/audio/make_banner_sound.py [--mix <name>] [--theme [--start <seconds>]] [--rate <hz>] [--out <wav>] [--candidates]
 
 --candidates also writes every mix and every bar in THEME_BARS to build/review/banner-sound/.
 The theme needs ffmpeg on PATH (to decode the Ogg Vorbis).
@@ -27,7 +30,8 @@ SFX = os.path.join(ROOT, "romfs", "sfx")
 THEME = os.path.join(ROOT, "romfs", "music", "title-theme.ogg")
 OUT = os.path.join(ROOT, "assets", "audio", "banner.wav")
 REVIEW = os.path.join(ROOT, "build", "review", "banner-sound")
-RATE = 22050
+RATE = 22050  # the game's sound effects, and the mixing here
+OUT_RATE = 32000  # what the banner holds (stereo)
 LENGTH = 2.8  # seconds
 
 # The title theme's bars worth hearing (seconds; from romfs/music/loops.json: the loop starts
@@ -118,29 +122,37 @@ def theme_bar(start: float) -> list[float]:
     return x
 
 
-def write(path: str, mix: list[float]) -> None:
+def write(path: str, mix: list[float], rate: int = OUT_RATE) -> None:
+    """The mix at `rate`, the same in both channels (the HOME Menu wants stereo)."""
     peak = max(abs(s) for s in mix) or 1.0
     k = 0.89 / peak  # about -1 dBFS at the peak
+    out = resample(mix, RATE / rate)
+    frames = array.array("h")
+    for s in out:
+        v = int(max(-1.0, min(1.0, s * k)) * 32767)
+        frames.extend((v, v))
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with wave.open(path, "wb") as w:
-        w.setnchannels(1)
+        w.setnchannels(2)
         w.setsampwidth(2)
-        w.setframerate(RATE)
-        w.writeframes(array.array("h", (int(max(-1.0, min(1.0, s * k)) * 32767) for s in mix)).tobytes())
-    print(f"wrote {path}: {len(mix) / RATE:.1f} s, peak {20 * math.log10(peak * k):.1f} dBFS")
+        w.setframerate(rate)
+        w.writeframes(frames.tobytes())
+    print(f"wrote {path}: {len(out) / rate:.2f} s, stereo {rate} Hz, peak {20 * math.log10(peak * k):.1f} dBFS")
 
 
 def main() -> None:
     args = sys.argv[1:]
+    rate = int(args[args.index("--rate") + 1]) if "--rate" in args else OUT_RATE
+    out = args[args.index("--out") + 1] if "--out" in args else OUT
     if "--candidates" in args:
         for name in MIXES:
             write(os.path.join(REVIEW, f"sfx-{name}.wav"), sfx_mix(name))
         for name, t in THEME_BARS.items():
             write(os.path.join(REVIEW, f"theme-{name}-{t:.2f}s.wav"), theme_bar(t))
     if "--theme" in args:
-        write(OUT, theme_bar(float(args[args.index("--start") + 1]) if "--start" in args else THEME_START))
+        write(out, theme_bar(float(args[args.index("--start") + 1]) if "--start" in args else THEME_START), rate)
     else:
-        write(OUT, sfx_mix(args[args.index("--mix") + 1] if "--mix" in args else DEFAULT_MIX))
+        write(out, sfx_mix(args[args.index("--mix") + 1] if "--mix" in args else DEFAULT_MIX), rate)
 
 
 if __name__ == "__main__":

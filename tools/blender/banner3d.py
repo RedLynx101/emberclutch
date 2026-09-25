@@ -12,7 +12,21 @@ into pieces at its joints (body, head, eyes, tail, heart), each with its pivot a
 
   blender -b -P tools/blender/banner3d.py -- [--out build/banner] [--assets assets] [--review build/review] [--debug-rig]
     [--no-fit] [--keep-glow] [--keep-backdrop] [--no-anchor] [--no-sparkles]   (banner-lab variants, tools/banner_lab.ps1)
-  py -3.12 build/tools/pycgfx/main.py build/banner/banner.gltf build/banner/banner.cgfx
+    [--still [--join-sparkles]] [--root]   (holding the banner still, run 10: see below)
+  py -3.12 tools/banner_cgfx.py build/banner/banner.gltf build/banner/banner.cgfx [--billboard world,sparkle_*]
+
+The HOME Menu turns every 3D banner round and round (its camera orbits the model, faster when
+you blow on the mic); official banners hold parts still with billboard nodes, which always
+face the camera (a Y-axis billboard: gbatemp thread 683412, and a Nintendo-SDK artist on
+polycount, 2012: "the billboard options DO basically disable the auto-rotate"). A billboard
+node turns only its own meshes, so the ways to hold it still:
+  --still          the dragon, its egg and the wordmark joined into one piece, "world", at the
+                   scene's centre (its parts no longer move; the heart still pulses its colour);
+                   the sparkles stay apart and glint (as billboards they circle it)
+  --join-sparkles  the sparkles joined into "world" too, mid-glint: nothing turns at all
+  --root           the scene as it is, under one still node "world" (whether a billboard's
+                   children turn with it is what this tries)
+and tools/banner_cgfx.py --billboard names the nodes to make Y-axis billboards.
 
 Writes <out>/banner.gltf (+ .bin, the skin texture), <assets>/banner.png (the 2D banner,
 256x128) and review renders of the 3D banner through the HOME Menu's camera.
@@ -649,8 +663,62 @@ def parent(child, par):
     child.matrix_world = m
 
 
+def still_world(pieces, egg, cap, word, stars):
+    """--still: the dragon, its egg and the wordmark joined into one rigid piece, "world", with
+    its origin at the scene's centre and no transform of its own (so a billboard turns it about
+    that centre). Returns the sparkles still apart (none, with --join-sparkles)."""
+    join = list(pieces.values()) + [egg, cap, word]
+    if "--join-sparkles" in sys.argv:
+        for o in stars:
+            o.scale = (0.6,) * 3  # frozen mid-glint
+        join += stars
+        stars = []
+    for o in join:
+        o.data = o.data.copy()  # single-user, so its transform can be applied
+        apply_modifiers(o)
+        o.vertex_groups.clear()  # the rig's, left on the frozen pieces (joining them crashes Blender 5.2)
+    for o in bpy.context.view_layer.objects:
+        o.select_set(False)
+    for o in join:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = pieces["body"]
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    bpy.ops.object.join()
+    world = bpy.context.view_layer.objects.active
+    world.name = world.data.name = "world"
+    print(f"[banner] still: one piece of {len(join)} ({len(world.data.polygons)} faces), {len(stars)} sparkles apart")
+    return stars
+
+
+def wrap_world():
+    """--root: every piece but the anchor under one still node, "world", at the centre."""
+    world = link(bpy.data.objects.new("world", None))
+    for o in list(bpy.context.scene.objects):
+        if o is not world and o.parent is None and o.type == "MESH" and o.name != "aaa_anchor":
+            parent(o, world)
+    bpy.context.view_layer.update()
+
+
 def animate(pieces, cap, heart_mat, stars=()):
-    """Rigid node animation only (the HOME Menu freezes on skinned banners)."""
+    """Rigid node animation only (the HOME Menu freezes on skinned banners). With no pieces
+    (--still) only the sparkles glint."""
+    bpy.context.preferences.edit.keyframe_new_interpolation_type = "LINEAR"
+    if pieces:
+        animate_dragon(pieces, cap)
+    for o, (_, _, peak) in zip(stars, SPARKLES):  # they glint in turn: a quick swell, a slower fade
+        rest, full = (SPARKLE_REST,) * 3, (1.0, 1.0, 1.0)
+        for f, s in ((0, rest), (peak - 10, rest), (peak, full), (peak + 14, rest), (FRAMES, rest)):
+            o.scale = s
+            o.keyframe_insert("scale", frame=f)
+    for o in bpy.data.objects:  # straight lines between keys (pycgfx: no spline rotations)
+        ad = o.animation_data
+        if ad and ad.action:
+            for fc in getattr(ad.action, "fcurves", []):
+                for kp in fc.keyframe_points:
+                    kp.interpolation = "LINEAR"
+
+
+def animate_dragon(pieces, cap):
     body, head, tail = pieces["body"], pieces["head"], pieces["tail"]
     for p in ("head", "tail", "heart"):
         if p in pieces:
@@ -659,8 +727,6 @@ def animate(pieces, cap, heart_mat, stars=()):
         parent(pieces["eyes"], head)
     parent(cap, head)
     bpy.context.view_layer.update()
-
-    bpy.context.preferences.edit.keyframe_new_interpolation_type = "LINEAR"
 
     def key(o, frame, rot=None, scale=None, loc=None):
         if rot is not None:
@@ -696,22 +762,10 @@ def animate(pieces, cap, heart_mat, stars=()):
             key(hp, f + 4, scale=(1.22, 1.22, 1.22))
             key(hp, f + 12, scale=(1, 1, 1))
         key(hp, FRAMES, scale=(1, 1, 1))
-    # The sparkles glint in turn: a quick swell and a slower fade. (They turned as well; Noah
-    # preferred them still.)
-    for o, (_, _, peak) in zip(stars, SPARKLES):
-        rest, full = (SPARKLE_REST,) * 3, (1.0, 1.0, 1.0)
-        for f, s in ((0, rest), (peak - 10, rest), (peak, full), (peak + 14, rest), (FRAMES, rest)):
-            key(o, f, scale=s)
     # A gentle bob.
     b0 = body.location.copy()
     for f, dz in ((0, 0.0), (48, 0.35), (96, 0.0)):
         key(body, f, loc=b0 + Vector((0, 0, dz)))
-    for o in bpy.data.objects:  # straight lines between keys (pycgfx: no spline rotations)
-        ad = o.animation_data
-        if ad and ad.action:
-            for fc in getattr(ad.action, "fcurves", []):
-                for kp in fc.keyframe_points:
-                    kp.interpolation = "LINEAR"
 
 
 # ------------------------------------------------------------------------------ export
@@ -733,9 +787,11 @@ def add_heart_colour(path, heart_name="heart_glow"):
     with open(path, encoding="utf-8") as f:
         g = json.load(f)
     mi = next((i for i, m in enumerate(g.get("materials", [])) if m.get("name") == heart_name), None)
-    if mi is None or not g.get("animations"):
-        print("[banner] no heart material or animation: colour pulse skipped")
+    if mi is None:
+        print("[banner] no heart material: colour pulse skipped")
         return
+    if not g.get("animations"):  # nothing moves (--still --join-sparkles): the pulse on its own
+        g["animations"] = [{"name": "COMMON", "channels": [], "samplers": []}]
     times, colours = [], []
     for beat in range(4):
         for f, c in ((0, HEART_DIM), (4, HEART_BRIGHT), (12, HEART_DIM)):
@@ -819,7 +875,12 @@ def render(path, width, height, frame, final=None):
 
 def main():
     pieces, egg, cap, heart_mat, word, stars = build()
+    if "--still" in sys.argv:
+        stars = still_world(pieces, egg, cap, word, stars)
+        pieces = {}
     animate(pieces, cap, heart_mat, stars)
+    if "--root" in sys.argv:
+        wrap_world()
     tris = 0
     for o in bpy.context.scene.objects:
         if o.type == "MESH":

@@ -9,6 +9,9 @@
 # A 3D banner needs the SMDH's "extendedbanner" flag, as homebrew 3D banners have: with it the
 # HOME Menu showed ours (0.1.1); without it, it froze opening the new title's present (0.1.2,
 # 2026-09-24). The flat banner keeps bannertool's default flags.
+# The boot logo is makerom's homebrew logo (the RSF's "Logo: Homebrew"): a logo of our own
+# can't be signed (its HMAC key is Nintendo's), and 0.1.8's stopped the game at start (run 9).
+# The CIA is checked by tools\check_3ds.py once it's built; a failed check stops here.
 # makerom (3DSGuy/Project_CTR) and bannertool (diasurgical/bannertool) aren't kept in this
 # repo: by default they're taken from the 3D-Claw project next to it (3ds-ai\tools\win64),
 # else from PATH.
@@ -16,7 +19,6 @@ param(
     [switch]$NoBuild,
     [switch]$Banner3D,
     [switch]$Banner2D,
-    [switch]$HomebrewLogo,
     [string]$ToolsDir = "",
     [string]$Version = "0.1.0"
 )
@@ -66,22 +68,10 @@ if ($LASTEXITCODE -ne 0) { throw "bannertool makesmdh failed ($LASTEXITCODE)" }
 & $bannertool makebanner @bannerArgs -a (Join-Path $root "assets\audio\banner.wav") -o $bnr
 if ($LASTEXITCODE -ne 0) { throw "bannertool makebanner failed ($LASTEXITCODE)" }
 
-# The boot logo (WP11c, D66): makerom's homebrew logo with the EMBERCLUTCH wordmark
-# (tools\logo\make_logo.py, built here if it's missing); -HomebrewLogo keeps makerom's own.
-$logoArgs = @()
-if (-not $HomebrewLogo) {
-    $logo = Join-Path $root "build\logo\emberclutch.bcma.lz"
-    if (-not (Test-Path $logo)) {
-        & py -3.12 (Join-Path $PSScriptRoot "logo\make_logo.py") --makerom $makerom
-        if ($LASTEXITCODE -ne 0) { throw "make_logo.py failed ($LASTEXITCODE)" }
-    }
-    $logoArgs = @("-logo", $logo)
-}
-
 $v = $Version.Split(".")
 Push-Location $root  # the RSF's RomFs path is relative to here
 try {
-    & $makerom -f cia -o $cia -elf $elf -icon $smdh -banner $bnr -rsf (Join-Path $PSScriptRoot "cia.rsf") @logoArgs `
+    & $makerom -f cia -o $cia -elf $elf -icon $smdh -banner $bnr -rsf (Join-Path $PSScriptRoot "cia.rsf") `
         -target t -DAPP_ENCRYPTED=false -major $v[0] -minor $v[1] -micro $v[2]
     if ($LASTEXITCODE -ne 0) { throw "makerom failed ($LASTEXITCODE)" }
 } finally {
@@ -89,3 +79,5 @@ try {
 }
 $size = [math]::Round((Get-Item $cia).Length / 1MB, 1)
 "Built $cia ($size MB, version $Version, $(if ($Banner3D) { '3D' } else { '2D' }) banner)"
+& py -3.12 (Join-Path $PSScriptRoot "check_3ds.py") --quiet $cia
+if ($LASTEXITCODE -ne 0) { throw "$cia failed its checks (tools\check_3ds.py): don't put it on the 3DS" }

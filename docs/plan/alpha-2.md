@@ -401,6 +401,51 @@ sound** (a high chirp of about 3 s), and so did the game's own title. Two findin
   (`banner_lab.ps1` now gives every title one, and `;noflag` drops the flag). The game's
   product code is now `CTR-P-EMB2` (0.1.8).
 
+**Run 9 (lab 5, 0.1.8):** P, Q and R all showed our dragon in its egg with the name above,
+all turned without end, and all played the same short high chirp; 0.1.8 stopped at start with
+"The SD card was removed". Looked up (2026-09-24), all three are known problems:
+- **The sound was the format, not a cache:** our banner sound was mono at 22050 Hz. The HOME
+  Menu plays such a CWAV as the same beeping whatever it holds (gbatemp threads 398072 and
+  399472; bannertool's README: "Some WAV files produce CWAV files consisting of a series of
+  beeps"). What plays: 16-bit PCM, **stereo**, 32000 Hz (two reports) or 44100 Hz (the 2026
+  ClouDS Music tutorial, gbatemp 683412), at most 3 s. So run 8's "cached by product code" was
+  wrong: every banner we ever made played beeps. Now stereo 32000 Hz
+  (`make_banner_sound.py --rate` for 44100), and bannertool keeps stereo sample for sample
+  (checked: the CWAV decodes back to the WAV exactly).
+- **The turning is the HOME Menu's camera orbiting every banner** (faster when you blow on the
+  mic). Official banners hold parts still with **billboard nodes**, which always face the
+  camera: a Y-axis billboard (CGFX mode 5) is what the SM64 port's and ClouDS Music's logos
+  use on hardware, and a Nintendo-SDK artist (polycount, 2012) found it "basically disable[s]
+  the auto-rotate" but only for that node's own meshes, not its children's. pycgfx can't say
+  billboard from glTF, so `tools/banner_cgfx.py --billboard <nodes>` sets it after conversion.
+- **The logo can't be ours:** the logo is an LZ11 darc ending in an HMAC-SHA256 whose key is
+  Nintendo's (3dbrew "Logo"; GBATEK; yellows8's ctr-logobuilder needs a key taken from the
+  HOME Menu). Ours kept the homebrew logo's HMAC over a changed picture (and was 0x1C00 bytes,
+  not the 0x2000 every logo is padded to), so the HOME Menu refused it. See WP11c.
+
+**Checks before the 3DS (Noah, run 9):** `tools/check_3ds.py` checks every file before it
+goes over: a CIA's TMD, ticket and content hashes; the NCCH's exheader, ExeFS (each file) and
+RomFS (every IVFC level) hashes; the logo (only logos known to work pass: makerom's); the SMDH
+(titles, region-free, flags, extendedbanner with a 3D banner, icons); the banner (the CGFX
+decompresses, under 512 KB, its model COMMON) and its sound (the rules above; `--sound-out`
+writes what the 3DS will play back); glTF sources (no skins, bone weights or unknown
+animation); WAVs; .3dsx files (segments add up, SMDH, RomFS). `package_cia.ps1` checks the CIA
+it builds, `make_banner.ps1` the banner, and `deploy_ftp.ps1` and `banner_lab.ps1` send nothing
+if anything fails. Run on every earlier CIA: all of them fail the sound rule, 0.1.8 the logo.
+
+**Lab 6 (run 10):** three ways to hold the banner still, each with a stereo sound:
+- **S** (`banner3d.py --still`): the dragon, egg and name joined into one piece, `world`, a
+  Y-axis billboard; the sparkles apart, each a billboard (they'll circle it as the camera
+  orbits) and glinting. The dragon's own motion is lost; the heart's glow still pulses.
+  Sparkle-chirp at 32000 Hz.
+- **T** (`--still --join-sparkles`): everything in one billboard piece: nothing turns; only
+  the heart's glow pulses. "Hello" at 44100 Hz.
+- **U** (`--root`): the scene as it was (tail, head, blinks, bob) under one still billboard
+  node, to see whether its children turn with it (the SDK artist found they don't).
+  Chirp-chirp at 32000 Hz.
+The game's 0.1.9 keeps the turning banner (P's, known to show) with the stereo sparkle-chirp,
+and makerom's homebrew logo, until lab 6 picks the still one.
+
 ### WP11d — Hardware performance pass (after run 3; before WP12a, Noah agreed)
 The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 8.3). Target:
 16.7 ms with three dragons, their toys and decor, and the close-up.
@@ -444,12 +489,14 @@ showcases, the map and the title, with the UI at screen depth and the dragons ju
 it. It draws the top screen's 3D twice, so it waits for WP11d; in 3D it runs at 30 fps on the
 old 3DS (Noah: fine), 60 without. The bottom screen can't be 3D.
 
-### WP11c — An Emberclutch boot logo (D58) ✅ built (0.1.8), to see on the 3DS
-Done 2026-09-24: `tools/logo/make_logo.py` takes makerom's homebrew logo from its own output,
-draws EMBERCLUTCH (Cinzel Decorative, white on black, a touch bold) in place of "homebrew",
-ETC1-encodes it (our encoder; a round trip reads 37.8 dB PSNR), recompresses (6.6 KB of the
-8 KB region) and `package_cia.ps1` passes it with `-logo` (`-HomebrewLogo` for makerom's).
-Checked in the built CIA (the logo region is ours byte for byte). The plan it followed:
+### WP11c — An Emberclutch boot logo (D58) ✗ not possible as the system logo (D68)
+Built 2026-09-24 (0.1.8): makerom's homebrew logo with EMBERCLUTCH drawn in place of
+"homebrew". On the 3DS the game stopped at start ("The SD card was removed", run 9): the logo
+ends in an HMAC-SHA256 over its darc whose key is Nintendo's, so a changed logo can't be
+signed (see WP11b, run 9). `make_logo.py` is gone (it's in git history, f3ee65f); the CIA
+uses makerom's homebrew logo again, and `tools/check_3ds.py` passes only logos known to work.
+**Instead (to agree with Noah):** our gold EMBERCLUTCH as the game's own first screen, a
+second after the system logo. The old plan, for the record:
 The logo the HOME Menu plays as a title starts (the NCCH's logo region; the emulator never
 shows it). Since 0.1.2 that's makerom's *homebrew* logo: a small layout (an LZ11-compressed
 darc of `blyt/*.bclyt`, `anim/*.bclan` and `timg/*.bclim`: the word "homebrew" on a

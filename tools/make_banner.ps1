@@ -28,6 +28,8 @@ if (-not $SkipBanner) {
     $cgfx = Join-Path $root "build\banner\banner.cgfx"
     & py -3.12 (Join-Path $root "tools\banner_cgfx.py") $gltf $cgfx  # pycgfx, plus unlit materials
     if ($LASTEXITCODE -ne 0) { throw "banner_cgfx.py (pycgfx) failed" }
+    & py -3.12 (Join-Path $root "tools\check_3ds.py") --quiet $gltf $cgfx
+    if ($LASTEXITCODE -ne 0) { throw "the banner failed its checks (tools\check_3ds.py)" }
     $kb = [math]::Round((Get-Item $cgfx).Length / 1KB)
     if ((Get-Item $cgfx).Length -gt 512KB) { throw "banner.cgfx is $kb KB: the HOME Menu takes at most 512 KB" }
     "3D banner: $cgfx ($kb KB of 512)"

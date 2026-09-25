@@ -8,7 +8,8 @@
 # out the SMDH's extendedbanner flag (every one of these banners turned constantly with it).
 # A variant's banner is a CGFX (3D) or a PNG (flat) and a WAV. The CIAs land in build/lab/;
 # -Deploy uploads them to sdmc:/cias/lab/ (FBI can install a whole folder at once). Remove
-# them afterwards in FBI: Titles, "Banner lab ...", Delete Title.
+# them afterwards in FBI: Titles, "Banner lab ...", Delete Title. Every CIA is checked
+# (tools\check_3ds.py) before anything is uploaded; one failure and nothing is sent.
 param(
     [Parameter(Mandatory = $true)][string[]]$Variants,
     [string]$Deploy = "",
@@ -61,6 +62,9 @@ foreach ($v in $Variants) {
     $id++
 }
 
+& py -3.12 (Join-Path $PSScriptRoot "check_3ds.py") --quiet @($built | ForEach-Object { $_.FullName })
+$checked = $LASTEXITCODE -eq 0
+if ($Deploy -and -not $checked) { throw "A lab CIA failed its checks (tools\check_3ds.py): nothing was sent" }
 if ($Deploy) {
     foreach ($c in $built) {
         $uri = "ftp://${Deploy}:5000/cias/lab/$($c.Name)"

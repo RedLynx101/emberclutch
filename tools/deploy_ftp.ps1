@@ -4,6 +4,7 @@
 #   sdmc:/cias/<name>.cia                               with -Cia: every CIA in build/cia-test/
 #                                                       (tools\package_cia.ps1 builds them), for FBI
 # The 3DS's address changes now and then (DHCP): ftpd shows it on its screen.
+# Everything is checked first (tools\check_3ds.py): if any file fails, nothing is sent.
 param(
     [Parameter(Mandatory = $true)][string]$FtpHost,
     [int]$Port = 5000,
@@ -49,12 +50,19 @@ function New-RemoteDir([string]$remote) {
     } catch { }  # already exists
 }
 
+$cias = @()
+if ($Cia) {
+    $cias = @(Get-ChildItem (Join-Path $root "build\cia-test") -Filter *.cia -ErrorAction SilentlyContinue)
+    if (-not $cias.Count) { throw "No CIAs in build\cia-test (tools\package_cia.ps1 builds them)" }
+}
+$files = @((Join-Path $root "emberclutch.3dsx"), (Join-Path $root "emberclutch.smdh")) + @($cias | ForEach-Object { $_.FullName })
+& py -3.12 (Join-Path $PSScriptRoot "check_3ds.py") --quiet @files
+if ($LASTEXITCODE -ne 0) { throw "A file failed its checks (tools\check_3ds.py): nothing was sent" }
+
 New-RemoteDir "/3ds/emberclutch"
 Send-File (Join-Path $root "emberclutch.3dsx") "/3ds/emberclutch/emberclutch.3dsx"
 Send-File (Join-Path $root "emberclutch.smdh") "/3ds/emberclutch/emberclutch.smdh"
 if ($Cia) {
     New-RemoteDir "/cias"
-    $cias = @(Get-ChildItem (Join-Path $root "build\cia-test") -Filter *.cia -ErrorAction SilentlyContinue)
-    if (-not $cias.Count) { throw "No CIAs in build\cia-test (tools\package_cia.ps1 builds them)" }
     foreach ($c in $cias) { Send-File $c.FullName "/cias/$($c.Name)" }
 }

@@ -6,7 +6,7 @@ SRCS     := $(wildcard *.cpp) $(wildcard ../src/core/*.cpp)
 .PHONY: all run clean
 all: run
 
-core_tests.exe: $(SRCS) $(wildcard ../src/core/*.hpp) $(wildcard *.hpp)
+core_tests.exe: $(SRCS) $(wildcard ../src/core/*.hpp) $(wildcard ../src/core/*.inc) $(wildcard *.hpp)
 	$(CXX) $(CXXFLAGS) -o $@ $(SRCS)
 
 run: core_tests.exe

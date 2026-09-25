@@ -172,8 +172,9 @@ void beforeFrameEnd(const App& app) {
     char when[24];
     std::strftime(when, sizeof(when), "%Y-%m-%d %H:%M:%S", std::gmtime(&t));  // the 3DS clock is local time
     std::snprintf(g_line, sizeof(g_line),
-                  "%s  %-12s %4.1fms CPU %.1f GPU %.1f  TRI %lu+%lu  LIN %.1fMB  [%s]%s%s  build %s %s", when,
-                  kSceneNames[static_cast<int>(app.scene)], app.frameMs, C3D_GetProcessingTime(), C3D_GetDrawingTime(),
+                  "%s  %-12s %4.1fms (worst %.0f, %d slow) CPU %.1f GPU %.1f  TRI %lu+%lu  LIN %.1fMB  [%s]%s%s  build %s %s",
+                  when, kSceneNames[static_cast<int>(app.scene)], app.frameMs, app.frameWorst, app.framesSlow,
+                  C3D_GetProcessingTime(), C3D_GetDrawingTime(),
                   static_cast<unsigned long>(app.stats.tris - app.bottomTris),
                   static_cast<unsigned long>(app.bottomTris), linearSpaceFree() / 1048576.0f, perf::line(),
                   app.gpuProbe ? "  probe: " : "", gpuProbeName(app.gpuProbe), __DATE__, __TIME__);

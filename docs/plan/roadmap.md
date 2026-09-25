@@ -35,7 +35,8 @@ Alpha 1 and Alpha 2 are done. What's left, in order, with the gates that hold ea
 1. **Prove it:** a flyable valley in the emulator (streamed height-field tiles, fog, sky,
    one place, the arcade flight controller, the follow camera) measured against the den's
    hardware numbers; concept images (AI, reference only) → **R7** (blocks the world's art);
-   the music and sound briefs sent early.
+   the music and sound briefs sent early. ✅ **Done 2026-09-25**; run 14 (the valley on the
+   old 3DS) is ready.
 2. **The valley:** the landscape → **R8** (the blockout) → getting about (you on foot with
    your dragon, gliding, flying, riding) → the painted map with fog and fast travel → the
    places standing in the valley, entered to their scenes → discovery, finds and the
@@ -61,7 +62,8 @@ together, gifts, local competitions; a cross-den clutch as a stretch).
 **2.0 — *The meadow*** (sit-down first): the equine line (horse, pegasus, unicorn,
 alicorn), as an expansion or its own game.
 
-**Now:** Beta's first step (WP1 and WP2), with the sound briefs.
+**Now:** Beta's first step is done (WP1, WP2, the briefs). Waiting on Noah: run 14 on the old
+3DS, R7's pick, and the batch 3 music and sounds; then step 2, the valley.
 
 **Every milestone after Alpha 2 opens with a design sit-down with Noah (D65), and no work
 on it starts until he has passed it.** The sit-down happens when the milestone before it is

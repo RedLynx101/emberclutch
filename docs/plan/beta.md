@@ -1,11 +1,14 @@
 # Beta — *The valley*: Work Plan
 
 Status: **Settled** (D73, D74; 2026-09-25): the sit-down's answers and the plan's open points
-are decided; work starts with WP1. Alpha 2 is done (`v0.2.0-alpha2`, D72). The
+are decided. **Phase A ("prove it") is done** (2026-09-25): the flyable valley (WP1), the
+concept images for [R7](../art/reviews/R7-valley-concepts.md) (WP2) and the music and sound
+briefs (WP15); run 14 is ready ([steps](hardware-check-3.md)). Next, once Noah has made
+the music and sounds: step 2, the valley. Alpha 2 is done (`v0.2.0-alpha2`, D72). The
 sit-down (D73, [brief](beta-sitdown.md)) put the valley first: an open world to walk and fly
 in, the places rebuilt inside it, a new map, flying, the first challenges, people and a
 first campaign. Training, voice and the ground cups move to 1.0 ([roadmap](roadmap.md)).
-**No hardware pushes for now** (D74): the runs below wait until Noah asks; budgets are
+**Hardware pushes when Noah asks** (D74): he asked for run 14 after step 1; budgets are
 measured in the emulator against the den's hardware numbers meanwhile.
 
 ## Decided at the sign-off (D74)
@@ -97,12 +100,26 @@ Checked in Azahar, then on Noah's old 3DS (D34):
   17–18 ms on the old 3DS). On the old 3DS when Noah asks: frame time, the 3D slider up.
 - Also measures the cost of the terrain shader (vertex colours + fog; one tiling detail
   texture if it fits).
+- ✅ **Done (2026-09-25, `22a3725`):** `tools/valley/make_valley.py` writes a placeholder
+  Skyreach (1,024 m, 257² heights at 4 m, 16×16 tiles of 64 m, 1,365 trees, the lake and
+  river, four islands, the places marked) to `romfs/valley/skyreach.evl` (344 KB);
+  `src/core/valley` loads it and builds tiles at three detail levels (16/8/4 quads, skirts
+  against cracks, trees near); `src/core/flight` is the arcade flight and chase camera;
+  the scene (dev menu page 2, Valley test) draws it with fog and the day's sky, the map on
+  the bottom screen. **Emulator:** 6,100–7,100 top-screen triangles (ground 3,300–4,600),
+  14–23 draws, 17.5 MB linear free, at most 2 tiles built a frame; the worst frame of each
+  second is shown for run 14 (what the old 3DS's CPU makes of the building is its question).
+  The fog's far plane is 290 m, a little past the plan's 150–200 m, as the budget allowed.
 
 ### WP2 — Concept images (review R7, blocks the world's art)
 - Reference images (AI, reference only, D74): the valley from above, the den's cliff
   and waterfall, the Market village, the arena, the Nesting Stone hilltop, the floating
   islands, and the player character and three villagers; a palette sheet of the valley at
   dawn, day, dusk and night next to the dragons. Noah picks the direction.
+- ✅ **Done (2026-09-25, `69e06d9`):** `tools/concept/make_concepts.py`, ten images in look A
+  (storybook) and three in look B (faceted low-poly), on the review page
+  [R7](../art/reviews/R7-valley-concepts.md) with the valley test beside them. Waiting on
+  Noah's pick.
 
 ## Phase B — the valley
 ### WP3 — The valley's landscape (review R8: the blockout)
@@ -180,13 +197,18 @@ Checked in Azahar, then on Noah's old 3DS (D34):
   results stingers, a quest jingle; an ElevenLabs/Suno brief for wind, wingbeats, water,
   footsteps on grass and stone, villagers' voices (babble); stand-ins until they arrive
   (D35). The flight loops `skyreach`/`skyreach-2` and `cup-day` are in hand from batch 1.
+- ✅ **Briefs sent (2026-09-25):** [music batch 3](../audio/suno-music-batch-3.md) (the valley
+  by day and night, a place-found stinger, the village, four results stingers, a quest
+  jingle, an optional festival loop) and [sounds batch 3](../audio/sfx-batch-3.md) (wind,
+  wings, water, footsteps, the villagers' babble, the challenges, the campaign).
 ### WP16 — Saves and settings
 - New save sections (your look, where you are, discoveries, cups and ribbons, quests); an
   Alpha 2 save starts outside the den's cliff with everything it had.
 ### WP17 — Performance and the hardware runs
 - Planned: run 14 (WP1, the technical test), run 15 (after WP5–6: flying, the map, a few
-  places), run 16 (the full milestone), bundled, with the steps written up as before. **Held
-  until Noah asks (D74)**; until then the emulator's counters keep to the budgets.
+  places), run 16 (the full milestone), bundled, with the steps written up as before. **When Noah asks (D74)**; until then the
+  emulator's counters keep to the budgets. **Run 14 is ready** (0.1.15, the valley test and
+  0.1.14's fixes; [steps](hardware-check-3.md)).
 ### WP18 — Wrap-up
 - The checklist, docs, the tag `v0.3.0-beta`; then the 1.0 sit-down.
 
@@ -199,8 +221,9 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 | R10 | The campaign outline | Writing the dialogue |
 
 ## Order of work
-1. **Now:** WP1 (the flyable valley, measured in the emulator) and WP2 (concept images for
-   R7) side by side, and the sound briefs of WP15 early so the music can arrive in time.
+1. ✅ **Prove it:** WP1 (the flyable valley, measured in the emulator) and WP2 (concept
+   images for R7) side by side, and the sound briefs of WP15 early so the music can arrive
+   in time. Then run 14 on the old 3DS, and Noah makes the music and sounds.
 2. **The valley:** WP3 (landscape, R8) → WP5 (getting about) → WP6 (the map) → WP4 (the
    places) → WP7 (discovery, the Wanderings).
 3. **Challenges:** WP8 (the arena and cups) → WP9 (Sky Rings) → WP10 (Lantern Trial) →

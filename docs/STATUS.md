@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-25 · **Milestone:** **Alpha 2 done** (run 13 on the old 3DS passed, D72; tagged `v0.2.0-alpha2`; [checklist](plan/alpha-2-checklist.md)) · **Beta, *The valley*: [plan](plan/beta.md) settled (D73–D74); next: WP1 (a flyable valley, measured in the emulator) and WP2 (concept images, R7), with the sound briefs; the whole road ahead: [roadmap](plan/roadmap.md#the-road-from-here-2026-09-25)** · no hardware pushes for now (D74) · Alpha 1 done and tagged `v0.1.0-alpha1` ([checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · 3DS runs 1–7: the game runs on the old 3DS; the 3D banner shows (sparkles, a hidden triangle, D63); 0.1.7 plays (a new title ID, beds lent by wanderers, a stacking bowl, posing ahead, D64) · a design sit-down opens every milestone from Beta on (D65) · run 9: the banner's sound fixed (stereo), its turning is the HOME Menu's camera (billboards hold it still), a logo of our own can't be signed, so the gold wordmark is a splash in the game (D68) · every file checked before the 3DS (`tools/check_3ds.py`) · the performance pass (WP11d) under way · run 10: a still banner shows (T), the sound plays; the HOME Menu turns every banner once every 10 s, so lab 7 turns ours back (D69) · 0.1.10: the splash, T's banner centred · run 11: V and W froze (four levels deep, D70) · run 12: the banner is settled (X: still, animated, D71) · **0.1.12** on the 3DS · WP11d accepted as it is (Noah) · the wings' roots seated · WP12a ✅ (the hatching: the egg bursts, the hatchling grows out of a white blob) · **WP12 ✅** (looks per dragon, the Dragondex with breed banners, photo mode, the parts library, all 21 breeds, rare traits, egg shells, mud spots; [R6](art/reviews/R6-breeds.md) sent) · WP12c ✅ (a scamper and a gallop; chases, far throws, toy runs and zoomies run) · WP11e ✅ (the 3D slider: the top screen per eye) · run 13 (0.1.13) passed; **0.1.14** fixes its notes (2D at its own depth in 3D, a baby toddle, a tug for the ball, sparring, stalking and tail chasing, spines seated for every build)
+**Updated:** 2026-09-25 · **Milestone:** **Alpha 2 done** (run 13 on the old 3DS passed, D72; tagged `v0.2.0-alpha2`; [checklist](plan/alpha-2-checklist.md)) · **Beta, *The valley*: [plan](plan/beta.md) settled (D73–D74); **Phase A ("prove it") done**: WP1 ✅ the flyable valley (measured in the emulator), WP2 ✅ the concept images ([R7](art/reviews/R7-valley-concepts.md), waiting on Noah's pick), WP15's briefs sent ([music 3](audio/suno-music-batch-3.md), [sounds 3](audio/sfx-batch-3.md)); **run 14 ready** (0.1.15: the valley test and 0.1.14's fixes, [steps](plan/hardware-check-3.md)); next: step 2, the valley, once Noah has made the music and sounds; the whole road ahead: [roadmap](plan/roadmap.md#the-road-from-here-2026-09-25)** · hardware pushes when Noah asks (D74) · Alpha 1 done and tagged `v0.1.0-alpha1` ([checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · 3DS runs 1–7: the game runs on the old 3DS; the 3D banner shows (sparkles, a hidden triangle, D63); 0.1.7 plays (a new title ID, beds lent by wanderers, a stacking bowl, posing ahead, D64) · a design sit-down opens every milestone from Beta on (D65) · run 9: the banner's sound fixed (stereo), its turning is the HOME Menu's camera (billboards hold it still), a logo of our own can't be signed, so the gold wordmark is a splash in the game (D68) · every file checked before the 3DS (`tools/check_3ds.py`) · the performance pass (WP11d) under way · run 10: a still banner shows (T), the sound plays; the HOME Menu turns every banner once every 10 s, so lab 7 turns ours back (D69) · 0.1.10: the splash, T's banner centred · run 11: V and W froze (four levels deep, D70) · run 12: the banner is settled (X: still, animated, D71) · **0.1.12** on the 3DS · WP11d accepted as it is (Noah) · the wings' roots seated · WP12a ✅ (the hatching: the egg bursts, the hatchling grows out of a white blob) · **WP12 ✅** (looks per dragon, the Dragondex with breed banners, photo mode, the parts library, all 21 breeds, rare traits, egg shells, mud spots; [R6](art/reviews/R6-breeds.md) sent) · WP12c ✅ (a scamper and a gallop; chases, far throws, toy runs and zoomies run) · WP11e ✅ (the 3D slider: the top screen per eye) · run 13 (0.1.13) passed; **0.1.14** fixes its notes (2D at its own depth in 3D, a baby toddle, a tug for the ball, sparring, stalking and tail chasing, spines seated for every build)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -97,7 +97,18 @@
   Note: the emulator needs `sdmc:/3ds/dspfirm.cdc`; a local dummy file works in Azahar (never commit it).
 
 ## Next actions
-**Alpha 1 is done** (2026-09-24, tag `v0.1.0-alpha1`): every item of its Definition of done
+**Beta, *The valley*** ([plan](plan/beta.md)). Phase A is done (2026-09-25): WP1, a
+flyable placeholder valley (dev menu page 2, Valley test: 1 km, tiles at three detail
+levels, fog and the day's sky, the arcade flight and chase camera, the map on the bottom
+screen; 6,100–7,100 top-screen triangles in the emulator); WP2, the concept images for R7
+in two looks; WP15's music and sound briefs. Next:
+1. **Run 14** on the old 3DS when Noah's ready ([steps](plan/hardware-check-3.md)): 0.1.15
+   is built and checked (`emberclutch.cia`, 21.7 MB).
+2. Noah makes the batch 3 music and sounds; R7's pick (look A, B or a mix).
+3. Then step 2, the valley: WP3 (the landscape, R8) → WP5 (getting about) → WP6 (the map)
+   → WP4 (the places) → WP7 (discovery, the Wanderings).
+
+**Earlier:** **Alpha 1 is done** (2026-09-24, tag `v0.1.0-alpha1`): every item of its Definition of done
 was checked in Azahar by scripted runs, see the [checklist](plan/alpha-1-checklist.md)
 with contact sheets. In its last stretch: hands-on care (WP7: the tool tray, petting with a
 sweet spot, hand-feeding, brushing and polishing, the bath, fetch; egg turning and
@@ -141,9 +152,14 @@ after each. Stops:
   haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
-- Nothing blocks. R7 (the concept images) comes to Noah after WP2.
-- **0.1.14** (run 13's fixes) is built and checked; it stays on the PC until Noah asks for a
-  hardware push (D74).
+- **R7** ([review](art/reviews/R7-valley-concepts.md)): look A (storybook), B (faceted
+  low-poly) or a mix, and notes on the places, people and palette. Blocks the world's art
+  (WP3 on).
+- **Music and sounds, batch 3** ([music](audio/suno-music-batch-3.md),
+  [sounds](audio/sfx-batch-3.md)); `valley-day`, `valley-night` and `place-found` first.
+  Batch 2's sounds are still open too (stand-ins play).
+- **Run 14** (0.1.15, [steps](plan/hardware-check-3.md)): on the 3DS when it's on the
+  network; it carries 0.1.14 (run 13's fixes) too.
 - **0.1.12 on the old 3DS** ([steps](plan/hardware-check-1.md)): the final banner for now
   (lab 8's X), the splash, the stereo sound.
   [What's left for Alpha 2](plan/alpha-2.md); after Alpha 2, the Beta sit-down (D65),

@@ -171,10 +171,13 @@ void drawBottom(App& app, const Input& in) {
     panel({bar.x, bar.y, bar.w * s.flight.stamina, bar.h}, theme::kClutchGold);
     const r3d::ValleyStats st = r3d::valleyStats();
     std::snprintf(line, sizeof(line), "tiles %d (%d tris), built %d", st.tiles, st.ground, st.built);
-    text(app, line, 166, 88, 0.38f, withAlpha(theme::kShell, 0.6f), C2D_AlignLeft);
-    text(app, "Pad: steer   A: flap   B: dive", 166, 110, 0.38f, theme::kShell, C2D_AlignLeft, 150);
-    text(app, "L/R: bank   let go: glide", 166, 126, 0.38f, theme::kShell, C2D_AlignLeft, 150);
-    text(app, "Land slowly on flat ground", 166, 142, 0.38f, theme::kShell, C2D_AlignLeft, 150);
+    text(app, line, 166, 86, 0.38f, withAlpha(theme::kShell, 0.6f), C2D_AlignLeft);
+    // The frame time for run 14: smoothed, the worst of the last second, and how many were slow.
+    std::snprintf(line, sizeof(line), "%.1f ms, worst %.0f, %d slow", app.frameMs, app.frameWorst, app.framesSlow);
+    text(app, line, 166, 98, 0.38f, withAlpha(theme::kShell, 0.6f), C2D_AlignLeft);
+    text(app, "Pad: steer   A: flap   B: dive", 166, 114, 0.38f, theme::kShell, C2D_AlignLeft, 150);
+    text(app, "L/R: bank   let go: glide", 166, 130, 0.38f, theme::kShell, C2D_AlignLeft, 150);
+    text(app, "Land slowly on flat ground", 166, 146, 0.38f, theme::kShell, C2D_AlignLeft, 150);
     if (button(app, {166, 196, 146, 36}, "Home (X)", in)) {
         audio::playSfx(audio::Sfx::Back);
         leaveValley(app);

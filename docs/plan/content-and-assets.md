@@ -131,13 +131,15 @@ dragon-to-dragon behaviors.
 | **Hatching** (stinger, no loop, ~10 s) | Egg hatches | Batch 2 — A1 |
 | **Market bustle** (loop) | Market | Batch 2 — A2 |
 | **Wanderings return** (stinger) | Finds revealed | Batch 2 — A2 |
-| **Training yard** (loop, light) | Training | Batch 3 — B |
-| **Cup won / cup lost** (stingers) | Competition results | Batch 3 — B |
-| **Valley by day / at night** (loops), **Market village** (loop), **quest jingle** | Exploring the valley | Batch 3 — B (D73) |
+| **valley-day**, **valley-night** (loops), **place-found** (stinger) | Exploring the valley | [Batch 3](../audio/suno-music-batch-3.md) — B, first |
+| **village-green** (loop) | The Market village outside | Batch 3 — B |
+| **results-first**, **results-placed**, **results-try-again**, **cup-won** (stingers) | The arena's results | Batch 3 — B |
+| **quest-done** (stinger), **lantern-festival** (loop, optional) | The first campaign | Batch 3 — B |
+| **Training yard** (loop, light) | Training | Batch 4 — 1.0 (D73) |
 | **Evening den** (loop, optional) | Dusk transition | Batch 4 — 1.0 |
 
-Each batch gets a Suno brief in `docs/audio/` before its milestone starts. Stingers skip
-`make_loop.py` (a `--no-loop` mode will be added: just level + encode).
+Each batch gets a Suno brief in `docs/audio/` before its milestone starts. Stingers go
+through `make_loop.py --no-loop` (trim, level, encode).
 
 ### 6.2 Sound effects (generated: ElevenLabs or Suno; CC0 fallback)
 | Group | Sounds | Milestone |
@@ -150,9 +152,12 @@ Each batch gets a Suno brief in `docs/audio/` before its milestone starts. Sting
 | UI | tap, confirm, back, error, toast, save chime, Gleam coin | A1 |
 | Den ambience | hearth crackle loop, night crickets loop | A1 |
 | Den life / Market | nest settle, market chatter loop, register ding (in brief 2) | A2 |
-| Competition | whistle, crowd cheer, crowd "aww", ring pass chime, lantern ignite | B / 1.0 |
-| World | wing flap, wind whoosh loop, footsteps (grass, stone), landing thud, water splash, valley birds loop | 1.0 |
-| Breath | flame, mist, gust, spore burst, frost, sunbeam | 1.0 |
+| The valley and flying ([brief 3](../audio/sfx-batch-3.md)) | high wind, meadow, valley night, waterfall, stream and lake loops; wingbeat, take-off, landing, dive whoosh, wing flutter, water skim, big splash | B, first |
+| On foot and the places ([brief 3](../audio/sfx-batch-3.md)) | footsteps (grass, stone, wood; the dragon's), mounting, a wooden door, the village bell and ambience, a find's sparkle | B |
+| Villagers ([brief 3](../audio/sfx-batch-3.md)) | a gibberish babble per villager (six) | B |
+| Competition ([brief 3](../audio/sfx-batch-3.md)) | whistle, crowd cheer, crowd "aww", ring pass chime, lantern ignite, fruit toss and catch | B |
+| Breath ([brief 3](../audio/sfx-batch-3.md)) | flame, mist, gust, spore burst, frost, light | B (Lantern Trial) |
+| Campaign ([brief 3](../audio/sfx-batch-3.md)) | a festival lantern relit, the quest log's page, a falling star | B |
 
 ## 7. Items catalogue
 Prices and exact effects are balanced in Beta; this is the content list.

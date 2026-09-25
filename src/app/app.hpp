@@ -239,6 +239,8 @@ struct App {
     RenderStats stats;
     u32 bottomTris = 0;  // last frame's bottom screen (the overlay is drawn before it)
     float frameMs = 16.7f;
+    float frameWorst = 0;  // the slowest frame of the last second, and how many missed 30 fps
+    u8 framesSlow = 0;
 };
 
 s64 nowLocal(const App& app);

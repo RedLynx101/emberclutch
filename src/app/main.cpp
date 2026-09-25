@@ -113,6 +113,18 @@ int main() {
         const float ms = static_cast<float>(tick - lastTick) / (SYSCLOCK_ARM11 / 1000.0f);
         lastTick = tick;
         app.frameMs = app.frameMs * 0.9f + ms * 0.1f;  // smoothed for the overlay
+        {  // and the hitches the smoothing hides (the valley's tiles are built as you fly, run 14)
+            static float window = 0, worst = 0;
+            static int slow = 0;
+            if (ms > worst) worst = ms;
+            if (ms > 34.0f) ++slow;
+            if ((window += ms) >= 1000.0f) {
+                app.frameWorst = worst;
+                app.framesSlow = static_cast<u8>(slow > 255 ? 255 : slow);
+                window = worst = 0;
+                slow = 0;
+            }
+        }
         app.dt = ms > 100.0f ? 0.1f : ms / 1000.0f;     // clamp after suspend
         app.t += app.dt;
         tickToast(app);

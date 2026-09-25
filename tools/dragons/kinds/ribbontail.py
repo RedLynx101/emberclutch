@@ -1,18 +1,26 @@
-"""The Ribbontail (Tide, uncommon): a long, low, serpentine water dragon.
+"""The Ribbontail (Tide, uncommon): a long, low, serpentine water dragon, a river spirit.
 
 Design notes (R11; concept docs/art/concept/dragons/dragon_ribbontail.jpg, reference only):
-  * The baby is a little noodle: a big round head (a third of it), huge eyes, a wide smile,
-    frilly axolotl-like fin-ears, four tiny legs and a tail it keeps curled round its side.
-  * The adult is a river spirit: a long body low on four short legs, a swan's S of a neck
-    carrying a slender head with a frilled crown of fins and two long soft whiskers, a
-    ribbon of fin running down its back, a tail that sweeps in an S and curls up into a big
-    flowing fan fin, and a pair of frilled fin-wings at the shoulders that lie swept back at
-    rest and spread and ripple when it swims through the air.
-  * Silhouette: the only kind that is long rather than tall; a wave from nose to tail.
-  * Colour: a pale belly stripe from chin to tail tip, dappled spots along the back.
-    Seaglass (teal and pearl), Coral (coral and cream), Deepsea (navy and cyan); the rare
-    Moonpearl is pearl-white and lilac with glowing pearl spots, glowing fin ribbons, longer
-    trailing whiskers, extra ribbons on its tail and a pearl on its brow.
+  * The baby is a little noodle: a big round head (a third of it), huge dark eyes, a wide
+    axolotl smile, frilly fan-gills behind its cheeks, four stubby legs, tiny fin-wings and a
+    finned tail it keeps curled round its side.
+  * The adult: a long body low on four short legs, a swan's S of a neck carrying a slender,
+    kind head with a crown of swept fin lobes, cheek fins and two long soft whiskers that
+    curl down from the lip; a little fin mane down the back of the neck; a pair of frilled
+    fin-wings (a fan of four rays) that stand swept back at the shoulders like sails at rest
+    and spread and ripple as it swims through the air; a ribbon of scalloped fin from the
+    hips down the tail, which sweeps in an S and curls up into a koi's flowing fan fin with
+    two side lobes. Its back between the sails and the ribbon is bare: a rider's saddle.
+  * Silhouette: the only kind that is long rather than tall; a wave from nose to tail, fins
+    along its whole top line (crown, mane, sails, ribbon, fan).
+  * Colour: a pale stripe down the whole underside from chin to tail tip; dappled spots along
+    the back (R) or soft koi patches (G). Seaglass (teal and pearl, natural), Coral (coral
+    pink with cream koi patches, the surprise), Deepsea (navy with cyan dapples, the subtle
+    one). The rare Moonpearl: lavender with a pearl belly, glowing aqua pearl spots down its
+    flanks (B), golden eyes, a glowing ribbon and tail fan, glowing ribbons streaming from its
+    crown, longer pearl-white whiskers with glowing tips, two long streamers trailing from its
+    tail and a glowing pearl set in its brow (its part groups replace the common ones).
+  * Egg: pearly, ringed low down with soft growth bands like a seashell.
   * Body plan: tools/dragons/plans/ribbontail.py (a serpent's skeleton and clips).
 """
 import math
@@ -74,12 +82,12 @@ GROWN_NODES = _mirrored({
     "hips": ((0, 0.88, 0.72), (0.34, 0.35)),
     "belly": ((0, 0.20, 0.78), (0.38, 0.41)),
     "chest": ((0, -0.44, 0.86), (0.39, 0.45)),
-    "neck1": ((0, -0.88, 1.22), (0.28, 0.30)),
-    "neck2": ((0, -1.07, 1.58), (0.22, 0.23)),
-    "neck3": ((0, -1.12, 1.91), (0.195, 0.2)),
-    "head": ((0, -1.26, 2.20), (0.33, 0.30)),
-    "muzzle": ((0, -1.57, 2.14), (0.2, 0.175)),
-    "snout": ((0, -1.81, 2.08), (0.135, 0.12)),
+    "neck1": ((0, -0.9, 1.26), (0.28, 0.30)),
+    "neck2": ((0, -1.1, 1.66), (0.22, 0.23)),
+    "neck3": ((0, -1.15, 2.02), (0.195, 0.2)),
+    "head": ((0, -1.26, 2.32), (0.33, 0.30)),
+    "muzzle": ((0, -1.57, 2.26), (0.2, 0.175)),
+    "snout": ((0, -1.81, 2.2), (0.135, 0.12)),
 }, {
     "shoulder": ((0.27, -0.42, 0.62), (0.19, 0.21)),
     "wrist": ((0.35, -0.46, 0.15), (0.13, 0.13)),
@@ -117,9 +125,9 @@ def _grown_sculpt(kit, obj):
     bm.from_mesh(obj.data)
     for v in bm.verts:
         x, y, z = v.co
-        if -1.46 < y < -1.1 and 2.1 < z < 2.48:  # round cheeks
+        if -1.46 < y < -1.1 and 2.22 < z < 2.6:  # round cheeks
             v.co.x *= 1.08
-        if -1.62 < y < -1.3 and z > 2.36 and abs(x) < 0.26:  # a soft brow over the eyes
+        if -1.62 < y < -1.3 and z > 2.48 and abs(x) < 0.26:  # a soft brow over the eyes
             v.co.z += 0.03 * (1 - abs(x) / 0.26)
         if -0.7 < y < 1.1 and z < 0.56:  # the belly flattens a touch underneath
             v.co.z += 0.03 * min(1.0, (0.56 - z) / 0.1)
@@ -132,12 +140,14 @@ GROWN = dict(
     body_tris=1430, body_tris_lod1=500, export_scale=1.0,
     young={
         "bones": {
-            "head": (0.95, 0.9, 1.0), "snout": (0.9, 0.72, 0.95),
-            "neck1": (0.74, 0.6), "neck2": (0.76, 0.6), "neck3": (0.8, 0.6),
-            "chest": (0.72, 0.62), "belly": (0.7, 0.6), "hips": (0.72, 0.62),
-            "tail1": (0.7, 0.62), "tail2": (0.72, 0.6), "tail3": (0.74, 0.6), "tail4": (0.76, 0.6),
-            "tail5": (0.78, 0.6), "tail6": (0.8, 0.6), "tail7": (0.84, 0.62), "tail8": (0.88, 0.66),
-            "arm_up": (0.74, 0.72), "arm_lo": (0.82, 0.8), "leg_up": (0.74, 0.72), "leg_lo": (0.82, 0.8),
+            # a juvenile: big-headed, short-necked and still short in the body, so the first molt
+            # (hatchling to juvenile) isn't a leap in size
+            "head": (0.92, 0.88, 0.97), "snout": (0.88, 0.7, 0.92),
+            "neck1": (0.72, 0.52), "neck2": (0.74, 0.52), "neck3": (0.78, 0.52),
+            "chest": (0.72, 0.54), "belly": (0.7, 0.5), "hips": (0.72, 0.54),
+            "tail1": (0.7, 0.5), "tail2": (0.72, 0.48), "tail3": (0.74, 0.48), "tail4": (0.76, 0.48),
+            "tail5": (0.78, 0.48), "tail6": (0.8, 0.5), "tail7": (0.84, 0.52), "tail8": (0.88, 0.56),
+            "arm_up": (0.74, 0.7), "arm_lo": (0.82, 0.8), "leg_up": (0.74, 0.7), "leg_lo": (0.82, 0.8),
         },
         "parts": {"eyes": 1.3, "horns": 0.55, "frill": 0.8, "wings": 0.5, "spikes": 0.6,
                   "tail_tip": 0.65, "heart": 0.85, "runes": 0.7},
@@ -149,10 +159,10 @@ GROWN = dict(
                "tail1": (2, 0, 10), "tail2": (0, 0, 16), "tail3": (0, 0, -12), "tail4": (0, 0, -24),
                "tail5": (6, 0, -22), "tail6": (12, 0, -6), "tail7": (16, 0, 16), "tail8": (20, 0, 22)},
     builds=BUILDS,
-    eyes=dict(at=(0.19, -1.48, 2.29), out=(0.62, -0.7, 0.2), iris=(0.1, 0.11, 0.052),
+    eyes=dict(at=(0.19, -1.48, 2.41), out=(0.62, -0.7, 0.2), iris=(0.1, 0.11, 0.052),
               pupil=(0.058, 0.072, 0.02), slit=(0.3, 1.12),
               glints=((-0.021, 0.032, 0.016), (0.016, -0.032, 0.008)), seg=(12, 2, 8, 2)),
-    head=dict(origin=(0, -1.26, 2.2), k=0.95, horn_len=1.0, horn_r=1.0, horn_curve=1.0, buds=False,
+    head=dict(origin=(0, -1.26, 2.32), k=0.95, horn_len=1.0, horn_r=1.0, horn_curve=1.0, buds=False,
               frill_k=1.0, feather_w=1.0),
     tail_k=1.0,
     heart=dict(at=(0, -0.84, 0.8), size=0.105),
@@ -160,12 +170,12 @@ GROWN = dict(
               layout=plan.FIN_LAYOUT,
               radii={"root": 0.07, "elbow": 0.05, "wrist": 0.05, "finger": 0.018, "tip": 0.008},
               arm_tris=110, thickness=0.012, style="fin"),
-    mask=dict(max_x=0.3, max_z=2.3, min_z=-1.0, tail_cut=None),
+    mask=dict(max_x=0.3, max_z=2.42, min_z=-1.0, tail_cut=None),
     inset={"eyes": 0.02, "horns": 0.012, "spikes": 0.03, "frill": 0.04, "heart": -0.05, "runes": -0.008,
            "tail_tip": 0.03},
-    face=dict(nostril=(0.055, -1.92, 2.13), nostril_r=(0.02, 0.013, 0.007), mouth_r=0.01,
-              mouth=lambda side, a: (side * 0.13 * a ** 0.7, -1.94 + 0.38 * a ** 1.5, 2.015 + 0.05 * a * a)),
-    jaw_hinge=(0, -1.5, 2.03),
+    face=dict(nostril=(0.055, -1.92, 2.25), nostril_r=(0.02, 0.013, 0.007), mouth_r=0.01,
+              mouth=lambda side, a: (side * 0.13 * a ** 0.7, -1.94 + 0.38 * a ** 1.5, 2.135 + 0.05 * a * a)),
+    jaw_hinge=(0, -1.5, 2.15),
     mouth_detail=dict(depth=0.2, fade=0.16, width=0.3, tooth=(0.008, 0.014), fang=(0.01, 0.022),
                       tongue=(0.05, 0.075, 0.012), fangs=[]),
     skin=dict(stripe=0.36, spot_cell=0.22, ao=0.5),
@@ -323,13 +333,47 @@ def _ribbon(kit, name, base, path, width, face, thickness=0.01):
     return obj
 
 
-def _whisker(kit, name, root, pts_rel, r0, lod_ring=(4, 3)):
-    """A soft whisker: a tapering tube through root + the relative points."""
+def _whisker(kit, name, root, pts_rel, r0, materials, tip_from=None, lod_ring=(4, 3)):
+    """A soft whisker: a tapering tube through root + the relative points, in materials[0];
+    with tip_from (0..1 along it) its end is in materials[1] (the rare one's glowing tips)."""
     V = kit.V
-    pts = [V(root)] + [V(root) + V(p) for p in pts_rel]
+    ctrl = [V(root)] + [V(root) + V(p) for p in pts_rel]
+    if kit.LOD == 0:  # resampled along a Catmull-Rom curve through the points: a smooth sweep
+        m = len(ctrl) - 1
+        pts = []
+        for j in range(kit.lod(11, 7)):
+            u = j / (kit.lod(11, 7) - 1) * m
+            i = min(int(u), m - 1)
+            f = u - i
+            p0, p1, p2, p3 = ctrl[max(i - 1, 0)], ctrl[i], ctrl[i + 1], ctrl[min(i + 2, m)]
+            pts.append(0.5 * (2 * p1 + (p2 - p0) * f + (2 * p0 - 5 * p1 + 4 * p2 - p3) * f * f +
+                              (3 * p1 - p0 - 3 * p2 + p3) * f * f * f))
+    else:
+        pts = ctrl
     n = len(pts)
     radii = [r0 * (1 - 0.8 * (i / (n - 1)) ** 1.2) for i in range(n)]
-    return kit.tube(name, pts, radii, ring=kit.lod(*lod_ring))
+    obj = kit.tube(name, pts, radii, ring=kit.lod(*lod_ring))
+    for m in materials:
+        obj.data.materials.append(m)
+    if tip_from is not None:
+        lengths = [0.0]
+        for a, b in zip(pts, pts[1:]):
+            lengths.append(lengths[-1] + (b - a).length)
+
+        def along(c):  # how far along the whisker (0..1) a point lies, by its nearest span
+            best = (1e9, 0.0)
+            for i in range(n - 1):
+                ab = pts[i + 1] - pts[i]
+                u = max(0.0, min(1.0, (c - pts[i]).dot(ab) / max(ab.length_squared, 1e-9)))
+                dd = (pts[i] + ab * u - c).length
+                if dd < best[0]:
+                    best = (dd, (lengths[i] + u * ab.length) / lengths[-1])
+            return best[1]
+
+        for p in obj.data.polygons:
+            if along(V(root) + V(p.center)) > tip_from:
+                p.material_index = 1
+    return obj
 
 
 def _skin_top(kit, d, p, up):
@@ -420,55 +464,59 @@ def parts(kit, d):
             wh = []
             k = 1.4 if rare else 1.0
             for s in (-1, 1):
-                root = (s * 0.11, -1.84, 2.08)
+                root = (s * 0.11, -1.84, 2.2)
                 # out from the lip, curving down past the chin, then trailing back like river weed
                 rel = [(s * 0.06, -0.05, -0.01), (s * 0.13, -0.08, -0.1), (s * 0.17, -0.05, -0.28 * k),
                        (s * 0.18, 0.06, -0.46 * k), (s * 0.17, 0.24 * k, -0.6 * k),
                        (s * 0.15, 0.44 * k, -0.68 * k), (s * 0.13, 0.62 * k, -0.7 * k)]
-                w = _whisker(kit, f"whisker_{s}", root, rel, 0.022)
-                w.data.materials.append(mats["glow_flat" if rare else "membrane"])
+                w = _whisker(kit, f"whisker_{s}", root, rel, 0.022, [mats["membrane"], mats["glow_flat"]],
+                             tip_from=0.62 if rare else None)
                 wh.append((w, "snout"))
             out.append(("horns", 1 if rare else 0, wh))
     # ---- the rare one's pearl, set in its brow
-    pearl = kit.blob("pearl", kit.head_point((0.0, -0.16, 0.25) if not baby else (0.0, -0.12, 0.3)),
-                     (0.075, 0.075, 0.075) if not baby else (0.055, 0.055, 0.055), kit.lod(8, 6), kit.lod(4, 3))
+    pearl = kit.blob("pearl", kit.head_point((0.0, -0.26, 0.2) if not baby else (0.0, -0.12, 0.3)),
+                     (0.085, 0.085, 0.085) if not baby else (0.055, 0.055, 0.055), kit.lod(8, 6), kit.lod(4, 3))
     pearl.data.materials.append(mats["glow_flat"])
     out.append(("runes", 1, [(pearl, "head")]))
-    # ---- a ribbon of fin down the back and tail
+    # ---- a mane of fin down the back of the neck, and a ribbon of fin down the back and tail
+    # (none over the shoulders and the small of the back: the fin-wings stand there, and it's
+    # where a rider sits, the plan's SEAT)
     if baby:
         path = [("chest", "belly", "chest", 0.07), ("belly", "hips", "belly", 0.08), ("hips", "tail2", "tail1", 0.07),
                 ("tail2", "tail3", "tail2", 0.06), ("tail3", "tail4", "tail3", 0.05)]
     else:
         path = [("neck3", "head", "neck3", 0.12), ("neck2", "neck3", "neck2", 0.14),
-                ("neck1", "neck2", "neck1", 0.17), ("chest", "belly", "chest", 0.26), ("belly", "hips", "belly", 0.28),
+                ("neck1", "neck2", "neck1", 0.17),
                 ("hips", "tail2", "tail1", 0.26), ("tail2", "tail3", "tail2", 0.24), ("tail3", "tail4", "tail3", 0.22),
                 ("tail4", "tail5", "tail4", 0.2), ("tail5", "tail6", "tail5", 0.18), ("tail6", "tail7", "tail6", 0.16)]
     out.append(("spikes", 0, _dorsal(kit, d, mats, path, "membrane")))
     out.append(("spikes", 1, _dorsal(kit, d, mats, path, "glow_flat", rare=True)))
     # ---- the tail's flowing fan fin
-    x, y, z = F["nodes"]["tail_tip"][0]
+    _, y, z = F["nodes"]["tail_tip"][0]
     k = F["tail_k"]
     for rare in (False, True):
         kk = k * (1.15 if rare else 1.0)
         base = V((0, y - 0.3 * k, z + 0.02 * k))
-        rays = [(V((0, 0.45, 0.9)), 0.9 * kk), (V((0, 0.95, 0.3)), 1.25 * kk), (V((0, 0.9, -0.42)), 1.1 * kk)]
+        # (angled down at rest: the tail's end curls up about 50 degrees, so the fan streams back)
+        rays = [(V((0, 0.92, 0.39)), 0.95 * kk), (V((0, 0.93, -0.37)), 1.25 * kk), (V((0, 0.57, -0.82)), 0.9 * kk)]
         fin = _fan(kit, "tailfan", base, rays, notch=0.55, round_=0.3, width=0.7, thickness=0.014 * max(k, 0.5),
                    cup=(V((1, 0, 0)), 0.04 * k))
         fin.data.materials.append(mats["glow_flat" if rare else "membrane"])
         fins = [(fin, "tail8")]
         for s in (-1, 1):  # a pair of lower side lobes, so the fin reads from above too
             side = _fan(kit, f"tailside_{s}", base + V((0, 0.06 * k, -0.01 * k)),
-                        [(V((s * 0.62, 0.78, -0.08)), 0.58 * kk), (V((s * 0.3, 0.95, -0.2)), 0.72 * kk)],
+                        [(V((s * 0.62, 0.6, -0.5)), 0.58 * kk), (V((s * 0.3, 0.73, -0.61)), 0.72 * kk)],
                         notch=0.6, round_=0.3, width=0.7, thickness=0.012 * max(k, 0.5),
                         cup=(V((0, 0, 1)), 0.05 * k))
             side.data.materials.append(mats["membrane"])
             fins.append((side, "tail8"))
-        if rare:  # two long streamers trailing from the fan
+        if rare:  # two long streamers trailing from the fan (turned down as the fan is)
+            import mathutils
+            down = mathutils.Matrix.Rotation(math.radians(-42), 3, "X")
             for s in (-1, 1):
+                path = [(s * 0.1, 0.5, -0.2), (s * 0.18, 1.0, -0.26), (s * 0.22, 1.5, -0.12), (s * 0.2, 1.9, 0.08)]
                 st = _ribbon(kit, f"streamer_{s}", base + V((s * 0.04 * k, 0.1 * k, -0.02 * k)),
-                             [(s * 0.1 * k, 0.5 * k, -0.2 * k), (s * 0.18 * k, 1.0 * k, -0.26 * k),
-                              (s * 0.22 * k, 1.5 * k, -0.12 * k), (s * 0.2 * k, 1.9 * k, 0.08 * k)],
-                             0.13 * k, V((0, 0, 1)))
+                             [down @ (V(p) * k) for p in path], 0.13 * k, down @ V((0, 0, 1)))
                 st.data.materials.append(mats["membrane"])
                 fins.append((st, "tail8"))
         out.append(("tail_tip", 1 if rare else 0, fins))

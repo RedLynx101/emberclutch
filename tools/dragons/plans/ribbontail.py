@@ -1,5 +1,6 @@
 """The Ribbontail's body plan: a long, low serpent on four short legs, with a pair of fan-like
-fin-wings at the shoulders. 25 body bones (the body draw's whole budget) and 10 wing bones.
+fin-wings at the shoulders. 26 body bones (25 in the body draw, its whole budget: eyes is
+never skinned) and 10 wing bones, 36 in all.
 
   the spine    hips (the root) -> belly -> chest -> neck1..3 -> head -> snout (+ jaw), and
                tail1..tail8 behind the hips: the long ribbon of a body that waves
@@ -7,15 +8,21 @@ fin-wings at the shoulders. 25 body bones (the body draw's whole budget) and 10 
                a short straight leg) and arm_lo / leg_lo (the paw, wrist to toe). The paws
                are the CONTACTS, so the contact joints sit at the wrists and ankles, just
                above the floor, as the classic hands and feet do
-  the fins     wing_arm (the fin's short fleshy base, root to knuckle) and four fin rays
-               wing_r1..r4 fanning from the knuckle (r1 the long leading ray). Folded, the fan
-               closes and lies swept back along the shoulders; in flight it spreads and
-               ripples ray after ray
+  the fins     wing_arm (the fin's short fleshy base, root to knuckle: the layout calls the
+               knuckle "wrist", the point the kit's wing_arm branches rays from) and four fin
+               rays wing_r1..r4 fanning from it (r1 the long leading ray). At rest the fan
+               half closes and stands swept back at the shoulders like a pair of sails; lying
+               down it tucks tighter (the baby drapes its little fins over its flanks); in
+               flight it spreads and ripples ray after ray (fin_pose() solves these)
 
-Its clips are its own: an undulating walk (a wave runs down the body from head to tail),
-coils to sit and to sleep, swimming through the air, a playful wiggle. They're built from the
-wave helpers below; nothing is the classic dragon's (tools/anim/clips.py) except the timings
-and events the game's behaviour expects.
+Its clips are its own. The body moves as a serpent's does, by bending along its length:
+bend() curls it sideways or arches it, body_wave() runs a wave down it from head to tail (the
+walk, the run, swimming through the air, the happy wiggle), and legs step in diagonal pairs
+with the wave as a salamander's do. It sits up on its haunches like an otter with its tail
+curled round in front, sleeps coiled in a ring, lopes like an otter when it runs, scratches an
+itch with the tip of its tail and shimmies the water off from head to tail. The baby has its
+own curl, sulk and scratch (its head is too big to tuck into a ring). Nothing is the classic
+dragon's (tools/anim/clips.py) except the timings and events the game's behaviour expects.
 """
 import math
 
@@ -23,9 +30,6 @@ from dragons import clipkit
 from eca import Clip, q_from_pyr
 
 NAME = "ribbontail"
-
-SPINE_FRONT = ["belly", "chest", "neck1", "neck2", "neck3", "head"]   # hips-forward chain
-TAILS = [f"tail{k}" for k in range(1, 9)]                               # hips-backward chain
 
 BONES = [
     ("hips", "hips", "belly", None),
@@ -64,7 +68,7 @@ WING_BONES = [f"{n}_{side}" for side in ("L", "R") for n, *_ in WING_CHAIN]
 BONE_ORDER = [b[0] for b in BONES] + WING_BONES
 WING_BODY = ("chest",)
 CONTACTS = ("arm_lo_L", "arm_lo_R", "leg_lo_L", "leg_lo_R")
-SEAT = ("belly", (0.0, 0.1, 0.42))
+SEAT = ("belly", (0.0, 0.0, 0.43))
 REGION = {}
 
 
@@ -135,7 +139,7 @@ def fin_pose(lead, facing, close, spread=None):
     along `lead` and its face (the upper side at rest) along `facing` (the right fin's; the left
     mirrors), its fan closed by `close` (0 open as at rest .. 1 every ray on the leading one).
     spread: extra per-ray fan angles (degrees, + opens) for ripples. Returns {bone*: (p, y, r)}."""
-    span, chord, normal = fin_frame()
+    normal = fin_frame()[2]
     k = fin_point("wrist")
     d1 = _norm(_sub(fin_point("t1"), k))
     # the fan's plane at rest: d1 and the face normal
@@ -195,7 +199,7 @@ LENGTH = 6.2
 # form's, and near enough the baby's). A clip's delta turns a bone in its rest frame, so a
 # sideways bend of the upright neck is a tilt about the bone's own forward-up axis (a yaw
 # there would only twist it about itself).
-ELEV = {"head": -12, "neck3": 65, "neck2": 80, "neck1": 60, "chest": 38, "belly": 4}
+ELEV = {"head": -11, "neck3": 70, "neck2": 82, "neck1": 63, "chest": 41, "belly": 7}
 
 
 def lateral(name, k):
@@ -328,17 +332,18 @@ def window(t, a, b, fade=0.12):
 # shoulders like swept sails (the leading ray low along the back, the fan rising behind it);
 # tucked flat along the back to lie down and sleep; half-raised for a flutter.
 FOLD = fin_pose(lead=(0.22, 0.92, 0.3), facing=(0.95, 0.0, 0.3), close=0.22)
-FOLD_TIGHT = fin_pose(lead=(0.16, 0.97, 0.16), facing=(0.97, 0.0, 0.22), close=0.6)
+FOLD_TIGHT = fin_pose(lead=(0.12, 0.98, 0.14), facing=(0.98, 0.0, 0.15), close=0.65)
+FOLD_DRAPED = fin_pose(lead=(0.1, 0.99, 0.04), facing=(-0.9, 0.1, -0.42), close=0.6)  # the baby asleep: over its flanks
 FIN_HALF = fin_pose(lead=(0.55, 0.7, 0.45), facing=(0.45, 0.05, 0.89), close=0.15)
 FIN_OPEN = fin_pose(lead=(0.9, 0.3, 0.3), facing=(-0.35, 0.2, 0.92), close=-0.08)
 FIN_BACK = fin_pose(lead=(0.45, 0.88, 0.1), facing=(-0.2, 0.1, 0.97), close=0.2)   # swept back, diving
 
-# Undo the rest pose's S and the curl at the tail's end (base_pose, bone-local x: up, z: side)
-# where a clip wants the tail straight and low (flying, lying, coiling).
-TAIL_FLAT = {"tail5": (6, 0, 0), "tail6": (12, 0, 0), "tail7": (16, 0, 0), "tail8": (20, 0, 0)}
-TAIL_STRAIGHT = merge(TAIL_FLAT, {"tail1": (0, -10, 0), "tail2": (0, -16, 0), "tail3": (0, 12, 0),
-                                  "tail4": (0, 24, 0), "tail5": (0, 22, 0), "tail6": (0, 6, 0),
-                                  "tail7": (0, -16, 0), "tail8": (0, -22, 0)})
+# The rest pose's tail sweeps in an S and curls up at its end (the grown form's base_pose);
+# lying, coiling and flying lower the curl by some 20 degrees (the fan fin still clears the
+# floor) and take the S out (the coil and the swim put their own bends in).
+TAIL_LOW = {"tail5": (2, 0, 0), "tail6": (4, 0, 0), "tail7": (6, 0, 0), "tail8": (8, 0, 0)}
+TAIL_UNSWAY = {"tail1": (0, -10, 0), "tail2": (0, -16, 0), "tail3": (0, 12, 0), "tail4": (0, 24, 0),
+               "tail5": (0, 22, 0), "tail6": (0, 6, 0), "tail7": (0, -16, 0), "tail8": (0, -22, 0)}
 
 STAND = FOLD
 # Sitting up like an otter: the front raised off the ground on the haunches, the little
@@ -348,11 +353,16 @@ SIT = merge(FOLD, {
     "neck1": (-24, 0, 0), "neck2": (-8, 0, 0), "neck3": (4, 0, 0), "head": (-10, 0, 0),
     "arm_up*": (-14, 0, 10), "arm_lo*": (30, 0, 0),
     "leg_up*": (60, 0, 6), "leg_lo*": (-20, 0, 0),
-    "tail1": (-12, -22, 0), "tail2": (0, -34, 0), "tail3": (0, -30, 0), "tail4": (0, -20, 0),
-    "tail5": (6, -18, 0), "tail6": (12, -26, 0), "tail7": (14, -32, 0), "tail8": (16, -34, 0),
+    "tail1": (-12, -22, 0), "tail2": (0, -34, 0), "tail3": (0, -32, 0), "tail4": (0, -28, 0),
+    "tail5": (6, -26, 0), "tail6": (12, -28, 0), "tail7": (14, -32, 0), "tail8": (16, -34, 0),
+})
+# The baby's tail already curls round to its other side: its sit wraps the tail that way.
+SIT_BABY = merge({k: v for k, v in SIT.items() if not k.startswith("tail")}, {
+    "tail1": (-12, 14, 0), "tail2": (0, 18, 0), "tail3": (0, 16, 0), "tail4": (0, 14, 0),
+    "tail5": (4, 12, 0), "tail6": (6, 12, 0), "tail7": (6, 10, 0), "tail8": (6, 10, 0),
 })
 # Lying: legs folded back along the belly, the neck lowered, the head up and level.
-LIE = merge(FOLD, TAIL_FLAT, {
+LIE = merge(FOLD, TAIL_LOW, {
     "arm_up*": (-76, 0, 6), "arm_lo*": (60, 0, 0), "leg_up*": (-78, 0, 6), "leg_lo*": (62, 0, 0),
     "neck1": (-34, 0, 0), "neck2": (-14, 0, 0), "neck3": (6, 0, 0), "head": (30, 0, 0),
 })
@@ -361,23 +371,23 @@ CROUCH_BODY = {"hips": (-4, 0, 0), "arm_up*": (-26, 0, 8), "arm_lo*": (20, 0, 0)
 CROUCH = merge(FIN_HALF, CROUCH_BODY)
 CROUCH_FOLDED = merge(FOLD, CROUCH_BODY)
 # Asleep: coiled into a ring on the floor, the head resting on the tail, fins tucked.
-CURL = merge(FOLD_TIGHT, TAIL_STRAIGHT, TAIL_FLAT, {
+CURL = merge(FOLD_TIGHT, TAIL_UNSWAY, TAIL_LOW, {
     "arm_up*": (-76, 0, 6), "arm_lo*": (60, 0, 0), "leg_up*": (-78, 0, 6), "leg_lo*": (62, 0, 0),
     "neck1": (-40, 0, 0), "neck2": (-26, 0, 0), "neck3": (-6, 0, 0), "head": (56, 0, 0),
 }, bend(lambda s: 28.0 if s < 2.5 else 25.0))
 # The baby's head is too big to tuck into a ring: it curls up with its chin on the floor, head
 # turned toward its tail, and the little tail wrapped round it (the way its tail already curls).
 LEGS_TUCKED = {"arm_up*": (-76, 0, 6), "arm_lo*": (60, 0, 0), "leg_up*": (-78, 0, 6), "leg_lo*": (62, 0, 0)}
-CURL_BABY = merge(FOLD_TIGHT, TAIL_FLAT, LEGS_TUCKED, {
+CURL_BABY = merge(FOLD_DRAPED, TAIL_LOW, LEGS_TUCKED, {
     "neck1": (-30, 0, 0), "neck2": (-14, 0, 0), "neck3": (4, 0, 0), "head": (26, 0, 0),
 }, bend(lambda s: -6.0 if s < 1.2 else (-12.0 if s < 2.5 else -24.0)))
-SULK_BABY = merge(FOLD_TIGHT, TAIL_FLAT, LEGS_TUCKED, {
+SULK_BABY = merge(FOLD_DRAPED, TAIL_LOW, LEGS_TUCKED, {
     "neck1": (-34, 0, 0), "neck2": (-14, 0, 0), "head": (16, 0, -12),
 }, bend(lambda s: 10.0 if s < 2.5 else 16.0))
 SCRATCH_BABY = merge(FOLD, {  # a hind foot up to scratch behind a gill, head tilted into it
     "hips": (4, 0, -10), "leg_up_R": (74, -10, 34), "leg_lo_R": (30, 0, 0),
     "neck1": (0, 0, 0), "neck3": (0, -16, 0), "head": (4, -8, -22), "tail1": (0, 10, 0)})
-SULK = merge(FOLD_TIGHT, TAIL_STRAIGHT, TAIL_FLAT, {
+SULK = merge(FOLD_TIGHT, TAIL_UNSWAY, TAIL_LOW, {
     "arm_up*": (-76, 0, 6), "arm_lo*": (60, 0, 0), "leg_up*": (-78, 0, 6), "leg_lo*": (62, 0, 0),
     "neck1": (-44, 0, 0), "neck2": (-16, 0, 0), "neck3": (6, 0, 0), "head": (14, 0, -10),
 }, bend(lambda s: -22.0 if s > 2.5 else -18.0))
@@ -397,7 +407,7 @@ BELLY_UP = merge(FIN_SPLAY, {
     "tail1": (0, 16, 0), "tail2": (0, 18, 30), "tail3": (0, 16, 30), "tail4": (0, 10, 30), "tail5": (0, 0, 30),
 })
 # Flying: legs tucked back, the neck stretched forward, the tail streaming out behind.
-FLY = merge(FIN_OPEN, TAIL_STRAIGHT, TAIL_FLAT, {
+FLY = merge(FIN_OPEN, TAIL_UNSWAY, TAIL_LOW, {
     "arm_up*": (-70, 0, 10), "arm_lo*": (50, 0, 0), "leg_up*": (-80, 0, 8), "leg_lo*": (60, 0, 0),
     "neck1": (-44, 0, 0), "neck2": (-10, 0, 0), "neck3": (6, 0, 0), "head": (24, 0, 0),
     "hips": (4, 0, 0),
@@ -504,36 +514,41 @@ def clips():
             return out
         return fn
 
-    gallop = clip("gallop", 0.56, loop=True, speed=3.0).pose(0.0, merge(FOLD_TIGHT, {"neck1": (-14, 0, 0),
-                                                                                  "head": (12, 0, 0)}))
+    # (two strides a loop: the tail swings side to side once over both)
+    gallop = clip("gallop", 1.12, loop=True, speed=3.0).pose(0.0, merge(FOLD_TIGHT, {"neck1": (-14, 0, 0),
+                                                                                   "head": (12, 0, 0)}))
     gallop.wave(lope(0.56, 9.0, 34, 34, 10.0)).wave(fin_ripple(0.56, 6.0))
-    gallop.root(0.0, up=0.02).root(0.14, up=0.12).root(0.28, up=0.03).root(0.42, up=0.08)
-    footsteps(gallop, 0.56, (0.2, 0.26, 0.7, 0.76))
-    scamper = clip("scamper", 0.4, loop=True, speed=2.2).pose(0.0, merge(FOLD, {"neck1": (-6, 0, 0),
+    for k in (0.0, 0.56):
+        gallop.root(k, up=0.02).root(k + 0.14, up=0.12).root(k + 0.28, up=0.03).root(k + 0.42, up=0.08)
+    footsteps(gallop, 0.56, (0.2, 0.26, 0.7, 0.76), cycles=2)
+    scamper = clip("scamper", 0.8, loop=True, speed=2.2).pose(0.0, merge(FOLD, {"neck1": (-6, 0, 0),
                                                                             "head": (8, 0, 0)}))
-    scamper.wave(lope(0.4, 11.0, 40, 40, 14.0)).wave(fin_ripple(0.4, 8.0))
-    scamper.root(0.0, up=0.0).root(0.12, up=0.18).root(0.26, up=0.03)
-    footsteps(scamper, 0.4, (0.2, 0.7))
+    scamper.wave(lope(0.4, 11.0, 34, 36, 14.0)).wave(fin_ripple(0.4, 8.0))
+    for k in (0.0, 0.4):
+        scamper.root(k, up=0.0).root(k + 0.12, up=0.18).root(k + 0.26, up=0.03)
+    footsteps(scamper, 0.4, (0.2, 0.7), cycles=2)
 
     # Flying: it swims through the air: a wave runs down the body (up and down, with a
-    # little side to side) while the fin-wings stroke and ripple.
+    # slower one side to side) while the fin-wings stroke and ripple.
     def swim(period, vert, side, stroke, ripple):
         v = body_wave(period, ramp(2.0, vert, 1.0, LENGTH), axis="pitch", steady=0.6, wavelength=LENGTH * 1.1)
         s = body_wave(period * 2, ramp(1.0, side, 1.0, LENGTH), steady=0.8, wavelength=LENGTH * 1.2)
         f = fin_ripple(period, ripple, 0.0, stroke)
         return lambda t: merge(v(t), s(t), f(t), {"chest": (1.5 * sin01(t, period), 0, 0)})
 
-    fly_flap = clip("fly_flap", 1.0, loop=True).pose(0.0, FLY)
-    fly_flap.wave(swim(1.0, 12.0, 7.0, 26.0, 18.0)).event(0.1, "flap")
-    clip("fly_glide", 2.4, loop=True).pose(0.0, FLY).wave(swim(2.4, 6.0, 9.0, 5.0, 7.0))
+    # (each loop two strokes long, so the slower side-to-side wave comes round too)
+    fly_flap = clip("fly_flap", 2.0, loop=True).pose(0.0, FLY)
+    fly_flap.wave(swim(1.0, 12.0, 7.0, 26.0, 18.0)).event(0.1, "flap").event(1.1, "flap")
+    clip("fly_glide", 4.8, loop=True).pose(0.0, FLY).wave(swim(2.4, 6.0, 9.0, 5.0, 7.0))
     dive = merge({b: v for b, v in FLY.items() if not b.startswith("wing")}, FIN_BACK,
                  {"neck1": (-10, 0, 0), "head": (6, 0, 0), "hips": (-4, 0, 0)})
     clip("fly_dive", 1.0, loop=True).pose(0.0, dive).wave(swim(0.5, 5.0, 3.0, 2.0, 3.0))
 
     # ---- rest
-    clip("sit", 1.0).pose(0.0, STAND).pose(1.0, SIT)
-    clip("sit_loop", 3.2, loop=True).pose(0.0, SIT).wave(breathe()).wave(
-        tail_wave(3.2, 0.0, 6.0)).wave(fin_ripple(3.2, 2.0))
+    for suffix, sit in (("", SIT), ("_h", SIT_BABY)):
+        clip("sit" + suffix, 1.0).pose(0.0, STAND).pose(1.0, sit)
+        clip("sit_loop" + suffix, 3.2, loop=True).pose(0.0, sit).wave(breathe()).wave(
+            tail_wave(3.2, 0.0, 6.0)).wave(fin_ripple(3.2, 2.0))
     clip("lie_down", 1.1).pose(0.0, STAND).pose(0.55, CROUCH_FOLDED).pose(1.1, LIE).event(0.9, "thump")
     clip("lie_loop", 4.0, loop=True).pose(0.0, LIE).wave(breathe(1.2, 4.0)).wave(tail_sway(0.6, 4.0))
     for suffix, curl in (("", CURL), ("_h", CURL_BABY)):
@@ -655,10 +670,10 @@ def clips():
      .pose(0.0, merge(STAND, {"neck1": (4, 0, 0), "head": (6, 0, 0), "jaw": (-8, 0, 0)}, bend(
          lambda s: -6.0, "pitch", ["tail1", "tail2"])))
      .wave(happy_wag).wave(fin_ripple(0.5, 6.0)))
-    (clip("wing_flutter", 1.2).pose(0.0, STAND).pose(0.25, FIN_OPEN).pose(0.45, FIN_HALF).pose(0.65, FIN_OPEN)
+    (clip("wing_flutter", 1.2).pose(0.0, STAND).pose(0.3, FIN_OPEN).pose(0.48, FIN_HALF).pose(0.66, FIN_OPEN)
      .pose(1.2, STAND).wave(lambda t: {k: tuple(x * window(t, 0.15, 0.9) for x in v)
                                        for k, v in fin_ripple(0.4, 12.0)(t).items()})
-     .event(0.25, "flap").event(0.65, "flap"))
+     .event(0.3, "flap").event(0.66, "flap"))
 
     # ---- feelings
     for suffix, sulk in (("", SULK), ("_h", SULK_BABY)):
@@ -686,12 +701,14 @@ def clips():
         (clip(name, 0.8).pose(0.0, STAND)
          .pose(0.25, merge(down, {"jaw": (-22, 0, 0)})).pose(0.4, merge(down, {"jaw": (-3, 0, 0)}))
          .pose(0.8, merge(STAND, CARRY_HEAD)))
-    SIT_UP = merge(SIT, {"neck1": (6, 0, 0), "head": (10, 0, 0)})
-    for name, down in (("drop_wait", merge(STAND, {"neck1": (-20, 0, 0), "neck2": (-10, 0, 0), "head": (-8, 0, 0)})),
-                       ("drop_wait_h", merge(STAND, {"neck1": (-6, 0, 0), "head": (-18, 0, 0)}))):
+    look_up = {"neck1": (6, 0, 0), "head": (10, 0, 0)}  # sitting, looking up at you, eager
+    for name, down, sit in (("drop_wait", merge(STAND, {"neck1": (-20, 0, 0), "neck2": (-10, 0, 0), "head": (-8, 0, 0)}),
+                             SIT),
+                            ("drop_wait_h", merge(STAND, {"neck1": (-6, 0, 0), "head": (-18, 0, 0)}), SIT_BABY)):
+        sit_up = merge(sit, look_up)
         (clip(name, 1.3).pose(0.0, merge(STAND, CARRY_HEAD))
          .pose(0.35, merge(down, {"jaw": (-4, 0, 0)})).pose(0.5, merge(down, {"jaw": (-22, 0, 0)}))
-         .pose(0.9, merge(SIT_UP, {"jaw": (-8, 0, 0)})).pose(1.3, merge(SIT_UP, {"jaw": (-6, 0, 0)}))
+         .pose(0.9, merge(sit_up, {"jaw": (-8, 0, 0)})).pose(1.3, merge(sit_up, {"jaw": (-6, 0, 0)}))
          .wave(lambda t: {k: tuple(x * smooth01((t - 0.7) * 3) for x in v)
                           for k, v in tail_wave(0.4, 2.0, 12.0)(t).items()}))
     CATCH = merge(FIN_OPEN, {"arm_up*": (30, 0, 0), "neck1": (10, 0, 0), "head": (14, 0, 0), "hips": (8, 0, 0)})

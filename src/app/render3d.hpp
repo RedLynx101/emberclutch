@@ -13,6 +13,10 @@
 #include "core/props.hpp"
 #include "core/shell_burst.hpp"
 
+namespace ec {
+struct Valley;  // core/valley.hpp
+}  // namespace ec
+
 namespace ec::r3d {
 
 // Loads the shaders, both dragon forms (romfs:/models/*.ecm), the clips and the den room
@@ -143,5 +147,28 @@ const int* clipIndex(int form);
 // (nullptr until that look is loaded).
 const ModelData* model(int form, int look = 0);
 const AnimBinding* binding(int form, int look = 0);
+
+// Skyreach Valley (Beta WP1): the ground round the camera (tiles at three levels by distance,
+// only those in view, built a few a frame and kept), the islands and the den's mouth, the
+// dragon flying, then the water, all fogged into the sky's horizon colour. The scene draws
+// the sky itself (2D) first.
+struct ValleyView {
+    const Valley* valley = nullptr;
+    const Dragon* dragon = nullptr;    // the one flown
+    const DenActor* actor = nullptr;   // its animation
+    Vec3 at;                           // its feet
+    float heading = 0, pitch = 0, roll = 0;
+    Vec3 eye, target;                  // the camera
+    Rgb fog{200, 225, 240};            // the sky at the horizon
+    Rgb tint{255, 255, 255};           // the day's light on the land
+};
+void drawValley(App& app, const ValleyView& view, s64 now);
+void releaseValley();  // leaving the valley: its GPU memory back
+struct ValleyStats {
+    int tiles = 0, built = 0, ground = 0;  // drawn and built last frame; the ground's triangles
+};
+ValleyStats valleyStats();
+// The valley from above (north up), for the bottom screen's map (nullptr if it can't be made).
+const C2D_Image* valleyMap(const Valley& v);
 
 }  // namespace ec::r3d

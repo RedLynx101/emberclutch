@@ -1,0 +1,47 @@
+# Beta WP1: the flyable valley. A grown dragon out of the den's cliff: up with wingbeats,
+# a turn, a glide, a dive, more wingbeats; the overlay on for the triangle and draw counts
+# (dev menu page 2: Valley test).
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+skip 9
+key R
+wait 0.3
+tap 82 231
+wait 2
+shot v1-ground
+shotin 4 v2-climbing
+keyhold A 8
+shot v3-high
+shotin 1.5 v4-turning
+keyhold RIGHT 3
+wait 2
+shot v5-gliding
+shotin 1 v6-dive
+keyhold B 2
+keyhold A 5
+shot v7-over-the-valley
+keyhold LEFT 5
+shot v8-another-way
+keyhold A 6
+shot v9-high-again
+quit

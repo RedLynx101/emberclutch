@@ -226,6 +226,36 @@ gallop.wave(tail_sway(0.8, 0.5)).wave(pant(4.0, 0.25)).wave(wing_bounce(0.5, 5.0
 gallop.root(0.0, up=0.03).root(0.12, up=0.0).root(0.3, up=0.02).root(0.4, up=0.1)
 footsteps(gallop, 0.5, GALLOP_PHASES)
 
+# Flight (Beta WP1's first set; WP5 adds take-off, landing, banking and hovering). The wings
+# start from the model's rest pose (raised in a V, spread: made for flying); the legs tuck
+# back, the neck reaches forward, the tail streams out behind.
+FLY_BODY = {
+    "arm_up*": (-50, 0, 0), "arm_lo*": (80, 0, 0), "hand*": (-30, 0, 0),
+    "leg_up*": (-62, 0, 0), "leg_lo*": (50, 0, 0), "foot*": (-40, 0, 0),
+    "neck1": (-32, 0, 0), "neck2": (-12, 0, 0), "neck3": (-4, 0, 0), "head": (22, 0, 0),
+    "tail1": (8, 0, 0), "tail2": (2, 0, 0)}
+
+
+def wingbeat(period, amount, phase=0.0):
+    """A full wingbeat: the arms sweep down and up (roll), the hands lag behind."""
+    def fn(t):
+        s = sin01(t, period, phase)
+        h = sin01(t, period, phase - 0.12)
+        return {"wing_arm_R": (0, 0, amount * s), "wing_arm_L": (0, 0, -amount * s),
+                "wing_fore_R": (0, 0, 0.35 * amount * h), "wing_fore_L": (0, 0, -0.35 * amount * h),
+                "chest": (2.5 * s, 0, 0), "neck1": (-2 * s, 0, 0)}
+    return fn
+
+
+fly_flap = clip("fly_flap", 0.55, loop=True).pose(0.0, FLY_BODY)
+fly_flap.wave(wingbeat(0.55, 42)).wave(tail_sway(0.6, 1.1))
+fly_flap.event(0.1, "flap")
+(clip("fly_glide", 2.4, loop=True).pose(0.0, merge(FLY_BODY, {"wing_arm*": (0, 0, -8)}))
+ .wave(wingbeat(2.4, 5)).wave(tail_sway(0.8, 2.4)))
+FLY_DIVE = merge(FLY_BODY, {"wing_arm*": (-10, 38, -30), "wing_fore*": (0, -30, 0), "neck1": (-6, 0, 0),
+                            "head": (26, 0, 0), "tail1": (4, 0, 0)})
+(clip("fly_dive", 1.0, loop=True).pose(0.0, FLY_DIVE).wave(wingbeat(0.25, 3)).wave(tail_sway(0.4, 0.5)))
+
 shuffle = clip("shuffle", 0.9, loop=True).pose(0.0, WINGS_FOLDED)
 shuffle.wave(leg_cycle(0.9, 10, 22, WALK_PHASES, bob=1.0))
 footsteps(shuffle, 0.9, WALK_PHASES)

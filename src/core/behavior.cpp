@@ -41,7 +41,8 @@ constexpr const char* kClipNames[] = {
     "roll_over", "belly_rub", "shake", "hop", "pounce", "tail_wag", "wing_flutter", "sulk", "sulk_loop",
     "nuzzle", "greet",
     "pick_up", "drop_wait", "leap_catch", "leg_kick", "sniff_refuse", "lift_wing", "sneeze", "pull_away",
-    "paw_bat", "tug", "scamper", "gallop", "play_bow", "spar", "stalk", "tail_chase",
+    "paw_bat", "tug", "scamper", "gallop", "play_bow", "spar", "stalk", "tail_chase", "fly_flap", "fly_glide",
+    "fly_dive",
 };
 static_assert(sizeof(kClipNames) / sizeof(kClipNames[0]) == static_cast<int>(ClipId::Count), "one name per clip");
 

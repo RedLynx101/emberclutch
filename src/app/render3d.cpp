@@ -24,6 +24,7 @@
 #include "core/prop_mesh.hpp"
 #include "core/rig.hpp"
 #include "core/static_mesh.hpp"
+#include "core/valley.hpp"
 #include "dragon_shbin.h"
 #include "static_shbin.h"
 
@@ -1003,6 +1004,7 @@ bool init() {
 void frameBegun() { bury(); }
 
 void shutdown() {
+    releaseValley();
     for (auto& forms : g_forms)
         for (auto& lods : forms)
             for (Form& f : lods) {
@@ -2136,6 +2138,275 @@ const AnimBinding* binding(int form, int look) {
     return g_animsOk && form >= 0 && form < kFormCount && look >= 0 && look < kLookCount && g_lookLoaded[look]
                ? &g_bind[look][form]
                : nullptr;
+}
+
+
+// ---------------------------------------------------------------------- the valley (Beta WP1)
+namespace {
+
+// A piece of the valley on the GPU: a tile at one detail level, the islands, or the water.
+struct ValleyGpu {
+    int tx = -1, ty = -1, lod = -1;
+    Vec3* pos = nullptr;
+    u8* col = nullptr;
+    u16* idx = nullptr;
+    int count = 0;  // indices
+    u32 used = 0;   // the valley frame it was last drawn in
+    void release() {
+        retire(pos);
+        retire(col);
+        retire(idx);
+        pos = nullptr;
+        col = nullptr;
+        idx = nullptr;
+        count = 0;
+        tx = ty = lod = -1;
+    }
+};
+constexpr int kValleySlots = 64;       // tiles kept built
+constexpr int kValleyBuilds = 2;       // tiles built a frame at most (the rest show coarser, or wait)
+constexpr float kValleyNear = 0.5f, kValleyFar = 290.0f;
+ValleyGpu g_vtiles[kValleySlots];
+ValleyGpu g_vextras, g_vwater;
+const Valley* g_valleyOf = nullptr;
+u32 g_valleyFrame = 0;
+C3D_FogLut g_fogLut;
+bool g_fogOk = false;
+ValleyStats g_valleyStats;
+C3D_Tex g_valleyMapTex;
+Tex3DS_SubTexture g_valleyMapSub;
+C2D_Image g_valleyMap;
+bool g_valleyMapOk = false;
+
+bool uploadValley(ValleyGpu& g, const ValleyMesh& m) {
+    if (m.idx.empty()) return false;
+    const std::size_t n = m.pos.size();
+    g.pos = static_cast<Vec3*>(linearAlloc(n * sizeof(Vec3)));
+    g.col = static_cast<u8*>(linearAlloc(n * 4));
+    g.idx = static_cast<u16*>(linearAlloc(m.idx.size() * sizeof(u16)));
+    if (!g.pos || !g.col || !g.idx) {
+        g.release();
+        return false;
+    }
+    std::memcpy(g.pos, m.pos.data(), n * sizeof(Vec3));
+    std::memcpy(g.col, m.color.data(), n * 4);
+    std::memcpy(g.idx, m.idx.data(), m.idx.size() * sizeof(u16));
+    GSPGPU_FlushDataCache(g.pos, n * sizeof(Vec3));
+    GSPGPU_FlushDataCache(g.col, n * 4);
+    GSPGPU_FlushDataCache(g.idx, m.idx.size() * sizeof(u16));
+    g.count = static_cast<int>(m.idx.size());
+    return true;
+}
+
+void drawValleyGpu(App& app, const ValleyGpu& g) {
+    if (!g.count) return;
+    C3D_BufInfo* buf = C3D_GetBufInfo();
+    BufInfo_Init(buf);
+    BufInfo_Add(buf, g.pos, sizeof(Vec3), 1, 0x0);
+    BufInfo_Add(buf, g.col, 4, 1, 0x1);
+    BufInfo_Add(buf, g.col, 4, 1, 0x2);  // one colour set: no blend between two
+    C3D_DrawElements(GPU_TRIANGLES, g.count, C3D_UNSIGNED_SHORT, g.idx);
+    app.stats.tris += g.count / 3;
+    app.stats.draws += 1;
+}
+
+// The static program for the valley's ground and things, fogged, lit by the day's tint.
+void bindValleyStatic(const C3D_Mtx& projection, const C3D_Mtx& view, Rgb tint) {
+    C3D_BindProgram(&g_staticProgram);
+    C3D_SetAttrInfo(&g_staticAttr);
+    C3D_LightEnvBind(nullptr);
+    C3D_TexEnv* env = C3D_GetTexEnv(0);
+    C3D_TexEnvInit(env);
+    C3D_TexEnvSrc(env, C3D_Both, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
+    C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
+    for (int i = 1; i < 6; ++i) C3D_TexEnvInit(C3D_GetTexEnv(i));
+    C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSProjection, &projection);
+    C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSModelView, &view);  // the valley is modelled in world space
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSBlend, 0, 0, 0, 0);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, tint.r / 65025.0f, tint.g / 65025.0f, tint.b / 65025.0f, 1.0f / 255.0f);
+}
+
+// True if a box can't be seen: every corner is beyond the same side of the view.
+bool outsideView(const C3D_Mtx& clip, Vec3 lo, Vec3 hi) {
+    int out[5] = {};
+    for (int k = 0; k < 8; ++k) {
+        const C3D_FVec c =
+            Mtx_MultiplyFVec4(&clip, FVec4_New(k & 1 ? hi.x : lo.x, k & 2 ? hi.y : lo.y, k & 4 ? hi.z : lo.z, 1.0f));
+        out[0] += c.x < -c.w;
+        out[1] += c.x > c.w;
+        out[2] += c.y < -c.w;
+        out[3] += c.y > c.w;
+        out[4] += c.w <= 0.0f;
+    }
+    for (int p : out)
+        if (p == 8) return true;
+    return false;
+}
+
+// A tile at a level: kept from before, or built now if this frame's building isn't used up
+// (else any level of it already built, or nothing yet).
+const ValleyGpu* valleyTile(const Valley& v, int tx, int ty, int lod, int& budget) {
+    for (ValleyGpu& g : g_vtiles)
+        if (g.tx == tx && g.ty == ty && g.lod == lod) {
+            g.used = g_valleyFrame;
+            return &g;
+        }
+    if (budget <= 0) {
+        for (ValleyGpu& g : g_vtiles)
+            if (g.tx == tx && g.ty == ty && g.count) {
+                g.used = g_valleyFrame;
+                return &g;
+            }
+        return nullptr;
+    }
+    ValleyGpu* slot = nullptr;
+    for (ValleyGpu& g : g_vtiles) {
+        if (g.used == g_valleyFrame && g.count) continue;  // drawn this frame: keep
+        if (!slot || !g.count || (slot->count && g.used < slot->used)) slot = &g;
+        if (!g.count) break;
+    }
+    if (!slot) return nullptr;
+    --budget;
+    ++g_valleyStats.built;
+    static ValleyMesh mesh;
+    buildValleyTile(v, tx, ty, lod, mesh);
+    slot->release();
+    if (!uploadValley(*slot, mesh)) return nullptr;
+    slot->tx = tx;
+    slot->ty = ty;
+    slot->lod = lod;
+    slot->used = g_valleyFrame;
+    return slot;
+}
+
+}  // namespace
+
+void releaseValley() {
+    for (ValleyGpu& g : g_vtiles) g.release();
+    g_vextras.release();
+    g_vwater.release();
+    g_valleyOf = nullptr;
+    if (g_valleyMapOk) {
+        retireTex(g_valleyMapTex);
+        g_valleyMapOk = false;
+    }
+}
+
+ValleyStats valleyStats() { return g_valleyStats; }
+
+void drawValley(App& app, const ValleyView& view, s64 now) {
+    if (!g_ready || !view.valley) return;
+    const Valley& v = *view.valley;
+    if (g_valleyOf != &v) {
+        releaseValley();
+        g_valleyOf = &v;
+    }
+    ++g_valleyFrame;
+    g_valleyStats = {};
+    perf::Scope timed(perf::Room);
+    C3D_Mtx projection, viewM, clip;
+    const float focus = std::fmax(4.0f, length(view.at - view.eye));
+    topProjection(projection, kValleyNear, kValleyFar, focus);
+    lookAt(viewM, view.eye, view.target);
+    g_denView = viewM;  // project() works in the valley too
+    g_denViewSet = true;
+    Mtx_Multiply(&clip, &projection, &viewM);
+    if (!g_fogOk) {  // fog thickens from about 90 m to the far plane (the LUT knows the projection)
+        FogLut_Exp(&g_fogLut, 1.0f / 190.0f, 2.5f, kValleyNear, kValleyFar);
+        g_fogOk = true;
+    }
+    C2D_Flush();
+    C3D_FogGasMode(GPU_FOG, GPU_PLAIN_DENSITY, false);
+    C3D_FogColor(u32(view.fog.r) | (u32(view.fog.g) << 8) | (u32(view.fog.b) << 16));
+    C3D_FogLutBind(&g_fogLut);
+    bindValleyStatic(projection, viewM, view.tint);
+    C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+    C3D_CullFace(GPU_CULL_BACK_CCW);
+    // The ground round the camera: in view, at a level by distance.
+    const int t = v.tiles();
+    const float ts = v.tileSize(), reachM = kValleyFar * 0.85f;
+    const int cx = static_cast<int>((view.eye.x - v.x0) / ts), cy = static_cast<int>((view.eye.y - v.y0) / ts);
+    const int reach = static_cast<int>(reachM / ts) + 1;
+    int budget = kValleyBuilds;
+    for (int ty = cy - reach; ty <= cy + reach; ++ty)
+        for (int tx = cx - reach; tx <= cx + reach; ++tx) {
+            if (tx < 0 || ty < 0 || tx >= t || ty >= t) continue;
+            const Vec3 lo{v.x0 + tx * ts, v.y0 + ty * ts, v.tileLow[std::size_t(ty) * t + tx] - 12.0f};
+            const Vec3 hi{lo.x + ts, lo.y + ts, v.tileHigh[std::size_t(ty) * t + tx]};
+            const Vec3 near{std::fmax(lo.x, std::fmin(view.eye.x, hi.x)), std::fmax(lo.y, std::fmin(view.eye.y, hi.y)),
+                            std::fmax(lo.z, std::fmin(view.eye.z, hi.z))};
+            const float d = length(near - view.eye);
+            if (d > reachM || outsideView(clip, lo, hi)) continue;
+            if (const ValleyGpu* g = valleyTile(v, tx, ty, valleyLodFor(d), budget)) {
+                drawValleyGpu(app, *g);
+                ++g_valleyStats.tiles;
+                g_valleyStats.ground += g->count / 3;
+            }
+        }
+    // The islands and the den's mouth (built once), both faces drawn.
+    if (!g_vextras.count) {
+        ValleyMesh m;
+        buildValleyExtras(v, m);
+        uploadValley(g_vextras, m);
+    }
+    C3D_CullFace(GPU_CULL_NONE);
+    drawValleyGpu(app, g_vextras);
+    // The dragon.
+    if (view.dragon && pose(app, *view.dragon, view.actor, now, 0, g_posed)) {
+        bindDragons(projection);
+        const float plain[3] = {1, 1, 1};
+        lightDragon(dragonLight(dayBlend(now)), plain);
+        C3D_Mtx model;
+        Mtx_Identity(&model);
+        constexpr float kPivot = 1.6f;  // it tilts about its middle, not its feet
+        Mtx_Translate(&model, view.at.x, view.at.y, view.at.z + kPivot * g_posed.size, true);
+        Mtx_RotateZ(&model, view.heading, true);
+        Mtx_RotateX(&model, view.pitch, true);
+        Mtx_RotateY(&model, -view.roll, true);
+        Mtx_Translate(&model, 0, 0, -kPivot * g_posed.size, true);
+        Mtx_Scale(&model, g_posed.size, g_posed.size, g_posed.size);
+        Mtx_Translate(&model, 0, 0, -g_posed.ground, true);
+        submit(app, g_posed, viewM, model);
+        if (g_posed.form->headBone >= 0) {
+            g_heads[0] = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
+            g_headSet[0] = true;
+        }
+    }
+    // The water and the waterfall: see-through, over everything, writing no depth.
+    if (!g_vwater.count) {
+        ValleyMesh m;
+        buildValleyWater(v, m);
+        uploadValley(g_vwater, m);
+    }
+    bindValleyStatic(projection, viewM, view.tint);
+    C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_COLOR);
+    C3D_CullFace(GPU_CULL_NONE);
+    drawValleyGpu(app, g_vwater);
+    C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+    C3D_FogGasMode(GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
+    end3D();
+}
+
+const C2D_Image* valleyMap(const Valley& v) {
+    if (g_valleyMapOk) return &g_valleyMap;
+    constexpr int kSize = 128;
+    if (!C3D_TexInit(&g_valleyMapTex, kSize, kSize, GPU_RGB565)) return nullptr;
+    u16* px = static_cast<u16*>(g_valleyMapTex.data);
+    for (int y = 0; y < kSize; ++y)
+        for (int x = 0; x < kSize; ++x) {
+            // The texture's first row is its top: north.
+            const int i = x * (v.n - 1) / (kSize - 1), j = (kSize - 1 - y) * (v.n - 1) / (kSize - 1);
+            const u8* c = &v.rgb[(std::size_t(j) * v.n + i) * 3];
+            const bool wet = v.h[std::size_t(j) * v.n + i] < v.water;
+            const int r = wet ? 70 : c[0], g = wet ? 140 : c[1], b = wet ? 178 : c[2];
+            px[tiledIndex(x, y, kSize)] = static_cast<u16>(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
+        }
+    C3D_TexFlush(&g_valleyMapTex);
+    C3D_TexSetFilter(&g_valleyMapTex, GPU_LINEAR, GPU_LINEAR);
+    g_valleyMapSub = {kSize, kSize, 0.0f, 1.0f, 1.0f, 0.0f};
+    g_valleyMap = {&g_valleyMapTex, &g_valleyMapSub};
+    g_valleyMapOk = true;
+    return &g_valleyMap;
 }
 
 }  // namespace ec::r3d

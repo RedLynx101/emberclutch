@@ -179,6 +179,7 @@ const SceneFns& sceneFns(SceneId id) {
         case SceneId::NestingStone: return kNestingStoneScene;
         case SceneId::Wanderings: return kWanderingsScene;
         case SceneId::Market: return kMarketScene;
+        case SceneId::Valley: return kValleyScene;
         default: return kTitleScene;
     }
 }

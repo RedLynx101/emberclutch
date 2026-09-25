@@ -28,3 +28,4 @@ void runBehaviorTests();  // tests/test_behavior.cpp
 void runDenTests();       // tests/test_den.cpp
 void runEggTests();       // tests/test_egg.cpp
 void runCareTests();      // tests/test_care.cpp
+void runValleyTests();    // tests/test_valley.cpp

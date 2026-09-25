@@ -4,6 +4,7 @@
 #include <citro3d.h>
 
 #include <cstdio>
+#include <cstdlib>
 
 #include "app/app.hpp"
 #include "app/audio.hpp"
@@ -38,6 +39,11 @@ Input readInput() {
     in.tapped = in.down & KEY_TOUCH;
     in.tx = touch.px;
     in.ty = touch.py;
+    circlePosition pad;
+    hidCircleRead(&pad);
+    auto axis = [](int v) { return std::abs(v) < 20 ? 0.0f : (v > 150 ? 1.0f : (v < -150 ? -1.0f : v / 150.0f)); };
+    in.padX = axis(pad.dx);
+    in.padY = axis(pad.dy);
     static float lastX = 0, lastY = 0;  // hidTouchRead reads (0, 0) once the stylus lifts
     in.released = hidKeysUp() & KEY_TOUCH;
     in.rx = lastX;
@@ -49,6 +55,7 @@ Input readInput() {
 // Which loop fits the moment (docs/audio/suno-music-brief.md).
 const char* musicFor(const App& app) {
     if (app.scene == SceneId::Market) return "market-bustle";
+    if (app.scene == SceneId::Valley) return "skyreach";  // batch 1's flight theme
     if (app.scene != SceneId::Den || !hasDragon(app)) return "title-theme";
     const Dragon& d = activeDragon(app);
     return (d.stage == Stage::Egg || isNight(nowLocal(app))) ? "nestsong" : "den-hearth";

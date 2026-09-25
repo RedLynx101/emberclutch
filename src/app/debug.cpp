@@ -5,6 +5,7 @@
 #include "app/audio.hpp"
 #include "app/perf.hpp"
 #include "app/render3d.hpp"
+#include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "core/den_roster.hpp"
 #include "core/genetics.hpp"
@@ -182,7 +183,7 @@ bool debugMenu(App& app, const Input& in) {
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
         {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26}, {"Next look", 27},
-        {"Force look", 28}, {"GPU probe", 29}, {"Next rare", 30}, {"Dex: this breed", 31}, {"Mix looks", 32}, {"Zoomies", 33}, {"Stereo preview", 34}, {"Next game", 35},
+        {"Force look", 28}, {"GPU probe", 29}, {"Next rare", 30}, {"Dex: this breed", 31}, {"Mix looks", 32}, {"Zoomies", 33}, {"Stereo preview", 34}, {"Next game", 35}, {"Valley test", 36},
     };
     const Entry* items = app.devPage ? kPage2 : kPage1;
     const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
@@ -242,6 +243,10 @@ bool debugMenu(App& app, const Input& in) {
                 showToastf(app, "Dragondex: %s complete", breedName(d.genome));
                 break;
             }
+            case 36:  // Beta WP1: fly your dragon over the placeholder valley
+                app.devMenu = false;
+                openValley(app);
+                break;
             case 34:  // WP11e: the top screen as the right eye sees it at full depth (the emulator
                       // shows one eye)
                 app.stereoPreview = !app.stereoPreview;

@@ -105,6 +105,7 @@ enum class ClipId : u8 {
     PawBat, Tug,
     Scamper, Gallop,  // running (WP12c): a hatchling's bounding scamper, a grown dragon's gallop
     PlayBow, Spar, Stalk, TailChase,  // play (run 13)
+    FlyFlap, FlyGlide, FlyDive,       // flight (Beta WP1)
     Count,
 };
 const char* clipName(ClipId c);  // the clip's name in the .eca

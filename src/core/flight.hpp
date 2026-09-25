@@ -1,0 +1,64 @@
+// Flying a grown dragon over the valley (Beta WP1/WP5, D73 5A): arcade controls. The circle
+// pad steers (left/right turns, up/down noses down/up a little), A flaps to climb, B dives,
+// L/R bank for a tighter turn, and letting go glides, sinking slowly. Stamina drains with
+// each flap and comes back gliding or on the ground. Takes off from the ground with A and
+// lands on flat ground when slow. Pure logic (PC-tested); the valley scene drives it.
+#pragma once
+
+#include "core/math3d.hpp"
+#include "core/types.hpp"
+
+namespace ec {
+
+struct Valley;
+
+struct FlightInput {
+    float steer = 0;   // -1 (left) .. 1 (right)
+    float pitch = 0;   // -1 (nose up) .. 1 (nose down)
+    float bank = 0;    // -1 (L) .. 1 (R)
+    bool flap = false; // held: a wingbeat every so often
+    bool dive = false;
+};
+
+// Tuning, in metres and seconds (a grown dragon crosses the 1 km valley in 2-3 minutes).
+struct FlightTuning {
+    float glideSpeed = 11, flapSpeed = 15, diveSpeed = 28;
+    float sinkRate = 1.6f;         // gliding: metres a second down
+    float flapLift = 4.2f;         // up, per wingbeat
+    float flapEvery = 0.55f;       // seconds between wingbeats while A is held
+    float flapCost = 0.07f;        // stamina per wingbeat (of 1)
+    float turnRate = 1.1f;         // radians a second at full steer
+    float bankBoost = 0.9f;        // how much tighter L/R make a turn
+    float ceiling = 250;           // thin air above: wingbeats weaker
+    float landSpeed = 13;          // slower than this over flat ground: it lands
+    float clearance = 1.2f;        // its feet above the ground in flight
+};
+
+struct Flight {
+    Vec3 pos;              // its feet
+    float heading = 0;     // radians about Z; 0 faces -Y (as in the den)
+    float speed = 0;       // forward, m/s
+    float climb = 0;       // vertical, m/s
+    // How the body tilts (radians), smoothed for the model: pitch < 0 nose up (climbing),
+    // roll > 0 leaning into a right turn.
+    float pitch = 0, roll = 0;
+    float stamina = 1;
+    bool grounded = true;
+    float flapIn = 0;      // seconds to the next wingbeat while A is held
+    float sinceFlap = 9;   // seconds since the last wingbeat (the flap clip plays a while after)
+    bool landed = false, tookOff = false, flapped = false;  // this step (sounds, clips)
+
+    Vec3 forward() const;
+    // One step. The valley gives the ground (and keeps it inside its edges).
+    void update(const FlightInput& in, const Valley& v, float dt, const FlightTuning& tune = FlightTuning{});
+    bool diving(const FlightInput& in) const { return !grounded && in.dive; }
+};
+
+// The camera behind and above, easing after the dragon, never under the ground.
+struct ChaseCamera {
+    Vec3 eye, target;
+    bool set = false;
+    void update(const Flight& f, const Valley& v, float dt);
+};
+
+}  // namespace ec

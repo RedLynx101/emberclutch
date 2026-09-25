@@ -26,5 +26,9 @@ extern const SceneFns kVaultScene;
 extern const SceneFns kNestingStoneScene;
 extern const SceneFns kWanderingsScene;
 extern const SceneFns kMarketScene;
+extern const SceneFns kValleyScene;
+
+// Beta's technical test (WP1): into Skyreach Valley with your dragon, grown (scene_valley).
+void openValley(App& app);
 
 }  // namespace ec

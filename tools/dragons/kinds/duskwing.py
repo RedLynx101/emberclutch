@@ -41,13 +41,13 @@ META = dict(
 
 VARIANTS = [
     dict(name="Dusk", base=(0.085, 0.085, 0.30), accent=(0.62, 0.52, 0.92), pattern=(0.03, 0.03, 0.12),
-         horn=(0.86, 0.84, 1.0), membrane=(0.07, 0.055, 0.22), iris=(0.82, 0.48, 0.10), glow=(0.70, 0.55, 1.0),
+         horn=(0.86, 0.84, 1.0), membrane=(0.09, 0.075, 0.28), iris=(0.82, 0.48, 0.10), glow=(0.70, 0.55, 1.0),
          pattern_channel="r", glow_channel=None),
     dict(name="Twilight", base=(0.30, 0.10, 0.27), accent=(1.0, 0.60, 0.62), pattern=(1.0, 0.82, 0.55),
-         horn=(1.0, 0.86, 0.78), membrane=(0.20, 0.05, 0.19), iris=(0.14, 0.50, 0.48), glow=(0.78, 0.55, 1.0),
+         horn=(1.0, 0.86, 0.78), membrane=(0.24, 0.07, 0.24), iris=(0.14, 0.50, 0.48), glow=(0.78, 0.55, 1.0),
          pattern_channel="g", glow_channel=None),
     dict(name="Moonshadow", base=(0.075, 0.075, 0.09), accent=(0.70, 0.73, 0.80), pattern=(0.90, 0.92, 1.0),
-         horn=(0.88, 0.90, 0.96), membrane=(0.05, 0.05, 0.075), iris=(0.90, 0.72, 0.26), glow=(0.70, 0.62, 1.0),
+         horn=(0.88, 0.90, 0.96), membrane=(0.075, 0.075, 0.105), iris=(0.90, 0.72, 0.26), glow=(0.70, 0.62, 1.0),
          pattern_channel="g", glow_channel=None),
     dict(name="Eclipse", base=(0.035, 0.022, 0.06), accent=(0.26, 0.12, 0.32), pattern=(1.0, 0.74, 0.28),
          horn=(1.0, 0.80, 0.40), membrane=(0.022, 0.012, 0.045), iris=(1.0, 0.76, 0.22), glow=(1.0, 0.70, 0.22),
@@ -97,7 +97,7 @@ for _side in ("L", "R"):
 # a long forearm, the thumb forward at the wrist, four fingers fanning to a scalloped edge.
 WING_LAYOUT = {"root": (0.0, 0.0), "elbow": (0.46, 0.16), "wrist": (2.34, -0.10), "thumb": (2.49, -0.34),
                "f1": (4.18, 0.25), "f2": (3.88, 1.10), "f3": (3.22, 1.70), "f4": (2.34, 1.86),
-               "body": (0.0, 0.90)}
+               "body": (0.10, 0.62)}
 
 BUILDS = {
     "neutral": {},
@@ -170,7 +170,7 @@ def _grown_sculpt(kit, obj):
 
 GROWN = dict(
     name="grown", nodes=GROWN_NODES, edges=GROWN_EDGES, body="skin",
-    body_tris=1400, body_tris_lod1=500, export_scale=1.0,
+    body_tris=1300, body_tris_lod1=480, export_scale=1.0,
     young={
         "bones": {
             "head": (0.95, 0.9, 1.0), "snout": (0.9, 0.75, 0.95),
@@ -194,8 +194,8 @@ GROWN = dict(
     tail_k=1.0,
     heart=dict(at=(0, -0.92, 1.58), size=0.12),
     wing=dict(root=(0.28, -0.42, 1.95), scale=1.12, dihedral=20, droop=5, layout=WING_LAYOUT,
-              radii={"root": 0.10, "elbow": 0.08, "wrist": 0.072, "thumb": 0.05, "finger": 0.022, "tip": 0.009},
-              arm_tris=150, thickness=0.016),
+              radii={"root": 0.115, "elbow": 0.095, "wrist": 0.085, "thumb": 0.055, "finger": 0.024, "tip": 0.009},
+              arm_tris=130, thickness=0.016),
     mask=dict(max_x=0.34, max_z=2.9, min_z=-1.0, tail_cut=(1.3, 1.2)),
     inset={"eyes": 0.02, "horns": 0.02, "spikes": 0.05, "frill": 0.03, "heart": -0.06, "runes": -0.012},
     face=dict(nostril=(0.045, -1.685, 2.755), nostril_r=(0.021, 0.014, 0.008), mouth_r=0.012,
@@ -262,8 +262,8 @@ HATCH = dict(
     base_pose={"tail1": (4, 0, 0), "tail2": (2, 0, 8), "tail3": (4, 0, 10), "tail4": (6, 0, 10)},
     builds={"neutral": {}, "sturdy": {}, "sleek": {}, "long": {}},
     eyes=dict(at=(0.18, -0.54, 1.14), out=(0.45, -0.88, 0.1), iris=(0.122, 0.136, 0.064),
-              pupil=(0.096, 0.112, 0.028), slit=(0.32, 1.06),
-              glints=((-0.03, 0.046, 0.028), (0.026, -0.044, 0.013)), seg=(12, 2, 10, 2)),
+              pupil=(0.09, 0.106, 0.028), slit=(0.32, 1.06),
+              glints=((-0.03, 0.046, 0.028), (0.026, -0.044, 0.013)), seg=(14, 3, 12, 2)),
     head=dict(origin=(0, -0.24, 1.10), k=0.9, buds=True),
     tail_k=0.4,
     heart=dict(at=(0, -0.33, 0.60), size=0.075),
@@ -276,7 +276,7 @@ HATCH = dict(
               mouth=lambda side, a: (side * 0.095 * a ** 0.8, -0.675 + 0.15 * a ** 1.6, 0.94 + 0.03 * a * a)),
     jaw_hinge=(0, -0.47, 0.94),
     mouth_detail=dict(depth=0.13, fade=0.09, width=0.2, tooth=(0.006, 0.01), fang=(0.008, 0.018),
-                      tongue=(0.045, 0.07, 0.011)),
+                      tongue=(0.04, 0.05, 0.01)),
     skin=dict(stripe=0.2, spot_cell=0.16, ao=0.25),
     sculpt=lambda kit, obj: _soften(obj, 8),
 )
@@ -435,6 +435,7 @@ def _star(bm, centre, a, u, r, sparkle):
 # ------------------------------------------------------------------------------ hooks
 def parts(kit, d):
     _ears_on_head(kit, d)
+    _pin_stars(kit, d)
     F, mats = kit.F, d["mats"]
     baby = d["form"] == "hatchling"
     out = []
@@ -456,16 +457,59 @@ def parts(kit, d):
                          (0, 1.0, -0.35), 0.30 * k, 0.26 * k, 0.16 * k, 0.05 * k)
         cres.data.materials.append(mats["glow_flat" if rare else "horn"])
         out.append(("tail_tip", 1 if rare else 0, [(cres, "tail6")]))
-    # The Eclipse's crescent crest between its ears.
-    if not baby:
-        crest = _crescent(kit, "crest", kit.head_point((0, 0.02, 0.30)), (0, 0.2, 1.0), (0, -1.0, 0.2),
-                          0.17, 0.15, 0.09, 0.03)
-    else:
-        crest = _crescent(kit, "crest", kit.head_point((0, 0.02, 0.36)), (0, 0.2, 1.0), (0, -1.0, 0.2),
-                          0.11, 0.095, 0.06, 0.025)
+    # The Eclipse's crest: a crescent moon standing on its brow, horns up, facing forward.
+    r = 0.15 if not baby else 0.12
+    centre = kit.head_point((0, -0.10, 0.36) if not baby else (0, -0.06, 0.42))
+    crest = _crescent(kit, "crest", centre, (1, 0, 0), (0, 0.25, 1.0), r, r * 0.84, r * 0.52, 0.035 if not baby else 0.03)
+    _origin_to(kit, crest, centre - kit.V((0, 0.25, 1.0)).normalized() * r)  # seated by its lowest point
     crest.data.materials.append(mats["glow_flat"])
     out.append(("horns", 1, [(crest, "head")]))
     return out
+
+
+def _pin_stars(kit, d):
+    """Each star follows exactly the membrane vertex at its centre (the poke under it), so it
+    moves as one piece with the membrane however far the wing folds (the kit weights every
+    vertex by its own nearest struts, which would stretch a star lying across two)."""
+    import bmesh
+    from mathutils import kdtree
+    for objs in (d["wings"], d["rare_wings"]):
+        by = {o.name.split(".")[0]: o for o in objs}
+        for side in ("L", "R"):
+            stars, mem = by.get(f"stars_{side}"), by.get(f"membrane_{side}")
+            if stars is None or mem is None:
+                continue
+            tree = kdtree.KDTree(len(mem.data.vertices))
+            for v in mem.data.vertices:
+                tree.insert(mem.matrix_world @ v.co, v.index)
+            tree.balance()
+            names = {g.index: g.name for g in mem.vertex_groups}
+            bm = bmesh.new()
+            bm.from_mesh(stars.data)
+            bm.verts.ensure_lookup_table()
+            seen = set()
+            for v0 in bm.verts:
+                if v0.index in seen:
+                    continue
+                island, stack = [], [v0]
+                seen.add(v0.index)
+                while stack:
+                    a = stack.pop()
+                    island.append(a.index)
+                    for e in a.link_edges:
+                        b = e.other_vert(a)
+                        if b.index not in seen:
+                            seen.add(b.index)
+                            stack.append(b)
+                centre = sum((stars.matrix_world @ stars.data.vertices[i].co for i in island), kit.V((0, 0, 0))) / len(island)
+                _, j, _ = tree.find(centre)
+                weights = [(names[g.group], g.weight) for g in mem.data.vertices[j].groups if g.weight > 0]
+                for g in stars.vertex_groups:
+                    g.remove(island)
+                for name, w in weights:
+                    g = stars.vertex_groups.get(name) or stars.vertex_groups.new(name=name)
+                    g.add(island, w, "REPLACE")
+            bm.free()
 
 
 def _ears_on_head(kit, d):
@@ -483,29 +527,43 @@ def _ears_on_head(kit, d):
         body.vertex_groups.remove(g)
 
 
+def _tuft(kit, name, base, direction, side, length, width, thickness):
+    """A tuft of fur: a flat fan from its base ending in three soft points (a leaf at LOD1)."""
+    d = kit.V(direction).normalized()
+    s = kit.V(side)
+    s = (s - d * s.dot(d)).normalized()
+    b = kit.V(base)
+    if kit.LOD:
+        return kit.blade(name, b, d, s, length, width, thickness)
+    shape = [(-0.5, 0.0), (-0.56, 0.42), (-0.36, 0.8), (-0.12, 0.62), (0.0, 1.0), (0.12, 0.62), (0.36, 0.8),
+             (0.56, 0.42), (0.5, 0.0)]
+    return kit.flat_fan(name, [b] + [b + s * (x * width) + d * (y * length) for x, y in shape], thickness)
+
+
 def _ruff(kit, d):
-    """A ring of soft tufts round the neck's base: [(object, bone)]."""
+    """A ring of soft fur tufts round the neck's base (on the baby, a fluffy chest and a
+    little crown between the ears): [(object, bone)]."""
     V = kit.V
     mats = d["mats"]
     baby = d["form"] == "hatchling"
     pieces = []
     if baby:
-        for j, (x, z, ang, ln) in enumerate(((0.0, 0.84, 0, 0.16), (-0.08, 0.83, -24, 0.13), (0.08, 0.83, 24, 0.13))):
-            base = V((x, -0.30, z - 0.2))
-            dirn = V((math.sin(math.radians(ang)) * 0.6, -0.35, -0.94))
-            o = kit.blade(f"tuft_{j}", base, dirn, V((1, 0, 0)), ln, 0.09, 0.01)
+        for j, (x, ang, ln) in enumerate(((0.0, 0, 0.17), (-0.09, -26, 0.14), (0.09, 26, 0.14))):
+            base = V((x, -0.30, 0.77))
+            dirn = V((math.sin(math.radians(ang)) * 0.5, -0.22, -0.97))
+            o = _tuft(kit, f"tuft_{j}", base, dirn, V((1, 0, 0)), ln * 0.8, 0.12, 0.01)
             o.data.materials.append(mats["accent_flat"])
             pieces.append((o, "chest"))
         top = kit.head_point((0.0, 0.02, 0.33))
         for j, ang in enumerate((-30, 0, 30)):
             dirn = V((math.sin(math.radians(ang)), 0.25, 1.0))
-            o = kit.blade(f"crown_{j}", top, dirn, V((1, 0, 0)), 0.13 if ang else 0.16, 0.07, 0.01)
+            o = _tuft(kit, f"crown_{j}", top, dirn, V((1, 0, 0)), 0.13 if ang else 0.16, 0.09, 0.01)
             o.data.materials.append(mats["accent_flat"])
             pieces.append((o, "head"))
         return pieces
     n1, ch = kit.node("neck1"), kit.node("chest")
     axis = (n1 - ch).normalized()
-    count = kit.lod(10, 5)
+    count = kit.lod(9, 5)
     for j in range(count):
         t = 2 * math.pi * (j + 0.5) / count
         out = V((math.sin(t), -math.cos(t) * 0.8, 0.0))
@@ -515,7 +573,7 @@ def _ruff(kit, d):
         dirn = (out * 0.55 - axis * 0.75).normalized()
         front = out.y < -0.3
         ln = 0.40 if not front else 0.32
-        o = kit.blade(f"ruff_{j}", base, dirn, axis.cross(out), ln, 0.28, 0.014)
+        o = _tuft(kit, f"ruff_{j}", base, dirn, axis.cross(out), ln, 0.32, 0.014)
         o.data.materials.append(mats["accent_flat"])
         pieces.append((o, "neck1" if front else "chest"))
     return pieces
@@ -545,11 +603,45 @@ def _bat_edge(kit, pts):
     return edge
 
 
-STARS = [  # (u, v, size, sparkle) in the wing layout, on the hand's panels between the fingers
-    (3.30, 0.52, 0.075, True), (3.05, 0.82, 0.045, False), (3.62, 0.60, 0.04, False), (3.72, 0.33, 0.035, False),
-    (3.10, 1.30, 0.065, True), (2.85, 1.02, 0.04, False), (3.40, 1.18, 0.035, False),
-    (2.75, 1.55, 0.05, True), (2.55, 1.25, 0.035, False), (2.62, 1.80, 0.035, False),
+STARS = [  # (u, v, size, sparkle) in the wing layout: the hand's panels, then the flank (the cloak)
+    (3.30, 0.52, 0.075, True), (3.62, 0.60, 0.04, False), (3.05, 0.85, 0.04, False),
+    (3.10, 1.30, 0.065, True), (2.75, 1.55, 0.04, False),
+    (1.05, 0.42, 0.065, True), (1.75, 0.78, 0.07, True), (0.62, 0.24, 0.035, False),
+    (2.05, 0.30, 0.04, False), (1.95, 1.22, 0.04, False),
+    (1.25, 0.70, 0.035, False), (2.12, 1.52, 0.05, True),
 ]
+
+
+def _poke_stars(kit, bm, stars, at, span, chord):
+    """Put each star's centre into the membrane (the fan triangle under it is split there), so
+    the membrane passes through the star however the wing folds: the star and the membrane
+    round it follow the same struts. Returns [(point, normal, tangent)] per star."""
+    from mathutils import geometry
+    root, scale = at(0, 0), kit.F["wing"]["scale"]
+
+    def uv(p):
+        d = p - root
+        return kit.V((d.dot(span) / scale, d.dot(chord) / scale, 0))
+
+    placed = []
+    for u, v, _, _ in stars:
+        q = kit.V((u, v, 0))
+        for f in list(bm.faces):
+            a, b, c = f.verts
+            if not geometry.intersect_point_tri_2d(q, uv(a.co), uv(b.co), uv(c.co)):
+                continue
+            w = geometry.barycentric_transform(q, uv(a.co), uv(b.co), uv(c.co), a.co, b.co, c.co)
+            n = (b.co - a.co).cross(c.co - a.co).normalized()
+            centre = bm.verts.new(w)
+            bm.faces.remove(f)
+            for x, y in ((a, b), (b, c), (c, a)):
+                bm.faces.new((x, y, centre))
+            t = (span - n * span.dot(n)).normalized()
+            placed.append((w.copy(), n, t))
+            break
+        else:
+            placed.append(None)
+    return placed
 
 
 def wings(kit, d, rare):
@@ -580,11 +672,14 @@ def wings(kit, d, rare):
         edge = _bat_edge(kit, pts)
         ring = [pts["wrist"], pts["elbow"], pts["root"]] + edge
         at, span, chord = _wing_frame(kit, side)
-        nrm = span.cross(chord).normalized()
         bm = bmesh.new()
         vs = [bm.verts.new(p) for p in ring]
         for i in range(1, len(vs) - 1):
             bm.faces.new((vs[0], vs[i], vs[i + 1]))
+        stars = STARS if not kit.LOD else STARS[::2]
+        if baby:
+            stars = [st for st in stars if st[3]]
+        placed = _poke_stars(kit, bm, stars, at, span, chord)
         th = F["wing"]["thickness"]
         mem = kit.mesh_object(f"membrane_{side}", bm)
         mod = mem.modifiers.new("thick", "SOLIDIFY")
@@ -594,19 +689,21 @@ def wings(kit, d, rare):
         kit.apply_modifiers(mem)
         mem.data.materials.append(mats["membrane"])
         objs.append(mem)
-        # stars on both faces of the membrane
+        # stars on both faces of the membrane, centred on the pokes
         sb = bmesh.new()
-        stars = STARS if not kit.LOD else STARS[::2]
-        if baby:
-            stars = [st for st in stars if st[3]]
-        for u, v, size, sparkle in stars:
-            c = at(u, v)
+        sides = []
+        for (u, v, size, sparkle), spot in zip(stars, placed):
+            if spot is None:
+                continue
+            c, n, t = spot
             size *= F["wing"]["scale"] * (1.6 if baby else 1.0)
             for face in (1, -1):
-                _star(sb, c + nrm * face * th * 0.8, span, chord, size, sparkle)
+                before = len(sb.faces)
+                _star(sb, c + n * face * th * 0.8, t, n.cross(t), size, sparkle)
+                sides += [n * face] * (len(sb.faces) - before)
+        sb.faces.ensure_lookup_table()
         sb.normal_update()
-        for f in sb.faces:
-            outward = nrm if (f.calc_center_median() - at(0, 0)).dot(nrm) > 0 else -nrm
+        for f, outward in zip(sb.faces, sides):
             if f.normal.dot(outward) < 0:
                 f.normal_flip()
         star_obj = kit.mesh_object(f"stars_{side}", sb)
@@ -655,7 +752,8 @@ def texture(tx, nt, p, form):
     G: little star freckles over the back; B: the Eclipse's glowing star-dust."""
     r = tx.mul(nt, tx.smoothstep(nt, tx.normal_z(nt), -0.05, 0.6),
                tx.madd(nt, tx.blotches(nt, 1.2, (0.3, 0.7), 2.0, where=tx.const(nt, 1.0)), 0.25, 0.75))
-    g = tx.spots(nt, p["spot_cell"] * 0.55, keep=0.55, size=(0.18, 0.11), where=tx.top(nt))
-    b = tx.maxi(nt, tx.spots(nt, p["spot_cell"] * 0.5, keep=0.4, size=(0.2, 0.12), where=tx.upper(nt), seed_offset=2.3),
-                tx.spots(nt, p["spot_cell"] * 1.1, keep=0.7, size=(0.16, 0.1), where=tx.top(nt), seed_offset=5.1))
+    g = tx.maxi(nt, tx.spots(nt, p["spot_cell"] * 0.8, keep=0.5, size=(0.24, 0.15), where=tx.top(nt)),
+                tx.spots(nt, p["spot_cell"] * 1.6, keep=0.75, size=(0.2, 0.12), where=tx.top(nt), seed_offset=3.7))
+    b = tx.maxi(nt, tx.spots(nt, p["spot_cell"] * 0.7, keep=0.45, size=(0.24, 0.15), where=tx.upper(nt), seed_offset=2.3),
+                tx.spots(nt, p["spot_cell"] * 1.4, keep=0.7, size=(0.2, 0.12), where=tx.top(nt), seed_offset=5.1))
     return {"r": r, "g": g, "b": b}

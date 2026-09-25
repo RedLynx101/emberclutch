@@ -1,0 +1,175 @@
+# Review R6 (not blocking): every breed in the game, an adult in the Classic look, the whole
+# body up close (the brush's view): the 6 purebreds, then the 15 hybrids (dev menu: Next breed).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key R
+wait 0.3
+tap 82 131
+wait 0.3
+key R
+wait 0.3
+key SELECT
+wait 2
+tap 134 221
+wait 2
+shot b00-ember
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b01-tide
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b02-gale
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b03-grove
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b04-frost
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b05-lumen
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b06-steam
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b07-wildfire
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b08-cinderbloom
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b09-solstice
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b10-sunflare
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b11-squall
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b12-lotus
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b13-glacier
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b14-pearl
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b15-thistledown
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b16-blizzard
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b17-aurora
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b18-evergreen
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b19-glowmoss
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot b20-prism
+quit

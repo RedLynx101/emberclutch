@@ -1,0 +1,76 @@
+# Review R6, faces (not blocking): every breed in the game, an adult in the Classic look, the face
+# up close (the hand's view): the 6 purebreds, then the 15 hybrids (dev menu: Next breed).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key R
+wait 0.3
+tap 82 131
+wait 0.3
+key R
+wait 0.3
+key SELECT
+wait 2
+tap 30 221
+wait 2
+shot f00-ember
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot f01-tide
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot f02-gale
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot f03-grove
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot f04-frost
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+shot f05-lumen
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+wait 2.2
+quit

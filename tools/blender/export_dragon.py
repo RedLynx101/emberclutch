@@ -55,11 +55,11 @@ LODS = [int(x) for x in arg("--lods", "0,1").split(",")]
 
 KIND_BODY, KIND_WINGS, KIND_PART = 0, 1, 2
 GROUP = {"eyes": 0, "horns": 1, "frill": 2, "spikes": 3, "tail_tip": 4, "heart": 5, "wings": 6, "mouth": 7,
-         "body": 255}
+         "runes": 9, "body": 255}  # 8: the egg's shards (egg_model.py)
 SEX_ANY, SEX_MALE, SEX_FEMALE = 0, 1, 2
 # Variant ids match the genome enums in src/core/genetics.hpp. The dorsal ridge (group
 # "spikes") is picked by the frill gene: 0 spikes, 1 fin sail, 3 plumes (leaf falls back to 0).
-HORNS = {"nubs": 0, "swept": 1}
+HORNS = {"nubs": 0, "swept": 1, "crown": 2, "crystal": 3, "antler": 4}
 FRILL = {"none": 0, "fin": 1, "leaf": 2, "feather": 3}
 RIDGE = {"spikes": 0, "fin": 1, "feather": 3}
 WINGS = {"classic": 0, "plumed": 1, "sail": 2}
@@ -74,6 +74,7 @@ MATERIAL_PAINT = {  # material name -> (palette A, palette B, emissive 0..255)
     "horn": (PAL_HORN, PAL_HORN, 0), "iris": (PAL_IRIS, PAL_IRIS, 0), "pupil": (PAL_PUPIL, PAL_PUPIL, 0),
     "glint": (PAL_GLINT, PAL_GLINT, 200), "heart": (PAL_GLINT, PAL_GLOW, 255),
     "tooth": (PAL_GLINT, PAL_HORN, 0), "tongue": (PAL_TONGUE, PAL_TONGUE, 0), "mouth": (PAL_PUPIL, PAL_TONGUE, 0),
+    "rune": (PAL_PATTERN, PAL_PATTERN, 230),  # the Runes pattern: glyphs glowing in the pattern colour
 }
 MATERIAL_MIX = {"tooth": 60, "mouth": 110}  # fixed A -> B mix: ivory teeth, a dark rosy mouth
 HEART_CORE = 0.55  # the heartglow is white-hot inside this fraction of its radius, glow-coloured at the rim
@@ -121,14 +122,15 @@ def build_all(form):
         d["snap"].get(g, []).clear()
 
     for sex in (SEX_MALE, SEX_FEMALE):
-        for kind in ("swept", "nubs"):
+        for kind in ("swept", "nubs", "crown", "crystal", "antler"):
             add_part("horns", HORNS[kind], sex, [(o, "head") for o in dm.build_horns(kind, mats)])
-        for kind in ("fin", "feather"):
+        for kind in ("fin", "leaf", "feather"):
             add_part("frill", FRILL[kind], sex, [(o, "head") for o in dm.build_frill(kind, mats)])
         for kind in ("spade", "fan", "tuft"):
             add_part("tail_tip", TAIL[kind], sex, [(dm.build_tail_tip(kind, mats), "tail4")])
     for kind in ("fin", "feather"):
         add_part("spikes", RIDGE[kind], SEX_ANY, dm.build_ridge(kind, mats))
+    add_part("runes", 0, SEX_ANY, dm.build_runes(mats))
 
     wings = {"classic": d["wings"]}
     for kind in ("plumed", "sail"):

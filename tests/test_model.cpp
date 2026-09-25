@@ -261,21 +261,28 @@ TEST(parts_follow_the_genome_and_merge_into_one_draw) {
                 CHECK(selectWings(m, g) && selectWings(m, g)->variant == g.wings);
             }
         }
-        // Variants not modelled yet fall back; None/Plain draw nothing.
+        // Every variant is modelled (WP12): crown, crystal and antler horns, the leaf frill (its
+        // ridge: spikes); Plain draws nothing; the Runes pattern adds its glowing glyphs.
         Genome g = makePurebred(Element::Ember, rng);
-        g.horns = kHornsCrown;
         g.frill = kFrillLeaf;
         g.tailTip = kTailPlain;
-        const MeshData* sel[8];
-        const int n = selectParts(m, g, Sex::Male, sel);
-        int horns = 0, ridge = 0, frill = 0, tail = 0;
-        for (int i = 0; i < n; ++i) {
-            horns += sel[i]->group == kGroupHorns && sel[i]->variant == kHornsSwept;
-            ridge += sel[i]->group == kGroupSpikes && sel[i]->variant == kFrillNone;
-            frill += sel[i]->group == kGroupFrill;
-            tail += sel[i]->group == kGroupTailTip;
+        g.pattern = kPatternRunes;
+        for (u8 h = 0; h < kHornsCount; ++h) {
+            g.horns = h;
+            for (Sex sex : {Sex::Male, Sex::Female}) {
+                const MeshData* sel[8];
+                const int n = selectParts(m, g, sex, sel);
+                int horns = 0, ridge = 0, frill = 0, tail = 0, runes = 0;
+                for (int i = 0; i < n; ++i) {
+                    horns += sel[i]->group == kGroupHorns && sel[i]->variant == h;
+                    ridge += sel[i]->group == kGroupSpikes && sel[i]->variant == kFrillNone;
+                    frill += sel[i]->group == kGroupFrill && sel[i]->variant == kFrillLeaf;
+                    tail += sel[i]->group == kGroupTailTip;
+                    runes += sel[i]->group == kGroupRunes;
+                }
+                CHECK(horns == 1 && ridge == 1 && frill == 1 && tail == 0 && runes == 1);
+            }
         }
-        CHECK(horns == 1 && ridge == 1 && frill == 0 && tail == 0);
     }
 }
 

@@ -58,6 +58,19 @@ BREEDS = {
                  base=(0.55, 0.72, 0.95), accent=(0.95, 0.97, 1.00), horn=(0.85, 0.92, 1.00),
                  glow=(0.62, 0.92, 1.00), eye=(0.25, 0.45, 0.90),
                  pattern="dapple", pattern_color=(0.36, 0.50, 0.82)),
+    # The other three elements (WP12: every breed), for previews and review sheets (R6).
+    "grove": dict(build="sturdy", horns="antler", frill="leaf", wings="classic", tail="fan",
+                  base=(0.42, 0.62, 0.27), accent=(0.78, 0.84, 0.45), horn=(0.62, 0.48, 0.30),
+                  glow=(0.60, 0.95, 0.30), eye=(0.55, 0.80, 0.20),
+                  pattern="dapple", pattern_color=(0.26, 0.40, 0.16)),
+    "frost": dict(build="sleek", horns="crystal", frill="none", wings="classic", tail="spade",
+                  base=(0.84, 0.80, 0.94), accent=(0.94, 0.92, 1.00), horn=(0.80, 0.86, 1.00),
+                  glow=(0.75, 0.60, 1.00), eye=(0.55, 0.45, 0.95),
+                  pattern="runes", pattern_color=(0.62, 0.50, 0.98)),
+    "lumen": dict(build="sleek", horns="crown", frill="feather", wings="plumed", tail="tuft",
+                  base=(0.97, 0.90, 0.72), accent=(1.00, 0.97, 0.86), horn=(1.00, 0.86, 0.45),
+                  glow=(1.00, 0.86, 0.43), eye=(0.95, 0.70, 0.25),
+                  pattern="runes", pattern_color=(1.00, 0.78, 0.35)),
 }
 RIDGE_OF_FRILL = {"none": "spikes", "leaf": "spikes", "fin": "fin", "feather": "feather"}
 
@@ -189,12 +202,17 @@ GROWN = dict(
                size=(0.08, 0.06, 0.3), spike=(1.9, 0.7, 40), fin=(2.2, 1.9, 0.02), plume=(3.2, 1.1, 0.012)),
     tail_k=1.25,
     heart=dict(at=(0, -1.06, 1.18), size=0.11),
+    # The Runes pattern: (bone, where on the right side, glyph, size); mirrored to the left.
+    # Where the folded wings don't cover them: the neck, the lower hip, the base of the tail.
+    runes=[("neck2", (0.2, -1.2, 1.9), 1, 0.2), ("neck1", (0.28, -0.9, 1.5), 0, 0.26),
+           ("hips", (0.44, 0.9, 0.82), 2, 0.28), ("tail2", (0.28, 1.62, 0.8), 3, 0.24)],
     # The rest pose IS the idle: wings half-raised in a V (dihedral), leading edge on top.
     wing=dict(root=(0.36, -0.40, 1.52), scale=1.0, dihedral=50, droop=10,
               radii={"root": 0.10, "elbow": 0.075, "wrist": 0.06, "finger": 0.022, "tip": 0.008},
               arm_tris=180, thickness=0.014),
     mask=dict(max_x=0.34, max_z=2.35, min_z=-1.0, tail_cut=(1.2, 0.3)),
-    inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.02, "frill": 0.09, "heart": -0.065},  # heart: proud of the chest, which bulges when sitting (part_clearance.py)
+    inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.02, "frill": 0.09, "heart": -0.065,  # heart: proud of the chest, which bulges when sitting (part_clearance.py)
+           "runes": -0.012},
     # Face details (R1b): nostrils on the snout tip and a jaw line, projected onto the body.
     face=dict(nostril=(0.05, -2.20, 2.52), nostril_r=(0.024, 0.015, 0.008), mouth_r=0.012,
               mouth=lambda side, a: (side * 0.15 * a ** 0.7, -2.25 + 0.47 * a ** 1.5, 2.41 + 0.06 * a * a)),
@@ -298,6 +316,8 @@ HATCH = dict(
                size=(0.035, 0.02, 0.2), spike=(1.3, 0.8, 20), fin=(1.8, 1.5, 0.012), plume=(2.4, 1.0, 0.008)),
     tail_k=0.42,
     heart=dict(at=(0, -0.40, 0.53), size=0.075),  # low enough that the chin clears it sitting (Noah, run 3)
+    runes=[("chest", (0.2, -0.22, 0.6), 0, 0.11), ("belly", (0.23, 0.08, 0.52), 2, 0.13),
+           ("hips", (0.19, 0.34, 0.5), 3, 0.11)],
     wing=dict(root=(0.13, -0.10, 0.77), scale=0.19, dihedral=35, droop=5,
               radii={"root": 0.045, "elbow": 0.035, "wrist": 0.03, "finger": 0.011, "tip": 0.005},
               arm_tris=120, thickness=0.008),
@@ -849,8 +869,15 @@ def parent_to_bone(obj, arm, bone):
 
 
 # ------------------------------------------------------------------------------ part shapes
-def horn_mesh(name, length, radius, curve, segments=6, ring=5):
-    """A tapered horn swept backward along a curve (in local +Y back, +Z up)."""
+def horn_point(length, curve, t):
+    """horn_mesh's centre line at t (0 base .. 1 tip), in its local frame."""
+    ang = curve * t
+    return Vector((0, math.sin(ang) * length * t * 0.9, math.cos(ang) * length * t))
+
+
+def horn_mesh(name, length, radius, curve, segments=6, ring=5, faceted=False):
+    """A tapered horn swept backward along a curve (in local +Y back, +Z up). Faceted: flat
+    shading (crystal horns)."""
     bm = bmesh.new()
     rings = []
     for i in range(segments + 1):
@@ -865,7 +892,8 @@ def horn_mesh(name, length, radius, curve, segments=6, ring=5):
             bm.faces.new((a[k], a[(k + 1) % ring], b[(k + 1) % ring], b[k]))
     bm.faces.new(list(reversed(rings[0])))
     obj = mesh_object(name, bm)
-    smooth(obj)
+    if not faceted:
+        smooth(obj)
     return obj
 
 
@@ -983,6 +1011,18 @@ HORN_KINDS = {  # offsets in the head frame; rot = (x, y mirrored, z) degrees
               dict(len=0.28, r=0.042, curve=70, seg=4, ring=4, at=(0.22, 0.02, 0.02), rot=(-40, 55, 0),
                    minor=True)],
     "nubs": [dict(len=0.22, r=0.075, curve=35, seg=4, ring=5, at=(0.12, 0.08, 0.17), rot=(-20, 15, 0))],
+    # Lumen's halo crest: a circlet of short upright spikes round the crown of the head.
+    "crown": [dict(len=0.27, r=0.045, curve=8, seg=3, ring=4, at=(0.0, 0.07, 0.25), rot=(-6, 0, 0), centre=True),
+              dict(len=0.23, r=0.04, curve=10, seg=3, ring=4, at=(0.09, 0.06, 0.23), rot=(-8, 20, 0)),
+              dict(len=0.18, r=0.036, curve=12, seg=3, ring=4, at=(0.16, 0.02, 0.18), rot=(-10, 42, 0), minor=True)],
+    # Frost: faceted crystals, a tall one and a small one beside it.
+    "crystal": [dict(len=0.5, r=0.085, curve=14, seg=2, ring=4, at=(0.12, 0.08, 0.17), rot=(-24, 10, 0), faceted=True),
+                dict(len=0.24, r=0.05, curve=6, seg=2, ring=4, at=(0.19, 0.03, 0.09), rot=(-46, 42, 0), faceted=True,
+                     minor=True)],
+    # Grove: bark antlers, a beam swept back with two tines off it (on=(beam, t): where along it).
+    "antler": [dict(len=0.56, r=0.055, curve=48, seg=5, ring=4, at=(0.12, 0.08, 0.17), rot=(-26, 22, 0)),
+               dict(len=0.2, r=0.03, curve=20, seg=2, ring=4, on=(0, 0.45), rot=(10, 34, 0), minor=True),
+               dict(len=0.16, r=0.026, curve=25, seg=2, ring=4, on=(0, 0.75), rot=(-60, 46, 0), minor=True)],
 }
 
 
@@ -990,18 +1030,32 @@ def build_horns(kind, mats):
     h = F["head"]
     horns = []
     for s in (-1, 1):
+        beams = []  # this side's pieces, for tines that grow off a beam
         for spec in HORN_KINDS[kind]:
-            if h["buds"] and spec.get("minor"):
-                continue  # hatchlings only have the main horn buds
-            seg = max(3, spec["seg"] - (2 if h["buds"] else 0))
-            o = horn_mesh(f"horn_{s}", spec["len"] * h["k"] * h["horn_len"], spec["r"] * h["k"] * h["horn_r"],
-                          math.radians(spec["curve"]) * h["horn_curve"], lod(seg, max(2, seg - 3)),
-                          lod(spec["ring"], 4))
-            o.location = head_point(spec["at"], s)
+            if (h["buds"] and spec.get("minor")) or (spec.get("centre") and s < 0):
+                beams.append(None)
+                continue  # hatchlings only have the main horn buds; a centre spike is one piece
+            seg = max(2 if spec.get("faceted") or spec.get("on") else 3, spec["seg"] - (2 if h["buds"] else 0))
+            length = spec["len"] * h["k"] * h["horn_len"]
+            curve = math.radians(spec["curve"]) * h["horn_curve"]
+            o = horn_mesh(f"horn_{s}", length, spec["r"] * h["k"] * h["horn_r"], curve,
+                          lod(seg, max(2, seg - 3)), lod(spec["ring"], 4), faceted=spec.get("faceted", False))
             rx, ry, rz = spec["rot"]
+            if "on" in spec:  # a tine: on its beam's centre line
+                beam, t = spec["on"]
+                b = beams[beam]
+                if b is None:
+                    bpy.data.objects.remove(o, do_unlink=True)
+                    beams.append(None)
+                    continue
+                bo, blen, bcurve = b
+                o.location = bo.location + bo.rotation_euler.to_matrix() @ horn_point(blen, bcurve, t)
+            else:
+                o.location = head_point(spec["at"], s)
             o.rotation_euler = (math.radians(rx), s * math.radians(ry), math.radians(rz))
             o.data.materials.append(mats["horn"])
             horns.append(o)
+            beams.append((o, length, curve))
     return horns
 
 
@@ -1022,6 +1076,12 @@ def build_frill(kind, mats):
                                    0.56 * k * h["k"], 70, -45, 3, 0.016 * h["k"]))
             parts.append(lobed_fin(f"cheekfin_{s}", hp((0.18, -0.08, -0.14), s), Vector((s * 0.6, 0.8, 0.0)),
                                    (0, 0, 1), 0.3 * k * h["k"], 10, -60, 2, 0.014 * h["k"]))
+    elif kind == "leaf":  # Grove: two big leaves for ears, swept back, and a small leaf on each cheek
+        for s in (-1, 1):
+            for j, (off, d, length, width) in enumerate((((0.19, 0.05, 0.02), (s * 0.55, 0.78, 0.30), 0.62, 0.30),
+                                                           ((0.18, -0.06, -0.13), (s * 0.7, 0.66, -0.1), 0.34, 0.2))):
+                parts.append(blade(f"leaf_{s}_{j}", hp(off, s), Vector(d), Vector((0, -0.25, 1)),
+                                   length * k * h["k"], width * k * h["k"]))
     elif kind == "feather":
         for x, length, spread in ((0.0, 0.80, 0.0), (0.07, 0.66, 0.28), (-0.07, 0.66, -0.28)):
             base = head_point((x, 0.04, 0.22))
@@ -1037,6 +1097,48 @@ def build_frill(kind, mats):
     for p in parts:
         p.data.materials.append(mats["accent_flat"])
     return parts
+
+
+# The Runes pattern (Frost, Lumen): glowing glyphs of a few thin strokes, in a unit box.
+RUNE_GLYPHS = [
+    [((0.2, 0.0), (0.2, 1.0)), ((0.2, 1.0), (0.75, 0.78)), ((0.75, 0.78), (0.2, 0.55)), ((0.2, 0.55), (0.8, 0.0))],
+    [((0.5, 0.0), (0.5, 1.0)), ((0.5, 0.55), (0.1, 1.0)), ((0.5, 0.55), (0.9, 1.0))],
+    [((0.5, 1.0), (0.9, 0.62)), ((0.9, 0.62), (0.5, 0.25)), ((0.5, 0.25), (0.1, 0.62)), ((0.1, 0.62), (0.5, 1.0)),
+     ((0.5, 0.25), (0.15, 0.0)), ((0.5, 0.25), (0.85, 0.0))],
+    [((0.25, 0.0), (0.25, 1.0)), ((0.25, 0.75), (0.75, 0.5)), ((0.75, 0.5), (0.25, 0.25))],
+]
+
+
+def build_runes(mats):
+    """Runes: small glowing glyphs along the neck and flanks, a few thin strokes each, lying
+    on the scales (seated on the surface like the heart, a touch proud of it). [(object, bone)]"""
+    pieces = []
+    for i, (bone, at, glyph, size) in enumerate(F["runes"]):
+        for s in (-1, 1):
+            c = mirror(at, s)
+            joint = V(F["nodes"][bone][0])
+            out = (c - joint).normalized()
+            right = Vector((0, 0, 1)).cross(out)
+            right = (right if right.length > 1e-4 else Vector((0, 1, 0))).normalized()
+            up = out.cross(right).normalized()
+            bm = bmesh.new()
+            w = 0.12  # stroke width, of the glyph's size
+            for (x0, y0), (x1, y1) in RUNE_GLYPHS[glyph % len(RUNE_GLYPHS)]:
+                a = right * ((x0 - 0.5) * size * s) + up * ((y0 - 0.5) * size)
+                b = right * ((x1 - 0.5) * size * s) + up * ((y1 - 0.5) * size)
+                along = (b - a).normalized()
+                side = out.cross(along).normalized() * (w * size * 0.5)
+                a -= along * (w * size * 0.4)
+                b += along * (w * size * 0.4)
+                vs = [bm.verts.new(p) for p in (a - side, b - side, b + side, a + side)]
+                f = bm.faces.new(vs)
+                f.normal_update()
+                if f.normal.dot(out) < 0:
+                    f.normal_flip()
+            obj = mesh_object(f"rune_{i}_{s}", bm, c)
+            obj.data.materials.append(mats["rune"])
+            pieces.append((obj, bone))
+    return pieces
 
 
 def spine_up(node, nxt):
@@ -1217,6 +1319,7 @@ def make_materials(b):
         "pupil": toon_material("pupil", (0.06, 0.03, 0.05)),
         "glint": toon_material("glint", (1, 1, 1), emission=2.0),
         "heart": toon_material("heart", b["glow"], emission=1.4),
+        "rune": toon_material("rune", b["glow"], emission=1.2),
         "tooth": toon_material("tooth", (0.97, 0.95, 0.90)),
         "tongue": toon_material("tongue", (0.93, 0.45, 0.55)),
         "mouth": toon_material("mouth", (0.36, 0.11, 0.16)),
@@ -1560,8 +1663,8 @@ def build_dragon(breed, form="grown"):
     for wobj in wings:
         bind_wing(wobj, arm)
 
-    groups = {"eyes": [], "horns": [], "frill": [], "spikes": [], "tail_tip": [], "heart": [], "mouth": []}
-    snap = {"eyes": [], "horns": [], "frill": [], "spikes": [], "heart": []}
+    groups = {"eyes": [], "horns": [], "frill": [], "spikes": [], "tail_tip": [], "heart": [], "mouth": [], "runes": []}
+    snap = {"eyes": [], "horns": [], "frill": [], "spikes": [], "heart": [], "runes": []}
     d = dict(body=body, arm=arm, wings=wings, groups=groups, snap=snap, breed=b, mats=mats, form=form)
     for e in build_eyes(mats):
         attach(d, "eyes", e, "eyes")
@@ -1574,6 +1677,9 @@ def build_dragon(breed, form="grown"):
     attach(d, "tail_tip", build_tail_tip(b["tail"], mats), "tail4")
     for h in build_heart(mats):
         attach(d, "heart", h, "chest")
+    if b.get("pattern") == "runes":  # glowing glyphs (the exporter bakes them for every breed)
+        for o, bone in build_runes(mats):
+            attach(d, "runes", o, bone)
     for o, bone in mouth_parts:
         attach(d, "mouth", o, bone)
     return d

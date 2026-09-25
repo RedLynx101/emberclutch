@@ -49,6 +49,7 @@ int selectParts(const ModelData& m, const Genome& g, Sex sex, const MeshData* ou
     if (g.frill != kFrillNone) add(firstOf(m, kGroupFrill, s, {g.frill}));
     add(firstOf(m, kGroupSpikes, s, {g.frill, kFrillNone}));  // the ridge follows the frill gene
     if (g.tailTip != kTailPlain) add(firstOf(m, kGroupTailTip, s, {g.tailTip}));
+    if (g.pattern == kPatternRunes) add(firstOf(m, kGroupRunes, s, {0}));
     return n;
 }
 

@@ -39,5 +39,6 @@ Hooks (all optional; kit = tools/blender/dragonkit/model.py, tx = dragonkit/text
   texture(tx, nt, p, form) -> {"r", "g", "b"[, "value"]} node sockets (see texture.py)
   sculpt (in a form)   callable(kit, body): reshape the body mesh before decimation
 
-EGG: dict(height, width, point, speckle, colors (base, accent) per variant): the kind's egg.
+EGG: dict(height, width, [asym], speckle, [speckle_params], colors): the kind's egg; colors is a
+  (shell, markings) pair per variant, as DISPLAY (sRGB) values 0..1, unlike VARIANTS (linear).
 """

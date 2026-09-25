@@ -4,7 +4,8 @@
   python tools/dragons/gen_tables.py [--check]      (--check: fail if the file is out of date)
 
 Colours: the kinds' linear 0..1 RGB (what the review renders show through Blender's sRGB view)
-become sRGB bytes, which the 3DS shows as they are.
+become sRGB bytes, which the 3DS shows as they are. The eggs' colours (EGG["colors"]) are
+display values already (egg_model.py previews them so) and go in as they are.
 """
 import os
 import sys
@@ -29,6 +30,11 @@ def srgb(c):
 
 def rgb(c):
     return "{%d, %d, %d}" % tuple(srgb(x) for x in c)
+
+
+def display_rgb(c):
+    """Colours already given as shown (the eggs' EGG["colors"], as egg_model.py previews them)."""
+    return "{%d, %d, %d}" % tuple(int(round(max(0.0, min(1.0, x)) * 255)) for x in c)
 
 
 def cf(x):
@@ -98,7 +104,7 @@ def main():
             e = egg[vi] if vi < len(egg) else (c["accent"], c["base"])
             lines.append("         {%s, {%s}, %d, %d, {%s, %s}}," % (
                 cstr(v["name"]), ", ".join(rgb(c[s]) for s in SLOTS), CHANNEL[v.get("pattern_channel")],
-                CHANNEL[v.get("glow_channel")], rgb(e[0]), rgb(e[1])))
+                CHANNEL[v.get("glow_channel")], display_rgb(e[0]), display_rgb(e[1])))
         lines.append("     },")
         lines.append("     %d, %s}," % (m.get("rare_variant", 3), "true" if m.get("rare_replaces", True) else "false"))
     lines.append("};")

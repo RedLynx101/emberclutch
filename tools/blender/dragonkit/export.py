@@ -155,9 +155,13 @@ def skinned_mesh(name, kind, group, variant, objs, bone_index, allowed, scale, r
 
 
 def part_meshes(d, tagged, bone_index, scale):
-    """Rigid parts, baked at every growth key in the idle pose, with per-build seat shifts."""
-    meshes = []
+    """Rigid parts, baked at every growth key in the idle pose, with per-build seat shifts.
+    Entries of the same group and variant become one mesh (the game finds one per pair)."""
+    merged = {}
     for group, variant, objs in tagged:
+        merged.setdefault((group, variant), []).extend(objs)
+    meshes = []
+    for (group, variant), objs in merged.items():
         if not objs:
             continue
         bones = [o.constraints[0].subtarget for o in objs]

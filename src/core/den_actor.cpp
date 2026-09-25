@@ -8,7 +8,9 @@
 namespace ec {
 namespace {
 
-constexpr float kBabyHaste = 1.3f;  // hatchlings walk 30% faster than their steps (Noah, 2026-09-24)
+// Hatchlings walked 30% faster than their steps (Noah, 2026-09-24); since run 13 their own
+// quick toddle (walk_h) sets the pace with the feet planted, so no extra.
+constexpr float kBabyHaste = 1.0f;
 
 }  // namespace
 
@@ -94,13 +96,13 @@ void DenActor::reset(const DenLayout& den, u32 seed, int spot) {
 }
 
 void DenActor::updateSpeeds(const ModelData& m, const AnimBinding& bind, const AnimLibrary& lib, const int* clipIndex,
-                            int form, float t, int build, float size) {
+                            int form, float t, int build, float size, bool baby) {
     if (form == speedForm && t - speedT < 0.01f && speedT - t < 0.01f) return;
     const int walk = clipIndex[static_cast<int>(ClipId::Walk)], trot = clipIndex[static_cast<int>(ClipId::Trot)];
     if (walk < 0 || trot < 0) return;
     behavior.walkSpeed = locomotionSpeed(m, bind, lib.clips[walk], t, build) * size;
     behavior.trotSpeed = locomotionSpeed(m, bind, lib.clips[trot], t, build) * size;
-    behavior.baby = form == 0;  // the hatchling's body scampers, the grown one gallops
+    behavior.baby = baby;  // the hatchling's body scampers, the grown one gallops
     const int run = clipIndex[static_cast<int>(behavior.baby ? ClipId::Scamper : ClipId::Gallop)];
     if (run >= 0) behavior.runSpeed = locomotionSpeed(m, bind, lib.clips[run], t, build) * size;
     speedForm = form;

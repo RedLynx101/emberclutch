@@ -47,9 +47,11 @@ struct DenActor {
     float look = 0;      // smoothed look-at-the-player weight
 
     void reset(const DenLayout& den, u32 seed, int spot = 0);  // spot: its bed and sulking spot
-    // Re-measures walk/trot speeds when the body changes (form, growth, build, size).
+    // Re-measures walk/trot/run speeds when the body changes (form, growth, build, size).
+    // `form` is a key for the body measured (the caller's form and look); `baby`: the
+    // hatchling's body, which scampers where a grown one gallops.
     void updateSpeeds(const ModelData& m, const AnimBinding& bind, const AnimLibrary& lib, const int* clipIndex,
-                      int form, float t, int build, float size);
+                      int form, float t, int build, float size, bool baby);
     // One frame: the behavior decides, the animator follows (new clips crossfade in, and a
     // finished one-shot tells the behavior to move on). Returns the events crossed.
     int update(const Dragon& d, bool night, float moveScale, float dt, const AnimLibrary& lib, const int* clipIndex,

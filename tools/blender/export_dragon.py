@@ -225,6 +225,7 @@ class Mesh:
         self.palette = palette  # skeleton bone indices
         self.keys = []          # [(positions, normals)] per key
         self.key_ts = []
+        self.shifts = []        # parts: per key, per build (sturdy, sleek, long), per object (piece): a Vector
         self.skin = self.paint = self.indices = self.uvs = self.regions = None
 
 
@@ -259,7 +260,11 @@ def part_meshes(d, tagged, bone_index, scale):
         m.bone_of = {o.name: local[bone_index[b]] for o, b in zip(objs, bones)}
         m.objs = objs
         meshes.append(m)
+    seated = [m for m, (group, _, _, _) in zip(meshes, tagged) if group in d["snap"]]
     for t in dm.F["key_ts"]:
+        # Seated in the idle pose, where they're seen most (run 13: in the rest pose a young
+        # dragon's raised neck lifted the first neck spine off the skin at its base).
+        dm.rest_pose(d, t)
         dm.apply_t(d, t, "neutral")  # scales + surface snap for every part at once
         for m in meshes:
             pos, nrm, skin, paint, idx, uvs, regions = mesh_arrays(
@@ -268,6 +273,18 @@ def part_meshes(d, tagged, bone_index, scale):
             m.keys.append((pos, nrm))
             m.key_ts.append(t)
             m.skin, m.paint, m.indices, m.uvs, m.regions = skin, paint, idx, uvs, regions
+        # Seated again for each build (Noah, run 13: a sturdy or long neck lifted the first
+        # neck spine off): how far each piece moves from its neutral seat, which the runtime
+        # adds for the dragon's own build (src/core/rig applyBuildShift).
+        neutral = {o.name: o.matrix_basis.translation.copy() for m in seated for o in m.objs}
+        per_build = []
+        for build in ("sturdy", "sleek", "long"):
+            dm.apply_t(d, t, build)
+            per_build.append({o.name: (o.matrix_basis.translation - neutral[o.name]) * scale
+                              for m in seated for o in m.objs})
+        dm.apply_t(d, t, "neutral")
+        for m in seated:
+            m.shifts.append([[moved[o.name] for o in m.objs] for moved in per_build])
     return meshes
 
 
@@ -275,7 +292,7 @@ def part_meshes(d, tagged, bone_index, scale):
 def write_ecm(path, d, meshes, order, scale):
     arm = d["arm"]
     out = bytearray()
-    out += b"ECM1" + struct.pack("<HH", 3, len(order))
+    out += b"ECM1" + struct.pack("<HH", 4, len(order))  # 4: parts seated per build
     index = {n: i for i, n in enumerate(order)}
     for name in order:
         bone = arm.data.bones[name]
@@ -319,6 +336,17 @@ def write_ecm(path, d, meshes, order, scale):
             out += struct.pack("<2f", *uv)
         out += bytes(m.regions)
         out += struct.pack(f"<{len(m.indices)}H", *m.indices)
+        # v4: the pieces (a part's objects: each vertex's), then per key, build and piece a shift
+        out += struct.pack("<B", len(m.objs) if m.shifts else 0)
+        if m.shifts:
+            assert len(m.objs) < 256, m.name
+            piece = [i for i, o in enumerate(m.objs) for _ in o.data.vertices]
+            assert len(piece) == n_verts, m.name
+            out += bytes(piece)
+            for key in m.shifts:
+                for pieces in key:
+                    for s in pieces:
+                        out += struct.pack("<3f", s.x, s.y, s.z)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(bytes(out))
     return len(out)
@@ -334,12 +362,13 @@ def write_reference(path, d, meshes, order, sources, scale):
     cases = []
     for t, build, randomize in ((0.0, "neutral", False), (0.7, "long", True), (1.0, "sturdy", True)):
         pb = arm.pose.bones
-        # Parts are seated on the surface in the rest pose with the neutral build, exactly as
-        # the exported keys are; posing afterwards only moves them rigidly with their bone.
+        # Parts are seated on the surface in the idle pose for the build, as the exported keys
+        # and their per-build shifts put them; posing afterwards only moves them rigidly.
         for name in order:
             pb[name].rotation_mode = "XYZ"
             pb[name].rotation_euler = (0, 0, 0)
-        dm.apply_t(d, t, "neutral")
+        dm.rest_pose(d, t)
+        dm.apply_t(d, t, build)
         dm.rest_pose(d, t)
         if randomize:  # arbitrary rotations on every bone exercise the whole chain
             for name in order:

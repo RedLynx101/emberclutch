@@ -81,6 +81,7 @@ bool buildParts(const ModelData& m, const Genome& g, Sex sex, float t, PartsMesh
         const std::size_t base = out.pos.size();
         if (base + mesh.vertexCount > 65535) return false;
         blendKeys(mesh, t, keyPos, keyNrm);
+        applyBuildShift(mesh, t, g.build < kModelBuilds ? g.build : kBuildNeutral, keyPos);  // seated for its build
         for (int v = 0; v < mesh.vertexCount; ++v) {
             out.pos.push_back(keyPos[v]);
             out.nrm.push_back(keyNrm[v]);

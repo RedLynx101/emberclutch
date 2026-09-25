@@ -117,6 +117,11 @@ void followInDen(Vec3 at, float weight);
 // Stereoscopic 3D (WP11e): which eye the top screen's 3D is drawn for and how far apart
 // (-1 .. 1, the 3D slider with the left eye negative; 0 flat). main.cpp sets it per eye.
 void setEye(float eye);
+// How far (top-screen pixels, + to the right) this eye sees something at `depthOverFocus`
+// times the distance to what the view frames (1: the dragon's depth; more: behind it). 2D
+// drawn with the 3D (a showcase's platform, the hills behind) moves by it to sit at that
+// depth instead of on the screen (Noah, run 13). 0 when flat. project() adds it itself.
+float eyeShift(float depthOverFocus = 1.0f);
 // Photo mode (D66): the den camera frames the one you care for (drawn first) alone.
 void setDenClose(bool close);
 

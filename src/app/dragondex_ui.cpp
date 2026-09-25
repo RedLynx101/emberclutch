@@ -44,7 +44,7 @@ void drawDexTop(App& app) {
     if (dexHas(s, breed, look)) {
         static Dragon shown;
         shown = dexDragon(breed, look);
-        C2D_DrawEllipseSolid(120, 190, 0, 160, 26, withAlpha(theme::rgba(0, 0, 0), 0.25f));
+        C2D_DrawEllipseSolid(120 + r3d::eyeShift(), 190, 0, 160, 26, withAlpha(theme::rgba(0, 0, 0), 0.25f));
         if (r3d::ready()) r3d::drawShowcase(app, shown, nullptr, now, 0.6f * std::sin(app.t * 0.4f));
         lookBreedName(static_cast<u8>(look), shown.genome, line, sizeof(line));
         textCentered(app, line, 200, 42, 0.6f, theme::kShell, 380);

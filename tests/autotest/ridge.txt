@@ -1,0 +1,39 @@
+# The back's ridge on a Tallneck Tide juvenile (Noah, run 13: spines floating): the brush's
+# whole-body view from both sides and from behind (L/R turn it).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 2
+tap 134 221
+wait 2
+shot g1-back
+key L
+wait 0.6
+shot g2-side
+key L
+wait 0.6
+shot g3-side2
+key R
+wait 0.4
+key R
+wait 0.4
+key R
+wait 0.6
+shot g4-other-side
+quit

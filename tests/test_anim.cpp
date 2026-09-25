@@ -208,6 +208,16 @@ TEST(locomotion_speeds_follow_the_body) {
         CHECK(young > 0 && young < walk[f]);  // shorter legs, shorter strides
     }
     CHECK(walk[kFormHatchling] < walk[kFormGrown] && trot[kFormHatchling] < trot[kFormGrown]);
+    // A baby's own toddle (Noah, run 13: the grown walk was far too slow on it): at least twice
+    // the grown walk's pace on the same body.
+    {
+        const ModelData& m = form(kFormHatchling);
+        AnimBinding bind;
+        bindAnims(lib, m.skel, bind);
+        const float toddle = locomotionSpeed(m, bind, lib.clips[lib.find("walk_h")], 1.0f, kBuildNeutral);
+        std::printf("  hatchling: toddles at %.2f units/s (the grown walk %.2f)\n", toddle, walk[kFormHatchling]);
+        CHECK(toddle > walk[kFormHatchling] * 2.0f && toddle < trot[kFormHatchling]);
+    }
     // Running (WP12c): the hatchling's scamper and the grown dragon's gallop outrun their trots.
     for (int f = 0; f < kFormCount; ++f) {
         const ModelData& m = form(f);

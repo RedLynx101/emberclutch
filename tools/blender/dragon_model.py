@@ -211,7 +211,7 @@ GROWN = dict(
               radii={"root": 0.10, "elbow": 0.075, "wrist": 0.06, "finger": 0.022, "tip": 0.008},
               arm_tris=180, thickness=0.014),
     mask=dict(max_x=0.34, max_z=2.35, min_z=-1.0, tail_cut=(1.2, 0.3)),
-    inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.02, "frill": 0.09, "heart": -0.065,  # heart: proud of the chest, which bulges when sitting (part_clearance.py)
+    inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.045, "frill": 0.09, "heart": -0.065,  # heart: proud of the chest, which bulges when sitting (part_clearance.py)
            "runes": -0.012},
     # Face details (R1b): nostrils on the snout tip and a jaw line, projected onto the body.
     face=dict(nostril=(0.05, -2.20, 2.52), nostril_r=(0.024, 0.015, 0.008), mouth_r=0.012,
@@ -1781,7 +1781,39 @@ def snap_parts(d):
             for o in members:
                 o["snap_off"] = list(delta)
                 o.location = Vector(o["base_loc"]) + delta
+            if key in SETTLE:
+                # The outermost hit can be a bulge beyond the skin under the part (the v2 deep
+                # chest over its slim waist left the belly's spine 0.09 up, Noah run 13): measure
+                # how far the part really stands off the skin and bring it down to touch.
+                bpy.context.view_layer.update()
+                gap = skin_gap(members, body, bvh, inv_body)
+                if gap is not None and gap > -inset:
+                    delta = delta + m.to_3x3().inverted() @ (-direction * (gap + inset))
+                    for o in members:
+                        o["snap_off"] = list(delta)
+                        o.location = Vector(o["base_loc"]) + delta
     bpy.context.view_layer.update()
+
+
+SETTLE = {"spikes"}  # parts brought down onto the skin after the ray snap (snap_parts)
+
+
+def skin_gap(objs, body, bvh, inv_body):
+    """How far the part's nearest vertex stands off the body's surface (negative: sunk in)."""
+    dg = bpy.context.evaluated_depsgraph_get()
+    gap = None
+    for o in objs:
+        ev = o.evaluated_get(dg)
+        me = ev.to_mesh()
+        to_body = inv_body @ ev.matrix_world
+        for v in me.vertices:
+            p = to_body @ v.co
+            hit, nrm, _, _ = bvh.find_nearest(p)
+            if hit is not None:
+                s = (p - hit).dot(nrm)
+                gap = s if gap is None else min(gap, s)
+        ev.to_mesh_clear()
+    return gap
 
 
 def ground(d):

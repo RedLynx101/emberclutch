@@ -269,6 +269,14 @@ EAT_BABY = merge(WINGS_FOLDED, {
 eat_h = clip("eat_h", 1.2, loop=True).pose(0.0, EAT_BABY)
 eat_h.wave(lambda t: {"head": (8 * max(0.0, sin01(t, 0.6)), 0, 0), "neck1": (3 * sin01(t, 1.2), 0, 0)}).wave(chomp(24))
 eat_h.event(0.15, "chomp").event(0.75, "chomp")
+# A baby toddles: quick little steps, a bob of the big head, the tail swishing (Noah after
+# run 13: the grown walk on the baby body was "horrendously slow"). Twice the grown walk's
+# stride rate with longer swings; the den measures its speed from the feet, as always.
+walk_h = clip("walk_h", 0.46, loop=True, speed=0.5).pose(0.0, merge(WINGS_FOLDED, {"tail1": (6, 0, 0)}))
+walk_h.wave(leg_cycle(0.46, 36, 48, WALK_PHASES, bob=3.5)).wave(tail_sway(1.6, 0.46))
+footsteps(walk_h, 0.46, WALK_PHASES)
+(clip("carry_h", 0.46, loop=True, speed=0.5).pose(0.0, merge(WINGS_FOLDED, {"neck1": (12, 0, 0), "head": (-8, 0, 0)}))
+ .wave(leg_cycle(0.46, 36, 48, WALK_PHASES, bob=3.0)).wave(tail_sway(1.8, 0.3)))
 (clip("fav_wiggle", 1.6).pose(0.0, WINGS_FOLDED)
  .pose(0.3, merge(WINGS_HALF, {"neck1": (10, 0, 0), "head": (12, 0, 0), "jaw": (-16, 0, 0)}))
  .pose(1.3, merge(WINGS_HALF, {"neck1": (10, 0, 0), "head": (12, 0, 0), "jaw": (-16, 0, 0)})).pose(1.6, WINGS_FOLDED)

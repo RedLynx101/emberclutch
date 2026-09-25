@@ -19,7 +19,8 @@ bool loadModel(const u8* data, std::size_t size, ModelData& out) {
     char magic[4];
     c.bytes(magic, 4);
     if (!c.ok() || std::memcmp(magic, "ECM1", 4) != 0) return false;
-    if (c.u16v() != 3) return false;  // version (3: UVs and body regions)
+    const u16 version = c.u16v();  // 3: UVs and body regions; 4: parts seated per build
+    if (version != 3 && version != 4) return false;
     const u16 boneCount = c.u16v();
     if (boneCount == 0 || boneCount > kMaxBones) return false;
 
@@ -87,6 +88,17 @@ bool loadModel(const u8* data, std::size_t size, ModelData& out) {
         c.bytes(m.region.data(), m.region.size());
         m.indices.resize(indexCount);
         for (u16& ix : m.indices) ix = c.u16v();
+        m.pieceCount = 0;
+        m.piece.clear();
+        m.buildShift.clear();
+        if (version >= 4 && (m.pieceCount = c.u8v()) > 0) {
+            m.piece.resize(m.vertexCount);
+            c.bytes(m.piece.data(), m.piece.size());
+            m.buildShift.resize(std::size_t(m.keyCount) * kModelBuilds * m.pieceCount);
+            for (Vec3& s : m.buildShift) s = c.vec3();
+            for (u8 p : m.piece)
+                if (p >= m.pieceCount) return false;
+        }
         if (!c.ok()) return false;
         for (int v = 0; v < m.vertexCount; ++v)
             if (m.skin[v * 4] >= m.paletteCount || m.skin[v * 4 + 1] >= m.paletteCount) return false;

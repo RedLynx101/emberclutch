@@ -63,6 +63,13 @@ struct MeshData {
     std::vector<float> uv;         // 2 per vertex: the form's skin texture (v3); non-skin -> kCleanUv
     std::vector<u8> region;        // 1 per vertex: body region for dirt (BodyRegion), kRegionClean if none
     std::vector<u16> indices;      // triangle list
+    // Parts: each vertex's piece (the part's separate objects: a horn, a spine), and how far
+    // each piece sits from its neutral seat for each build, per key (keyCount * kModelBuilds *
+    // pieceCount; empty: none). Run 13: a spine seated for the neutral build floated off a
+    // sturdy or long neck.
+    u8 pieceCount = 0;
+    std::vector<u8> piece;
+    std::vector<Vec3> buildShift;
 };
 
 struct ModelData {

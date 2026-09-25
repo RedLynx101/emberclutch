@@ -339,6 +339,9 @@ float g_eye = 0;          // the eye the top screen's 3D is for (setEye): 0 flat
 // The eyes' separation, as a share of the distance to what the camera frames, at the slider's
 // top: enough to feel the room's depth without straining (the citro3d sample's is ~1/6).
 constexpr float kStereoDepth = 0.07f;
+// This eye's shift in pixels at depth d (a multiple of the view's focus) is A / d + B
+// (setEye measures A and B); the last top view's focus, for project().
+float g_shiftA = 0, g_shiftB = 0, g_viewFocus = 1;
 
 // Toon ramp on L.N (signed): plum shadow, a mid band, full light.
 float toonRamp(float x, float) { return x < 0.12f ? 0.0f : (x < 0.45f ? 0.62f : 1.0f); }
@@ -1322,6 +1325,7 @@ void modelView(const C3D_Mtx& view, const C3D_Mtx& model) {
 // little in front of the point it frames (`focus` away), so the dragons stand just behind
 // the screen with the room further back, and the interface (citro2d, flat) on it.
 void topProjection(C3D_Mtx& p, float near, float far, float focus) {
+    g_viewFocus = focus;
     if (g_eye == 0) {
         Mtx_PerspTilt(&p, kFovY, C3D_AspectRatioTop, near, far, false);
         return;
@@ -1520,7 +1524,7 @@ bool projectWith(const C3D_Mtx& view, Vec3 p, float& x, float& y, float& ppu) {
     const Vec3 v = apply(view, p);
     if (v.z > -0.2f) return false;  // behind the camera
     ppu = (kScreenH * 0.5f / std::tan(kFovY * 0.5f)) / -v.z;
-    x = kTopW * 0.5f + v.x * ppu;
+    x = kTopW * 0.5f + v.x * ppu + eyeShift(-v.z / g_viewFocus);  // at its own depth in 3D (WP11e)
     y = kScreenH * 0.5f - v.y * ppu;
     return true;
 }
@@ -2044,7 +2048,40 @@ int forceLook() { return g_forceLook; }
 
 void setDenClose(bool close) { g_denClose = close; }
 
-void setEye(float eye) { g_eye = eye; }
+void setEye(float eye) {
+    g_eye = eye;
+    g_shiftA = g_shiftB = 0;
+    if (eye == 0) return;
+    // The per-eye projection against the flat one, at a focus of 1 (the shift scales with it):
+    // where a point straight ahead lands at two depths, in the screen's own x (the tilt turns
+    // the axes, so which one is found by nudging a point sideways).
+    C3D_Mtx flat, eyeM;
+    Mtx_PerspTilt(&flat, kFovY, C3D_AspectRatioTop, 0.05f, 10.0f, false);
+    Mtx_PerspStereoTilt(&eyeM, kFovY, C3D_AspectRatioTop, 0.05f, 10.0f, eye * kStereoDepth, 0.9f, false);
+    auto ndc = [](const C3D_Mtx& m, float x, float z, float out[2]) {
+        const C3D_FVec c = Mtx_MultiplyFVec4(&m, FVec4_New(x, 0, z, 1));
+        out[0] = c.x / c.w;
+        out[1] = c.y / c.w;
+    };
+    float at[2], side[2];
+    ndc(flat, 0, -1, at);
+    ndc(flat, 0.1f, -1, side);
+    const int axis = std::fabs(side[0] - at[0]) > std::fabs(side[1] - at[1]) ? 0 : 1;
+    const float pxPerNdc = 0.1f * (kScreenH * 0.5f / std::tan(kFovY * 0.5f)) / (side[axis] - at[axis]);
+    float shift[2];
+    for (int k = 0; k < 2; ++k) {
+        float f[2], e[2];
+        ndc(flat, 0, -(1.0f + k), f);
+        ndc(eyeM, 0, -(1.0f + k), e);
+        shift[k] = (e[axis] - f[axis]) * pxPerNdc;
+    }
+    g_shiftA = 2 * (shift[0] - shift[1]);
+    g_shiftB = shift[0] - g_shiftA;
+}
+
+float eyeShift(float depthOverFocus) {
+    return g_eye == 0 ? 0.0f : g_shiftA / std::fmax(0.05f, depthOverFocus) + g_shiftB;
+}
 
 void followInDen(Vec3 at, float weight) {
     g_follow = at;

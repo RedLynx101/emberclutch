@@ -79,12 +79,14 @@ void drawTop(App& app) {
     const s64 now = nowLocal(app);
     // A hilltop at golden hour, the flat old stone with its straw.
     verticalGradient(0, 0, kTopW, kScreenH, col(236, 168, 150), col(250, 216, 168));
-    C2D_DrawEllipseSolid(-40, 120, 0, 260, 90, col(170, 150, 150));
-    C2D_DrawEllipseSolid(200, 110, 0, 260, 100, col(160, 142, 150));
-    C2D_DrawEllipseSolid(-60, 150, 0, 520, 160, col(132, 150, 100));
-    C2D_DrawEllipseSolid(70, 158, 0, 260, 60, col(120, 116, 124));   // the stone
-    C2D_DrawEllipseSolid(80, 150, 0, 240, 50, col(158, 154, 160));
-    C2D_DrawEllipseSolid(120, 158, 0, 160, 30, col(214, 184, 110, 0.8f));  // straw
+    // In 3D the hills lie far behind, the stone at the pair's depth (Noah, run 13).
+    const float hills = r3d::eyeShift(2.5f), ground = r3d::eyeShift(1.5f), stone = r3d::eyeShift();
+    C2D_DrawEllipseSolid(-40 + hills, 120, 0, 260, 90, col(170, 150, 150));
+    C2D_DrawEllipseSolid(200 + hills, 110, 0, 260, 100, col(160, 142, 150));
+    C2D_DrawEllipseSolid(-60 + ground, 150, 0, 520, 160, col(132, 150, 100));
+    C2D_DrawEllipseSolid(70 + stone, 158, 0, 260, 60, col(120, 116, 124));   // the stone
+    C2D_DrawEllipseSolid(80 + stone, 150, 0, 240, 50, col(158, 154, 160));
+    C2D_DrawEllipseSolid(120 + stone, 158, 0, 160, 30, col(214, 184, 110, 0.8f));  // straw
     const bool mother = app.stoneMother >= 0, father = app.stoneFather >= 0;
     if (r3d::ready()) {
         if (mother && father) {

@@ -50,6 +50,25 @@ void idlePose(const ModelData& m, float t, int build, BonePose* out) {
     }
 }
 
+void applyBuildShift(const MeshData& mesh, float t, int build, Vec3* pos) {
+    if (build < 0 || build >= kModelBuilds || mesh.buildShift.empty()) return;
+    int k = 0;
+    float f = 0.0f;
+    if (mesh.keyCount > 1) {  // the keys and weight blendKeys uses
+        t = clamp01(t);
+        while (k < mesh.keyCount - 2 && t > mesh.keyT[k + 1]) ++k;
+        const float span = mesh.keyT[k + 1] - mesh.keyT[k];
+        f = span > 1e-6f ? clamp01((t - mesh.keyT[k]) / span) : 0.0f;
+    }
+    const int k1 = mesh.keyCount > 1 ? k + 1 : k, pieces = mesh.pieceCount;
+    const Vec3* a = &mesh.buildShift[(std::size_t(k) * kModelBuilds + build) * pieces];
+    const Vec3* b = &mesh.buildShift[(std::size_t(k1) * kModelBuilds + build) * pieces];
+    for (int v = 0; v < mesh.vertexCount; ++v) {
+        const int p = mesh.piece[v];
+        pos[v] = pos[v] + lerp(a[p], b[p], f);
+    }
+}
+
 void blendKeys(const MeshData& mesh, float t, Vec3* pos, Vec3* nrm) {
     const int n = mesh.vertexCount;
     int k = 0;

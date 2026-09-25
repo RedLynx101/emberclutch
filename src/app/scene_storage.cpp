@@ -71,13 +71,14 @@ void drawSetting(App& app) {
             C2D_DrawTriangle(x - 7, 0, col(210, 232, 250, 0.8f), x + 7, 0, col(190, 216, 244, 0.8f), x, h,
                              col(240, 250, 255, 0.9f), 0);
         }
-        C2D_DrawEllipseSolid(90, 170, 0, 220, 60, col(150, 180, 214, 0.6f));  // a frosty plinth
+        C2D_DrawEllipseSolid(90 + r3d::eyeShift(), 170, 0, 220, 60, col(150, 180, 214, 0.6f));  // a frosty plinth
     } else {
         verticalGradient(0, 0, kTopW, kScreenH, col(126, 176, 226), col(250, 222, 176));
-        C2D_DrawEllipseSolid(-80, 130, 0, 330, 150, col(140, 182, 110));
-        C2D_DrawEllipseSolid(150, 140, 0, 340, 150, col(122, 168, 100));
-        for (int i = 0; i < 12; ++i) C2D_DrawRectSolid(10.0f + i * 34, 196, 0, 5, 30, col(150, 110, 70));
-        C2D_DrawRectSolid(10, 204, 0, 380, 4, col(150, 110, 70));
+        const float hills = r3d::eyeShift(2.5f), fence = r3d::eyeShift(1.2f);  // behind the dragon in 3D
+        C2D_DrawEllipseSolid(-80 + hills, 130, 0, 330, 150, col(140, 182, 110));
+        C2D_DrawEllipseSolid(150 + hills, 140, 0, 340, 150, col(122, 168, 100));
+        for (int i = 0; i < 12; ++i) C2D_DrawRectSolid(10.0f + i * 34 + fence, 196, 0, 5, 30, col(150, 110, 70));
+        C2D_DrawRectSolid(10 + fence, 204, 0, 380, 4, col(150, 110, 70));
     }
 }
 

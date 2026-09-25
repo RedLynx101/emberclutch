@@ -73,12 +73,14 @@ void drawTrail(float x, float y, float w, float h, float t, u32 marker) {
 void drawTop(App& app) {
     // The trailhead: a morning sky, hills, the path winding off.
     verticalGradient(0, 0, kTopW, kScreenH, col(150, 196, 236), col(248, 226, 190));
-    C2D_DrawEllipseSolid(-80, 120, 0, 300, 130, col(150, 182, 120));
-    C2D_DrawEllipseSolid(180, 110, 0, 320, 140, col(132, 170, 108));
+    const float hills = r3d::eyeShift(2.5f);  // in 3D: far behind, the path from near to far
+    C2D_DrawEllipseSolid(-80 + hills, 120, 0, 300, 130, col(150, 182, 120));
+    C2D_DrawEllipseSolid(180 + hills, 110, 0, 320, 140, col(132, 170, 108));
     C2D_DrawRectSolid(0, 200, 0, kTopW, 40, col(120, 156, 96));
     for (int i = 0; i < 26; ++i) {
         const float t = i / 25.0f;
-        C2D_DrawCircleSolid(40 + 330 * t, 226 - 110 * t + 12 * std::sin(t * 8), 0, 6 - 4 * t, col(196, 164, 116));
+        C2D_DrawCircleSolid(40 + 330 * t + r3d::eyeShift(0.9f + 1.4f * t), 226 - 110 * t + 12 * std::sin(t * 8), 0,
+                            6 - 4 * t, col(196, 164, 116));
     }
     const s64 now = nowLocal(app);
     const int out = wandererIndex(app.game);

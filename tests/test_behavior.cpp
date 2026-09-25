@@ -68,7 +68,8 @@ TEST(behavior_clips_exist_in_the_clip_file) {
     int baby[static_cast<int>(ClipId::Count)];
     CHECK(resolveClips(world().lib, kFormHatchling, baby));
     CHECK(baby[static_cast<int>(ClipId::Eat)] == world().lib.find("eat_h"));
-    CHECK(baby[static_cast<int>(ClipId::Walk)] == world().clips[static_cast<int>(ClipId::Walk)]);
+    CHECK(baby[static_cast<int>(ClipId::Walk)] == world().lib.find("walk_h"));  // the toddle (run 13)
+    CHECK(baby[static_cast<int>(ClipId::Trot)] == world().clips[static_cast<int>(ClipId::Trot)]);  // none: shared
     for (int a = 0; a < static_cast<int>(Activity::Count); ++a)
         CHECK(activityName(static_cast<Activity>(a))[0] != '?');
 }

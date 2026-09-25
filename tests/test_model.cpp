@@ -1,6 +1,7 @@
-// Model + skeleton tests. The key one: the C++ rig reproduces Blender's deformation of both
+﻿// Model + skeleton tests. The key one: the C++ rig reproduces Blender's deformation of both
 // exported dragon forms (tests/data/<form>_reference.ecr, written by tools/blender/export_dragon.py).
 #include <cmath>
+#include <cstdlib>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -213,6 +214,7 @@ void checkRigParity(int form) {
             const MeshData& mesh = m.meshes[mi];
             if (mi != lastMesh) {
                 blendKeys(mesh, t, keyPos, keyNrm);
+                applyBuildShift(mesh, t, build, keyPos);  // parts seated for the build (run 13)
                 lastMesh = mi;
             }
             const Vec3 got = skinPoint(mesh, vi, keyPos[vi], skin);
@@ -376,7 +378,173 @@ TEST(mud_spots_cover_part_of_each_body) {
     }
 }
 
+// The distance from p to the triangle abc (Ericson, Real-Time Collision Detection 5.1.5).
+float pointTriangle(Vec3 p, Vec3 a, Vec3 b, Vec3 c) {
+    const Vec3 ab = b - a, ac = c - a, ap = p - a;
+    const float d1 = dot(ab, ap), d2 = dot(ac, ap);
+    if (d1 <= 0 && d2 <= 0) return length(p - a);
+    const Vec3 bp = p - b;
+    const float d3 = dot(ab, bp), d4 = dot(ac, bp);
+    if (d3 >= 0 && d4 <= d3) return length(p - b);
+    const float vc = d1 * d4 - d3 * d2;
+    if (vc <= 0 && d1 >= 0 && d3 <= 0) return length(p - (a + ab * (d1 / (d1 - d3))));
+    const Vec3 cp = p - c;
+    const float d5 = dot(ab, cp), d6 = dot(ac, cp);
+    if (d6 >= 0 && d5 <= d6) return length(p - c);
+    const float vb = d5 * d2 - d1 * d6;
+    if (vb <= 0 && d2 >= 0 && d6 <= 0) return length(p - (a + ac * (d2 / (d2 - d6))));
+    const float va = d3 * d6 - d5 * d4;
+    if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0)
+        return length(p - (b + (c - b) * ((d4 - d3) / ((d4 - d3) + (d5 - d6)))));
+    const float denom = 1.0f / (va + vb + vc);
+    return length(p - (a + ab * (vb * denom) + ac * (vc * denom)));
+}
+
+// A look's model (romfs/models/, v1/, v2/, v3/), loaded once.
+ModelData& lookModel(int look, int form) {
+    static ModelData m[4][kFormCount];
+    static bool loaded[4][kFormCount] = {};
+    if (!loaded[look][form]) {
+        static const char* const kDirs[4] = {"", "v1/", "v2/", "v3/"};
+        const std::string path = std::string("../romfs/models/") + kDirs[look] + kFormNames[form] + ".ecm";
+        const std::vector<u8> bytes = readFile(path.c_str());
+        loaded[look][form] = !bytes.empty() && loadModel(bytes.data(), bytes.size(), m[look][form]);
+    }
+    return m[look][form];
+}
+
+// The back's ridge sits on the back for every look, stage and build as the game poses it
+// (Noah, run 13: spines floating on a Tallneck Tide juvenile). For each ridge piece (one per
+// spine bone), how far its nearest point stands off the posed body (negative: sunk in).
+// Fixed by seating parts in the idle pose and per build (tools/blender/export_dragon.py).
+TEST(the_ridge_sits_on_the_back) {
+    static Vec3 bodyPos[4096], bodyNrm[4096], partPos[2048], partNrm[2048];
+    static const char* const kLooks[4] = {"classic", "pebbleback", "tallneck", "wild"};
+    float worstAll = 0;
+    for (int look = 0; look < 4; ++look)
+        for (int form = 0; form < kFormCount; ++form) {
+            const ModelData& m = lookModel(look, form);
+            CHECK(m.skel.count > 0);
+            if (m.skel.count == 0) continue;
+            const MeshData* body = m.findMesh(kMeshBody, kGroupBody, 0);
+            if (!body) continue;
+            float worstForm = 0, worstKind[4] = {};
+            char where[96] = "", whereKind[4][64] = {};
+            for (float t : {0.0f, 0.2f, 0.45f, 0.7f, 1.0f})
+                for (int build = 0; build < kModelBuilds; ++build) {  // every dragon has one (the neutral table is unstyled)
+                    BonePose pose[kMaxBones];
+                    idlePose(m, t, build, pose);
+                    Mat34 poseMat[kMaxBones], skin[kMaxBones];
+                    evaluatePose(m.skel, pose, poseMat, skin);
+                    blendKeys(*body, t, bodyPos, bodyNrm);
+                    for (int v = 0; v < body->vertexCount; ++v) bodyPos[v] = skinPoint(*body, v, bodyPos[v], skin);
+                    if (t == 0.0f && build == 0) {  // the sign test itself: above the back is outside
+                        int top = 0;
+                        for (int v = 1; v < body->vertexCount; ++v)
+                            if (bodyPos[v].z > bodyPos[top].z) top = v;
+                        const Vec3 above = bodyPos[top] + Vec3{0, 0, 0.1f};
+                        float best = 1e9f;
+                        std::size_t tri = 0;
+                        for (std::size_t i = 0; i + 2 < body->indices.size(); i += 3) {
+                            const float dd = pointTriangle(above, bodyPos[body->indices[i]], bodyPos[body->indices[i + 1]],
+                                                           bodyPos[body->indices[i + 2]]);
+                            if (dd < best) best = dd, tri = i;
+                        }
+                        const Vec3 a = bodyPos[body->indices[tri]], b = bodyPos[body->indices[tri + 1]],
+                                   c = bodyPos[body->indices[tri + 2]];
+                        CHECK(dot(above - a, cross(b - a, c - a)) > 0);
+                    }
+                    for (const MeshData& part : m.meshes) {
+                        if (part.kind != kMeshPart || part.group != kGroupSpikes) continue;
+                        blendKeys(part, t, partPos, partNrm);
+                        applyBuildShift(part, t, build, partPos);
+                        float nearest[kMaxPalette];
+                        for (float& n : nearest) n = 1e9f;
+                        for (int v = 0; v < part.vertexCount; ++v) {
+                            const Vec3 p = skinPoint(part, v, partPos[v], skin);
+                            float best = 1e9f;
+                            std::size_t bestTri = 0;
+                            for (std::size_t i = 0; i + 2 < body->indices.size(); i += 3) {
+                                const float dd = pointTriangle(p, bodyPos[body->indices[i]], bodyPos[body->indices[i + 1]],
+                                                               bodyPos[body->indices[i + 2]]);
+                                if (dd < best) best = dd, bestTri = i;
+                            }
+                            {  // under the skin (behind the nearest face): sunk in, not a gap
+                                const Vec3 a = bodyPos[body->indices[bestTri]], b = bodyPos[body->indices[bestTri + 1]],
+                                           c = bodyPos[body->indices[bestTri + 2]];
+                                if (dot(p - a, cross(b - a, c - a)) < 0) best = -best;
+                            }
+                            const int piece = part.skin[v * 4];
+                            nearest[piece] = std::fmin(nearest[piece], best);
+                        }
+                        for (int piece = 0; piece < part.paletteCount; ++piece) {
+                            if (nearest[piece] >= 1e8f) continue;
+                            if (nearest[piece] > worstForm) {
+                                worstForm = nearest[piece];
+                                std::snprintf(where, sizeof(where), "t %.2f build %d variant %d bone %s", t, build,
+                                              part.variant, m.skel.name[part.palette[piece]]);
+                            }
+                            const int kind = part.variant < 4 ? part.variant : 0;
+                            if (nearest[piece] > worstKind[kind]) {
+                                worstKind[kind] = nearest[piece];
+                                std::snprintf(whereKind[kind], sizeof(whereKind[kind]), "t %.2f build %d %s", t, build,
+                                              m.skel.name[part.palette[piece]]);
+                            }
+                        }
+                    }
+                }
+            std::printf("  ridge %s %s: worst gap %.3f (%s)\n", kLooks[look], kFormNames[form], worstForm, where);
+            for (int k = 0; k < 4; ++k)
+                if (whereKind[k][0]) std::printf("    variant %d: %.3f (%s)\n", k, worstKind[k], whereKind[k]);
+            worstAll = std::fmax(worstAll, worstForm);
+        }
+    std::printf("  ridge: worst gap overall %.3f\n", worstAll);
+    CHECK(worstAll < 0.02f);  // every piece touches (or sinks into) the skin
+}
+
+// Dev (EC_DUMP_OBJ=<path>): a Tallneck Tide juvenile as the game builds and poses it (body and
+// parts, idle), as an OBJ to render large and look at the seams (Noah, run 13).
+TEST(dump_a_posed_dragon) {
+    const char* path = std::getenv("EC_DUMP_OBJ");
+    if (!path) return;
+    const ModelData& m = lookModel(2, kFormGrown);
+    Rng rng(3);
+    const Genome g = makePurebred(Element::Tide, rng);
+    const float t = 0.1f;
+    BonePose pose[kMaxBones];
+    idlePose(m, t, g.build, pose);
+    Mat34 poseMat[kMaxBones], skin[kMaxBones];
+    evaluatePose(m.skel, pose, poseMat, skin);
+    FILE* f = std::fopen(path, "w");
+    if (!f) return;
+    static Vec3 pos[4096], nrm[4096];
+    const MeshData* body = m.findMesh(kMeshBody, kGroupBody, 0);
+    blendKeys(*body, t, pos, nrm);
+    std::fprintf(f, "o body\n");
+    for (int v = 0; v < body->vertexCount; ++v) {
+        const Vec3 p = skinPoint(*body, v, pos[v], skin);
+        std::fprintf(f, "v %f %f %f\n", p.x, p.y, p.z);
+    }
+    for (std::size_t i = 0; i + 2 < body->indices.size(); i += 3)
+        std::fprintf(f, "f %d %d %d\n", body->indices[i] + 1, body->indices[i + 1] + 1, body->indices[i + 2] + 1);
+    PartsMesh parts;
+    buildParts(m, g, Sex::Male, t, parts);
+    std::fprintf(f, "o parts\n");
+    for (std::size_t v = 0; v < parts.pos.size(); ++v) {
+        const Vec3 p = transformPoint(skin[parts.palette[parts.skin[v * 4]]], parts.pos[v]);
+        std::fprintf(f, "v %f %f %f\n", p.x, p.y, p.z);
+    }
+    const int base = body->vertexCount;
+    for (std::size_t i = 0; i + 2 < parts.indices.size(); i += 3)
+        std::fprintf(f, "f %d %d %d\n", base + parts.indices[i] + 1, base + parts.indices[i + 1] + 1,
+                     base + parts.indices[i + 2] + 1);
+    std::fclose(f);
+    std::printf("  wrote %s (build %d, frill %d)\n", path, g.build, g.frill);
+}
+
 void runModelTests() {
+    RUN(dump_a_posed_dragon);
+    RUN(the_ridge_sits_on_the_back);
     RUN(mud_spots_cover_part_of_each_body);
     RUN(model_loads_and_is_well_formed);
     RUN(dragon_fits_triangle_budget);

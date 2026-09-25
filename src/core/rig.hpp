@@ -40,5 +40,8 @@ void blendKeys(const MeshData& mesh, float t, Vec3* pos, Vec3* nrm);
 
 // Skin one vertex position with the mesh's bone palette (2 weights).
 Vec3 skinPoint(const MeshData& mesh, int vertex, Vec3 p, const Mat34* skin);
+// A part's pieces moved to their seat for this build (genome Build 0..2; kBuildNeutral
+// leaves them), on top of blendKeys' positions at the same t.
+void applyBuildShift(const MeshData& mesh, float t, int build, Vec3* pos);
 
 }  // namespace ec

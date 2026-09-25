@@ -148,7 +148,7 @@ void matchSpeeds(DenActor& actor, const Dragon& d, s64 now) {
     if (!m || !bind) return;
     const int build = d.genome.build < kModelBuilds ? d.genome.build : kBuildNeutral;
     actor.updateSpeeds(*m, *bind, *r3d::anims(), r3d::clipIndex(g.form), g.form * kLookCount + look, g.t, build,
-                       sizeScale(d.genome));
+                       sizeScale(d.genome), g.form == kFormHatchling);
 }
 
 // Moves the den's dragons along: behavior decides, animation follows (core/den_actor). Each
@@ -643,8 +643,9 @@ void update(App& app, const Input& in) {
 void drawProfileTop(App& app, const Dragon& d, s64 now) {
     const Rgb glow = heartglowColor(static_cast<Element>(d.genome.elementA));
     verticalGradient(0, 0, kTopW, kScreenH, theme::rgba(40, 28, 52), theme::kDenPlum);
-    C2D_DrawEllipseSolid(80, 150, 0, 240, 70, withAlpha(fromRgb(glow), 0.18f));
-    C2D_DrawEllipseSolid(130, 196, 0, 140, 22, withAlpha(theme::rgba(0, 0, 0), 0.25f));
+    const float at = r3d::eyeShift();  // the glow and the shadow at the dragon's depth in 3D
+    C2D_DrawEllipseSolid(80 + r3d::eyeShift(1.15f), 150, 0, 240, 70, withAlpha(fromRgb(glow), 0.18f));
+    C2D_DrawEllipseSolid(130 + at, 196, 0, 140, 22, withAlpha(theme::rgba(0, 0, 0), 0.25f));
     if (r3d::ready()) r3d::drawShowcase(app, d, nullptr, now, 0.6f * std::sin(app.t * 0.35f));
     char line[64], kind[40];
     kindName(d, kind, sizeof(kind));

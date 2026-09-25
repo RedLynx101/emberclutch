@@ -335,6 +335,10 @@ const DenThings* g_things = nullptr;
 GpuMesh g_toyMeshes[kToys], g_bowlFoodMesh, g_decorMeshes[kItems], g_homeRugMesh, g_breedBannerMesh;
 float g_followWeight = 0;
 bool g_denClose = false;  // photo mode's close framing: the one cared for alone
+float g_eye = 0;          // the eye the top screen's 3D is for (setEye): 0 flat
+// The eyes' separation, as a share of the distance to what the camera frames, at the slider's
+// top: enough to feel the room's depth without straining (the citro3d sample's is ~1/6).
+constexpr float kStereoDepth = 0.07f;
 
 // Toon ramp on L.N (signed): plum shadow, a mid band, full light.
 float toonRamp(float x, float) { return x < 0.12f ? 0.0f : (x < 0.45f ? 0.62f : 1.0f); }
@@ -1314,6 +1318,17 @@ void modelView(const C3D_Mtx& view, const C3D_Mtx& model) {
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &modelView);
 }
 
+// The top screen's projection, per eye when the 3D slider is up (WP11e): zero parallax a
+// little in front of the point it frames (`focus` away), so the dragons stand just behind
+// the screen with the room further back, and the interface (citro2d, flat) on it.
+void topProjection(C3D_Mtx& p, float near, float far, float focus) {
+    if (g_eye == 0) {
+        Mtx_PerspTilt(&p, kFovY, C3D_AspectRatioTop, near, far, false);
+        return;
+    }
+    Mtx_PerspStereoTilt(&p, kFovY, C3D_AspectRatioTop, near, far, g_eye * focus * kStereoDepth, focus * 0.9f, false);
+}
+
 // Stands at `at`, turned `yaw` about +Z, scaled (and sx more along its own X).
 C3D_Mtx placeMatrix(Vec3 at, float yaw, float sx = 1.0f, float scale = 1.0f) {
     C3D_Mtx model;
@@ -1621,7 +1636,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
     const Vec3 dir = normalize(Vec3{-0.35f, -0.9f, 0.32f});  // tools/blender/den_model.py CAM_DIR
     const float dist = g_camRadius / std::tan(kFovY * 0.5f) * 0.95f;
     C3D_Mtx projection, view, model;
-    Mtx_PerspTilt(&projection, kFovY, C3D_AspectRatioTop, 0.25f, std::fmax(dist * 4.0f, 70.0f), false);
+    topProjection(projection, 0.25f, std::fmax(dist * 4.0f, 70.0f), dist);
     g_camEye = g_camTarget + dir * dist;
     lookAt(view, g_camEye, g_camTarget);
     g_denView = view;
@@ -1698,7 +1713,7 @@ void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, floa
         if (!g_egg.ok || !egg) return;
         const Vec3 target{0, 0, 0.62f};
         const float dist = 1.0f / std::tan(kFovY * 0.5f);
-        Mtx_PerspTilt(&projection, kFovY, C3D_AspectRatioTop, 0.05f, dist * 4.0f, false);
+        topProjection(projection, 0.05f, dist * 4.0f, dist);
         lookAt(view, target + dir * dist, target);
         C2D_Flush();
         bindDragons(projection);
@@ -1734,7 +1749,7 @@ void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, floa
     const float radius = g_posed.cache->radius * g_posed.size;
     const Vec3 target{hips.x, hips.y, hips.z + radius * 0.25f};
     const float dist = radius * 1.05f / std::tan(kFovY * 0.5f);
-    Mtx_PerspTilt(&projection, kFovY, C3D_AspectRatioTop, 0.05f, dist * 4.0f, false);
+    topProjection(projection, 0.05f, dist * 4.0f, dist);
     lookAt(view, target + dir * dist, target);
     C2D_Flush();
     bindDragons(projection);
@@ -1764,7 +1779,7 @@ void drawPair(App& app, const Dragon& a, const DenActor& actorA, const Dragon& b
     C3D_Mtx projection, view, model;
     const Vec3 target{mid.x, mid.y, reach * 0.45f};
     const float dist = reach / std::tan(kFovY * 0.5f) * 0.95f;
-    Mtx_PerspTilt(&projection, kFovY, C3D_AspectRatioTop, 0.05f, dist * 4.0f, false);
+    topProjection(projection, 0.05f, dist * 4.0f, dist);
     lookAt(view, target + normalize(Vec3{-0.2f, -0.95f, 0.3f}) * dist, target);
     C2D_Flush();
     bindDragons(projection);
@@ -2028,6 +2043,8 @@ void setForceLook(int look) {
 int forceLook() { return g_forceLook; }
 
 void setDenClose(bool close) { g_denClose = close; }
+
+void setEye(float eye) { g_eye = eye; }
 
 void followInDen(Vec3 at, float weight) {
     g_follow = at;

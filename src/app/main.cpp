@@ -74,6 +74,8 @@ int main() {
     static App app;  // holds the whole save (200 dragons): keep it off the stack
     app.top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
     app.bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
+    app.topRight = C2D_CreateScreenTarget(GFX_TOP, GFX_RIGHT);
+    gfxSet3D(true);  // the right eye is drawn only while the slider is up (WP11e)
     app.textBuf = C2D_TextBufNew(4096);
     if (romfsMounted) loadFonts();  // Nunito and Cinzel Decorative (the system font if missing)
     app.romfsOk = romfsMounted && romfsReady();
@@ -135,10 +137,18 @@ int main() {
         autotest::afterFrameBegin();  // last frame's picture is finished now
         screenshot::afterFrameBegin(app);
 
-        C2D_TargetClear(app.top, app.topClear ? app.topClear : theme::kDenPlum);
+        // The top screen, once per eye while the 3D slider is up (WP11e: 30 fps is fine in 3D).
+        // The right eye is drawn with no time passing, so nothing moves on twice.
+        const u32 topClear = app.topClear ? app.topClear : theme::kDenPlum;
         app.topClear = 0;  // a scene's prepare sets it again
-        C2D_SceneBegin(app.top);
-        {
+        const float slider = osGet3DSliderState();
+        for (int eye = 0; eye < (slider > 0.0f ? 2 : 1); ++eye) {
+            C3D_RenderTarget* target = eye ? app.topRight : app.top;
+            const float dt = app.dt;
+            if (eye) app.dt = 0;
+            r3d::setEye(app.stereoPreview && !eye ? 1.0f : (slider > 0.0f ? (eye ? slider : -slider) : 0.0f));
+            C2D_TargetClear(target, topClear);
+            C2D_SceneBegin(target);
             perf::Scope timed(perf::Top);
             if (app.menu == MenuPage::Dex) {
                 drawDexTop(app);  // the book's dragon instead of the scene
@@ -151,7 +161,9 @@ int main() {
                 drawSaveIcon(app);
                 if (!app.photo.active) debugDrawOverlay(app);
             }
+            app.dt = dt;
         }
+        r3d::setEye(0);
 
         const u32 topTris = app.stats.tris;
         C2D_TargetClear(app.bottom, theme::kDenPlum);

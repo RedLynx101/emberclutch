@@ -114,6 +114,9 @@ int forceLook();
 int lookFor(const Dragon& d);
 // The den camera watches this point too (a thrown ball) while `weight` > 0.
 void followInDen(Vec3 at, float weight);
+// Stereoscopic 3D (WP11e): which eye the top screen's 3D is drawn for and how far apart
+// (-1 .. 1, the 3D slider with the left eye negative; 0 flat). main.cpp sets it per eye.
+void setEye(float eye);
 // Photo mode (D66): the den camera frames the one you care for (drawn first) alone.
 void setDenClose(bool close);
 

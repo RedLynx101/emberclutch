@@ -538,6 +538,15 @@ The top screen is flat today. Rendered per eye when the slider is up: the den, t
 showcases, the map and the title, with the UI at screen depth and the dragons just behind
 it. It draws the top screen's 3D twice, so it waits for WP11d; in 3D it runs at 30 fps on the
 old 3DS (Noah: fine), 60 without. The bottom screen can't be 3D.
+*Done:* `main.cpp` draws the top screen once per eye while the slider is up (the right eye
+into its own target, with no time passing so nothing moves on twice); `r3d::topProjection`
+gives every top-screen 3D view (the den, the showcases, the Nesting Stone's pair) a per-eye
+projection with zero parallax just in front of what it frames, so the dragons stand a little
+behind the screen, the room further back, and the interface (citro2d) on the screen. The
+separation at the slider's top is 7% of the distance to the subject. The emulator shows one
+eye, so dev menu page 2 'Stereo preview' draws the right eye in its place:
+`tests/autotest/stereo.txt` (the den held still by photo mode, flat and right eye). The feel
+and the frame rate in 3D are for the hardware run (WP13).
 
 ### WP11c — An Emberclutch boot logo (D58) ✗ not possible as the system logo (D68)
 Built 2026-09-24 (0.1.8): makerom's homebrew logo with EMBERCLUTCH drawn in place of
@@ -718,7 +727,7 @@ boot splash (WP11c's replacement), and the checks before anything goes on the 3D
    banner per breed), photo mode (the camera button), the parts library, all 21 breeds, egg
    shells per element, rare-trait looks, mud spots; the budgets with mixed looks; R6 sent.
 4. ✅ **WP12c, running clips** (a scamper for babies, a gallop for grown dragons, zoomies).
-5. **WP11e, the 3D slider** (after WP11d; 30 fps in 3D is fine).
+5. ✅ **WP11e, the 3D slider** (the top screen per eye; judged on the 3DS in WP13).
 6. **WP13, the full run on the old 3DS** and **WP14, the wrap-up** (the checklist, docs, the
    tag `v0.2.0-alpha2`).
 

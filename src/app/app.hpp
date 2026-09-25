@@ -140,6 +140,7 @@ enum class MenuPage : u8 { Closed, Main, Settings, DeleteAsk, DeleteSure, Dex };
 struct App {
     SceneId scene = SceneId::Title;
     C3D_RenderTarget* top = nullptr;
+    C3D_RenderTarget* topRight = nullptr;  // the right eye, drawn while the 3D slider is up (WP11e)
     C3D_RenderTarget* bottom = nullptr;
     C2D_TextBuf textBuf = nullptr;
     SaveData game;  // large: App lives in static storage (see main.cpp)
@@ -230,6 +231,7 @@ struct App {
     // backdrop, instead of a full-screen quad drawn over the clear). Reset after each frame.
     u32 topClear = 0;
     bool devMenu = false;
+    bool stereoPreview = false;  // dev (WP11e): the top screen drawn for the right eye at full depth
     u8 devPage = 0;
     u32 devSteps = 0;  // dev: steps added to the pedometer (the emulator's never counts)
     RenderStats stats;

@@ -1,0 +1,54 @@
+# Stereoscopic 3D (WP11e): the top screen flat, then as the right eye sees it at the slider's
+# top (dev menu page 2: Stereo preview; the emulator shows one eye), with the den held still
+# by photo mode so the two compare.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 238 131
+wait 0.3
+key SELECT
+wait 3
+tap 299 50
+wait 1.5
+shot s1-flat
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 238 206
+wait 0.3
+key SELECT
+wait 0.5
+shot s2-right-eye
+key X
+wait 2
+shot s3-close-right-eye
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 238 206
+wait 0.3
+key SELECT
+wait 0.5
+shot s4-close-flat
+quit

@@ -197,21 +197,19 @@ def portraits(out, res):
 
 
 def clip_strips(out, res, stage, names, sheet, frames=4):
+    """Each clip framed on its own frames (a flying clip needs more room than a sit)."""
     p = Posed(stage, 0)
-    # Frame once on the widest clip poses so every strip shares one camera.
-    pts = []
-    for name in names:
-        c = p.clip(name)
-        for k in range(frames):
-            p.frame(name, k * c.length / frames)
-            pts += km.visible_points([p.d])
-    km.frame_points(bpy.context.scene.camera, pts, "three_quarter", lens=55, margin=1.05)
     files = []
     for name in names:
         c = p.clip(name)
-        for k in range(frames):
-            t = k * c.length / frames if c.loop else k * c.length / (frames - 1)
-            p.frame(name, min(t, c.length))
+        times = [min(c.length, k * c.length / frames if c.loop else k * c.length / (frames - 1)) for k in range(frames)]
+        pts = []
+        for t in times:
+            p.frame(name, t)
+            pts += km.visible_points([p.d])
+        km.frame_points(bpy.context.scene.camera, pts, "three_quarter", lens=55, margin=1.0)
+        for k, t in enumerate(times):
+            p.frame(name, t)
             f = os.path.join(out, f"{stage}_{name}_{k}.png")
             km.render(f)
             files.append(f)

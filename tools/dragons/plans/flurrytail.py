@@ -284,6 +284,31 @@ def envelope(t, t0, t1, ramp=0.12):
     return max(0.0, min(1.0, (t - t0) / ramp, (t1 - t) / ramp))
 
 
+# The grown Flurrytail carries its neck upright and its head high (the kind's base_pose, the
+# idle every clip rides on): LIFT is that lift in the clips' terms (pitch up). The baby has no
+# lift. Grown clips that must bring the head down to where the poses were solved (eating,
+# sleeping, sulking, picking up, the pounce's dive) take it back with lowered(): a wave, which
+# the runtime applies in armature axes after the keys, so it undoes the lift exactly even on
+# a twisted neck. Their baby versions (*_h) do without.
+LIFT = {"neck2": 12.0, "neck3": 6.0, "head": -20.0}  # the head levels itself on the upright neck
+
+
+def lowered(keys=((0.0, 1.0),)):
+    """A wave taking the grown neck lift back, eased in and out by [(t, amount 0..1)]."""
+    keys = sorted(keys)
+
+    def amount(t):
+        if t <= keys[0][0]:
+            return keys[0][1]
+        for (t0, a0), (t1, a1) in zip(keys, keys[1:]):
+            if t <= t1:
+                u = (t - t0) / (t1 - t0)
+                return a0 + (a1 - a0) * u * u * (3 - 2 * u)
+        return keys[-1][1]
+
+    return lambda t: {b: (-v * amount(t), 0.0, 0.0) for b, v in LIFT.items()}
+
+
 def pounce_wiggle(t):
     """The fox's rump wiggle before it springs."""
     k = envelope(t, 0.28, 0.62, 0.08)
@@ -325,14 +350,22 @@ def own_clips():
     half_up = merge(WINGS_HALF, {"arm_up*": (22, 0, 0), "hips": (-10, 0, 0), "neck2": (14, 0, 0), "head": (10, 0, 0)},
                     TAIL_HIGH)
     for sfx, curl in (("", CURL), ("_h", CURL_BABY)):
-        clip("curl_up" + sfx, 1.4).pose(0.0, LIE).pose(1.4, curl)
-        clip("sleep" + sfx, 4.8, loop=True).pose(0.0, curl).wave(breathe(1.8, 4.8)).wave(sway(0.12, 4.8))
-        (clip("wake" + sfx, 2.6).pose(0.0, curl).pose(0.6, LIE).pose(1.3, stretch).pose(1.9, half_up)
-         .pose(2.6, STAND).event(1.3, "yawn"))
+        grown = not sfx
+        c = clip("curl_up" + sfx, 1.4).pose(0.0, LIE).pose(1.4, curl)
+        if grown:
+            c.wave(lowered([(0.0, 0.0), (1.4, 1.0)]))
+        c = clip("sleep" + sfx, 4.8, loop=True).pose(0.0, curl).wave(breathe(1.8, 4.8)).wave(sway(0.12, 4.8))
+        if grown:
+            c.wave(lowered())
+        c = (clip("wake" + sfx, 2.6).pose(0.0, curl).pose(0.6, LIE).pose(1.3, stretch).pose(1.9, half_up)
+             .pose(2.6, STAND).event(1.3, "yawn"))
+        if grown:
+            c.wave(lowered([(0.0, 1.0), (0.6, 0.0)]))
     clip("nap_flop", 0.7).pose(0.0, STAND).pose(0.7, LIE).event(0.55, "thump")
     eat = clip("eat", 1.2, loop=True).pose(0.0, EAT)
     eat.wave(lambda t: {"head": (8 * max(0.0, sin01(t, 0.6)), 0, 0), "snout": (6 * max(0.0, sin01(t, 0.6)), 0, 0),
                         "neck2": (3 * sin01(t, 1.2), 0, 0)}).wave(classic.chomp()).wave(sway(0.5, 1.2))
+    eat.wave(lowered())
     eat.event(0.15, "chomp").event(0.75, "chomp")
     clip("roll_over", 1.1).pose(0.0, STAND).pose(0.45, LIE).pose(1.1, BELLY_UP).event(0.8, "thump")
     (clip("belly_rub", 1.2, loop=True).pose(0.0, BELLY_UP)
@@ -341,30 +374,41 @@ def own_clips():
                       "hips": (0, 0, 6 * sin01(t, 1.2)), "tail4": (0, 8 * sin01(t, 0.6), 0),
                       "tail5": (0, 12 * sin01(t, 0.6, -0.1), 0), "tail6": (0, 16 * sin01(t, 0.6, -0.2), 0)})
      .wave(classic.pant(10.0, 0.6)).event(0.3, "purr"))
-    (clip("sulk", 1.5).pose(0.0, STAND).pose(0.7, CROUCH_FOLDED).pose(1.5, SULK)
-     .event(0.5, "whimper").event(1.2, "thump"))
-    (clip("sulk_loop", 5.0, loop=True).pose(0.0, SULK)
-     .wave(lambda t: {"chest": (3 * max(0.0, sin01(t, 5.0)), 0, 0), "head": (-2 * max(0.0, sin01(t, 5.0)), 0, 0)})
-     .wave(sway(0.15, 5.0)))
+    for sfx in ("", "_h"):
+        c = (clip("sulk" + sfx, 1.5).pose(0.0, STAND).pose(0.7, CROUCH_FOLDED).pose(1.5, SULK)
+             .event(0.5, "whimper").event(1.2, "thump"))
+        if not sfx:
+            c.wave(lowered([(0.0, 0.0), (0.7, 0.4), (1.5, 1.0)]))
+        c = (clip("sulk_loop" + sfx, 5.0, loop=True).pose(0.0, SULK)
+             .wave(lambda t: {"chest": (3 * max(0.0, sin01(t, 5.0)), 0, 0),
+                              "head": (-2 * max(0.0, sin01(t, 5.0)), 0, 0)})
+             .wave(sway(0.15, 5.0)))
+        if not sfx:
+            c.wave(lowered())
     for name, down in (("drop_wait", merge(WINGS_FOLDED, {"neck2": (-14, 0, 0), "head": (-16, 0, 0)})),
                        ("drop_wait_h", merge(WINGS_FOLDED, {"neck2": (-6, 0, 0), "head": (-18, 0, 0)}))):
         carry = merge(WINGS_FOLDED, {"neck2": (12, 0, 0), "head": (-8, 0, 0)})
-        (clip(name, 1.3).pose(0.0, carry)
-         .pose(0.35, merge(down, {"jaw": (-4, 0, 0)})).pose(0.5, merge(down, {"jaw": (-22, 0, 0)}))
-         .pose(0.9, merge(SIT_UP, {"jaw": (-8, 0, 0)})).pose(1.3, merge(SIT_UP, {"jaw": (-6, 0, 0)}))
-         .wave(lambda t: {f"tail{k}": (0, (4 + 3 * k) * sin01(t, 0.4, -0.08 * k) * min(1.0, max(0.0, (t - 0.9) * 3)), 0)
-                          for k in range(4, 7)}))
+        c = (clip(name, 1.3).pose(0.0, carry)
+             .pose(0.35, merge(down, {"jaw": (-4, 0, 0)})).pose(0.5, merge(down, {"jaw": (-22, 0, 0)}))
+             .pose(0.9, merge(SIT_UP, {"jaw": (-8, 0, 0)})).pose(1.3, merge(SIT_UP, {"jaw": (-6, 0, 0)}))
+             .wave(lambda t: {f"tail{k}": (0, (4 + 3 * k) * sin01(t, 0.4, -0.08 * k) *
+                                           min(1.0, max(0.0, (t - 0.9) * 3)), 0) for k in range(4, 7)}))
+        if name == "drop_wait":
+            c.wave(lowered([(0.0, 0.0), (0.35, 1.0), (0.5, 1.0), (0.9, 0.0)]))
     kick = merge(SIT, {"neck2": (4, 0, 0), "head": (6, 8, 14), "leg_up_R": (60, 0, 0), "leg_lo_R": (-40, 0, 0)})
     (clip("leg_kick", 1.4).pose(0.0, STAND).pose(0.25, kick).pose(1.15, kick).pose(1.4, STAND)
      .wave(lambda t: {"leg_up_R": (22 * sin01(t, 0.18) * envelope(t, 0.25, 1.15), 0, 0),
                       **{f"tail{k}": (0, (5 + 3 * k) * sin01(t, 0.35, -0.08 * k) * envelope(t, 0.25, 1.15), 0)
                          for k in range(4, 7)}})
      .event(0.3, "thump").event(0.48, "thump").event(0.66, "thump").event(0.84, "thump"))
-    (clip("pounce", 1.4).pose(0.0, STAND).pose(0.3, POUNCE_CROUCH).pose(0.46, POUNCE_CROUCH).pose(0.6, POUNCE_READY)
-     .pose(0.76, LAUNCH).pose(0.95, DIVE).pose(1.07, PIN).pose(1.25, PIN).pose(1.4, STAND)
-     .wave(pounce_wiggle)
-     .root(0.0).root(0.62).root(0.76, up=0.4).root(0.86, up=0.95).root(0.96, up=0.58).root(1.07).root(1.4)
-     .event(0.7, "squeak").event(1.07, "land"))
+    for sfx in ("", "_h"):
+        c = (clip("pounce" + sfx, 1.4).pose(0.0, STAND).pose(0.3, POUNCE_CROUCH).pose(0.46, POUNCE_CROUCH)
+             .pose(0.6, POUNCE_READY).pose(0.76, LAUNCH).pose(0.95, DIVE).pose(1.07, PIN).pose(1.25, PIN)
+             .pose(1.4, STAND).wave(pounce_wiggle)
+             .root(0.0).root(0.62).root(0.76, up=0.4).root(0.86, up=0.95).root(0.96, up=0.58).root(1.07).root(1.4)
+             .event(0.7, "squeak").event(1.07, "land"))
+        if not sfx:
+            c.wave(lowered([(0.76, 0.0), (0.95, 1.0), (1.25, 1.0), (1.4, 0.0)]))
     tail_chase = clip("tail_chase", 0.6, loop=True).pose(0.0, TAIL_CHASE)
     tail_chase.wave(fit(classic.leg_cycle(0.6, 22, 36, classic.TROT_PHASES, bob=2.5))).wave(classic.pant(6.0, 0.3))
     tail_chase.wave(wag(0.5, 0.3))
@@ -403,6 +447,7 @@ def clips():
     for name in ("hop", "leap_catch"):
         tail(by[name], [(0.0, TAIL_HIGH)], sway(0.6, 2.0))
     tail(by["stalk"], [(0.0, TAIL_TRAIL)], flick(1.0, 0.3))
+    by["pick_up"].wave(lowered([(0.0, 0.0), (0.25, 1.0), (0.4, 1.0), (0.8, 0.0)]))
     # Light on its feet: a little spring in every step, higher hops and leaps.
     for name, bounce, steps in (("walk", 0.035, 4), ("walk_h", 0.03, 4), ("carry", 0.025, 4), ("carry_h", 0.02, 4),
                                 ("trot", 0.06, 2)):

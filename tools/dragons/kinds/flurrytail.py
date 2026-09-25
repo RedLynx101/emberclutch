@@ -5,8 +5,9 @@ Design notes
            cheeks, a tiny button muzzle, stubby legs, fox ears with coloured tips, two little
            crystal antler buds, and a HUGE pom-pom tail (a ball ringed with soft fur points) on
            a short stalk, nearly as big as its head.
-  Adult    elegant and fox-like: slender legs with neat paws and fluffy trousers, a deep chest
-           under a full ruff, a mane of bold locks down the back of the neck, cheek fluff
+  Adult    elegant and fox-like, its neck carried upright and its head high (base_pose): slender
+           legs with neat paws and fluffy trousers, a deep chest under a full round ruff, a
+           mane of bold locks down the back of the neck, cheek fluff
            flaring back, a short pointed muzzle, tall fox ears and branching ice-crystal
            antlers. Its signature is the great plumed tail, bigger than its body, that rises
            behind it and curls forward over its back, dressed in soft locks along its outer
@@ -47,10 +48,10 @@ VARIANTS = [
          horn=(0.56, 0.78, 1.0), membrane=(0.66, 0.80, 0.98), iris=(0.10, 0.26, 0.66), glow=(0.30, 0.56, 1.0),
          pattern_channel="r", glow_channel=None),
     dict(name="Moonmist", base=(0.58, 0.60, 0.68), accent=(0.93, 0.90, 1.0), pattern=(0.36, 0.28, 0.62),
-         horn=(0.80, 0.70, 1.0), membrane=(0.70, 0.62, 0.92), iris=(0.85, 0.58, 0.16), glow=(0.66, 0.60, 1.0),
+         horn=(0.80, 0.70, 1.0), membrane=(0.70, 0.62, 0.92), iris=(0.85, 0.58, 0.16), glow=(0.56, 0.44, 1.0),
          pattern_channel="g", glow_channel=None),
     dict(name="Foxfire", base=(0.96, 0.60, 0.34), accent=(1.0, 0.94, 0.84), pattern=(1.0, 0.95, 0.88),
-         horn=(0.70, 0.88, 1.0), membrane=(0.98, 0.78, 0.60), iris=(0.20, 0.50, 0.95), glow=(0.62, 0.78, 1.0),
+         horn=(0.70, 0.88, 1.0), membrane=(0.98, 0.78, 0.60), iris=(0.20, 0.50, 0.95), glow=(0.36, 0.64, 1.0),
          pattern_channel="r", glow_channel=None),
     dict(name="Aurora", base=(0.06, 0.08, 0.22), accent=(0.78, 0.88, 1.0), pattern=(0.40, 0.24, 0.80),
          horn=(0.50, 0.92, 0.86), membrane=(0.16, 0.20, 0.48), iris=(0.30, 0.95, 0.80), glow=(0.32, 1.0, 0.74),
@@ -130,7 +131,10 @@ def _even(kit, obj):
     """Retopologise the metaball body into even, flowing quads (QuadriFlow, mirrored), a
     little under the kit's triangle target so it doesn't decimate again. Toon bands run
     straight across each triangle, so a collapse-decimated blob of fur shades like crumpled
-    paper; quads that follow the forms shade in clean, soft bands."""
+    paper; quads that follow the forms shade in clean, soft bands.
+    The mirrored mesh has an edge seam exactly on the midline, and the kit's seating ray for a
+    part on the midline (the heart) runs in that plane and can slip between the seam's
+    triangles, leaving the part unseated: the hearts are authored 2 mm off the midline."""
     import bpy
     target = int(kit.lod(kit.F["body_tris"], kit.F["body_tris_lod1"]) * 0.97)
     sm = obj.modifiers.new("soften", "SMOOTH")
@@ -197,9 +201,9 @@ GROWN_META = [
     tuft((0, -1.12, 2.30), (0, -0.82, 2.48), 0.2, 0.11),
     tuft((0, -0.92, 2.08), (0, -0.58, 2.20), 0.23, 0.12),
     tuft((0, -0.72, 1.84), (0, -0.38, 1.86), 0.22, 0.11),
-    # the chest ruff: a full bib under the throat, its clumps hanging over the heart
+    # the chest ruff: a full, round bib under the throat (the heartglow sits on its front,
+    # where every camera sees it), its locks hanging either side
     ("ball", (0, -0.88, 1.62), 0.27),
-    tuft((0, -0.90, 1.56), (0, -1.03, 1.32), 0.21, 0.1),
 ]
 GROWN_META += _both([
     tuft((0.16, -1.28, 2.26), (0.39, -1.11, 2.13), 0.15, 0.075),     # fluffy cheeks flaring back
@@ -238,25 +242,25 @@ GROWN = dict(
         "parts": {"eyes": 1.32, "horns": 0.45, "frill": 0.82, "wings": 0.45, "spikes": 0.6,
                   "tail_tip": 0.7, "heart": 0.85, "runes": 0.7},
     },
-    young_pose={"neck2": -14, "neck3": 4, "head": 16},
-    base_pose={"head": (-4, 0, 0)},
+    young_pose={"neck2": -6, "neck3": 2, "head": 8},
+    base_pose={"neck2": (-12, 0, 0), "neck3": (-6, 0, 0), "head": (16, 0, 0)},  # a proud, upright neck (plans: LIFT)
     eyes=dict(at=(0.16, -1.53, 2.49), out=(0.62, -0.78, 0.12), iris=(0.102, 0.114, 0.055),
               pupil=(0.06, 0.076, 0.022), slit=(0.3, 1.12),
               glints=((-0.028, 0.042, 0.02), (0.02, -0.042, 0.01)), seg=(12, 2, 8, 2)),
     head=dict(origin=(0, -1.33, 2.44), k=1.0, horn_len=1.0, horn_r=1.0, horn_curve=1.0, buds=False,
               frill_k=1.0, feather_w=1.0),
     tail_k=1.0,
-    heart=dict(at=(0, -0.90, 1.04), size=0.13),
+    heart=dict(at=(0.002, -1.12, 1.52), size=0.13, tilt=22),  # x: see _even (the midline seam)
     wing=dict(root=(0.26, -0.40, 1.58), scale=0.8, dihedral=50, droop=10,
               radii={"root": 0.08, "elbow": 0.06, "wrist": 0.048, "finger": 0.02, "tip": 0.008},
               arm_tris=120, thickness=0.014, frost=0.12, icicle=0.22, layout=WING_LAYOUT),
     mask=dict(max_x=0.3, max_z=2.3, min_z=-1.0, tail_cut=(0.8, 5.0)),
-    inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.03, "frill": 0.04, "heart": -0.05, "runes": -0.012},
+    inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.03, "frill": 0.04, "heart": -0.022, "runes": -0.012},
     face=dict(nostril=(0.032, -1.83, 2.285), nostril_r=(0.02, 0.013, 0.008), mouth_r=0.01,
               mouth=lambda side, a: (side * 0.12 * a ** 0.7, -1.825 + 0.32 * a ** 1.5, 2.20 + 0.035 * a * a)),
     jaw_hinge=(0, -1.44, 2.21),
     mouth_detail=dict(depth=0.2, fade=0.16, width=0.3, tooth=(0.008, 0.014), fang=(0.011, 0.026),
-                      tongue=(0.055, 0.11, 0.013)),
+                      tongue=(0.045, 0.085, 0.01)),
     skin=dict(stripe=0.4, spot_cell=0.26, ao=0.3),
     sculpt=_even,
 )
@@ -334,12 +338,12 @@ HATCH = dict(
     head=dict(origin=(0, -0.38, 1.08), k=0.8, horn_len=0.45, horn_r=0.9, horn_curve=0.6, buds=True,
               frill_k=0.7, feather_w=1.4),
     tail_k=0.4,
-    heart=dict(at=(0, -0.36, 0.44), size=0.085),
+    heart=dict(at=(0.002, -0.36, 0.44), size=0.085, tilt=18),
     wing=dict(root=(0.13, -0.08, 0.74), scale=0.18, dihedral=50, droop=10,
               radii={"root": 0.042, "elbow": 0.033, "wrist": 0.028, "finger": 0.011, "tip": 0.005},
               arm_tris=90, thickness=0.008, frost=0.12, icicle=0.2, layout=WING_LAYOUT),
     mask=dict(max_x=0.22, max_z=1.06, min_z=0.13, tail_cut=(0.35, 5.0)),
-    inset={"eyes": 0.04, "horns": 0.02, "spikes": 0.012, "frill": 0.025, "heart": -0.03, "runes": -0.01},
+    inset={"eyes": 0.04, "horns": 0.02, "spikes": 0.012, "frill": 0.025, "heart": -0.012, "runes": -0.01},
     face=dict(nostril=(0.03, -0.765, 0.915), nostril_r=(0.02, 0.014, 0.008), mouth_r=0.009,
               mouth=lambda side, a: (side * 0.075 * a ** 0.8, -0.765 + 0.11 * a ** 1.6, 0.85 + 0.02 * a * a)),
     jaw_hinge=(0, -0.62, 0.85),
@@ -487,7 +491,7 @@ def parts(kit, d):
         base = kit.head_point((0.17, 0.05, 0.19) if not baby else (0.2, 0.06, 0.2), s)
         up = (s * 0.34, 0.22, 0.91)
         front = (s * 0.42, -0.9, 0.08)
-        h = (0.5 if not baby else 0.42) * k
+        h = (0.56 if not baby else 0.42) * k
         e = _ear(kit, f"ear_{s}", base, up, front, h, 0.16 * k, 0.05 * k, tip_bend=0.06, tip_from=0.58)
         e.data.materials.append(mats["body_plain"])
         e.data.materials.append(mats["pattern_flat"])

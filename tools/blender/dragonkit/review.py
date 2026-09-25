@@ -166,7 +166,7 @@ def turntable(out, res, n=8):
         arm.rotation_euler.z = 2 * math.pi * k / n
         bpy.context.view_layer.update()
         pts += km.visible_points([p.d])
-    km.frame_points(bpy.context.scene.camera, pts, "side", lens=55, margin=1.3)
+    km.frame_points(bpy.context.scene.camera, pts, "side", lens=55, margin=0.95)
     files = []
     for k in range(n):
         arm.rotation_euler.z = 2 * math.pi * k / n
@@ -207,7 +207,7 @@ def clip_strips(out, res, stage, names, sheet, frames=4):
         for t in times:
             p.frame(name, t)
             pts += km.visible_points([p.d])
-        km.frame_points(bpy.context.scene.camera, pts, "three_quarter", lens=55, margin=1.0)
+        km.frame_points(bpy.context.scene.camera, pts, "three_quarter", lens=55, margin=1.3)
         for k, t in enumerate(times):
             p.frame(name, t)
             f = os.path.join(out, f"{stage}_{name}_{k}.png")

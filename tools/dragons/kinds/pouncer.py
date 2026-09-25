@@ -142,7 +142,7 @@ GROWN = dict(
     heart=dict(at=(0, -0.98, 1.18), size=0.11),
     wing=dict(root=(0.32, -0.42, 1.52), scale=1.1, dihedral=50, droop=10,
               radii={"root": 0.095, "elbow": 0.07, "wrist": 0.056, "finger": 0.021, "tip": 0.008},
-              arm_tris=180, thickness=0.014, style="classic"),
+              arm_tris=180, thickness=0.014, style="classic", claws=False),
     mask=dict(max_x=0.32, max_z=1.9, min_z=-1.0, tail_cut=(1.3, 0.8)),
     inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.03, "frill": 0.05, "heart": -0.06, "runes": -0.012},
     face=dict(nostril=(0.045, -2.13, 1.86), nostril_r=(0.024, 0.015, 0.008), mouth_r=0.011,

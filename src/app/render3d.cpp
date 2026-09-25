@@ -19,6 +19,7 @@
 #include "core/daylight.hpp"
 #include "core/mud.hpp"
 #include "core/dragon_mesh.hpp"
+#include "core/kinds.hpp"
 #include "core/egg.hpp"
 #include "core/shell_burst.hpp"
 #include "core/prop_mesh.hpp"
@@ -158,6 +159,8 @@ struct Cache {
     int form = -1;
     int lod = 0;
     int look = 0;
+    int variant = 0;   // a kind's colouring (the rare variant has its own parts)
+    bool slit = false;  // a kind's pupils: slit when startled or cross (D77)
     float t = -1;
     Genome genome{};
     Sex sex = Sex::Female;
@@ -270,9 +273,11 @@ struct Posed {
 // [look][form][lod] (D54: every look is in the game, per dragon; each look's models in its
 // own folder). LOD1 draws background dragons in a full den. The classic look loads at start,
 // the others one form a frame while the splash plays (loadNextLook), or when first needed.
-Form g_forms[kLookCount][kFormCount][2];
-bool g_lookLoaded[kLookCount] = {};
-bool g_lookFailed[kLookCount] = {};  // a look whose models are missing: drawn classic, not retried
+// After the genome's looks come the new kinds (D77, core/kinds: romfs:/dragons/<kind>/), each
+// with its plan's own clips; until DR3 they are shown only through the dev menu.
+Form g_forms[kLookSlots][kFormCount][2];
+bool g_lookLoaded[kLookSlots] = {};
+bool g_lookFailed[kLookSlots] = {};  // a look whose models are missing: drawn classic, not retried
 int g_forceLook = -1;  // dev: every dragon in one look (-1: their own)
 Cache g_caches[kCacheSlots];
 u32 g_frame = 0;
@@ -283,7 +288,12 @@ bool g_ready = false;
 AnimLibrary g_anims;
 int g_clipIndex[kFormCount][static_cast<int>(ClipId::Count)];
 bool g_animsOk = false;
-AnimBinding g_bind[kLookCount][kFormCount];  // LOD1 shares its form's skeleton; each look has its own
+AnimBinding g_bind[kLookSlots][kFormCount];  // LOD1 shares its form's skeleton; each look has its own
+// The kinds' plans: romfs:/anims/<plan>.eca, loaded with the first kind that needs one.
+AnimLibrary g_planAnims[kMaxPlans];
+int g_planClips[kMaxPlans][kFormCount][static_cast<int>(ClipId::Count)];
+bool g_planTried[kMaxPlans] = {}, g_planOk[kMaxPlans] = {};
+int g_devVariant = 0;  // dev: the colouring the kinds are shown in (3: the rare one)
 Room g_room;
 EggForm g_egg;      // full detail: the close-up, and a lone egg in the den
 EggForm g_eggLod1;  // the den's egg when there's more to draw (tools/blender/egg_model.py --lod 1)
@@ -355,6 +365,30 @@ float toonRampHard(float x, float) { return x < 0.2f ? 0.0f : (x < 0.5f ? 0.5f :
 
 const char* const kLookDir[kLookCount] = {"romfs:/models/", "romfs:/models/v1/", "romfs:/models/v2/",
                                           "romfs:/models/v3/"};
+
+bool isKind(int slot) { return slot >= kLookCount; }
+int kindOfSlot(int slot) { return slot - kLookCount; }
+int planOfSlot(int slot) { return kindInfo(kindOfSlot(slot)).plan; }
+
+// The clips a look slot animates with: the classic library, or its kind's plan.
+bool animsOkFor(int slot) { return isKind(slot) ? g_planOk[planOfSlot(slot)] : g_animsOk; }
+const AnimLibrary& libFor(int slot) { return isKind(slot) ? g_planAnims[planOfSlot(slot)] : g_anims; }
+const int* clipsForSlot(int slot, int form) {
+    const int f = form == kFormHatchling ? kFormHatchling : kFormGrown;
+    return isKind(slot) ? g_planClips[planOfSlot(slot)][f] : g_clipIndex[f];
+}
+
+bool loadPlan(int plan) {
+    if (g_planTried[plan]) return g_planOk[plan];
+    g_planTried[plan] = true;
+    std::vector<u8> bytes;
+    char path[64];
+    std::snprintf(path, sizeof(path), "romfs:/anims/%s.eca", planInfo(plan).name);
+    g_planOk[plan] = readFile(path, bytes) && loadAnims(bytes.data(), bytes.size(), g_planAnims[plan]) &&
+                     resolveClips(g_planAnims[plan], kFormHatchling, g_planClips[plan][kFormHatchling]) &&
+                     resolveClips(g_planAnims[plan], kFormGrown, g_planClips[plan][kFormGrown]);
+    return g_planOk[plan];
+}
 
 bool loadTexture(const char* path, C3D_Tex& tex) {
     FILE* file = std::fopen(path, "rb");
@@ -501,13 +535,20 @@ float framingRadius(const ModelData& m, float t, int build, Vec3* center, float*
 // Rebuilds the merged part mesh, ground offset and framing when the dragon, its growth or
 // its genome changes (growth is slow: days, not frames).
 void refreshCache(Cache& c, const Dragon& d, const Growth& gr, int build, int lod, int look) {
+    const int variant = isKind(look) ? g_devVariant : 0;
+    const bool slit = isKind(look) && moodOf(d) <= Mood::Sulky;
     const bool same = c.valid && c.id == d.id && c.form == gr.form && c.lod == lod && c.look == look &&
-                      std::fabs(c.t - gr.t) < 0.002f && c.sex == d.sex &&
+                      c.variant == variant && c.slit == slit && std::fabs(c.t - gr.t) < 0.002f && c.sex == d.sex &&
                       std::memcmp(&c.genome, &d.genome, sizeof(Genome)) == 0;
     if (same) return;
     const Form& f = g_forms[look][gr.form][lod];
     c.valid = false;
-    if (!buildParts(f.model, d.genome, d.sex, gr.t, g_parts)) return;
+    if (isKind(look)) {
+        const KindInfo& ki = kindInfo(kindOfSlot(look));
+        if (!buildKindParts(f.model, variant == ki.rareVariant, ki.rareReplaces, slit, gr.t, build, g_parts)) return;
+    } else if (!buildParts(f.model, d.genome, d.sex, gr.t, g_parts)) {
+        return;
+    }
     if (!fill(c.parts, static_cast<int>(g_parts.pos.size()), g_parts.pos.data(), g_parts.nrm.data(),
               g_parts.skin.data(), g_parts.paint.data(), g_parts.uv.data(), g_parts.indices.data(),
               static_cast<int>(g_parts.indices.size()), g_parts.palette, g_parts.paletteCount))
@@ -519,6 +560,8 @@ void refreshCache(Cache& c, const Dragon& d, const Growth& gr, int build, int lo
     c.form = gr.form;
     c.lod = lod;
     c.look = look;
+    c.variant = variant;
+    c.slit = slit;
     c.t = gr.t;
     c.genome = d.genome;
     c.sex = d.sex;
@@ -533,6 +576,7 @@ bool loadLook(int look);
 // splash hasn't got to it yet; the classic look if its models are missing.
 int lookOf(const Dragon& d) {
     int look = g_forceLook >= 0 ? g_forceLook : (d.look < kLookCount ? static_cast<int>(d.look) : 0);
+    if (d.stage == Stage::Egg) look = look < kLookCount ? look : kLookClassic;  // eggs stay the old ones for now
     if (!g_lookLoaded[look] && !loadLook(look)) look = kLookClassic;
     return look;
 }
@@ -606,6 +650,7 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
     if (!c) return false;
     const Form& f = g_forms[c->look][c->form][lod];
     const AnimBinding& bind = g_bind[c->look][c->form];
+    const AnimLibrary& lib = libFor(c->look);
     updateDust(*c, f, d);
     out.size = sizeScale(d.genome);
     out.scale = growthScale(growthFor(d.stage, stageProgress(d, now))) * out.size;
@@ -617,9 +662,9 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
     BonePose bones[kMaxBones];
     idlePose(f.model, c->t, buildOf(d), bones);
     out.root[0] = out.root[1] = 0;
-    if (actor && g_animsOk) {
+    if (actor && animsOkFor(c->look)) {
         Quat delta[kMaxBones];
-        actor->anim.sample(g_anims, bind, f.model.skel.count, delta, out.root);
+        actor->anim.sample(lib, bind, f.model.skel.count, delta, out.root);
         applyDeltas(bones, delta, f.model.skel.count);
         // Look at the player: the den camera, brought into the dragon's armature space
         // (the inverse of modelMatrix, with last frame's floor contact).
@@ -761,6 +806,28 @@ void dragonPattern(u8 pattern, Rgb color, bool veins) {
     C3D_TexEnvColor(env, 0xFF000000u | (u32(color.b) << 16) | (u32(color.g) << 8) | color.r);
 }
 
+// Stage 0 (and 5) for a kind's variant (D77): its pattern channel blended in the pattern
+// colour, and its glow channel (the rare variant's marks) glowing after the light.
+void kindPattern(int pattern, int glow, Rgb patternColour, Rgb glowColour) {
+    static constexpr u8 kPatternOf[3] = {kPatternStripes, kPatternSpots, kPatternDapple};
+    dragonPattern(pattern >= 0 && pattern < 3 ? kPatternOf[pattern] : static_cast<u8>(kPatternSolid), patternColour,
+                  false);
+    // Stage 5 set every time (a glowing dragon before this one leaves its own there): the warm
+    // rim (lightDragon has set its colour), or the glow channel lighting up in the glow colour.
+    C3D_TexEnv* env = C3D_GetTexEnv(5);
+    if (glow < 0 || glow > 2) {
+        C3D_TexEnvSrc(env, C3D_RGB, GPU_CONSTANT, GPU_PREVIOUS, GPU_PREVIOUS);
+        C3D_TexEnvOpRgb(env, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_ALPHA, GPU_TEVOP_RGB_SRC_COLOR);
+        C3D_TexEnvFunc(env, C3D_RGB, GPU_MULTIPLY_ADD);
+        return;
+    }
+    static constexpr GPU_TEVOP_RGB kChannel[3] = {GPU_TEVOP_RGB_SRC_R, GPU_TEVOP_RGB_SRC_G, GPU_TEVOP_RGB_SRC_B};
+    C3D_TexEnvSrc(env, C3D_RGB, GPU_TEXTURE0, GPU_CONSTANT, GPU_PREVIOUS);
+    C3D_TexEnvOpRgb(env, kChannel[glow], GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_COLOR);
+    C3D_TexEnvFunc(env, C3D_RGB, GPU_MULTIPLY_ADD);
+    C3D_TexEnvColor(env, 0xFF000000u | (u32(glowColour.b) << 16) | (u32(glowColour.g) << 8) | glowColour.r);
+}
+
 // Binds a form's skin (or the clean stand-in) and the dust ramp.
 void bindSkin(const Form* f) {
     C3D_TexBind(0, f && f->skinOk ? const_cast<C3D_Tex*>(&f->skin) : &g_cleanSkin);
@@ -818,9 +885,9 @@ void lookPalette(int look, const Genome& g, Rgb pal[kPalCount]) {
 void lookShading(int look) {
     if (look == g_litLook) return;
     g_litLook = look;
-    C3D_LightEnvLut(&g_lightEnv, GPU_LUT_D0, GPU_LUTINPUT_LN, true,
-                    &g_lutToon[look == kLookPebbleback ? 1 : (look == kLookWild ? 2 : 0)]);
-    C3D_LightEnvLut(&g_lightEnv, GPU_LUT_FR, GPU_LUTINPUT_NV, false, &g_lutRim[look == kLookPebbleback ? 1 : 0]);
+    const bool soft = look == kLookPebbleback || isKind(look);  // the kinds: the storybook look (D75)
+    C3D_LightEnvLut(&g_lightEnv, GPU_LUT_D0, GPU_LUTINPUT_LN, true, &g_lutToon[soft ? 1 : (look == kLookWild ? 2 : 0)]);
+    C3D_LightEnvLut(&g_lightEnv, GPU_LUT_FR, GPU_LUTINPUT_NV, false, &g_lutRim[soft ? 1 : 0]);
 }
 
 // The light on one dragon: the time of day, scaled per channel by `local` (the room's light
@@ -1137,9 +1204,13 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
     lookShading(look);
     Rgb pal[kPalCount];
     const Genome shown = (d.genome.rareFlags & kRareIridescent) ? shimmer(d.genome, app.t + d.id * 0.37f) : d.genome;
-    dragonPalette(shown, pal);
-    lookPalette(look, shown, pal);
-    rarePalette(d.genome.rareFlags, pal);
+    if (isKind(look)) {
+        kindPalette(kindOfSlot(look), p.cache->variant, d.id, pal);
+    } else {
+        dragonPalette(shown, pal);
+        lookPalette(look, shown, pal);
+        rarePalette(d.genome.rareFlags, pal);
+    }
     const float glow = 0.55f + 0.45f * heartglowLevel(d, app.t);  // the heartglow pulses with mood
     pal[kPalGlow] = {static_cast<u8>(pal[kPalGlow].r * glow), static_cast<u8>(pal[kPalGlow].g * glow),
                      static_cast<u8>(pal[kPalGlow].b * glow)};
@@ -1147,7 +1218,12 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
         C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, pal[i].r / 255.0f, pal[i].g / 255.0f, pal[i].b / 255.0f,
                       1.0f);
     bindSkin(p.form);
-    dragonPattern(d.genome.pattern, pal[kPalPattern], look == kLookWild);
+    if (isKind(look)) {
+        const KindVariant& v = kindInfo(kindOfSlot(look)).variants[p.cache->variant];
+        kindPattern(v.patternChannel, v.glowChannel, pal[kPalPattern], pal[kPalGlow]);
+    } else {
+        dragonPattern(d.genome.pattern, pal[kPalPattern], look == kLookWild);
+    }
     const bool blob = p.morph != 1.0f && p.form->chestBone >= 0;
     if (blob) {  // taking shape out of a white blob round its chest (dragon.v.pica)
         const Vec3 c = p.poseMat[p.form->chestBone].translation();
@@ -1155,7 +1231,10 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
     }
     drawBody(app, p.form->body, p.skin, *p.cache);
     drawMesh(app, p.cache->parts, p.skin);
-    if (const MeshData* wings = selectWings(p.form->model, d.genome))
+    const MeshData* wings = isKind(look) ? kindWings(p.form->model, p.cache->variant ==
+                                                     kindInfo(kindOfSlot(look)).rareVariant)
+                                         : selectWings(p.form->model, d.genome);
+    if (wings)
         drawMesh(app, p.form->wings[wings->variant], p.skin, dustValue(d, kRegionWings));
     if (blob) C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locBlob, 0, 0, 0, 1);
 }
@@ -1734,8 +1813,11 @@ void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, floa
     static int showForm = -1;
     static ClipId showClip = ClipId::Idle;
     const int form = growthFor(d.stage, stageProgress(d, now)).form;
-    const int* clips = clipIndex(form);
-    if (g_animsOk && (showId != d.id || showForm != form || showClip != clip)) {
+    const int slot = lookOf(d);
+    const int* clips = clipsForSlot(slot, form);
+    const bool animsOk = animsOkFor(slot);
+    static int showSlot = -1;
+    if (animsOk && (showId != d.id || showForm != form || showClip != clip || showSlot != slot)) {
         show = DenActor{};
         int index = clips[static_cast<int>(clip)];
         if (index < 0) index = clips[static_cast<int>(ClipId::Idle)];
@@ -1743,12 +1825,13 @@ void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, floa
         showId = d.id;
         showForm = form;
         showClip = clip;
+        showSlot = slot;
     }
-    if (g_animsOk) {
-        show.anim.update(g_anims, app.dt, nullptr, 0);
+    if (animsOk) {
+        show.anim.update(libFor(slot), app.dt, nullptr, 0);
         show.eyes.update(0.0f, app.dt);
     }
-    if (!pose(app, d, g_animsOk ? &show : nullptr, now, 0, g_posed)) return;
+    if (!pose(app, d, animsOk ? &show : nullptr, now, 0, g_posed)) return;
     C3D_Mtx model;
     modelMatrix(g_posed, model);
     const Vec3 hips = apply(model, g_posed.poseMat[0].translation());
@@ -1996,10 +2079,14 @@ bool loadLookForm(int look, int k) {
     const int form = k < 2 ? kFormHatchling : kFormGrown, lod = k % 2;
     Form& f = g_forms[look][form][lod];
     if (f.ok) return true;
-    char ecm[64], skin[64];
+    char dir[48], ecm[80], skin[80];
     const char* name = form == kFormHatchling ? "hatchling" : "grown";
-    std::snprintf(ecm, sizeof(ecm), "%s%s%s.ecm", kLookDir[look], name, lod ? "_lod1" : "");
-    std::snprintf(skin, sizeof(skin), "%s%s%s_skin.t3x", kLookDir[look], name, lod ? "_lod1" : "");
+    if (isKind(look))
+        std::snprintf(dir, sizeof(dir), "romfs:/dragons/%s/", kindInfo(kindOfSlot(look)).name);
+    else
+        std::snprintf(dir, sizeof(dir), "%s", kLookDir[look]);
+    std::snprintf(ecm, sizeof(ecm), "%s%s%s.ecm", dir, name, lod ? "_lod1" : "");
+    std::snprintf(skin, sizeof(skin), "%s%s%s_skin.t3x", dir, name, lod ? "_lod1" : "");
     if (!loadForm(ecm, skin, f)) {
         releaseForm(f);
         return false;
@@ -2009,15 +2096,19 @@ bool loadLookForm(int look, int k) {
 
 // A whole look (its four forms and their animation bindings). False if a model is missing.
 bool loadLook(int look) {
-    if (look < 0 || look >= kLookCount || g_lookFailed[look]) return false;
+    if (look < 0 || look >= kLookCount + kindCount() || g_lookFailed[look]) return false;
     if (g_lookLoaded[look]) return true;
+    if (isKind(look) && !loadPlan(planOfSlot(look))) {
+        g_lookFailed[look] = true;
+        return false;
+    }
     for (int k = 0; k < 4; ++k)
         if (!loadLookForm(look, k)) {
             g_lookFailed[look] = true;
             return false;
         }
-    if (g_animsOk)
-        for (int f = 0; f < kFormCount; ++f) bindAnims(g_anims, g_forms[look][f][0].model.skel, g_bind[look][f]);
+    if (animsOkFor(look))
+        for (int f = 0; f < kFormCount; ++f) bindAnims(libFor(look), g_forms[look][f][0].model.skel, g_bind[look][f]);
     g_lookLoaded[look] = true;
     return true;
 }
@@ -2045,6 +2136,15 @@ void setForceLook(int look) {
     g_forceLook = look >= 0 && look < kLookCount ? look : -1;
     for (Cache& c : g_caches) c.valid = false;
 }
+
+void setDevKind(int kind, int variant) {
+    g_forceLook = kind >= 0 && kind < kindCount() ? kLookCount + kind : -1;
+    g_devVariant = variant >= 0 && variant < kKindVariants ? variant : 0;
+    for (Cache& c : g_caches) c.valid = false;
+}
+
+int devKind() { return g_forceLook >= kLookCount ? g_forceLook - kLookCount : -1; }
+int devVariant() { return g_devVariant; }
 
 int forceLook() { return g_forceLook; }
 
@@ -2127,15 +2227,20 @@ u32 backdrop(s64 now) {
 }
 
 const AnimLibrary* anims() { return g_animsOk ? &g_anims : nullptr; }
+const AnimLibrary* animsFor(const Dragon& d) {
+    const int slot = g_ready ? lookOf(d) : kLookClassic;
+    return animsOkFor(slot) ? &libFor(slot) : nullptr;
+}
+const int* clipIndexFor(const Dragon& d, int form) { return clipsForSlot(g_ready ? lookOf(d) : kLookClassic, form); }
 const int* clipIndex(int form) { return g_clipIndex[form == kFormHatchling ? kFormHatchling : kFormGrown]; }
 int lookFor(const Dragon& d) { return g_ready ? lookOf(d) : kLookClassic; }
 const ModelData* model(int form, int look) {
-    return g_ready && form >= 0 && form < kFormCount && look >= 0 && look < kLookCount && g_lookLoaded[look]
+    return g_ready && form >= 0 && form < kFormCount && look >= 0 && look < kLookSlots && g_lookLoaded[look]
                ? &g_forms[look][form][0].model
                : nullptr;
 }
 const AnimBinding* binding(int form, int look) {
-    return g_animsOk && form >= 0 && form < kFormCount && look >= 0 && look < kLookCount && g_lookLoaded[look]
+    return form >= 0 && form < kFormCount && look >= 0 && look < kLookSlots && g_lookLoaded[look] && animsOkFor(look)
                ? &g_bind[look][form]
                : nullptr;
 }

@@ -34,3 +34,6 @@ Thumbs.db
 
 # Large source sound effects (only processed WAVs in romfs/sfx are committed)
 assets/audio/sfx/source/
+
+# Agent worktrees (the dragon revamp's builders)
+.claude/

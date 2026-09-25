@@ -60,9 +60,13 @@ const MeshData* selectWings(const ModelData& m, const Genome& g) {
 }
 
 bool buildParts(const ModelData& m, const Genome& g, Sex sex, float t, PartsMesh& out) {
-    out.clear();
     const MeshData* meshes[8];
     const int count = selectParts(m, g, sex, meshes);
+    return mergeParts(meshes, count, t, g.build < kModelBuilds ? g.build : kBuildNeutral, out);
+}
+
+bool mergeParts(const MeshData* const* meshes, int count, float t, int build, PartsMesh& out) {
+    out.clear();
     static Vec3 keyPos[4096], keyNrm[4096];
     for (int i = 0; i < count; ++i) {
         const MeshData& mesh = *meshes[i];
@@ -81,7 +85,7 @@ bool buildParts(const ModelData& m, const Genome& g, Sex sex, float t, PartsMesh
         const std::size_t base = out.pos.size();
         if (base + mesh.vertexCount > 65535) return false;
         blendKeys(mesh, t, keyPos, keyNrm);
-        applyBuildShift(mesh, t, g.build < kModelBuilds ? g.build : kBuildNeutral, keyPos);  // seated for its build
+        applyBuildShift(mesh, t, build, keyPos);  // seated for its build
         for (int v = 0; v < mesh.vertexCount; ++v) {
             out.pos.push_back(keyPos[v]);
             out.nrm.push_back(keyNrm[v]);

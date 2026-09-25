@@ -30,7 +30,7 @@ int denOf(const App& app, Sex sex, int* out) {
     return n;
 }
 
-const int* clipsOf(const Dragon& d, s64 now) { return r3d::clipIndex(growthFor(d.stage, stageProgress(d, now)).form); }
+const int* clipsOf(const Dragon& d, s64 now) { return r3d::clipIndexFor(d, growthFor(d.stage, stageProgress(d, now)).form); }
 
 // Stands the picked pair on the stone, facing each other, and keeps their animations going
 // (no behavior: they stay put).
@@ -56,7 +56,8 @@ void poseThePair(App& app, s64 now) {
         else if (app.stoneCourt <= 0 && a.anim.clip == clips[static_cast<int>(ClipId::Nuzzle)])
             a.anim.play(clips[static_cast<int>(ClipId::Idle)], 0.5f);
         a.eyes.update(app.stoneCourt > 0 ? 0.6f : 0.0f, app.dt);
-        a.anim.update(*lib, app.dt, nullptr, 0);
+        const AnimLibrary* own = r3d::animsFor(d);
+        a.anim.update(own ? *own : *lib, app.dt, nullptr, 0);
     }
 }
 

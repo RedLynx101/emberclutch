@@ -1,0 +1,56 @@
+# The dragon revamp (D77): the den's dragon shown as each new kind (dev menu page 1: Next kind,
+# Kind colouring), as a hatchling and grown, in its four colourings.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+key SELECT
+wait 0.3
+tap 82 231
+key SELECT
+wait 3
+shot k1-hatchling
+wait 2
+shot k2-hatchling-later
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 4
+shot k3-grown
+key SELECT
+wait 0.3
+tap 238 231
+key SELECT
+wait 3
+shot k4-colouring2
+key SELECT
+wait 0.3
+tap 238 231
+key SELECT
+wait 3
+shot k5-colouring3
+key SELECT
+wait 0.3
+tap 238 231
+key SELECT
+wait 3
+shot k6-rare
+wait 3
+shot k7-rare-later
+quit

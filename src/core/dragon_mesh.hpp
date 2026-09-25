@@ -36,6 +36,9 @@ const MeshData* selectWings(const ModelData& m, const Genome& g);
 // Blends the selected parts at growth t and merges them. Returns false if the merged
 // palette would exceed kMaxPalette bones (never for the shipped models).
 bool buildParts(const ModelData& m, const Genome& g, Sex sex, float t, PartsMesh& out);
+// The same for any list of part meshes (a kind's, core/kinds): blended at t, seated for the
+// build (genome Build 0..2 or kBuildNeutral), merged into one palette.
+bool mergeParts(const MeshData* const* meshes, int count, float t, int build, PartsMesh& out);
 
 // Height of the lowest body vertex for the given skinning matrices; the renderer lifts the
 // dragon by -groundOffset so its feet touch the floor.

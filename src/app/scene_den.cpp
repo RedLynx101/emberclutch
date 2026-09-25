@@ -137,7 +137,7 @@ void effectsFor(App& app, int i, int bed, const Dragon& d, const DenActor& a, co
 }
 
 // The clips for this dragon's current body (hatchlings have a few of their own).
-const int* clipsFor(const Dragon& d, s64 now) { return r3d::clipIndex(growthFor(d.stage, stageProgress(d, now)).form); }
+const int* clipsFor(const Dragon& d, s64 now) { return r3d::clipIndexFor(d, growthFor(d.stage, stageProgress(d, now)).form); }
 
 // Walk and trot at the speed this dragon's feet actually move (no skating).
 void matchSpeeds(DenActor& actor, const Dragon& d, s64 now) {
@@ -147,7 +147,9 @@ void matchSpeeds(DenActor& actor, const Dragon& d, s64 now) {
     const AnimBinding* bind = r3d::binding(g.form, look);
     if (!m || !bind) return;
     const int build = d.genome.build < kModelBuilds ? d.genome.build : kBuildNeutral;
-    actor.updateSpeeds(*m, *bind, *r3d::anims(), r3d::clipIndex(g.form), g.form * kLookCount + look, g.t, build,
+    const AnimLibrary* lib = r3d::animsFor(d);
+    if (!lib) return;
+    actor.updateSpeeds(*m, *bind, *lib, r3d::clipIndexFor(d, g.form), g.form * r3d::kLookSlots + look, g.t, build,
                        sizeScale(d.genome), g.form == kFormHatchling);
 }
 
@@ -225,7 +227,8 @@ void denLife(App& app, const DenRoster& r, s64 now) {
         const bool yours = r.dragon[b] == app.careIndex;
         u8 events[8];
         matchSpeeds(a, d, now);
-        const int n = a.update(d, night, moveScaleOf(d, now), app.dt, *lib, clipsFor(d, now), events, 8);
+        const AnimLibrary* own = r3d::animsFor(d);  // a kind has its plan's clips (dev, D77)
+        const int n = a.update(d, night, moveScaleOf(d, now), app.dt, own ? *own : *lib, clipsFor(d, now), events, 8);
         for (int i = 0; i < n; ++i) playEventSound(app, events[i], d, a.behavior.activity, now, yours ? 1.0f : 0.6f);
         // A gulp when a meal is finished; a happy squeak when a game of chase ends.
         const Activity activity = a.behavior.activity;

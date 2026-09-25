@@ -5,6 +5,7 @@
 #include "app/audio.hpp"
 #include "app/perf.hpp"
 #include "app/render3d.hpp"
+#include "core/kinds.hpp"
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "core/den_roster.hpp"
@@ -179,6 +180,7 @@ bool debugMenu(App& app, const Input& in) {
         {"Drain needs", 4}, {"Hatch now", 5}, {"Next stage", 6},   {"Next breed", 10},
         {"Next activity", 12}, {"Add dragon", 11}, {"Overlay", 7}, {"Save now", 8},
         {"Reset save", 9}, {"Dust/mud/bath", 13}, {"Add egg", 14}, {"Breed-ready", 15},
+        {"Next kind", 37}, {"Kind colouring", 38},
     };
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
@@ -241,6 +243,26 @@ bool debugMenu(App& app, const Input& in) {
                 const int breed = breedIndex(d.genome);
                 for (int l = 0; l < kLookCount; ++l) dexSee(app.game, dexDragon(breed, l));
                 showToastf(app, "Dragondex: %s complete", breedName(d.genome));
+                break;
+            }
+            case 37: {  // the dragon revamp (D77): every hatched dragon as a new kind, in turn
+                const int next = r3d::devKind() + 1 < kindCount() ? r3d::devKind() + 1 : -1;
+                r3d::setDevKind(next, r3d::devVariant());
+                if (next < 0) {
+                    showToast(app, "Kinds: their own looks again");
+                } else {
+                    const KindInfo& k = kindInfo(next);
+                    char line[64];
+                    std::snprintf(line, sizeof(line), "%s (%s%s%s)", k.title, elementName(k.elements[0]),
+                                  k.elementCount > 1 ? " / " : "", k.elementCount > 1 ? elementName(k.elements[1]) : "");
+                    showToastf(app, "Kind: %s", line);
+                }
+                break;
+            }
+            case 38: {  // ...and its four colourings (the last is the rare one)
+                const int v = (r3d::devVariant() + 1) % kKindVariants;
+                r3d::setDevKind(r3d::devKind(), v);
+                if (r3d::devKind() >= 0) showToastf(app, "Colouring: %s", kindInfo(r3d::devKind()).variants[v].name);
                 break;
             }
             case 36:  // Beta WP1: fly your dragon over the placeholder valley

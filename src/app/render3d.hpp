@@ -8,6 +8,7 @@
 #include "core/den_actor.hpp"
 #include "core/egg.hpp"
 #include "core/items.hpp"
+#include "core/kinds.hpp"
 #include "core/particles.hpp"
 #include "core/prop_mesh.hpp"
 #include "core/props.hpp"
@@ -114,6 +115,13 @@ bool loadNextLook();
 // Dev: every dragon drawn in one look (-1: their own).
 void setForceLook(int look);
 int forceLook();
+// The look slots: the genome's looks, then the new kinds (D77, core/kinds; romfs:/dragons/).
+constexpr int kLookSlots = kLookCount + kMaxKinds;
+// Dev (the dragon revamp's preview): every hatched dragon drawn as this kind in this colouring
+// (variant 3 is the rare one; kind -1: back to their own looks).
+void setDevKind(int kind, int variant);
+int devKind();
+int devVariant();
 // The look a dragon is drawn in (its own, the dev menu's, or classic if missing).
 int lookFor(const Dragon& d);
 // The den camera watches this point too (a thrown ball) while `weight` > 0.
@@ -143,6 +151,9 @@ u32 backdrop(s64 now);
 // and the library index of each behavior clip for a body form.
 const AnimLibrary* anims();
 const int* clipIndex(int form);
+// The same for the body a dragon is drawn with (a kind's plan has its own clips).
+const AnimLibrary* animsFor(const Dragon& d);
+const int* clipIndexFor(const Dragon& d, int form);
 // A body form's model (LOD0) and its clip binding in a look, for measuring walking speeds
 // (nullptr until that look is loaded).
 const ModelData* model(int form, int look = 0);

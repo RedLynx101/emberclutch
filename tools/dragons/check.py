@@ -17,6 +17,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import dragons  # noqa: E402
 from dragons.clip_names import REQUIRED  # noqa: E402
+from dragons import lore  # noqa: E402
 
 GROUP_NAMES = {0: "eyes", 1: "horns", 2: "frill", 3: "spikes", 4: "tail_tip", 5: "heart", 6: "wings", 7: "mouth",
                9: "runes", 255: "body"}
@@ -116,7 +117,14 @@ def check_kind(name):
     plan = dragons.plan(k.META["plan"])
     RARE_REPLACES = k.META.get("rare_replaces", True)
     problems, lines = [], []
+    try:
+        lore.check_meta(k.META)
+    except AssertionError as e:
+        problems.append(str(e))
     folder = os.path.join(ROOT, "romfs", "dragons", name)
+    for egg in ("egg.ecm", "egg_lod1.ecm"):
+        if not os.path.exists(os.path.join(folder, egg)):
+            problems.append(f"no {egg} (python tools/blender/egg_model.py --kind {name} [--lod 1])")
     assert len(k.VARIANTS) == 4 and k.META.get("rare_variant", 3) == 3, f"{name}: four variants, the rare one last"
     for form in ("hatchling", "grown"):
         for lod in (0, 1):

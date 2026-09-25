@@ -1,31 +1,37 @@
-"""The Blazeplume (Ember and Gale, uncommon crossbreed of the Pouncer and the Crestwing): a
-phoenix-cat. Dragondex 9. Concept: docs/art/concept/dragons/dragon_blazeplume.jpg (reference only).
+"""The Blazeplume (Ember and Gale, uncommon; Dragondex 9): the first crossbreed, child of the
+Pouncer and the Crestwing. A phoenix-cat. Concept: docs/art/concept/dragons/dragon_blazeplume.jpg
+(reference only, D74; its adult's slight beak is ignored: the head is a cat's).
 
 Design notes
-  * Parents. The Pouncer gives it the lithe cat's body, the round cat head with tall pointed
-    ears and a cat's face; the Crestwing gives it feathers: feathered wings, a crest and a
-    plumed tail. What is new is fire: every feather is a flame, shading from gold at the root
-    through scarlet to a hot orange tip, and the tail ends in a spray of plumes whose tips glow.
-  * The adult. Proud and warm: a deep chest carried high on a longer, upright neck (a bird's
-    bearing on a cat), a golden bib and belly, flame licks rising up its flanks from the belly
-    like a fire seen from below. On the head a crest of flame feathers sweeps back between the
-    ears; each ear ends in a little flame tuft (the lynx in it); flame tufts on the cheeks and
-    a short flame mane down the back of the neck. Big layered feathered wings (gold coverts over
-    scarlet flight feathers with hot orange tips) that fold into a neat bundle on the flank.
-    A long cat's tail ending in a fan of long curling plumes with glowing tips.
-  * The hatchling. A round kitten-chick: a big round head, huge eyes, a fluffy down bib and
-    fluffy cheeks, stubby legs, a stumpy tail with a little flame tuft that glows like a
-    candle, a tiny three-feather crest and tiny feathery wing buds.
-  * Feathers are built here (the kit has blades and plumed membranes; these are layered,
-    gradient-painted feather sheets): each feather is a strip whose vertices are painted from
-    the palette row by row (gold -> scarlet -> hot orange -> glow), so the game shades them
-    smoothly from root to tip. Wings are a feather vane (flight feathers, notched trailing
-    edge) and a row of gold coverts on a slim bony arm, weighted to the Pouncer plan's classic
-    wing chain so they fold and spread with its clips.
-  * Variants: Blaze (orange, scarlet, gold: the natural one), Sunset (gold and rose: the
-    surprise), Cinder (charcoal and ash with ember-bright feather tips: the subtle one), and the
-    rare Phoenix (white-gold, glowing flame veins, glowing plume and crest tips, a bigger crest
-    and longer, more flame-like tail plumes).
+  * Parents. The Pouncer gives it the lithe cat's body and body plan, the round cat head with
+    tall pointed ears and a cat's face; the Crestwing gives it feathers: feathered wings, a
+    crest and a plumed tail. What is new is fire: every feather is a flame, shading from gold at
+    the root through scarlet to a hot orange tip, and the tail ends in a spray of plumes whose
+    tips glow.
+  * The adult. Proud and warm: a round breast carried high on a longer, upright neck (a bird's
+    bearing on a cat), a golden bib and belly, and tongues of flame licking up its flanks from
+    the belly like a fire seen from below. On the head a crest of flame feathers sweeps back
+    between the ears and flows on down the nape (the Crestwing's mane); each ear ends in a
+    little flame tuft (the lynx in it); flame tufts on the cheeks and a soft collar of feathers
+    round the base of the neck (the lion in it), framing the heartglow. Layered feathered wings (gold coverts over scarlet flight feathers with hot
+    orange tips) that fold into a neat bundle along the back. A long cat's tail ending in a
+    spray of flame plumes with glowing tips, held up like a torch.
+  * The hatchling. A round kitten-chick: a big round head, huge eyes, fluffy cheeks and a
+    fluffy bib, soft bumps of down on the back, stubby legs, a stumpy tail tipped with a little
+    flame that glows like a candle, a three-feather crest, flame-tipped kitten ears and tiny
+    feathered wing buds.
+  * Feathers are built here as strips whose vertices are painted from the palette row by row
+    (the exporter paints a vertex by its last face, so faces are listed tip-first), which the
+    game shades smoothly from root to tip: gold -> scarlet -> hot orange -> glow. The wings are
+    a flight-feather vane and a row of coverts on a slim bony arm, in a wing layout made for the
+    Pouncer plan's fold (see the wings section), so they fold and spread with its clips.
+  * Pattern: R flame tongues (the common pattern), G a soft mantle over the back (Sunset's
+    rosy sky), B the tongues' hot cores (the Phoenix's glow).
+  * Variants: Blaze (orange, scarlet and gold: the natural one), Sunset (gold with a rose back
+    and rose feathers: the surprise), Cinder (charcoal and ash, smouldering ember tongues and
+    ember-bright feather tips: the subtle one), and the rare Phoenix: white-gold with glowing
+    flames, glowing wing tips, a bigger glowing crest and longer, wavier flame plumes (its
+    hatchling a taller glowing crest and a longer tail flame).
 """
 import math
 
@@ -93,7 +99,7 @@ GROWN_NODES = _mirrored({
     "neck1": ((0, -1.00, 1.70), (0.33, 0.35)),
     "neck2": ((0, -1.18, 2.02), (0.27, 0.28)),
     "neck3": ((0, -1.30, 2.32), (0.235, 0.235)),
-    "head": (HEAD, (0.335, 0.30)),
+    "head": (HEAD, (0.355, 0.315)),
     "muzzle": (_h(0, -1.685, 2.42), (0.18, 0.15)),
     "snout": (_h(0, -1.88, 2.36), (0.11, 0.09)),
 }, {
@@ -154,7 +160,7 @@ def _grown_sculpt(kit, obj):
 
 GROWN = dict(
     name="grown", nodes=GROWN_NODES, edges=GROWN_EDGES, body="skin",
-    body_tris=1400, body_tris_lod1=540, export_scale=1.0,
+    body_tris=1350, body_tris_lod1=540, export_scale=1.0,
     young={
         "bones": {
             "head": (0.95, 0.9, 1.0), "snout": (0.9, 0.7, 0.95),
@@ -164,21 +170,21 @@ GROWN = dict(
             "arm_up": (0.68, 0.58), "arm_lo": (0.7, 0.58), "hand": (0.8, 0.72),
             "leg_up": (0.68, 0.58), "leg_lo": (0.7, 0.56), "foot": (0.8, 0.72),
         },
-        "parts": {"eyes": 1.35, "horns": 0.55, "frill": 0.8, "wings": 0.42, "spikes": 0.6,
+        "parts": {"eyes": 1.2, "horns": 0.55, "frill": 0.8, "wings": 0.42, "spikes": 0.6,
                   "tail_tip": 0.6, "heart": 0.85, "runes": 0.7},
     },
     young_pose={"neck1": -18, "neck2": -6, "neck3": 4, "head": 18},
     base_pose={"neck1": (-6, 0, 0), "neck2": (4, 0, 0), "neck3": (10, 0, 0), "head": (-6, 0, 0),
                "tail1": (8, 0, 0), "tail2": (4, 0, 6), "tail3": (6, 0, 10), "tail4": (10, 0, 12)},
     builds=BUILDS,
-    eyes=dict(at=_h(0.16, -1.70, 2.56), out=(0.58, -0.80, 0.12), iris=(0.092, 0.103, 0.05),
-              pupil=(0.054, 0.068, 0.019), slit=(0.3, 1.12),
+    eyes=dict(at=_h(0.168, -1.70, 2.57), out=(0.58, -0.80, 0.12), iris=(0.098, 0.11, 0.052),
+              pupil=(0.058, 0.073, 0.02), slit=(0.3, 1.12),
               glints=((-0.022, 0.035, 0.016), (0.016, -0.035, 0.008)), seg=(12, 2, 8, 2)),
-    head=dict(origin=HEAD, k=1.0, horn_len=1.0, horn_r=1.0, horn_curve=1.0, buds=False, frill_k=1.0, feather_w=1.0),
+    head=dict(origin=HEAD, k=1.06, horn_len=1.0, horn_r=1.0, horn_curve=1.0, buds=False, frill_k=1.0, feather_w=1.0),
     tail_k=1.0,
     heart=dict(at=(0, -1.02, 1.36), size=0.105),
     wing=dict(root=(0.30, -0.46, 1.72), scale=1.1, dihedral=40, droop=4,
-              radii={"root": 0.09, "elbow": 0.066, "wrist": 0.052, "finger": 0.02, "tip": 0.008},
+              radii={"root": 0.1, "elbow": 0.074, "wrist": 0.056, "finger": 0.02, "tip": 0.008},
               arm_tris=80, thickness=0.012, style="classic"),
     mask=dict(max_x=0.3, max_z=2.5, min_z=-1.0, tail_cut=(1.3, 0.95)),
     inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.02, "frill": 0.04, "tail_tip": 0.03, "heart": -0.06,
@@ -385,16 +391,6 @@ def _paint_preview(kit, d, obj):
         ve.data[i].value = glow
 
 
-def _frame(a, b, up):
-    """Unit direction a->b, a side vector (perpendicular, in the plane with `up`) and the
-    sheet normal."""
-    from mathutils import Vector
-    d = (Vector(b) - Vector(a)).normalized()
-    n = Vector(up) - d * Vector(up).dot(d)
-    n = n.normalized()
-    return d, d.cross(n).normalized(), n
-
-
 # Feather strips: rows [(t along the length, width factor)] ending in the point (width 0), and
 # one palette slot per band between rows (root band first).
 FEATHER = [(0.0, 0.4), (0.3, 1.0), (0.66, 0.72), (1.0, 0.0)]
@@ -452,17 +448,20 @@ def _feathers(kit, d, name, origin, strips, thickness=0.012, extra=None):
 
 # ------------------------------------------------------------------------------ wings
 # The feathered wing, in its own layout (u out along the span, v back along the chord) made
-# for the plan's fold (the classic clips' WINGS_FOLDED). The fold lays the wing's plane flat on
-# the flank and turns each wing bone in that plane by a fixed angle, whatever the layout: the
-# arm +3 degrees, the forearm -114, the four fingers 0, -41, -80 and -116. So:
+# for the plan's fold (the classic clips' WINGS_FOLDED, solved for the classic bat wing). The
+# fold lays the wing's plane flat against the flank and turns each wing bone within that plane
+# by a fixed angle, whatever the layout; with the wing raised at 40 degrees (at the classic 50
+# the folded plane splays out toward the tail) those angles are: arm +3, forearm -111, the four
+# fingers -1, -41, -78 and -114 degrees. So:
 #   * the arm points straight out (folded, it lies along the back line instead of rising);
-#   * the forearm reaches forward to the wrist (folded, the wrist comes to the shoulder front);
-#   * the fingers sit 37-41 degrees apart round the wrist, so folded they all point the same
-#     way, a little down: the closed fan is one neat bundle on the upper flank;
-#   * the feathers stay in the sector the fingers sweep (from the first finger to a little past
-#     the last), each weighted to the fingers or the forearm on either side of it, and within
-#     reach of the wrist, so folded their tips end together over the rump.
-# The arm itself carries only short coverts pointing out along it (they fold along the arm).
+#   * the forearm reaches forward to the wrist (folded, the wrist comes to the shoulder front,
+#     the bend of a bird's folded wing);
+#   * the fingers sit about 35 degrees apart round the wrist, so folded they all point back
+#     together, a little down: the closed fan is one neat bundle along the back;
+#   * the feathers stay in the sector the fingers sweep and near the forearm, where their two
+#     nearest struts (the kit's weighting) fold alike, and within 2.45 of the wrist, so folded
+#     their tips end together over the rump; nothing hangs behind the arm, where the fold
+#     would stand it up above the back (the kit's strut weights can't be steered there).
 def _polar(c, ang, r):
     return (c[0] + r * math.cos(math.radians(ang)), c[1] + r * math.sin(math.radians(ang)))
 
@@ -580,8 +579,6 @@ def wings(kit, d, rare):
     """Feathered wings: a slim bony arm along the leading edge, the flight-feather vane (scarlet
     to hot orange tips; the rare one's tips glow) and gold coverts."""
     baby = d["form"] == "hatchling"
-    if rare and baby:
-        return []
     wr = kit.F["wing"]["radii"]
     objs = []
     for side in ("L", "R"):
@@ -610,7 +607,6 @@ def _crest(kit, rare, baby):
     """The flame crest: feathers rising from the brow and sweeping back over the crown, the
     middle ones tallest (the rare Phoenix's: more, longer and wavier, their tips glowing)."""
     hk = kit.F["head"]["k"]
-    x_axis = (1.0, 0.0, 0.0)
     if baby:
         spec = [((0.0, -0.06, 0.3), (0.0, 0.2, 1.0), 0.3, 0.15, -0.35),
                 ((0.07, 0.02, 0.28), (0.25, 0.55, 0.85), 0.24, 0.13, -0.3),
@@ -643,9 +639,9 @@ def _crest(kit, rare, baby):
         if kit.LOD and (i >= 5 or (i == 0 and not baby)):
             continue
         base = kit.head_point(at)
-        normal = (1.0, 0.0, -0.35 * (1 if at[0] > 0 else -1) if at[0] else 0.0) if at[0] else x_axis
+        normal = (1.0, 0.0, -0.35 * math.copysign(1.0, at[0])) if at[0] else (1.0, 0.0, 0.0)
         out.append(dict(base=base, direction=dirn, normal=normal, length=length * hk, width=width * hk, rows=rows,
-                        slots=slots[:len(rows) - 1], lean=lean, wave=0.1 if rare else 0.08))
+                        slots=slots, lean=lean, wave=0.1 if rare else 0.08))
     return out
 
 
@@ -709,6 +705,30 @@ def _ruff(kit, d, baby):
     return pieces
 
 
+def _nape(kit, d):
+    """The crest flowing on down the nape: a few flame feathers lying back along the top of the
+    neck (the Crestwing's mane)."""
+    from mathutils import Vector
+    pieces = []
+    # Each on the neck bone whose segment it sits on, just past that bone's joint: the kit seats
+    # a part along the ray from its bone's joint, so the ray must leave the neck straight away.
+    for i, (bone, nxt, t, length, width) in enumerate(kit.lod((("neck3", "head", 0.12, 0.34, 0.15),
+                                                                ("neck2", "neck3", 0.2, 0.3, 0.14),
+                                                                ("neck1", "neck2", 0.25, 0.25, 0.13)),
+                                                               (("neck3", "head", 0.12, 0.34, 0.15),))):
+        a, b = kit.node(bone), kit.node(nxt)
+        down = (a - b).normalized()
+        up = kit.spine_up(bone, nxt)
+        r = kit.F["nodes"][bone][1][1] * (1 - t) + kit.F["nodes"][nxt][1][1] * t
+        base = a.lerp(b, t) + up * r * 0.9
+        dirn = (down * 0.75 + up * 0.35 + Vector((0, 0.25, 0))).normalized()
+        st = dict(base=base, direction=tuple(dirn), normal=(1.0, 0.0, 0.0), length=length * kit.F["head"]["k"],
+                  width=width, rows=kit.lod(FEATHER, LOW), slots=["accent_flat", "membrane", "horn"], lean=-0.3,
+                  wave=0.06)
+        pieces.append((_feathers(kit, d, f"nape_{i}", base, [st]), bone))
+    return pieces
+
+
 def parts(kit, d):
     F, mats, V = kit.F, d["mats"], kit.V
     baby = d["form"] == "hatchling"
@@ -726,9 +746,9 @@ def parts(kit, d):
                     length=length * (0.42 if not baby else 0.36), width=0.1 * hk, rows=kit.lod(FEATHER, LOW),
                     slots=["membrane", "horn", "horn"], lean=-0.25)
         e = _feathers(kit, d, f"ear_{s}", base, [tuft], thickness=0.045 * hk, extra=fan)
-        inner = kit.flat_fan(f"earin_{s}", [base + V((0, -0.02, 0.02)) * hk] + _ear(
-            kit, base + V((0, -0.02, 0.02)) * hk, o, u, length * 0.72, (0.17 if not baby else 0.19) * hk)[0][0][1:],
-            0.06 * hk)
+        (inner_pts, _), _, _, _ = _ear(kit, base + V((0, -0.02, 0.02)) * hk, o, u, length * 0.72,
+                                       (0.17 if not baby else 0.19) * hk)
+        inner = kit.flat_fan(f"earin_{s}", inner_pts, 0.06 * hk)
         inner.data.materials.append(mats["accent_flat"])
         ears += [(e, "head"), (inner, "head")]
     # Cheek tufts: flame feathers sweeping back from the cheeks.
@@ -745,9 +765,10 @@ def parts(kit, d):
                                lean=s * 0.15))
         cheeks.append((_feathers(kit, d, f"cheek_{s}", at, strips), "head"))
     out.append(("frill", 0, ears + cheeks))
-    # The ruff (group spikes: seated down onto the skin); the baby has its fluffy bib instead.
+    # The ruff and the nape feathers (group spikes: seated down onto the skin); the baby has
+    # its fluffy bib instead.
     if not baby:
-        out.append(("spikes", 0, _ruff(kit, d, baby)))
+        out.append(("spikes", 0, _ruff(kit, d, baby) + _nape(kit, d)))
     # The crest (group horns: the rare one's replaces it).
     for v, rare in ((0, False), (1, True)):
         pieces = []

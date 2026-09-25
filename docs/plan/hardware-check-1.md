@@ -4,6 +4,8 @@
 four sets of dragon models in memory. About 15 minutes. The full hardware run (WP13, D34)
 still closes Alpha 2.
 
+**Next: run 13, the Alpha 2 review (0.1.13): [hardware-check-2.md](hardware-check-2.md).**
+
 **Run 1 (2026-09-24, 0.1.1):** the 3D banner played, but the game stopped before it
 started ("The SD card was removed"): the CIA had no boot logo. **Run 2 (0.1.2):** the game
 started, but the 3D-banner CIA froze the HOME Menu (a flag it needs was dropped) and the

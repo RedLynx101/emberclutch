@@ -22,11 +22,13 @@ of Alpha 2 at the latest**, before content volume makes a rendering change expen
 |---|---|---|---|
 | **Foundations** | Design, tools, proof of pipeline | Phase 0 | ✅ Done 2026-09-23 |
 | **Alpha 1** | *A living pet* | Phases 1–2: 3D dragon, care, growth, naming, real saves, music, CIA | ✅ Done (2026-09-24, `v0.1.0-alpha1`) |
-| **Alpha 2** | *A den* | Phase 3: several dragons, breeding, eggs, Sanctuary/Vault, Market, Wanderings, map with fast travel; style review R5; first hardware runs | In progress ([plan](alpha-2.md)) |
+| **Alpha 2** | *A den* | Phase 3: several dragons, breeding, eggs, Sanctuary/Vault, Market, Wanderings, map with fast travel; style review R5; first hardware runs | ✅ Done (2026-09-25, `v0.2.0-alpha2`; [plan](alpha-2.md), [checklist](alpha-2-checklist.md)) |
 | **Beta** | *A trainer* | Phase 4 + ground half of Phase 5: tricks, voice, 3 ground competitions, economy | Planned · **sit-down first** |
 | **1.0** | *The sky* | Phase 6 + air half of Phase 5 + Phase 7 polish: flight, riding, valley, Sky Rings, Lantern Trial, public release | Planned · **sit-down first** |
 | **1.x** | *Friends* | Sky Visits (local wireless) | Later · **sit-down first** |
 | **2.0** | *The meadow* | Equine line: horse, pegasus, unicorn, alicorn | Later · **sit-down first** |
+
+**Next: the sit-down ([brief](beta-sitdown.md)).** Noah wants the places redesigned, the map, the open world, flying and challenges next (run 13, D72): the brief's first question is whether the valley comes before training.
 
 **Every milestone after Alpha 2 opens with a design sit-down with Noah (D65), and no work
 on it starts until he has passed it.** The sit-down happens when the milestone before it is

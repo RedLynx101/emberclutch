@@ -699,7 +699,18 @@ makes a little routine.
 - Review sheets of every breed (R6, not blocking). *Sent:* [R6](../art/reviews/R6-breeds.md)
   (every breed, look and rare trait, the Dragondex, photos, dirt, the budgets).
 
-### WP13 — The run on the old 3DS (D34)
+### WP13 — The run on the old 3DS (D34) ✅ run 13
+**Run 13 (2026-09-25, 0.1.13): Alpha 2 passes (D72).** Noah's notes and 0.1.14's fixes are in
+[hardware-check-2.md](hardware-check-2.md): 2D at its own depth in 3D (the profile's
+platform, the den's selection heart and particles), a baby toddle (walk_h), a tug for the
+ball, more games between dragons (spar, stalk and pounce, tail chase), and the spines
+seated in the idle pose for every build (ECM v4: per-build part shifts). On the way, two
+older bugs the new games exposed: a dragon counted as arrived at its own sulking spot, or its
+end of a game, when another merely stood near it (one pulled the rope from across the room).
+**Ready (2026-09-24):** the review build 0.1.13 (CIA and .3dsx, both through
+`tools/check_3ds.py`), Noah's steps in [hardware-check-2.md](hardware-check-2.md), the
+[checklist](alpha-2-checklist.md) with every scripted run swept on 0.1.13. Uploaded when
+Noah has the 3DS on the network.
 - Install the CIA with FBI (Noah's old 3DS runs Luma3DS + FBI); check the **3D banner**
   in the real HOME Menu (select it, let it
   animate, launch; fall back to the 2D banner if it misbehaves).
@@ -728,10 +739,12 @@ boot splash (WP11c's replacement), and the checks before anything goes on the 3D
    shells per element, rare-trait looks, mud spots; the budgets with mixed looks; R6 sent.
 4. ✅ **WP12c, running clips** (a scamper for babies, a gallop for grown dragons, zoomies).
 5. ✅ **WP11e, the 3D slider** (the top screen per eye; judged on the 3DS in WP13).
-6. **WP13, the full run on the old 3DS** and **WP14, the wrap-up** (the checklist, docs, the
-   tag `v0.2.0-alpha2`).
+6. ✅ **WP13, the full run on the old 3DS** (run 13, 0.1.13: passed, D72) and **WP14, the
+   wrap-up** (0.1.14 with run 13's fixes, [the checklist](alpha-2-checklist.md), the tag
+   `v0.2.0-alpha2`).
 
-Then **the Beta sit-down** with Noah (D65) before any Beta work: Claude brings a brief.
+**Alpha 2 is done.** Then **the sit-down** with Noah (D65) before any more work: the
+[brief](beta-sitdown.md).
 
 Moved past Alpha 2: the grooming redesign and its Groom button (Beta, with the Shine Show),
 several dragons wandering at once (Beta, the Wanderings' next pass), the map's new look and

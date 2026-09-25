@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-25 — Run 13: the Alpha 2 review
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D72 | **Run 13 passes Alpha 2** (0.1.13 on the old 3DS): the looks, a hatching, the full den, photo mode, zoomies and running, mud and the breed banners work; the 3D slider is "really cool". Fixed in 0.1.14: in 3D, 2D drawn with the 3D sits at its own depth (the profile's platform stood out on the screen, the selection heart floated at the screen); babies toddle at about 3.7 times their old pace; you can tug the ball back out of a dragon's mouth; more games between dragons (sparring, stalk and pounce, tail chasing); spines seated on the body for every look, build and stage (a Tallneck Tide juvenile's floated). The Dragondex's pictures, the breed banners and the fast-travel map will largely be replaced when the places move into the open world. Alpha 2 is tagged `v0.2.0-alpha2`; next, the sit-down (D65) for what Noah wants most: the places redesigned, the map, the open world, flying and challenges | Noah's run 13 (2026-09-25): "I'm itching to get to larger parts of the game where we redesign the locations, map, and create the open world, flying, and challenges" | Approved |
+
 ## 2026-09-24 — The first run on the old 3DS (Alpha 2)
 
 | # | Decision | Why | Status |

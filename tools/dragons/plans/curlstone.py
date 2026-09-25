@@ -206,7 +206,7 @@ def wings_following(pitch, fold=None):
     with the belly (the membrane's flank edge follows the chest, belly and loin; the arm alone
     would leave it poking out)."""
     fold = dict(fold or WINGS_FOLDED)
-    for s, m in (("R", 1), ("L", -1)):
+    for s in ("R", "L"):
         p, y, r = fold[f"wing_arm_{s}"]
         q = q_mul(q_axis((-1.0, 0.0, 0.0), pitch), q_from_pyr(p, y, r))
         fold[f"wing_arm_{s}"] = pyr_from_q(q)
@@ -321,8 +321,11 @@ def tail_sway(amount=1.0, period=3.6):
 
 def sniffing(amount=3.0, period=0.22, start=0.0, end=1e9):
     """The snout twitching as it sniffs."""
-    return lambda t: {"snout": (amount * sin01(t, period), 0, 0), "head": (0.6 * amount * sin01(t, period, 0.3), 0, 0)} \
-        if start < t < end else {}
+    def fn(t):
+        if not start < t < end:
+            return {}
+        return {"snout": (amount * sin01(t, period), 0, 0), "head": (0.6 * amount * sin01(t, period, 0.3), 0, 0)}
+    return fn
 
 
 def leg_cycle(period, amp_up, amp_bend, phases, bob=2.0, roll=0.0, head=1.0):
@@ -424,7 +427,8 @@ def build():
     trot = clip("trot", 0.7, loop=True, speed=1.5).pose(0.0, merge(STAND, {"neck2": (-10, 0, 0), "head": (6, 0, 0)}))
     trot.wave(leg_cycle(0.7, 26, 48, TROT_PHASES, bob=2.6, roll=2.0, head=0.6)).wave(tail_sway(1.2, 0.7))
     footsteps(trot, 0.7, {"a": 0.0, "b": 0.5})
-    trot_h = clip("trot_h", 0.42, loop=True, speed=1.0).pose(0.0, merge(STAND, {"neck2": (-6, 0, 0), "head": (4, 0, 0)}))
+    trot_h = clip("trot_h", 0.42, loop=True, speed=1.0)
+    trot_h.pose(0.0, merge(STAND, {"neck2": (-6, 0, 0), "head": (4, 0, 0)}))
     trot_h.wave(leg_cycle(0.42, 32, 52, TROT_PHASES, bob=3.0, roll=2.0, head=0.6)).wave(tail_sway(1.4, 0.42))
     footsteps(trot_h, 0.42, {"a": 0.0, "b": 0.5})
     shuffle = clip("shuffle", 1.1, loop=True).pose(0.0, STAND)

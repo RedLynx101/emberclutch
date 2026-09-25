@@ -190,8 +190,8 @@ HATCH_NODES = _mirrored({
     "tail3": ((0, 0.80, 0.21), None),
     "tail2": ((0, 0.62, 0.30), None),
     "hips": ((0, 0.40, 0.46), None),
-    "loin": ((0, 0.22, 0.58), None),
-    "belly": ((0, 0.02, 0.60), None),
+    "loin": ((0, 0.22, 0.62), None),
+    "belly": ((0, 0.02, 0.64), None),
     "chest": ((0, -0.16, 0.56), None),
     "neck2": ((0, -0.28, 0.64), None),
     "neck3": ((0, -0.38, 0.76), None),
@@ -215,9 +215,9 @@ HATCH_META = [
     ("ball", (0, -1.00, 0.78), 0.094),                  # the button at its tip
     ("ell", (0, -0.66, 0.80), (0.14, 0.14, 0.09)),      # chin
     ("chain", [(0, -0.24, 0.60), (0, -0.36, 0.75)], [0.22, 0.23]),
-    ("ell", (0, 0.10, 0.56), (0.35, 0.40, 0.37)),       # the pebble: a round, high back
+    ("ell", (0, 0.10, 0.60), (0.37, 0.37, 0.41)),       # the pebble: a round, high back
     ("ell", (0, -0.12, 0.52), (0.28, 0.24, 0.30)),      # chest
-    ("ell", (0, 0.36, 0.44), (0.28, 0.24, 0.28)),       # haunches
+    ("ell", (0, 0.33, 0.47), (0.30, 0.23, 0.30)),       # haunches
     ("ell", (0, 0.06, 0.37), (0.26, 0.28, 0.20)),       # tummy
     ("chain", [(0, 0.50, 0.38), (0, 0.66, 0.28), (0, 0.82, 0.21), (0, 0.97, 0.16), (0, 1.09, 0.14)],
      [0.15, 0.12, 0.10, 0.085, 0.075]),               # a thick little tail
@@ -234,7 +234,6 @@ for _s in (-1, 1):
     ]
 
 HATCH_PLATES = [
-    ("neck2", 0.5, (0, 55, -55), (0.22, 0.24, 0.05), 0.025),
     ("chest", 0.5, (-27, 27, 80, -80), (0.31, 0.32, 0.065), 0.03),
     ("belly", 0.5, (0, 52, -52, 102, -102), (0.33, 0.33, 0.07), 0.03),
     ("loin", 0.5, (-27, 27, 80, -80), (0.33, 0.33, 0.07), 0.03),
@@ -342,7 +341,7 @@ def _plate(kit, bvh, name, centre, normal, back, size, lift, domed=True):
     def drape(px, py, up):
         """The skin point under plate coordinates (px, py) plus `up` along the plate normal."""
         q = c + x * px + y * py
-        hit, nrm = _first_hit(bvh, q + z * 0.6, -z, 1.4)
+        hit, _ = _first_hit(bvh, q + z * 0.6, -z, 1.4)
         base = hit if hit is not None and (hit - q).length < 0.5 else q
         return base + z * up
 
@@ -557,14 +556,14 @@ def parts(kit, d):
             for j, dx in enumerate((-0.55, 0.0, 0.55)):
                 base = tip + V((s * dx * rr * 0.9, -rr * 0.55, 0.02 * k))
                 c = claw(kit, f"claw_{foot}_{s}_{j}", base, (s * dx * 0.3, -1.0, -0.25),
-                         (0.2 if not baby else 0.06) * k, (0.042 if not baby else 0.018) * k, big=k > 0.8)
+                         (0.27 if not baby else 0.06) * k, (0.052 if not baby else 0.018) * k, big=k > 0.8)
                 c.data.materials.append(mats["tooth"])
                 claws.append((c, f"{bone}_{'R' if s > 0 else 'L'}"))
     out.append(("frill", 0, claws))
     # The tail's rounded stone club.
     x, y, z = F["nodes"]["tail_tip"][0]
     k = F["tail_k"]
-    club = kit.blob("tail_club", (0, y + 0.02 * k, z + 0.02 * k), (0.30 * k, 0.36 * k, 0.26 * k),
+    club = kit.blob("tail_club", (0, y + 0.04 * k, z + 0.03 * k), (0.34 * k, 0.40 * k, 0.29 * k),
                     kit.lod(8, 6), kit.lod(5, 4))
     club.data.materials.append(mats["horn"])
     out.append(("tail_tip", 0, [(club, "tail4")]))

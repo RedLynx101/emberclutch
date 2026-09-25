@@ -9,6 +9,7 @@
 #include "core/den_actor.hpp"
 #include "core/den_roster.hpp"
 #include "core/dragon.hpp"
+#include "core/dragondex.hpp"
 #include "core/egg.hpp"
 #include "core/shell_burst.hpp"
 #include "core/particles.hpp"
@@ -116,6 +117,7 @@ struct HatchState {
     bool named = false;     // the keyboard is done
     float flash = 0;        // the burst's warm flash, fading (1 .. 0)
     float sparkIn = 0;      // seconds to the next sparkle round the blob
+    DexNews dex;            // what it added to the Dragondex (told once it's named)
     ShellBurst burst;       // the pieces of the shell
 };
 
@@ -124,7 +126,7 @@ struct HatchState {
 enum class KeyboardFor : u8 { None, PlayerName, NameHatchling, Rename };
 
 // START's system menu (src/app/system_menu.cpp): the game waits while it's open.
-enum class MenuPage : u8 { Closed, Main, Settings, DeleteAsk, DeleteSure };
+enum class MenuPage : u8 { Closed, Main, Settings, DeleteAsk, DeleteSure, Dex };
 
 struct App {
     SceneId scene = SceneId::Title;
@@ -176,6 +178,7 @@ struct App {
     const char* toast = nullptr;
     float toastTime = 0;
     char toastText[64] = {};  // for toasts with a name in them (showToastf)
+    char toastNext[64] = {};  // one more, shown when this one is gone (queueToastf)
     float saveFlash = 0;      // seconds the save icon still shows
     MenuPage menu = MenuPage::Closed;
     bool quit = false;        // Save & quit: leave after this frame
@@ -204,6 +207,8 @@ struct App {
     u8 marketTab = 0;    // the Market: food, goods, sell, the egg of the day
     u8 goodsPick = 0;    // the Market's goods (WP7): the item picked (core/items Item)...
     u8 goodsPage = 0;    // ...and the page of the stall
+    // The Dragondex (WP12, dragondex_ui.cpp): the entry picked (breed, look) and the page.
+    u8 dexPick = 0, dexLook = 0, dexPage = 0;
 
     // Debug
     bool overlay = EC_DEV;
@@ -225,6 +230,11 @@ struct App {
 s64 nowLocal(const App& app);
 void showToast(App& app, const char* msg);
 void showToastf(App& app, const char* fmt, const char* arg);  // one %s
+// After the toast showing now (at once if there's none). One waits at a time: a newer one
+// takes its place.
+void queueToastf(App& app, const char* fmt, const char* arg);
+// Each frame: the toast fades on; the one queued follows it.
+void tickToast(App& app);
 
 inline bool hasDragon(const App& app) { return app.game.dragonCount > 0; }
 // The dragon (or egg) the bottom screen cares for.

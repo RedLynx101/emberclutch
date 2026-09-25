@@ -32,6 +32,10 @@ struct PropLook {
     float glow = 0;  // palette alpha for emissive vertices (lanterns, moonflowers)
 };
 PropLook propLook(Item i);  // Item::Count: the den's own rug
+// A completed breed's banner (the Dragondex, WP12), hung in the banner spot in its colours:
+// the cloth its body, an egg on it in its accent, the egg's heart in its heartglow.
+PropMesh breedBannerMesh();
+PropLook breedBannerLook(Rgb base, Rgb accent, Rgb glow);
 
 // Where a decor spot is: the rug on the floor at home, the lantern and the banner on the
 // back wall, the perch by the hearth, the plant under the shelves. Local +Y points at the

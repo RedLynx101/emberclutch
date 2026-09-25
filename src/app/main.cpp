@@ -16,6 +16,7 @@
 #include "app/scenes.hpp"
 #include "app/screenshot.hpp"
 #include "app/system_menu.hpp"
+#include "app/dragondex_ui.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
 #include "core/clock.hpp"
@@ -90,6 +91,7 @@ int main() {
         feedFromBowl(app.game, now);  // the hungry ate from the bowl while you were away
         fixCare(app);
         markVisit(activeDragon(app), now);
+        dexSeeAll(app.game);  // a save from before the Dragondex: everyone hatched is in it
     }
 
     audio::setVolumes(app.game.settings.musicVolume, app.game.settings.sfxVolume);
@@ -104,7 +106,7 @@ int main() {
         app.frameMs = app.frameMs * 0.9f + ms * 0.1f;  // smoothed for the overlay
         app.dt = ms > 100.0f ? 0.1f : ms / 1000.0f;     // clamp after suspend
         app.t += app.dt;
-        if (app.toast && (app.toastTime -= app.dt) <= 0) app.toast = nullptr;
+        tickToast(app);
         if (app.saveFlash > 0) app.saveFlash -= app.dt;
 
         const Input in = autotest::active() ? autotest::next(app) : readInput();
@@ -138,8 +140,12 @@ int main() {
         C2D_SceneBegin(app.top);
         {
             perf::Scope timed(perf::Top);
-            sceneFns(app.scene).drawTop(app);
-            if (paused) dimTopForMenu(app);
+            if (app.menu == MenuPage::Dex) {
+                drawDexTop(app);  // the book's dragon instead of the scene
+            } else {
+                sceneFns(app.scene).drawTop(app);
+                if (paused) dimTopForMenu(app);
+            }
             drawToast(app);
             drawSaveIcon(app);
             debugDrawOverlay(app);

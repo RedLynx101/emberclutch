@@ -17,6 +17,7 @@
 #include "core/egg.hpp"
 #include "core/genetics.hpp"
 #include "core/items.hpp"
+#include "core/profile.hpp"
 #include "core/prop_mesh.hpp"
 #include "core/rig.hpp"
 
@@ -373,6 +374,7 @@ void pop(App& app, Dragon& d, s64 now) {
         r3d::setBurst(&h.burst, &d);  // its egg's colours
     }
     tryHatch(d, now, app.rng);  // incubation is complete: it hatches
+    h.dex = dexSee(app.game, d);  // into the Dragondex (told once it's named)
     d.denSlot = static_cast<u8>(bed >= 0 ? bed : 0);
     markVisit(d, now);
     app.eggs[h.nest] = EggMotion{};
@@ -466,6 +468,17 @@ void hatchLife(App& app, const Input& in, s64 now) {
         a.behavior.care(Care::Greet, d);  // out of the nest to say hello
         app.game.settings.seenHatch = 1;
         showToastf(app, str::kSayHello, d.name);
+        if (h.dex.completed >= 0) {  // then the Dragondex's news, the biggest
+            u8 a, b;
+            breedAlleles(h.dex.completed, a, b);
+            queueToastf(app, str::kDexComplete, breedName(static_cast<Element>(a), static_cast<Element>(b)));
+        } else if (h.dex.newRare) {
+            queueToastf(app, str::kDexRare, rareName(d.genome.rareFlags));
+        } else if (h.dex.newEntry) {
+            char kind[40];
+            kindName(d, kind, sizeof(kind));
+            queueToastf(app, str::kDexNew, kind);
+        }
         saveNow(app);
     }
 }
@@ -564,6 +577,12 @@ void denThings(App& app, const DenRoster& r, s64 now) {
     }
     t.bowlFood = bowlFood(s);
     for (int p = 0; p < kDecorSpots; ++p) t.decor[p] = decorAt(s, p);
+    if (const int breed = bannerBreed(s); breed >= 0) {  // a completed breed's banner (the Dragondex)
+        Rgb base, accent, glow;
+        breedColours(breed, base, accent, glow);
+        t.breedBanner = true;
+        t.breedLook = breedBannerLook(base, accent, glow);
+    }
     const DayBlend light = dayBlend(now);
     t.daylight = light.weight(kLightDay) + 0.4f * light.weight(kLightEvening);
     r3d::setDenThings(&t);

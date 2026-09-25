@@ -30,6 +30,20 @@ void showToastf(App& app, const char* fmt, const char* arg) {
     showToast(app, app.toastText);
 }
 
+void queueToastf(App& app, const char* fmt, const char* arg) {
+    std::snprintf(app.toastNext, sizeof(app.toastNext), fmt, arg);
+    if (!app.toast) tickToast(app);
+}
+
+void tickToast(App& app) {
+    if (app.toast && (app.toastTime -= app.dt) > 0) return;
+    app.toast = nullptr;
+    if (!app.toastNext[0]) return;
+    std::snprintf(app.toastText, sizeof(app.toastText), "%s", app.toastNext);
+    app.toastNext[0] = 0;
+    showToast(app, app.toastText);
+}
+
 void saveNow(App& app) {
     if (!saveGame(app.game, app.slots, nowLocal(app))) {
         showToast(app, "Couldn't save to the SD card.");

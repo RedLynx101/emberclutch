@@ -121,6 +121,19 @@ TEST(den_things_fit_the_frame_budget) {
         decor[spot] = std::max(decor[spot], m.triangles());
         if (spot == 0) cheapestRug = std::min(cheapestRug, m.triangles());
     }
+    {  // a breed's banner (the Dragondex) takes the banner spot instead
+        const PropMesh m = breedBannerMesh();
+        CHECK(m.triangles() > 0 && m.paint.size() == m.pos.size() * 4);
+        for (u16 v : m.idx) CHECK(v < m.pos.size());
+        const int spot = decorSpot(ItemKind::Banner);
+        decor[spot] = std::max(decor[spot], m.triangles());
+        // its egg reads on the cloth whatever the breed's colours
+        const PropLook pale = breedBannerLook({230, 230, 220}, {235, 225, 215}, {255, 200, 120});
+        const PropLook dark = breedBannerLook({30, 30, 40}, {40, 35, 45}, {120, 200, 255});
+        CHECK(pale.colour[1].r < 128 && dark.colour[1].r > 128);
+        const PropLook plain = breedBannerLook({170, 40, 40}, {245, 196, 81}, {255, 150, 60});
+        CHECK(plain.colour[1].r == 245 && plain.colour[1].g == 196);
+    }
     const StaticScene& s = den();
     int decorSum = 0;
     for (int n : decor) decorSum += n;

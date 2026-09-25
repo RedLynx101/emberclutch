@@ -9,6 +9,7 @@
 #include "core/egg.hpp"
 #include "core/items.hpp"
 #include "core/particles.hpp"
+#include "core/prop_mesh.hpp"
 #include "core/props.hpp"
 #include "core/shell_burst.hpp"
 
@@ -96,6 +97,8 @@ struct DenThings {
     Vec3 ropeA, ropeB;
     Food bowlFood = Food::Count;  // Count: the bowl is empty
     Item decor[kDecorSpots] = {Item::Count, Item::Count, Item::Count, Item::Count, Item::Count};
+    bool breedBanner = false;  // a breed's banner in the banner spot (the Dragondex), in these colours
+    PropLook breedLook;
     float daylight = 1;  // 0 night .. 1 day: lanterns and moonflowers glow brighter at night
 };
 void setDenThings(const DenThings* things);

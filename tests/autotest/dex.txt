@@ -1,0 +1,62 @@
+# The Dragondex (WP12): the hatchling's entry and its toast, a completed breed's banner in the
+# den (dev menu page 2: Dex: this breed), then the book from the system menu.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 5.5
+shot x1-hello
+wait 3
+shot x2-hello
+wait 3
+shot x2b-newentry
+key SELECT
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+key R
+wait 0.3
+tap 238 156
+wait 0.3
+key SELECT
+wait 2.5
+shot x3-banner
+key START
+wait 0.5
+shot x4-menu
+tap 160 136
+wait 1
+shot x5-book
+tap 190 39
+wait 1
+shot x6-pick
+key R
+wait 0.5
+shot x7-page2
+key R
+wait 0.5
+key R
+wait 0.5
+shot x8-page1
+tap 142 61
+wait 0.5
+shot x9-tide
+tap 169 219
+wait 0.5
+shot x10-takendown
+key B
+wait 0.5
+key START
+wait 0.5
+quit

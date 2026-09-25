@@ -109,6 +109,7 @@ void devAddDragon(App& app, bool asEgg) {
         suggestName(d, rng.next(), d.name, sizeof(d.name));
     }
     s.dragons[s.dragonCount++] = d;
+    dexSeeAll(s);
     saveNow(app);
 }
 
@@ -152,6 +153,7 @@ void devAddFamily(App& app) {
     kid.denSlot = static_cast<u8>(makeRoomForHatchling(s));
     suggestName(kid, rng.next(), kid.name, sizeof(kid.name));
     s.dragons[s.dragonCount++] = kid;
+    dexSeeAll(s);
     saveNow(app);
 }
 
@@ -180,7 +182,7 @@ bool debugMenu(App& app, const Input& in) {
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
         {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26}, {"Next look", 27},
-        {"Force look", 28}, {"GPU probe", 29}, {"Next rare", 30},
+        {"Force look", 28}, {"GPU probe", 29}, {"Next rare", 30}, {"Dex: this breed", 31},
     };
     const Entry* items = app.devPage ? kPage2 : kPage1;
     const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
@@ -232,6 +234,12 @@ bool debugMenu(App& app, const Input& in) {
                 k = (k + 1) % 5;
                 d.genome.rareFlags = kRares[k];
                 showToastf(app, "Rare trait: %s", kRareNames[k]);
+                break;
+            }
+            case 31: {  // WP12: every look of this one's breed in the Dragondex (completes it: the banner)
+                const int breed = breedIndex(d.genome);
+                for (int l = 0; l < kLookCount; ++l) dexSee(app.game, dexDragon(breed, l));
+                showToastf(app, "Dragondex: %s complete", breedName(d.genome));
                 break;
             }
             case 29:  // WP11d: each part's share of the GPU's time, one left out at a time

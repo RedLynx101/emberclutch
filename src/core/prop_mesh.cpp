@@ -333,13 +333,20 @@ void banner(Builder& b, int variant) {
                        {x0, kFront, z0 + h0 - 0.12f}, {0, -1, 0});
             }
         }
-    } else {  // a star
+    } else if (variant == 2) {  // a star
         Vec3 ring[10];
         for (int k = 0; k < 10; ++k) {
             const float t = kPi / 2 - 2 * kPi * k / 10, r = k % 2 ? 0.14f : 0.34f;
             ring[k] = mid + Vec3{-std::cos(t) * r, 0, std::sin(t) * r};
         }
         b.fan(mid, ring, 10, {0, -1, 0}, false, 3);
+    } else {  // a breed's banner (the Dragondex): an egg, its heartglow at the middle
+        Vec3 ring[12];
+        for (int k = 0; k < 12; ++k) {
+            const float t = kPi / 2 - 2 * kPi * k / 12, up = std::sin(t);
+            ring[k] = mid + Vec3{-std::cos(t) * 0.26f * (1.0f - 0.18f * up), 0, up * 0.34f};
+        }
+        b.fan(mid + Vec3{0, 0, -0.06f}, ring, 12, {0, -1, 0}, false, 3);
     }
 }
 
@@ -380,6 +387,26 @@ PropMesh decorMesh(Item i) {
         default: break;
     }
     return m;
+}
+
+PropMesh breedBannerMesh() {
+    PropMesh m;
+    Builder b{m};
+    banner(b, 3);
+    return m;
+}
+
+PropLook breedBannerLook(Rgb base, Rgb accent, Rgb glow) {
+    auto luma = [](Rgb c) { return 0.3f * c.r + 0.59f * c.g + 0.11f * c.b; };
+    PropLook l;
+    l.colour[0] = base;
+    // The egg stands out from the cloth: its accent, unless that's too close to it.
+    const float lb = luma(base);
+    l.colour[1] = std::fabs(luma(accent) - lb) > 60 ? accent : lb > 128 ? Rgb{70, 45, 55} : Rgb{247, 234, 200};
+    l.colour[2] = {196, 150, 70};  // the brass rod
+    l.colour[3] = glow;
+    l.glow = 0.6f;
+    return l;
 }
 
 PropMesh homeRugMesh() {

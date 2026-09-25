@@ -330,7 +330,7 @@ Quat g_ballSpin{0, 0, 0, 1};
 Vec3 g_follow;          // the den camera also watches this (a thrown ball)
 // The den's bought things (WP7): meshes built on first use, one per toy and decor item.
 const DenThings* g_things = nullptr;
-GpuMesh g_toyMeshes[kToys], g_bowlFoodMesh, g_decorMeshes[kItems], g_homeRugMesh;
+GpuMesh g_toyMeshes[kToys], g_bowlFoodMesh, g_decorMeshes[kItems], g_homeRugMesh, g_breedBannerMesh;
 float g_followWeight = 0;
 
 // Toon ramp on L.N (signed): plum shadow, a mid band, full light.
@@ -1010,6 +1010,7 @@ void shutdown() {
     for (GpuMesh& m : g_decorMeshes) m.release();
     g_bowlFoodMesh.release();
     g_homeRugMesh.release();
+    g_breedBannerMesh.release();
     g_egg.ok = g_eggLod1.ok = false;
     if (g_staticDvlb) {
         shaderProgramFree(&g_staticProgram);
@@ -1332,7 +1333,16 @@ void drawThings(App& app, const C3D_Mtx& view, const DenThings& t) {
     if (app.gpuProbe == 1) return;
     const Mat34 identity[1] = {Mat34::identity()};
     const float night = 1.0f - t.daylight;
+    const int bannerSpot = decorSpot(ItemKind::Banner);
     for (int s = 0; s < kDecorSpots; ++s) {
+        if (s == bannerSpot && t.breedBanner) {  // a breed's banner takes the spot
+            if (!g_breedBannerMesh.vbo && !uploadProp(g_breedBannerMesh, breedBannerMesh())) continue;
+            setLook(t.breedLook, t.breedLook.glow * (0.3f + 0.7f * night));
+            const DecorPlace p = decorPlace(s);
+            modelView(view, placeMatrix(p.at, p.yaw, 1.0f, p.scale));
+            drawMesh(app, g_breedBannerMesh, identity);
+            continue;
+        }
         const Item it = t.decor[s];
         if (it >= Item::Count && s != 0) continue;  // an empty spot (the rug's has the den's own)
         GpuMesh& g = it < Item::Count ? g_decorMeshes[static_cast<int>(it)] : g_homeRugMesh;
@@ -1399,7 +1409,7 @@ void drawProps(App& app, const C3D_Mtx& view) {
         propModelView(view, g_ball->pos, g_ball->radius, &g_ballSpin);
         drawMesh(app, g_ballMesh, identity);
     }
-    static const DenThings kBare;  // scenes that set nothing still have the den's own rug
+    static const DenThings kBare{};  // scenes that set nothing still have the den's own rug
     drawThings(app, view, g_things ? *g_things : kBare);
 }
 

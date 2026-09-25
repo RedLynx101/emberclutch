@@ -258,6 +258,10 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
     w.u8v(portions ? data.bowl[portions - 1] : 0xFF);
     w.u8v(static_cast<u8>(portions));
     for (u8 k : data.bowl) w.u8v(k);  // ...then every portion (Alpha 2, after run 4)
+    for (u8 k : data.dexLooks) w.u8v(k);  // Alpha 2 WP12: the Dragondex
+    w.u8v(data.dexRares);
+    w.u32v(data.dexDone);
+    w.u8v(data.bannerBreed);
     w.patchU16(at, static_cast<u16>(w.pos() - start));
 
     // Settings section
@@ -363,6 +367,13 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
         } else {  // older saves: one food, `left` portions of it
             for (int k = 0; k < kBowlSlots; ++k) tmp.bowl[k] = k < left && k < 3 ? food : 0xFF;
         }
+    }
+    if (sectionSize >= 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots + kBreedCount + 6) {  // older: an empty book
+        for (u8& k : tmp.dexLooks) k = static_cast<u8>(r.u8v() & ((1u << kLookCount) - 1));
+        tmp.dexRares = static_cast<u8>(r.u8v() & 0x0F);
+        tmp.dexDone = r.u32v() & ((1u << kBreedCount) - 1);
+        tmp.bannerBreed = r.u8v();
+        if (tmp.bannerBreed >= kBreedCount) tmp.bannerBreed = 0xFF;
     }
     r.seek(start + sectionSize);
 

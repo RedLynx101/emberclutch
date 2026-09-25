@@ -1,6 +1,7 @@
 #include "app/system_menu.hpp"
 
 #include "app/audio.hpp"
+#include "app/dragondex_ui.hpp"
 #include "app/storage.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
@@ -41,20 +42,22 @@ void closeMenu(App& app) {
 void mainPage(App& app, const Input& in) {
     heading(app, str::kGameTitle);
     const bool inGame = hasDragon(app) && app.scene != SceneId::Title && app.scene != SceneId::PickStarter;
-    const float step = inGame ? 42.0f : 50.0f;
-    float y = inGame ? 50.0f : 58.0f;
-    if (button(app, {60, y, 200, 36}, str::kResume, in) || (in.down & KEY_B)) closeMenu(app);
+    const float step = inGame ? 38.0f : 50.0f, h = inGame ? 32.0f : 36.0f;
+    float y = inGame ? 44.0f : 58.0f;
+    if (button(app, {60, y, 200, h}, str::kResume, in) || (in.down & KEY_B)) closeMenu(app);
     y += step;
     if (inGame) {
-        if (button(app, {60, y, 200, 36}, str::kMap, in)) {
+        if (button(app, {60, y, 200, h}, str::kMap, in)) {
             closeMenu(app);
             openMap(app);
         }
         y += step;
+        if (button(app, {60, y, 200, h}, str::kDex, in)) openDex(app);
+        y += step;
     }
-    if (button(app, {60, y, 200, 36}, str::kSettings, in)) app.menu = MenuPage::Settings;
+    if (button(app, {60, y, 200, h}, str::kSettings, in)) app.menu = MenuPage::Settings;
     y += step;
-    if (button(app, {60, y, 200, 36}, hasDragon(app) ? str::kSaveQuit : str::kQuit, in)) {
+    if (button(app, {60, y, 200, h}, hasDragon(app) ? str::kSaveQuit : str::kQuit, in)) {
         if (hasDragon(app)) saveNow(app);
         app.quit = true;
     }
@@ -118,6 +121,7 @@ void drawSystemMenu(App& app, const Input& in) {
         case MenuPage::Settings: settingsPage(app, in); break;
         case MenuPage::DeleteAsk: deletePage(app, in, false); break;
         case MenuPage::DeleteSure: deletePage(app, in, true); break;
+        case MenuPage::Dex: drawDexBottom(app, in); break;
         default: break;
     }
 }

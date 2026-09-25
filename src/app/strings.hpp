@@ -232,5 +232,16 @@ inline constexpr const char* kDeleteSure = "Are you sure? This can't be undone."
 inline constexpr const char* kYesDelete = "Yes, delete";
 inline constexpr const char* kDeleted = "Save deleted.";
 inline constexpr const char* kKeeper = "Keeper";
+// The Dragondex (WP12)
+inline constexpr const char* kDex = "Dragondex";
+inline constexpr const char* kDexUnknown = "Not met yet";
+inline constexpr const char* kDexBreedLine = "%s: %d of %d looks";
+inline constexpr const char* kDexDone = "Complete! Its banner is yours.";
+inline constexpr const char* kDexHang = "Hang banner";
+inline constexpr const char* kDexRares = "Rare traits";
+inline constexpr const char* kDexTakeDown = "Take it down";
+inline constexpr const char* kDexNew = "New in the Dragondex: %s";
+inline constexpr const char* kDexRare = "A rare trait for the Dragondex: %s!";
+inline constexpr const char* kDexComplete = "Every %s look found! +150 Gleam and a banner";
 
 }  // namespace ec::str

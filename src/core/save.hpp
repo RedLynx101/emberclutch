@@ -55,6 +55,13 @@ struct SaveData {
     // an empty place; the portions are always the first ones). One food at a time before, 3 of
     // it (Noah wanted to put in whatever he had, 2026-09-24).
     u8 bowl[kBowlSlots] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    // The Dragondex (WP12, core/dragondex): per breed, the looks seen (a bit each); the rare
+    // traits seen; the breeds completed (rewarded, their banners yours); the breed banner hung
+    // in the den (0xFF: none).
+    u8 dexLooks[kBreedCount] = {};
+    u8 dexRares = 0;
+    u32 dexDone = 0;
+    u8 bannerBreed = 0xFF;
     Settings settings{};
     u16 dragonCount = 0;
     Dragon dragons[kMaxDragons];

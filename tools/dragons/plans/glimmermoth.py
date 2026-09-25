@@ -17,16 +17,19 @@ The body draw is the 25 body bones the skin uses (the antennae carry only parts)
 draw is the 12 wing bones.
 
 Moth wings are stiff plates, so the wings are posed as plates: a pose names where each plate
-points (its inner edge along the back, its upper face out and up) and plate_pose() turns
-that into the (pitch, yaw, roll) deltas the clips key, for the wing frame every form of a
-kind on this plan lays its wings out in (DIHEDRAL, DROOP, and the plates' edge angles in the
-layout: FORE_EDGES, HIND_EDGES). At rest the wings fold back over the body like a moth's
-roof, the hindwings under the forewings, their long tails trailing beside the tail; the idle
-fans them gently; in flight both pairs beat, the hindwings a beat behind.
+points (its inner edge along the back, its upper face out and up) and plate_rotation() turns
+that into the (pitch, yaw, roll) delta the clips key on the plate's first bone, for the wing
+frame every form of a kind on this plan lays its wings out in (DIHEDRAL, DROOP, and the
+plates' edge angles in the layout: FORE_EDGES, HIND_EDGES). At rest the wings fold back over
+the body like a moth's roof (roof()), the hindwings under the forewings, their long tails
+trailing beside the tail; the idle fans them gently; excited, the moth flashes its eyespots
+(the roof opened flat); in flight both pairs beat, the hindwings a beat behind.
 
 The body clips start from the classic dragon's (tools/anim/clips.py), which were made for
 these body bones, with the classic bat wings taken out and this plan's wings, antennae and
-fluttery character put in.
+fluttery character put in. Lying, curling up and sulking are this plan's own (a long upright
+neck has to come down before it can curl round; aim() poses it along target directions), and
+the hatchling has its own curl, waking stretch and sulk (a big baby head can't come round).
 """
 import math
 
@@ -83,10 +86,6 @@ DIHEDRAL, DROOP = 14.0, 4.0
 # angles in the layout (degrees from +u, the span, toward +v, the chord: 90 points back).
 FORE_EDGES = (-12.0, 34.0)
 HIND_EDGES = (14.0, 96.0)
-
-
-def _v(*a):
-    return list(a)
 
 
 def _add(a, b):
@@ -160,10 +159,6 @@ def pyr(m):
     return (round(-math.degrees(a), 2), round(math.degrees(c), 2), round(-math.degrees(b), 2))
 
 
-def from_pyr(p, y, r):
-    return _mm(_rot((0, 0, 1), y), _mm(_rot((-1, 0, 0), p), _rot((0, -1, 0), r)))
-
-
 def plate_rotation(edge_theta, direction, normal):
     """The rotation taking the right wing's rest plate so that its edge at edge_theta points
     along `direction` and its upper face faces `normal` (made square to the direction)."""
@@ -172,14 +167,6 @@ def plate_rotation(edge_theta, direction, normal):
     e1 = _unit(direction)
     n1 = _unit(_add(normal, _mul(e1, -_dot(normal, e1))))
     return _mm(_cols(e1, n1, _cross(e1, n1)), _transpose(_cols(e0, n0, _cross(e0, n0))))
-
-
-def plate_pose(edge_theta, direction, normal, then=None):
-    """Plate pose as (pitch, yaw, roll); `then`: an extra armature-space rotation matrix after."""
-    m = plate_rotation(edge_theta, direction, normal)
-    if then is not None:
-        m = _mm(then, m)
-    return pyr(m)
 
 
 # ------------------------------------------------------------------------------ wing poses
@@ -360,12 +347,11 @@ def tail_sway(amount=1.0, period=3.2):
     return fn
 
 
-# How each classic clip's wings and antennae go on this body: [(time, wing pose)], an antenna
-# mood and whether the clip comes back to the idle's antennae at its end, and fluttering.
+# How each classic clip's wings and antennae go on this body: [(time, wing pose)] (folded
+# throughout if not named), fluttering [(from, to, degrees)], and an antenna mood: (pose,
+# whether the clip comes back to the idle's antennae at its end, sway).
 CLASSIC_WINGS = {
-    "wake": [(0.0, WINGS_FOLDED), (0.6, WINGS_FOLDED), (1.3, WINGS_STRETCH), (1.9, WINGS_HALF), (2.6, WINGS_FOLDED)],
     "fav_wiggle": [(0.0, WINGS_FOLDED), (0.3, WINGS_HALF), (1.3, WINGS_HALF), (1.6, WINGS_FOLDED)],
-    "roll_over": [(0.0, WINGS_FOLDED), (0.45, WINGS_FOLDED), (1.1, WINGS_BELLY)],
     "belly_rub": [(0.0, WINGS_BELLY)],
     "hop": [(0.0, WINGS_FOLDED), (0.25, WINGS_HALF), (0.45, WINGS_OPEN), (0.7, WINGS_HALF), (0.9, WINGS_FOLDED)],
     "pounce": [(0.0, WINGS_FOLDED), (0.35, WINGS_HALF), (0.65, WINGS_HALF), (0.85, WINGS_OPEN), (1.05, WINGS_HALF),
@@ -386,13 +372,11 @@ CLASSIC_WINGS = {
 FLUTTERS = {"hop": [(0.3, 0.72, 18.0)], "pounce": [(0.7, 1.08, 18.0)], "greet": [(0.3, 1.05, 14.0)],
             "leap_catch": [(0.18, 0.66, 20.0)], "fav_wiggle": [(0.35, 1.3, 10.0)], "spar": [(0.0, 1.0, 8.0)],
             "play_bow": [(0.35, 0.85, 6.0)]}
-MOODS = {  # clip: (antenna pose, back to rest at the end, sway amount)
-    "sleep": (ANT_SLEEP, False, 1.0), "curl_up": (ANT_SLEEP, False, 0.0), "lie_loop": (ANT_BACK, False, 2.0),
-    "lie_down": (ANT_BACK, False, 0.0), "nap_flop": (ANT_SLEEP, False, 0.0), "wake": (ANT_PERK, True, 0.0),
+MOODS = {
     "sit": (ANT_REST, False, 0.0), "sit_loop": (ANT_REST, False, 3.0), "yawn": (ANT_BACK, True, 0.0),
-    "sulk": (ANT_DROOP, False, 0.0), "sulk_loop": (ANT_DROOP, False, 1.5), "pull_away": (ANT_BACK, True, 0.0),
+    "pull_away": (ANT_BACK, True, 0.0),
     "sniff_refuse": (ANT_BACK, True, 0.0), "pet_head": (ANT_BACK, False, 2.0), "pet_chin": (ANT_BACK, False, 2.0),
-    "nuzzle": (ANT_BACK, False, 2.0), "belly_rub": (ANT_BACK, False, 3.0), "roll_over": (ANT_BACK, False, 0.0),
+    "nuzzle": (ANT_BACK, False, 2.0), "belly_rub": (ANT_BACK, False, 3.0),
     "greet": (ANT_PERK, True, 6.0), "hop": (ANT_PERK, True, 6.0), "pounce": (ANT_PERK, True, 5.0),
     "leap_catch": (ANT_PERK, True, 6.0), "play_bow": (ANT_PERK, True, 5.0), "spar": (ANT_PERK, False, 6.0),
     "tail_chase": (ANT_PERK, False, 6.0), "fav_wiggle": (ANT_PERK, True, 6.0), "tail_wag": (ANT_PERK, False, 5.0),
@@ -526,11 +510,18 @@ def aim(chain, targets, roll=None):
     return keys
 
 
+def sigh(t):
+    """A sulking dragon's slow sighs."""
+    s = max(0.0, sin01(t, 5.0))
+    return {"chest": (3 * s, 0, 0), "head": (-2 * s, 0, 0)}
+
+
 def _resting_clips(cl):
     """Lying down, curling up to sleep, sulking: a long upright neck has to come down before
     it can curl round (the classic neck, nearly level, just turns), so these have their own
-    poses: lying with the head held up, curled in a ring with the head resting by the tail
-    and the antennae laid flat back, and sulking with the head low and turned away."""
+    poses: lying with the head held up; curled round with the head laid back beside the
+    forelegs, the tail curled to meet it and the antennae flat back; sulking with the head
+    low and turned away. The hatchling's versions (<name>_h) keep its big head over its paws."""
     Clip = clipkit.Clip
     F = WINGS_FOLDED
     legs = {k: v for k, v in _body(cl.LIE).items() if k.rstrip("*") in ("arm_up", "arm_lo", "hand", "leg_up",
@@ -579,12 +570,10 @@ def _resting_clips(cl):
         .wave(flutter(1.35, 1.85, 10.0)).event(1.3, "yawn"),
         Clip("sulk_h", 1.5).pose(0.0, rest).pose(0.7, crouch).pose(1.5, sulk_h).event(0.5, "whimper")
         .event(1.2, "thump"),
-        Clip("sulk_loop_h", 5.0, loop=True).pose(0.0, sulk_h)
-        .wave(lambda t: {"chest": (3 * max(0.0, sin01(t, 5.0)), 0, 0), "head": (-2 * max(0.0, sin01(t, 5.0)), 0, 0)}),
+        Clip("sulk_loop_h", 5.0, loop=True).pose(0.0, sulk_h).wave(sigh),
         Clip("nap_flop", 0.7).pose(0.0, rest).pose(0.7, lie).event(0.55, "thump"),
         Clip("sulk", 1.5).pose(0.0, rest).pose(0.7, crouch).pose(1.5, sulk).event(0.5, "whimper").event(1.2, "thump"),
-        Clip("sulk_loop", 5.0, loop=True).pose(0.0, sulk)
-        .wave(lambda t: {"chest": (3 * max(0.0, sin01(t, 5.0)), 0, 0), "head": (-2 * max(0.0, sin01(t, 5.0)), 0, 0)}),
+        Clip("sulk_loop", 5.0, loop=True).pose(0.0, sulk).wave(sigh),
         Clip("roll_over", 1.1).pose(0.0, rest).pose(0.45, lie).pose(1.1, belly).event(0.8, "thump"),
     ]
     return out

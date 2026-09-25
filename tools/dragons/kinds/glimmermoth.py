@@ -15,18 +15,21 @@ the wings fold back over the body into a moth's roof, the hindwings tucked under
 forewings, the tails trailing along the tail, and the idle fans them gently. A long thin tail
 ends in a soft fluffy tuft. Luminous, ethereal, a little majestic; never menacing.
 
-Its colours (the common three): Lumen (cream, soft gold and butter), Rosy Maple (butter
-yellow with rose-pink wings and points, like the rosy maple moth) and Luna (moon-white and
-pale green with lavender points and a lavender leading edge, like the luna moth). The rare
-Sunburst: a warm amber body with glowing sun bands, flame-orange wings whose edges and
-eyespots glow strongly, longer hindwing tails and a crown of glowing sun-ray plumes behind the
-antennae.
+Its colours (the common three): Lumen (butter, cream and soft gold, the concept's), Rosy Maple
+(lemon yellow with rose-pink wings, antennae and points, like the rosy maple moth) and Luna
+(moon-white and pale green with lavender legs and a lavender leading edge, like the luna
+moth). The rare Sunburst: a warm amber body with glowing sun bands and rings, flame-orange
+wings whose margins, eyespots and tail tips glow, longer hindwing tails, and a glowing
+sunburst halo of rays behind the antennae.
 
-The body's texture: R soft moth bands round the abdomen and tail (Lumen's gold stripes), G the
-points (lower legs, tail tip, the end of the muzzle: Rosy Maple's and Luna's legs), B the
-rare variant's glowing sun bands and rings. The wings aren't textured (the game paints them
-by vertex colour): their bands are faces in the membrane, margin, leading-edge and root
-colours, and the eyespots separate thin discs.
+How it's built: the collar ruff is a puffy scalloped shell added to the body mesh (so it bends
+with the neck and takes the skin's texture); the antennae are fronds on their own bones; the
+wings are built here as plates (fans of rays, bands of colour, eyespot discs, the hindwing's
+tail strip) and weighted plate by plate (see _plate_weights). The body's texture: R soft moth
+bands round the abdomen and tail (Lumen's gold stripes), G the points (lower legs, tail tip,
+the end of the muzzle: Rosy Maple's and Luna's legs), B the rare variant's glowing sun bands
+and rings. The wings aren't textured (the game paints them by vertex colour): their bands are
+faces in the root (body), membrane, leading-edge (pattern) and margin (accent) colours.
 """
 import math
 
@@ -75,6 +78,13 @@ EGG = dict(height=1.0, width=0.37, asym=0.12, point=1.0, speckle="rings",
 # ------------------------------------------------------------------------------ wings
 # Each plate is a fan from the root: rays (angle in the layout, radius) from its leading edge
 # round to its inner edge (plan.FORE_EDGES / HIND_EDGES), and the hindwing's tail. Adult units.
+# A form's "wing" dict, besides the kit's root/scale/dihedral/droop/thickness/layout:
+#   fore, hind, tail   the plates' rays and the tail (base rays, length, bend, widths, heading)
+#   rings, rings_lod1  where the bands start along each ray (root, membrane.., margin)
+#   spots              per plate: (angle, radius, ring outer, ring inner, glowing centre)
+#   under              how far the hindwing lies under the forewing
+#   lock               the radius round each eyespot that moves rigidly with it
+#   set                degrees each plate is turned up about its inner edge (the baby's buds)
 def _pt(theta, r):
     t = math.radians(theta)
     return (r * math.cos(t), r * math.sin(t))
@@ -179,11 +189,11 @@ COLLAR = {
     "grown": dict(at=NECK_BASE, axis=(0.0, -0.44, 0.9), seg=18,
                   profile=[(-0.03, 0.2), (0.09, 0.15), (0.19, 0.05), (0.23, -0.06), (0.2, -0.16), (0.1, -0.22),
                            (-0.04, -0.24)],
-                  lobes=7, lobe=0.3, back=0.4),
+                  lobes=8, lobe=0.4, tuft=2.2, back=0.4),
     "hatchling": dict(at=(0.0, -0.27, 0.70), axis=(0.0, -0.36, 0.93), seg=16,
-                      profile=[(-0.03, 0.1), (0.05, 0.08), (0.1, 0.02), (0.115, -0.05), (0.09, -0.11),
-                               (0.04, -0.15), (-0.03, -0.16)],
-                      lobes=8, lobe=0.45, back=0.2),
+                      profile=[(-0.03, 0.11), (0.07, 0.09), (0.125, 0.03), (0.135, -0.04), (0.105, -0.1),
+                               (0.05, -0.135), (-0.03, -0.145)],
+                      lobes=9, lobe=0.5, tuft=2.2, back=0.2),
 }
 
 
@@ -205,7 +215,7 @@ def _add_collar(kit, bm, spec):
         d = u * math.cos(a) + w * math.sin(a)
         front = 0.5 + 0.5 * math.cos(a)           # 1 in front, 0 behind
         size = spec["back"] + (1 - spec["back"]) * front ** 0.7
-        lobe = math.cos(spec["lobes"] * a)
+        lobe = 2 * (0.5 + 0.5 * math.cos(spec["lobes"] * a)) ** spec.get("tuft", 1.0) - 1  # tufts: narrow peaks
         ring = []
         for k, (out, h) in enumerate(prof):
             origin = c + ax * h
@@ -272,9 +282,9 @@ def _pieces(me):
 
 
 def _grown_sculpt(kit, obj):
-    """Drop the stray skin blobs the antenna joints make (only the body is kept), add the
-    collar ruff, then the shapes the node graph can't give: a deeper chest over a tucked
-    belly, round cheeks, a soft muzzle."""
+    """Drop the stray skin blobs the antenna joints make (only the body is kept), give it the
+    shapes the node graph can't (a deeper chest over a tucked belly, round cheeks, a soft
+    muzzle), then add the collar ruff."""
     import bmesh
     bm = bmesh.new()
     bm.from_mesh(obj.data)
@@ -348,8 +358,7 @@ GROWN = dict(
     tail_k=1.0,
     heart=dict(at=(0, -0.9, 1.04), size=0.1),
     wing=dict(root=(0.21, -0.30, 1.62), scale=1.0, dihedral=plan.DIHEDRAL, droop=plan.DROOP,
-              radii={"root": 0.05, "elbow": 0.04, "wrist": 0.03, "finger": 0.02, "tip": 0.01},
-              thickness=0.014, style="moth", layout=_layout(FORE_RAYS, HIND_RAYS, HIND_TAIL),
+              radii={"root": 0.05}, thickness=0.014, style="moth", layout=_layout(FORE_RAYS, HIND_RAYS, HIND_TAIL),
               fore=FORE_RAYS, hind=HIND_RAYS, tail=HIND_TAIL, rings=(0.3, 0.62, 0.9), rings_lod1=(0.5, 0.88),
               spots=dict(fore=(12.0, 1.24, 0.2, 0.13, 0.07), hind=(45.0, 0.86, 0.15, 0.095, 0.05)),
               under=0.03, lock=dict(fore=0.64, hind=0.52)),
@@ -437,9 +446,8 @@ HATCH = dict(
               frill_k=0.6, feather_w=1.6),
     tail_k=0.4,
     heart=dict(at=(0, -0.40, 0.50), size=0.075),
-    wing=dict(root=(0.12, 0.06, 0.74), scale=1.0, dihedral=plan.DIHEDRAL, droop=plan.DROOP, set=dict(fore=34, hind=30),
-              radii={"root": 0.03, "elbow": 0.03, "wrist": 0.02, "finger": 0.01, "tip": 0.005},
-              thickness=0.012, style="moth", layout=_layout(BUD_FORE, BUD_HIND, BUD_TAIL),
+    wing=dict(root=(0.12, 0.06, 0.74), scale=1.0, dihedral=plan.DIHEDRAL, droop=plan.DROOP,
+              set=dict(fore=34, hind=30), radii={"root": 0.03}, thickness=0.012, style="moth", layout=_layout(BUD_FORE, BUD_HIND, BUD_TAIL),
               fore=BUD_FORE, hind=BUD_HIND, tail=BUD_TAIL, rings=(0.45, 0.82), rings_lod1=(0.8,),
               spots=dict(fore=(10.0, 0.25, 0.07, 0.0, 0.0), hind=(46.0, 0.19, 0.05, 0.0, 0.0)), under=0.018,
               lock=dict(fore=0.22, hind=0.16)),
@@ -589,8 +597,8 @@ def _spot(kit, name, side, plate, theta, r, outer, inner, dot, lift, thickness, 
     names = []
 
     def ring_pts(rad):
-        return [bm.verts.new(c + (a * math.cos(2 * math.pi * k / seg) + b * math.sin(2 * math.pi * k / seg)) * rad * sc)
-                for k in range(seg)]
+        angles = [2 * math.pi * k / seg for k in range(seg)]
+        return [bm.verts.new(c + (a * math.cos(t) + b * math.sin(t)) * rad * sc) for t in angles]
 
     faces = []
     if inner > 0:
@@ -702,25 +710,20 @@ def wings(kit, d, rare):
     ring_mat, dot_mat = ("rune", "glow_flat") if rare else ("pattern_flat", "glow_flat")
     grow = 1.0 if not rare else (1.25 if baby else 1.32)
     t, spots = w["thickness"], w["spots"]
+    tail = dict(w["tail"], grow=grow, mats=("membrane", "glow_flat" if rare else "pattern_flat"))
+
+    def fore_bands(i, j, ni, nj):  # (sector, band) -> colour: root, leading edge, membrane, margin
+        if j == 0:
+            return "body_plain"
+        if j == nj - 1:
+            return margin
+        return "pattern_flat" if i == 0 else "membrane"
+
+    def hind_bands(i, j, ni, nj):
+        return "body_plain" if j == 0 else (margin if j == nj - 1 else "membrane")
+
     objs = []
     for side in ("L", "R"):
-        def fore_bands(i, j, ni, nj):
-            if j == 0:
-                return "body_plain"
-            if j == nj - 1:
-                return margin
-            if i == 0:
-                return "pattern_flat"
-            return "membrane"
-
-        def hind_bands(i, j, ni, nj):
-            if j == 0:
-                return "body_plain"
-            if j == nj - 1:
-                return margin
-            return "membrane"
-
-        tail = dict(w["tail"], grow=grow, mats=("membrane", "glow_flat" if rare else "pattern_flat"))
         for plate, rays, tl, bands, lift, bones in (("fore", w["fore"], None, fore_bands, 0.0, plan.FOREWING),
                                                     ("hind", w["hind"], tail, hind_bands, -w["under"], plan.HINDWING)):
             th, r, outer, inner, dot = spots[plate]
@@ -775,8 +778,7 @@ def _frond(kit, name, base, up, side, bend, length, width, teeth, curl, thicknes
         f.normal_update()
         if f.normal.dot(face) < 0:
             f.normal_flip()
-    obj = kit.mesh_object(name, bm, (0, 0, 0))
-    obj.location = (0, 0, 0)
+    obj = kit.mesh_object(name, bm)
     m = obj.modifiers.new("thick", "SOLIDIFY")
     m.thickness = thickness
     m.offset = 0
@@ -817,9 +819,13 @@ def _puff(kit, name, base, axis, length, radius, lumps=5, lump=0.22):
 
 
 def parts(kit, d):
+    """The feathery antennae (horns, on their own bones), the tail's fluffy puff and the rare
+    variant's sunburst halo (spikes, variant 1). The eyes, heart and mouth are the kit's; the
+    collar is part of the body."""
     F, mats, V = kit.F, d["mats"], kit.V
     baby = d["form"] == "hatchling"
     _strip_antenna_weights(kit, d["body"])
+    _reunwrap(kit, d["body"])
     out = []
     # The antennae: feathery fronds on their own bones, swept up, back and out.
     ants = []
@@ -860,6 +866,89 @@ def parts(kit, d):
         crown.append((pl, "head"))
     out.append(("spikes", 1, crown))
     return out
+
+
+def _reunwrap(kit, body, angle=66.0):
+    """The kit's unwrap (texture.unwrap) smart-projects with an 86-degree angle limit, so faces
+    nearly edge-on to their island's plane collapse into islands thinner than a texel, which
+    the bake never paints: black specks on the skin. The same unwrap with Blender's default
+    66 degrees makes no such islands."""
+    import bmesh
+    import bpy
+    tex = kit.tex
+    for o in bpy.context.selected_objects:
+        o.select_set(False)
+    body.select_set(True)
+    bpy.context.view_layer.objects.active = body
+    me = body.data
+    bpy.ops.object.mode_set(mode="EDIT")
+    bm = bmesh.from_edit_mesh(me)
+    for f in bm.faces:
+        f.select = f.material_index == 0
+    bmesh.update_edit_mesh(me)
+    bpy.ops.uv.smart_project(angle_limit=math.radians(angle), island_margin=0.02)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    body.select_set(False)
+    uv = me.uv_layers["UVMap"].data
+    for p in me.polygons:
+        for li in p.loop_indices:
+            uv[li].uv = uv[li].uv * tex.SKIN_AREA if p.material_index == 0 else tex.CLEAN_UV
+    _heal_thin_islands(me, kit.lod(256, 128))
+
+
+def _heal_thin_islands(me, size):
+    """A decimation sliver can still make an island of its own thinner than a texel (never
+    painted): its faces take the UV of a neighbouring face on the body instead."""
+    uv = me.uv_layers["UVMap"].data
+    skin = [p.material_index == 0 for p in me.polygons]
+    corner = [{v: tuple(round(c, 6) for c in uv[li].uv) for v, li in zip(p.vertices, p.loop_indices)}
+              for p in me.polygons]
+    parent = list(range(len(me.polygons)))
+
+    def find(i):
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    faces_of = {}
+    for p in me.polygons:
+        for e in p.edge_keys:
+            faces_of.setdefault(e, []).append(p.index)
+    for (a, b), fs in faces_of.items():
+        if len(fs) == 2 and skin[fs[0]] and skin[fs[1]]:
+            f, g = fs
+            if corner[f][a] == corner[g][a] and corner[f][b] == corner[g][b]:
+                parent[find(f)] = find(g)
+    islands = {}
+    for p in me.polygons:
+        if skin[p.index]:
+            islands.setdefault(find(p.index), []).append(p.index)
+    thin = set()
+    for faces in islands.values():
+        pts = [c for f in faces for c in corner[f].values()]
+        us, vs = [c[0] * size for c in pts], [c[1] * size for c in pts]
+        if min(max(us) - min(us), max(vs) - min(vs)) < 1.2:
+            thin.update(faces)
+    for f in thin:  # the nearest face across the body (breadth first) in a painted island
+        seen, ring, good = {f}, [f], None
+        while ring and good is None:
+            nxt = []
+            for h in ring:
+                for e in me.polygons[h].edge_keys:
+                    for g in faces_of[e]:
+                        if g not in seen and skin[g]:
+                            seen.add(g)
+                            nxt.append(g)
+                            if g not in thin and good is None:
+                                good = g
+            ring = nxt
+        if good is None:
+            continue
+        q = me.polygons[good]
+        centre = sum((uv[li].uv for li in q.loop_indices), uv[q.loop_indices[0]].uv * 0) / len(q.loop_indices)
+        for li in me.polygons[f].loop_indices:
+            uv[li].uv = centre
 
 
 def _strip_antenna_weights(kit, body):
@@ -921,9 +1010,20 @@ def texture(tx, nt, p, form):
     tail_end = tx.smoothstep(nt, tx.axis(nt, 1), 0.68 if baby else 2.2, 0.84 if baby else 2.8)
     nose = tx.near(nt, (0.0, -0.8, 0.93) if baby else _h(0.0, -0.41, -0.13), 0.1 if baby else 0.13, 0.7)
     g = tx.maxi(nt, tx.maxi(nt, legs, tail_end), nose)
-    sun = tx.stripes(nt, p["stripe"] * 1.4, direction="Y", distortion=0.2, width=(0.78, 0.86), where=tx.top(nt))
-    rings = tx.spots(nt, p["spot_cell"] * 1.3, keep=0.5, size=(0.3, 0.24))
-    inner = tx.spots(nt, p["spot_cell"] * 1.3, keep=0.5, size=(0.2, 0.15))
-    ring = tx.math_op(nt, "SUBTRACT", rings, inner)
-    b = tx.maxi(nt, tx.mul(nt, sun, rear), tx.mul(nt, ring, tx.smoothstep(nt, tx.axis(nt, 1), -0.2, 0.1)))
+    # B (the rare variant's glow): bold and few, where the folded wings leave the body showing:
+    # sun bands down the tail, and on the adult three bands round the neck and one round each
+    # leg; on the baby a few big sun-rings over its back.
+    one = tx.const(nt, 1.0)
+    sun = tx.stripes(nt, p["stripe"] * 1.4, direction="Y", distortion=0.2, width=(0.78, 0.86), where=one)
+    b = tx.mul(nt, sun, tx.smoothstep(nt, tx.axis(nt, 1), y0 + (0.25 if baby else 0.6), y0 + (0.35 if baby else 0.8)))
+    if baby:
+        rings = tx.spots(nt, 0.2, keep=0.4, size=(0.32, 0.26), where=tx.top(nt))
+        inner = tx.spots(nt, 0.2, keep=0.4, size=(0.2, 0.15), where=tx.top(nt))
+        back = tx.band(nt, 1, -0.05, 0.45, 0.06)
+        b = tx.maxi(nt, b, tx.mul(nt, tx.math_op(nt, "SUBTRACT", rings, inner), back))
+    else:
+        neck = tx.mul(nt, tx.stripes(nt, 0.2, direction="Z", distortion=0.0, width=(0.8, 0.88), where=one),
+                      tx.mul(nt, tx.band(nt, 2, 1.75, 2.28, 0.04), tx.band(nt, 1, HEAD[1] + 0.05, -0.7, 0.05)))
+        legs_band = tx.mul(nt, tx.band(nt, 2, 0.48, 0.54, 0.02), tx.band(nt, 1, -0.9, 1.0, 0.05))
+        b = tx.maxi(nt, b, tx.maxi(nt, neck, legs_band))
     return {"r": r, "g": g, "b": b}

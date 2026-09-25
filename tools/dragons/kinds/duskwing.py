@@ -57,7 +57,7 @@ VARIANTS = [
 EGG = dict(height=1.02, width=0.36, point=1.0, speckle="stars",
            speckle_params=dict(count=46, size=(0.008, 0.02), count_lod1=14),
            colors=[((0.07, 0.07, 0.24), (0.86, 0.86, 1.0)), ((0.24, 0.08, 0.22), (1.0, 0.84, 0.62)),
-                   ((0.12, 0.12, 0.145), (0.90, 0.92, 1.0)), ((0.03, 0.02, 0.05), (1.0, 0.76, 0.30))])
+                   ((0.16, 0.16, 0.19), (0.90, 0.92, 1.0)), ((0.03, 0.02, 0.05), (1.0, 0.76, 0.30))])
 
 # ------------------------------------------------------------------------------ grown
 # Faces -Y, Z up; units ~ metres at adult size. radius = (side, vertical). The idle stance:
@@ -73,18 +73,18 @@ GROWN_NODES = _mirrored({
     "belly": ((0, 0.14, 1.42), (0.37, 0.42)),
     "chest": ((0, -0.46, 1.62), (0.42, 0.50)),
     "neck1": ((0, -0.82, 1.98), (0.31, 0.32)),
-    "neck2": ((0, -0.98, 2.28), (0.235, 0.24)),
-    "neck3": ((0, -1.04, 2.54), (0.215, 0.215)),
-    "head": ((0, -1.12, 2.84), (0.37, 0.335)),
-    "muzzle": ((0, -1.41, 2.75), (0.19, 0.152)),
-    "snout": ((0, -1.585, 2.70), (0.112, 0.092)),
+    "neck2": ((0, -1.03, 2.26), (0.235, 0.24)),
+    "neck3": ((0, -1.14, 2.49), (0.215, 0.215)),
+    "head": ((0, -1.26, 2.76), (0.37, 0.335)),
+    "muzzle": ((0, -1.55, 2.67), (0.19, 0.152)),
+    "snout": ((0, -1.725, 2.62), (0.112, 0.092)),
 }, {
     "hipj": ((0.31, 0.82, 1.12), (0.29, 0.34)),
     "knee": ((0.37, 0.48, 0.66), (0.175, 0.18)),
     "ankle": ((0.37, 0.92, 0.24), (0.10, 0.104)),
     "toe_b": ((0.39, 0.66, 0.065), (0.13, 0.065)),
-    "ear": ((0.16, -1.06, 2.90), (0.01, 0.01)),  # bone only (not joined to the body): the
-    "ear_tip": ((0.34, -0.96, 3.62), (0.01, 0.01)),  # ear's pivot under its base, and its tip
+    "ear": ((0.16, -1.20, 2.82), (0.01, 0.01)),  # bone only (not joined to the body): the
+    "ear_tip": ((0.34, -1.10, 3.54), (0.01, 0.01)),  # ear's pivot under its base, and its tip
 })
 GROWN_EDGES = [("tail_tip", "tail6"), ("tail6", "tail5"), ("tail5", "tail4"), ("tail4", "tail3"),
                ("tail3", "tail2"), ("tail2", "hips"), ("hips", "belly"), ("belly", "chest"), ("chest", "neck1"),
@@ -158,11 +158,11 @@ def _grown_sculpt(kit, obj):
         if 0.0 < y < 0.7 and z < 1.3 and abs(x) < 0.3:  # tucked belly
             k = (1 - abs(x) / 0.3) * max(0.0, (1.3 - z) / 0.3)
             v.co.z += 0.06 * k
-        if -1.34 < y < -1.0 and 2.72 < z < 2.94:  # round cheeks
+        if -1.48 < y < -1.14 and 2.64 < z < 2.86:  # round cheeks
             v.co.x *= 1.07
-        dy, dz = y + 1.18, z - 2.98  # a rounded brow and crown over the eyes
-        if abs(x) < 0.3 and z > 2.84 and abs(dy) < 0.3:
-            k = max(0.0, 1 - (dy / 0.3) ** 2) * max(0.0, 1 - (x / 0.3) ** 2) * min(1.0, (z - 2.84) / 0.12)
+        dy, dz = y + 1.32, z - 2.90  # a rounded brow and crown over the eyes
+        if abs(x) < 0.3 and z > 2.76 and abs(dy) < 0.3:
+            k = max(0.0, 1 - (dy / 0.3) ** 2) * max(0.0, 1 - (x / 0.3) ** 2) * min(1.0, (z - 2.76) / 0.12)
             v.co.z += 0.05 * k
     bm.to_mesh(obj.data)
     bm.free()
@@ -187,10 +187,10 @@ GROWN = dict(
     base_pose={"tail1": (4, 0, 0), "tail2": (2, 0, 4), "tail3": (4, 0, 6), "tail4": (6, 0, 8),
                "tail5": (8, 0, 8), "tail6": (10, 0, 6)},
     builds=BUILDS,
-    eyes=dict(at=(0.2, -1.38, 2.92), out=(0.62, -0.76, 0.16), iris=(0.122, 0.132, 0.06),
+    eyes=dict(at=(0.2, -1.52, 2.84), out=(0.62, -0.76, 0.16), iris=(0.122, 0.132, 0.06),
               pupil=(0.09, 0.104, 0.024), slit=(0.3, 1.06),
               glints=((-0.03, 0.045, 0.021), (0.022, -0.045, 0.011)), seg=(12, 2, 8, 2)),
-    head=dict(origin=(0, -1.12, 2.84), k=1.0, buds=False),
+    head=dict(origin=(0, -1.26, 2.76), k=1.0, buds=False),
     tail_k=1.0,
     heart=dict(at=(0, -0.92, 1.58), size=0.12),
     wing=dict(root=(0.28, -0.42, 1.95), scale=1.12, dihedral=20, droop=5, layout=WING_LAYOUT,
@@ -198,9 +198,9 @@ GROWN = dict(
               arm_tris=130, thickness=0.016),
     mask=dict(max_x=0.34, max_z=2.9, min_z=-1.0, tail_cut=(1.3, 1.2)),
     inset={"eyes": 0.02, "horns": 0.02, "spikes": 0.05, "frill": 0.03, "heart": -0.06, "runes": -0.012},
-    face=dict(nostril=(0.045, -1.685, 2.755), nostril_r=(0.021, 0.014, 0.008), mouth_r=0.012,
-              mouth=lambda side, a: (side * 0.16 * a ** 0.7, -1.705 + 0.40 * a ** 1.5, 2.655 + 0.09 * a * a)),
-    jaw_hinge=(0, -1.26, 2.68),
+    face=dict(nostril=(0.045, -1.825, 2.675), nostril_r=(0.021, 0.014, 0.008), mouth_r=0.012,
+              mouth=lambda side, a: (side * 0.16 * a ** 0.7, -1.845 + 0.40 * a ** 1.5, 2.575 + 0.09 * a * a)),
+    jaw_hinge=(0, -1.40, 2.60),
     mouth_detail=dict(depth=0.24, fade=0.18, width=0.34, tooth=(0.008, 0.014), fang=(0.012, 0.03),
                       tongue=(0.06, 0.12, 0.014)),
     skin=dict(stripe=0.4, spot_cell=0.34, ao=0.6),

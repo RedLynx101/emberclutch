@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · 3DS runs 1–7: the game runs on the old 3DS; the 3D banner shows (sparkles, a hidden triangle, D63); 0.1.7 plays (a new title ID, beds lent by wanderers, a stacking bowl, posing ahead, D64) · a design sit-down opens every milestone from Beta on (D65) · run 9: the banner's sound fixed (stereo), its turning is the HOME Menu's camera (billboards hold it still), a logo of our own can't be signed, so the gold wordmark is a splash in the game (D68) · every file checked before the 3DS (`tools/check_3ds.py`) · the performance pass (WP11d) under way · run 10: a still banner shows (T), the sound plays; the HOME Menu turns every banner once every 10 s, so lab 7 turns ours back (D69) · 0.1.10: the splash, T's banner centred · run 11: V and W froze (four levels deep, D70) · run 12: the banner is settled (X: still, animated, D71) · **0.1.12** on the 3DS · next: the performance pass (WP11d), then the hatching (WP12a) and the dragons update (WP12)
+**Updated:** 2026-09-24 · **Milestone:** **Alpha 2 in progress** (Alpha 1 done and tagged `v0.1.0-alpha1`; [checklist](plan/alpha-1-checklist.md)) · WP1 ✅ (a den of three dragons and two eggs, living together) · WP2 ✅ (Sanctuary and Cold Vault, a first world map) · WP3 ✅ (breeding at the Nesting Stone) · WP4 ✅ (the Wanderings) · WP5 ✅ (the Market) · WP6 ✅ (the world map and its trips) · WP7 ✅ (toys and den decor) · WP8 ✅ (the profile and family tree) · WP9 ✅ (brief 2's sounds wired, stand-ins until they arrive) · WP10 ✅ (the emblem icon, the 3D banner) · **R5 decided (D54): every look ships, per dragon** · 3DS runs 1–7: the game runs on the old 3DS; the 3D banner shows (sparkles, a hidden triangle, D63); 0.1.7 plays (a new title ID, beds lent by wanderers, a stacking bowl, posing ahead, D64) · a design sit-down opens every milestone from Beta on (D65) · run 9: the banner's sound fixed (stereo), its turning is the HOME Menu's camera (billboards hold it still), a logo of our own can't be signed, so the gold wordmark is a splash in the game (D68) · every file checked before the 3DS (`tools/check_3ds.py`) · the performance pass (WP11d) under way · run 10: a still banner shows (T), the sound plays; the HOME Menu turns every banner once every 10 s, so lab 7 turns ours back (D69) · 0.1.10: the splash, T's banner centred · run 11: V and W froze (four levels deep, D70) · run 12: the banner is settled (X: still, animated, D71) · **0.1.12** on the 3DS · WP11d accepted as it is (Noah) · the wings' roots seated · WP12a ✅ (the hatching: the egg bursts, the hatchling grows out of a white blob) · **WP12 ✅** (looks per dragon, the Dragondex with breed banners, photo mode, the parts library, all 21 breeds, rare traits, egg shells, mud spots; [R6](art/reviews/R6-breeds.md) sent) · next: running clips (WP12c), the 3D slider (WP11e), then the hardware run (WP13)
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Where things stand
@@ -16,7 +16,7 @@
   (fast travel in Alpha 2, free flight in 1.0).
 - **Code:** `src/core` (genetics, needs, mood, growth, eggs, clock, breeding, save, model
   format, skeleton/rig, per-dragon mesh assembly, animation, den behavior, den room,
-  daylight, particles, items and the den's props) with PC tests (95,269 checks). `src/app` draws the dragons in 3D
+  daylight, particles, items and the den's props) with PC tests (103,752 checks). `src/app` draws the dragons in 3D
   (skinned toon shader) in a 3D den room lit for the time of day, inside themed citro2d
   screens. Runs in Azahar at 60 fps in the den (2026-09-24), sounds and all.
 - **Art:** two dragon forms built by script (`tools/blender/dragon_model.py`): a metaball
@@ -141,9 +141,12 @@ after each. Stops:
   haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
+- Nothing blocks. Alpha 2 is being finished before Noah's next review (his words, after
+  run 12): WP12a ✅, WP12 ✅, then WP12c (running), WP11e (the 3D slider) and the
+  checklist for the hardware run (WP13), all in one bundle. [R6](art/reviews/R6-breeds.md)
+  is there to look through whenever (not blocking).
 - **0.1.12 on the old 3DS** ([steps](plan/hardware-check-1.md)): the final banner for now
-  (lab 8's X), the splash, the stereo sound. The next hardware run comes after the
-  performance pass and the hatching, bundled.
+  (lab 8's X), the splash, the stereo sound.
   [What's left for Alpha 2](plan/alpha-2.md); after Alpha 2, the Beta sit-down (D65),
   check the banner, sound and icon fixes, read the budget with a full den and with every
   look in memory, pressing **Y** for a screenshot at each number and anything odd (pulled

@@ -654,16 +654,34 @@ makes a little routine.
   pattern. The profile shows the look; the dev menu's style switch becomes "force look".
 - **The Dragondex (D55):** every breed × look (84) plus the rare traits, filled in as you
   hatch or meet them; small rewards for completing a breed.
+  *Done:* `src/core/dragondex.*` (PC-tested; saved in the player section, older saves are
+  filled in from their hatched dragons on load) and `src/app/dragondex_ui.cpp`, a page of
+  the system menu: seven breeds a page with their four looks, the one picked turning on the
+  top screen. The news after the naming (a one-deep toast queue). A completed breed pays 150
+  Gleam and gives its banner in the breed's colours (`breedBannerMesh`: an egg with its
+  heartglow), hung at once the first time; Hang banner / Take it down. `dex.txt`.
 - **Photo mode (D55):** hide the UI, freeze the den, save a framed picture to the SD card
   (with the capture behind D57's screenshots).
+  *Done:* `src/app/photo.cpp`: the camera under the heartglow; the den holds still, the
+  names hide; A or the big button saves the top screen in a gold frame (the name, the date,
+  the wordmark) as `photos/photo_NNNN.bmp` on the screenshot thread. X: the whole den or
+  a close framing of the one cared for (`r3d::setDenClose`). `photo.txt`.
 - Memory and frame budgets measured with mixed looks in the den (three dragons, three looks),
   against the numbers from the first hardware look.
+  *Done (emulator):* three grown dragons in Pebbleback, Tallneck and wild (dev: Mix looks,
+  `perfmix.txt`): 6,814 + 2,954 triangles (of 8,000 + 3,500), 13 draws, 17.8 MB linear
+  free. Frame times on the hardware in WP13.
 - The full parts library: horns (Crown, Crystal, Antler), frill (Leaf), tail tip (Plain),
   patterns (Solid, Runes), rare-trait looks (Iridescent, Melanistic, Leucistic,
   Starspeckle); all 6 base breeds and 15 hybrids; egg shells for all 6 elements.
 - Dirt and mud on the chosen surface (D46).
+  *Done:* mud is its own saved level per region, drawn in blotches (a smooth noise of each
+  vertex's rest position, `src/core/mud.*`) over the even dust through a 256 × 32 RGBA dirt
+  ramp. The Wanderings leave it on the legs, belly and tail; brushing lifts it at half the
+  dust's rate, the bath at once; it flakes off at 1.5 an hour. `mud.txt`.
 - The 3D banner keeps the current look (the classic Ember); re-exported if the looks change it.
-- Review sheets of every breed (R6, not blocking).
+- Review sheets of every breed (R6, not blocking). *Sent:* [R6](../art/reviews/R6-breeds.md)
+  (every breed, look and rare trait, the Dragondex, photos, dirt, the budgets).
 
 ### WP13 — The run on the old 3DS (D34)
 - Install the CIA with FBI (Noah's old 3DS runs Luma3DS + FBI); check the **3D banner**
@@ -688,10 +706,10 @@ boot splash (WP11c's replacement), and the checks before anything goes on the 3D
    The wings' roots fixed on the way (they stood off the body; `wing_gap.py`).
 2. ✅ **WP12a, the hatching** Noah's way: the egg bursts into bits, the dragon grows out of a
    white blob.
-3. **WP12, the dragons update** (the big one): looks per dragon with their odds and names
-   (D54), random looks for existing dragons (D66), the Dragondex (Gleam + a breed-coloured
-   banner per breed, D66), photo mode (the camera button, D66), the parts library, all 6
-   breeds and 15 hybrids, egg shells per element, rare-trait looks; then the budgets again.
+3. ✅ **WP12, the dragons update**: looks per dragon with their odds and names (D54),
+   random looks for existing dragons (D66), the Dragondex (Gleam and a breed-coloured
+   banner per breed), photo mode (the camera button), the parts library, all 21 breeds, egg
+   shells per element, rare-trait looks, mud spots; the budgets with mixed looks; R6 sent.
 4. **WP12c, running clips** (a scamper for babies, a gallop for grown dragons).
 5. **WP11e, the 3D slider** (after WP11d; 30 fps in 3D is fine).
 6. **WP13, the full run on the old 3DS** and **WP14, the wrap-up** (the checklist, docs, the

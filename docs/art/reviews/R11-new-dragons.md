@@ -1,5 +1,13 @@
 # Review R11 — New dragons (D76; before Beta's step 2)
 
+> **Answered 2026-09-25 (D77):** 1A, and long term every kind genuinely unique; the new
+> dragons replace the old: 8 base breeds and a crossbreed for every pair, **36 kinds**, each
+> with three texture variants and a rarer one with a slightly different model, and stats,
+> manners and traits by breed; 3B (a random kind, common variant); 4: different skeletons
+> welcome, with the same kinds of animation; 5A, 6A, 7A; 8A within ±50%; 9A, all rideable;
+> 10: names to suit each design; 11B, the camera turns. Next: [the design](../../design/dragons-v2.md)
+> and [the plan](../../plan/dragon-revamp.md), whose questions come first.
+
 **For Noah, 2026-09-25.** Four wholly new dragon silhouettes for the storybook look (D75),
 crossing a cozy life-sim's softness (round, chunky, hand-painted, simple faces) with a
 dragon film's lovable dragons (big expressive eyes, cat- and dog-like, one clear silhouette

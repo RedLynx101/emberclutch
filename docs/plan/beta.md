@@ -6,7 +6,7 @@ concept images for [R7](../art/reviews/R7-valley-concepts.md) (WP2) and the musi
 briefs (WP15); run 14 is ready ([steps](hardware-check-3.md)). Next, once Noah has made
 the music and sounds: step 2, the valley. **R7 decided (D75):** look A, storybook in the way
 of a cozy life-sim ([look and feel](../design/look-and-feel.md)). **Before step 2 (D76):** new
-dragons to match, four wholly new silhouettes ([R11](../art/reviews/R11-new-dragons.md)). Alpha 2 is done (`v0.2.0-alpha2`, D72). The
+dragons to match: [the dragon revamp](dragon-revamp.md), 36 kinds (R11, D77). Alpha 2 is done (`v0.2.0-alpha2`, D72). The
 sit-down (D73, [brief](beta-sitdown.md)) put the valley first: an open world to walk and fly
 in, the places rebuilt inside it, a new map, flying, the first challenges, people and a
 first campaign. Training, voice and the ground cups move to 1.0 ([roadmap](roadmap.md)).
@@ -125,11 +125,11 @@ Checked in Azahar, then on Noah's old 3DS (D34):
   shapes, the ground rolling away on foot, people about two heads tall, speech letter by
   letter, an analog walk with a run button ([look and feel](../design/look-and-feel.md)).
 
-### WP2b — New dragons (review R11, D76; before step 2)
-- Four wholly new silhouettes in the new look, every stage from the egg to the adult:
-  concept sheets first ([R11](../art/reviews/R11-new-dragons.md)), Noah's answers, then the
-  models, built in Blender by script with Opus 5.5 subagents (one per kind), rendered in
-  every stage, and then into the game.
+### WP2b — The dragon revamp (R11, D76–D77; before step 2)
+- A plan of its own: [the dragon revamp](dragon-revamp.md) ([design](../design/dragons-v2.md)):
+  8 base breeds and 28 crossbreeds, 36 kinds, each with variants, stats, manners and traits,
+  its own body and animations, all rideable; the four bases first (R11b), into the game
+  with run 15. How much of it comes before step 2 is the plan's question 7.
 
 ## Phase B — the valley
 ### WP3 — The valley's landscape (review R8: the blockout)
@@ -157,7 +157,7 @@ Checked in Azahar, then on Noah's old 3DS (D34):
   hops and glides, and sniffs things out; A calls it, the stylus points it at things.
   Moving as in a cozy life-sim (D75): speed follows the circle pad, B held runs, quick
   turns with a little arc, a bouncy step, dust puffs and footprints, no jumping; the
-  camera at one fixed angle looking north, tilted down (to confirm at R11).
+  camera tilted down behind you, and it turns (D77).
 - Adolescents glide off ledges and slopes; grown dragons take off (from the ground or a
   ledge), flap to climb (A), dive (B), bank (L/R), glide on release, land on flat ground,
   with stamina that grows with Wing and bond.

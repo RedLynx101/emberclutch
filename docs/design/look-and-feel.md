@@ -41,10 +41,9 @@ of it is copied, and no Nintendo names or assets go in the game.
   64×64 or 128×128 texture per material, blended with the vertex colour in the combiner.
 - **Round, chunky props:** trees as soft rounded crowns (pines as stacked soft cones),
   bushes, flowers, rocks as pebbles, fences, lanterns, all low-poly and fat-edged.
-- **The camera on foot:** one fixed angle, always looking north and tilted down about
-  30–40° at you, easing to follow; the circle pad never turns it, and the valley is laid
-  out to be read that way, north up like the map (to confirm: R11 question 11). In flight
-  the chase camera as now.
+- **The camera on foot:** tilted down about 30–40° behind you, easing to follow, and it
+  **turns** (Noah, R11: "you can turn in this world regardless"); the life-sim's close,
+  tilted framing without its fixed north. In flight the chase camera as now.
 
 ### You and the people (WP5, WP12, WP13)
 - **You:** about 2–2.5 heads tall, round hands, a simple face with big eyes; walk (analog),
@@ -71,8 +70,8 @@ of it is copied, and no Nintendo names or assets go in the game.
   suit. Music by the time of day stays as the den does it (day and night now; dawn and
   dusk cues could follow).
 
-### The dragons (R11, D76)
-A new look to match: four wholly new silhouettes, crossing that cozy life-sim softness
+### The dragons (R11, D76–D77)
+A full revamp, 36 kinds ([dragons, version 2](dragons-v2.md)); the first four are wholly new silhouettes, crossing that cozy life-sim softness
 with a dragon film's lovable, readable dragons (big expressive eyes, cat- and dog-like
 behaviour, a clear silhouette per kind) and a touch of awe and majesty in the grown
 adults. The heartglow stays. See [R11](../art/reviews/R11-new-dragons.md).

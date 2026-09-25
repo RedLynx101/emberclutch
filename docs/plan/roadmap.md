@@ -37,6 +37,9 @@ Alpha 1 and Alpha 2 are done. What's left, in order, with the gates that hold ea
    hardware numbers; concept images (AI, reference only) → **R7** (blocks the world's art);
    the music and sound briefs sent early. ✅ **Done 2026-09-25**; run 14 (the valley on the
    old 3DS) is ready.
+   **Then the dragon revamp** (D76–D77, [plan](dragon-revamp.md)): 8 base breeds and 28
+   crossbreeds in the new look, each with variants, stats, manners and traits, all rideable;
+   the four bases first.
 2. **The valley:** the landscape → **R8** (the blockout) → getting about (you on foot with
    your dragon, gliding, flying, riding) → the painted map with fog and fast travel → the
    places standing in the valley, entered to their scenes → discovery, finds and the
@@ -63,7 +66,7 @@ together, gifts, local competitions; a cross-den clutch as a stretch).
 alicorn), as an expansion or its own game.
 
 **Now:** Beta's first step is done (WP1, WP2, the briefs). Waiting on Noah: run 14 on the old
-3DS, R7's pick, and the batch 3 music and sounds; then step 2, the valley.
+3DS and the batch 2–3 music and sounds; R7 is decided (D75). Now: the dragon revamp (D77), then step 2, the valley.
 
 **Every milestone after Alpha 2 opens with a design sit-down with Noah (D65), and no work
 on it starts until he has passed it.** The sit-down happens when the milestone before it is

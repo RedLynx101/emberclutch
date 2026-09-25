@@ -1,9 +1,10 @@
 """The animated 3D HOME Menu banner (Alpha 2 WP10, D50) and its flat 2D fallback.
 
 The textured baby Ember peeks out of its cracked, ember-lit egg (the cap sits on its head),
-the Emberclutch wordmark behind it, gold sparkles twinkling round them, over the HOME Menu's
-own background. Over a 4 second loop it tilts its head, wags its tail, blinks twice and its
-heart pulses (scale, and a diffuse-colour animation); the sparkles glint in turn.
+the Emberclutch wordmark above it, gold sparkles twinkling round them, over the HOME Menu's
+own background, all centred. Twice in a 10 second loop (one turn of the HOME Menu's camera,
+below) it tilts its head, wags its tail, blinks twice and its heart pulses (scale, and a
+diffuse-colour animation); the sparkles glint in turn.
 
 The HOME Menu rules (docs/plan/alpha-2.md WP10): the model and its animation are named
 COMMON (pycgfx does that), the CGFX stays under 512 KB, and every moving thing is a rigid
@@ -12,21 +13,21 @@ into pieces at its joints (body, head, eyes, tail, heart), each with its pivot a
 
   blender -b -P tools/blender/banner3d.py -- [--out build/banner] [--assets assets] [--review build/review] [--debug-rig]
     [--no-fit] [--keep-glow] [--keep-backdrop] [--no-anchor] [--no-sparkles]   (banner-lab variants, tools/banner_lab.ps1)
-    [--still [--join-sparkles]] [--root]   (holding the banner still, run 10: see below)
-  py -3.12 tools/banner_cgfx.py build/banner/banner.gltf build/banner/banner.cgfx [--billboard world,sparkle_*]
+    [--turn | --still]   (holding the banner still: see below)
+  py -3.12 tools/banner_cgfx.py build/banner/banner.gltf build/banner/banner.cgfx [--turn egg:1 | --billboard world]
 
-The HOME Menu turns every 3D banner round and round (its camera orbits the model, faster when
-you blow on the mic); official banners hold parts still with billboard nodes, which always
-face the camera (a Y-axis billboard: gbatemp thread 683412, and a Nintendo-SDK artist on
-polycount, 2012: "the billboard options DO basically disable the auto-rotate"). A billboard
-node turns only its own meshes, so the ways to hold it still:
-  --still          the dragon, its egg and the wordmark joined into one piece, "world", at the
-                   scene's centre (its parts no longer move; the heart still pulses its colour);
-                   the sparkles stay apart and glint (as billboards they circle it)
-  --join-sparkles  the sparkles joined into "world" too, mid-glint: nothing turns at all
-  --root           the scene as it is, under one still node "world" (whether a billboard's
-                   children turn with it is what this tries)
-and tools/banner_cgfx.py --billboard names the nodes to make Y-axis billboards.
+The HOME Menu turns every 3D banner round, once every 10 s, clockwise seen from above (faster
+while you blow on the mic): measured on pycgfx's own HOME Menu recording (10.03 s a turn), and
+a Nintendo-SDK artist on polycount (2012) held a banner still with "a reverse-360 spin over 600
+frames" (10 s at the CGFX's 60 frames a second). Two ways to hold ours still:
+  --turn   everything but the hidden anchor is parented to the egg, whose origin is on the
+           turning axis; tools/banner_cgfx.py --turn egg:1 then turns the egg once the other
+           way over the loop, so the dragon keeps all its motion (lab 7, run 11).
+  --still  the dragon, its egg, the wordmark and the sparkles joined into one piece, "world",
+           made a Y-axis billboard (--billboard world): nothing moves but the heart's glow
+           (lab 6's T: no freeze, no turning, run 10).
+Run 10 also found what freezes the HOME Menu: billboards that are animated (S: the sparkles
+glinting as billboards) or have animated children (U: the whole scene under one).
 
 Writes <out>/banner.gltf (+ .bin, the skin texture), <assets>/banner.png (the 2D banner,
 256x128) and review renders of the 3D banner through the HOME Menu's camera.
@@ -52,7 +53,8 @@ ASSETS = os.path.abspath(dm.arg("--assets", os.path.join(ROOT, "assets")))
 REVIEW = os.path.abspath(dm.arg("--review", os.path.join(ROOT, "build", "review")))
 FONT = os.path.join(ROOT, "assets", "fonts", "cinzel-decorative", "CinzelDecorative-Bold.ttf")
 
-FPS, FRAMES = 24, 96          # a 4 second loop
+FPS, FRAMES = 24, 240         # a 10 second loop: one turn of the HOME Menu's camera
+CYCLE = 120                   # the dragon's motions, twice a loop (written on a 96-frame count)
 SKIN = 128                    # the skin texture (RGBA4 in the CGFX: 32 KB)
 TALL = 18.0                   # the dragon and its egg, in banner units (the view is 40 x 24)
 # The HOME Menu's banner camera (pycgfx banner-camera.gltf): glTF (0, 1, 44.786), looking
@@ -72,12 +74,14 @@ SPARKLE = (1.0, 0.86, 0.45)   # the heart's bright gold
 # and the frame their glint peaks. Round the egg and the dragon, clear of its face and of the
 # wordmark; about two or three glinting at any moment, the rest faint specks.
 SPARKLES = [
-    ((-13.5, -2.0, -8.0), 1.0, 12), ((8.5, 0.0, -3.0), 1.0, 19), ((-10.0, -3.0, 3.5), 0.7, 26),
-    ((14.0, 2.0, -7.0), 0.7, 33), ((-14.5, 1.0, -1.0), 1.2, 40), ((4.0, -2.0, 2.0), 0.8, 47),
-    ((1.5, -4.0, -11.0), 0.6, 54), ((11.5, -1.0, 2.5), 0.9, 61), ((6.5, -2.0, -9.5), 0.8, 68),
-    ((-17.0, 0.0, 6.0), 0.7, 75),
+    ((-10.5, -2.0, -8.0), 1.0, 12), ((11.5, 0.0, -3.0), 1.0, 19), ((-7.0, -3.0, 3.5), 0.7, 26),
+    ((17.0, 2.0, -7.0), 0.7, 33), ((-11.5, 1.0, -1.0), 1.2, 40), ((7.0, -2.0, 2.0), 0.8, 47),
+    ((4.5, -4.0, -11.0), 0.6, 54), ((14.5, -1.0, 2.5), 0.9, 61), ((9.5, -2.0, -9.5), 0.8, 68),
+    ((-16.0, 0.0, 1.5), 0.7, 75),
 ]
 SPARKLE_REST = 0.2            # a faint speck between glints (never 0: a zero scale can't invert)
+# The heart's beat on the 96-frame count: a quick swell each second (its scale; the glow follows).
+HEART_BEATS = tuple(p for beat in range(4) for p in ((beat * 24, 1.0), (beat * 24 + 4, 1.22), (beat * 24 + 12, 1.0))) + ((96, 1.0),)
 
 
 # ------------------------------------------------------------------------------ helpers
@@ -512,7 +516,7 @@ def anchor():
     bm.to_mesh(me)
     bm.free()
     o = link(bpy.data.objects.new("aaa_anchor", me))
-    o.location = (-3.0, 0.0, -10.0)  # inside the egg's cup
+    o.location = (0.0, 0.0, -10.0)  # inside the egg's cup
     o.data.materials.append(principled("anchor", SHELL, 0.9))
     return o
 
@@ -641,14 +645,14 @@ def build():
     # In the frame: the pair just left of centre and low; the wordmark across the top, behind.
     # Nothing else: the HOME Menu's own background shows round them (Noah took the wall out;
     # the flat 2D banner keeps its backdrop, see main()).
-    shift = Vector((-3.0, 0.0, -10.8))
+    shift = Vector((0.0, 0.0, -10.8))  # centred (run 10: the wordmark sat off centre)
     for o in world_objs:
         o.location += shift
     word = wordmark(30.0)
-    word.location = (2.0, 5.0, 8.4)
+    word.location = (0.0, 5.0, 8.4)
     # Banner-lab variants (run 3: the new scene froze the HOME Menu, 0.1.1's didn't).
     if "--keep-glow" in sys.argv:
-        glow_disc(9.8, (0.55, 0.22, 0.12), (-3.0, 16.0, -1.0))
+        glow_disc(9.8, (0.55, 0.22, 0.12), (0.0, 16.0, -1.0))
     if "--keep-backdrop" in sys.argv:
         backdrop(90, 50, 20.0)
     if "--no-anchor" not in sys.argv:
@@ -663,16 +667,25 @@ def parent(child, par):
     child.matrix_world = m
 
 
+def cycles(pattern):
+    """A motion written on a 96-frame count, (frame, value) pairs, stretched to CYCLE and
+    repeated through the loop (a repeated frame dropped)."""
+    out = []
+    for c in range(FRAMES // CYCLE):
+        for f, v in pattern:
+            at = c * CYCLE + f * CYCLE / 96
+            if not out or at > out[-1][0]:
+                out.append((at, v))
+    return out
+
+
 def still_world(pieces, egg, cap, word, stars):
-    """--still: the dragon, its egg and the wordmark joined into one rigid piece, "world", with
-    its origin at the scene's centre and no transform of its own (so a billboard turns it about
-    that centre). Returns the sparkles still apart (none, with --join-sparkles)."""
-    join = list(pieces.values()) + [egg, cap, word]
-    if "--join-sparkles" in sys.argv:
-        for o in stars:
-            o.scale = (0.6,) * 3  # frozen mid-glint
-        join += stars
-        stars = []
+    """--still: the dragon, its egg, the wordmark and the sparkles (frozen mid-glint) joined
+    into one rigid piece, "world", with its origin at the scene's centre and no transform of
+    its own, for a Y-axis billboard."""
+    for o in stars:
+        o.scale = (0.6,) * 3
+    join = list(pieces.values()) + [egg, cap, word] + list(stars)
     for o in join:
         o.data = o.data.copy()  # single-user, so its transform can be applied
         apply_modifiers(o)
@@ -686,17 +699,23 @@ def still_world(pieces, egg, cap, word, stars):
     bpy.ops.object.join()
     world = bpy.context.view_layer.objects.active
     world.name = world.data.name = "world"
-    print(f"[banner] still: one piece of {len(join)} ({len(world.data.polygons)} faces), {len(stars)} sparkles apart")
-    return stars
+    print(f"[banner] still: one piece of {len(join)} ({len(world.data.polygons)} faces)")
 
 
-def wrap_world():
-    """--root: every piece but the anchor under one still node, "world", at the centre."""
-    world = link(bpy.data.objects.new("world", None))
-    for o in list(bpy.context.scene.objects):
-        if o is not world and o.parent is None and o.type == "MESH" and o.name != "aaa_anchor":
-            parent(o, world)
+def turn_with_egg(pieces, egg, cap, word, stars):
+    """--turn: everything but the anchor under the egg, whose origin is on the turning axis
+    (the scene is centred), and a placeholder turn on the egg (10 degrees over the loop) that
+    tools/banner_cgfx.py --turn replaces with a whole turn: pycgfx keeps rotations as Euler
+    angles taken from quaternions, which can't pass 90 degrees about the vertical smoothly."""
+    bpy.context.view_layer.update()  # the wordmark and sparkles were placed without one: parent() reads matrix_world
+    for o in list(pieces.values()) + [cap, word] + list(stars):
+        parent(o, egg)
     bpy.context.view_layer.update()
+    egg.rotation_euler = (0, 0, 0)
+    egg.keyframe_insert("rotation_euler", frame=0)
+    egg.rotation_euler = (0, 0, math.radians(10))
+    egg.keyframe_insert("rotation_euler", frame=FRAMES)
+    egg.rotation_euler = (0, 0, 0)
 
 
 def animate(pieces, cap, heart_mat, stars=()):
@@ -707,7 +726,7 @@ def animate(pieces, cap, heart_mat, stars=()):
         animate_dragon(pieces, cap)
     for o, (_, _, peak) in zip(stars, SPARKLES):  # they glint in turn: a quick swell, a slower fade
         rest, full = (SPARKLE_REST,) * 3, (1.0, 1.0, 1.0)
-        for f, s in ((0, rest), (peak - 10, rest), (peak, full), (peak + 14, rest), (FRAMES, rest)):
+        for f, s in cycles(((0, rest), (peak - 10, rest), (peak, full), (peak + 14, rest), (96, rest))):
             o.scale = s
             o.keyframe_insert("scale", frame=f)
     for o in bpy.data.objects:  # straight lines between keys (pycgfx: no spline rotations)
@@ -741,30 +760,26 @@ def animate_dragon(pieces, cap):
 
     # The head tilts one way, then nods and tilts the other (roll is about the facing axis, Y).
     h0 = tuple(math.degrees(a) for a in head.rotation_euler)
-    for f, (x, y, z) in ((0, (0, 0, 0)), (18, (0, 12, 0)), (36, (0, 0, 0)), (54, (-6, -10, 0)), (72, (0, 0, 0)),
-                         (96, (0, 0, 0))):
+    for f, (x, y, z) in cycles(((0, (0, 0, 0)), (18, (0, 12, 0)), (36, (0, 0, 0)), (54, (-6, -10, 0)),
+                                (72, (0, 0, 0)), (96, (0, 0, 0)))):
         key(head, f, rot=(h0[0] + x, h0[1] + y, h0[2] + z))
     # The tail wags, then rests.
     t0 = tuple(math.degrees(a) for a in tail.rotation_euler)
-    for f, yaw in ((0, 0), (8, 24), (16, -24), (24, 24), (32, -24), (40, 24), (48, 0), (96, 0)):
+    for f, yaw in cycles(((0, 0), (8, 24), (16, -24), (24, 24), (32, -24), (40, 24), (48, 0), (96, 0))):
         key(tail, f, rot=(t0[0], t0[1], t0[2] + yaw))
     # Two blinks: the eyes squash flat and open again.
     if "eyes" in pieces:
         e = pieces["eyes"]
-        for f, sz in ((0, 1), (36, 1), (38, 0.08), (41, 1), (76, 1), (78, 0.08), (81, 1), (96, 1)):
+        for f, sz in cycles(((0, 1), (36, 1), (38, 0.08), (41, 1), (76, 1), (78, 0.08), (81, 1), (96, 1))):
             key(e, f, scale=(1, 1, sz))
-    # The heart beats: a quick swell each second.
+    # The heart beats: four quick swells a cycle.
     if "heart" in pieces:
         hp = pieces["heart"]
-        for beat in range(4):
-            f = beat * FPS
-            key(hp, f, scale=(1, 1, 1))
-            key(hp, f + 4, scale=(1.22, 1.22, 1.22))
-            key(hp, f + 12, scale=(1, 1, 1))
-        key(hp, FRAMES, scale=(1, 1, 1))
+        for f, s in cycles(HEART_BEATS):
+            key(hp, f, scale=(s, s, s))
     # A gentle bob.
     b0 = body.location.copy()
-    for f, dz in ((0, 0.0), (48, 0.35), (96, 0.0)):
+    for f, dz in cycles(((0, 0.0), (48, 0.35), (96, 0.0))):
         key(body, f, loc=b0 + Vector((0, 0, dz)))
 
 
@@ -792,13 +807,9 @@ def add_heart_colour(path, heart_name="heart_glow"):
         return
     if not g.get("animations"):  # nothing moves (--still --join-sparkles): the pulse on its own
         g["animations"] = [{"name": "COMMON", "channels": [], "samplers": []}]
-    times, colours = [], []
-    for beat in range(4):
-        for f, c in ((0, HEART_DIM), (4, HEART_BRIGHT), (12, HEART_DIM)):
-            times.append((beat * FPS + f) / FPS)
-            colours.append(c)
-    times.append(FRAMES / FPS)
-    colours.append(HEART_DIM)
+    glow = {1.0: HEART_DIM, 1.22: HEART_BRIGHT}  # in step with the beat's swell
+    times = [f / FPS for f, _ in cycles(HEART_BEATS)]
+    colours = [glow[s] for _, s in cycles(HEART_BEATS)]
     blob = struct.pack(f"<{len(times)}f", *times) + b"".join(struct.pack("<4f", *c) for c in colours)
     bin_name = "heart_colour.bin"
     with open(os.path.join(os.path.dirname(path), bin_name), "wb") as f:
@@ -876,11 +887,11 @@ def render(path, width, height, frame, final=None):
 def main():
     pieces, egg, cap, heart_mat, word, stars = build()
     if "--still" in sys.argv:
-        stars = still_world(pieces, egg, cap, word, stars)
-        pieces = {}
+        still_world(pieces, egg, cap, word, stars)
+        pieces, stars = {}, []
+    elif "--turn" in sys.argv:
+        turn_with_egg(pieces, egg, cap, word, stars)
     animate(pieces, cap, heart_mat, stars)
-    if "--root" in sys.argv:
-        wrap_world()
     tris = 0
     for o in bpy.context.scene.objects:
         if o.type == "MESH":
@@ -912,7 +923,7 @@ def main():
         render(os.path.join(REVIEW, name), 500, 300, 0)
     banner_camera()
     if "--keep-glow" not in sys.argv:  # the 2D banner is a flat picture: it keeps its hearth glow
-        glow_disc(9.8, (0.55, 0.22, 0.12), (-3.0, 16.0, -1.0))
+        glow_disc(9.8, (0.55, 0.22, 0.12), (0.0, 16.0, -1.0))
     if "--keep-backdrop" not in sys.argv:  # ...and its dusk wall
         backdrop(90, 50, 20.0)
     cam = scene.camera  # the 2D banner: the same scene, a little closer (its frame is wider, 2:1)

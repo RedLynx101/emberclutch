@@ -446,6 +446,26 @@ if anything fails. Run on every earlier CIA: all of them fail the sound rule, 0.
 The game's 0.1.9 keeps the turning banner (P's, known to show) with the stereo sparkle-chirp,
 and makerom's homebrew logo, until lab 6 picks the still one.
 
+**Run 10 (lab 6, 0.1.9):** S froze, U froze; T showed, held still and played its sound, but
+nothing moved (Noah: the dragon should still be animated) and the wordmark sat off centre.
+0.1.9's stereo sound plays. So a billboard that's animated (S's glinting sparkles) or has
+animated children (U) freezes the HOME Menu; a still billboard is fine (T).
+- **Centred:** the dragon, its egg and the wordmark now sit on the middle (the sparkles moved
+  with them; the one that would cross the wordmark moved down).
+- **The HOME Menu's turn, measured:** on pycgfx's recording of the real HOME Menu the pair of
+  spheres comes round every 10.03 s (50 samples, ±0.02 s), steadily, clockwise seen from
+  above (2.5 s after they sit side by side, the right-hand one has come to the front). That
+  matches the SDK artist's "reverse-360 spin over 600 frames" (10 s at 60 frames a second).
+- **Lab 7:** the whole scene (everything but the hidden anchor) is parented to the egg, whose
+  origin is on the turning axis, and the egg turns once the other way over a 10 s loop; the
+  dragon's motions run twice in that loop (5 s each, a little calmer than 4 s). pycgfx takes
+  rotations through quaternions to Euler angles, which can't pass 90° about the vertical, so
+  `banner_cgfx.py --turn egg:1` writes the turn straight into the CGFX as two keys (0 and 360°
+  over frames 0–600). **V** turns against the HOME Menu; **W** turns with it (a control: it
+  should spin twice as fast), so one of them settles the direction for good.
+- **0.1.10:** the game's banner is T's layout, centred (`make_banner.ps1 -Mode still`, the
+  default until V is seen working; then `-Mode turn`), with the splash and the stereo sound.
+
 ### WP11d — Hardware performance pass (after run 3; before WP12a, Noah agreed)
 The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 8.3). Target:
 16.7 ms with three dragons, their toys and decor, and the close-up.
@@ -468,6 +488,13 @@ The full den with the close-up runs at 22–23 ms on the old 3DS (CPU 10.9, GPU 
   profiler sections (text, particles), and a **GPU probe** (dev menu page 2): each press
   leaves out one part (the room, the den's dragons, the close-up, particles), named on the
   overlay and in the screenshot log, to see each one's share of the GPU's 7.9 ms.
+- **Run 10's GPU probe (0.1.9, full den):** with the close-up, CPU 5.0 ms in the frame (+ 2.5 ms
+  posing before it), GPU 8.1 ms, frames 17.6–18.3 ms. The probe shots have the dev menu on the
+  bottom screen (so no close-up): GPU 6.5–6.7 ms, of which the den's dragons take ~2.3 ms
+  (4,789 triangles), the room ~1.4, particles ~0, and the close-up (from the full shots) ~1.5
+  (3,099 triangles); the other ~2.9 ms is the 2D on both screens (UI, text, the overlay),
+  clears and transfers. So next: LOD1 for the dragons further back and a lighter close-up
+  (the GPU), fewer 2D draws, and posing (2.5 ms of CPU).
 - **Run 7's numbers:** the frame's CPU part fell to 6.6–6.8 ms; the frame averages ~19 ms
   because 6.7 (CPU) + 7.9 (GPU) + the screens' copies sit at the 16.7 ms limit. Next: the
   top screen's text laid out once instead of every frame, fewer 2D draws; the close-up's GPU

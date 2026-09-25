@@ -14,6 +14,21 @@ game crashed at its first 3D frame (a null texture read the emulator hides). Bot
 WP11b); both 3D-banner CIAs froze the HOME Menu, which also turned out to keep an old banner
 per title; Next style froze the 3DS (fixed in 0.1.4).
 
+**Run 10:** S and U froze; T held still with its sound but nothing moved; 0.1.9's stereo sound
+plays; the GPU probe's shots came back. **Run 11:**
+1. In FBI (Titles), delete the "Banner lab" S, T and U titles. From `/cias/lab/` install
+   **V and W** (the other files there are lab 6's). The HOME Menu turns every banner once
+   every 10 s; each of these turns its dragon back the other way at that speed, V against it
+   and W with it:
+   - one should stand still, facing you, and keep moving: the head tilts, the tail wags, it
+     blinks, the heart beats and glows, the sparkles glint;
+   - the other should spin twice as fast.
+   Which is which? On the still one: does it stay still, or creep round slowly, or jump a
+   little every 10 s? (Blowing on the mic spins any banner; after that it may stay turned.)
+   If one freezes the HOME Menu, hold POWER and carry on.
+2. Install `/cias/emberclutch.cia` (0.1.10) over the game: after the system logo, the gold
+   EMBERCLUTCH splash (any button skips it). Its banner is T's, centred, still.
+
 **Run 9:** P, Q, R turned and chirped alike (the sound was mono: every banner we'd made played
 beeps); 0.1.8's own logo stopped it at start (a logo can't be re-signed). **Run 10:**
 1. In FBI (Titles), delete any "Banner lab" titles still installed. Then from `/cias/lab/`

@@ -111,7 +111,10 @@ what Beta leaves out. Nothing below is built until it's passed.
 - **Grooming that fits together** (WP12b, moved from Alpha 2): the bath washes grime and
   leaves the dragon damp, the cloth dries and polishes, the brush clears shed scales; the
   three tools under one Groom button; judged in the Shine Show.
-- **The Wanderings' next pass:** several dragons out at once, each counting its own steps.
+- **The Wanderings' next pass:** several dragons out at once, each counting its own steps;
+  and the trip shown **in flight** rather than walking (Noah, run 10): the dragon flaps and
+  glides over the trail, with the flap loop and glide taken early from 1.0's flight set (a
+  hatchling too small to fly flutters and hops).
 - Trick learning (gesture then name), skill curves, 12 tricks.
 - Voice: mic capture + MFCC/DTW template matching on a worker thread; cue buttons always.
 - Wing / Wit / Spark stats.

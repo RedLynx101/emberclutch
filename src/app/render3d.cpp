@@ -289,6 +289,8 @@ struct Posed {
 // with its plan's own clips; until DR3 they are shown only through the dev menu.
 Form g_forms[kLookSlots][kFormCount][2];
 bool g_lookLoaded[kLookSlots] = {};
+u32 g_lookUsed[kLookSlots] = {};     // the frame a look was last drawn in (letting unused kinds go)
+bool g_lookAsked[kLookSlots] = {};   // its files asked for ahead (loadNextLook)
 bool g_lookFailed[kLookSlots] = {};  // a look whose models are missing: drawn classic, not retried
 int g_forceLook = -1;  // dev: every dragon in one look (-1: their own)
 Cache g_caches[kCacheSlots];
@@ -604,6 +606,7 @@ int lookOf(const Dragon& d) {
     int look = g_forceLook >= 0 ? g_forceLook : kLookCount + (d.kind < kindCount() ? d.kind : 0);
     if (!g_lookLoaded[look]) hitch::mark("kind on the spot");
     if (!g_lookLoaded[look] && !loadLook(look)) look = kLookClassic;
+    g_lookUsed[look] = g_frame;
     return look;
 }
 
@@ -1704,6 +1707,8 @@ void drawParticles(App& app, const Particles& fx, bool foreground) {
 
 }  // namespace
 
+int denLod(const DenDragon* dragons, int count, int i);
+
 void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Particles* fx) {
     if (!g_ready) return;
     ++g_frame;
@@ -1803,8 +1808,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
             g_headSet[i] = true;
             continue;
         }
-        // The first dragon is the one you're caring for: full detail. Others use LOD1.
-        if (!posedFor(app, *dragons[i].dragon, dragons[i].actor, now, i == 0 ? 0 : 1, g_posed)) continue;
+        if (!posedFor(app, *dragons[i].dragon, dragons[i].actor, now, denLod(dragons, count, i), g_posed)) continue;
         modelMatrix(g_posed, model);
         float local[3];
         localLight(g_posed.pos, blend, local);
@@ -1942,6 +1946,15 @@ void drawPair(App& app, const Dragon& a, const DenActor& actorA, const Dragon& b
     end3D();
 }
 
+// Which model a den dragon is drawn with on the top screen: the one you care for in full detail,
+// the others lighter; with three or more dragons out (run 18: 20-26 ms with three big kinds)
+// all of them lighter, the close-up keeping the full one.
+int denLod(const DenDragon* dragons, int count, int i) {
+    int out = 0;
+    for (int k = 0; k < count && k < kDenShown; ++k) out += dragons[k].dragon->stage != Stage::Egg;
+    return i == 0 && out < 3 ? 0 : 1;
+}
+
 void poseAhead(App& app, const DenDragon* dragons, int count, s64 now) {
     if (!g_ready) return;
     g_aheadAt = app.t;
@@ -1951,7 +1964,7 @@ void poseAhead(App& app, const DenDragon* dragons, int count, s64 now) {
         if (i >= count || dragons[i].dragon->stage == Stage::Egg) continue;
         a.dragon = dragons[i].dragon;
         a.actor = dragons[i].actor;
-        a.lod = i == 0 ? 0 : 1;  // as drawDen: the one you care for in full detail
+        a.lod = denLod(dragons, count, i);  // as drawDen
         a.ok = pose(app, *a.dragon, a.actor, now, a.lod, a.posed);
     }
 }
@@ -2180,9 +2193,31 @@ bool loadLook(int look) {
 
 }  // namespace
 
+// Kinds no dragon of the save is and nothing has drawn for a while (the Dragondex's, the dev
+// menu's) are let go: their models, skins and the dragons' cached parts (run 17: every kind
+// loaded took 3.8 MB). Checked every couple of seconds.
+void evictLooks(const SaveData& s) {
+    static u32 checked = 0;
+    if (g_frame - checked < 120) return;
+    checked = g_frame;
+    for (int look = kLookCount; look < kLookCount + kindCount(); ++look) {
+        if (!g_lookLoaded[look] || look == g_forceLook || g_frame - g_lookUsed[look] < 1800) continue;
+        bool wanted = false;
+        for (int i = 0; i < s.dragonCount && !wanted; ++i)
+            wanted = kLookCount + (s.dragons[i].kind < kindCount() ? s.dragons[i].kind : 0) == look;
+        if (wanted) continue;
+        for (Cache& c : g_caches)
+            if (c.valid && c.look == look) c.valid = false;
+        for (int f = 0; f < kFormCount; ++f)
+            for (int lod = 0; lod < 2; ++lod) releaseForm(g_forms[look][f][lod]);
+        g_lookLoaded[look] = false;
+        g_lookAsked[look] = false;
+    }
+}
+
 bool loadNextLook(const SaveData& s) {
     if (!g_ready) return false;
-    static bool asked[kLookSlots] = {};
+    bool* asked = g_lookAsked;
     for (int i = 0; i < s.dragonCount; ++i) {
         const int look = kLookCount + (s.dragons[i].kind < kindCount() ? s.dragons[i].kind : 0);
         if (g_lookLoaded[look] || g_lookFailed[look]) continue;
@@ -2220,6 +2255,7 @@ bool loadNextLook(const SaveData& s) {
         loadLook(look);  // all four in: bind its animations
         return true;
     }
+    evictLooks(s);
     return false;
 }
 
@@ -2686,7 +2722,8 @@ void drawPlaces(App& app, const Valley& v, const ValleyView& view, const C3D_Mtx
         const PlaceGpu& g = g_places[p.id];
         const Vec3 lo{p.at.x - g.reach, p.at.y - g.reach, p.at.z + g.low};
         const Vec3 hi{p.at.x + g.reach, p.at.y + g.reach, p.at.z + g.high};
-        if (outsideView(clip, lo, hi) || std::hypot(view.eye.x - p.at.x, view.eye.y - p.at.y) > kValleyFar + g.reach)
+        // (Past 260 m the fog has them: not drawn.)
+        if (outsideView(clip, lo, hi) || std::hypot(view.eye.x - p.at.x, view.eye.y - p.at.y) > 260.0f + g.reach)
             continue;
         const bool lit = (view.lanternsLit >> p.id) & 1u;
         const C3D_Mtx frame = placeFrame(p);
@@ -2968,23 +3005,25 @@ void drawStall(App& app, const Valley& v, const ValleyView& view, const C3D_Mtx&
         setLook(look, look.glow * 0.6f);
         drawMesh(app, g->mesh, identity);
     }
-    if (view.marketEgg && g_egg.ok) {  // the egg of the day, rocking a little on its straw
+    const Vec2 eggAt = placeToWorld(*market, {L.eggStand.x, L.eggStand.y});
+    const EggForm& egg = g_eggLod1.ok && std::hypot(eggAt.x - view.eye.x, eggAt.y - view.eye.y) > 7.0f ? g_eggLod1 : g_egg;
+    if (view.marketEgg && egg.ok) {  // the egg of the day, rocking a little on its straw
         g_standEgg.update(app.dt, 0.0f, app.rng);
         if (g_standEgg.rock < 0.02f) g_standEgg.knock(0.03f, 0);
-        const Vec2 at = placeToWorld(*market, {L.eggStand.x, L.eggStand.y});
+        const Vec2 at = eggAt;
         Mat34 skin[2];
-        eggSkin(g_egg.model, g_standEgg, skin);
+        eggSkin(egg.model, g_standEgg, skin);
         constexpr float kStandEgg = 0.6f;  // the egg's height on the stand, metres
         C3D_Mtx model, mv;
         Mtx_Identity(&model);
         Mtx_Translate(&model, at.x, at.y, market->at.z + L.eggStand.z, true);
         Mtx_RotateZ(&model, yaw + 0.4f * std::sin(app.t * 0.3f), true);
         Mtx_Scale(&model, kStandEgg, kStandEgg, kStandEgg);
-        Mtx_Translate(&model, 0, 0, -groundOffset(g_egg.model, skin), true);
+        Mtx_Translate(&model, 0, 0, -groundOffset(egg.model, skin), true);
         Mtx_Multiply(&mv, &viewM, &model);
         C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &mv);
         eggColours(app, *view.marketEgg, 1.0f);
-        drawMesh(app, g_egg.shell, skin);
+        drawMesh(app, egg.shell, skin);
     }
 }
 
@@ -3091,7 +3130,8 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     // The dragon.
     Vec3 collar, hand;
     bool collarSet = false, handSet = false;
-    if (view.dragon && pose(app, *view.dragon, view.actor, now, 0, g_posed)) {
+    const int partnerLod = length(view.at - view.eye) > 9.0f ? 1 : 0;  // the lighter model a little way off
+    if (view.dragon && pose(app, *view.dragon, view.actor, now, partnerLod, g_posed)) {
         bindDragons(projection);
         const float plain[3] = {1, 1, 1};
         lightDragon(dragonLight(dayBlend(now)), plain);
@@ -3152,7 +3192,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
             const PersonView& p = view.people[i];
             if (p.seated) continue;
             const float d = std::hypot(p.at.x - view.eye.x, p.at.y - view.eye.y);
-            if (d > 70.0f || outsideView(clip, p.at - Vec3{0.8f, 0.8f, 0}, p.at + Vec3{0.8f, 0.8f, 1.8f})) continue;
+            if ((i > 0 && d > 55.0f) || outsideView(clip, p.at - Vec3{0.8f, 0.8f, 0}, p.at + Vec3{0.8f, 0.8f, 1.8f})) continue;
             drawPerson(app, p, viewM, nullptr, i == 0 ? &hand : nullptr);
             if (i == 0) handSet = true;
         }
@@ -3187,6 +3227,10 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
     C3D_FogGasMode(GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
     end3D();
+    if (autotest::shooting())
+        autotest::log("valley tris %u: ground %d (%d tiles, %d built) places %d, the rest %d", app.stats.tris,
+                      g_valleyStats.ground, g_valleyStats.tiles, g_valleyStats.built, g_valleyStats.places,
+                      static_cast<int>(app.stats.tris) - g_valleyStats.ground - g_valleyStats.places);
 }
 
 const C2D_Image* valleyMap(const Valley& v) {

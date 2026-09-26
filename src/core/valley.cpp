@@ -10,8 +10,8 @@ namespace {
 
 constexpr float kPi = 3.14159265f;
 constexpr float kSkirt = 3.0f;         // metres a skirt hangs below the edge, at full detail
-constexpr float kLodNear = 48.0f;      // tiles nearer than this: full detail
-constexpr float kLodMid = 140.0f;      // then half; beyond, a quarter
+constexpr float kLodNear = 38.0f;      // tiles nearer than this: full detail (Beta: the places and people need room)
+constexpr float kLodMid = 115.0f;      // then half; beyond, a quarter
 
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
 

@@ -267,7 +267,7 @@ TEST(finds_and_the_fog) {
         }
         CHECK(takeFind(s, i, 0, rng).gleam == 0);  // once
     }
-    CHECK(eggs == 2 && air == 9);
+    CHECK(eggs == 2 && air == 10);
     // The fog: clearing round a spot, then saved and read back.
     CHECK(explore(s, v, {0, 0}, 150) && !explore(s, v, {0, 0}, 150));
     const float cell = v.size() / kFogCells;

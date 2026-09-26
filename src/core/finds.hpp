@@ -1,6 +1,6 @@
-// Finds about the valley (Beta WP7): twenty spots worth a look, each with something waiting
+// Finds about the valley (Beta WP7): twenty-two spots worth a look, each with something waiting
 // once (Gleam, a trinket for the hoard, twice a wild egg), shown as a glint until found; six
-// on the floating islands' tops and two up high, reached only from the air on a grown dragon.
+// on the floating islands' tops and four up high, reached only from the air on a grown dragon.
 // And the map's fog: the valley in 32 x 32 cells, each cleared once you've been near. Pure
 // logic (PC-tested).
 #pragma once
@@ -11,7 +11,7 @@
 
 namespace ec {
 
-constexpr int kFindSpots = 20;
+constexpr int kFindSpots = 22;
 constexpr int kFogCells = 32;  // a side (world.explored holds a bit each)
 
 struct FindSpot {

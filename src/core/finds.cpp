@@ -32,6 +32,8 @@ constexpr FindSpot kSpots[kFindSpots] = {
     {{740, -400}, -1, false, 0, 1, false},   // behind the arena: a coin
     {{-520, 300}, -1, false, 35, -1, false}, // the keeper's garden
     {{-120, -700}, -1, false, 0, 4, false},  // by the outlet's bank: a pearl
+    {{-625, 192}, -1, false, 100, -1, false},  // the grotto behind the falls: its gold chest
+    {{960, 700}, -1, true, 0, 3, false},     // Starwatch Ruins on the crag: a star-bright crystal
 };
 
 }  // namespace

@@ -177,7 +177,7 @@ GROWN = dict(
     name="grown", nodes=GROWN_NODES, edges=GROWN_EDGES, body="skin",
     # DR2 sizing: grown at the common scale, the Pouncer's bulk and length (the geometric mean of the
     # cube root of the body's volume and its length); META size then sizes it in the game.
-    body_tris=1300, body_tris_lod1=480, export_scale=1.05,
+    body_tris=1270, body_tris_lod1=470, export_scale=1.05,  # (1300/480 before the fuller mouth, run 15)
     young={
         "bones": {
             "head": (0.95, 0.9, 1.0), "snout": (0.9, 0.75, 0.95),
@@ -554,19 +554,15 @@ def _tuft(kit, name, base, direction, side, length, width, thickness):
 
 
 def _ruff(kit, d):
-    """A ring of soft fur tufts round the neck's base (on the baby, a fluffy chest and a
-    little crown between the ears): [(object, bone)]."""
+    """A ring of soft fur tufts round the neck's base (on the baby, a little crown between the
+    ears): [(object, bone)]."""
     V = kit.V
     mats = d["mats"]
     baby = d["form"] == "hatchling"
     pieces = []
     if baby:
-        for j, (x, ang, ln) in enumerate(((0.0, 0, 0.17), (-0.09, -26, 0.14), (0.09, 26, 0.14))):
-            base = V((x, -0.30, 0.77))
-            dirn = V((math.sin(math.radians(ang)) * 0.5, -0.22, -0.97))
-            o = _tuft(kit, f"tuft_{j}", base, dirn, V((1, 0, 0)), ln * 0.8, 0.12, 0.01)
-            o.data.materials.append(mats["accent_flat"])
-            pieces.append((o, "chest"))
+        # (Its chest tufts went, run 15: on the round chest they read as something hovering
+        # under its chin, however they were seated. The crown stays.)
         top = kit.head_point((0.0, 0.02, 0.33))
         for j, ang in enumerate((-30, 0, 30)):
             dirn = V((math.sin(math.radians(ang)), 0.25, 1.0))

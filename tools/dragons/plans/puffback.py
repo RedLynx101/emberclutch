@@ -148,12 +148,18 @@ def wing_pose(targets):
 # flat against the body. The targets were found by walking along the grown body's skin from
 # the seated wing root (10 degrees below straight back, the fingers 16 degrees apart, a bone's
 # radius off the skin); the baby's buds turn in a little more by its form's base_pose.
+def _clear(d, k=0.07):
+    """A folded bone's direction turned out from the body by about 4 degrees: a bone's radius
+    off the skin clipped as the waddle rolled the flank under the wings (run 15)."""
+    return _norm((d[0] + k, d[1], d[2]))
+
+
 WINGS_FOLDED = wing_pose({
-    "wing_arm": ((0.426, 0.900, 0.095), (0.816, -0.182, 0.548)),
-    "wing_fore": ((0.112, 0.985, -0.132), (0.876, -0.043, 0.481)),
-    "wing_f1": ((-0.123, 0.985, -0.119), (0.897, 0.049, 0.440)),
-    "wing_f2": ((0.014, 0.945, -0.327), (0.897, 0.049, 0.440)),
-    "wing_f3": ((0.137, 0.822, -0.553), (0.938, 0.014, 0.345)),
+    "wing_arm": (_clear((0.426, 0.900, 0.095)), (0.816, -0.182, 0.548)),
+    "wing_fore": (_clear((0.112, 0.985, -0.132)), (0.876, -0.043, 0.481)),
+    "wing_f1": (_clear((-0.123, 0.985, -0.119)), (0.897, 0.049, 0.440)),
+    "wing_f2": (_clear((0.014, 0.945, -0.327)), (0.897, 0.049, 0.440)),
+    "wing_f3": (_clear((0.137, 0.822, -0.553)), (0.938, 0.014, 0.345)),
 })
 
 

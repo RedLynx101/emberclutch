@@ -1298,33 +1298,56 @@ def weight_jaw(body):
 
 
 def build_mouth_pocket(body, upper, lower):
-    """The inside of the mouth (dark): a roof and a floor fanned from the back of the mouth."""
-    co, no, _ = mouth_plane()
+    """The inside of the mouth (dark): a roof and a floor running from the lips back to a line
+    across the back of the mouth as wide as the lips (a little behind the corners), and a
+    wall at each corner, so an open mouth shows its dark inside everywhere and no way through
+    to the inside of the head. (It fanned to one point at the back until run 15: the sides of
+    a wide mouth showed the head's inside, which the game culls, as a hole.)"""
+    co, no, y_corner = mouth_plane()
+    md = F["mouth_detail"]
     me = body.data
     bm = bmesh.new()
     bm.from_mesh(me)
     bm.verts.ensure_lookup_table()
     deform = bm.verts.layers.deform.verify()
     head, jaw = body.vertex_groups["head"].index, body.vertex_groups["jaw"].index
+    y_back = y_corner + md.get("pocket", 0.35) * md["width"]
 
-    def fan(lip, facing):
+    def on_plane(x, y):
+        return Vector((x, y, co.z - (no.x * (x - co.x) + no.y * (y - co.y)) / no.z))
+
+    def target(src):  # its point on the back line, halfway between the head and the jaw
+        v = bm.verts.new(on_plane(src.co.x * 0.95, y_back))
+        v[deform][head] = v[deform][jaw] = 0.5
+        return v
+
+    def strip(lip, facing):
         rim = []
         for src in lip:
             v = bm.verts.new(src.co)
             for k, x in src[deform].items():
                 v[deform][k] = x
             rim.append(v)
-        for a, b in zip(rim, rim[1:]):
-            f = bm.faces.new((back, a, b))
+        backs = [target(src) for src in lip]
+        for (a, b), (ta, tb) in zip(zip(rim, rim[1:]), zip(backs, backs[1:])):
+            f = bm.faces.new((a, b, tb, ta))
             f.normal_update()
             if f.normal.dot(facing) < 0:
                 f.normal_flip()
             f.material_index = 2
-    upper, lower = [bm.verts[i] for i in upper], [bm.verts[i] for i in lower]
-    back = bm.verts.new(mouth_back())
-    back[deform][head] = back[deform][jaw] = 0.5
-    fan(upper, -no)
-    fan(lower, no)
+        return rim, backs
+
+    upper, lower = [bm.verts[i] for i in upper], [bm.verts[i] for i in lower]  # before any are added
+    up_rim, up_back = strip(upper, -no)
+    lo_rim, lo_back = strip(lower, no)
+    for u, l, t in ((up_rim[0], lo_rim[0], up_back[0]), (up_rim[-1], lo_rim[-1], up_back[-1])):
+        if (u.co - l.co).length < 1e-6 and (u.co - t.co).length < 1e-6:
+            continue
+        f = bm.faces.new((u, l, t))  # the corner's wall, facing into the mouth
+        f.normal_update()
+        if f.normal.dot(Vector((-u.co.x, 0, 0))) < 0:
+            f.normal_flip()
+        f.material_index = 2
     bm.to_mesh(me)
     bm.free()
 
@@ -1555,7 +1578,9 @@ SETTLE = {"spikes"}           # parts brought down onto the skin after the ray s
 
 def snap_parts(d):
     """Seat each part on the body surface for the current stage: ray from the bone joint
-    toward the part's anchor, place the anchor at the outermost hit (minus the group's inset)."""
+    toward the part's anchor, place the anchor at the outermost hit (minus the group's inset),
+    or at the first one if a member is marked o["snap_first"] (a part whose ray would go on
+    through the body into a leg or the chin, and float there)."""
     bpy.context.view_layer.update()
     dg = bpy.context.evaluated_depsgraph_get()
     body = d["body"].evaluated_get(dg)
@@ -1573,7 +1598,8 @@ def snap_parts(d):
             here = anchor.matrix_world.translation.copy()
             direction = (here - joint).normalized()
             origin, ldir, hit = inv_body @ joint, (inv_body.to_3x3() @ direction).normalized(), None
-            for _ in range(8):
+            first = any(o.get("snap_first") for o in members)
+            for _ in range(1 if first else 8):
                 h, _, _, _ = bvh.ray_cast(origin, ldir, 10.0)
                 if h is None:
                     break

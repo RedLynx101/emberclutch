@@ -32,6 +32,7 @@
 #include "core/valley.hpp"
 #include "core/villagers.hpp"
 #include "core/walker.hpp"
+#include "core/wanderings.hpp"
 #include "core/world.hpp"
 
 namespace ec {
@@ -87,6 +88,12 @@ struct ValleyScene {
     };
     Figure youFig;
     Figure folk[kVillagers];
+    // A dragon out on the Wanderings (D69): its place on the loop, its clip.
+    DenActor wanderActor;
+    ClipId wanderClip = ClipId::Count;
+    u32 wanderId = 0;
+    Vec3 wanderAt;
+    float wanderHeading = 0, wanderT = 0;
 };
 
 ValleyScene& vs() {
@@ -208,6 +215,40 @@ void windOnTail(App& app, ValleyScene& s, bool flying, bool diving) {
     s.flyer.tailYaw += s.tailYawV * dt;
     s.flyer.tailPitch += s.tailPitchV * dt;
     s.flyer.tailStraight += (wantStraight - s.flyer.tailStraight) * std::fmin(1.0f, dt * 3.0f);
+}
+
+// The wanderer out on its loop (D69): walking round its spot as it goes, or (grown) flying
+// wide circles over it; the trip moves on as you walk with the 3DS closed.
+void animateWanderer(App& app, ValleyScene& s) {
+    const int w = wandererIndex(app.game);
+    if (w < 0) return;
+    const Dragon& d = app.game.dragons[w];
+    const WanderSpot spot = wanderSpot(stepsSince(d, stepCount(app)));
+    const bool flies = d.stage == Stage::Adult;
+    if (s.wanderId != d.id) {
+        s.wanderId = d.id;
+        s.wanderActor = DenActor{};
+        s.wanderClip = ClipId::Count;
+        s.wanderT = 0;
+    }
+    s.wanderT += app.dt;
+    const float r = flies ? 26.0f : 7.0f, speed = flies ? 11.0f : 1.6f;
+    const float a = s.wanderT * speed / r;
+    const float x = spot.at.x + std::cos(a) * r, y = spot.at.y + std::sin(a) * r;
+    const float ground = std::fmax(s.valley.heightAt(x, y), s.valley.water);
+    s.wanderAt = {x, y, ground + (flies ? 28.0f + 4.0f * std::sin(s.wanderT * 0.4f) : 0.0f)};
+    s.wanderHeading = std::atan2(-std::sin(a), -std::cos(a));  // along the circle (counter-clockwise)
+    const AnimLibrary* lib = r3d::animsFor(d);
+    if (!lib) return;
+    const int form = d.stage == Stage::Hatchling ? kFormHatchling : kFormGrown;
+    const int* clips = r3d::clipIndexFor(d, form);
+    const ClipId want = flies ? ClipId::FlyGlide : ClipId::Walk;
+    if (s.wanderClip != want && clips[static_cast<int>(want)] >= 0) {
+        s.wanderActor.anim.play(clips[static_cast<int>(want)], 0.3f, true);
+        s.wanderClip = want;
+    }
+    s.wanderActor.anim.update(*lib, app.dt, nullptr, 0);
+    s.wanderActor.eyes.update(0.0f, app.dt);
 }
 
 void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swimming, float speed) {
@@ -496,6 +537,7 @@ void update(App& app, const Input& in) {
         s.folk[k].heading = (p ? p->heading : 0.0f) + villagerInfo(static_cast<Villager>(k)).facing;
     }
     animatePeople(app, s);
+    animateWanderer(app, s);
     if (app.autoTravel >= 0) {  // an autotest's trip
         world::findPlace(app.game, app.autoTravel);
         travelTo(app, s, app.autoTravel, false);
@@ -667,6 +709,12 @@ void drawTop(App& app) {
     view.fog = sky.horizon;
     view.tint = sky.tint;
     view.lanternsLit = app.game.world.lanternsLit;
+    if (const int w = wandererIndex(app.game); w >= 0 && s.wanderId == app.game.dragons[w].id) {
+        view.wanderer = &app.game.dragons[w];
+        view.wandererActor = &s.wanderActor;
+        view.wandererAt = s.wanderAt;
+        view.wandererHeading = s.wanderHeading;
+    }
     {
         r3d::PersonView& me = view.people[view.peopleCount++];
         me.form = static_cast<u8>(playerBody(app.game.world.look));
@@ -821,6 +869,19 @@ void drawBottom(App& app, const Input& touch) {
         if (info.lantern && world::lanternLit(app.game, p.id)) C2D_DrawCircleSolid(m.x + 4, m.y - 4, 0.5f, 1.8f, theme::kClutchGold);
         if (in.tapped && std::hypot(in.tx - m.x, in.ty - m.y) < 9) tappedPlace = p.id;
     }
+    // A dragon out on the Wanderings: its loop, faint, and where it's got to (D69).
+    if (wandererIndex(app.game) >= 0 && s.wanderId) {
+        const Vec2* loop = nullptr;
+        const int n = wanderLoop(loop);
+        for (int k = 0; k < n; ++k) {
+            const Vec2 a = mapPoint(va, loop[k].x, loop[k].y), b = mapPoint(va, loop[(k + 1) % n].x, loop[(k + 1) % n].y);
+            C2D_DrawLine(a.x, a.y, withAlpha(theme::kClutchGold, 0.35f), b.x, b.y, withAlpha(theme::kClutchGold, 0.35f), 1.0f, 0.5f);
+        }
+        const Vec2 w = mapPoint(va, s.wanderAt.x, s.wanderAt.y);
+        const float bob = std::sin(app.t * 3.0f);
+        C2D_DrawCircleSolid(w.x, w.y, 0.5f, 4.0f + 0.5f * bob, theme::kDenPlum);
+        C2D_DrawCircleSolid(w.x, w.y, 0.5f, 3.0f + 0.5f * bob, theme::kClutchGold);
+    }
     const Vec3 at = hereAt(s);
     const Vec2 me = mapPoint(va, at.x, at.y);
     const float heading = s.mode == Mode::Riding ? s.flight.heading : s.you.heading;
@@ -894,8 +955,9 @@ void openValleyAt(App& app, int place) {
     // Your partner: the one chosen (D81), else the one you're caring for; eggs stay home.
     s.partner = -1;
     for (int i = 0; i < g.dragonCount; ++i)
-        if (g.dragons[i].id == g.world.partnerId && g.dragons[i].stage != Stage::Egg) s.partner = i;
-    if (s.partner < 0 && hasDragon(app) && activeDragon(app).stage != Stage::Egg) s.partner = app.careIndex;
+        if (g.dragons[i].id == g.world.partnerId && g.dragons[i].stage != Stage::Egg && !g.dragons[i].wanderSince) s.partner = i;
+    if (s.partner < 0 && hasDragon(app) && activeDragon(app).stage != Stage::Egg && !activeDragon(app).wanderSince)
+        s.partner = app.careIndex;  // (one out on the Wanderings is off on its own)
     if (s.partner >= 0) {
         s.shown = g.dragons[s.partner];
         g.world.partnerId = s.shown.id;

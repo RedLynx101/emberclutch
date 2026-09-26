@@ -206,6 +206,10 @@ struct ValleyView {
     const Dragon* marketEgg = nullptr;  // the egg of the day on the Market's stand (null: bought)
     Item goods[4] = {Item::Count, Item::Count, Item::Count, Item::Count};  // the goods stall (Count: sold out)
     bool lead = false;                   // your partner on its lead (too small to ride, D81)
+    const Dragon* wanderer = nullptr;    // out on the Wanderings, seen along its loop (D69)
+    const DenActor* wandererActor = nullptr;
+    Vec3 wandererAt;
+    float wandererHeading = 0;
     PersonView people[kMaxPeopleShown];  // you first, then the villagers
     int peopleCount = 0;
 };

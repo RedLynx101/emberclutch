@@ -20,6 +20,7 @@
 //   view <place> <ex> <ey> <ez> <tx> <ty> <tz>   the valley's free camera at a place (its frame; z
 //                               above its anchor), looking at a point
 //   creator                     your look (the creator), back to this scene after
+//   wander <steps>              the dragon cared for sets off on the Wanderings; that many steps walked
 //   quit                        leave (writes shots/done.txt)
 #pragma once
 

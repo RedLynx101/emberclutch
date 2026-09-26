@@ -1,0 +1,37 @@
+# D69: a dragon out on the Wanderings seen in the valley: its loop and pin on the map, and
+# (grown) flying circles over its spot by the meadow; 844 steps along (to the meadow).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+wander 844
+wait 1
+key X
+wait 4
+shot v01-map
+travel 3
+wait 2
+view 3 0 45 12 0 0 26
+wait 2
+shot v02-wanderer
+quit

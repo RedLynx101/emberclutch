@@ -29,6 +29,41 @@ u32 trinketValue(Trinket t) {
     return t < Trinket::Count ? kValue[static_cast<int>(t)] : 0;
 }
 
+namespace {
+// The loop (tools/valley/make_valley.py PATHS): the trailhead, up by the meadow's edge, round
+// the lake's south, and back down to the trailhead.
+constexpr Vec2 kLoop[] = {{60, -880}, {-80, -790}, {-260, -640}, {-420, -470}, {-300, -330}, {-160, -520},
+                          {60, -600}, {200, -500}, {180, -700}, {120, -820}};
+constexpr int kLoopPoints = sizeof(kLoop) / sizeof(kLoop[0]);
+}  // namespace
+
+int wanderLoop(const Vec2*& points) {
+    points = kLoop;
+    return kLoopPoints;
+}
+
+WanderSpot wanderSpot(u32 steps) {
+    float total = 0;
+    for (int k = 0; k < kLoopPoints; ++k) {
+        const Vec2 a = kLoop[k], b = kLoop[(k + 1) % kLoopPoints];
+        total += std::hypot(b.x - a.x, b.y - a.y);
+    }
+    float d = std::fmod(static_cast<float>(steps) * 0.75f, total);
+    for (int k = 0; k < kLoopPoints; ++k) {
+        const Vec2 a = kLoop[k], b = kLoop[(k + 1) % kLoopPoints];
+        const float len = std::hypot(b.x - a.x, b.y - a.y);
+        if (d <= len || k == kLoopPoints - 1) {
+            const float t = len > 0 ? std::fmin(1.0f, d / len) : 0.0f;
+            WanderSpot w;
+            w.at = {a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t};
+            w.heading = std::atan2(b.x - a.x, -(b.y - a.y));
+            return w;
+        }
+        d -= len;
+    }
+    return WanderSpot{};
+}
+
 int wandererIndex(const SaveData& s) {
     for (int i = 0; i < s.dragonCount; ++i)
         if (s.dragons[i].wanderSince != 0) return i;

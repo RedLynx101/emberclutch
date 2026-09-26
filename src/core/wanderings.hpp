@@ -5,6 +5,7 @@
 // drain as usual and it keeps its bed; it comes home muddy (D46).
 #pragma once
 
+#include "core/math3d.hpp"
 #include "core/save.hpp"
 
 namespace ec {
@@ -34,6 +35,16 @@ u32 stepsSince(const Dragon& d, u32 stepCount);
 // What a trip of `steps` turns up for this dragon (adults and the curious find more; at most
 // one wild egg a trip). Pure: nothing is added anywhere.
 WanderFinds rollFinds(const Dragon& d, u32 steps, Rng& rng);
+// Where it is out there (D69, Beta): a loop through the valley's south (from the trailhead,
+// by the meadow and round the lake), metres along it following the steps you've walked (about
+// 0.75 m a step), so the trip moves on as you walk with the 3DS closed.
+struct WanderSpot {
+    Vec2 at;
+    float heading = 0;  // the way along the loop (0 faces -Y)
+};
+WanderSpot wanderSpot(u32 steps);
+int wanderLoop(const Vec2*& points);  // the loop's corners (the map draws it)
+
 // Brings it home: rolls the finds and adds them to the save (Gleam, the hoard, a wild egg in
 // a free nest or the Vault), muddies its legs, belly and tail, and marks the visit.
 WanderFinds comeBack(SaveData& s, int index, u32 stepCount, s64 now, Rng& rng);

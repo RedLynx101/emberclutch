@@ -3126,6 +3126,23 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
                           g_posed.cache && isKind(g_posed.cache->look) ? kindOfSlot(g_posed.cache->look) : -1,
                           seat.r[0].w, seat.r[1].w, seat.r[2].w, view.at.x, view.at.y, view.at.z);
     }
+    // A dragon out on the Wanderings, if it's near (D69).
+    if (view.wanderer && std::hypot(view.wandererAt.x - view.eye.x, view.wandererAt.y - view.eye.y) < 220.0f &&
+        !outsideView(clip, view.wandererAt - Vec3{4, 4, 1}, view.wandererAt + Vec3{4, 4, 6})) {
+        static Posed wanderPosed;
+        if (pose(app, *view.wanderer, view.wandererActor, now, 0, wanderPosed)) {
+            bindDragons(projection);
+            const float plain[3] = {1, 1, 1};
+            lightDragon(dragonLight(dayBlend(now)), plain);
+            C3D_Mtx model;
+            Mtx_Identity(&model);
+            Mtx_Translate(&model, view.wandererAt.x, view.wandererAt.y, view.wandererAt.z, true);
+            Mtx_RotateZ(&model, view.wandererHeading, true);
+            Mtx_Scale(&model, wanderPosed.size, wanderPosed.size, wanderPosed.size);
+            Mtx_Translate(&model, 0, 0, -wanderPosed.ground, true);
+            submit(app, wanderPosed, viewM, model);
+        }
+    }
     // The people about (you on foot, the villagers), near enough to see.
     if (view.peopleCount > 0) {
         bindDragons(projection);

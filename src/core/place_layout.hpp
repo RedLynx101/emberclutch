@@ -2,7 +2,7 @@
 // in), its festival lantern, the walls to walk round, and the Market's egg stand and goods
 // spots. In the place's own frame (metres from its anchor on the ground; +Y the way it faces,
 // +X its right) and turned into the valley by the place's heading. The numbers come from the
-// places' models (tools/valley/places.json, D85 builders); these are their defaults.
+// places' models (tools/valley/places.json, D85 builders: src/core/places_data.inc).
 #pragma once
 
 #include <vector>
@@ -14,6 +14,7 @@
 namespace ec {
 
 struct PlaceLayout {
+    float flat = 0;        // how far round the anchor the ground is flat (and its props kept clear)
     bool hasDoor = false;
     Vec2 door;             // where you press A to go in
     bool hasLantern = false;
@@ -21,7 +22,10 @@ struct PlaceLayout {
     std::vector<Solid> solids;  // circles, in the place's frame
     Vec3 eggStand;         // the Market's egg of the day (x, y, z up from the ground)
     Vec3 goods[4];         // the Market's four goods spots
-    Vec3 hub;              // the windmill's sails
+    Vec3 hub;              // the windmill's sails turn round it,
+    Vec3 hubAxis{0, 1, 0}; // about this
+    float waterZ = 0;      // the lake's and the mill's water, from the anchor
+    Vec2 arrive;           // where a trip on the map sets you down, looking at it
 };
 
 const PlaceLayout& placeLayout(int place);

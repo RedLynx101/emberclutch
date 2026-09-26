@@ -8,6 +8,7 @@
 #include <citro3d.h>
 #include <tex3ds.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -27,6 +28,7 @@
 #include "core/shell_burst.hpp"
 #include "core/prop_mesh.hpp"
 #include "core/rig.hpp"
+#include "core/place_layout.hpp"
 #include "core/static_mesh.hpp"
 #include "core/valley.hpp"
 #include "dragon_shbin.h"
@@ -2509,12 +2511,271 @@ const ValleyGpu* valleyTile(const Valley& v, int tx, int ty, int lod, int& budge
     return slot;
 }
 
+// The valley's places (D85): each a .esm static scene in its own frame (metres, +Y its front,
+// three lighting sets baked), read ahead as you come near, built on the GPU closer in and let
+// go far off. Its parts: the solid model, the festival lantern's post, the mill's sails (turned
+// round their hub), the glows (windows at night) and the lantern's light, lit by the festival.
+enum PlaceRole : u8 { kRoleSolid, kRoleLantern, kRoleSails, kRoleGlow, kRoleLight };
+struct PlaceGpu {
+    struct Part {
+        u16* idx = nullptr;
+        int count = 0;
+        u8 flags = 0, role = kRoleSolid;
+    };
+    static constexpr int kMaxParts = 8;
+    float* pos = nullptr;
+    u8* color[kLightSets] = {};
+    Part parts[kMaxParts];
+    int partCount = 0;
+    float reach = 0, low = 0, high = 0;  // how far it spreads round its anchor, and its height
+    bool ok = false, failed = false, asked = false;
+    void release() {
+        retire(pos);
+        pos = nullptr;
+        for (u8*& c : color) {
+            retire(c);
+            c = nullptr;
+        }
+        for (Part& p : parts) {
+            retire(p.idx);
+            p = Part{};
+        }
+        partCount = 0;
+        ok = asked = false;
+    }
+};
+PlaceGpu g_places[kPlaceCount];
+constexpr const char* kPlaceFiles[kPlaceCount] = {
+    "romfs:/valley/places/den.esm",       "romfs:/valley/places/market.esm",  "romfs:/valley/places/stone.esm",
+    "romfs:/valley/places/sanctuary.esm", "romfs:/valley/places/vault.esm",   "romfs:/valley/places/trailhead.esm",
+    "romfs:/valley/places/arena.esm",     "romfs:/valley/places/lake.esm",    "romfs:/valley/places/keeper.esm",
+    "romfs:/valley/places/isles.esm",     "romfs:/valley/places/orchard.esm", "romfs:/valley/places/mill.esm",
+    "romfs:/valley/places/grotto.esm",    "romfs:/valley/places/ruins.esm"};
+constexpr float kPlaceWant = 420.0f, kPlaceLoad = 330.0f, kPlaceDrop = 480.0f;
+
+u8 placeRole(const char* name) {
+    if (std::strcmp(name, "lantern_light") == 0) return kRoleLight;
+    if (std::strcmp(name, "lantern") == 0) return kRoleLantern;
+    if (std::strcmp(name, "sails") == 0) return kRoleSails;
+    if (std::strcmp(name, "glow") == 0) return kRoleGlow;
+    return kRoleSolid;
+}
+
+bool loadPlace(PlaceGpu& g, const char* path) {
+    std::vector<u8> bytes;
+    static StaticScene s;  // (only while it's built: the GPU keeps its own copy)
+    s = StaticScene{};
+    if (!readFile(path, bytes) || !loadStaticScene(bytes.data(), bytes.size(), s) || s.sets != kLightSets ||
+        s.parts.size() > std::size_t(PlaceGpu::kMaxParts))
+        return false;
+    g.pos = static_cast<float*>(linearAlloc(sizeof(float) * 3 * s.vertexCount));
+    bool ok = g.pos != nullptr;
+    for (int k = 0; k < kLightSets && ok; ++k) {
+        g.color[k] = static_cast<u8*>(linearAlloc(std::size_t(s.vertexCount) * 4));
+        ok = g.color[k] != nullptr;
+        if (ok) {
+            std::memcpy(g.color[k], s.colors(k), std::size_t(s.vertexCount) * 4);
+            GSPGPU_FlushDataCache(g.color[k], std::size_t(s.vertexCount) * 4);
+        }
+    }
+    for (std::size_t i = 0; i < s.parts.size() && ok; ++i) {
+        const StaticPart& sp = s.parts[i];
+        PlaceGpu::Part& part = g.parts[g.partCount++];
+        part.count = sp.indexCount;
+        part.flags = sp.flags;
+        part.role = placeRole(sp.name);
+        part.idx = static_cast<u16*>(linearAlloc(sizeof(u16) * std::max(1, part.count)));
+        ok = part.idx != nullptr;
+        if (ok) {
+            std::memcpy(part.idx, s.indices.data() + sp.firstIndex, sizeof(u16) * part.count);
+            GSPGPU_FlushDataCache(part.idx, sizeof(u16) * part.count);
+        }
+    }
+    if (!ok) {
+        g.release();
+        return false;
+    }
+    g.reach = g.low = g.high = 0;
+    for (int v = 0; v < s.vertexCount; ++v) {
+        const Vec3 p = s.pos[v];
+        g.pos[v * 3] = p.x;
+        g.pos[v * 3 + 1] = p.y;
+        g.pos[v * 3 + 2] = p.z;
+        g.reach = std::fmax(g.reach, std::fmax(std::fabs(p.x), std::fabs(p.y)));
+        g.low = std::fmin(g.low, p.z);
+        g.high = std::fmax(g.high, p.z);
+    }
+    GSPGPU_FlushDataCache(g.pos, sizeof(float) * 3 * s.vertexCount);
+    g.ok = true;
+    return true;
+}
+
+// Reads ahead the places coming into reach, builds one a frame, lets the far ones go.
+void streamPlaces(const Valley& v, Vec3 eye) {
+    bool built = false;
+    for (const ValleyPlaceInfo& p : v.places) {
+        if (p.id >= kPlaceCount) continue;
+        PlaceGpu& g = g_places[p.id];
+        const float d = std::hypot(eye.x - p.at.x, eye.y - p.at.y);
+        if (g.ok) {
+            if (d > kPlaceDrop) g.release();
+            continue;
+        }
+        if (g.failed || d > kPlaceWant) continue;
+        if (!g.asked) {
+            prefetch::want(kPlaceFiles[p.id]);
+            g.asked = true;
+        }
+        if (!built && (d < kPlaceLoad || prefetch::ready(kPlaceFiles[p.id]))) {
+            built = true;
+            if (!loadPlace(g, kPlaceFiles[p.id])) g.failed = true;
+        }
+    }
+}
+
+// A place's frame in the valley: its anchor, turned so its +Y is the way it faces.
+C3D_Mtx placeFrame(const ValleyPlaceInfo& p) {
+    C3D_Mtx m;
+    Mtx_Identity(&m);
+    Mtx_Translate(&m, p.at.x, p.at.y, p.at.z, true);
+    Mtx_RotateZ(&m, p.heading + 3.14159265f, true);
+    return m;
+}
+
+// The places' opaque parts (glows = false) or their glows and lit lanterns (after the dragons).
+void drawPlaces(App& app, const Valley& v, const ValleyView& view, const C3D_Mtx& viewM, const C3D_Mtx& clip,
+                const DayBlend& blend, bool glows) {
+    if (glows) {
+        C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_COLOR);
+        C3D_CullFace(GPU_CULL_NONE);
+        C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_ONE, GPU_ONE, GPU_ZERO, GPU_ONE);
+    } else {
+        C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+        C3D_CullFace(GPU_CULL_BACK_CCW);
+    }
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSBlend, blend.t, 0, 0, 0);
+    for (const ValleyPlaceInfo& p : v.places) {
+        if (p.id >= kPlaceCount || !g_places[p.id].ok) continue;
+        const PlaceGpu& g = g_places[p.id];
+        const Vec3 lo{p.at.x - g.reach, p.at.y - g.reach, p.at.z + g.low};
+        const Vec3 hi{p.at.x + g.reach, p.at.y + g.reach, p.at.z + g.high};
+        if (outsideView(clip, lo, hi) || std::hypot(view.eye.x - p.at.x, view.eye.y - p.at.y) > kValleyFar + g.reach)
+            continue;
+        const bool lit = (view.lanternsLit >> p.id) & 1u;
+        const C3D_Mtx frame = placeFrame(p);
+        C3D_Mtx mv;
+        Mtx_Multiply(&mv, &viewM, &frame);
+        C3D_Mtx sails = mv;
+        if (p.id == kPlaceMill) {  // the sails turn slowly round their hub
+            const PlaceLayout& L = placeLayout(kPlaceMill);
+            Mtx_Translate(&sails, L.hub.x, L.hub.y, L.hub.z, true);
+            Mtx_Rotate(&sails, FVec3_New(L.hubAxis.x, L.hubAxis.y, L.hubAxis.z), app.t * 0.7f, true);
+            Mtx_Translate(&sails, -L.hub.x, -L.hub.y, -L.hub.z, true);
+        }
+        C3D_BufInfo* buf = C3D_GetBufInfo();
+        BufInfo_Init(buf);
+        BufInfo_Add(buf, g.pos, sizeof(float) * 3, 1, 0x0);
+        BufInfo_Add(buf, g.color[blend.a], 4, 1, 0x1);
+        BufInfo_Add(buf, g.color[blend.b], 4, 1, 0x2);
+        for (int i = 0; i < g.partCount; ++i) {
+            const PlaceGpu::Part& part = g.parts[i];
+            if (((part.flags & kStaticAdditive) != 0) != glows || !part.count) continue;
+            if (part.role == kRoleLight && !lit) continue;  // the festival lantern, dark till lit
+            const float k = (part.flags & kStaticFlicker) ? flicker(app.t + p.id) : 1.0f;
+            C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, k / 255.0f, k / 255.0f, k / 255.0f, 1.0f / 255.0f);
+            C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSModelView, part.role == kRoleSails ? &sails : &mv);
+            C3D_DrawElements(GPU_TRIANGLES, part.count, C3D_UNSIGNED_SHORT, part.idx);
+            app.stats.tris += part.count / 3;
+            app.stats.draws += 1;
+            g_valleyStats.places += part.count / 3;
+        }
+    }
+    C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSModelView, &viewM);
+    if (glows)
+        C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA,
+                       GPU_ONE_MINUS_SRC_ALPHA);
+    C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+}
+
+// The Market's stall: the egg of the day on its stand (gone once bought) and the day's four
+// goods on the stall's mats, each fitted to its spot; a sold-out spot shows a plain crate.
+struct GoodsMesh {
+    GpuMesh mesh;
+    float scale = 1, lift = 0, cx = 0, cy = 0;
+};
+GoodsMesh g_goods[kItems + 1];
+EggMotion g_standEgg;
+
+bool goodsMesh(Item it, GoodsMesh*& out) {
+    GoodsMesh& g = g_goods[it < Item::Count ? static_cast<int>(it) : kItems];
+    out = &g;
+    if (g.mesh.vbo) return true;
+    const PropMesh m = stallMesh(it);
+    if (m.pos.empty()) return false;
+    Vec3 lo = m.pos[0], hi = m.pos[0];
+    for (const Vec3& p : m.pos) {
+        lo = {std::fmin(lo.x, p.x), std::fmin(lo.y, p.y), std::fmin(lo.z, p.z)};
+        hi = {std::fmax(hi.x, p.x), std::fmax(hi.y, p.y), std::fmax(hi.z, p.z)};
+    }
+    const float wide = std::fmax(hi.x - lo.x, hi.y - lo.y), tall = hi.z - lo.z;
+    g.scale = std::fmin(0.46f / std::fmax(wide, 1e-3f), 0.55f / std::fmax(tall, 1e-3f));
+    g.lift = -lo.z;
+    g.cx = (lo.x + hi.x) * 0.5f;
+    g.cy = (lo.y + hi.y) * 0.5f;
+    return uploadProp(g.mesh, m);
+}
+
+void drawStall(App& app, const Valley& v, const ValleyView& view, const C3D_Mtx& viewM) {
+    const ValleyPlaceInfo* market = v.place(kPlaceMarket);
+    if (!market || !g_places[kPlaceMarket].ok) return;
+    const PlaceLayout& L = placeLayout(kPlaceMarket);
+    const float yaw = market->heading + 3.14159265f;
+    const Mat34 identity[1] = {Mat34::identity()};
+    lookShading(kLookClassic);
+    bindSkin(nullptr);
+    dragonPattern(kPatternSolid, {0, 0, 0});
+    for (int k = 0; k < 4; ++k) {
+        GoodsMesh* g = nullptr;
+        if (!goodsMesh(view.goods[k], g)) continue;
+        const Vec2 at = placeToWorld(*market, {L.goods[k].x, L.goods[k].y});
+        C3D_Mtx model = placeMatrix({at.x, at.y, market->at.z + L.goods[k].z}, yaw + 0.25f * (k - 1.5f), 1.0f, g->scale);
+        Mtx_Translate(&model, -g->cx, -g->cy, g->lift, true);
+        modelView(viewM, model);
+        const PropLook look = stallLook(view.goods[k]);
+        setLook(look, look.glow * 0.6f);
+        drawMesh(app, g->mesh, identity);
+    }
+    if (view.marketEgg && g_egg.ok) {  // the egg of the day, rocking a little on its straw
+        g_standEgg.update(app.dt, 0.0f, app.rng);
+        if (g_standEgg.rock < 0.02f) g_standEgg.knock(0.03f, 0);
+        const Vec2 at = placeToWorld(*market, {L.eggStand.x, L.eggStand.y});
+        Mat34 skin[2];
+        eggSkin(g_egg.model, g_standEgg, skin);
+        constexpr float kStandEgg = 0.6f;  // the egg's height on the stand, metres
+        C3D_Mtx model, mv;
+        Mtx_Identity(&model);
+        Mtx_Translate(&model, at.x, at.y, market->at.z + L.eggStand.z, true);
+        Mtx_RotateZ(&model, yaw + 0.4f * std::sin(app.t * 0.3f), true);
+        Mtx_Scale(&model, kStandEgg, kStandEgg, kStandEgg);
+        Mtx_Translate(&model, 0, 0, -groundOffset(g_egg.model, skin), true);
+        Mtx_Multiply(&mv, &viewM, &model);
+        C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &mv);
+        eggColours(app, *view.marketEgg, 1.0f);
+        drawMesh(app, g_egg.shell, skin);
+    }
+}
+
 }  // namespace
 
 void releaseValley() {
     for (ValleyGpu& g : g_vtiles) g.release();
     g_vextras.release();
     g_vwater.release();
+    for (PlaceGpu& p : g_places) {
+        p.release();
+        p.failed = false;
+    }
+    for (GoodsMesh& g : g_goods) g.mesh.release();
     g_valleyOf = nullptr;
     if (g_valleyMapOk) {
         retireTex(g_valleyMapTex);
@@ -2573,7 +2834,12 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
                 g_valleyStats.ground += g->count / 3;
             }
         }
-    // The islands and the den's mouth (built once), both faces drawn.
+    // The places, near enough to have been built.
+    const DayBlend blend = dayBlend(now);
+    streamPlaces(v, view.eye);
+    drawPlaces(app, v, view, viewM, clip, blend, false);
+    bindValleyStatic(projection, viewM, view.tint);
+    // The islands (built once), both faces drawn.
     if (!g_vextras.count) {
         ValleyMesh m;
         buildValleyExtras(v, m);
@@ -2603,6 +2869,17 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
             g_headSet[0] = true;
         }
     }
+    // The Market's stall (the dragons' program, their light).
+    if (const ValleyPlaceInfo* market = v.place(kPlaceMarket);
+        market && g_places[kPlaceMarket].ok && std::hypot(view.eye.x - market->at.x, view.eye.y - market->at.y) < 140.0f) {
+        bindDragons(projection);
+        const float plain[3] = {1, 1, 1};
+        lightDragon(dragonLight(blend), plain);
+        drawStall(app, v, view, viewM);
+    }
+    // The places' glows: windows and lamps at night, the festival's lit lanterns.
+    bindValleyStatic(projection, viewM, view.tint);
+    drawPlaces(app, v, view, viewM, clip, blend, true);
     // The water and the waterfall: see-through, over everything, writing no depth.
     if (!g_vwater.count) {
         ValleyMesh m;

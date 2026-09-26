@@ -5,43 +5,43 @@
 namespace ec {
 namespace {
 
-PlaceLayout make(bool door, Vec2 d, bool lantern, Vec3 l, std::vector<Solid> solids) {
-    PlaceLayout p;
-    p.hasDoor = door;
-    p.door = d;
-    p.hasLantern = lantern;
-    p.lantern = l;
-    p.solids = std::move(solids);
-    return p;
-}
+#include "core/places_data.inc"
 
-std::vector<PlaceLayout> defaults() {
+std::vector<PlaceLayout> build() {
     std::vector<PlaceLayout> t(kPlaceCount);
-    t[kPlaceDen] = make(true, {0, 4}, true, {6, 7, 2.2f}, {});
-    t[kPlaceMarket] = make(true, {0, 0}, true, {9, 9, 2.4f},
-                           {{{-18, 10}, 4.0f}, {{18, 10}, 4.0f}, {{-15, -16}, 4.0f}, {{15, -16}, 4.0f}, {{0, 20}, 4.0f}});
-    t[kPlaceMarket].eggStand = {0, -4, 1.0f};
-    for (int k = 0; k < 4; ++k) t[kPlaceMarket].goods[k] = {-3.0f + 2.0f * k, 5, 1.0f};
-    t[kPlaceStone] = make(true, {0, 3.5f}, true, {5, -3, 2.2f}, {{{0, 0}, 2.5f}});
-    t[kPlaceSanctuary] = make(true, {0, 6}, true, {7, 2, 2.2f}, {{{-6, 0}, 3.5f}, {{6, -2}, 3.5f}});
-    t[kPlaceVault] = make(true, {0, 4}, true, {5, 5, 2.2f}, {});
-    t[kPlaceTrailhead] = make(true, {0, 3}, true, {4, 4, 2.2f}, {{{-5, -2}, 1.5f}});
-    t[kPlaceArena] = make(true, {0, 26}, true, {0, -8, 4.0f}, {});
-    t[kPlaceLake] = make(false, {}, false, {}, {});
-    t[kPlaceKeeper] = make(true, {0, 5}, false, {}, {{{0, -1}, 4.0f}});
-    t[kPlaceIsles] = make(false, {}, true, {0, 0, 2.2f}, {});
-    t[kPlaceOrchard] = make(true, {0, 3}, false, {}, {});
-    t[kPlaceMill] = make(false, {}, false, {}, {{{9, 4}, 4.0f}});
-    t[kPlaceMill].hub = {9, 4, 12};
-    t[kPlaceGrotto] = make(true, {0, 3}, false, {}, {});
-    t[kPlaceRuins] = make(false, {}, false, {}, {{{0, 0}, 5.0f}});
+    for (int k = 0; k < kPlaceCount; ++k) {
+        const PlaceRow& r = kPlaceRows[k];
+        PlaceLayout& p = t[k];
+        p.flat = r.flat;
+        p.hasDoor = r.hasDoor;
+        p.door = {r.door[0], r.door[1]};
+        p.hasLantern = r.hasLantern;
+        p.lantern = {r.lantern[0], r.lantern[1], r.lantern[2]};
+        for (int i = 0; i < r.solids; ++i) {
+            const float* c = kPlaceSolids[r.firstSolid + i];
+            p.solids.push_back({{c[0], c[1]}, c[2]});
+        }
+        p.waterZ = r.waterZ;
+    }
+    PlaceLayout& m = t[kPlaceMarket];
+    m.eggStand = {kMarketEggStand[0], kMarketEggStand[1], kMarketEggStand[2]};
+    for (int i = 0; i < 4; ++i) m.goods[i] = {kMarketGoods[i][0], kMarketGoods[i][1], kMarketGoods[i][2]};
+    t[kPlaceMill].hub = {kMillHub[0], kMillHub[1], kMillHub[2]};
+    t[kPlaceMill].hubAxis = {kMillAxis[0], kMillAxis[1], kMillAxis[2]};
+    // Arriving: before its door, or out in front of it; the mill from its east bank (the river
+    // runs through its front), the grotto from the falls' side (it opens toward its -Y).
+    for (PlaceLayout& p : t) p.arrive = p.hasDoor ? Vec2{p.door.x, p.door.y + 5.0f} : Vec2{0, 12.0f};
+    t[kPlaceMarket].arrive = {0.0f, -2.5f};  // the square's middle: the stalls ahead
+    t[kPlaceMill].arrive = {13.0f, 6.0f};
+    t[kPlaceGrotto].arrive = {0.0f, -11.0f};
+    t[kPlaceLake].arrive = {4.0f, 9.0f};
     return t;
 }
 
 }  // namespace
 
 const PlaceLayout& placeLayout(int place) {
-    static const std::vector<PlaceLayout> kTable = defaults();
+    static const std::vector<PlaceLayout> kTable = build();
     return kTable[place >= 0 && place < kPlaceCount ? place : 0];
 }
 

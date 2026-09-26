@@ -25,14 +25,7 @@ u32 col(u8 r, u8 g, u8 b, float a = 1.0f) { return withAlpha(theme::rgba(r, g, b
 enum Tab : u8 { kFood, kGoods, kSell, kEgg, kTabs };
 
 // Today's egg as a dragon record (for drawing it; nothing is saved).
-Dragon todaysEgg(const App& app) {
-    const DailyEgg e = dailyEgg(app.game, dayIndex(nowLocal(app)));
-    Dragon d = makeEgg(0xFFFFFFF0u, e.genome, e.sex, 0);
-    d.kind = e.kind;  // today's kind, in its colouring (the egg shows it)
-    d.variant = e.variant;
-    d.warmth = 80;
-    return d;
-}
+Dragon todaysEgg(const App& app) { return eggOnShow(app.game, dayIndex(nowLocal(app))); }
 
 void update(App& app, const Input& in) {
     audio::setBed(audio::Bed::Market, 1.0f);  // the stalls' murmur

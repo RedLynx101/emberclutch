@@ -33,6 +33,8 @@ struct DailyEgg {
 // Today's egg, the same all day for everyone with this save (from the day and the save's
 // first dragon): a kind by rarity, weighted toward the harder to find.
 DailyEgg dailyEgg(const SaveData& s, s32 day);
+// The day's egg as a dragon record, for drawing it on its stand (nothing is saved).
+Dragon eggOnShow(const SaveData& s, s32 day);
 // Buys it (once a day) into a free nest, else the Cold Vault. Returns its index, or -1 (not
 // enough Gleam, already bought today, the Vault is full).
 int buyDailyEgg(SaveData& s, s64 now);

@@ -32,6 +32,10 @@ struct PropLook {
     float glow = 0;  // palette alpha for emissive vertices (lanterns, moonflowers)
 };
 PropLook propLook(Item i);  // Item::Count: the den's own rug
+// The Market's goods stall in the valley (Beta): anything sold there, at its own size (the stall
+// fits it to a spot), or Item::Count for the store furniture a sold-out spot shows.
+PropMesh stallMesh(Item i);
+PropLook stallLook(Item i);
 // A completed breed's banner (the Dragondex, WP12), hung in the banner spot in its colours:
 // the cloth its body, an egg on it in its accent, the egg's heart in its heartglow.
 PropMesh breedBannerMesh();

@@ -389,25 +389,7 @@ void buildValleyExtras(const Valley& v, ValleyMesh& out) {
                  green);
         }
     }
-    // The den's cave mouth: a dark arch in the cliff, facing out of it.
-    if (const ValleyPlaceInfo* den = v.place(kPlaceDen)) {
-        const Vec3 fwd{std::sin(den->heading), -std::cos(den->heading), 0};
-        const Vec3 side{-fwd.y, fwd.x, 0};
-        const Vec3 base = den->at + fwd * 1.0f;  // (at the cliff's foot: the places' den dressing frames it)
-        const float floor = v.heightAt(base.x + fwd.x * 6, base.y + fwd.y * 6) - 1.0f;
-        const Vec3 mid{base.x, base.y, floor};
-        const u16 c = addVertex(out, mid, 22, 16, 30);
-        constexpr int kArch = 8;
-        u16 ring[kArch + 1];
-        for (int s = 0; s <= kArch; ++s) {
-            const float a = kPi * s / kArch;
-            ring[s] = addVertex(out, mid + side * (std::cos(a) * 4.5f) + Vec3{0, 0, std::sin(a) * 5.5f}, 48, 36, 58);
-        }
-        for (int s = 0; s < kArch; ++s) {
-            tri(out, c, ring[s], ring[s + 1]);  // both faces: seen from the valley and from above
-            tri(out, c, ring[s + 1], ring[s]);
-        }
-    }
+    // (The places themselves are models: romfs/valley/places, drawn by render3d.)
 }
 
 void buildValleyWater(const Valley& v, ValleyMesh& out) {

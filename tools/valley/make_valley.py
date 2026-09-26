@@ -118,9 +118,13 @@ HEIGHTS = (100.0, 860.0)                            # the cold heights' middle
 CRAG = (960.0, 700.0)
 STONE_HILL = (600.0, 520.0)
 
-# place: (x, y, flat radius, ground height or None: the ground there), heading
+# The windmill's bridge crosses the river where the path does: the river runs along its local Y.
+MILL_HEADING = math.atan2(0.49, 0.87)
+MILL_WATER = 1.3        # the mill's anchor above the water (places.json water_z)
+GROTTO_FLOOR = WATER + 1.0
+# place: (x, y, flat radius, ground height or None: its own ground before flattening), heading
 PLACES = {
-    P_DEN: (DEN[0] + 2.0, DEN[1], 0.0, None, math.pi / 2),
+    P_DEN: (DEN[0] + 4.0, DEN[1], 0.0, None, math.pi / 2),        # in a notch in the cliff (den_notch)
     P_MARKET: (330.0, 120.0, 85.0, 14.0, 0.0),
     P_STONE: (STONE_HILL[0], STONE_HILL[1], 30.0, 72.0, math.pi),
     P_SANCTUARY: (-420.0, -470.0, 110.0, 16.0, 0.3),
@@ -131,9 +135,9 @@ PLACES = {
     P_KEEPER: (CLIFF_X + 70.0, FALLS_Y + 52.0, 22.0, 12.5, 2.4),
     P_ISLES: (120.0, 200.0, 0.0, None, 0.0),
     P_ORCHARD: (560.0, 40.0, 50.0, 17.0, -1.2),
-    P_MILL: (-6.0, 60.0, 0.0, None, math.pi / 2),
-    P_GROTTO: (CLIFF_X + 1.0, FALLS_Y, 0.0, None, math.pi / 2),
-    P_RUINS: (CRAG[0], CRAG[1], 14.0, None, math.pi * 1.2),
+    P_MILL: (-6.0, 60.0, 0.0, None, MILL_HEADING),               # its bridge across the river (mill_banks)
+    P_GROTTO: (CLIFF_X - 6.0, FALLS_Y, 0.0, None, -math.pi / 2),  # in the cliff behind the falls, open east
+    P_RUINS: (CRAG[0], CRAG[1], 16.0, None, math.pi * 1.2),      # flattened at the crag's own top
 }
 ISLANDS = [(120.0, 200.0, 190.0, 55.0), (300.0, -330.0, 150.0, 40.0), (-250.0, 480.0, 172.0, 35.0),
            (480.0, 300.0, 212.0, 30.0), (-150.0, -250.0, 160.0, 28.0), (700.0, 120.0, 185.0, 26.0)]
@@ -151,7 +155,8 @@ PATHS = [
 ]
 
 
-def height(x, y):
+def base_height(x, y):
+    """The land before the places are shaped into it; also the ground without the den's cliff."""
     r = math.hypot(x, y) / HALF
     h = 12.0 + 10.0 * (fbm(x / 220.0, y / 220.0, 5, 1) - 0.5) * 2
     # Rolling ground: gentle hills between the places.
@@ -161,6 +166,7 @@ def height(x, y):
     # The cold heights in the north and the crag in the east.
     h += 170.0 * math.exp(-(((x - HEIGHTS[0]) / 330.0) ** 2 + ((y - HEIGHTS[1]) / 200.0) ** 2))
     h += 170.0 * math.exp(-(((x - CRAG[0]) / 90.0) ** 2 + ((y - CRAG[1]) / 110.0) ** 2))
+    h0 = h  # the valley floor, before the den's plateau
     # The den's plateau with its sheer cliff.
     band = smoothstep(-330.0, -220.0, y) * (1.0 - smoothstep(480.0, 600.0, y))
     plateau = PLATEAU + 8.0 * (fbm(x / 80.0, y / 80.0, 3, 5) - 0.5)
@@ -173,12 +179,25 @@ def height(x, y):
     vx, vy = PLACES[P_VAULT][0], PLACES[P_VAULT][1]
     w = 1.0 - smoothstep(26.0, 60.0, math.hypot(x - vx, y - vy))
     h = h + (152.0 - h) * w
+    return h, h0
+
+
+PLACE_BASE = {}
+
+
+def height(x, y):
+    h, h0 = base_height(x, y)
     # Flattened ground at the places (with a soft rim).
     for pid, (px, py, fr, fh, _) in PLACES.items():
-        if fr <= 0 or fh is None:
+        if fr <= 0:
             continue
+        if fh is None:  # its own ground, flattened
+            if pid not in PLACE_BASE:
+                PLACE_BASE[pid] = base_height(px, py)[0]
+            fh = PLACE_BASE[pid]
         w = 1.0 - smoothstep(fr * 0.7, fr * 1.25, math.hypot(x - px, y - py))
         h = h + (fh + 1.0 * (fbm(x / 40.0, y / 40.0, 2, 9) - 0.5) - h) * w
+    h = den_notch(x, y, h, h0)
     # The river, its outlet, the brook and the stream on the plateau, cut in.
     dr = min(poly_near(x, y, RIVER, 120.0), poly_near(x, y, OUTLET, 120.0))
     h -= 8.0 * math.exp(-(dr / 12.0) ** 2) + 4.0 * math.exp(-(dr / 60.0) ** 2)
@@ -196,7 +215,55 @@ def height(x, y):
     if e < 1.3:
         bowl = WATER - 8.0 * (1.0 - min(1.0, e) ** 2) - 0.5
         h = h + (min(h, bowl) - h) * (1.0 - smoothstep(0.85, 1.3, e))
+    h = mill_banks(x, y, h)
+    h = grotto_notch(x, y, h)
     return h
+
+
+def local(x, y, pid):
+    """(right, forward) of a point in a place's frame (forward = (sin h, -cos h))."""
+    px, py, _, _, hd = PLACES[pid]
+    fx, fy = math.sin(hd), -math.cos(hd)
+    dx, dy = x - px, y - py
+    return dx * fy - dy * fx, dx * fx + dy * fy
+
+
+def den_notch(x, y, h, h0):
+    """The den's yard cut into the cliff's foot, and the cave's mouth deeper still: its arch
+    model (places.json) stands out of the cliff face at local y -1.9, its tunnel 3.6 m deep."""
+    u, f = local(x, y, P_DEN)
+    if f < -12.0 or f > 26.0 or abs(u) > 22.0:
+        return h
+    yard = smoothstep(-5.0, -1.0, f) * (1.0 - smoothstep(11.0, 17.0, abs(u))) * (1.0 - smoothstep(18.0, 26.0, f))
+    mouth = smoothstep(-10.0, -6.5, f) * (1.0 - smoothstep(4.5, 7.5, abs(u)))
+    w = max(yard, mouth)
+    return h + (min(h, h0) - h) * w
+
+
+def mill_banks(x, y, h):
+    """The windmill's banks at its bridge's ends, the river kept cut between them."""
+    px, py = PLACES[P_MILL][0], PLACES[P_MILL][1]
+    d = math.hypot(x - px, y - py)
+    if d > 30.0:
+        return h
+    u, f = local(x, y, P_MILL)
+    bank = WATER + MILL_WATER
+    w = 1.0 - smoothstep(18.0, 28.0, d)
+    if abs(u) < 6.5:  # the channel under the bridge
+        return h + (min(h, WATER - 2.2) - h) * w
+    return h + (bank - h) * w * smoothstep(6.5, 9.0, abs(u))
+
+
+def grotto_notch(x, y, h):
+    """The grotto's chamber cut into the cliff behind the falls, its mouth open east to the pool."""
+    u, f = local(x, y, P_GROTTO)
+    d = math.hypot(u, f)
+    if d > 22.0:
+        return h
+    room = 1.0 - smoothstep(7.5, 10.0, d)
+    mouth = (1.0 - smoothstep(3.0, 6.0, abs(u))) * smoothstep(0.0, 2.0, -f) * (1.0 - smoothstep(12.0, 20.0, -f))
+    w = max(room, mouth)
+    return h + (GROTTO_FLOOR - h) * w
 
 
 # The storybook palette.
@@ -375,9 +442,11 @@ def places(hs):
             isl = ISLANDS[0]
             out.append((pid, isl[0], isl[1], isl[2], heading))
         elif pid == P_LAKE:
-            out.append((pid, x, y, WATER + 0.4, heading))
-        elif pid in (P_DEN, P_GROTTO):
-            out.append((pid, x, y, ground(hs, x + 14.0, y), heading))  # at the foot of the cliff
+            out.append((pid, x, y, WATER + 0.6, heading))  # places.json water_z -0.6
+        elif pid == P_MILL:
+            out.append((pid, x, y, WATER + MILL_WATER, heading))
+        elif pid == P_GROTTO:
+            out.append((pid, x, y, GROTTO_FLOOR, heading))
         else:
             out.append((pid, x, y, ground(hs, x, y), heading))
     return out

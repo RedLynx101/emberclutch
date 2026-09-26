@@ -15,6 +15,10 @@
 //   name <text>                 what the keyboard returns next (no keyboard is shown)
 //   skip <hours>                the dev clock skips ahead
 //   overlay <on|off>            the dev budget overlay
+//   travel <place>              in the valley: go to a place (core/valley ValleyPlace)
+//   light                       every festival lantern lit
+//   view <place> <ex> <ey> <ez> <tx> <ty> <tz>   the valley's free camera at a place (its frame; z
+//                               above its anchor), looking at a point
 //   quit                        leave (writes shots/done.txt)
 #pragma once
 

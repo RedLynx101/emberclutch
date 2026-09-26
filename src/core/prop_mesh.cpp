@@ -389,6 +389,83 @@ PropMesh decorMesh(Item i) {
     return m;
 }
 
+namespace {
+
+// ------------------------------------------------------------------------------ the Market's stall (Beta)
+void silverBrush(Builder& b) {
+    b.slot = 0;  // the wooden handle
+    b.frustum({-0.3f, 0, 0.04f}, {0.02f, 0, 0.05f}, 0.03f, 0.035f, 5, true, false);
+    b.slot = 1;  // the silver back
+    b.ellipsoid({0.14f, 0, 0.07f}, {0.14f, 0.075f, 0.035f}, 8, 4, [](Vec3) -> u8 { return 1; });
+    b.slot = 2;  // the bristles under it
+    b.ellipsoid({0.14f, 0, 0.03f}, {0.13f, 0.065f, 0.03f}, 8, 3, [](Vec3) -> u8 { return 2; });
+}
+
+void bubbleSoap(Builder& b) {
+    b.slot = 0;  // the bottle, with a cork
+    b.frustum({0, 0, 0}, {0, 0, 0.22f}, 0.09f, 0.08f, 7, true, false);
+    b.ellipsoid({0, 0, 0.22f}, {0.08f, 0.08f, 0.05f}, 7, 3, [](Vec3) -> u8 { return 0; });
+    b.slot = 3;
+    b.frustum({0, 0, 0.25f}, {0, 0, 0.31f}, 0.035f, 0.03f, 5, false, true);
+    for (int k = 0; k < 3; ++k) {  // bubbles rising from it
+        const float r = 0.03f + 0.012f * k;
+        b.ellipsoid({0.07f - 0.05f * k, 0.03f * k, 0.36f + 0.07f * k}, {r, r, r}, 6, 3, [](Vec3) -> u8 { return 1; });
+    }
+}
+
+void warmStones(Builder& b) {
+    b.slot = 0;  // a shallow woven dish
+    b.frustum({0, 0, 0}, {0, 0, 0.06f}, 0.2f, 0.26f, 8, true, false);
+    const Vec3 at[3] = {{-0.08f, -0.04f, 0.09f}, {0.09f, -0.02f, 0.09f}, {0.0f, 0.09f, 0.1f}};
+    for (int k = 0; k < 3; ++k)  // three smooth stones, glowing warm at heart
+        b.ellipsoid(at[k], {0.1f, 0.085f, 0.06f}, 7, 4, [](Vec3 s) -> u8 { return s.z > 0.6f ? 2 : 1; });
+}
+
+// Store furniture for a spot with nothing left to sell: a little crate with a folded cloth.
+void crate(Builder& b) {
+    b.slot = 0;
+    b.frustum({0, 0, 0}, {0, 0, 0.26f}, 0.22f, 0.22f, 4, false, true, kPi / 4);
+    b.slot = 1;  // darker slats round it
+    for (float z : {0.06f, 0.2f}) b.frustum({0, 0, z - 0.025f}, {0, 0, z + 0.025f}, 0.228f, 0.228f, 4, false, false, kPi / 4);
+    b.slot = 2;  // the cloth on top
+    b.frustum({-0.02f, 0.01f, 0.26f}, {-0.02f, 0.01f, 0.3f}, 0.13f, 0.12f, 4, false, true, 0.5f);
+}
+
+}  // namespace
+
+PropMesh stallMesh(Item i) {
+    if (i == Item::Count) {
+        PropMesh m;
+        Builder b{m};
+        crate(b);
+        return m;
+    }
+    if (static_cast<int>(i) < kToys) return toyMesh(static_cast<int>(i));
+    PropMesh m;
+    Builder b{m};
+    switch (i) {
+        case Item::SilverBrush: silverBrush(b); return m;
+        case Item::BubbleSoap: bubbleSoap(b); return m;
+        case Item::WarmStones: warmStones(b); return m;
+        default: return decorMesh(i);
+    }
+}
+
+PropLook stallLook(Item i) {
+    PropLook l;
+    switch (i) {
+        case Item::SilverBrush: l.colour[0] = {150, 98, 56}, l.colour[1] = {214, 220, 232}, l.colour[2] = {247, 234, 200}; break;
+        case Item::BubbleSoap: l.colour[0] = {150, 210, 230}, l.colour[1] = {235, 240, 255}, l.colour[3] = {170, 120, 80}; break;
+        case Item::WarmStones:
+            l.colour[0] = {190, 150, 100}, l.colour[1] = {130, 110, 116}, l.colour[2] = {245, 150, 80};
+            l.glow = 0.6f;
+            break;
+        case Item::Count: l.colour[0] = {196, 150, 100}, l.colour[1] = {150, 104, 66}, l.colour[2] = {214, 86, 70}; break;
+        default: return propLook(i);
+    }
+    return l;
+}
+
 PropMesh breedBannerMesh() {
     PropMesh m;
     Builder b{m};

@@ -185,11 +185,14 @@ struct ValleyView {
     bool youShown = false;             // you on foot: where, which way, how fast
     Vec3 you;
     float youHeading = 0, youSpeed = 0;
+    const Dragon* marketEgg = nullptr;  // the egg of the day on the Market's stand (null: bought)
+    Item goods[4] = {Item::Count, Item::Count, Item::Count, Item::Count};  // the goods stall (Count: sold out)
 };
 void drawValley(App& app, const ValleyView& view, s64 now);
 void releaseValley();  // leaving the valley: its GPU memory back
 struct ValleyStats {
     int tiles = 0, built = 0, ground = 0;  // drawn and built last frame; the ground's triangles
+    int places = 0;                        // the places' triangles drawn
 };
 ValleyStats valleyStats();
 // The valley from above (north up), for the bottom screen's map (nullptr if it can't be made).

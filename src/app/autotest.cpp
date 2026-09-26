@@ -12,6 +12,8 @@
 #include <vector>
 
 #include "core/clock.hpp"
+#include "core/valley.hpp"
+#include "core/world.hpp"
 
 namespace ec::autotest {
 namespace {
@@ -19,11 +21,11 @@ namespace {
 constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
-enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Quit };
+enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View, Quit };
 
 struct Cmd {
     Op op = Op::Wait;
-    float a[6] = {};
+    float a[7] = {};
     u32 key = 0;
     std::string text;
 };
@@ -99,6 +101,9 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "skip") { c.op = Op::Skip; nums(1); }
     else if (w == "overlay") { c.op = Op::Overlay; c.a[0] = std::strcmp(rest, "on") == 0; }
     else if (w == "splash") { c.op = Op::Splash; }
+    else if (w == "travel") { c.op = Op::Travel; nums(1); }
+    else if (w == "light") { c.op = Op::Light; }
+    else if (w == "view") { c.op = Op::View; nums(7); }
     else if (w == "quit") { c.op = Op::Quit; }
     else return false;
     return true;
@@ -211,6 +216,19 @@ Input next(App& app) {
             case Op::Skip: app.game.devOffset += static_cast<s64>(c.a[0] * kHour); done = true; break;
             case Op::Overlay: app.overlay = c.a[0] != 0; done = true; break;
             case Op::Splash: app.splash = kSplashSeconds; done = true; break;
+            case Op::Travel: app.autoTravel = static_cast<int>(c.a[0]); done = true; break;
+            case Op::View:
+                for (int k = 0; k < 7; ++k) app.autoView[k] = c.a[k];
+                done = true;
+                break;
+            case Op::Light:
+                for (int p = 0; p < kPlaceCount; ++p)
+                    if (world::placeInfo(p).lantern) {
+                        world::findPlace(app.game, p);
+                        world::lightLantern(app.game, p);
+                    }
+                done = true;
+                break;
             case Op::Quit: app.quit = true; done = true; break;
         }
         if (!done) {

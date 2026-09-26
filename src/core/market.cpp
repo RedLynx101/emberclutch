@@ -2,6 +2,7 @@
 
 #include "core/clock.hpp"
 #include "core/den_roster.hpp"
+#include "core/dragon.hpp"
 #include "core/genetics.hpp"
 #include "core/kinds.hpp"
 
@@ -103,6 +104,15 @@ void stallToday(SaveData& s, s32 day, Item out[kStallSpots]) {
         const u8 v = w.stall[k];
         out[k] = v < kItems && !owns(s, static_cast<Item>(v)) ? static_cast<Item>(v) : Item::Count;
     }
+}
+
+Dragon eggOnShow(const SaveData& s, s32 day) {
+    const DailyEgg e = dailyEgg(s, day);
+    Dragon d = makeEgg(0xFFFFFFF0u, e.genome, e.sex, 0);
+    d.kind = e.kind;  // today's kind, in its colouring (the egg shows it)
+    d.variant = e.variant;
+    d.warmth = 80;
+    return d;
 }
 
 bool buyFromStall(SaveData& s, s32 day, int spot) {

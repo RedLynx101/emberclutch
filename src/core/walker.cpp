@@ -89,7 +89,7 @@ void Walker::update(const WalkInput& in, float cameraYaw, const Valley& v, const
 Vec3 Follower::spot(const Walker& you) const {
     const Vec3 f = you.forward();
     const Vec3 right{-f.y, f.x, 0};
-    return you.pos + right * gap - f * (gap * 0.45f);
+    return you.pos + right * gap - f * (gap * 0.1f);
 }
 
 void Follower::update(const Walker& you, const Valley& v, const std::vector<Solid>& solids, float dt) {
@@ -134,7 +134,7 @@ void WalkCamera::update(const Walker& you, float turn, const Valley& v, float dt
         if (std::fabs(err) < 2.2f) yaw = wrap(yaw + clampf(err, -0.6f * dt, 0.6f * dt));
     }
     const Vec3 look{std::sin(yaw), -std::cos(yaw), 0};
-    const Vec3 wantTarget = you.pos + Vec3{0, 0, 1.2f} + look * 1.5f;
+    const Vec3 wantTarget = you.pos + Vec3{0, 0, 1.0f} + look * 2.2f;
     Vec3 wantEye = you.pos - look * (distance * 0.78f) + Vec3{0, 0, distance * 0.62f};
     // Kept in the open: stepping out from you toward where it wants to be, it stops short of any
     // ground that rises into the way (the den's cliff behind you, a hillside).

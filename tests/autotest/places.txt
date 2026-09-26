@@ -1,0 +1,84 @@
+# Beta: the valley's places (D85 builders), each visited by an autotest trip: the den's arch in
+# its cliff, the Market with the egg of the day on its stand and the goods stall, the mill's
+# sails, the grotto behind the falls; then night with every festival lantern lit.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+key X
+wait 4
+shot p00-den
+travel 1
+wait 4
+shot p01-market
+view 1 -6.5 9 3.2 -3.8 4.5 1.6
+wait 1
+shot p01b-egg-stand
+view 1 6.5 9.5 2.9 3.8 4.5 1.2
+wait 1
+shot p01c-goods
+travel 2
+wait 4
+shot p02-stone
+travel 3
+wait 4
+shot p03-sanctuary
+travel 4
+wait 4
+shot p04-vault
+travel 5
+wait 4
+shot p05-trailhead
+travel 6
+wait 4
+shot p06-arena
+travel 7
+wait 4
+shot p07-lake
+travel 8
+wait 4
+shot p08-keeper
+travel 10
+wait 4
+shot p10-orchard
+travel 11
+wait 4
+shot p11-mill
+travel 12
+wait 4
+shot p12-grotto
+travel 13
+wait 4
+shot p13-ruins
+light
+skip 10
+travel 0
+wait 4
+shot p20-den-night
+travel 1
+wait 4
+shot p21-market-night
+view 1 -6.5 9 3.2 -3.8 4.5 1.6
+wait 1
+shot p22-egg-night
+quit

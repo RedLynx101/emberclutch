@@ -67,7 +67,7 @@ struct Follower {
 struct WalkCamera {
     Vec3 eye, target;
     float yaw = 0;       // the way it looks, radians about Z (0 faces -Y)
-    float distance = 9;
+    float distance = 10.5f;
     bool set = false;
     void update(const Walker& you, float turn, const Valley& v, float dt);
 };

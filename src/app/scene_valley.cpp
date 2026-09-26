@@ -18,11 +18,13 @@
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
 #include "core/campaign.hpp"
+#include "core/clock.hpp"
 #include "core/daylight.hpp"
 #include "core/dragondex.hpp"
 #include "core/flight.hpp"
 #include "core/genetics.hpp"
 #include "core/kinds.hpp"
+#include "core/market.hpp"
 #include "core/model.hpp"
 #include "core/place_layout.hpp"
 #include "core/rig.hpp"
@@ -231,6 +233,8 @@ void lookRound(App& app, ValleyScene& s) {
     }
 }
 
+void travelTo(App& app, ValleyScene& s, int place, bool outward);
+
 // Where a villager stands in the valley.
 Vec3 villagerAt(const Valley& v, Villager who) {
     const VillagerInfo& info = villagerInfo(who);
@@ -374,6 +378,24 @@ void update(App& app, const Input& in) {
         return;
     }
     if (!s.loaded) return;
+    if (app.autoTravel >= 0) {  // an autotest's trip
+        world::findPlace(app.game, app.autoTravel);
+        travelTo(app, s, app.autoTravel, false);
+        app.autoTravel = -1;
+    }
+    if (app.autoView[0] >= 0) {  // an autotest's view: the free camera at a place, looking at a point
+        if (const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(app.autoView[0]))) {
+            const float* a = app.autoView;
+            const Vec3 eye = placeToWorld3(s.valley, *p, {a[1], a[2], 0}), at = placeToWorld3(s.valley, *p, {a[4], a[5], 0});
+            if (s.mode != Mode::FreeCam) s.before = s.mode;
+            s.mode = Mode::FreeCam;
+            s.freeEye = {eye.x, eye.y, p->at.z + a[3]};
+            const Vec3 d = Vec3{at.x, at.y, p->at.z + a[6]} - s.freeEye;
+            s.freeYaw = std::atan2(d.x, -d.y);
+            s.freePitch = std::atan2(d.z, std::hypot(d.x, d.y));
+        }
+        app.autoView[0] = -1;
+    }
     measureSpeeds(s);
     if (talking(app)) {  // listening: the world waits (your partner idles beside you)
         updateTalk(app, in);
@@ -391,7 +413,7 @@ void update(App& app, const Input& in) {
         const float speed = (in.held & KEY_B ? 60.0f : 22.0f) * app.dt;
         s.freeEye = s.freeEye + fwd * (in.padY * speed) + right * (in.padX * -speed) + Vec3{0, 0, dpadY * speed};
         s.freePitch = clampf(s.freePitch + dpadX * 0.8f * app.dt, -1.2f, 0.4f);
-        s.freeEye.z = std::fmax(s.freeEye.z, va.heightAt(s.freeEye.x, s.freeEye.y) + 1.5f);
+        s.freeEye.z = std::fmax(s.freeEye.z, va.heightAt(s.freeEye.x, s.freeEye.y) + 0.6f);
         if (in.down & (KEY_A | KEY_Y)) s.mode = s.before;
         animatePartner(app, s, s.before == Mode::Riding && !s.flight.grounded, false, false, 0);
         return;
@@ -522,6 +544,18 @@ void drawTop(App& app) {
     view.fog = sky.horizon;
     view.tint = sky.tint;
     view.lanternsLit = app.game.world.lanternsLit;
+    if (const ValleyPlaceInfo* market = s.valley.place(kPlaceMarket);
+        market && std::hypot(market->at.x - s.you.pos.x, market->at.y - s.you.pos.y) < 160.0f) {
+        static Dragon standEgg;  // the egg of the day on its stand, till it's bought
+        const s32 day = dayIndex(now);
+        if (app.game.eggBoughtDay != day) {
+            standEgg = eggOnShow(app.game, day);
+            view.marketEgg = &standEgg;
+        }
+        Item goods[kStallSpots];
+        stallToday(app.game, day, goods);
+        for (int k = 0; k < kStallSpots && k < 4; ++k) view.goods[k] = goods[k];
+    }
     if (s.partner >= 0) {
         view.dragon = &s.shown;
         view.actor = &s.flyer;
@@ -601,10 +635,11 @@ void travelTo(App& app, ValleyScene& s, int place, bool outward) {
     const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(place));
     if (!p) return;
     const PlaceLayout& l = placeLayout(place);
-    const Vec2 front = placeToWorld(*p, l.hasDoor ? Vec2{l.door.x, l.door.y + 5.0f} : Vec2{0, 12.0f});
+    const Vec2 front = placeToWorld(*p, outward && l.hasDoor ? Vec2{l.door.x, l.door.y + 5.0f} : l.arrive);
     s.mode = Mode::OnFoot;
     s.you.pos = {front.x, front.y, s.valley.heightAt(front.x, front.y)};
-    s.you.heading = outward ? p->heading : p->heading + 3.14159f;  // out of its door, or (travelling) facing it
+    // Out of its door, its way; or (travelling) looking at it.
+    s.you.heading = outward ? p->heading : std::atan2(p->at.x - front.x, -(p->at.y - front.y));
     s.you.speed = 0;
     if (s.partner >= 0) s.pal.call(s.you, s.valley);
     s.wcam = WalkCamera{};

@@ -39,9 +39,10 @@ constexpr int kCups = 4;  // Ember, Flame, Blaze, Starfire
 
 // The world's bytes in the save (after its size byte): look 6, made 1, x y heading 12, in the
 // valley 1, partner 4, places 4, lanterns 4, quests 8, cups 3, flags 4, ribbons 2, the stall's day 4 and
-// its spots 4.
+// its spots 4, the challenges' bests 24.
 constexpr int kStallSpots = 4;  // the Market's goods stall (D86)
-constexpr int kWorldBytes = kLookParts + 1 + 12 + 1 + 4 + 4 + 4 + 8 + kChallenges + 4 + 2 + 4 + kStallSpots;
+constexpr int kWorldBytes = kLookParts + 1 + 12 + 1 + 4 + 4 + 4 + 8 + kChallenges + 4 + 2 + 4 + kStallSpots +
+                            kChallenges * kCups * 2;
 
 struct WorldState {
     u8 look[kLookParts] = {0, 0, 0, 1, 0, 0};
@@ -54,9 +55,12 @@ struct WorldState {
     u8 quest[8] = {};                   // per quest (core/campaign): 0 not begun, 1.. its step, 0xFF done
     u8 cups[kChallenges] = {};          // per challenge: the highest cup won (0 none .. 4 Starfire)
     u32 flags = 0;                      // WorldFlag bits
-    u16 ribbons = 0;                    // ribbons won (den decor), all cups together
+    u16 ribbons = 0;                    // the cups' ribbons won (den decor): a bit per cup, challenge * 4 + cup - 1
     s32 stallDay = -1000000;            // the day the Market's goods stall was last picked (D86)
     u8 stall[kStallSpots] = {0xFF, 0xFF, 0xFF, 0xFF};  // its spots (core/items Item; 0xFF: nothing)
+    // Per challenge and cup (core/challenges), your best: Sky Rings in tenths of a second, the
+    // others in points (0: not run yet).
+    u16 best[kChallenges][kCups] = {};
 };
 
 namespace world {

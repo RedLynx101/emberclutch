@@ -122,9 +122,10 @@ Things that tripped the builders; the kit may fix some later, until then work wi
   as you'd see them in a paint program.
 - **WING_BODY must include the parent of the first wing bone** (usually the chest), or
   `weight_membrane` divides by zero; a kind with no body-joined membrane still needs one.
-- **`base_pose` values are always (pitch, yaw, roll) tuples**, never a bare number; they
-  apply to the rest pose in the armature's axes. Clip keys are deltas on top of the idle
-  pose, in the same convention as `fold.py` prints.
+- **`base_pose` values are always (x, y, z) tuples** in degrees, never a bare number, and
+  they are **bone-local** Euler angles (each pose bone's own XYZ): on an upright neck bone +X
+  tips it forward, on the head +X is nose-down. Clip keys are different: deltas on top of
+  the idle pose in the **armature's** axes (pitch, yaw, roll), the convention `fold.py` prints.
 - **No fangs:** `fangs=[]` in a form turns them off (the storybook look has none).
 - **Two groups with the same (group, variant)** are merged by the exporter; the game finds a
   part group by name, so one mesh per group and variant is what it sees.
@@ -133,7 +134,11 @@ Things that tripped the builders; the kit may fix some later, until then work wi
   the floor contact, so a long tail may drag without lifting the body.
 - **Care zones:** bones named `ear*` and `antenna*` count as the head for stroking.
 - **Known, not fixed yet** (work around them): `snap_parts` takes the outermost hit when a
-  ray leaves and re-enters the body (seat parts on convex spots, or nudge them by hand);
+  ray leaves and re-enters the body (seat parts on convex spots, or nudge them by hand), and
+  a ray exactly on the x = 0 plane can slip through the midline seam and leave a part (a
+  heart) unseated without a warning (author midline parts 2 mm off the midline);
+  `glow_marks` faces a mark away from its bone's node, which tilts limb marks into the skin
+  (pass the joint's node);
   `weight_membrane` has one strut list for all membranes (a four-winged kind weights each
   pair itself); `wing_arm` branches its fingers only from a point named `wrist`; the UV
   unwrap can leave tiny islands on thin parts (give them a flat material); bones used only

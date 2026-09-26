@@ -2,7 +2,7 @@
 
 Status: **under way, 2026-09-25.** DR1 done (the kit, the engine's groundwork, the Pouncer);
 **DR2 built** (D79: all eight base breeds and the first crossbreed, by Opus 5.5 subagents in
-parallel), waiting on Noah's review, [R11b](../art/reviews/R11b-new-dragons.md); DR3 starts
+parallel), waiting on Noah's review, [R11b](../art/reviews/R11b-new-dragons.md) (the [review page](https://claude.ai/artifact/XJaAes23wB7FnQyuhGD8Xp) keeps his verdicts); DR3 starts
 after it. What
 the dragons become is in [dragons, version 2](../design/dragons-v2.md): 8 base breeds and 28
 crossbreeds (36 kinds), each with three painted variants and a rare one, their own bodies,

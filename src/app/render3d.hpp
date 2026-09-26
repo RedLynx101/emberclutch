@@ -172,6 +172,8 @@ struct ValleyView {
     Vec3 eye, target;                  // the camera
     Rgb fog{200, 225, 240};            // the sky at the horizon
     Rgb tint{255, 255, 255};           // the day's light on the land
+    Vec3 shadowAt;                     // the ground (or the water) under it
+    float shadow = 0, shadowRadius = 0;  // its shadow's darkness (0: none) and size, metres
 };
 void drawValley(App& app, const ValleyView& view, s64 now);
 void releaseValley();  // leaving the valley: its GPU memory back

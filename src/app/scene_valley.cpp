@@ -35,6 +35,9 @@ struct ValleyScene {
     Dragon shown;
     FlightInput last;
     bool speedsSet = false;  // its walking speeds, measured on its own legs once its body is loaded
+    float natWalk = 2.2f, natTrot = 4.0f, natRun = 6.0f;  // each gait's own ground speed (its clip at rate 1)
+    float skimFor = 0;  // seconds to the next water-skim spray
+    float swimT = 0;    // the swimmer's bob
 };
 
 ValleyScene& vs() {
@@ -99,11 +102,21 @@ void update(App& app, const Input& in) {
     fi.bank = (in.held & KEY_R ? 1.0f : 0.0f) - (in.held & KEY_L ? 1.0f : 0.0f);
     fi.flap = in.held & KEY_A;
     fi.dive = in.held & KEY_B;
+    const bool wasDiving = s.flight.diving(s.last);
     s.last = fi;
     s.flight.update(fi, s.valley, app.dt);
     s.cam.update(s.flight, s.valley, app.dt);
-    if (s.flight.tookOff) audio::playSfx(audio::Sfx::Flap, 0.9f);
-    if (s.flight.landed) audio::playSfx(audio::Sfx::Thump, 0.8f);
+    // Sounds (brief 3): take-off and landing, into the water, a dive's rush, spray skimming the lake.
+    if (s.flight.tookOff) audio::playSfx(audio::Sfx::Takeoff);
+    if (s.flight.landed) audio::playSfx(audio::Sfx::Landing);
+    if (s.flight.splashed) audio::playSfx(audio::Sfx::SplashBig);
+    if (s.flight.diving(fi) && !wasDiving) audio::playSfx(audio::Sfx::DiveWhoosh);
+    s.skimFor -= app.dt;
+    if (s.flight.skimming && s.skimFor <= 0) {
+        audio::playSfx(audio::Sfx::WaterSkim, 0.95f + 0.1f * (s.flight.speed / 30.0f));
+        s.skimFor = 0.7f;
+    }
+    s.swimT = s.flight.swimming ? s.swimT + app.dt : 0.0f;
     const AnimLibrary* lib = r3d::animsFor(s.shown);  // a kind's plan has its own clips
     const int* clips = r3d::clipIndexFor(s.shown, kFormGrown);
     if (!s.speedsSet && lib) {  // walk, trot and gallop at the speed its feet move (no skating)
@@ -114,40 +127,71 @@ void update(App& app, const Input& in) {
             const int build = s.shown.genome.build < kModelBuilds ? s.shown.genome.build : kBuildNeutral;
             s.flyer.updateSpeeds(*m, *bind, *lib, clips, kFormGrown * r3d::kLookSlots + look, 1.0f, build,
                                  sizeScale(s.shown.genome), false);
-            s.flight.walkSpeed = clampf(s.flyer.behavior.walkSpeed, 0.8f, 4.0f);
-            s.flight.runSpeed = clampf(s.flyer.behavior.runSpeed, s.flight.walkSpeed * 2.0f, 14.0f);
+            s.natWalk = clampf(s.flyer.behavior.walkSpeed, 0.8f, 4.0f);
+            s.natRun = clampf(s.flyer.behavior.runSpeed, s.natWalk * 2.0f, 14.0f);
+            s.natTrot = s.flyer.behavior.trotSpeed > s.natWalk && s.flyer.behavior.trotSpeed < s.natRun
+                            ? s.flyer.behavior.trotSpeed
+                            : (s.natWalk + s.natRun) * 0.5f;
+            s.flight.walkSpeed = s.natWalk;
+            // Out in the world it runs at least three times its gallop's own pace (run 15, D81):
+            // the legs quicken, and the rest is arcade speed.
+            s.flight.runSpeed = clampf(3.0f * s.natRun, s.natWalk * 6.0f, 30.0f);
             s.speedsSet = true;
         }
     }
     // Its wings: beating, gliding or swept back in a dive; on the ground standing, walking,
-    // trotting or galloping, each played at the speed it's going.
-    const DenBehavior& b = s.flyer.behavior;
-    const float walk = s.flight.walkSpeed, run = s.flight.runSpeed;
-    const float trot = b.trotSpeed > walk && b.trotSpeed < run ? b.trotSpeed : (walk + run) * 0.5f;
+    // trotting or galloping, each played at the speed it's going; swimming, a slow paddle.
     ClipId want = ClipId::Idle;
-    float natural = 0;  // the clip's own ground speed
+    float natural = 0, fastest = 1.6f;  // the clip's own ground speed, and how much quicker it may play
+    const float v = s.flight.speed;
     if (!s.flight.grounded) {
         want = s.flight.diving(fi) ? ClipId::FlyDive : s.flight.sinceFlap < 0.8f ? ClipId::FlyFlap : ClipId::FlyGlide;
-    } else if (s.flight.speed > 0.15f) {
-        const bool running = s.flight.speed > (trot + run) * 0.5f, trotting = s.flight.speed > walk * 1.25f;
+    } else if (s.flight.swimming) {
+        want = ClipId::Walk;  // paddling (a swim clip of its own comes with WP5)
+        natural = s.natWalk * 1.5f;
+    } else if (v > 0.15f) {
+        const bool running = v > s.natTrot * 1.3f, trotting = v > s.natWalk * 1.3f;
         want = running ? ClipId::Gallop : trotting ? ClipId::Trot : ClipId::Walk;
-        natural = running ? run : trotting ? trot : walk;
+        natural = running ? s.natRun : trotting ? s.natTrot : s.natWalk;
+        fastest = running ? 2.3f : 1.6f;
     }
     if (want != s.clip && lib) {
         const int index = clips[static_cast<int>(want)];
         if (index >= 0) s.flyer.anim.play(index, 0.3f, want != ClipId::FlyDive && want != ClipId::FlyGlide);
         s.clip = want;
     }
-    s.flyer.anim.rate = natural > 0 ? clampf(s.flight.speed / natural, 0.5f, 1.6f) : 1.0f;
+    s.flyer.anim.rate = natural > 0 ? clampf(v / natural, 0.5f, fastest) : 1.0f;
     if (lib) {
         u8 events[8];
         const int n = s.flyer.anim.update(*lib, app.dt, events, 8);
         for (int k = 0; k < n; ++k) {
-            if (events[k] == kAnimFlap) audio::playSfx(audio::Sfx::Flap, 1.0f, 0.7f);
-            if (events[k] == kAnimFootstep && s.flight.grounded) audio::playSfx(audio::Sfx::Step, 0.9f, 0.6f);
+            if (events[k] == kAnimFlap) audio::playSfx(audio::Sfx::Wingbeat, 1.0f, 0.8f);
+            if (events[k] == kAnimFootstep && s.flight.grounded)
+                audio::playSfx(s.flight.swimming ? audio::Sfx::Splash : audio::Sfx::DragonStep,
+                               s.flight.swimming ? 1.3f : 1.0f, s.flight.swimming ? 0.35f : 1.0f);
         }
     }
     s.flyer.eyes.update(0.0f, app.dt);
+    // The beds: the meadow by day and the night on or near the ground, the wind as it climbs
+    // and speeds, the wings fluttering in a glide, the lake close by.
+    const DayBlend day = dayBlend(nowLocal(app));
+    const float night = day.weight(kLightNight) + 0.5f * day.weight(kLightEvening);
+    const Valley& va = s.valley;
+    const float surface = std::fmax(va.heightAt(s.flight.pos.x, s.flight.pos.y), va.water);
+    const float high = s.flight.grounded ? 0.0f : std::fmax(0.0f, s.flight.pos.z - surface);
+    const float nearGround = s.flight.grounded ? 1.0f : clampf(1.0f - high / 50.0f, 0.0f, 1.0f);
+    audio::setBed(audio::Bed::Meadow, (1.0f - night) * nearGround);
+    audio::setBed(audio::Bed::ValleyNight, night * nearGround);
+    if (!s.flight.grounded) {
+        audio::setBed(audio::Bed::WindHigh, clampf((high - 8.0f) / 60.0f, 0.0f, 0.8f) + clampf(v / 40.0f, 0.0f, 0.35f));
+        if (s.flight.sinceFlap > 0.8f) audio::setBed(audio::Bed::WingFlutter, clampf(v / 18.0f, 0.3f, 1.0f));
+    }
+    int wet = 0;  // how much of round about is lake
+    for (int k = 0; k < 5; ++k) {
+        const float a = k * 1.2566f, r = k ? 25.0f : 0.0f;
+        wet += va.heightAt(s.flight.pos.x + r * std::cos(a), s.flight.pos.y + r * std::sin(a)) < va.water;
+    }
+    audio::setBed(audio::Bed::Lake, (s.flight.swimming ? 1.0f : wet / 5.0f) * nearGround);
 }
 
 void drawTop(App& app) {
@@ -164,13 +208,26 @@ void drawTop(App& app) {
     view.dragon = &s.shown;
     view.actor = &s.flyer;
     view.at = s.flight.pos;
+    if (s.flight.swimming) view.at.z += 0.08f * std::sin(s.swimT * 2.6f);  // bobbing afloat
     view.heading = s.flight.heading;
-    view.pitch = s.flight.pitch;
+    view.pitch = s.flight.swimming ? -0.1f : s.flight.pitch;  // nose up, swimming
     view.roll = s.flight.roll;
     view.eye = s.cam.eye;
     view.target = s.cam.target;
     view.fog = sky.horizon;
     view.tint = sky.tint;
+    // Its shadow on the ground below (D81, a height tell): darker and tighter as it comes down,
+    // gone high up; faint by night.
+    {
+        const DayBlend day = dayBlend(now);
+        const float lit = day.weight(kLightDay) + 0.6f * day.weight(kLightEvening) + 0.25f * day.weight(kLightNight);
+        const Valley& va = s.valley;
+        const float surface = std::fmax(va.heightAt(s.flight.pos.x, s.flight.pos.y), va.water);
+        const float high = std::fmax(0.0f, s.flight.pos.z - surface);
+        view.shadowAt = {s.flight.pos.x, s.flight.pos.y, surface};
+        view.shadow = s.flight.swimming ? 0.0f : 0.5f * lit * clampf(1.0f - high / 60.0f, 0.0f, 1.0f);
+        view.shadowRadius = 1.9f * sizeScale(s.shown.genome) * (1.0f - 0.45f * clampf(high / 60.0f, 0.0f, 1.0f));
+    }
     if (r3d::ready()) r3d::drawValley(app, view, now);
 }
 
@@ -191,7 +248,8 @@ void drawBottom(App& app, const Input& in) {
     }
     char line[64];
     const float above = s.flight.pos.z - s.valley.heightAt(s.flight.pos.x, s.flight.pos.y);
-    std::snprintf(line, sizeof(line), "%s  %.0f m up  %.0f m/s", s.flight.grounded ? "On the ground" : "Flying", above,
+    std::snprintf(line, sizeof(line), "%s  %.0f m up  %.0f m/s",
+                  s.flight.swimming ? "Swimming" : s.flight.grounded ? "On the ground" : "Flying", std::fmax(0.0f, above),
                   s.flight.speed);
     text(app, line, 166, 32, 0.45f, theme::kShell, C2D_AlignLeft, 150);
     text(app, "Stamina", 166, 54, 0.42f, withAlpha(theme::kShell, 0.8f), C2D_AlignLeft);
@@ -205,7 +263,8 @@ void drawBottom(App& app, const Input& in) {
     std::snprintf(line, sizeof(line), "%.1f ms, worst %.0f, %d slow", app.frameMs, app.frameWorst, app.framesSlow);
     text(app, line, 166, 98, 0.38f, withAlpha(theme::kShell, 0.6f), C2D_AlignLeft);
     if (s.flight.grounded) {
-        text(app, "Pad: walk and turn   B: run", 166, 114, 0.38f, theme::kShell, C2D_AlignLeft, 150);
+        text(app, s.flight.swimming ? "Pad: swim   B: faster" : "Pad: walk and turn   B: run", 166, 114, 0.38f,
+             theme::kShell, C2D_AlignLeft, 150);
         text(app, "A: take off", 166, 130, 0.38f, theme::kShell, C2D_AlignLeft, 150);
         text(app, "Walk off a cliff to glide", 166, 146, 0.38f, theme::kShell, C2D_AlignLeft, 150);
     } else {
@@ -240,6 +299,7 @@ void openValley(App& app) {
     s.flyer = DenActor{};
     s.clip = ClipId::Count;
     s.speedsSet = false;
+    s.skimFor = s.swimT = 0;
     if (s.loaded)
         if (const ValleyPlaceInfo* den = s.valley.place(kPlaceDen)) {  // out on the grass before the cave mouth
             const Vec3 f{std::sin(den->heading), -std::cos(den->heading), 0};

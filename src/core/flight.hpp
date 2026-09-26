@@ -3,8 +3,9 @@
 // L/R bank for a tighter turn, and letting go glides, sinking slowly. Stamina drains with
 // each flap and comes back gliding or on the ground. Takes off from the ground with A and
 // lands on flat ground when slow. On the ground it walks (pad up, turning with the pad) and
-// runs with B, at its own legs' speeds; it stops at deep water and slopes too steep to climb,
-// and walking off a drop it glides. Pure logic (PC-tested); the valley scene drives it.
+// runs with B; in deep water it swims, floating (D81); it stops at slopes too steep to climb,
+// and walking off a drop it glides. Coming down slowly onto the lake it splashes in and swims;
+// faster, it skims the water. Pure logic (PC-tested); the valley scene drives it.
 #pragma once
 
 #include "core/math3d.hpp"
@@ -32,10 +33,11 @@ struct FlightTuning {
     float turnRate = 1.1f;         // radians a second at full steer
     float bankBoost = 0.9f;        // how much tighter L/R make a turn
     float ceiling = 250;           // thin air above: wingbeats weaker
-    float landSpeed = 13;          // slower than this over flat ground: it lands
+    float landSpeed = 18;          // slower than this over flat ground: it lands (run 15: 13 made it glide on too long)
     float clearance = 1.2f;        // its feet above the ground in flight
     float groundTurn = 1.7f;       // radians a second, turning on foot
-    float wadeDepth = 0.4f;        // on foot: no deeper into the water than this
+    float wadeDepth = 0.4f;        // on foot: deeper water than this, it swims
+    float swimDepth = 1.1f;        // swimming: its feet this far under the surface (it floats, half in)
     float steepest = 0.7f;         // on foot: no climbing slopes whose normal is flatter than this
     float drop = 2.0f;             // on foot: a step down this far is an edge, and it glides off
 };
@@ -50,10 +52,13 @@ struct Flight {
     float pitch = 0, roll = 0;
     float stamina = 1;
     bool grounded = true;
+    bool swimming = false;  // grounded in deep water: floating, paddling
     float walkSpeed = 2.2f, runSpeed = 8.0f;  // on foot, m/s: the scene sets them from its legs
     float flapIn = 0;      // seconds to the next wingbeat while A is held
     float sinceFlap = 9;   // seconds since the last wingbeat (the flap clip plays a while after)
     bool landed = false, tookOff = false, flapped = false;  // this step (sounds, clips)
+    bool splashed = false;  // this step: into the water (walking in or coming down onto it)
+    bool skimming = false;  // this step: flying fast along the water's surface
 
     Vec3 forward() const;
     // One step. The valley gives the ground (and keeps it inside its edges).

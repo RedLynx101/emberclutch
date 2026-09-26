@@ -23,42 +23,54 @@ float wrap(float a) {
 Vec3 Flight::forward() const { return {std::sin(heading), -std::cos(heading), 0}; }
 
 void Flight::update(const FlightInput& in, const Valley& v, float dt, const FlightTuning& tune) {
-    landed = tookOff = flapped = false;
+    landed = tookOff = flapped = splashed = skimming = false;
     sinceFlap += dt;
     const float ground = v.heightAt(pos.x, pos.y);
+    const float floatAt = v.water - tune.swimDepth;  // where a swimmer's feet are
     if (grounded) {
         stamina = std::fmin(1.0f, stamina + 0.25f * dt);
         climb = 0;
         pitch = approach(pitch, 0, 6, dt);
         roll = approach(roll, 0, 6, dt);
         // On foot: the pad pushed up walks, B runs; it turns as it goes (a little wider running).
-        const float want = clampf(in.pitch, 0, 1) * (in.dive ? runSpeed : walkSpeed);
+        // Swimming it paddles at about its walk, a little faster with B.
+        const float want = clampf(in.pitch, 0, 1) *
+                           (swimming ? walkSpeed * (in.dive ? 2.0f : 1.2f) : (in.dive ? runSpeed : walkSpeed));
         speed = approach(speed, want, want > speed ? 3.0f : 5.0f, dt);
         if (want == 0 && speed < 0.05f) speed = 0;
         const float turn = tune.groundTurn * (speed > walkSpeed * 1.5f ? 0.7f : 1.0f);
         heading = wrap(heading - in.steer * turn * dt);  // right: towards the screen's right
-        pos.z = ground;
+        swimming = ground < v.water - tune.wadeDepth;
+        pos.z = swimming ? std::fmax(ground, floatAt) : ground;
         if (speed > 0) {
             const Vec3 next = pos + forward() * (speed * dt);
             const float g = v.heightAt(next.x, next.y), margin = 30.0f;
             const bool outside = next.x < v.x0 + margin || next.x > v.x0 + v.size() - margin ||
                                  next.y < v.y0 + margin || next.y > v.y0 + v.size() - margin;
             const bool deep = g < v.water - tune.wadeDepth;
-            const bool steep = g > ground && v.normalAt(next.x, next.y).z < tune.steepest;
-            if (outside || deep || steep) {
-                speed = 0;  // the shore, a cliff face, the valley's edge: it stops
-            } else if (g < ground - tune.drop) {
+            const bool steep = !deep && g > ground && v.normalAt(next.x, next.y).z < tune.steepest;
+            if (outside || steep) {
+                speed = 0;  // a cliff face, the valley's edge: it stops
+            } else if (deep) {  // in, or on, the water: it swims
+                if (!swimming) splashed = true;
+                pos = next;
+                pos.z = std::fmax(g, floatAt);  // floating, never below the bed
+                swimming = true;
+            } else if (!swimming && g < ground - tune.drop) {
                 pos = next;  // over the edge: gliding down
                 grounded = false;
                 speed = std::fmax(speed, 6.0f);
                 sinceFlap = 9;
                 return;
             } else {
-                pos = next;
+                pos = next;  // walking on, or out of the water onto the shore
                 pos.z = g;
+                swimming = false;
             }
         }
         if (in.flap && stamina > 0.1f) {  // up: a strong first wingbeat
+            if (swimming) splashed = true;
+            swimming = false;
             grounded = false;
             tookOff = flapped = true;
             climb = 7.5f;
@@ -112,20 +124,27 @@ void Flight::update(const FlightInput& in, const Valley& v, float dt, const Flig
         const float home = std::atan2(v.x0 + v.size() * 0.5f - pos.x, -(v.y0 + v.size() * 0.5f - pos.y));
         heading = wrap(heading + clampf(wrap(home - heading), -2.0f * dt, 2.0f * dt));
     }
-    // The ground: skim it, or land when slow and it's flat enough.
-    const float g = v.heightAt(pos.x, pos.y) + tune.clearance;
+    // The ground, or the lake's surface over deep water: skim it, or come down when slow (on
+    // flat enough ground it lands; onto the water it splashes in and swims).
+    const float bed = v.heightAt(pos.x, pos.y);
+    const bool overWater = bed < v.water - tune.wadeDepth;
+    const float g = (overWater ? v.water : bed) + tune.clearance;
     if (pos.z <= g) {
-        const Vec3 n = v.normalAt(pos.x, pos.y);
-        if (speed < tune.landSpeed && n.z > 0.85f && !in.flap) {
+        const Vec3 n = overWater ? Vec3{0, 0, 1} : v.normalAt(pos.x, pos.y);
+        if (speed < tune.landSpeed && n.z > 0.8f && !in.flap) {
             grounded = true;
-            landed = true;
-            pos.z = g - tune.clearance;
-            speed = climb = 0;
+            landed = !overWater;
+            splashed = overWater;
+            swimming = overWater;
+            pos.z = overWater ? std::fmax(bed, floatAt) : g - tune.clearance;
+            speed = std::fmin(speed, overWater ? walkSpeed : 0.0f);
+            climb = 0;
             return;
         }
         pos.z = g;
         climb = std::fmax(climb, 0.5f);  // pulled up off the slope
-        speed *= 1.0f - 0.8f * dt;
+        speed *= 1.0f - 1.2f * dt;       // (ground or water rubbing at it: it slows to land soon)
+        skimming = overWater;
     }
 }
 

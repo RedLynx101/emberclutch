@@ -181,7 +181,8 @@ TEST(walking_in_the_valley) {
     auto run = [&](const FlightInput& in, float seconds) {
         for (int k = 0; k < static_cast<int>(seconds * 30); ++k) {
             f.update(in, v, dt);
-            if (f.grounded) CHECK(std::fabs(f.pos.z - v.heightAt(f.pos.x, f.pos.y)) < 0.01f);  // on the ground
+            if (f.grounded && !f.swimming) CHECK(std::fabs(f.pos.z - v.heightAt(f.pos.x, f.pos.y)) < 0.01f);  // on the ground
+            if (f.swimming) CHECK(f.pos.z <= v.water && f.pos.z >= v.heightAt(f.pos.x, f.pos.y) - 0.01f);  // afloat
             CHECK(v.inside(f.pos.x, f.pos.y));
         }
     };
@@ -209,8 +210,8 @@ TEST(walking_in_the_valley) {
     CHECK(std::fabs(std::remainder(f.heading - h0, 6.2831853f)) > 0.8f);
     run(none, 1);
     CHECK(f.speed == 0 && f.grounded);
-    // At the lake it stops at the shore: from dry ground a few metres from deep water, walking
-    // straight at it, it never goes in deeper than it can wade.
+    // At the lake it swims (D81): from dry ground a few metres from deep water, walking straight
+    // in, it splashes in and floats; turned round, it walks back out onto the shore.
     bool found = false;
     for (float y = v.y0 + 60; y < v.y0 + v.size() - 60 && !found; y += 8)
         for (float x = v.x0 + 60; x < v.x0 + v.size() - 60 && !found; x += 8)
@@ -222,9 +223,34 @@ TEST(walking_in_the_valley) {
                 found = true;
             }
     CHECK(found);
-    run(walk, 12);
-    std::printf("  at the shore: %.2f m of water under it\n", std::fmax(0.0f, v.water - f.pos.z));
-    CHECK(f.grounded && f.pos.z >= v.water - FlightTuning{}.wadeDepth - 0.3f);
+    bool splashed = false;
+    for (int k = 0; k < 12 * 30; ++k) {
+        f.update(walk, v, dt);
+        splashed |= f.splashed;
+    }
+    std::printf("  swimming: %.2f m of water under its feet, afloat %d\n", v.water - f.pos.z, f.swimming ? 1 : 0);
+    CHECK(f.grounded && f.swimming && splashed && f.pos.z < v.water);
+    f.heading += 3.14159265f;  // back the way it came
+    run(walk, 20);
+    CHECK(f.grounded && !f.swimming);
+    // Coming down slowly onto the lake: in with a splash, swimming.
+    f = Flight{};
+    f.grounded = false;
+    for (float y = v.y0 + 60; y < v.y0 + v.size() - 60 && f.pos.x == 0; y += 8)
+        for (float x = v.x0 + 60; x < v.x0 + v.size() - 60; x += 8)
+            if (v.heightAt(x, y) < v.water - 3.0f && v.heightAt(x + 40, y) < v.water - 3.0f) {
+                f.pos = {x, y, v.water + 6.0f};
+                break;
+            }
+    f.heading = 1.5707963f;
+    f.speed = 9;
+    FlightInput none2;
+    splashed = false;
+    for (int k = 0; k < 30 * 8 && !f.grounded; ++k) {
+        f.update(none2, v, dt);
+        splashed |= f.splashed;
+    }
+    CHECK(f.grounded && f.swimming && splashed);
 }
 
 void runValleyTests() {

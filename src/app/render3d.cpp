@@ -685,8 +685,8 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
         if (actor->gazeWeight > 0.01f)
             applyLookAt(f.model.skel, bind, bones, actor->gazeLocal, actor->gazeWeight);
     }
-    if (actor && f.jawBone >= 0 && actor->jawOpen > 0.01f) {  // opening for the food
-        const Quat q = quatFromPitchYawRoll(-actor->jawOpen * 30.0f * kDegToRad, 0, 0);
+    if (actor && f.jawBone >= 0 && actor->jawOpen > 0.01f) {  // opening for the food (a smaller bite, run 15)
+        const Quat q = quatFromPitchYawRoll(-actor->jawOpen * 20.0f * kDegToRad, 0, 0);
         const Quat& rest = bind.rest[f.jawBone];
         bones[f.jawBone].rot = mul(bones[f.jawBone].rot, mul(mul(conjugate(rest), q), rest));
     }
@@ -2280,6 +2280,16 @@ constexpr int kValleyBuilds = 2;       // tiles built a frame at most (the rest 
 constexpr float kValleyNear = 0.5f, kValleyFar = 290.0f;
 ValleyGpu g_vtiles[kValleySlots];
 ValleyGpu g_vextras, g_vwater;
+// The flown dragon's shadow (D81, a height tell): a soft disc laid on the ground under it,
+// rebuilt each frame into one of two buffers (the GPU may still be drawing last frame's).
+struct ShadowGpu {
+    Vec3* pos = nullptr;
+    u8* col = nullptr;
+    u16* idx = nullptr;
+};
+constexpr int kShadowRim = 16;
+ShadowGpu g_vshadow[2];
+int g_vshadowFlip = 0;
 const Valley* g_valleyOf = nullptr;
 u32 g_valleyFrame = 0;
 C3D_FogLut g_fogLut;
@@ -2319,6 +2329,54 @@ void drawValleyGpu(App& app, const ValleyGpu& g) {
     BufInfo_Add(buf, g.col, 4, 1, 0x2);  // one colour set: no blend between two
     C3D_DrawElements(GPU_TRIANGLES, g.count, C3D_UNSIGNED_SHORT, g.idx);
     app.stats.tris += g.count / 3;
+    app.stats.draws += 1;
+}
+
+void drawValleyShadow(App& app, const Valley& v, const ValleyView& view) {
+    if (view.shadow <= 0.01f || view.shadowRadius <= 0.0f) return;
+    g_vshadowFlip ^= 1;
+    ShadowGpu& g = g_vshadow[g_vshadowFlip];
+    constexpr int n = kShadowRim + 1;
+    if (!g.pos) {
+        g.pos = static_cast<Vec3*>(linearAlloc(n * sizeof(Vec3)));
+        g.col = static_cast<u8*>(linearAlloc(n * 4));
+        g.idx = static_cast<u16*>(linearAlloc(kShadowRim * 3 * sizeof(u16)));
+        if (!g.pos || !g.col || !g.idx) {
+            if (g.pos) linearFree(g.pos);
+            if (g.col) linearFree(g.col);
+            if (g.idx) linearFree(g.idx);
+            g = ShadowGpu{};
+            return;
+        }
+        for (int k = 0; k < kShadowRim; ++k) {  // a fan round the middle
+            g.idx[k * 3] = 0;
+            g.idx[k * 3 + 1] = static_cast<u16>(1 + k);
+            g.idx[k * 3 + 2] = static_cast<u16>(1 + (k + 1) % kShadowRim);
+        }
+        GSPGPU_FlushDataCache(g.idx, kShadowRim * 3 * sizeof(u16));
+    }
+    // Each point sits just over the ground (or the water) where it falls: the disc follows slopes.
+    auto put = [&](int i, float x, float y, u8 alpha) {
+        g.pos[i] = {x, y, std::fmax(v.heightAt(x, y), v.water) + 0.12f};
+        u8* c = g.col + i * 4;
+        c[0] = 30, c[1] = 20, c[2] = 40, c[3] = alpha;
+    };
+    put(0, view.shadowAt.x, view.shadowAt.y, static_cast<u8>(255.0f * std::fmin(1.0f, view.shadow)));
+    for (int k = 0; k < kShadowRim; ++k) {
+        const float a = k * (6.2831853f / kShadowRim);
+        put(1 + k, view.shadowAt.x + view.shadowRadius * std::cos(a), view.shadowAt.y + view.shadowRadius * 0.8f * std::sin(a), 0);
+    }
+    GSPGPU_FlushDataCache(g.pos, n * sizeof(Vec3));
+    GSPGPU_FlushDataCache(g.col, n * 4);
+    C3D_BufInfo* buf = C3D_GetBufInfo();
+    BufInfo_Init(buf);
+    BufInfo_Add(buf, g.pos, sizeof(Vec3), 1, 0x0);
+    BufInfo_Add(buf, g.col, 4, 1, 0x1);
+    BufInfo_Add(buf, g.col, 4, 1, 0x2);
+    C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_COLOR);  // under the dragon, hiding nothing
+    C3D_DrawElements(GPU_TRIANGLES, kShadowRim * 3, C3D_UNSIGNED_SHORT, g.idx);
+    C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+    app.stats.tris += kShadowRim;
     app.stats.draws += 1;
 }
 
@@ -2463,6 +2521,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     }
     C3D_CullFace(GPU_CULL_NONE);
     drawValleyGpu(app, g_vextras);
+    drawValleyShadow(app, v, view);
     // The dragon.
     if (view.dragon && pose(app, *view.dragon, view.actor, now, 0, g_posed)) {
         bindDragons(projection);

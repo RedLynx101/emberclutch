@@ -28,6 +28,19 @@ $backup = Join-Path $runs "save-backup"
 $saves = "save.a", "save.b"
 
 if (-not $NoBuild) { & (Join-Path $PSScriptRoot "build.ps1") }
+# One run at a time on this PC: the emulator and its SD card are shared (runs from other
+# worktrees too), and a run stops any Azahar it finds. The lock is an open file, let go when
+# this PowerShell ends however it ends; others wait for it (up to 30 minutes).
+$lockPath = Join-Path $env:TEMP "emberclutch-autotest.lock"
+$lock = $null
+for ($waited = 0; -not $lock; $waited += 5) {
+    try { $lock = [IO.File]::Open($lockPath, "OpenOrCreate", "ReadWrite", "None") }
+    catch {
+        if ($waited -ge 1800) { throw "Another autotest has held the emulator for 30 minutes" }
+        if ($waited -eq 0) { Write-Host "Waiting for another autotest run to finish..." }
+        Start-Sleep -Seconds 5
+    }
+}
 New-Item -ItemType Directory -Force $sd | Out-Null
 $kept = Join-Path $backup "kept.txt"  # a previous run kept its save: the backup is the dev save
 if (-not (Test-Path $kept)) {

@@ -19,7 +19,7 @@ from dragonkit import model as km  # noqa: E402
 from dragonkit import review as rv  # noqa: E402
 
 ROWS = [["pouncer", "puffback", "curlstone"], ["crestwing", "ribbontail", "flurrytail"],
-        ["glimmermoth", "duskwing", "blazeplume"]]
+        ["glimmermoth", "duskwing", "blazeplume"], ["kindlemoss", "cindershell", "bloomstone"], ["lilyfin", "frostcurl"]]
 ROW_DEPTH = 40.0   # rows sit apart along the camera's axis; each renders alone
 GAP = 0.6
 TILT = 8.0         # degrees the camera looks down, so the floor shows

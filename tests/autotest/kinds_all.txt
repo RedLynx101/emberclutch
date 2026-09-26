@@ -82,6 +82,41 @@ wait 0.3
 tap 82 231
 wait 0.3
 key SELECT
+wait 3
+shot h10-kindlemoss
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot h11-cindershell
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot h12-bloomstone
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot h13-lilyfin
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot h14-frostcurl
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
 key SELECT
 wait 0.3
 tap 82 106
@@ -294,6 +329,121 @@ wait 0.3
 key SELECT
 wait 3
 shot r09-blazeplume-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g10-kindlemoss
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r10-kindlemoss-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g11-cindershell
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r11-cindershell-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g12-bloomstone
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r12-bloomstone-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g13-lilyfin
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r13-lilyfin-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g14-frostcurl
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r14-frostcurl-rare
 key SELECT
 wait 0.3
 tap 238 231

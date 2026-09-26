@@ -127,6 +127,46 @@ WING_LAYOUT = {"root": (0.0, 0.0), "elbow": (1.05, 0.35), "wrist": (2.0, -0.1), 
                "f1": (3.3, 0.25), "f2": (3.15, 0.95), "f3": (2.75, 1.35), "f4": (2.15, 1.45), "body": (0.0, 1.15)}
 
 
+def _weld_midline(kit, obj, tol=0.006):
+    """Join the two mirrored halves along x = 0: every vertex within tol of the midline on an
+    open (one-faced) edge moves onto it, and pairs that then coincide are merged. QuadriFlow's
+    mirrored remesh leaves the halves apart by up to a millimetre or two (open edges down the
+    middle, split normals: a visible seam); after this the body is closed."""
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    open_verts = {v for e in bm.edges if len(e.link_faces) == 1 for v in e.verts if abs(v.co.x) < tol}
+    for v in open_verts:
+        v.co.x = 0.0
+    bmesh.ops.remove_doubles(bm, verts=list(open_verts), dist=tol * 0.5)
+    # Tidy what the merge can leave on a coarse mesh: faces that collapsed, a face doubled on
+    # the midline (an edge with three faces), and any pinhole left open there.
+    bmesh.ops.dissolve_degenerate(bm, dist=1e-6, edges=list(bm.edges))
+    seen, doubled = {}, []
+    for f in bm.faces:
+        key = frozenset(v.index for v in f.verts)
+        if key in seen:
+            doubled.append(f)
+        else:
+            seen[key] = f
+    if doubled:
+        bmesh.ops.delete(bm, geom=doubled, context="FACES_ONLY")
+    for e in [e for e in bm.edges if len(e.link_faces) > 2]:
+        extra = sorted(e.link_faces, key=lambda f: f.calc_area())[:len(e.link_faces) - 2]
+        bmesh.ops.delete(bm, geom=extra, context="FACES_ONLY")
+    loose = [v for v in bm.verts if not v.link_faces]
+    if loose:
+        bmesh.ops.delete(bm, geom=loose, context="VERTS")
+    holes = [e for e in bm.edges if len(e.link_faces) == 1]
+    if holes:
+        bmesh.ops.holes_fill(bm, edges=holes, sides=8)
+        bmesh.ops.triangulate(bm, faces=[f for f in bm.faces if len(f.verts) > 4])
+    bm.normal_update()
+    bm.to_mesh(obj.data)
+    bm.free()
+    obj.data.update()
+
+
 def _even(kit, obj):
     """The form's sculpt hook: retopologise the metaball body into even, flowing quads
     (QuadriFlow, mirrored) at about twice the triangle target, then decimate it (mirrored)
@@ -149,6 +189,7 @@ def _even(kit, obj):
                                      use_preserve_sharp=False, use_preserve_boundary=False, smooth_normals=False,
                                      seed=3)
     obj.select_set(False)
+    _weld_midline(kit, obj)  # run 18: the halves sat apart down the middle (a rift in the texture)
     cur = kit.tri_count(obj)
     if cur > target:
         m = obj.modifiers.new("even", "DECIMATE")
@@ -157,6 +198,7 @@ def _even(kit, obj):
         m.use_symmetry = True
         m.symmetry_axis = "X"
         kit.apply_modifiers(obj)
+    _weld_midline(kit, obj)
 
 
 # ------------------------------------------------------------------------------ grown

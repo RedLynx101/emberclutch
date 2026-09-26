@@ -7,6 +7,7 @@
 
 #include "app/audio.hpp"
 #include "app/autotest.hpp"
+#include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "core/names.hpp"
 
@@ -43,7 +44,9 @@ void runKeyboard(App& app) {
             if (setName(name, sizeof(name), buf)) {
                 resetForNewGame(app);
                 std::memcpy(app.game.playerName, name, sizeof(name));
-                app.scene = SceneId::PickStarter;
+                // Your look next (then the egg); scripted runs go straight on to the egg.
+                if (autotest::active()) app.scene = SceneId::PickStarter;
+                else openCreator(app, SceneId::PickStarter);
                 audio::playSfx(audio::Sfx::Confirm);
             }
         }

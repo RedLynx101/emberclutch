@@ -184,6 +184,8 @@ struct PersonView {
 constexpr int kMaxPeopleShown = 8;
 // The people's clip library (romfs:/anims/person.eca), for the scenes to play clips.
 const AnimLibrary* personAnims();
+// A person on their own on the top screen, lit by the time of day (the creator).
+void drawPersonShowcase(App& app, const PersonView& p, s64 now);
 
 struct ValleyView {
     const Valley* valley = nullptr;

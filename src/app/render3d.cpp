@@ -2804,14 +2804,20 @@ void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_M
     }
     Mtx_Multiply(&mv, &viewM, &model);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &mv);
-    lookShading(kLookClassic);
+    lookShading(kLookCount);  // the storybook look, as the kinds (D75): soft bands, a face never in shadow
     for (int i = 0; i < kPalCount; ++i)
         C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, p.pal[i].r / 255.0f, p.pal[i].g / 255.0f, p.pal[i].b / 255.0f, 1.0f);
     bindSkin(nullptr);
     dragonPattern(kPatternSolid, {0, 0, 0});
+    // A face in the light: the dragons' key light comes from above the view, which leaves an
+    // upright face dark under a camera looking down; the people get it from the camera's side.
+    C3D_FVec front = FVec4_New(-0.35f, 0.4f, 0.85f, 0.0f);
+    C3D_LightPosition(&g_light, &front);
     drawMesh(app, f->body, skin);
     drawMesh(app, f->eyes, skin);
     if (p.hair >= 0 && p.hair < kHairStyles) drawMesh(app, f->hair[p.hair], skin);
+    C3D_FVec key = FVec4_New(-0.45f, 0.8f, 0.4f, 0.0f);  // the dragons' own (init)
+    C3D_LightPosition(&g_light, &key);
 }
 
 // Where the rider sits on the flown dragon (its plan's seat on its seat bone), as a frame for
@@ -2925,6 +2931,21 @@ void releaseValley() {
 }
 
 ValleyStats valleyStats() { return g_valleyStats; }
+
+void drawPersonShowcase(App& app, const PersonView& p, s64 now) {
+    if (!g_ready) return;
+    C3D_Mtx projection, view;
+    const Vec3 target{0, 0, 0.66f};
+    const float dist = 0.82f / std::tan(kFovY * 0.5f);
+    topProjection(projection, 0.05f, dist * 4.0f, dist);
+    lookAt(view, target + normalize(Vec3{0, -1, 0.42f}) * dist, target);  // a little from above, as the valley's camera
+    C2D_Flush();
+    bindDragons(projection);
+    const float plain[3] = {1, 1, 1};
+    lightDragon(dragonLight(dayBlend(now)), plain);
+    drawPerson(app, p, view);
+    end3D();
+}
 const AnimLibrary* personAnims() { return personLibReady() ? &g_personLib : nullptr; }
 
 void drawValley(App& app, const ValleyView& view, s64 now) {

@@ -40,7 +40,7 @@ struct Input {
     float rx = 0, ry = 0;
 };
 
-enum class SceneId : u8 { Title, PickStarter, Den, Map, Sanctuary, Vault, NestingStone, Wanderings, Market, Valley, Count };
+enum class SceneId : u8 { Title, PickStarter, Den, Map, Sanctuary, Vault, NestingStone, Wanderings, Market, Valley, Creator, Count };
 
 // Per-frame counters the renderer fills in; the debug overlay checks them against the
 // budgets in docs/tech/architecture.md section 1.

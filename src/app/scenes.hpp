@@ -27,10 +27,13 @@ extern const SceneFns kNestingStoneScene;
 extern const SceneFns kWanderingsScene;
 extern const SceneFns kMarketScene;
 extern const SceneFns kValleyScene;
+extern const SceneFns kCreatorScene;
 
 // Beta's technical test (WP1): into Skyreach Valley with your dragon, grown (scene_valley).
 void openValley(App& app);
 // Out into the valley, on foot before a place (core/valley ValleyPlace) with your partner.
 void openValleyAt(App& app, int place);
+void resumeValley(App& app);  // Continue, left in the valley: back where you were
+void openCreator(App& app, SceneId back);  // your look, then back to `back`
 
 }  // namespace ec

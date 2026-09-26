@@ -3,6 +3,7 @@
 #include "app/audio.hpp"
 #include "app/dragondex_ui.hpp"
 #include "app/storage.hpp"
+#include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
@@ -71,6 +72,11 @@ void settingsPage(App& app, const Input& in) {
     if (changed) audio::setVolumes(s.musicVolume, s.sfxVolume);
     text(app, str::kClockNote1, 160, 128, 0.45f, withAlpha(theme::kShell, 0.8f), C2D_AlignCenter, 296);
     text(app, str::kClockNote2, 160, 144, 0.45f, withAlpha(theme::kShell, 0.8f), C2D_AlignCenter, 296);
+    if (hasDragon(app) && button(app, {90, 158, 140, 28}, str::kYourLook, in)) {  // the creator, any time
+        saveNow(app);
+        app.menu = MenuPage::Closed;
+        openCreator(app, app.scene);
+    }
     if (hasDragon(app) && button(app, {16, 190, 136, 36}, str::kDeleteSave, in, theme::kRose))
         app.menu = MenuPage::DeleteAsk;
     if (button(app, {168, 190, 136, 36}, str::kBack, in) || (in.down & KEY_B)) {

@@ -68,7 +68,8 @@ void drawBottom(App& app, const Input& in) {
     if (app.titleConfirm == 0) {
         if (hasDragon(app)) {
             if (button(app, {60, 62, 200, 46}, str::kContinue, in) || (in.down & KEY_A)) {
-                app.scene = SceneId::Den;
+                if (app.game.world.inValley) resumeValley(app);  // left out in the valley: back there
+                else app.scene = SceneId::Den;
                 audio::playSfx(audio::Sfx::Confirm);
             }
             char line[48];

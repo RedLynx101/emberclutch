@@ -76,6 +76,7 @@ struct ValleyScene {
     int breathPlace = -1;
     float stepFor = 0;        // your next footstep
     float foundCheck = 0;     // seconds to the next look round for places
+    float keepFor = 0;        // seconds to keeping where you are (keepPlace)
     // The people as drawn: your clip, the villagers' (turning to you, waving hello), blinks.
     struct Figure {
         Animator anim;
@@ -513,6 +514,11 @@ void update(App& app, const Input& in) {
         app.autoView[0] = -1;
     }
     measureSpeeds(s);
+    s.keepFor -= app.dt;
+    if (s.keepFor <= 0) {  // where you are, kept for the next save (Continue brings you back)
+        keepPlace(app);
+        s.keepFor = 3.0f;
+    }
     if (talking(app)) {  // listening: the world waits (your partner idles beside you)
         updateTalk(app, in);
         animatePartner(app, s, false, false, false, 0);
@@ -909,6 +915,27 @@ void openValleyAt(App& app, int place) {
 }
 
 void openValley(App& app) { openValleyAt(app, kPlaceDen); }
+
+// Continue, left in the valley: back where you were (on foot, your partner at your side), if
+// that's still somewhere to stand; else out of the den's door.
+void resumeValley(App& app) {
+    openValleyAt(app, kPlaceDen);
+    ValleyScene& s = vs();
+    const WorldState& w = app.game.world;
+    if (!s.loaded || !std::isfinite(w.x) || !std::isfinite(w.y) || !std::isfinite(w.heading)) return;
+    const Valley& v = s.valley;
+    const float margin = 40.0f;
+    if (w.x < v.x0 + margin || w.y < v.y0 + margin || w.x > v.x0 + v.size() - margin || w.y > v.y0 + v.size() - margin)
+        return;
+    if (v.heightAt(w.x, w.y) < v.water - 0.3f) return;  // in the water (it was flown over): the den's door
+    s.you.pos = {w.x, w.y, v.heightAt(w.x, w.y)};
+    s.you.heading = w.heading;
+    s.you.speed = 0;
+    if (s.partner >= 0) s.pal.call(s.you, v);
+    s.wcam = WalkCamera{};
+    s.wcam.yaw = s.you.heading;
+    s.wcam.update(s.you, 0, v, 0.0f);
+}
 
 const SceneFns kValleyScene{update, drawTop, drawBottom};
 

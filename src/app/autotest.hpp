@@ -19,6 +19,7 @@
 //   light                       every festival lantern lit
 //   view <place> <ex> <ey> <ez> <tx> <ty> <tz>   the valley's free camera at a place (its frame; z
 //                               above its anchor), looking at a point
+//   creator                     your look (the creator), back to this scene after
 //   quit                        leave (writes shots/done.txt)
 #pragma once
 

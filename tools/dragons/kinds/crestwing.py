@@ -82,9 +82,9 @@ GROWN_NODES = _mirrored({
     "tail4": ((0, 2.12, 1.28), (0.12, 0.12)),
     "tail3": ((0, 1.62, 1.62), (0.18, 0.18)),
     "tail2": ((0, 1.02, 1.84), (0.26, 0.26)),
-    "hips": ((0, 0.42, 1.78), (0.50, 0.66)),
-    "belly": ((0, 0.04, 1.72), (0.50, 0.70)),
-    "chest": ((0, -0.36, 1.76), (0.62, 0.78)),
+    "hips": ((0, 0.42, 1.78), (0.56, 0.66)),
+    "belly": ((0, 0.04, 1.72), (0.55, 0.70)),
+    "chest": ((0, -0.36, 1.76), (0.68, 0.78)),
     "neck1": ((0, -0.74, 2.18), (0.39, 0.43)),
     "neck2": ((0, -0.86, 2.52), (0.27, 0.30)),
     "neck3": ((0, -0.90, 2.82), (0.23, 0.25)),
@@ -95,14 +95,14 @@ GROWN_NODES = _mirrored({
     "crest": ((0, -0.96, 3.40), (0.01, 0.01)),
     "crest_tip": ((0, -0.83, 3.58), (0.01, 0.01)),
 }, {
-    "shoulder": ((0.29, -0.34, 1.54), (0.25, 0.32)),
-    "elbow": ((0.31, -0.40, 0.96), (0.15, 0.15)),
-    "wrist": ((0.31, -0.43, 0.27), (0.105, 0.105)),
-    "toe_f": ((0.32, -0.60, 0.06), (0.12, 0.07)),
-    "hipj": ((0.30, 0.46, 1.56), (0.34, 0.44)),
-    "knee": ((0.34, 0.14, 1.02), (0.19, 0.19)),
-    "ankle": ((0.34, 0.58, 0.38), (0.12, 0.12)),
-    "toe_b": ((0.35, 0.36, 0.065), (0.13, 0.078)),
+    "shoulder": ((0.31, -0.34, 1.54), (0.28, 0.32)),
+    "elbow": ((0.33, -0.40, 0.96), (0.165, 0.16)),
+    "wrist": ((0.33, -0.43, 0.27), (0.115, 0.11)),
+    "toe_f": ((0.34, -0.60, 0.06), (0.125, 0.072)),
+    "hipj": ((0.32, 0.46, 1.56), (0.38, 0.44)),
+    "knee": ((0.36, 0.14, 1.02), (0.205, 0.2)),
+    "ankle": ((0.36, 0.58, 0.38), (0.13, 0.125)),
+    "toe_b": ((0.37, 0.36, 0.065), (0.135, 0.08)),
 })
 GROWN_EDGES = [("tail_tip", "tail4"), ("tail4", "tail3"), ("tail3", "tail2"), ("tail2", "hips"),
                ("hips", "belly"), ("belly", "chest"), ("chest", "neck1"), ("neck1", "neck2"),
@@ -391,14 +391,15 @@ def _tip_arc(P, base, tip, width, lift, angles):
 
 def _feather_edge(P, feathers, frac, widen, lift, angles, notch):
     """Scalloped edge over feathers (listed inner to outer), walked outer to inner. frac: how far
-    along each feather its row ends (1 = the flight feathers, less for the coverts)."""
+    along each feather its row ends (1 = the flight feathers, less for the coverts); notch: how
+    deep the gap between two feathers' tips cuts back."""
     edge = []
     prev = None
     for base, tip, width in reversed(feathers):
         t = (base[0] + (tip[0] - base[0]) * frac, base[1] + (tip[1] - base[1]) * frac)
         arc = _tip_arc(P, base, t, width * widen, lift, angles)
         if prev is not None and notch:
-            (pb, pt), here = prev, (base, t)
+            pb, pt = prev
             mid_u = (pt[0] + t[0]) * 0.5
             mid_v = (pt[1] + t[1]) * 0.5
             back_u = ((pt[0] - pb[0]) + (t[0] - base[0])) * 0.5
@@ -409,15 +410,19 @@ def _feather_edge(P, feathers, frac, widen, lift, angles, notch):
     return edge
 
 
-def _wing_side(kit, side, mats, rare=False):
-    F, V = kit.F, kit.V
-    w = F["wing"]
+def _wing_side(kit, side, mats):
+    """One feathered wing: the bony arm (root, elbow, wrist, a little wrist claw), the flight
+    feathers (a sheet in the horn colour whose scalloped edge is one rounded tip per feather,
+    from the form's wing "flight" list [(base (u, v), tip (u, v), width)]) and the coverts over
+    them (a thicker sheet in the membrane colour, "covert" of the way out). Both are strut-
+    weighted by the kit, so they fold with the feather rays."""
+    w = kit.F["wing"]
     wr = w["radii"]
-    P, n = _wing_frame(kit, side)
+    P, _ = _wing_frame(kit, side)
     L = w["layout"]
     pts3 = kit.wing_points(side)
-    full = not kit.LOD
-    feathers = w["flight"] if full else w["flight"][::2] + ([w["flight"][-1]] if len(w["flight"]) % 2 == 0 else [])
+    feathers = w["flight"] if not kit.LOD else \
+        w["flight"][::2] + ([w["flight"][-1]] if len(w["flight"]) % 2 == 0 else [])
     th = w["thickness"]
     objs = []
     arm = kit.wing_arm(side, ["root", "elbow", "wrist", "thumb"],
@@ -525,7 +530,8 @@ BABY_CREST_RARE = BABY_CREST + [((0, 0.16, 0.25), (0, 0.9, 0.42), 0.18, 0.12)]
 
 
 def _ruff(kit, mats):
-    """The hatchling's fluffy ruff: soft round tufts in a collar behind the cheeks."""
+    """The hatchling's downy ruff: a collar of small tufts round the back of the head (none
+    under the throat, where the chin would press them into the chest)."""
     V = kit.V
     out = []
     for j, a in enumerate((-128, -104, -80, -56, 56, 80, 104, 128)):
@@ -573,8 +579,11 @@ def _plumes(kit, mats, angles, length, width, ocelli=False):
 
 
 def parts(kit, d):
+    """Crest (on the crest bone), cheek and nape feathers, the baby's ruff, the tail's plume fan;
+    the rare Starplume's bigger crest with glowing tips and its seven-plumed fan with glowing
+    eyes replace the common ones (META rare_replaces)."""
     _merge_crest_weights(kit, d)
-    F, mats, V = kit.F, d["mats"], kit.V
+    mats, V = d["mats"], kit.V
     baby = d["form"] == "hatchling"
     out = []
     if baby:

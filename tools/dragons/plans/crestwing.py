@@ -64,10 +64,6 @@ SEAT = ("hips", (0.0, 0.5, 0.5))
 REGION = {"crest": "head"}
 
 # ------------------------------------------------------------------------------ helpers
-TAIL = ("tail1", "tail2", "tail3", "tail4")
-NECK = ("neck1", "neck2", "neck3", "neck4")
-
-
 def merge(*poses):
     out = {}
     for p in poses:
@@ -148,13 +144,7 @@ WINGS_DISPLAY = {"wing_arm*": (0, -26, 26), "wing_fore*": (0, -6, 8)}
 WINGS_OPEN = {"wing_arm*": (0, -8, 10)}  # a little wider than the rest V
 
 
-def pose_of(*parts):
-    return merge(*parts)
-
-
 # ------------------------------------------------------------------------------ body poses
-# The standing pose is the form's base pose: the neck in a proud S, the head level.
-PROUD = {}
 SIT = {  # sits back on its haunches like a proud cat, chest high, the plumed tail wrapped round
     "hips": (48, 0, 0), "chest": (-16, 0, 0),
     "leg_up*": (90, 0, 0), "leg_lo*": (-140, 0, 0), "foot*": (60, 0, 0),
@@ -357,14 +347,8 @@ def fan_tail(amount=1.0):
             "tail4": (-8 * amount, 0, 0)}
 
 
-def tail_wave(amount, period, phase_step=0.1, pitch=0.0):
-    return lambda t: {f"tail{k}": (pitch * sin01(t, period * 2, -phase_step * k),
-                                   amount * (0.6 + 0.2 * k) * sin01(t, period, -phase_step * k), 0)
-                      for k in range(1, 5)}
-
-
 # ------------------------------------------------------------------------------ idle & locomotion
-STAND = merge(WINGS_FOLDED, PROUD)
+STAND = dict(WINGS_FOLDED)  # the form's base pose is the stance: the neck in a proud S
 clip("idle", 3.4, loop=True).pose(0.0, STAND).wave(breathe()).wave(tail_sway())
 
 # A bird's look: quick turns of the head, a pause, the crest lifting with interest.
@@ -478,7 +462,7 @@ clip("sleep_h", 4.0, loop=True).pose(0.0, merge(WINGS_FOLDED, CURL_BABY)).wave(b
  .pose(1.3, merge(WINGS_DISPLAY, LIE, {"neck1": (20, 0, 0), "neck3": (6, 0, 0), "head": (26, 0, 0), "snout": (6, 0, 0),
                                        "jaw": (-32, 0, 0), "crest": (-24, 0, 0)}))
  .pose(1.8, merge(WINGS_HALF, {"arm_up*": (24, 0, 0), "hips": (-10, 0, 0), "neck1": (12, 0, 0), "head": (8, 0, 0)}))
- .pose(2.4, merge(WINGS_HALF, PROUD)).pose(3.0, STAND).event(1.3, "yawn"))
+ .pose(2.4, WINGS_HALF).pose(3.0, STAND).event(1.3, "yawn"))
 YAWN_UP = {"neck1": (12, 0, 0), "neck2": (6, 0, 0), "neck3": (4, 0, 0), "head": (30, 0, 0), "snout": (6, 0, 0),
            "chest": (4, 0, 0), "crest": (-20, 0, 0)}
 (clip("yawn", 1.7).pose(0.0, STAND)

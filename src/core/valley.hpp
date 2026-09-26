@@ -25,9 +25,17 @@ enum ValleyPlace : u8 {
     kPlaceCount
 };
 
-struct ValleyTree {
+// What stands on the ground (Beta WP3, the storybook's props): tools/valley/make_valley.py
+// places them by rules; buildValleyTile shapes them, rounder near, simpler further off.
+enum ValleyPropKind : u8 { kPropTree, kPropPine, kPropFruit, kPropBush, kPropRock, kPropFlowers, kPropReeds,
+                           kPropKinds };
+
+struct ValleyTree {  // a prop (named for the test valley's trees)
     float x, y;
-    u8 height, shade;
+    float height;    // metres (its size)
+    u8 shade = 0;    // a little variety in its colour
+    u8 kind = kPropPine;
+    u8 yaw = 0;      // in 256ths of a turn
 };
 struct ValleyIsland {
     Vec3 at;       // the middle of its grassy top
@@ -47,6 +55,7 @@ struct Valley {
     std::vector<ValleyTree> trees;
     std::vector<ValleyIsland> islands;
     std::vector<ValleyPlaceInfo> places;
+    std::vector<std::vector<Vec2>> paths;  // the earth paths between the places (EVL2)
     std::vector<float> tileLow, tileHigh;  // per tile: its lowest and highest ground (culling)
     std::vector<std::vector<int>> tileTrees;  // per tile: the trees standing in it
 

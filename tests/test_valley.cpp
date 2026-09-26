@@ -38,11 +38,14 @@ Vec3 faceNormal(const ValleyMesh& m, std::size_t i) {
 
 TEST(the_valley_loads) {
     const Valley& v = valley();
-    CHECK(v.n == 257 && v.tiles() == 16);
-    CHECK(std::fabs(v.size() - 1024.0f) < 0.01f && std::fabs(v.tileSize() - 64.0f) < 0.01f);
-    CHECK(v.hmax > 150 && v.hmin < v.water);
-    CHECK(v.trees.size() > 500 && v.islands.size() == 4 && v.places.size() >= kPlaceLake + 1);
-    for (u8 p = 0; p <= kPlaceLake; ++p) CHECK(v.place(p) != nullptr);  // (the test valley's places; Beta's valley has them all)
+    CHECK(v.n == 577 && v.tiles() == 36);  // Beta's valley: 2.3 km across (D81)
+    CHECK(std::fabs(v.size() - 2304.0f) < 0.01f && std::fabs(v.tileSize() - 64.0f) < 0.01f);
+    CHECK(v.hmax > 250 && v.hmin < v.water);
+    CHECK(v.trees.size() > 3000 && v.islands.size() == 6 && v.places.size() == kPlaceCount && v.paths.size() >= 8);
+    for (u8 p = 0; p < kPlaceCount; ++p) CHECK(v.place(p) != nullptr);
+    int kinds[kPropKinds] = {};
+    for (const ValleyTree& t : v.trees) ++kinds[t.kind];
+    for (int k = 0; k < kPropKinds; ++k) CHECK(kinds[k] > 0);  // every kind of prop out there
     // Heights between samples blend smoothly; at a sample they're the sample.
     const float x = v.x0 + 40 * v.spacing, y = v.y0 + 70 * v.spacing;
     CHECK(std::fabs(v.heightAt(x, y) - v.h[70 * v.n + 40]) < 1e-3f);
@@ -71,15 +74,17 @@ TEST(valley_tiles_join_and_fit_the_budget) {
             }
     std::printf("  valley tiles: worst %d / %d / %d, mean %.0f / %.0f / %.0f triangles\n", worst[0], worst[1], worst[2],
                 mean[0], mean[1], mean[2]);
-    CHECK(worst[0] <= 1000 && worst[1] <= 360 && worst[2] <= 80);
+    CHECK(worst[0] <= 1800 && worst[1] <= 520 && worst[2] <= 80);  // Beta's rounder storybook props (the densest wood)
     // A view: three tiles near, six mid, twelve far (culled by the view, in fog beyond): a
     // typical one, and the worst (the densest forest tile everywhere, which can't happen).
     const double typical = 3 * mean[0] + 6 * mean[1] + 12 * mean[2];
     const int view = 3 * worst[0] + 6 * worst[1] + 12 * worst[2];
     std::printf("  a view: typically %.0f terrain triangles, at most %d\n", typical, view);
-    // With the ridden dragon (3,000) that's still under the full den's ~9,800 triangles, which
-    // runs at 17-18 ms on the old 3DS; the valley's target is 30 fps (Beta plan, WP1).
-    CHECK(typical <= 4500 && view <= 6000);
+    // With the ridden dragon (3,000) and you (600) a typical view stays under the full den's
+    // ~9,800 triangles, which runs at 17-18 ms on the old 3DS; the test valley's 7,000 ran at
+    // 17 ms there (run 16). The valley's target is 30 fps (33 ms, Beta plan), so even the
+    // impossible worst (the densest wood on every near tile) has room.
+    CHECK(typical <= 5000 && view <= 9000);
     // Neighbours at the same level share their edge exactly; the ground faces up; the skirts
     // face out of the tile.
     buildValleyTile(v, 5, 7, 0, a);

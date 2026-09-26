@@ -12,7 +12,6 @@ constexpr float kPi = 3.14159265f;
 constexpr float kSkirt = 3.0f;         // metres a skirt hangs below the edge, at full detail
 constexpr float kLodNear = 48.0f;      // tiles nearer than this: full detail
 constexpr float kLodMid = 140.0f;      // then half; beyond, a quarter
-constexpr int kTreeSides[kTreeLods] = {4, 3};
 
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
@@ -45,6 +44,138 @@ void tree(ValleyMesh& m, Vec3 base, float h, float r, int sides, const u8 green[
     }
 }
 
+// A ring of `sides` points round `c` at radius r (x and y scaled by sx, sy), turned by `turn`.
+Vec3 ringPoint(Vec3 c, float r, float sx, float sy, float a, float turn) {
+    return {c.x + std::cos(a + turn) * r * sx, c.y + std::sin(a + turn) * r * sy, c.z};
+}
+
+// A bipyramid blob: a waist ring of `sides` at `mid`, a top point `up` above and a bottom point
+// `down` below (0: no bottom, it sits on the ground); faces shaded, the top a little lighter.
+void blob(ValleyMesh& m, Vec3 mid, float r, float up, float down, int sides, float turn, const u8 col[3],
+          float squash = 1.0f) {
+    const Vec3 top{mid.x, mid.y, mid.z + up};
+    const Vec3 bottom{mid.x, mid.y, mid.z - down};
+    const u8 light[3] = {static_cast<u8>(col[0] + (255 - col[0]) / 6), static_cast<u8>(col[1] + (255 - col[1]) / 6),
+                         static_cast<u8>(col[2] + (255 - col[2]) / 6)};
+    for (int s = 0; s < sides; ++s) {
+        const float a0 = 2 * kPi * s / sides, a1 = 2 * kPi * (s + 1) / sides;
+        const Vec3 p0 = ringPoint(mid, r, 1.0f, squash, a0, turn), p1 = ringPoint(mid, r, 1.0f, squash, a1, turn);
+        u8 c[3];
+        shaded(light, cross(p1 - p0, top - p0), c);
+        tri(m, addVertex(m, p0, c[0], c[1], c[2]), addVertex(m, p1, c[0], c[1], c[2]), addVertex(m, top, c[0], c[1], c[2]));
+        if (down > 0) {
+            shaded(col, cross(bottom - p0, p1 - p0), c);
+            tri(m, addVertex(m, p0, c[0], c[1], c[2]), addVertex(m, bottom, c[0], c[1], c[2]),
+                addVertex(m, p1, c[0], c[1], c[2]));
+        }
+    }
+}
+
+// A trunk: a thin prism of `sides` from the ground up to h.
+void trunk(ValleyMesh& m, Vec3 base, float h, float r, int sides, const u8 col[3]) {
+    for (int s = 0; s < sides; ++s) {
+        const float a0 = 2 * kPi * s / sides, a1 = 2 * kPi * (s + 1) / sides;
+        const Vec3 p0 = ringPoint(base, r, 1, 1, a0, 0.3f), p1 = ringPoint(base, r, 1, 1, a1, 0.3f);
+        const Vec3 q0{p0.x, p0.y, p0.z + h}, q1{p1.x, p1.y, p1.z + h};
+        u8 c[3];
+        shaded(col, cross(p1 - p0, q0 - p0), c);
+        const u16 a = addVertex(m, p0, c[0], c[1], c[2]), b = addVertex(m, p1, c[0], c[1], c[2]),
+                  d = addVertex(m, q1, c[0], c[1], c[2]), e = addVertex(m, q0, c[0], c[1], c[2]);
+        tri(m, a, b, d);
+        tri(m, a, d, e);
+    }
+}
+
+// One prop at a detail level (0 near, 1 further; nothing beyond).
+void prop(ValleyMesh& m, const Valley& v, const ValleyTree& p, int lod) {
+    const float z = v.heightAt(p.x, p.y);
+    const float h = p.height, turn = p.yaw * (2 * kPi / 256.0f);
+    const u8 k = p.shade;
+    switch (p.kind) {
+        case kPropTree: {  // a round storybook tree: a stout trunk under two soft clumps of leaves
+            const u8 leaf[3] = {static_cast<u8>(64 + k % 30), static_cast<u8>(128 + k % 40), static_cast<u8>(58 + k % 22)};
+            const u8 bark[3] = {118, 84, 58};
+            if (lod == 0) {
+                trunk(m, {p.x, p.y, z - 0.3f}, h * 0.45f, h * 0.07f, 3, bark);
+                blob(m, {p.x, p.y, z + h * 0.5f}, h * 0.38f, h * 0.26f, h * 0.2f, 5, turn, leaf);
+                const float ox = std::cos(turn) * h * 0.1f, oy = std::sin(turn) * h * 0.1f;
+                blob(m, {p.x + ox, p.y + oy, z + h * 0.74f}, h * 0.27f, h * 0.24f, h * 0.12f, 5, turn + 0.6f, leaf);
+            } else {  // further off: one round clump (five sides reads round, four reads as a gem)
+                blob(m, {p.x, p.y, z + h * 0.6f}, h * 0.4f, h * 0.3f, h * 0.24f, 5, turn, leaf);
+            }
+            break;
+        }
+        case kPropPine: {  // two stacked cones, deep green
+            const u8 needle[3] = {static_cast<u8>(40 + k % 22), static_cast<u8>(96 + k % 28), static_cast<u8>(62 + k % 18)};
+            if (lod == 0) {
+                blob(m, {p.x, p.y, z - 0.2f}, h * 0.3f, h * 0.55f, 0, 5, turn, needle);
+                blob(m, {p.x, p.y, z + h * 0.42f}, h * 0.22f, h * 0.58f, 0, 5, turn + 0.6f, needle);
+            } else {
+                tree(m, {p.x, p.y, z - 0.3f}, h, h * 0.3f, 4, needle);
+            }
+            break;
+        }
+        case kPropFruit: {  // a round fruit tree, and its fruit
+            const u8 leaf[3] = {static_cast<u8>(84 + k % 20), static_cast<u8>(146 + k % 30), static_cast<u8>(64 + k % 16)};
+            const u8 bark[3] = {128, 92, 62};
+            if (lod == 0) trunk(m, {p.x, p.y, z - 0.3f}, h * 0.45f, h * 0.07f, 3, bark);
+            blob(m, {p.x, p.y, z + h * 0.62f}, h * 0.42f, h * 0.36f, h * 0.2f, lod == 0 ? 6 : 4, turn, leaf, 0.95f);
+            if (lod == 0)
+                for (int f = 0; f < 4; ++f) {  // little fruit on the leaves' sunny side
+                    const float a = turn + f * 1.6f;
+                    const Vec3 c{p.x + std::cos(a) * h * 0.36f, p.y + std::sin(a) * h * 0.36f, z + h * (0.62f + 0.05f * (f % 2))};
+                    const u8 fruit[3] = {230, static_cast<u8>(f % 2 ? 180 : 96), 70};
+                    blob(m, c, 0.28f, 0.28f, 0.28f, 3, a, fruit);
+                }
+            break;
+        }
+        case kPropBush: {
+            const u8 leaf[3] = {static_cast<u8>(70 + k % 26), static_cast<u8>(136 + k % 34), static_cast<u8>(62 + k % 20)};
+            blob(m, {p.x, p.y, z + h * 0.1f}, h * 0.6f, h * 0.75f, 0, lod == 0 ? 5 : 3, turn, leaf, 0.85f);
+            if (lod == 0 && k % 3 == 0) {  // one in three in flower
+                const u8 bloom[3] = {246, static_cast<u8>(k % 2 ? 150 : 214), static_cast<u8>(k % 2 ? 190 : 110)};
+                blob(m, {p.x + h * 0.2f, p.y - h * 0.3f, z + h * 0.62f}, h * 0.14f, h * 0.14f, h * 0.1f, 3, turn, bloom);
+            }
+            break;
+        }
+        case kPropRock: {  // a squat, faceted rock, soft lilac grey
+            const u8 stone[3] = {static_cast<u8>(146 + k % 24), static_cast<u8>(134 + k % 20), static_cast<u8>(140 + k % 22)};
+            blob(m, {p.x, p.y, z - h * 0.15f}, h * 0.55f, h * 0.55f, 0, lod == 0 ? 5 : 3, turn, stone, 0.75f);
+            break;
+        }
+        case kPropFlowers: {  // a patch of little flowers: petals just above the grass
+            if (lod > 0) break;
+            static const u8 kBloom[4][3] = {{250, 168, 196}, {252, 226, 110}, {250, 250, 244}, {170, 180, 250}};
+            const u8* c = kBloom[k % 4];
+            for (int f = 0; f < 5; ++f) {
+                const float a = turn + f * 1.3f, r = h * (0.2f + 0.16f * f);
+                const float fx = p.x + std::cos(a) * r, fy = p.y + std::sin(a) * r, fz = v.heightAt(fx, fy) + 0.18f;
+                const float s = 0.32f;
+                tri(m, addVertex(m, {fx - s, fy - s * 0.5f, fz}, c[0], c[1], c[2]),
+                    addVertex(m, {fx + s, fy - s * 0.5f, fz}, c[0], c[1], c[2]),
+                    addVertex(m, {fx, fy + s, fz + 0.05f}, c[0], c[1], c[2]));
+            }
+            break;
+        }
+        case kPropReeds: {  // a few thin blades
+            if (lod > 0) break;
+            const u8 reed[3] = {110, 150, 78};
+            for (int b = 0; b < 4; ++b) {
+                const float a = turn + b * 1.7f;
+                const Vec3 base{p.x + std::cos(a) * 0.5f, p.y + std::sin(a) * 0.5f, z - 0.2f};
+                const Vec3 tip{base.x + std::cos(a) * 0.3f, base.y + std::sin(a) * 0.3f, base.z + h};
+                const Vec3 side{-std::sin(a) * 0.12f, std::cos(a) * 0.12f, 0};
+                tri(m, addVertex(m, base - side, reed[0], reed[1], reed[2]), addVertex(m, base + side, reed[0], reed[1], reed[2]),
+                    addVertex(m, tip, 150, 180, 96));
+                tri(m, addVertex(m, base + side, reed[0], reed[1], reed[2]), addVertex(m, base - side, reed[0], reed[1], reed[2]),
+                    addVertex(m, tip, 150, 180, 96));
+            }
+            break;
+        }
+        default: break;
+    }
+}
+
 }  // namespace
 
 void ValleyMesh::clear() {
@@ -57,7 +188,8 @@ bool loadValley(const u8* data, std::size_t size, Valley& out) {
     ByteReader r(data, size);
     char magic[4];
     r.bytes(magic, 4);
-    if (!r.ok() || std::memcmp(magic, "EVL1", 4) != 0 || r.u16v() != 1) return false;
+    const bool v2 = std::memcmp(magic, "EVL2", 4) == 0;  // Beta: props of every kind, and the paths
+    if (!r.ok() || (!v2 && std::memcmp(magic, "EVL1", 4) != 0) || r.u16v() != (v2 ? 2 : 1)) return false;
     out = Valley{};
     out.n = r.u16v();
     out.spacing = r.f32();
@@ -77,8 +209,16 @@ bool loadValley(const u8* data, std::size_t size, Valley& out) {
     for (ValleyTree& t : out.trees) {
         t.x = r.f32();
         t.y = r.f32();
-        t.height = r.u8v();
-        t.shade = r.u8v();
+        if (v2) {
+            t.kind = r.u8v();
+            t.height = r.u8v() / 10.0f;
+            t.shade = r.u8v();
+            t.yaw = r.u8v();
+            if (t.kind >= kPropKinds) t.kind = kPropBush;
+        } else {
+            t.height = r.u8v();
+            t.shade = r.u8v();
+        }
     }
     out.islands.resize(r.u16v());
     for (ValleyIsland& isl : out.islands) {
@@ -90,6 +230,16 @@ bool loadValley(const u8* data, std::size_t size, Valley& out) {
         p.id = r.u8v();
         p.at = r.vec3();
         p.heading = r.f32();
+    }
+    if (v2) {
+        out.paths.resize(r.u16v());
+        for (std::vector<Vec2>& path : out.paths) {
+            path.resize(r.u16v());
+            for (Vec2& p : path) {
+                p.x = r.f32();
+                p.y = r.f32();
+            }
+        }
     }
     if (!r.ok()) return false;
     // Each tile's height range, and the trees standing in it.
@@ -192,14 +342,9 @@ void buildValleyTile(const Valley& v, int tx, int ty, int lod, ValleyMesh& out) 
     skirt(quads, 0, 0, 1, true);        // east edge, south to north: faces east
     skirt(0, quads, 1, 0, false);       // north edge: faces north
     skirt(0, 0, 0, 1, false);           // west edge: faces west
-    // Trees, nearer levels only (fewer sides further off).
+    // Props, nearer levels only (simpler further off; the little ones only near).
     if (lod < kTreeLods)
-        for (int k : v.tileTrees[std::size_t(ty) * t + tx]) {
-            const ValleyTree& tr = v.trees[std::size_t(k)];
-            const u8 green[3] = {static_cast<u8>(40 + tr.shade % 24), static_cast<u8>(86 + tr.shade % 30),
-                                 static_cast<u8>(46 + tr.shade % 16)};
-            tree(out, {tr.x, tr.y, v.heightAt(tr.x, tr.y) - 0.4f}, tr.height, tr.height * 0.32f, kTreeSides[lod], green);
-        }
+        for (int k : v.tileTrees[std::size_t(ty) * t + tx]) prop(out, v, v.trees[std::size_t(k)], lod);
 }
 
 void buildValleyExtras(const Valley& v, ValleyMesh& out) {

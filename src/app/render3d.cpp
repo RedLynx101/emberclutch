@@ -2337,7 +2337,7 @@ struct ValleyGpu {
 };
 constexpr int kValleySlots = 64;       // tiles kept built
 constexpr int kValleyBuilds = 2;       // tiles built a frame at most (the rest show coarser, or wait)
-constexpr float kValleyNear = 0.5f, kValleyFar = 290.0f;
+constexpr float kValleyNear = 0.5f, kValleyFar = 400.0f;  // Beta's valley is 2.3 km: see further
 ValleyGpu g_vtiles[kValleySlots];
 ValleyGpu g_vextras, g_vwater;
 // The flown dragon's shadow (D81, a height tell): a soft disc laid on the ground under it,
@@ -2541,8 +2541,8 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     g_denView = viewM;  // project() works in the valley too
     g_denViewSet = true;
     Mtx_Multiply(&clip, &projection, &viewM);
-    if (!g_fogOk) {  // fog thickens from about 90 m to the far plane (the LUT knows the projection)
-        FogLut_Exp(&g_fogLut, 1.0f / 190.0f, 2.5f, kValleyNear, kValleyFar);
+    if (!g_fogOk) {  // fog thickens from about 130 m to the far plane (the LUT knows the projection)
+        FogLut_Exp(&g_fogLut, 1.0f / 280.0f, 2.5f, kValleyNear, kValleyFar);
         g_fogOk = true;
     }
     C2D_Flush();

@@ -95,6 +95,13 @@ struct ValleyScene {
     u32 wanderId = 0;
     Vec3 wanderAt;
     float wanderHeading = 0, wanderT = 0;
+    // The star dragon (the Lantern Festival): seen high over the floating isles once your dragon
+    // has its wings, over the arena on the festival's night, over the lake on nights after.
+    Dragon star;
+    DenActor starActor;
+    bool starShown = false, starSet = false;
+    Vec3 starAt;
+    float starHeading = 0, starT = 0;
 };
 
 ValleyScene& vs() {
@@ -250,6 +257,49 @@ void animateWanderer(App& app, ValleyScene& s) {
     }
     s.wanderActor.anim.update(*lib, app.dt, nullptr, 0);
     s.wanderActor.eyes.update(0.0f, app.dt);
+}
+
+void animateStar(App& app, ValleyScene& s) {
+    s.starShown = false;
+    const int kind = findKind("glimmermoth");
+    if (kind < 0) return;
+    const SaveData& g = app.game;
+    const campaign::QuestView wings = campaign::view(g, 5), festival = campaign::view(g, 7);
+    const DayBlend day = dayBlend(nowLocal(app));
+    int over = -1;
+    if (festival.done) {
+        if (day.weight(kLightDay) < 0.35f) over = kPlaceLake;  // on nights after, now and then about
+    } else if (festival.started && festival.stepIndex >= 1) {
+        over = kPlaceArena;  // every lantern lit: it waits over the arena for the festival
+    } else if (wings.done || (wings.started && wings.stepIndex >= 2)) {
+        over = kPlaceIsles;  // the first sighting, over the floating isles
+    }
+    r3d::wantKind(over >= 0 ? kind : -1);
+    if (over < 0 || !r3d::kindReady(kind)) return;
+    const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(over));
+    if (!p) return;
+    if (!s.starSet) {  // grown, in its rare starlit colouring
+        s.star = Dragon{};
+        s.star.id = 0xFFFFFFF1u;
+        s.star.stage = Stage::Adult;
+        s.star.kind = static_cast<u8>(kind);
+        s.star.variant = kindInfo(kind).rareVariant;
+        s.starActor = DenActor{};
+        s.starSet = true;
+    }
+    s.starT += app.dt;
+    constexpr float kRadius = 42.0f, kSpeed = 11.0f;
+    const float a = s.starT * kSpeed / kRadius;
+    const float x = p->at.x + std::cos(a) * kRadius, y = p->at.y + std::sin(a) * kRadius;
+    s.starAt = {x, y, p->at.z + 46.0f + 6.0f * std::sin(s.starT * 0.3f)};
+    s.starHeading = std::atan2(-std::sin(a), -std::cos(a));
+    const AnimLibrary* lib = r3d::animsFor(s.star);
+    if (!lib) return;
+    const int* clips = r3d::clipIndexFor(s.star, kFormGrown);
+    if (s.starActor.anim.clip < 0 && clips[static_cast<int>(ClipId::FlyGlide)] >= 0)
+        s.starActor.anim.play(clips[static_cast<int>(ClipId::FlyGlide)], 0.0f, true);
+    s.starActor.anim.update(*lib, app.dt, nullptr, 0);
+    s.starShown = true;
 }
 
 void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swimming, float speed) {
@@ -557,12 +607,23 @@ void update(App& app, const Input& in) {
     }
     animatePeople(app, s);
     animateWanderer(app, s);
+    animateStar(app, s);
     if (app.autoTravel >= 0) {  // an autotest's trip
         world::findPlace(app.game, app.autoTravel);
         travelTo(app, s, app.autoTravel, false);
         app.autoTravel = -1;
     }
-    if (app.autoView[0] >= 0) {  // an autotest's view: the free camera at a place, looking at a point
+    if (app.autoView[0] == 99.0f && s.starShown) {  // (99: from beside the star dragon, looking at it)
+        const float* a = app.autoView;
+        if (s.mode != Mode::FreeCam) s.before = s.mode;
+        s.mode = Mode::FreeCam;
+        s.freeEye = s.starAt + Vec3{a[1], a[2], a[3]};
+        const Vec3 d = s.starAt - s.freeEye;
+        s.freeYaw = std::atan2(d.x, -d.y);
+        s.freePitch = clampf(std::atan2(d.z, std::hypot(d.x, d.y)), -1.2f, 0.4f);
+        app.autoView[0] = -1;
+    }
+    if (app.autoView[0] >= 0 && app.autoView[0] != 99.0f) {  // an autotest's view: the free camera at a place, looking at a point
         if (const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(app.autoView[0]))) {
             const float* a = app.autoView;
             const Vec3 eye = placeToWorld3(s.valley, *p, {a[1], a[2], 0}), at = placeToWorld3(s.valley, *p, {a[4], a[5], 0});
@@ -733,6 +794,12 @@ void drawTop(App& app) {
         view.wandererActor = &s.wanderActor;
         view.wandererAt = s.wanderAt;
         view.wandererHeading = s.wanderHeading;
+    }
+    if (s.starShown) {
+        view.skyDragon = &s.star;
+        view.skyActor = &s.starActor;
+        view.skyAt = s.starAt;
+        view.skyHeading = s.starHeading;
     }
     {
         r3d::PersonView& me = view.people[view.peopleCount++];

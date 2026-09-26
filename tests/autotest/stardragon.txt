@@ -1,0 +1,30 @@
+# The Lantern Festival's eve: every lantern lit but the great one, the star dragon circling high
+# over the arena (the campaign's last quest), seen from the arena's gate and looking up.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+festival
+key X
+wait 6
+travel 6
+wait 4
+view 99 14 14 -2 0 0 0
+wait 0.1
+shot f01-star-over-the-arena
+skip 10
+wait 2
+view 99 14 14 -2 0 0 0
+wait 0.1
+shot f02-at-night
+quit

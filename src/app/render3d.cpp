@@ -2196,13 +2196,15 @@ bool loadLook(int look) {
 // Kinds no dragon of the save is and nothing has drawn for a while (the Dragondex's, the dev
 // menu's) are let go: their models, skins and the dragons' cached parts (run 17: every kind
 // loaded took 3.8 MB). Checked every couple of seconds.
+int g_extraKind = -1;  // a kind wanted besides the save's (the star dragon in the sky)
+
 void evictLooks(const SaveData& s) {
     static u32 checked = 0;
     if (g_frame - checked < 120) return;
     checked = g_frame;
     for (int look = kLookCount; look < kLookCount + kindCount(); ++look) {
         if (!g_lookLoaded[look] || look == g_forceLook || g_frame - g_lookUsed[look] < 1800) continue;
-        bool wanted = false;
+        bool wanted = look == kLookCount + g_extraKind;
         for (int i = 0; i < s.dragonCount && !wanted; ++i)
             wanted = kLookCount + (s.dragons[i].kind < kindCount() ? s.dragons[i].kind : 0) == look;
         if (wanted) continue;
@@ -2215,11 +2217,16 @@ void evictLooks(const SaveData& s) {
     }
 }
 
+void wantKind(int kind) { g_extraKind = kind >= 0 && kind < kindCount() ? kind : -1; }
+bool kindReady(int kind) { return kind >= 0 && kind < kindCount() && g_lookLoaded[kLookCount + kind]; }
+
 bool loadNextLook(const SaveData& s) {
     if (!g_ready) return false;
     bool* asked = g_lookAsked;
-    for (int i = 0; i < s.dragonCount; ++i) {
-        const int look = kLookCount + (s.dragons[i].kind < kindCount() ? s.dragons[i].kind : 0);
+    for (int i = 0; i <= s.dragonCount; ++i) {
+        const int kind = i < s.dragonCount ? s.dragons[i].kind : g_extraKind;  // the save's, then the extra one
+        if (kind < 0) continue;
+        const int look = kLookCount + (kind < kindCount() ? kind : 0);
         if (g_lookLoaded[look] || g_lookFailed[look]) continue;
         const int plan = planOfSlot(look);
         char a[80], b[80];
@@ -3166,23 +3173,28 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
                           g_posed.cache && isKind(g_posed.cache->look) ? kindOfSlot(g_posed.cache->look) : -1,
                           seat.r[0].w, seat.r[1].w, seat.r[2].w, view.at.x, view.at.y, view.at.z);
     }
-    // A dragon out on the Wanderings, if it's near (D69).
-    if (view.wanderer && std::hypot(view.wandererAt.x - view.eye.x, view.wandererAt.y - view.eye.y) < 220.0f &&
-        !outsideView(clip, view.wandererAt - Vec3{4, 4, 1}, view.wandererAt + Vec3{4, 4, 6})) {
-        static Posed wanderPosed;
-        if (pose(app, *view.wanderer, view.wandererActor, now, 0, wanderPosed)) {
-            bindDragons(projection);
-            const float plain[3] = {1, 1, 1};
-            lightDragon(dragonLight(dayBlend(now)), plain);
-            C3D_Mtx model;
-            Mtx_Identity(&model);
-            Mtx_Translate(&model, view.wandererAt.x, view.wandererAt.y, view.wandererAt.z, true);
-            Mtx_RotateZ(&model, view.wandererHeading, true);
-            Mtx_Scale(&model, wanderPosed.size, wanderPosed.size, wanderPosed.size);
-            Mtx_Translate(&model, 0, 0, -wanderPosed.ground, true);
-            submit(app, wanderPosed, viewM, model);
-        }
-    }
+    // A dragon out on the Wanderings, if it's near (D69), and the star dragon in the sky.
+    auto another = [&](const Dragon* d, const DenActor* actor, Vec3 at, float heading, float reach, float bank, float grow) {
+        if (!d || std::hypot(at.x - view.eye.x, at.y - view.eye.y) > reach ||
+            outsideView(clip, at - Vec3{5, 5, 2}, at + Vec3{5, 5, 6}))
+            return;
+        static Posed posed;
+        const int lod = length(at - view.eye) > 30.0f ? 1 : 0;
+        if (!pose(app, *d, actor, now, lod, posed)) return;
+        bindDragons(projection);
+        const float plain[3] = {1, 1, 1};
+        lightDragon(dragonLight(dayBlend(now)), plain);
+        C3D_Mtx model;
+        Mtx_Identity(&model);
+        Mtx_Translate(&model, at.x, at.y, at.z, true);
+        Mtx_RotateZ(&model, heading, true);
+        Mtx_RotateY(&model, bank, true);
+        Mtx_Scale(&model, posed.size * grow, posed.size * grow, posed.size * grow);
+        Mtx_Translate(&model, 0, 0, -posed.ground, true);
+        submit(app, posed, viewM, model);
+    };
+    another(view.wanderer, view.wandererActor, view.wandererAt, view.wandererHeading, 220.0f, 0.0f, 1.0f);
+    another(view.skyDragon, view.skyActor, view.skyAt, view.skyHeading, 380.0f, -0.35f, 1.8f);  // a legend: larger
     // The people about (you on foot, the villagers), near enough to see.
     if (view.peopleCount > 0) {
         bindDragons(projection);
@@ -3228,9 +3240,10 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     C3D_FogGasMode(GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
     end3D();
     if (autotest::shooting())
-        autotest::log("valley tris %u: ground %d (%d tiles, %d built) places %d, the rest %d", app.stats.tris,
-                      g_valleyStats.ground, g_valleyStats.tiles, g_valleyStats.built, g_valleyStats.places,
-                      static_cast<int>(app.stats.tris) - g_valleyStats.ground - g_valleyStats.places);
+        autotest::log("valley tris %u: ground %d (%d tiles, %d built) places %d, the rest %d; sky dragon %s (%.0f %.0f %.0f) eye (%.0f %.0f %.0f)",
+                      app.stats.tris, g_valleyStats.ground, g_valleyStats.tiles, g_valleyStats.built, g_valleyStats.places,
+                      static_cast<int>(app.stats.tris) - g_valleyStats.ground - g_valleyStats.places,
+                      view.skyDragon ? "up" : "none", view.skyAt.x, view.skyAt.y, view.skyAt.z, view.eye.x, view.eye.y, view.eye.z);
 }
 
 const C2D_Image* valleyMap(const Valley& v) {

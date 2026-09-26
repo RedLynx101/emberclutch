@@ -1,0 +1,31 @@
+# The valley in 3D (run 17's note: the slider did nothing there): the top screen flat, then as
+# the right eye sees it at the slider's top (dev menu: Stereo preview; the emulator shows one eye).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+key X
+wait 4
+travel 1
+wait 3
+shot d01-flat
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 82 206
+wait 0.3
+key SELECT
+wait 1
+shot d02-right-eye
+quit

@@ -114,6 +114,10 @@ void setDenThings(const DenThings* things);
 // (run 17: a kind loading on the spot stalled the den). One still needed at once loads then.
 // The old looks (D54) load only when the dev menu shows them.
 bool loadNextLook(const SaveData& s);
+// A kind wanted besides the save's own (the star dragon in the sky): read ahead the same way
+// (-1: none); ready once all of it is in.
+void wantKind(int kind);
+bool kindReady(int kind);
 
 // The den's view swung round (radians, + to the right) and tilted (+ higher) by the circle pad
 // (D85); the scene eases it back to 0 when the pad is let go.
@@ -210,6 +214,10 @@ struct ValleyView {
     const DenActor* wandererActor = nullptr;
     Vec3 wandererAt;
     float wandererHeading = 0;
+    const Dragon* skyDragon = nullptr;   // the star dragon, circling high (the Lantern Festival)
+    const DenActor* skyActor = nullptr;
+    Vec3 skyAt;
+    float skyHeading = 0;
     PersonView people[kMaxPeopleShown];  // you first, then the villagers
     int peopleCount = 0;
 };

@@ -35,7 +35,11 @@ python tools/blender/egg_model.py --kind <kind>
 python tools/blender/egg_model.py --kind <kind> --lod 1
 
 # the checks and the review sheets
-python tools/dragons/check.py <kind>
+python tools/dragons/check.py <kind> [--deep]           # --deep: also the two Blender checks below
+python tools/dragons/dark_faces.py <kind> [--verbose]   # skin faces that come out near-black
+blender -b -P tools/blender/dragonkit/closeup.py -- --kinds <kind> [--render C:/abs/prefix]   # see-through mouths
+blender -b -P tools/blender/dragonkit/curl.py -- --kinds <kind> [--render C:/abs/prefix] [--texture] [--baseline]
+blender -b -P tools/blender/dragonkit/solve.py -- --kind <kind> --spec C:/abs/spec.py --out C:/abs/prefix   # a pose from bone directions
 blender -b -P tools/blender/dragonkit/review.py -- --kind <kind> --out C:/abs/build/review/<kind> [--quick] [--only lineup,variants]
 blender -b -P tools/blender/dragonkit/measure.py -- [--kinds <kind>,pouncer]      # size vs the Pouncer, export_scale wanted
 blender -b -P tools/blender/dragonkit/together.py -- --out C:/abs/build/review/together.png   # every kind at true size
@@ -118,11 +122,35 @@ with a touch of awe and majesty in the grown adults (D75–D77):
 
 ## Done means
 1. `python tools/anim/build_anims.py --plan <plan>` and the export and eggs run cleanly.
-2. `python tools/dragons/check.py <kind>` says OK.
+2. `python tools/dragons/check.py <kind> --deep` says OK: the budgets and the contract, no
+   near-black skin face, no see-through mouth from the close-up's angles, and curled up and
+   asleep nothing through the floor or the body and the head resting.
 3. The review sheets look right from every angle and at every stage: nothing floating or
    sunk, no holes, no parts through the body in any clip, wings folding neatly, the face
-   cute, the adult majestic, matching the concept's spirit.
+   cute, the adult majestic, matching the concept's spirit. `curl.py --render` for the
+   sleeping poses (every kind on the plan, both forms).
 4. The kind file and the plan read clearly (a short docstring saying what the kind is).
+
+## The checks (run 18)
+- **`dark_faces.py`** (plain Python, and in `check.py`) reads the shipped skins and body UVs
+  and samples every skin face across its UV triangle at mip levels 0 to 2, as the game
+  filters it; a face whose painted value (the skin's alpha) comes out under 0.35, or a speck
+  under 0.15 at full size, is reported with its UV island.
+- **`closeup.py`** follows rays through the open mouth as the game draws it (back faces
+  culled): from the bottom screen's close-up camera, framed as `drawCloseUp` frames it (idle,
+  and chin up for a scratch), and from a sweep round the snout (below, in front, beside,
+  above), at jaw 6, 12, 20 and 34 degrees, on the newborn, hatchling, juvenile and adult. A
+  ray that goes out through the back of the skin and then shows anything but the mouth's
+  inside is see-through (a patch of lip folded over by a wide yawn, showing the pocket or the
+  lip's other layer just behind it, isn't). `--render` writes the close-up and the worst
+  view on a magenta backdrop.
+- **`curl.py`** stands each kind's hatchling and adult as the game does (the lowest body
+  vertex that isn't mostly tail on the floor, the clip's root lift on top) halfway through
+  `curl_up`, at its end and asleep, and measures in body lengths: wings, parts or the tail
+  through the floor, and wings in the body (both past what the idle pose has: a folded wing
+  already hugs the flank); a lower leg, the tail or the head inside another part of the body
+  (0.1: a tucked paw sinks a little into a round belly); air under a sleeping head (0.12).
+  `--baseline` prints the idle pose's numbers.
 
 ## Gotchas (learned building the first nine, DR2)
 Things that tripped the builders; the kit may fix some later, until then work with them:
@@ -157,9 +185,44 @@ Things that tripped the builders; the kit may fix some later, until then work wi
   meet at a back line, but a wide open mouth seen from the side looked straight through it
   (in at one side, out at the other) until `build_mouth_pocket` grew a dark wall down each side
   from the upper lip to the lower (the lips' outer 45% across). `build/tools/mouth_look.py
-  --jaw 45 --views mouth,mouth_top,mouth_side --cull 1` renders it the way the game culls.
+  --jaw 45 --views mouth,mouth_top,mouth_side --cull 1` renders it the way the game culls;
+  since run 18 `closeup.py` checks every angle (the close-up's looks up from below and in
+  front) by rays, on every kind.
 - **A baby's folded wings can sink into a round body (run 17).** The plan's fold suits the
   grown body; a chubby hatchling's flank bulges past its little wings. Turn them out with the
   hatchling form's `base_pose` (the Pouncer's and the Blazeplume's: `wing_arm_R` (-20, 0, -55),
   mirrored for L; the third angle, negative for the right wing, lifts it off the body), and
   look from behind and above, culled (`build/tools/wing_look.py --close 1`, `wing_try.py`).
+- **The mouth's lips are the slit's own edges (run 18).** The cut takes whole faces whose
+  centre is in front of the corners and within `mouth_detail` width, so the slit runs a
+  little past `y_corner` or stops at the width short of it; `lip_chains` walks the slit's
+  open edges end to end (picking lips by position missed the ends, which opened into the
+  head: see-through at the mouth's edges in the close-up, on every kind). If the corners look
+  wrong, the slit is what to change (`width`, `depth`, the mouth line), not the chains.
+- **The skin modifier can leave a hole (run 18).** Where branches meet at a node it may fail
+  to hull and leave a hole and a stray wire edge (the grown Kindlemoss's and Curlstone's left
+  shoulders); `close_holes` fills the coarse hull before it's subdivided and says so.
+- **Tiny UV islands bake black (run 18).** A decimation sliver at a sharp crease becomes a
+  UV island a fraction of a texel wide that no texel centre falls in; the unwrap lays any
+  island under 6 texels onto its neighbour, and the bake fills every texel it didn't reach.
+  Such faces drew black, and the smaller mipmaps averaged the unbaked gaps into island edges.
+- **Sleeping poses (run 18).** A clip's yaw turns a forward bone's tip to +X and a backward
+  bone's to -X: the neck and the tail curl to the same side (a C, a curl) with opposite yaw
+  signs; the same sign makes an S. The classic lie's forearms stand down and back from the
+  elbow, which props long-legged bodies up (a Crestwing or Glimmermoth "asleep" stood on its
+  forelegs): fold them right under the chest for sleep (the Pouncer plan's `CURL`: arm_up 60,
+  arm_lo -145, hand -5). One plan's deltas land differently on each kind's skeleton (the
+  Blazeplume's upright neck holds its head higher than the Pouncer's for the same keys): solve
+  from bone directions on one kind (`tools/blender/dragonkit/solve.py`), then tune the keys
+  across every kind on the plan and both forms with `curl.py`, not on one kind. Still open
+  after run 18 (`curl.py --all`): the Duskwing's curl is an S with its head held up (0.39 body
+  lengths; its baby sleeps sitting up by design); the Puffback's and Bloomstone's grown heads
+  held up (0.21, 0.24); the Curlstone plan's tucked horns and frills through the floor (0.07
+  to 0.12) and the Frostcurl baby's tail through the floor and its body; the Flurrytail's big
+  tail sunk into the floor (0.17 to 0.30); the Ribbontail's horns and its baby's tail tip a
+  little under the floor; the Glimmermoth baby's head held up (0.33); the Crestwing baby's
+  frill under the floor and a hind leg through its body halfway through curling up.
+- **Parts at the end of a long ray (run 18).** A foot's toenails whose ray from the ankle runs
+  on into the front feet get seated there (snap_parts' outermost hit) and then ride the hind
+  foot from the front paws: mark them `o["snap_first"] = True` (the Puffback's and the
+  Bloomstone's toes).

@@ -13,9 +13,11 @@ For each form (the newborn and the late hatchling, the juvenile and the adult) a
 opening, rays are cast through a fine grid of pixels round the mouth, from the close-up's own
 camera (framed as src/app/render3d.cpp drawCloseUp does, in the idle pose and chin up for a
 scratch) and from a sweep of angles round the snout: below, in front, beside and above. A ray
-whose first hit is the back of a body face is a see-through pixel. Prints a line per kind and
-exits 1 if any kind has one; --render writes the close-up and the worst view, culled, on a
-bright backdrop (a gap shows as the backdrop).
+that goes out through the back of the skin (it was inside the head) and then shows anything
+but the mouth's inside is a see-through pixel (culled_ray); one seen by a single ray on an
+edge only is dropped. Prints a line per kind and exits 1 if any kind has one; --render writes
+the close-up and the worst view, culled, on a magenta backdrop (a gap shows as the backdrop).
+(Run 18: every kind but the Flurrytail see-through before the lip fix, none after.)
 """
 import math
 import os
@@ -41,7 +43,7 @@ JAWS = (6.0, 12.0, 20.0, 34.0)          # petting 7-12, eating 20, the yawn 30-3
 AZIMUTHS = (-75, -50, -25, 0, 25, 50, 75)   # round the snout, degrees (0: straight ahead)
 ELEVATIONS = (-60, -40, -20, 0, 20, 45)     # below (-) to above (+)
 GRID = 112                              # rays across a view (the mouth fills most of it)
-BACKFACE = 0.02                         # a first hit this far past edge-on counts (not a graze)
+BACKFACE = 0.02                         # a face this far past edge-on is a back face (not a graze)
 BACKDROP = (0.95, 0.10, 0.75)           # renders: a gap shows as this magenta
 
 

@@ -1,26 +1,29 @@
 """The curl-up check (run 18): every kind curled up and asleep, as the game poses and stands it.
 
   blender -b -P tools/blender/dragonkit/curl.py -- --kinds pouncer,blazeplume   (or --plan pouncer, --all)
-          [--render C:/abs/prefix] [--texture]
+          [--render C:/abs/prefix] [--texture] [--baseline]
 
 For each kind's hatchling and adult: the curl_up clip halfway and at its end, and sleep at the
 top of a breath, each posed on the idle pose as the game does it and stood on the floor the way
 the game stands it (render3d animatedGround: the lowest body vertex that isn't mostly tail;
 the clip's root lift on top). Then it measures what reads wrong in a curled-up dragon:
 
-  floor   wings, parts or the tail below the floor (the game stands it on its skin only)
-  wings   wing vertices inside the body (a wing through the back or the flank)
+  floor   wings, parts or the tail below the floor (the game stands it on its skin only),
+          past what the idle pose has
+  wings   wing vertices past the wing's first bone inside the body (a wing through the back
+          or the flank), past what the idle pose has (a folded wing already hugs the flank)
   pokes   a leg's lower half or foot, the tail (past its first bone) or the head inside
           another part of the body: the torso, a leg, the tail, the head
-  head    the head held up with nothing under it (a sleeping head rests on something: the
-          floor, its paws, its tail, its flank), or the body up off the floor on its chin
+  head    air under the head's lowest point, down to the floor or the rest of the body (a
+          sleeping head rests on something: the floor, its paws, its tail, its flank); not
+          halfway through curl_up, when it's still on its way down
 
-Depths are in body lengths (the grown form's hips-to-snout, times the stage's growth), so the
-limits read the same for every kind. Prints a line per kind and form, the worst frames, and
-exits 1 if anything is past its limit. --render writes each frame from four views, culled, and
-tiles them into <prefix>_<kind>.png (a row per frame: hatchling, then adult).
+Depths are in body lengths (hips to snout tip standing, at the stage's growth), so the limits
+read the same for every kind. Prints a line per kind and form with the worst frame of each
+(--baseline: the idle pose's numbers too), and exits 1 if anything is past its limit. --render
+writes each frame from four views, culled, and tiles them into <prefix>_<kind>.png (a row per
+frame: hatchling, then adult).
 """
-import math
 import os
 import sys
 

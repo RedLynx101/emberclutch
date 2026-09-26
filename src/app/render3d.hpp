@@ -205,6 +205,7 @@ struct ValleyView {
     float youHeading = 0, youSpeed = 0;
     const Dragon* marketEgg = nullptr;  // the egg of the day on the Market's stand (null: bought)
     Item goods[4] = {Item::Count, Item::Count, Item::Count, Item::Count};  // the goods stall (Count: sold out)
+    bool lead = false;                   // your partner on its lead (too small to ride, D81)
     PersonView people[kMaxPeopleShown];  // you first, then the villagers
     int peopleCount = 0;
 };

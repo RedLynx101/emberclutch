@@ -2777,7 +2777,8 @@ PersonForm* personForm(int who) {
 
 // A person, posed and drawn (after bindDragons and a lightDragon). `frame` (if set) places
 // them instead of their spot: the rider on its dragon's seat.
-void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_Mtx* frame = nullptr) {
+void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_Mtx* frame = nullptr,
+                Vec3* handOut = nullptr) {
     PersonForm* f = personForm(p.form);
     if (!f) return;
     perf::Scope timed(perf::Pose);
@@ -2804,6 +2805,10 @@ void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_M
     }
     Mtx_Multiply(&mv, &viewM, &model);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &mv);
+    if (handOut) {
+        const int hand = f->model.skel.find("hand_L");
+        *handOut = hand >= 0 ? apply(model, poseMat[hand].translation()) : p.at + Vec3{0, 0, 0.5f};
+    }
     lookShading(kLookCount);  // the storybook look, as the kinds (D75): soft bands, a face never in shadow
     for (int i = 0; i < kPalCount; ++i)
         C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, p.pal[i].r / 255.0f, p.pal[i].g / 255.0f, p.pal[i].b / 255.0f, 1.0f);
@@ -2818,6 +2823,78 @@ void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_M
     if (p.hair >= 0 && p.hair < kHairStyles) drawMesh(app, f->hair[p.hair], skin);
     C3D_FVec key = FVec4_New(-0.45f, 0.8f, 0.4f, 0.0f);  // the dragons' own (init)
     C3D_LightPosition(&g_light, &key);
+}
+
+
+// The lead (D81): a dragon too small to ride walks at your side on one, from your left hand to
+// its collar, sagging with the slack. A camera-facing ribbon, rebuilt each frame into one of
+// two buffers (the GPU may still be drawing last frame's).
+struct LeadGpu {
+    Vec3* pos = nullptr;
+    u8* col = nullptr;
+    u16* idx = nullptr;
+};
+constexpr int kLeadSegments = 12;
+constexpr float kLeadLength = 3.4f;  // metres
+LeadGpu g_lead[2];
+int g_leadFlip = 0;
+
+void drawLead(App& app, Vec3 hand, Vec3 collar, Vec3 eye) {
+    const float d = length(collar - hand);
+    if (d > kLeadLength * 1.6f || d < 0.05f) return;
+    g_leadFlip ^= 1;
+    LeadGpu& g = g_lead[g_leadFlip];
+    constexpr int n = 2 * (kLeadSegments + 1);
+    if (!g.pos) {
+        g.pos = static_cast<Vec3*>(linearAlloc(n * sizeof(Vec3)));
+        g.col = static_cast<u8*>(linearAlloc(n * 4));
+        g.idx = static_cast<u16*>(linearAlloc(kLeadSegments * 6 * sizeof(u16)));
+        if (!g.pos || !g.col || !g.idx) {
+            if (g.pos) linearFree(g.pos);
+            if (g.col) linearFree(g.col);
+            if (g.idx) linearFree(g.idx);
+            g = LeadGpu{};
+            return;
+        }
+        for (int k = 0; k < kLeadSegments; ++k) {
+            u16* q = g.idx + k * 6;
+            const u16 a = static_cast<u16>(2 * k);
+            q[0] = a, q[1] = static_cast<u16>(a + 1), q[2] = static_cast<u16>(a + 3);
+            q[3] = a, q[4] = static_cast<u16>(a + 3), q[5] = static_cast<u16>(a + 2);
+        }
+        GSPGPU_FlushDataCache(g.idx, kLeadSegments * 6 * sizeof(u16));
+    }
+    // A parabola for the sag: deeper the more slack there is.
+    const float sag = 0.4f * std::sqrt(std::fmax(0.0f, kLeadLength * kLeadLength - d * d));
+    for (int k = 0; k <= kLeadSegments; ++k) {
+        const float t = static_cast<float>(k) / kLeadSegments;
+        const Vec3 p = hand + (collar - hand) * t - Vec3{0, 0, sag * 4.0f * t * (1.0f - t)};
+        const float dt = 1.0f / kLeadSegments;
+        const Vec3 ahead = hand + (collar - hand) * std::fmin(1.0f, t + dt) -
+                           Vec3{0, 0, sag * 4.0f * std::fmin(1.0f, t + dt) * (1.0f - std::fmin(1.0f, t + dt))};
+        const Vec3 behind = hand + (collar - hand) * std::fmax(0.0f, t - dt) -
+                            Vec3{0, 0, sag * 4.0f * std::fmax(0.0f, t - dt) * (1.0f - std::fmax(0.0f, t - dt))};
+        Vec3 side = cross(ahead - behind, eye - p);
+        const float len = length(side);
+        side = len > 1e-5f ? side * (0.018f / len) : Vec3{0.018f, 0, 0};
+        g.pos[2 * k] = p - side;
+        g.pos[2 * k + 1] = p + side;
+        for (int e = 0; e < 2; ++e) {
+            u8* c = g.col + (2 * k + e) * 4;
+            c[0] = 176, c[1] = 62, c[2] = 58, c[3] = 255;  // red leather
+        }
+    }
+    GSPGPU_FlushDataCache(g.pos, n * sizeof(Vec3));
+    GSPGPU_FlushDataCache(g.col, n * 4);
+    C3D_BufInfo* buf = C3D_GetBufInfo();
+    BufInfo_Init(buf);
+    BufInfo_Add(buf, g.pos, sizeof(Vec3), 1, 0x0);
+    BufInfo_Add(buf, g.col, 4, 1, 0x1);
+    BufInfo_Add(buf, g.col, 4, 1, 0x2);
+    C3D_CullFace(GPU_CULL_NONE);
+    C3D_DrawElements(GPU_TRIANGLES, kLeadSegments * 6, C3D_UNSIGNED_SHORT, g.idx);
+    app.stats.tris += kLeadSegments * 2;
+    app.stats.draws += 1;
 }
 
 // Where the rider sits on the flown dragon (its plan's seat on its seat bone), as a frame for
@@ -3012,6 +3089,8 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     drawValleyGpu(app, g_vextras);
     drawValleyShadow(app, v, view);
     // The dragon.
+    Vec3 collar, hand;
+    bool collarSet = false, handSet = false;
     if (view.dragon && pose(app, *view.dragon, view.actor, now, 0, g_posed)) {
         bindDragons(projection);
         const float plain[3] = {1, 1, 1};
@@ -3030,6 +3109,11 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         if (g_posed.form->headBone >= 0) {
             g_heads[0] = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
             g_headSet[0] = true;
+        }
+        if (g_posed.form->headBone >= 0 && g_posed.form->chestBone >= 0) {  // the lead's collar: low on the neck
+            const Vec3 head = g_heads[0], chest = apply(model, g_posed.poseMat[g_posed.form->chestBone].translation());
+            collar = chest + (head - chest) * 0.4f;
+            collarSet = true;
         }
         // You on its back.
         C3D_Mtx seat;
@@ -3052,8 +3136,15 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
             if (p.seated) continue;
             const float d = std::hypot(p.at.x - view.eye.x, p.at.y - view.eye.y);
             if (d > 70.0f || outsideView(clip, p.at - Vec3{0.8f, 0.8f, 0}, p.at + Vec3{0.8f, 0.8f, 1.8f})) continue;
-            drawPerson(app, p, viewM);
+            drawPerson(app, p, viewM, nullptr, i == 0 ? &hand : nullptr);
+            if (i == 0) handSet = true;
         }
+    }
+    // Your small dragon's lead.
+    if (view.lead && collarSet && handSet) {
+        bindValleyStatic(projection, viewM, view.tint);
+        C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+        drawLead(app, hand, collar, view.eye);
     }
     // The Market's stall (the dragons' program, their light).
     if (const ValleyPlaceInfo* market = v.place(kPlaceMarket);

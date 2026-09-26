@@ -56,6 +56,7 @@ struct ValleyScene {
     Follower pal;
     WalkCamera wcam;
     std::vector<Solid> solids;
+    std::vector<CameraWall> camWalls;
     // The partner as drawn and animated.
     int partner = -1;  // its index in the save (-1: out alone)
     Dragon shown;
@@ -546,7 +547,7 @@ void update(App& app, const Input& in) {
         wi.y = clampf(in.padY + dpadY, -1, 1);
         wi.run = in.held & KEY_B;
         s.you.update(wi, s.wcam.yaw, va, s.solids, app.dt);
-        s.wcam.update(s.you, (in.held & KEY_R ? 1.0f : 0.0f) - (in.held & KEY_L ? 1.0f : 0.0f), va, app.dt);
+        s.wcam.update(s.you, (in.held & KEY_R ? 1.0f : 0.0f) - (in.held & KEY_L ? 1.0f : 0.0f), va, app.dt, &s.camWalls);
         if (s.partner >= 0) {
             s.pal.update(s.you, va, s.solids, app.dt);
             partnerSpeed = s.pal.speed;
@@ -676,6 +677,7 @@ void drawTop(App& app) {
         me.hair = static_cast<s8>(app.game.world.look[kLookHair] < kHairStyles ? app.game.world.look[kLookHair] : 0);
         me.blink = s.youFig.blink;
         me.seated = s.mode == Mode::Riding || (s.mode == Mode::FreeCam && s.before == Mode::Riding);
+        view.lead = !me.seated && s.partner >= 0 && s.shown.stage != Stage::Adult;  // too small to ride: on its lead
         for (int k = 0; k < kVillagers && view.peopleCount < r3d::kMaxPeopleShown; ++k) {
             const Villager who = static_cast<Villager>(k);
             r3d::PersonView& p = view.people[view.peopleCount++];
@@ -778,7 +780,8 @@ void travelTo(App& app, ValleyScene& s, int place, bool outward) {
     const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(place));
     if (!p) return;
     const PlaceLayout& l = placeLayout(place);
-    const Vec2 front = placeToWorld(*p, outward && l.hasDoor ? Vec2{l.door.x, l.door.y + 5.0f} : l.arrive);
+    // (Out of a door: far enough that the camera behind you is outside too, not in the den's arch.)
+    const Vec2 front = placeToWorld(*p, outward && l.hasDoor ? Vec2{l.door.x, l.door.y + 11.0f} : l.arrive);
     s.mode = Mode::OnFoot;
     s.you.pos = {front.x, front.y, s.valley.heightAt(front.x, front.y)};
     // Out of its door, its way; or (travelling) looking at it.
@@ -787,7 +790,7 @@ void travelTo(App& app, ValleyScene& s, int place, bool outward) {
     if (s.partner >= 0) s.pal.call(s.you, s.valley);
     s.wcam = WalkCamera{};
     s.wcam.yaw = s.you.heading;
-    s.wcam.update(s.you, 0, s.valley, 0.0f);  // there at once (even if nothing moves this frame)
+    s.wcam.update(s.you, 0, s.valley, 0.0f, &s.camWalls);  // there at once (even if nothing moves this frame)
     audio::playSfx(audio::Sfx::TravelWhoosh);
     (void)app;
 }
@@ -882,7 +885,10 @@ void openValleyAt(App& app, int place) {
     if (!s.tried) {
         s.tried = true;
         s.loaded = loadValleyFile(s.valley);
-        if (s.loaded) s.solids = worldSolids(s.valley);
+        if (s.loaded) {
+            s.solids = worldSolids(s.valley);
+            s.camWalls = cameraWalls(s.valley);
+        }
     }
     SaveData& g = app.game;
     // Your partner: the one chosen (D81), else the one you're caring for; eggs stay home.
@@ -934,7 +940,7 @@ void resumeValley(App& app) {
     if (s.partner >= 0) s.pal.call(s.you, v);
     s.wcam = WalkCamera{};
     s.wcam.yaw = s.you.heading;
-    s.wcam.update(s.you, 0, v, 0.0f);
+    s.wcam.update(s.you, 0, v, 0.0f, &s.camWalls);
 }
 
 const SceneFns kValleyScene{update, drawTop, drawBottom};

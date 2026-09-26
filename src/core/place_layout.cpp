@@ -56,6 +56,15 @@ Vec3 placeToWorld3(const Valley& v, const ValleyPlaceInfo& p, Vec3 local) {
     return {w.x, w.y, v.heightAt(w.x, w.y) + local.z};
 }
 
+std::vector<CameraWall> cameraWalls(const Valley& v) {
+    std::vector<CameraWall> out;
+    if (const ValleyPlaceInfo* den = v.place(kPlaceDen)) {  // its arch stands out of the cliff at local y -1.9
+        const Vec2 f{std::sin(den->heading), -std::cos(den->heading)};
+        out.push_back({placeToWorld(*den, {0, 1.4f}), f, 13.0f, 10.0f});  // (clear of the moss on its top)
+    }
+    return out;
+}
+
 std::vector<Solid> worldSolids(const Valley& v) {
     std::vector<Solid> out;
     for (const ValleyPlaceInfo& p : v.places)

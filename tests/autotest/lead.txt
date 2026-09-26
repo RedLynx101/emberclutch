@@ -1,0 +1,26 @@
+# D81: a dragon too small to ride walks at your side on its lead (the hatchling, never grown).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+key X
+wait 4
+shot l01-on-its-lead
+shotin 1.5 l02-walking
+pad 0.3 1 2.5
+wait 1
+shot l03-stopped
+view 0 3 8 2.2 0 3 0.6
+wait 1
+shot l04-close
+quit

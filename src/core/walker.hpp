@@ -64,12 +64,20 @@ struct Follower {
 
 // The camera on foot: behind you and above, looking down at about 40 degrees, turned round you
 // by L and R (and easing round behind you when you walk away from it); never in the ground.
+// A face the walking camera stays in front of (a place built into a cliff: the den's arch):
+// a vertical wall through `at` facing `normal`, `halfWidth` either side, up to `top` metres.
+struct CameraWall {
+    Vec2 at, normal;
+    float halfWidth = 0, top = 0;
+};
+
 struct WalkCamera {
     Vec3 eye, target;
     float yaw = 0;       // the way it looks, radians about Z (0 faces -Y)
     float distance = 10.5f;
     bool set = false;
-    void update(const Walker& you, float turn, const Valley& v, float dt);
+    void update(const Walker& you, float turn, const Valley& v, float dt,
+                const std::vector<CameraWall>* walls = nullptr);
 };
 
 }  // namespace ec

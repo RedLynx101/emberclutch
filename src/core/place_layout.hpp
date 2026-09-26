@@ -35,5 +35,7 @@ Vec2 placeToWorld(const ValleyPlaceInfo& p, Vec2 local);
 Vec3 placeToWorld3(const Valley& v, const ValleyPlaceInfo& p, Vec3 local);
 // Every place's walls in the valley, for walking round.
 std::vector<Solid> worldSolids(const Valley& v);
+// The faces the walking camera keeps in front of: the den's arch in its cliff.
+std::vector<CameraWall> cameraWalls(const Valley& v);
 
 }  // namespace ec

@@ -1,5 +1,6 @@
 #include "core/walker.hpp"
 
+#include <algorithm>
 #include <cmath>
 
 #include "core/valley.hpp"
@@ -127,7 +128,7 @@ void Follower::call(const Walker& you, const Valley& v) {
     stuckFor = 0;
 }
 
-void WalkCamera::update(const Walker& you, float turn, const Valley& v, float dt) {
+void WalkCamera::update(const Walker& you, float turn, const Valley& v, float dt, const std::vector<CameraWall>* walls) {
     yaw = wrap(yaw + turn * 1.8f * dt);
     if (turn == 0 && you.speed > 3.0f) {  // walking away from it: it swings round behind, slowly
         const float err = wrap(you.heading - yaw);
@@ -146,6 +147,51 @@ void WalkCamera::update(const Walker& you, float turn, const Valley& v, float dt
             break;
         }
     }
+    // ...and short of any tree's leaves in the way (the camera would look out through a trunk).
+    const float reach = length(wantEye - from);
+    if (reach > 1.0f && !v.tileTrees.empty()) {
+        const float ts = v.tileSize();
+        const int t = v.tiles();
+        const int tx0 = static_cast<int>((std::fmin(from.x, wantEye.x) - 8.0f - v.x0) / ts);
+        const int tx1 = static_cast<int>((std::fmax(from.x, wantEye.x) + 8.0f - v.x0) / ts);
+        const int ty0 = static_cast<int>((std::fmin(from.y, wantEye.y) - 8.0f - v.y0) / ts);
+        const int ty1 = static_cast<int>((std::fmax(from.y, wantEye.y) + 8.0f - v.y0) / ts);
+        float keep = 1.0f;  // the share of the way out kept
+        for (int ty = std::max(0, ty0); ty <= std::min(t - 1, ty1); ++ty)
+            for (int tx = std::max(0, tx0); tx <= std::min(t - 1, tx1); ++tx)
+                for (int i : v.tileTrees[std::size_t(ty) * t + tx]) {
+                    const ValleyTree& tr = v.trees[i];
+                    if (tr.kind != kPropTree && tr.kind != kPropPine && tr.kind != kPropFruit) continue;
+                    const float h = tr.height;
+                    const float r = h * (tr.kind == kPropPine ? 0.3f : 0.4f) + 0.4f;
+                    const float cz = v.heightAt(tr.x, tr.y) + h * (tr.kind == kPropFruit ? 0.62f : 0.5f);
+                    const float rz = h * 0.4f + 0.4f;
+                    for (int k = 2; k <= 12; ++k) {
+                        const float f = k / 12.0f;
+                        if (f >= keep) break;
+                        const Vec3 p = from + (wantEye - from) * f;
+                        if (length(p - from) < 1.5f) continue;  // under its own leaves: you stand there
+                        const float dx = (p.x - tr.x) / r, dy = (p.y - tr.y) / r, dz = (p.z - cz) / rz;
+                        if (dx * dx + dy * dy + dz * dz < 1.0f) {
+                            keep = (k - 1) / 12.0f;
+                            break;
+                        }
+                    }
+                }
+        if (keep < 1.0f) wantEye = from + (wantEye - from) * keep;
+    }
+    // ...and in front of the walls (the den's arch in its cliff).
+    if (walls)
+        for (const CameraWall& w : *walls) {
+            const Vec2 e{wantEye.x - w.at.x, wantEye.y - w.at.y}, y{from.x - w.at.x, from.y - w.at.y};
+            const float de = e.x * w.normal.x + e.y * w.normal.y, dy = y.x * w.normal.x + y.y * w.normal.y;
+            const float side = e.x * w.normal.y - e.y * w.normal.x;
+            if (de >= 0.8f || dy <= 0.8f || std::fabs(side) > w.halfWidth) continue;
+            const float f = (dy - 0.8f) / (dy - de);  // where the way out meets the wall (less a margin)
+            const Vec3 hit = from + (wantEye - from) * f;
+            if (hit.z - v.heightAt(hit.x, hit.y) > w.top) continue;  // over the top of it
+            wantEye = hit;
+        }
     const float ground = v.heightAt(wantEye.x, wantEye.y) + 1.2f;
     if (wantEye.z < ground) wantEye.z = ground;
     if (!set) {

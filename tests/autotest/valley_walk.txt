@@ -1,0 +1,55 @@
+# Walking in the valley (run 14's note: on the ground the dragon stood stuck): the Pouncer, then
+# the Curlstone, out of the den's cliff on foot: walking, turning, running with B, stopping,
+# then off into the air (dev menu page 1: Next kind; page 2: Valley test).
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key R
+wait 0.3
+tap 82 231
+wait 3
+shot w1-standing
+shotin 1.5 w2-walking
+keyhold UP 3
+shotin 1 w3-turning
+keyhold UP+LEFT 2
+shotin 2 w4-running
+keyhold UP+B 4
+wait 1
+shot w5-stopped
+shotin 1 w6-taking-off
+keyhold A 3
+key X
+wait 3
+key SELECT
+wait 0.3
+key L
+wait 0.3
+tap 82 231
+wait 0.3
+tap 82 231
+wait 0.3
+key R
+wait 0.3
+tap 82 231
+wait 3
+shotin 1.5 w7-curlstone-walking
+keyhold UP 3
+shotin 2 w8-curlstone-running
+keyhold UP+B 4
+quit

@@ -349,10 +349,13 @@ def _shell(kit, name, base, up, across, outline, width, height, cup, thickness, 
     return obj
 
 
-# A bat's ear, tall with a rounded tip leaning to the outer side (x > 0 is the outer edge).
-EAR_OUTLINE = [(-0.50, 0.0), (-0.54, 0.30), (-0.40, 0.62), (-0.18, 0.88), (0.0, 1.0), (0.16, 0.90),
-               (0.36, 0.62), (0.50, 0.30), (0.48, 0.02)]
-EAR_OUTLINE_LOD1 = [(-0.50, 0.0), (-0.50, 0.42), (-0.22, 0.86), (0.0, 1.0), (0.30, 0.70), (0.50, 0.30), (0.48, 0.02)]
+# A bat's ear, tall with a rounded tip leaning to the outer side (x > 0 is the outer edge). Its
+# root runs on below the base (y < 0) into the skull, so the ear grows out of the head wherever
+# it meets the skin instead of standing on it by one edge (R11b: they floated at the sides).
+EAR_OUTLINE = [(-0.46, -0.18), (-0.54, 0.30), (-0.40, 0.62), (-0.18, 0.88), (0.0, 1.0), (0.16, 0.90),
+               (0.36, 0.62), (0.50, 0.30), (0.44, -0.18)]
+EAR_OUTLINE_LOD1 = [(-0.46, -0.18), (-0.50, 0.42), (-0.22, 0.86), (0.0, 1.0), (0.30, 0.70), (0.50, 0.30),
+                    (0.44, -0.18)]
 
 
 def _ear(kit, d, s, scale, rim=False):
@@ -380,7 +383,8 @@ def _ear(kit, d, s, scale, rim=False):
     inner.data.materials.append(mats["accent_flat"])
     pieces = [outer, inner]
     if rim:
-        pts = [base + a * (x * w * 1.0) + u * (y * h * 1.0) - n * (0.1 * w * 0.2) for x, y in outline]
+        # the rim stops at the base: the root under the skin has none
+        pts = [base + a * (x * w * 1.0) + u * (max(y, 0.02) * h * 1.0) - n * (0.1 * w * 0.2) for x, y in outline]
         if kit.LOD:  # the den's far view: a lighter rim
             pts = pts[::2] + ([pts[-1]] if len(pts) % 2 == 0 else [])
         glow = _origin_to(kit, kit.tube(f"earrim_{s}", pts, [th * 0.6] * len(pts), ring=3), base)

@@ -9,7 +9,7 @@
 //   hold <x> <y> <s>            the stylus held still
 //   drag <x0> <y0> <x1> <y1> <s> [<hold>]  a stroke (then held still at its end), then lift
 //   key <A|B|X|Y|L|R|START|SELECT|UP|DOWN|LEFT|RIGHT>   one press
-//   keyhold <key> <s>           held down
+//   keyhold <key> <s>           held down (keys together: UP+B)
 //   shot <name>                 both screens, as drawn this frame
 //   shotin <s> <name>           a shot s seconds into the next command (mid-stroke, mid-hold)
 //   name <text>                 what the keyboard returns next (no keyboard is shown)

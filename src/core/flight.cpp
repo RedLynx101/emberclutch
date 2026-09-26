@@ -28,17 +28,41 @@ void Flight::update(const FlightInput& in, const Valley& v, float dt, const Flig
     const float ground = v.heightAt(pos.x, pos.y);
     if (grounded) {
         stamina = std::fmin(1.0f, stamina + 0.25f * dt);
-        speed = 0;
         climb = 0;
-        pos.z = ground;
-        heading = wrap(heading - in.steer * tune.turnRate * dt);  // right: towards the screen's right
         pitch = approach(pitch, 0, 6, dt);
         roll = approach(roll, 0, 6, dt);
+        // On foot: the pad pushed up walks, B runs; it turns as it goes (a little wider running).
+        const float want = clampf(in.pitch, 0, 1) * (in.dive ? runSpeed : walkSpeed);
+        speed = approach(speed, want, want > speed ? 3.0f : 5.0f, dt);
+        if (want == 0 && speed < 0.05f) speed = 0;
+        const float turn = tune.groundTurn * (speed > walkSpeed * 1.5f ? 0.7f : 1.0f);
+        heading = wrap(heading - in.steer * turn * dt);  // right: towards the screen's right
+        pos.z = ground;
+        if (speed > 0) {
+            const Vec3 next = pos + forward() * (speed * dt);
+            const float g = v.heightAt(next.x, next.y), margin = 30.0f;
+            const bool outside = next.x < v.x0 + margin || next.x > v.x0 + v.size() - margin ||
+                                 next.y < v.y0 + margin || next.y > v.y0 + v.size() - margin;
+            const bool deep = g < v.water - tune.wadeDepth;
+            const bool steep = g > ground && v.normalAt(next.x, next.y).z < tune.steepest;
+            if (outside || deep || steep) {
+                speed = 0;  // the shore, a cliff face, the valley's edge: it stops
+            } else if (g < ground - tune.drop) {
+                pos = next;  // over the edge: gliding down
+                grounded = false;
+                speed = std::fmax(speed, 6.0f);
+                sinceFlap = 9;
+                return;
+            } else {
+                pos = next;
+                pos.z = g;
+            }
+        }
         if (in.flap && stamina > 0.1f) {  // up: a strong first wingbeat
             grounded = false;
             tookOff = flapped = true;
             climb = 7.5f;
-            speed = 6;
+            speed = std::fmax(6.0f, speed);
             sinceFlap = 0;
             flapIn = tune.flapEvery;
             stamina -= tune.flapCost;

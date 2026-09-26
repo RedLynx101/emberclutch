@@ -170,8 +170,66 @@ TEST(flying_over_the_valley) {
     CHECK(dot(cam.target - cam.eye, f.forward()) > 0);
 }
 
+TEST(walking_in_the_valley) {
+    const Valley& v = valley();
+    const ValleyPlaceInfo& den = *v.place(kPlaceDen);
+    const float dt = 1.0f / 30;
+    Flight f;
+    f.pos = den.at + Vec3{std::sin(den.heading), -std::cos(den.heading), 0} * 40.0f;
+    f.pos.z = v.heightAt(f.pos.x, f.pos.y);
+    f.heading = den.heading;
+    auto run = [&](const FlightInput& in, float seconds) {
+        for (int k = 0; k < static_cast<int>(seconds * 30); ++k) {
+            f.update(in, v, dt);
+            if (f.grounded) CHECK(std::fabs(f.pos.z - v.heightAt(f.pos.x, f.pos.y)) < 0.01f);  // on the ground
+            CHECK(v.inside(f.pos.x, f.pos.y));
+        }
+    };
+    FlightInput walk, runB, walkLeft, none;
+    walk.pitch = 1;  // the pad pushed up
+    runB.pitch = 1;
+    runB.dive = true;
+    walkLeft.pitch = 1;
+    walkLeft.steer = -1;
+    // Walking: forward at its walking speed, on the ground.
+    Vec3 p0 = f.pos;
+    run(walk, 3);
+    const float walked = length(Vec3{f.pos.x - p0.x, f.pos.y - p0.y, 0});
+    std::printf("  walking: %.1f m in 3 s (walk speed %.1f)\n", walked, f.walkSpeed);
+    CHECK(f.grounded && walked > f.walkSpeed * 2.0f && walked < f.walkSpeed * 3.2f);
+    // Running with B: much faster.
+    p0 = f.pos;
+    run(runB, 3);
+    const float ran = length(Vec3{f.pos.x - p0.x, f.pos.y - p0.y, 0});
+    std::printf("  running: %.1f m in 3 s\n", ran);
+    CHECK(f.grounded && ran > walked * 2.0f);
+    // It turns as it walks, and stops when let go.
+    const float h0 = f.heading;
+    run(walkLeft, 1);
+    CHECK(std::fabs(std::remainder(f.heading - h0, 6.2831853f)) > 0.8f);
+    run(none, 1);
+    CHECK(f.speed == 0 && f.grounded);
+    // At the lake it stops at the shore: from dry ground a few metres from deep water, walking
+    // straight at it, it never goes in deeper than it can wade.
+    bool found = false;
+    for (float y = v.y0 + 60; y < v.y0 + v.size() - 60 && !found; y += 8)
+        for (float x = v.x0 + 60; x < v.x0 + v.size() - 60 && !found; x += 8)
+            if (v.heightAt(x, y) > v.water + 0.5f && v.heightAt(x + 12, y) < v.water - 1.5f &&
+                v.normalAt(x, y).z > 0.9f) {
+                f = Flight{};
+                f.pos = {x, y, v.heightAt(x, y)};
+                f.heading = 1.5707963f;  // facing +X, the water
+                found = true;
+            }
+    CHECK(found);
+    run(walk, 12);
+    std::printf("  at the shore: %.2f m of water under it\n", std::fmax(0.0f, v.water - f.pos.z));
+    CHECK(f.grounded && f.pos.z >= v.water - FlightTuning{}.wadeDepth - 0.3f);
+}
+
 void runValleyTests() {
     RUN(the_valley_loads);
     RUN(valley_tiles_join_and_fit_the_budget);
     RUN(flying_over_the_valley);
+    RUN(walking_in_the_valley);
 }

@@ -1,8 +1,9 @@
 // Skyreach Valley, Beta's technical test (WP1, docs/plan/beta.md): a grown dragon flown over a
-// placeholder valley with the arcade controls, the camera following, the sky and fog by the
-// time of day, and on the bottom screen the valley from above with where you are. Reached
-// from the dev menu (page 2: Valley test); the places, walking, riding and the real map come
-// with the rest of Beta.
+// placeholder valley with the arcade controls, walking and running on the ground, the camera
+// following, the sky and fog by the time of day, and on the bottom screen the valley from
+// above with where you are. Reached from the dev menu (page 2: Valley test); a kind chosen on
+// page 1 (Next kind) is the one flown. The places, the player on foot, riding and the real
+// map come with the rest of Beta.
 #include <cmath>
 #include <cstdio>
 #include <vector>
@@ -17,6 +18,7 @@
 #include "core/dragondex.hpp"
 #include "core/flight.hpp"
 #include "core/genetics.hpp"
+#include "core/model.hpp"
 #include "core/rig.hpp"
 #include "core/valley.hpp"
 
@@ -32,6 +34,7 @@ struct ValleyScene {
     ClipId clip = ClipId::Count;
     Dragon shown;
     FlightInput last;
+    bool speedsSet = false;  // its walking speeds, measured on its own legs once its body is loaded
 };
 
 ValleyScene& vs() {
@@ -101,22 +104,48 @@ void update(App& app, const Input& in) {
     s.cam.update(s.flight, s.valley, app.dt);
     if (s.flight.tookOff) audio::playSfx(audio::Sfx::Flap, 0.9f);
     if (s.flight.landed) audio::playSfx(audio::Sfx::Thump, 0.8f);
-    // Its wings: beating, gliding or swept back in a dive; standing on the ground.
-    const ClipId want = s.flight.grounded           ? ClipId::Idle
-                        : s.flight.diving(fi)       ? ClipId::FlyDive
-                        : s.flight.sinceFlap < 0.8f ? ClipId::FlyFlap
-                                                    : ClipId::FlyGlide;
-    const AnimLibrary* lib = r3d::anims();
+    const AnimLibrary* lib = r3d::animsFor(s.shown);  // a kind's plan has its own clips
+    const int* clips = r3d::clipIndexFor(s.shown, kFormGrown);
+    if (!s.speedsSet && lib) {  // walk, trot and gallop at the speed its feet move (no skating)
+        const int look = r3d::lookFor(s.shown);
+        const ModelData* m = r3d::model(kFormGrown, look);
+        const AnimBinding* bind = r3d::binding(kFormGrown, look);
+        if (m && bind) {
+            const int build = s.shown.genome.build < kModelBuilds ? s.shown.genome.build : kBuildNeutral;
+            s.flyer.updateSpeeds(*m, *bind, *lib, clips, kFormGrown * r3d::kLookSlots + look, 1.0f, build,
+                                 sizeScale(s.shown.genome), false);
+            s.flight.walkSpeed = clampf(s.flyer.behavior.walkSpeed, 0.8f, 4.0f);
+            s.flight.runSpeed = clampf(s.flyer.behavior.runSpeed, s.flight.walkSpeed * 2.0f, 14.0f);
+            s.speedsSet = true;
+        }
+    }
+    // Its wings: beating, gliding or swept back in a dive; on the ground standing, walking,
+    // trotting or galloping, each played at the speed it's going.
+    const DenBehavior& b = s.flyer.behavior;
+    const float walk = s.flight.walkSpeed, run = s.flight.runSpeed;
+    const float trot = b.trotSpeed > walk && b.trotSpeed < run ? b.trotSpeed : (walk + run) * 0.5f;
+    ClipId want = ClipId::Idle;
+    float natural = 0;  // the clip's own ground speed
+    if (!s.flight.grounded) {
+        want = s.flight.diving(fi) ? ClipId::FlyDive : s.flight.sinceFlap < 0.8f ? ClipId::FlyFlap : ClipId::FlyGlide;
+    } else if (s.flight.speed > 0.15f) {
+        const bool running = s.flight.speed > (trot + run) * 0.5f, trotting = s.flight.speed > walk * 1.25f;
+        want = running ? ClipId::Gallop : trotting ? ClipId::Trot : ClipId::Walk;
+        natural = running ? run : trotting ? trot : walk;
+    }
     if (want != s.clip && lib) {
-        const int index = r3d::clipIndex(kFormGrown)[static_cast<int>(want)];
-        if (index >= 0) s.flyer.anim.play(index, 0.3f, want == ClipId::FlyFlap);
+        const int index = clips[static_cast<int>(want)];
+        if (index >= 0) s.flyer.anim.play(index, 0.3f, want != ClipId::FlyDive && want != ClipId::FlyGlide);
         s.clip = want;
     }
+    s.flyer.anim.rate = natural > 0 ? clampf(s.flight.speed / natural, 0.5f, 1.6f) : 1.0f;
     if (lib) {
         u8 events[8];
         const int n = s.flyer.anim.update(*lib, app.dt, events, 8);
-        for (int k = 0; k < n; ++k)
+        for (int k = 0; k < n; ++k) {
             if (events[k] == kAnimFlap) audio::playSfx(audio::Sfx::Flap, 1.0f, 0.7f);
+            if (events[k] == kAnimFootstep && s.flight.grounded) audio::playSfx(audio::Sfx::Step, 0.9f, 0.6f);
+        }
     }
     s.flyer.eyes.update(0.0f, app.dt);
 }
@@ -175,9 +204,15 @@ void drawBottom(App& app, const Input& in) {
     // The frame time for run 14: smoothed, the worst of the last second, and how many were slow.
     std::snprintf(line, sizeof(line), "%.1f ms, worst %.0f, %d slow", app.frameMs, app.frameWorst, app.framesSlow);
     text(app, line, 166, 98, 0.38f, withAlpha(theme::kShell, 0.6f), C2D_AlignLeft);
-    text(app, "Pad: steer   A: flap   B: dive", 166, 114, 0.38f, theme::kShell, C2D_AlignLeft, 150);
-    text(app, "L/R: bank   let go: glide", 166, 130, 0.38f, theme::kShell, C2D_AlignLeft, 150);
-    text(app, "Land slowly on flat ground", 166, 146, 0.38f, theme::kShell, C2D_AlignLeft, 150);
+    if (s.flight.grounded) {
+        text(app, "Pad: walk and turn   B: run", 166, 114, 0.38f, theme::kShell, C2D_AlignLeft, 150);
+        text(app, "A: take off", 166, 130, 0.38f, theme::kShell, C2D_AlignLeft, 150);
+        text(app, "Walk off a cliff to glide", 166, 146, 0.38f, theme::kShell, C2D_AlignLeft, 150);
+    } else {
+        text(app, "Pad: steer   A: flap   B: dive", 166, 114, 0.38f, theme::kShell, C2D_AlignLeft, 150);
+        text(app, "L/R: bank   let go: glide", 166, 130, 0.38f, theme::kShell, C2D_AlignLeft, 150);
+        text(app, "Land slowly on flat ground", 166, 146, 0.38f, theme::kShell, C2D_AlignLeft, 150);
+    }
     if (button(app, {166, 196, 146, 36}, "Home (X)", in)) {
         audio::playSfx(audio::Sfx::Back);
         leaveValley(app);
@@ -204,6 +239,7 @@ void openValley(App& app) {
     s.cam = ChaseCamera{};
     s.flyer = DenActor{};
     s.clip = ClipId::Count;
+    s.speedsSet = false;
     if (s.loaded)
         if (const ValleyPlaceInfo* den = s.valley.place(kPlaceDen)) {  // out on the grass before the cave mouth
             const Vec3 f{std::sin(den->heading), -std::cos(den->heading), 0};

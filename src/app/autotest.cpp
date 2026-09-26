@@ -49,9 +49,19 @@ u32 keyNamed(const char* s) {
     } kKeys[] = {{"A", KEY_A},       {"B", KEY_B},         {"X", KEY_X},       {"Y", KEY_Y},
                  {"L", KEY_L},       {"R", KEY_R},         {"START", KEY_START}, {"SELECT", KEY_SELECT},
                  {"UP", KEY_DUP},    {"DOWN", KEY_DDOWN},  {"LEFT", KEY_DLEFT}, {"RIGHT", KEY_DRIGHT}};
-    for (const auto& k : kKeys)
-        if (std::strcmp(s, k.name) == 0) return k.key;
-    return 0;
+    u32 keys = 0;  // "UP+B": held together
+    char one[16];
+    while (*s) {
+        std::size_t n = std::strcspn(s, "+");
+        if (n >= sizeof(one)) n = sizeof(one) - 1;
+        std::memcpy(one, s, n);
+        one[n] = 0;
+        for (const auto& k : kKeys)
+            if (std::strcmp(one, k.name) == 0) keys |= k.key;
+        s += std::strcspn(s, "+");
+        if (*s == '+') ++s;
+    }
+    return keys;
 }
 
 bool parse(const char* line, Cmd& c) {

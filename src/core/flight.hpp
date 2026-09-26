@@ -2,7 +2,9 @@
 // pad steers (left/right turns, up/down noses down/up a little), A flaps to climb, B dives,
 // L/R bank for a tighter turn, and letting go glides, sinking slowly. Stamina drains with
 // each flap and comes back gliding or on the ground. Takes off from the ground with A and
-// lands on flat ground when slow. Pure logic (PC-tested); the valley scene drives it.
+// lands on flat ground when slow. On the ground it walks (pad up, turning with the pad) and
+// runs with B, at its own legs' speeds; it stops at deep water and slopes too steep to climb,
+// and walking off a drop it glides. Pure logic (PC-tested); the valley scene drives it.
 #pragma once
 
 #include "core/math3d.hpp"
@@ -32,6 +34,10 @@ struct FlightTuning {
     float ceiling = 250;           // thin air above: wingbeats weaker
     float landSpeed = 13;          // slower than this over flat ground: it lands
     float clearance = 1.2f;        // its feet above the ground in flight
+    float groundTurn = 1.7f;       // radians a second, turning on foot
+    float wadeDepth = 0.4f;        // on foot: no deeper into the water than this
+    float steepest = 0.7f;         // on foot: no climbing slopes whose normal is flatter than this
+    float drop = 2.0f;             // on foot: a step down this far is an edge, and it glides off
 };
 
 struct Flight {
@@ -44,6 +50,7 @@ struct Flight {
     float pitch = 0, roll = 0;
     float stamina = 1;
     bool grounded = true;
+    float walkSpeed = 2.2f, runSpeed = 8.0f;  // on foot, m/s: the scene sets them from its legs
     float flapIn = 0;      // seconds to the next wingbeat while A is held
     float sinceFlap = 9;   // seconds since the last wingbeat (the flap clip plays a while after)
     bool landed = false, tookOff = false, flapped = false;  // this step (sounds, clips)
@@ -52,6 +59,7 @@ struct Flight {
     // One step. The valley gives the ground (and keeps it inside its edges).
     void update(const FlightInput& in, const Valley& v, float dt, const FlightTuning& tune = FlightTuning{});
     bool diving(const FlightInput& in) const { return !grounded && in.dive; }
+    bool running(const FlightInput& in) const { return grounded && in.dive; }
 };
 
 // The camera behind and above, easing after the dragon, never under the ground.

@@ -72,6 +72,11 @@ constexpr Tone kTones[] = {{Sfx::Step, 0.3f, 650.0f}, {Sfx::DragonStep, 0.55f, 0
 const char* const kBedFiles[] = {"amb-hearth", "amb-night", "egg-hum", "amb-market", "amb-wind-high", "amb-meadow",
                                  "amb-valley-night", "amb-lake", "wing-flutter"};
 const float kBedGain[] = {0.55f, 0.5f, 0.6f, 0.45f, 0.5f, 0.42f, 0.45f, 0.45f, 0.35f};  // under the music and the voices
+// The den's beds stay loaded (they come and go all the time there); the Market's and the
+// valley's load when a scene first wants them and go again a few seconds after they fall
+// silent: preloaded, the valley's five took 1.6 MB of the den's linear memory (run 15's build).
+const bool kBedResident[] = {true, true, true, false, false, false, false, false, false};
+constexpr float kBedUnloadAfter = 3.0f;  // seconds silent
 static_assert(sizeof(kBedFiles) / sizeof(kBedFiles[0]) == static_cast<int>(Bed::Count), "one file per Bed");
 
 struct Stream {
@@ -124,6 +129,7 @@ ndspWaveBuf g_bedBufs[static_cast<int>(Bed::Count)][kBedRing];
 u32 g_bedNext[static_cast<int>(Bed::Count)] = {};  // the frame the next slice starts at
 float g_bedLevel[static_cast<int>(Bed::Count)] = {}, g_bedWant[static_cast<int>(Bed::Count)] = {};
 bool g_bedOn[static_cast<int>(Bed::Count)] = {};
+float g_bedIdle[static_cast<int>(Bed::Count)] = {};  // seconds a loaded, non-resident bed has been silent
 
 // Queues frames [0, frames) of interleaved PCM16 on `ch` as consecutive slices, one wave
 // buffer each (see kSliceFrames): as many as fit in `count` buffers, each at least
@@ -366,6 +372,7 @@ bool init() {
         }
     }
     for (int b = 0; b < static_cast<int>(Bed::Count); ++b) {  // started when a scene asks
+        if (!kBedResident[b]) continue;  // (loaded when first wanted)
         char path[64];
         std::snprintf(path, sizeof(path), "romfs:/sfx/%s.wav", kBedFiles[b]);
         loadWav(path, g_beds[b]);
@@ -467,6 +474,11 @@ void playSfx(Sfx s, float pitch, float gain) {
 void setBed(Bed b, float level) {
     const int i = static_cast<int>(b);
     g_bedWant[i] = level < 0.0f ? 0.0f : (level > 1.0f ? 1.0f : level);
+    if (g_ok && g_bedWant[i] > 0.0f && !g_beds[i].data) {  // first wanted: loaded now (a scene's start)
+        char path[64];
+        std::snprintf(path, sizeof(path), "romfs:/sfx/%s.wav", kBedFiles[i]);
+        loadWav(path, g_beds[i]);
+    }
 }
 
 void setVolumes(u8 music, u8 sfx) {
@@ -516,7 +528,15 @@ void update(float dt) {
             g_bedNext[b] = 0;
             g_bedOn[b] = true;
         }
-        if (!g_bedOn[b]) continue;
+        if (!g_bedOn[b]) {
+            // Silent a while (its channel long cleared): a non-resident bed's memory goes back.
+            if (!kBedResident[b] && (g_bedIdle[b] += dt) > kBedUnloadAfter) {
+                linearFree(g_beds[b].data);
+                g_beds[b] = Clip{};
+                g_bedIdle[b] = 0.0f;
+            }
+            continue;
+        }
         // The loop plays as a ring of slices: each finished one takes the next stretch of
         // the bed (wrapping to its start) and goes back in the queue.
         const int channels = c.stereo ? 2 : 1;
@@ -534,6 +554,7 @@ void update(float dt) {
             ndspChnWaveBufClear(ch);
             g_bedOn[b] = false;
             g_bedLevel[b] = 0.0f;
+            g_bedIdle[b] = 0.0f;
         } else {
             setMix(ch, g_bedLevel[b] * kBedGain[b] * g_sfxVol);
         }

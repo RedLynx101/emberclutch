@@ -2,9 +2,9 @@
 
 Runs 1–12 are in [hardware-check-1.md](hardware-check-1.md), run 13 (Alpha 2) in
 [hardware-check-2.md](hardware-check-2.md). Beta's runs: run 14 (the flyable valley, WP1),
-run 15 (the nine new dragons of the revamp and walking in the valley, 0.2.1), then run 16
-(the new dragons for real, DR3), run 17 (after flying, the map and a few places) and run 18
-(the whole milestone).
+run 15 (the nine new dragons of the revamp and walking in the valley, 0.2.2), run 16
+(run 15's fixes, the new music and sounds, swimming, 0.2.3), then run 17 (the new dragons for
+real, DR3), run 18 (after flying, the map and a few places) and run 19 (the whole milestone).
 
 # Run 14 (0.1.15): the flyable valley
 
@@ -157,3 +157,67 @@ banner, in case the new one misbehaves (step 4).
 - How walking feels: the speed, the turning, running, the camera on foot.
 - The banner: does it look right on the HOME Menu, and does it move cleanly?
 - Anything else before DR3 (your dragons and eggs moving over to the new kinds).
+
+## Results (2026-09-26)
+The Blazeplume banner **froze the HOME Menu**; Noah went back to `emberclutch-oldbanner.cia`
+(X's banner) and carried on. His notes (D81): swimming instead of stopping at the shore, landing
+a little faster, running at least 3x as fast, a shadow as a height tell, the real valley at
+least 5x the size; the Puffback's wings clipping as it moves; the Duskwing baby's neck tufts
+hovering and grown Duskwings' heads meeting in their games; the mouths seen through at the
+sides, a smaller bite and chewing; dragons stuck on the den's walls; the dragons' voices pitched
+further apart. All of it is in 0.2.3 (run 16) but the voices, which come with DR3.
+
+# Run 16 (0.2.3): run 15's fixes, the new music and sounds, swimming, a banner lab
+
+**For Noah.** Everything from your run 15 notes except the voices (with DR3, next): and your
+batch 2 and 3 music and sounds are in. Your dragons are still their old selves; the new kinds
+show by the dev menu as in run 15. About 15 minutes; the checklists page has these steps (the
+Run 16 tab). **Y** saves both screens and the numbers.
+
+## 0. Install
+The files are on the SD card (sent 2026-09-26 to the 3DS at .61): in **FBI**, SD → cias →
+`emberclutch.cia` → Install CIA, over the game (the save stays). It has X's banner, so the
+old-banner CIA is gone from the card. And `cias/lab/banner-lab-a.cia`: install it too (step 5).
+
+## 1. Sounds
+1. In the den the care and toy sounds are the real ones now (brushing, suds, the tub, the
+   bowl, the ball, the rope, the orb, the egg's turn and heartbeat, a sniff, a giggle, a
+   grumble); the Market's murmur plays at the stalls. Anything too loud, too quiet or wrong?
+
+## 2. The valley
+1. Page 2, **Valley test** (choose a kind on page 1 first if you like). The music is **Valley
+   Day** by day and **Valley Night** at night; the meadow's breeze or the night's crickets
+   underneath, wind as you climb, the wings fluttering in a glide, wingbeats, the take-off
+   and the landing, a whoosh as you dive, the lake lapping near the water.
+2. **Run** with B: at least three times as fast as before.
+3. **Swim:** walk into the lake: it splashes in and swims, bobbing; B paddles faster; walk out
+   on the far shore, or take off from the water with A. Gliding down slowly onto the lake it
+   splashes in; skimming low and fast over it throws spray.
+4. **Landing** works at a higher speed now.
+5. **The shadow:** coming down to land, its shadow on the ground grows and darkens under it.
+   **Y** close to the ground.
+
+## 3. The dragons
+1. Dev menu page 1, **Next kind**: the **Puffback**'s little wings shouldn't sink into its
+   flank as it walks and runs; the **Duskwing** baby has no tufts hovering under its chin now.
+2. Grown Duskwings (or any long neck) playing together: their heads shouldn't meet in the
+   middle any more.
+3. Every kind's **mouth** (yawning, chomping, eating from your hand) should be dark inside
+   right to the corners, never see-through.
+4. **Feeding by hand:** a smaller bite, then three little chews before the next.
+
+## 4. The den
+1. Watch a while with two or three dragons: they shouldn't walk into the walls or props for
+   long, or get stuck on each other.
+
+## 5. The banner lab
+1. On the HOME Menu, move to **Banner lab A** and rest on it (never start it): it's the
+   Blazeplume banner cut down to X's size (14 materials, 32 pieces: the frozen one had 20 and
+   37). If it freezes, hold **POWER** and carry on. If it holds, the Blazeplume can be the
+   game's banner in the next build.
+2. Delete it afterwards in FBI: Titles, "Banner lab A", Delete Title.
+
+## What to send back
+- The sounds and the music: anything to change?
+- Swimming, running, landing and the shadow: how they feel.
+- Whether the lab banner held, and anything still wrong with the dragons or the den.

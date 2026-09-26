@@ -277,15 +277,22 @@ def dragon_pieces(d, skin):
     def colour_of(m):
         painted = any(n.bl_idname == "ShaderNodeAttribute" and n.attribute_name == "vc" for n in m.node_tree.nodes)
         key = SLOT_KEY.get(m.name.split(".")[0])
+        if key == "glow":  # the glowing tips in the flames' red: one material and piece fewer (X's 32)
+            key = "membrane"
         if painted and "palette" in d and key:
             return tuple(d["palette"][key][:3])
         return toon_colour(m)
 
     def mat_for(m):
-        if m.name not in mats:
-            mats[m.name] = principled("b_" + m.name, (1, 1, 1), 0.7, skin) if m is d["mats"]["body"] else \
+        # A kind's materials of one colour share one (a feather's bands and the plain parts had
+        # twins): the HOME Menu held X's 16 materials and froze on the Blazeplume's 20 (run 15).
+        key = m.name
+        if KIND != "classic" and m is not d["mats"]["body"]:
+            key = tuple(round(c, 3) for c in colour_of(m))
+        if key not in mats:
+            mats[key] = principled("b_" + m.name, (1, 1, 1), 0.7, skin) if m is d["mats"]["body"] else \
                 principled("b_" + m.name, colour_of(m), 0.5)
-        return mats[m.name]
+        return mats[key]
 
     # The body mesh: each face goes with the bone most of its corners follow.
     me = frozen(body, dg)
@@ -324,7 +331,14 @@ def dragon_pieces(d, skin):
     tall = max(zs) - min(zs)
     centres = [f.center.copy() for f in me.polygons]
 
+    # A kind's mouth stays shut on the banner: its inside, teeth and tongue are left out (three
+    # materials and pieces fewer).
+    shut = [KIND != "classic" and body.material_slots[f.material_index].material is d["mats"]["mouth"]
+            for f in me.polygons]
+
     def keep(fi, p):
+        if shut[fi]:
+            return False
         if face_owner[fi] == p:
             return True
         return p in COLLAR and face_owner[fi] == "body" and (centres[fi] - pivots[p]).length < COLLAR[p] * tall
@@ -340,7 +354,7 @@ def dragon_pieces(d, skin):
     eye_meshes, heart_meshes = [], []
     for group, objs in d["groups"].items():
         for o in objs:
-            if o.hide_render:  # a kind's rare parts, not shown on this colouring
+            if o.hide_render or (group == "mouth" and KIND != "classic"):  # rare parts not shown; the shut mouth's
                 continue
             bone = o.constraints[0].subtarget if o.constraints else "chest"
             ms = [mat_for(s.material) for s in o.material_slots]

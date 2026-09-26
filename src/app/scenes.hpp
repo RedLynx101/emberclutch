@@ -41,6 +41,8 @@ extern const SceneFns kChallengeScene;
 bool challengeBoardNear(const Valley& v, Vec3 at, int& place, float& distance);
 void drawChallengeBoards(App& app, const Valley& v, s64 now);  // after r3d::drawValley
 void openChallenges(App& app, int place);
+// A talk just ended that was Wren's hello or her "pick a challenge": the picker follows it.
+bool wrenOpensChallenges(const App& app);
 const char* challengeMusic(const App& app);
 // Scripted runs (autotest): straight into a cup; the challenges play themselves while on.
 void openChallengeCup(App& app, int challenge, int cup);

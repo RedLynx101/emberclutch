@@ -866,7 +866,14 @@ void openChallenges(App& app, int place) {
     s.place = place == kPlaceOrchard ? kPlaceOrchard : kPlaceArena;
     s.snapCam = true;
     c.phase = Phase::Picker;
-    c.pick = static_cast<int>(s.place == kPlaceOrchard ? Challenge::FruitCatch : Challenge::SkyRings);
+    // What's offered first: the orchard's own; at the arena the Lantern Trial on the festival night
+    // (and for a dragon too young to ride), else Sky Rings.
+    const campaign::QuestView festival = campaign::view(app.game, campaign::kQuests - 1);
+    const bool trialNight = festival.started && !festival.done && festival.stepIndex >= 1;
+    const bool canRide = s.partner >= 0 && s.shown.stage == Stage::Adult;
+    c.pick = static_cast<int>(s.place == kPlaceOrchard        ? Challenge::FruitCatch
+                              : trialNight || !canRide ? Challenge::LanternTrial
+                                                             : Challenge::SkyRings);
     // The first cup not yet won (the Starfire once they all are).
     const int won = app.game.world.cups[c.pick];
     c.cup = won < challenge::kStarfire ? won + 1 : challenge::kStarfire;
@@ -890,6 +897,11 @@ void openChallengeCup(App& app, int challengeId, int cup) {
 }
 
 void setChallengeAutoplay(bool on) { sc().autoplay = on; }
+
+bool wrenOpensChallenges(const App& app) {
+    // Anything she says but the festival night's story (that ends the campaign, not in a menu).
+    return app.talk.who == Villager::Steward && !(app.talk.talk.sets & kFlagFestival);
+}
 
 const char* challengeMusic(const App& app) {
     const Scene& c = sc();

@@ -501,6 +501,11 @@ void update(App& app, const Input& in) {
     measureSpeeds(s);
     if (talking(app)) {  // listening: the world waits (your partner idles beside you)
         updateTalk(app, in);
+        if (!talking(app) && wrenOpensChallenges(app)) {  // Wren's hello, or "ready when you are": the picker
+            keepPlace(app);
+            openChallenges(app, kPlaceArena);
+            return;
+        }
         animatePartner(app, s, false, false, false, 0);
         return;
     }

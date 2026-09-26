@@ -1,0 +1,39 @@
+# Beta WP8: talking to Wren by the arena's gate leads on to the challenges' picker.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+key X
+wait 4
+travel 6
+wait 2
+pad -0.75 -0.55 1.4
+wait 0.8
+shot w00-near-wren
+key A
+wait 1.2
+shot w01-talking
+key A
+wait 0.5
+key A
+wait 0.5
+key A
+wait 0.5
+key A
+wait 0.5
+key A
+wait 0.5
+key A
+wait 1.5
+shot w02-picker
+quit

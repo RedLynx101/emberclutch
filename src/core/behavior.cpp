@@ -130,6 +130,20 @@ bool DenBehavior::clearPath(Vec2 a, Vec2 b, float margin) const {
     return clear;
 }
 
+Vec2 DenBehavior::reachable(Vec2 goal) const {
+    const float lim = den.radius - 0.1f, r = distance(goal, den.home);
+    if (r > lim) goal = {den.home.x + (goal.x - den.home.x) * lim / r, den.home.y + (goal.y - den.home.y) * lim / r};
+    for (const DenObstacle& o : den.obstacles) {
+        const float room = o.radius + kClearance * size + 0.05f, d = distance(goal, o.at);
+        if (d >= room) continue;
+        Vec2 away{goal.x - o.at.x, goal.y - o.at.y};
+        if (d < 1e-3f) away = {den.home.x - o.at.x, den.home.y - o.at.y};  // right on it: toward the room's middle
+        const float len = std::fmax(1e-3f, std::hypot(away.x, away.y));
+        goal = {o.at.x + away.x / len * room, o.at.y + away.y / len * room};
+    }
+    return goal;
+}
+
 Vec2 DenBehavior::steerTarget(Vec2 goal) const {
     Vec2 via = goal;
     bool found = false;
@@ -140,14 +154,19 @@ Vec2 DenBehavior::steerTarget(Vec2 goal) const {
         if (len < 1e-4f) return;
         // Pass just outside it, on the side of the path the dragon is already on.
         const Vec2 left{-dy / len, dx / len};
-        const float s = (at.x - pos.x) * left.x + (at.y - pos.y) * left.y > 0 ? -1.0f : 1.0f;
+        float s = (at.x - pos.x) * left.x + (at.y - pos.y) * left.y > 0 ? -1.0f : 1.0f;
         via = {at.x + left.x * s * (r + 0.3f), at.y + left.y * s * (r + 0.3f)};
+        if (distance(via, den.home) > den.radius) {  // that side runs into the wall: the other
+            s = -s;
+            via = {at.x + left.x * s * (r + 0.3f), at.y + left.y * s * (r + 0.3f)};
+        }
         found = true;
     });
     return via;
 }
 
 bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
+    goal = reachable(goal);  // past the walls or inside a prop: as near as it can stand
     const float dist = distance(pos, goal);
     if (dist < 0.2f * moveScale + 0.05f) return true;
     // Another dragon is standing on the spot: close enough.
@@ -165,6 +184,20 @@ bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
     if (std::fabs(err) > 0.7f) {  // face the way first
         turnTo(headingTo(pos, via), dt);
         return false;
+    }
+    // Walking and getting no nearer for a moment (something in the way it can't get round):
+    // where it is will do (run 15: dragons walked into the walls and props for good).
+    if (distance(goal, stuckGoal) > 0.3f) {
+        stuckGoal = goal;
+        stuckBest = dist;
+        stuckFor = 0;
+    } else if (dist < stuckBest - 0.1f * moveScale) {
+        stuckBest = dist;
+        stuckFor = 0;
+    } else if ((stuckFor += dt) > 1.5f) {
+        stuckFor = 0;
+        stuckGoal = {1e9f, 1e9f};
+        return true;
     }
     heading = wrapAngle(heading + clampf(err, -kSteerRate * dt, kSteerRate * dt));
     const bool running = trotting && sprint;
@@ -1253,7 +1286,9 @@ void startTogether(DenSocial& s, DenBehavior* const* bs, const Dragon* const* ds
         const float len = std::hypot(dx, dy);
         dx = len > 1e-3f ? dx / len : 1.0f;
         dy = len > 1e-3f ? dy / len : 0.0f;
-        const float ra = kBodyRadius * bs[a]->size + 0.35f * bs[a]->size, rb = kBodyRadius * bs[b]->size + 0.35f * bs[b]->size;
+        // Face to face at arm's length: each as far off as its snout reaches (a long neck stands back).
+        const float ra = (std::fmax(kBodyRadius, bs[a]->reach) + 0.35f) * bs[a]->size,
+                    rb = (std::fmax(kBodyRadius, bs[b]->reach) + 0.35f) * bs[b]->size;
         bs[a]->join(Activity::Spar, static_cast<s8>(b), {mid.x - dx * ra, mid.y - dy * ra});
         bs[b]->join(Activity::Spar, static_cast<s8>(a), {mid.x + dx * rb, mid.y + dy * rb});
         const bool aWins = rng.chance(1, 2);
@@ -1307,7 +1342,8 @@ void startTogether(DenSocial& s, DenBehavior* const* bs, const Dragon* const* ds
         const float len = std::hypot(dx, dy);
         dx = len > 1e-3f ? dx / len : 1.0f;
         dy = len > 1e-3f ? dy / len : 0.0f;
-        const float ra = kBodyRadius * bs[a]->size + 0.05f, rb = kBodyRadius * bs[b]->size + 0.05f;
+        const float ra = std::fmax(kBodyRadius, bs[a]->reach) * bs[a]->size + 0.05f,
+                    rb = std::fmax(kBodyRadius, bs[b]->reach) * bs[b]->size + 0.05f;
         bs[a]->join(Activity::Nuzzle, static_cast<s8>(b), {mid.x - dx * ra, mid.y - dy * ra});
         bs[b]->join(Activity::Nuzzle, static_cast<s8>(a), {mid.x + dx * rb, mid.y + dy * rb});
     }

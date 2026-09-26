@@ -60,6 +60,8 @@ struct CareState {
     bool holdingFood = false;  // a food at the stylus (picked from the tray)
     int bitesLeft = 0;
     float biteWait = 0, chomp = 0;
+    float chewT = 0;   // chewing a bite (run 15): into the current chew
+    int chewLeft = 0;  // ...and the chews still to come
     StrokeTracker stroke;
     GroomSession groom;
     bool onDragon = false;       // this contact started on the dragon

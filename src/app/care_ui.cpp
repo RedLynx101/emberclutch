@@ -227,8 +227,8 @@ void useFood(App& app, const Input& in, Dragon& d) {
     if (!r3d::mouthOnCloseUp(mouth)) return;
     const float dist = std::hypot(in.tx - mouth.x, in.ty - mouth.y);
     const float open = dist < 22 ? 1.0f : (dist > 95 ? 0.0f : 1.0f - (dist - 22) / 73);
-    a.jawOpen = c.chomp > 0 ? 0.0f : open;
-    if (dist > 30 || c.biteWait > 0) return;
+    if (c.chewLeft <= 0) a.jawOpen = c.chomp > 0 ? 0.0f : open;  // (chewing works the jaw itself)
+    if (dist > 30 || c.biteWait > 0 || c.chewLeft > 0) return;
     const Taste taste = tasteOf(d, c.food);
     const FoodInfo& info = foodInfo(c.food);
     c.biteWait = 0.55f;
@@ -243,6 +243,8 @@ void useFood(App& app, const Input& in, Dragon& d) {
     --c.bitesLeft;
     audio::playSfx(audio::Sfx::Munch);
     emit(app, kFxCrumb, mouth, 5);
+    c.chewLeft = 3;  // a few chews before the next bite
+    c.chewT = 0;
     const bool favourite = taste == Taste::Favorite;
     if (favourite && static_cast<int>(c.food) == d.favoriteFood) d.known |= kKnownFavourite;
     if (c.bitesLeft <= 0) {
@@ -714,6 +716,16 @@ void update(App& app, Dragon& d) {
     const float k = std::fmin(1.0f, app.dt * 5.0f);
     a.gazeWeight -= a.gazeWeight * k;
     a.jawOpen -= a.jawOpen * k * 1.5f;
+    // Chewing a bite (run 15): the jaw works three small bites, a soft munch on each.
+    if (c.chewLeft > 0) {
+        constexpr float kChew = 0.34f;
+        c.chewT += app.dt;
+        a.jawOpen = 0.35f * std::sin(3.14159265f * std::fmin(1.0f, c.chewT / kChew));
+        if (c.chewT >= kChew) {
+            c.chewT -= kChew;
+            if (--c.chewLeft > 0) audio::playSfx(audio::Sfx::Munch, 1.15f, 0.45f);
+        }
+    }
     c.biteWait -= app.dt;
     c.chomp -= app.dt;
     c.sweetCooldown -= app.dt;

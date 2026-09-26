@@ -386,6 +386,40 @@ TEST(dragons_walk_around_the_hearth_and_hoard) {
     CHECK(nearest >= den.obstacles[1].radius + 0.8f - 1e-3f);
 }
 
+TEST(a_walk_it_cant_finish_ends_where_it_can) {
+    // Run 15: dragons walked into the walls and props for good. A goal past the wall is taken
+    // at the wall, one in the middle of the hearth at its edge, and a walk that gets no
+    // nearer ends after a moment, so the activity moves on.
+    const DenLayout den;
+    DenBehavior b;
+    b.reset(den, 21);
+    const Vec2 goals[] = {{0.0f, -30.0f}, den.hearth, {den.hoard.x, den.hoard.y - 0.1f}};
+    for (const Vec2 goal : goals) {
+        b.pos = den.home;
+        int frames = 0;
+        while (!b.walkTo(goal, false, 1.0f, 1.0f / 30) && frames < 30 * 30) ++frames;
+        std::printf("  to (%.1f, %.1f): there in %.1f s, at (%.1f, %.1f)\n", goal.x, goal.y, frames / 30.0f, b.pos.x, b.pos.y);
+        CHECK(frames < 30 * 20);
+        CHECK(dist(b.pos, den.home) <= den.radius + 1e-3f);
+    }
+    // Something it can't get round (a dragon lying across the way, taken as a wall of crowd):
+    // it gives up after the moment, not after the activity's own timeout.
+    b.pos = {-3.0f, 0.6f};
+    b.heading = -1.5708f;  // facing +X
+    b.crowdCount = 1;
+    b.crowd[0] = {{-1.0f, 0.6f}, 1.9f};
+    int frames = 0;
+    while (!b.walkTo({1.0f, 0.6f}, false, 1.0f, 1.0f / 30) && frames < 30 * 30) {
+        ++frames;
+        for (int i = 0; i < b.crowdCount; ++i) {  // the floor pushes it back out, as update() does
+            const float d = dist(b.pos, b.crowd[i].at), room = b.crowd[i].radius + 1.2f;
+            if (d < room) b.pos = {b.crowd[i].at.x + (b.pos.x - b.crowd[i].at.x) * room / d, b.crowd[i].at.y + (b.pos.y - b.crowd[i].at.y) * room / d};
+        }
+    }
+    std::printf("  blocked: gave up after %.1f s\n", frames / 30.0f);
+    CHECK(frames < 30 * 8);
+}
+
 TEST(three_dragons_share_the_den) {
     const DenLayout den;
     DenActor a[3];
@@ -744,6 +778,7 @@ TEST(zoomies_run_laps_round_the_den) {
 
 void runBehaviorTests() {
     RUN(zoomies_run_laps_round_the_den);
+    RUN(a_walk_it_cant_finish_ends_where_it_can);
     RUN(tug_of_war_over_the_ball);
     RUN(behavior_clips_exist_in_the_clip_file);
     RUN(a_content_dragon_leads_a_varied_life_on_the_floor);

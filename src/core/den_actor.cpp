@@ -105,6 +105,17 @@ void DenActor::updateSpeeds(const ModelData& m, const AnimBinding& bind, const A
     behavior.baby = baby;  // the hatchling's body scampers, the grown one gallops
     const int run = clipIndex[static_cast<int>(behavior.baby ? ClipId::Scamper : ClipId::Gallop)];
     if (run >= 0) behavior.runSpeed = locomotionSpeed(m, bind, lib.clips[run], t, build) * size;
+    // How far its snout reaches in front of it, standing: its tip is about as far past the
+    // snout's joint as that is past the head's.
+    const int head = m.skel.find("head"), snout = m.skel.find("snout");
+    if (head >= 0 && snout >= 0) {
+        BonePose idle[kMaxBones];
+        idlePose(m, t, build, idle);
+        Mat34 poseMat[kMaxBones], skin[kMaxBones];
+        evaluatePose(m.skel, idle, poseMat, skin);
+        const Vec3 h = poseMat[head].translation(), s = poseMat[snout].translation();
+        behavior.reach = std::fmax(0.5f, -(s.y + 0.8f * (s.y - h.y)));
+    }
     speedForm = form;
     speedT = t;
 }

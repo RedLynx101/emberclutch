@@ -191,6 +191,14 @@ struct DenBehavior {
     // babies get about with 30% more pep (Noah, 2026-09-24), their feet sliding a touch.
     float haste = 1.0f;
     float size = 1.0f;  // the last moveScale: how much room the body needs around obstacles
+    // How far its snout reaches in front of it (adult units, x size), measured on its body
+    // (den_actor): two meeting face to face stand this far off (run 15: a long-necked kind's
+    // heads met in the middle at the old body's spacing).
+    float reach = 1.2f;
+    // Getting nowhere on a walk (a wall, a prop, another dragon in the way): the goal it was
+    // after, the nearest it got, and how long it hasn't got nearer.
+    Vec2 stuckGoal{1e9f, 1e9f};
+    float stuckBest = 0, stuckFor = 0;
     u8 spot = 0;        // which bed and sulking spot are its own (its place in the den)
     // Life together (denSocial): its partner in a game or a nuzzle (an index into the den's
     // dragons this frame, -1: none) and what the partner is up to; where it sleeps tonight if
@@ -235,6 +243,11 @@ struct DenBehavior {
     // touching an obstacle or another dragon.
     bool clearAt(Vec2 p, float margin) const;
     bool clearPath(Vec2 a, Vec2 b, float margin) const;
+    // One step of a walk toward `goal`: true on arrival, or when it can't get nearer (public
+    // for the PC tests).
+    bool walkTo(Vec2 goal, bool trot, float moveScale, float dt);
+    // A goal it can stand on: inside the walls and clear of the props, nearest to `goal`.
+    Vec2 reachable(Vec2 goal) const;
 
 private:
     void start(Activity a);
@@ -242,7 +255,6 @@ private:
     void playWithToy(float moveScale, float dt);
     void grab();
     void chooseAmbient(const Dragon& d, float moveScale);
-    bool walkTo(Vec2 goal, bool trot, float moveScale, float dt);  // true on arrival
     Vec2 steerTarget(Vec2 goal) const;  // the goal, or a point beside an obstacle in the way
     bool turnTo(float goal, float dt);  // shuffles in place; true when facing it
     void setClip(ClipId c, float crossfade = 0.25f, bool restart = false);

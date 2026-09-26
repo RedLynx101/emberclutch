@@ -169,6 +169,8 @@ further apart. All of it is in 0.2.3 (run 16) but the voices, which come with DR
 
 # Run 16 (0.2.3): run 15's fixes, the new music and sounds, swimming, a banner lab
 
+**Not run:** folded into run 17 (0.2.4), which has all of it (Noah, 2026-09-26).
+
 **For Noah.** Everything from your run 15 notes except the voices (with DR3, next): and your
 batch 2 and 3 music and sounds are in. Your dragons are still their old selves; the new kinds
 show by the dev menu as in run 15. About 15 minutes; the checklists page has these steps (the
@@ -222,47 +224,76 @@ old-banner CIA is gone from the card. And `cias/lab/banner-lab-a.cia`: install i
 - Swimming, running, landing and the shadow: how they feel.
 - Whether the lab banner held, and anything still wrong with the dragons or the den.
 
-# Run 17 (0.2.4): DR3, your dragons become the new kinds
+# Run 17 (0.2.4): your dragons become the new kinds, and everything from run 16
 
-**For Noah.** Your go (D81): every dragon and egg in your save becomes one of the nine new kinds
-the first time 0.2.4 opens it, rolled once from who it is and kept from then on (names, ages,
-bonds and families stay). Only the new kinds from here (D82). Also the voices you asked for, by
-kind and stage. About 10 minutes; the checklists page has these steps (the Run 17 tab). **Y**
-saves both screens and the numbers.
+**For Noah.** This is the only run to do now (run 16 is folded in). 0.2.4 has all of run 16
+(your run 15 fixes, batch 2 and 3's music and sounds, swimming, the banner lab) and DR3:
+**every dragon and egg in your save becomes one of the nine new kinds** the first time 0.2.4
+opens it, rolled once and kept from then on (names, ages, bonds and families stay), and voices
+pitched by kind and stage. About 25 minutes. **Y** saves both screens and the numbers.
 
 ## 0. Install
-When run 16 is done, I put 0.2.4 on the SD card: in **FBI**, SD → cias → `emberclutch.cia` →
-Install CIA, over the game (the save stays, and moves over as it loads).
+In **FBI**: SD → cias → `emberclutch.cia` → Install CIA, over the game (the save stays, and moves over to the new kinds as it loads). Then SD → cias → lab → `banner-lab-a.cia` → Install CIA too (for step 7).
 
 ## 1. Your dragons
-1. The den: each dragon is a kind now, in a common colouring: the top line reads "Name -
-   Colouring Kind Stage" and its manner (Brave, Shy, Playful, Proud, Sleepy, Curious, Gentle,
-   Mischievous, Greedy or Stubborn), which is how it behaves too. Walk through them with < >.
-2. **The profile** (the heart, top right): About shows the five stats (Wing, Wit, Might,
-   Breath, Stamina, out of 10), its elements and how rare its kind is, and its traits (the
-   rarer ones in gold). Family names each one's kind.
+1. Start the game. In the den each dragon is now a kind in a common colouring: the top line
+   reads "Name - Colouring Kind Stage", then its mood and its manner (Brave, Shy, Playful,
+   Proud, Sleepy, Curious, Gentle, Mischievous, Greedy or Stubborn), which is how it behaves too.
+   Switch between them with < >.
+2. **The profile** (the heart, top right of the bottom screen), About: the five stats (Wing,
+   Wit, Might, Breath, Stamina, out of 10), its elements and how rare its kind is, and its
+   traits (the rarer ones in gold). Family shows each one's kind.
 3. **Voices:** a hatchling squeaks well above a grown one, and a big kind sounds deeper than a
-   small one (a Curlstone or Crestwing against a Pouncer).
+   small one.
 
-## 2. Eggs
-1. Your eggs wear their kind's shell and markings, glowing in their element's colour.
-   Listening hints at the manner. Hatch one (or wait): "It's a Moss Puffback!" or the like.
-2. The Market's **egg of the day** is a kind: 150 Gleam for a common one, 250 harder to find,
-   400 rare.
-3. A pair at the Nesting Stone lays the mother's or the father's kind (a Pouncer and a
-   Crestwing's egg is a Blazeplume a third of the time); the rare colouring is 1 in 20, 1 in 10
-   with a rare-coloured parent.
-
-## 3. The Dragondex
-1. START → Dragondex: nine kinds over two pages, four colourings each (the last, "*", the
+## 2. Eggs, the Market and the Dragondex
+1. Your eggs wear their kind's shell and markings, glowing in their element's colour. When one
+   hatches it says what it is ("It's a Moss Puffback!").
+2. The Market's **egg of the day** is a kind: 150 Gleam common, 250 harder to find, 400 rare.
+3. **START → Dragondex:** nine kinds over two pages, four colourings each (the last, "*", is the
    rare one); your hatched dragons are in it. Tap a cell to see that one turning up top.
-   Completing a kind's four colourings hangs its banner in the den.
 
-## 4. The dev menu (if you want it)
-- Page 1 **Next kind** and **Kind colouring** still only show every dragon as a kind (not
-  saved). **Change kind** (page 1) and **Change colour** (page 2) change this dragon for good.
+## 3. Sounds
+1. In the den the care and toy sounds are the real ones now (brushing, suds, the tub, the bowl,
+   the ball, the rope, the orb, the egg's turn and heartbeat, a sniff, a giggle, a grumble);
+   the Market's murmur plays at the stalls. Anything too loud, too quiet or wrong?
+
+## 4. The valley
+1. SELECT (dev menu), page 2, **Valley test**: you fly your own dragon, as its new kind. The
+   music is Valley Day by day and Valley Night at night; the breeze or the crickets underneath,
+   wind as you climb, wingbeats, the take-off and landing, a whoosh as you dive, the lake lapping.
+2. **Run** with B on the ground: at least three times as fast as before.
+3. **Swim:** walk into the lake: it splashes in and swims, bobbing; B paddles faster; walk out on
+   the far shore, or take off from the water with A. Gliding down slowly onto the lake it
+   splashes in; skimming low and fast over it throws spray.
+4. **Landing** works at a higher speed now.
+5. **The shadow:** coming down, its shadow on the ground grows and darkens under it. **Y** close
+   to the ground.
+
+## 5. The dragons
+1. Dev menu page 1, **Next kind** shows every dragon as each kind in turn (not saved; press
+   until the toast says their own looks are back). The **Puffback**'s little wings shouldn't sink
+   into its flank as it walks and runs; the **Duskwing** baby has no tufts hovering under its chin.
+2. Grown dragons playing together: their heads shouldn't meet in the middle any more.
+3. Every kind's **mouth** (yawning, chomping, eating from your hand) is dark inside right to the
+   corners, never see-through.
+4. **Feeding by hand:** a smaller bite, then three little chews before the next.
+
+## 6. The den
+1. Watch a while with two or three dragons: they shouldn't walk into the walls or props for
+   long, or get stuck on each other.
+
+## 7. The banner lab
+1. On the HOME Menu, move to **Banner lab A** and rest on it (never start it): the Blazeplume
+   banner cut down to the working banner's size. If it freezes, hold **POWER** and carry on. If it
+   holds, the Blazeplume becomes the game's banner in the next build.
+2. Delete it afterwards in FBI: Titles, "Banner lab A", Delete Title.
 
 ## What to send back
-- Which kinds your dragons became, and whether they feel right (their manners, the stats).
+- Which kinds your dragons became, and whether their manners and stats feel right.
 - The voices: far enough apart now?
-- Anything wrong with the eggs, the Dex or the Market.
+- The sounds and the music: anything to change?
+- Swimming, running, landing and the shadow: how they feel.
+- Whether the lab banner held, and anything still wrong with the dragons or the den.
+- Note: on the dev menu, **Change kind** (page 1) and **Change colour** (page 2) change a dragon
+  for good; **Next kind** and **Kind colouring** only show.

@@ -212,6 +212,7 @@ def markings(m):
       rings   two broad rings, low and high (a glowing sun-egg)
       swirl   curling flame-like strokes rising up the egg
       flakes  little six-armed snowflakes
+    speckle_params "flower": (u, theta degrees, size) adds a five-petalled flower (optional).
     Everything stays clear of the seam, so the cap splits cleanly."""
     rng = random.Random(7)
     style, count, (s0, s1) = SPECKLE["style"], SPECKLE["count"], SPECKLE["size"]
@@ -259,6 +260,14 @@ def markings(m):
                 pts = [(u - du * math.sin(ang), th - dth * math.cos(ang)), (u + du * math.sin(ang), th + dth * math.cos(ang))]
                 decal_line(m, pts, size * 0.28, bone, paint)
             placed += 1
+    flower = SPECKLE.get("flower")  # (u, theta degrees, size): five petals on the shell (the Bloomstone's)
+    if flower:
+        u0, th0, size = flower
+        du, dth = size / H, size / max(0.05, radius(u0))
+        for k in range(5):
+            a = 2 * math.pi * k / 5
+            decal_disc(m, u0 + du * math.cos(a), math.radians(th0) + dth * math.sin(a), size * 0.6,
+                       CAP if u0 > SEAM else ROOT, paint)
 
 
 def build_shards():

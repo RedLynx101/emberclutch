@@ -439,9 +439,47 @@ ITEM_SPRITES = [
 ]
 
 
+# The tray's places (D85): an outing (a signpost pointing out into the valley), the journal (a
+# little book with a heart on it), the den (a cave mouth under a hill, a banner at its door).
+def outing():
+    wood = mat("wood", WOOD)
+    cylinder((0, 0, -0.1), 0.07, 1.3, wood)
+    board = mat("board", (0.86, 0.62, 0.36))
+    for z, lean, flip in ((0.35, 8, 1), (0.02, -6, -1)):
+        box((flip * 0.18, 0, z), (0.34, 0.06, 0.1), board, bevel=0.3)
+        cone((flip * 0.56, 0, z), 0.13, 0.0, 0.16, board, rot=(0, math.radians(90 * flip), 0), verts=4)
+    leaf = mat("leaf", (0.42, 0.72, 0.36))
+    sphere((-0.1, -0.05, 0.62), (0.12, 0.04, 0.07), leaf)
+    sphere((0.08, -0.05, 0.64), (0.1, 0.04, 0.06), leaf)
+    sphere((0, 0, -0.72), (0.34, 0.2, 0.08), mat("grass", (0.5, 0.78, 0.42)))
+
+
+def journal():
+    cover = mat("cover", (0.72, 0.28, 0.24))
+    box((0.02, 0.04, 0), (0.46, 0.12, 0.58), cover, bevel=0.2)
+    box((0.06, -0.02, 0), (0.4, 0.1, 0.52), mat("pages", CREAM), bevel=0.1)
+    box((0.02, -0.1, 0), (0.46, 0.04, 0.58), cover, bevel=0.2)
+    gold = mat("gold", (1.0, 0.8, 0.3), emission=0.3)
+    sphere((-0.04, -0.15, 0.1), (0.1, 0.03, 0.1), gold)
+    sphere((0.1, -0.15, 0.1), (0.1, 0.03, 0.1), gold)
+    cone((0.03, -0.15, -0.04), 0.16, 0.0, 0.2, gold, rot=(math.radians(180), 0, 0), verts=3)
+    box((0.32, -0.12, -0.62), (0.05, 0.02, 0.18), mat("ribbon", (0.95, 0.75, 0.3)))
+
+
+def den_place():
+    sphere((0, 0.1, -0.1), (0.72, 0.4, 0.56), mat("hill", (0.56, 0.62, 0.42)))
+    sphere((0, 0.05, 0.3), (0.5, 0.36, 0.2), mat("moss", (0.46, 0.7, 0.38)))
+    cylinder((0, -0.26, -0.34), 0.28, 0.1, mat("door", (0.2, 0.12, 0.18)), rot=(math.radians(90), 0, 0))
+    box((0, -0.28, -0.62), (0.3, 0.06, 0.06), mat("step", (0.7, 0.62, 0.52)), bevel=0.3)
+    banner = mat("banner", (0.8, 0.22, 0.2))
+    box((0.36, -0.3, -0.12), (0.08, 0.02, 0.16), banner)
+    cylinder((0.36, -0.3, 0.06), 0.02, 0.2, mat("rod", (0.72, 0.55, 0.24)), rot=(0, math.radians(90), 0))
+
+
 SPRITES = [
     ("hand", hand), ("hand_press", lambda: hand(pressing=True)), ("brush", brush), ("cloth", cloth),
     ("sponge", sponge), ("ladle", ladle), ("ball", ball),
+    ("place_outing", outing), ("place_journal", journal), ("place_den", den_place),
     # foods, in core/care.hpp Food order
     ("food_firepepper", firepepper), ("food_riverfish", river_fish), ("food_skyberry", skyberry),
     ("food_honeyroot", honeyroot), ("food_frostmelon", frostmelon), ("food_starfruit", starfruit),

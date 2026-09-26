@@ -1,5 +1,6 @@
 #include "core/save.hpp"
 
+#include <cmath>
 #include <cstring>
 
 #include "core/kinds.hpp"
@@ -25,6 +26,7 @@ public:
     std::size_t pos() const { return pos_; }
     bool ok() const { return ok_; }
     // Patch a u16 written earlier (section sizes).
+    void patchU8(std::size_t at, u8 v) { if (at < cap_) out_[at] = v; }
     void patchU16(std::size_t at, u16 v) { if (at + 2 <= cap_) { out_[at] = u8(v); out_[at + 1] = u8(v >> 8); } }
 
 private:
@@ -255,7 +257,7 @@ u32 crc32(const u8* data, std::size_t size) {
 
 std::size_t maxEncodedSize() {
     // header + player/settings sections (generous) + dragons with room for growth
-    return kSaveHeaderSize + 256 + kMaxDragons * (kDragonRecordV1 + 2 + 64);
+    return kSaveHeaderSize + 512 + kMaxDragons * (kDragonRecordV1 + 2 + 64);
 }
 
 std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std::size_t cap) {
@@ -295,6 +297,26 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
     w.u32v(static_cast<u32>(data.dexKindsDone));
     w.u32v(static_cast<u32>(data.dexKindsDone >> 32));
     w.u8v(data.bannerKind);
+    {  // Beta: the world (its size first, so it can grow; core/world)
+        const WorldState& ws = data.world;
+        const std::size_t sizeAt = w.pos();
+        w.u8v(0);
+        const std::size_t from = w.pos();
+        for (u8 k : ws.look) w.u8v(k);
+        w.u8v(ws.lookMade);
+        w.f32v(ws.x);
+        w.f32v(ws.y);
+        w.f32v(ws.heading);
+        w.u8v(ws.inValley);
+        w.u32v(ws.partnerId);
+        w.u32v(ws.placesFound);
+        w.u32v(ws.lanternsLit);
+        for (u8 q : ws.quest) w.u8v(q);
+        for (u8 c : ws.cups) w.u8v(c);
+        w.u32v(ws.flags);
+        w.u16v(ws.ribbons);
+        w.patchU8(sizeAt, static_cast<u8>(w.pos() - from));
+    }
     w.patchU16(at, static_cast<u16>(w.pos() - start));
 
     // Settings section
@@ -419,6 +441,43 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
         tmp.bannerKind = r.u8v();
         if (tmp.bannerKind >= kindCount()) tmp.bannerKind = 0xFF;
     }
+    if (r.pos() + 1 <= start + sectionSize) {  // Beta: the world (older saves: a fresh one, the den found)
+        const std::size_t n = r.u8v(), from = r.pos();
+        WorldState& ws = tmp.world;
+        auto has = [&](std::size_t bytes) { return r.pos() + bytes <= from + n; };
+        if (has(kLookParts + 1)) {
+            for (int k = 0; k < kLookParts; ++k) ws.look[k] = static_cast<u8>(r.u8v() % kLookChoices[k]);
+            ws.lookMade = r.u8v() ? 1 : 0;
+        }
+        if (has(13)) {
+            ws.x = r.f32v();
+            ws.y = r.f32v();
+            ws.heading = r.f32v();
+            ws.inValley = r.u8v() ? 1 : 0;
+            if (!std::isfinite(ws.x) || !std::isfinite(ws.y) || !std::isfinite(ws.heading)) {
+                ws.x = ws.y = ws.heading = 0;
+                ws.inValley = 0;
+            }
+        }
+        if (has(12)) {
+            ws.partnerId = r.u32v();
+            ws.placesFound = r.u32v();
+            ws.lanternsLit = r.u32v();
+        }
+        if (has(8 + kChallenges)) {
+            for (u8& q : ws.quest) q = r.u8v();
+            for (u8& c : ws.cups) {
+                const u8 v = r.u8v();
+                c = v > kCups ? kCups : v;
+            }
+        }
+        if (has(6)) {
+            ws.flags = r.u32v();
+            ws.ribbons = r.u16v();
+        }
+        r.seek(from + n);
+    }
+    world::startWorld(tmp);
     r.seek(start + sectionSize);
 
     sectionSize = r.u16v();

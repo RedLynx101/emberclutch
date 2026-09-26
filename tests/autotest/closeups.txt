@@ -17,7 +17,9 @@ shot c1-hatchling-face
 tap 82 221
 wait 1
 shot c1-hatchling-feed
-tap 134 221
+tap 30 221
+wait 0.3
+tap 66 182
 wait 1.5
 shot c1-hatchling-body
 tap 30 221
@@ -47,7 +49,9 @@ shot c4-adult-face
 tap 82 221
 wait 1
 shot c4-adult-feed
-tap 134 221
+tap 30 221
+wait 0.3
+tap 66 182
 wait 1.5
 shot c4-adult-body
 quit

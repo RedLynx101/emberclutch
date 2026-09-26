@@ -8,6 +8,8 @@
 #include "core/genetics.hpp"
 #include "core/items.hpp"
 #include "core/kinds.hpp"
+#include "core/campaign.hpp"
+#include "core/world.hpp"
 #include "app/strings.hpp"
 
 namespace ec {
@@ -58,6 +60,8 @@ void resetForNewGame(App& app) {
     const Settings keep = app.game.settings;
     app.game = SaveData{};
     app.game.settings = keep;
+    world::startWorld(app.game);  // Beta: the den found, the first quest begun
+    campaign::update(app.game);
     for (u32& id : app.actorId) id = 0;
     for (EggMotion& e : app.eggs) e = EggMotion{};
     for (int& c : app.eggCracks) c = -1;

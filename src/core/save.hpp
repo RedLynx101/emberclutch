@@ -14,6 +14,7 @@
 #include <cstddef>
 
 #include "core/dragon.hpp"
+#include "core/world.hpp"
 
 namespace ec {
 
@@ -70,6 +71,9 @@ struct SaveData {
     u8 dexKinds[kDexKindSlots] = {};
     u64 dexKindsDone = 0;
     u8 bannerKind = 0xFF;
+    // Beta (D73-D86): the world: your look, where you are, your partner, places, lanterns,
+    // quests, cups (core/world).
+    WorldState world{};
     Settings settings{};
     u16 dragonCount = 0;
     Dragon dragons[kMaxDragons];

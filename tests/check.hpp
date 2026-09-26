@@ -30,3 +30,4 @@ void runEggTests();       // tests/test_egg.cpp
 void runCareTests();      // tests/test_care.cpp
 void runValleyTests();    // tests/test_valley.cpp
 void runKindTests();      // tests/test_kinds.cpp
+void runWorldTests();     // tests/test_world.cpp

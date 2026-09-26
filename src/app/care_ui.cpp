@@ -32,14 +32,14 @@ constexpr float kFoodRowY = 164;   // the food picker, above the tray
 constexpr Rect kView{0, kTopBar, 320, kFoodRowY - kTopBar};  // where the stylus meets the dragon
 constexpr float kFlickSpeed = 160;  // px/s: faster than this on release throws the ball
 
-constexpr Tool kTools[] = {Tool::Hand, Tool::Food, Tool::Brush, Tool::Sponge, Tool::Ball};  // the last: a toy (no cloth, D83)
-constexpr int kToolCount = sizeof(kTools) / sizeof(kTools[0]);
+constexpr int kTraySlots = 6;  // Care, Food, Toys, Outing, Journal, Den (D85)
 constexpr Rect kBowlDrop{262, kFoodRowY - 38, 54, 34};  // drop a food here to fill the bowl
 constexpr float kOrbRadiusPx = 17;
 constexpr float kOrbTreatAfter = 1500;  // pixels of rolling before a treat drops out
 constexpr float kOrbRefill = 40;        // seconds until the orb has another
 
 bool isToy(Tool t) { return t >= Tool::Ball; }
+bool isCare(Tool t) { return t == Tool::Hand || t == Tool::Brush || t == Tool::Sponge; }
 Item toyItem(Tool t) {  // the Market thing a toy tool is (the ball comes with the den)
     return t == Tool::Feather ? Item::FeatherWand : t == Tool::Rope ? Item::TugRope : Item::PuzzleOrb;
 }
@@ -497,6 +497,7 @@ void useOrb(App& app, const Input& in, float moved) {
 void selectTool(App& app, Dragon& d, Tool t) {
     CareState& c = app.care;
     if (isToy(t)) c.toy = t;
+    if (isCare(t)) c.careTool = t;
     if (c.tool == t) return;
     if (c.tool == Tool::Rope) actor(app).behavior.care(Care::TugLetGo, d);  // the rope goes with it
     if (c.tool == Tool::Sponge && c.bathOut) actor(app).behavior.care(Care::BathDone, d);  // leaving the bath
@@ -528,6 +529,8 @@ void kinBox(App& app, Rect r, const SaveData& s, int who, const char* role) {
     text(app, k.name, r.x + 20, r.y + 3, 0.38f, theme::kShell, C2D_AlignLeft, r.w - 23);
     text(app, kindTitle(k), r.x + 20, r.y + r.h / 2 + 1, 0.32f, withAlpha(theme::kShell, 0.7f), C2D_AlignLeft, r.w - 23);
 }
+
+}  // namespace
 
 void profileAbout(App& app, const Dragon& d, s64 now) {
     char line[96];
@@ -576,6 +579,8 @@ void profileAbout(App& app, const Dragon& d, s64 now) {
     else std::snprintf(line, sizeof(line), "%s", str::kFavouriteUnknown);
     textCentered(app, line, 160, 185, 0.4f, theme::kClutchGold, 300);
 }
+
+namespace {
 
 void profileFamily(App& app, const Dragon& d) {
     const SaveData& s = app.game;
@@ -784,6 +789,7 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
         drawProfile(app, in, d, now);
         return;
     }
+    if (drawPage(app, in, d, now)) return;
     // The camera under it: photo mode (D66).
     if (photo::cameraButton(app, in) && !c.stroke.down) {
         photo::open(app);
@@ -797,21 +803,56 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
                 Rect{photo::kButtonX, photo::kButtonY, photo::kButtonW, photo::kButtonH}.contains(in.tx, in.ty);
     int toys = 1;  // the ball, and the Market's toys bought
     for (Tool t : {Tool::Feather, Tool::Rope, Tool::Orb}) toys += owns(app.game, toyItem(t));
-    for (int i = 0; i < kToolCount; ++i) {
+    for (int i = 0; i < kTraySlots; ++i) {
         const Rect r{6.0f + i * 52.0f, kTrayY + 1, 48, 36};
-        const Tool t = i == kToolCount - 1 ? c.toy : kTools[i];
+        if (i >= 3) {  // the places: Outing, Journal, Den
+            static const std::size_t kIcons[3] = {care_place_outing_idx, care_place_journal_idx, care_place_den_idx};
+            panel(r, withAlpha(theme::kShell, 0.16f));
+            sprite(kIcons[i - 3], r.x + r.w * 0.5f, r.y + r.h * 0.5f, 0.5f);
+            if (in.released && !c.stroke.down && r.contains(in.rx, in.ry)) {
+                c.page = i == 3 ? CarePage::Outing : i == 4 ? CarePage::Journal : CarePage::Den;
+                c.careRow = c.toyRow = false;
+                c.journalTab = 0;
+                audio::playSfx(audio::Sfx::Tap);
+            }
+            continue;
+        }
+        const Tool t = i == 0 ? c.careTool : i == 1 ? Tool::Food : c.toy;
         const bool selected = c.tool == t;
         panel(r, withAlpha(selected ? theme::kClutchGold : theme::kShell, selected ? 0.55f : 0.16f));
         sprite(toolSprite(t), r.x + r.w * 0.5f, r.y + r.h * 0.5f, isToy(t) && t != Tool::Ball ? 0.46f : 0.52f);
-        if (i == kToolCount - 1 && toys > 1)  // more toys: a little mark, and the picker on a second tap
+        if (i != 1 && (i == 0 || toys > 1))  // a pop-up behind it: a little mark, and the picker on a second tap
             C2D_DrawTriangle(r.x + r.w - 10, r.y + 8, theme::kShell, r.x + r.w - 4, r.y + 8, theme::kShell, r.x + r.w - 7,
                              r.y + 3, theme::kShell, 0.5f);
         if (in.released && !c.stroke.down && r.contains(in.rx, in.ry)) {
-            if (selected && isToy(t)) c.toyRow = !c.toyRow;
-            else selectTool(app, d, t);
+            if (selected && i == 0) {
+                c.careRow = !c.careRow;
+                c.toyRow = false;
+            } else if (selected && i == 2) {
+                c.toyRow = !c.toyRow;
+                c.careRow = false;
+            } else {
+                selectTool(app, d, t);
+            }
         }
     }
     if (!isToy(c.tool)) c.toyRow = false;
+    if (!isCare(c.tool)) c.careRow = false;
+    // The care pop-up: the hand, the brush, the sponge (the bath).
+    if (c.careRow) {
+        panel({2, kFoodRowY, 316, 36}, withAlpha(theme::kDenPlum, 0.7f));
+        int k = 0;
+        for (Tool t : {Tool::Hand, Tool::Brush, Tool::Sponge}) {
+            const Rect r{5.0f + k++ * 42.0f, kFoodRowY + 2, 38, 32};
+            if (c.tool == t) panel(r, withAlpha(theme::kClutchGold, 0.45f));
+            sprite(toolSprite(t), r.x + r.w / 2, r.y + r.h / 2, 0.42f);
+            if (in.released && !c.stroke.down && r.contains(in.rx, in.ry)) {
+                selectTool(app, d, t);
+                c.careRow = false;
+            }
+        }
+        onUi = onUi || in.ty >= kFoodRowY;
+    }
     // The toy picker.
     if (c.toyRow) {
         panel({2, kFoodRowY, 316, 36}, withAlpha(theme::kDenPlum, 0.7f));
@@ -1011,7 +1052,7 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
     }
     if (!(in.touching && c.stroke.down)) {
         const char* hint = hintFor(c.tool);
-        const float y = c.tool == Tool::Food || c.toyRow ? kFoodRowY - 17 : kTrayY - 17;
+        const float y = c.tool == Tool::Food || c.toyRow || c.careRow ? kFoodRowY - 17 : kTrayY - 17;
         const float w = textWidth(app, hint, 0.4f) + 16;
         panel({160 - w / 2, y, w, 15}, withAlpha(theme::kDenPlum, 0.6f));
         textCentered(app, hint, 160, y + 7.5f, 0.4f, withAlpha(theme::kShell, 0.9f), 300);

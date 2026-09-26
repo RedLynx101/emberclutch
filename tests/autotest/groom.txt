@@ -31,7 +31,9 @@ key R
 wait 1.8
 shot g05-facing-you-again
 # The brush.
-tap 134 221
+tap 30 221
+wait 0.3
+tap 66 182
 wait 1.2
 shotin 0.6 g06-brush
 drag 90 110 230 110 1.4
@@ -40,7 +42,9 @@ wait 1.8
 shotin 0.6 g07-brush-left
 drag 90 110 230 110 1.4
 # The bath: gleaming after.
-tap 186 221
+tap 30 221
+wait 0.3
+tap 108 182
 wait 5
 drag 120 90 200 110 1.2
 drag 200 110 120 90 1.2

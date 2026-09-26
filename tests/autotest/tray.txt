@@ -1,0 +1,56 @@
+# The care tray (D85): Care (a pop-up: hand, brush, sponge), Food, Toys, and the three places:
+# Outing (your partner, out together), Journal (quests, this dragon, places, the Dragondex) and
+# Den (the decor, spot by spot).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+shot t01-tray
+tap 30 221
+wait 0.5
+shot t02-care-popup
+tap 66 182
+wait 0.8
+shot t03-brush
+tap 186 221
+wait 0.8
+shot t04-outing
+tap 160 137
+wait 0.8
+shot t05-partner
+key B
+wait 0.5
+tap 238 221
+wait 0.8
+shot t06-journal
+tap 123 44
+wait 0.8
+shot t07-journal-dragon
+tap 200 44
+wait 0.8
+shot t08-journal-places
+key B
+wait 0.5
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 238 56
+wait 0.3
+key SELECT
+wait 0.3
+tap 290 221
+wait 0.8
+shot t09-den
+key B
+wait 0.5
+quit

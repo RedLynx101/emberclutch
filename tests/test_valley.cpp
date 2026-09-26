@@ -41,8 +41,8 @@ TEST(the_valley_loads) {
     CHECK(v.n == 257 && v.tiles() == 16);
     CHECK(std::fabs(v.size() - 1024.0f) < 0.01f && std::fabs(v.tileSize() - 64.0f) < 0.01f);
     CHECK(v.hmax > 150 && v.hmin < v.water);
-    CHECK(v.trees.size() > 500 && v.islands.size() == 4 && v.places.size() == kPlaceCount);
-    for (u8 p = 0; p < kPlaceCount; ++p) CHECK(v.place(p) != nullptr);
+    CHECK(v.trees.size() > 500 && v.islands.size() == 4 && v.places.size() >= kPlaceLake + 1);
+    for (u8 p = 0; p <= kPlaceLake; ++p) CHECK(v.place(p) != nullptr);  // (the test valley's places; Beta's valley has them all)
     // Heights between samples blend smoothly; at a sample they're the sample.
     const float x = v.x0 + 40 * v.spacing, y = v.y0 + 70 * v.spacing;
     CHECK(std::fabs(v.heightAt(x, y) - v.h[70 * v.n + 40]) < 1e-3f);

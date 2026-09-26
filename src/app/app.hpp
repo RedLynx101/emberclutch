@@ -54,6 +54,8 @@ struct CareFx {  // a 2D effect over the close-up
     float life = 0, maxLife = 1, size = 4;
     u8 kind = 0;
 };
+enum class CarePage : u8 { None, Outing, Journal, Den };
+
 struct CareState {
     Tool tool = Tool::Hand;
     Food food = Food::HearthBread;
@@ -80,9 +82,14 @@ struct CareState {
     int fxCount = 0;
     bool profileOpen = false;    // the profile (tap the heartglow): about it, its family (WP8)
     u8 profileTab = 0;           // 0 about, 1 family
-    // Toys (Alpha 2 WP7): the one in the tray's last slot, and its picker row.
+    // The tray (D85): Care (the hand, the brush or the sponge, picked from its pop-up), Food,
+    // Toys (the one shown, and its pop-up), then the three places.
+    Tool careTool = Tool::Hand;
+    bool careRow = false;
     Tool toy = Tool::Ball;
     bool toyRow = false;
+    CarePage page = CarePage::None;
+    u8 journalTab = 0;
     float swatWait = 0, tugWait = 0;  // between swats; between growls on the rope
     float ballTug = 0;                // seconds of pulling on the ball in its mouth (Noah, run 13)
     bool featherNear = false;         // the feather was close to its face when let go

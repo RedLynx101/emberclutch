@@ -24,9 +24,9 @@ wait 0.3
 key SELECT
 wait 0.5
 # The toy slot (the ball), then its picker.
-tap 238 221
+tap 134 221
 wait 0.4
-tap 238 221
+tap 134 221
 wait 0.4
 shot y01-toy-picker
 # The feather: dangled and flicked near its face.
@@ -39,7 +39,7 @@ drag 140 80 250 100 0.25 0.5
 wait 1.2
 shot y03-feather-pounce
 # The rope: held and tugged, then let go.
-tap 238 221
+tap 134 221
 wait 0.4
 tap 108 180
 wait 0.5
@@ -50,7 +50,7 @@ shot y05-rope-trots-off
 wait 4
 shot y06-rope-dropped
 # The orb: rolled about until a treat drops out.
-tap 238 221
+tap 134 221
 wait 0.4
 tap 150 180
 wait 0.5

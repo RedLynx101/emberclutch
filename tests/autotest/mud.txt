@@ -24,7 +24,9 @@ tap 82 106
 wait 0.3
 key SELECT
 wait 2
-tap 134 221
+tap 30 221
+wait 0.3
+tap 66 182
 wait 1
 key R
 wait 0.4

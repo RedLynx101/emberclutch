@@ -11,6 +11,7 @@
 #include "app/autotest.hpp"
 #include "app/care_ui.hpp"
 #include "app/hitch.hpp"
+#include "app/prefetch.hpp"
 #include "app/keyboard.hpp"
 #include "app/perf.hpp"
 #include "app/debug.hpp"
@@ -21,6 +22,7 @@
 #include "app/dragondex_ui.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
+#include "core/campaign.hpp"
 #include "core/clock.hpp"
 #include "core/dragon.hpp"
 #include "core/items.hpp"
@@ -102,6 +104,7 @@ int main() {
         fixCare(app);
         markVisit(activeDragon(app), now);
         dexSeeAll(app.game);  // a save from before the Dragondex: everyone hatched is in it
+        campaign::update(app.game);  // Beta: a save from before it begins the Lantern Festival
     }
 
     audio::setVolumes(app.game.settings.musicVolume, app.game.settings.sfxVolume);
@@ -215,6 +218,7 @@ int main() {
 
     if (hasDragon(app) && !app.quit) saveNow(app);  // (Save & quit has just saved)
     finishSaves();  // the save thread's last write lands before the game goes
+    prefetch::shutdown();
     hitch::write();
     autotest::finish();
     screenshot::finish();

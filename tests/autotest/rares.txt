@@ -27,7 +27,9 @@ tap 82 131
 wait 0.3
 key SELECT
 wait 2
-tap 134 221
+tap 30 221
+wait 0.3
+tap 66 182
 wait 2
 shot r0-none
 key SELECT

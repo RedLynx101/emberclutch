@@ -16,6 +16,12 @@ void drawItem(Item i, float x, float y, float scale);
 // The profile's pages (WP8) for any dragon or egg: About / Family tabs at y 38 and the page
 // below them (to y 196). The den's profile uses them; so do the Sanctuary and the Cold Vault.
 void drawProfilePages(App& app, const Input& in, const Dragon& d, s64 now, u8& tab);
+// Just the About page (the Journal shows it under its own tabs).
+void profileAbout(App& app, const Dragon& d, s64 now);
+
+// The tray's places (D85, app/care_pages): Outing, Journal and Den over the bottom screen.
+// True while one is open (it drew the screen).
+bool drawPage(App& app, const Input& in, Dragon& d, s64 now);
 
 // Which close-up the tool in hand wants (the face for petting, feeding and play; the whole
 // body for grooming and the bath).

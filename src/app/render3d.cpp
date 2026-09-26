@@ -1,6 +1,7 @@
 #include "app/render3d.hpp"
 
 #include "app/hitch.hpp"
+#include "app/prefetch.hpp"
 
 #include <3ds.h>
 #include <citro2d.h>
@@ -130,6 +131,9 @@ bool fillStatic(GpuMesh& g, const MeshData& m) {
 }
 
 bool readFile(const char* path, std::vector<u8>& out) {
+    bool asked = false;  // read ahead on the loader's thread? (app/prefetch)
+    if (prefetch::take(path, out, asked)) return true;
+    if (asked) return false;
     FILE* file = std::fopen(path, "rb");
     if (!file) return false;
     std::fseek(file, 0, SEEK_END);
@@ -380,12 +384,16 @@ const int* clipsForSlot(int slot, int form) {
     return isKind(slot) ? g_planClips[planOfSlot(slot)][f] : g_clipIndex[f];
 }
 
+void planPath(int plan, char* path, std::size_t cap) {
+    std::snprintf(path, cap, "romfs:/anims/%s.eca", planInfo(plan).name);
+}
+
 bool loadPlan(int plan) {
     if (g_planTried[plan]) return g_planOk[plan];
     g_planTried[plan] = true;
     std::vector<u8> bytes;
     char path[64];
-    std::snprintf(path, sizeof(path), "romfs:/anims/%s.eca", planInfo(plan).name);
+    planPath(plan, path, sizeof(path));
     g_planOk[plan] = readFile(path, bytes) && loadAnims(bytes.data(), bytes.size(), g_planAnims[plan]) &&
                      resolveClips(g_planAnims[plan], kFormHatchling, g_planClips[plan][kFormHatchling]) &&
                      resolveClips(g_planAnims[plan], kFormGrown, g_planClips[plan][kFormGrown]);
@@ -393,10 +401,9 @@ bool loadPlan(int plan) {
 }
 
 bool loadTexture(const char* path, C3D_Tex& tex) {
-    FILE* file = std::fopen(path, "rb");
-    if (!file) return false;
-    Tex3DS_Texture t3x = Tex3DS_TextureImportStdio(file, &tex, nullptr, false);
-    std::fclose(file);
+    std::vector<u8> bytes;  // (through readFile: it may have been read ahead)
+    if (!readFile(path, bytes)) return false;
+    Tex3DS_Texture t3x = Tex3DS_TextureImport(bytes.data(), bytes.size(), &tex, nullptr, false);
     if (!t3x) return false;
     Tex3DS_TextureFree(t3x);
     C3D_TexSetFilter(&tex, GPU_LINEAR, GPU_LINEAR);
@@ -2087,19 +2094,26 @@ void releaseForm(Form& f) {
     f.model = ModelData{};
 }
 
-// One form of one look: its model and skin (form order: hatchling LOD0, LOD1, grown LOD0, LOD1).
-bool loadLookForm(int look, int k) {
+// A form's files: its model and its skin (form order: hatchling LOD0, LOD1, grown LOD0, LOD1).
+void formPaths(int look, int k, char* ecm, char* skin, std::size_t cap) {
     const int form = k < 2 ? kFormHatchling : kFormGrown, lod = k % 2;
-    Form& f = g_forms[look][form][lod];
-    if (f.ok) return true;
-    char dir[48], ecm[80], skin[80];
+    char dir[48];
     const char* name = form == kFormHatchling ? "hatchling" : "grown";
     if (isKind(look))
         std::snprintf(dir, sizeof(dir), "romfs:/dragons/%s/", kindInfo(kindOfSlot(look)).name);
     else
         std::snprintf(dir, sizeof(dir), "%s", kLookDir[look]);
-    std::snprintf(ecm, sizeof(ecm), "%s%s%s.ecm", dir, name, lod ? "_lod1" : "");
-    std::snprintf(skin, sizeof(skin), "%s%s%s_skin.t3x", dir, name, lod ? "_lod1" : "");
+    std::snprintf(ecm, cap, "%s%s%s.ecm", dir, name, lod ? "_lod1" : "");
+    std::snprintf(skin, cap, "%s%s%s_skin.t3x", dir, name, lod ? "_lod1" : "");
+}
+
+// One form of one look: its model and skin.
+bool loadLookForm(int look, int k) {
+    const int form = k < 2 ? kFormHatchling : kFormGrown, lod = k % 2;
+    Form& f = g_forms[look][form][lod];
+    if (f.ok) return true;
+    char ecm[80], skin[80];
+    formPaths(look, k, ecm, skin, sizeof(ecm));
     if (!loadForm(ecm, skin, f)) {
         releaseForm(f);
         return false;
@@ -2134,11 +2148,27 @@ bool loadLook(int look) {
 
 bool loadNextLook(const SaveData& s) {
     if (!g_ready) return false;
+    static bool asked[kLookSlots] = {};
     for (int i = 0; i < s.dragonCount; ++i) {
         const int look = kLookCount + (s.dragons[i].kind < kindCount() ? s.dragons[i].kind : 0);
         if (g_lookLoaded[look] || g_lookFailed[look]) continue;
         const int plan = planOfSlot(look);
-        if (!g_planTried[plan]) {  // its clips first (the biggest piece), then a form a call
+        char a[80], b[80];
+        if (!asked[look]) {  // every file it needs, read ahead off the main thread (Beta: the loader)
+            asked[look] = true;
+            if (!g_planTried[plan]) {
+                planPath(plan, a, sizeof(a));
+                prefetch::want(a);
+            }
+            for (int k = 0; k < 4; ++k) {
+                formPaths(look, k, a, b, sizeof(a));
+                prefetch::want(a);
+                prefetch::want(b);
+            }
+        }
+        if (!g_planTried[plan]) {  // its clips first, then a form a call, each once it's read
+            planPath(plan, a, sizeof(a));
+            if (!prefetch::ready(a)) return true;
             hitch::mark("clips");
             if (!loadPlan(plan)) g_lookFailed[look] = true;
             return true;
@@ -2146,6 +2176,8 @@ bool loadNextLook(const SaveData& s) {
         for (int k = 0; k < 4; ++k) {
             const int form = k < 2 ? kFormHatchling : kFormGrown;
             if (!g_forms[look][form][k % 2].ok) {
+                formPaths(look, k, a, b, sizeof(a));
+                if (!prefetch::ready(a) || !prefetch::ready(b)) return true;
                 hitch::mark("form");
                 if (!loadLookForm(look, k)) g_lookFailed[look] = true;
                 return true;

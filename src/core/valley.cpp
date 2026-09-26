@@ -1,5 +1,6 @@
 #include "core/valley.hpp"
 
+#include <array>
 #include <cmath>
 #include <cstring>
 
@@ -392,26 +393,66 @@ void buildValleyExtras(const Valley& v, ValleyMesh& out) {
     // (The places themselves are models: romfs/valley/places, drawn by render3d.)
 }
 
-void buildValleyWater(const Valley& v, ValleyMesh& out) {
+void buildValleyHorizon(const Valley& v, ValleyMesh& out) {
     out.clear();
-    const float x1 = v.x0 + v.size(), y1 = v.y0 + v.size(), z = v.water;
+    constexpr int kRays = 96;
+    const float half = v.size() * 0.5f, cx = v.x0 + half, cy = v.y0 + half;
+    Vec3 peak[kRays];
+    for (int k = 0; k < kRays; ++k) {
+        const float a = k * (2 * kPi / kRays), dx = std::cos(a), dy = std::sin(a);
+        peak[k] = {cx + dx * half * 0.6f, cy + dy * half * 0.6f, v.water};
+        for (float r = half * 0.55f; r < half * 0.99f; r += 8.0f) {
+            const float x = cx + dx * r, y = cy + dy * r, h = v.heightAt(x, y);
+            if (h > peak[k].z) peak[k] = {x, y, h};
+        }
+    }
+    for (int k = 0; k < kRays; ++k) {  // three to a ray: the foot, the shoulder, the top
+        const Vec3 p = peak[k];
+        const float snow = std::fmin(1.0f, std::fmax(0.0f, (p.z - 190.0f) / 90.0f));
+        auto shade = [&](float t, float bright) {
+            const float r = 150 + (240 - 150) * t, g = 136 + (244 - 136) * t, b = 164 + (252 - 164) * t;
+            return std::array<u8, 3>{static_cast<u8>(r * bright), static_cast<u8>(g * bright), static_cast<u8>(b * bright)};
+        };
+        const float lit = 0.86f + 0.14f * std::cos(k * (2 * kPi / kRays) - 2.4f);  // the sun's side a touch brighter
+        const auto foot = shade(0.0f, lit * 0.9f), shoulder = shade(snow * 0.4f, lit), top = shade(snow, lit * 1.04f);
+        addVertex(out, {p.x, p.y, v.water - 2.0f}, foot[0], foot[1], foot[2]);
+        addVertex(out, {p.x, p.y, v.water + (p.z - v.water) * 0.62f}, shoulder[0], shoulder[1], shoulder[2]);
+        addVertex(out, {p.x, p.y, p.z}, top[0], top[1], top[2]);
+    }
+    for (int k = 0; k < kRays; ++k) {
+        const u16 a = static_cast<u16>(k * 3), b = static_cast<u16>(((k + 1) % kRays) * 3);
+        for (int s = 0; s < 2; ++s) {
+            tri(out, static_cast<u16>(a + s), static_cast<u16>(b + s), static_cast<u16>(b + s + 1));
+            tri(out, static_cast<u16>(a + s), static_cast<u16>(b + s + 1), static_cast<u16>(a + s + 1));
+        }
+    }
+}
+
+void buildValleyWater(const Valley& v, ValleyMesh& out, Vec2 centre, float radius) {
+    out.clear();
+    // The water's surface: a disc round `centre` (the camera: past its edge the haze has it).
     const u8 blue[4] = {70, 140, 178, 170};
-    const u16 a = addVertex(out, {v.x0, v.y0, z}, blue[0], blue[1], blue[2], blue[3]);
-    const u16 b = addVertex(out, {x1, v.y0, z}, blue[0], blue[1], blue[2], blue[3]);
-    const u16 c = addVertex(out, {x1, y1, z}, blue[0], blue[1], blue[2], blue[3]);
-    const u16 d = addVertex(out, {v.x0, y1, z}, blue[0], blue[1], blue[2], blue[3]);
-    tri(out, a, b, c);
-    tri(out, a, c, d);
-    // The waterfall: a ribbon down the cliff from the plateau's stream, just proud of the rock.
-    if (const ValleyPlaceInfo* den = v.place(kPlaceDen)) {
-        const float y = den->at.y + 60.0f;
-        constexpr int kSteps = 8;
+    constexpr int kRim = 24;
+    const u16 mid = addVertex(out, {centre.x, centre.y, v.water}, blue[0], blue[1], blue[2], blue[3]);
+    for (int k = 0; k < kRim; ++k) {
+        const float a = k * (2 * kPi / kRim);
+        addVertex(out, {centre.x + std::cos(a) * radius, centre.y + std::sin(a) * radius, v.water}, blue[0], blue[1],
+                  blue[2], blue[3]);
+    }
+    for (int k = 0; k < kRim; ++k) tri(out, mid, static_cast<u16>(mid + 1 + k), static_cast<u16>(mid + 1 + (k + 1) % kRim));
+    // The waterfall: a curtain off the den's plateau, in front of the grotto behind the falls,
+    // arcing out a little as it drops into the pool.
+    if (const ValleyPlaceInfo* grotto = v.place(kPlaceGrotto)) {
+        const float y = grotto->at.y, cliff = grotto->at.x + 6.0f;  // (the grotto sits 6 m into the cliff)
+        const float top = v.heightAt(cliff - 22.0f, y) - 1.0f;       // the plateau's stream
+        constexpr int kSteps = 10;
         u16 prev[2] = {};
         for (int s = 0; s <= kSteps; ++s) {
-            const float x = den->at.x - 8.0f + 26.0f * s / kSteps;
-            const float z = v.heightAt(x, y) + 0.8f;
+            const float t = static_cast<float>(s) / kSteps;
+            const float x = cliff - 12.0f + 20.0f * std::sqrt(t), z = top + (v.water - 0.5f - top) * t;
             const u8 w = static_cast<u8>(200 + 40 * (s % 2));
-            const u16 l = addVertex(out, {x, y - 3.5f, z}, w, w, 255, 200), r = addVertex(out, {x, y + 3.5f, z}, w, w, 255, 200);
+            const float spread = 3.5f + 2.5f * t;  // wider as it falls
+            const u16 l = addVertex(out, {x, y - spread, z}, w, w, 255, 200), r = addVertex(out, {x, y + spread, z}, w, w, 255, 200);
             if (s > 0) {
                 tri(out, prev[0], l, r);
                 tri(out, prev[0], r, prev[1]);

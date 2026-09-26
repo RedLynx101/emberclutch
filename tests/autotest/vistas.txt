@@ -1,0 +1,43 @@
+# Beta: the valley's vistas for the review: over the village toward the heights, the den's cliff
+# and the falls, the lake and the arena, and the same at dusk and at night.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+light
+key X
+wait 5
+view 1 -60 -160 70 20 120 10
+wait 3
+shot v01-village-to-the-heights
+view 12 0 -70 22 0 0 26
+wait 3
+shot v02-the-falls-and-grotto
+view 7 40 180 60 0 -150 0
+wait 3
+shot v03-the-lake-and-arena
+view 11 40 50 22 -10 0 5
+wait 3
+shot v04-the-mill
+skip 8
+view 1 -60 -160 70 20 120 10
+wait 3
+shot v05-village-at-dusk
+skip 3
+view 1 -60 -160 70 20 120 10
+wait 3
+shot v06-village-at-night
+view 0 30 25 10 0 0 3
+wait 3
+shot v07-den-at-night
+quit

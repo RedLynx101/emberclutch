@@ -2411,7 +2411,10 @@ constexpr int kValleySlots = 64;       // tiles kept built
 constexpr int kValleyBuilds = 2;       // tiles built a frame at most (the rest show coarser, or wait)
 constexpr float kValleyNear = 0.5f, kValleyFar = 400.0f;  // Beta's valley is 2.3 km: see further
 ValleyGpu g_vtiles[kValleySlots];
-ValleyGpu g_vextras, g_vwater;
+ValleyGpu g_vextras, g_vwater, g_vhorizon, g_vskirt;
+std::vector<u8> g_horizonBase;  // the ring's own colours (hazed toward the fog each frame)
+u8* g_horizonHaze[2] = {};
+int g_horizonFlip = 0;
 // The flown dragon's shadow (D81, a height tell): a soft disc laid on the ground under it,
 // rebuilt each frame into one of two buffers (the GPU may still be drawing last frame's).
 struct ShadowGpu {
@@ -3132,6 +3135,12 @@ void releaseValley() {
     for (ValleyGpu& g : g_vtiles) g.release();
     g_vextras.release();
     g_vwater.release();
+    g_vhorizon.release();
+    g_vskirt.release();
+    for (u8*& c : g_horizonHaze) {
+        retire(c);
+        c = nullptr;
+    }
     for (PlaceGpu& p : g_places) {
         p.release();
         p.failed = false;
@@ -3180,14 +3189,78 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     g_denView = viewM;  // project() works in the valley too
     g_denViewSet = true;
     Mtx_Multiply(&clip, &projection, &viewM);
-    if (!g_fogOk) {  // fog thickens from about 130 m to the far plane (the LUT knows the projection)
-        FogLut_Exp(&g_fogLut, 1.0f / 280.0f, 2.5f, kValleyNear, kValleyFar);
+    if (!g_fogOk) {  // fog: clear to ~200 m, a third by the ground's edge (340 m): the far haze takes over there
+        FogLut_Exp(&g_fogLut, 1.0f / 450.0f, 4.0f, kValleyNear, kValleyFar);  // clear to ~150 m, gone by the edge
         g_fogOk = true;
     }
     C2D_Flush();
     C3D_FogGasMode(GPU_FOG, GPU_PLAIN_DENSITY, false);
     C3D_FogColor(u32(view.fog.r) | (u32(view.fog.g) << 8) | (u32(view.fog.b) << 16));
     C3D_FogLutBind(&g_fogLut);
+    // The ring of mountains, far off behind everything: hazed halfway to the sky's horizon.
+    if (!g_vhorizon.count) {
+        ValleyMesh m;
+        buildValleyHorizon(v, m);
+        if (uploadValley(g_vhorizon, m)) g_horizonBase = m.color;
+    }
+    if (g_vhorizon.count && !g_horizonBase.empty()) {
+        const std::size_t bytes = g_horizonBase.size();
+        g_horizonFlip ^= 1;
+        u8*& haze = g_horizonHaze[g_horizonFlip];
+        if (!haze) haze = static_cast<u8*>(linearAlloc(bytes));
+        if (haze) {
+            // The far haze: the fog's colour with a little of the valley's green in it (so the
+            // ground's edge at 340 m fades into it rather than stepping).
+            const Rgb farHaze{static_cast<u8>(view.fog.r * 0.62f + 118 * 0.38f * view.tint.r / 255.0f),
+                              static_cast<u8>(view.fog.g * 0.62f + 170 * 0.38f * view.tint.g / 255.0f),
+                              static_cast<u8>(view.fog.b * 0.62f + 92 * 0.38f * view.tint.b / 255.0f)};
+            const u8 fog[3] = {view.fog.r, view.fog.g, view.fog.b};
+            for (std::size_t i = 0; i < bytes; i += 4) {
+                const int level = (i / 4) % 3;  // the foot lost in the haze, the shoulder half, the top clearest
+                const float k = level == 0 ? 1.0f : level == 1 ? 0.62f : 0.42f;
+                const u8 to[3] = {level == 0 ? farHaze.r : fog[0], level == 0 ? farHaze.g : fog[1], level == 0 ? farHaze.b : fog[2]};
+                for (int c = 0; c < 3; ++c)
+                    haze[i + c] = static_cast<u8>(g_horizonBase[i + c] + (to[c] - g_horizonBase[i + c]) * k);
+                haze[i + 3] = 255;
+            }
+            GSPGPU_FlushDataCache(haze, bytes);
+            C3D_Mtx far;
+            topProjection(far, 40.0f, 5000.0f, focus);
+            C3D_FogGasMode(GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
+            C3D_DepthTest(false, GPU_ALWAYS, GPU_WRITE_COLOR);
+            C3D_CullFace(GPU_CULL_NONE);
+            // First the haze over the far valley floor: a disc at the water's level out to the far
+            // plane in the fog's colour (under the ring's foot and the ground drawn after).
+            if (!g_vskirt.count) {
+                ValleyMesh m;
+                const float cx = v.x0 + v.size() * 0.5f, cy = v.y0 + v.size() * 0.5f;
+                const u16 mid = static_cast<u16>(m.pos.size());
+                m.pos.push_back({cx, cy, v.water - 3.0f});
+                m.color.insert(m.color.end(), {255, 255, 255, 255});
+                constexpr int kRim = 32;
+                for (int k = 0; k < kRim; ++k) {
+                    const float a = k * (6.2831853f / kRim);
+                    m.pos.push_back({cx + std::cos(a) * 4200.0f, cy + std::sin(a) * 4200.0f, v.water - 3.0f});
+                    m.color.insert(m.color.end(), {255, 255, 255, 255});
+                }
+                for (int k = 0; k < kRim; ++k)
+                    m.idx.insert(m.idx.end(), {mid, static_cast<u16>(mid + 1 + k), static_cast<u16>(mid + 1 + (k + 1) % kRim)});
+                uploadValley(g_vskirt, m);
+            }
+            bindValleyStatic(far, viewM, farHaze);  // white vertices times the far haze
+            drawValleyGpu(app, g_vskirt);
+            bindValleyStatic(far, viewM, Rgb{255, 255, 255});
+            C3D_BufInfo* buf = C3D_GetBufInfo();
+            BufInfo_Init(buf);
+            BufInfo_Add(buf, g_vhorizon.pos, sizeof(Vec3), 1, 0x0);
+            BufInfo_Add(buf, haze, 4, 1, 0x1);
+            BufInfo_Add(buf, haze, 4, 1, 0x2);
+            C3D_DrawElements(GPU_TRIANGLES, g_vhorizon.count, C3D_UNSIGNED_SHORT, g_vhorizon.idx);
+            app.stats.tris += g_vhorizon.count / 3;
+            app.stats.draws += 1;
+            C3D_FogGasMode(GPU_FOG, GPU_PLAIN_DENSITY, false);
+        }
+    }
     bindValleyStatic(projection, viewM, view.tint);
     C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
     C3D_CullFace(GPU_CULL_BACK_CCW);
@@ -3321,9 +3394,13 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, 1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f);
     drawGlints(app, view, viewM);
     // The water and the waterfall: see-through, over everything, writing no depth.
-    if (!g_vwater.count) {
+    // (rebuilt round the camera as it moves on: past the ground's edge the haze has the water)
+    static Vec2 waterAt{1e9f, 1e9f};
+    if (!g_vwater.count || std::hypot(view.eye.x - waterAt.x, view.eye.y - waterAt.y) > 40.0f) {
         ValleyMesh m;
-        buildValleyWater(v, m);
+        waterAt = {view.eye.x, view.eye.y};
+        buildValleyWater(v, m, waterAt, kValleyFar * 0.87f);
+        g_vwater.release();  // (retired: the GPU may still be drawing last frame's)
         uploadValley(g_vwater, m);
     }
     bindValleyStatic(projection, viewM, view.tint);

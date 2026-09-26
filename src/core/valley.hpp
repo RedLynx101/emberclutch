@@ -87,8 +87,13 @@ void buildValleyTile(const Valley& v, int tx, int ty, int lod, ValleyMesh& out);
 // What isn't ground: the floating islands (grassy tops, rocky undersides, a few trees) and
 // the den's cave mouth in its cliff.
 void buildValleyExtras(const Valley& v, ValleyMesh& out);
+// The ring of mountains as a far silhouette (Beta: the fog hides the valley's edges from
+// inside it): the highest ground along each of 96 rays from the middle, a band from the water's
+// level up to it, lilac rock snowing over at the top; drawn behind everything, hazed.
+void buildValleyHorizon(const Valley& v, ValleyMesh& out);
 // See-through things: the water's sheet over the whole valley and the den's waterfall.
-void buildValleyWater(const Valley& v, ValleyMesh& out);
+// The water round `centre` out to `radius` (the camera's reach), and the waterfall.
+void buildValleyWater(const Valley& v, ValleyMesh& out, Vec2 centre, float radius);
 // The detail level for a tile this far from the camera (metres).
 int valleyLodFor(float distance);
 

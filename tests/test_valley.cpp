@@ -110,7 +110,7 @@ TEST(valley_tiles_join_and_fit_the_budget) {
     CHECK(valleyLodFor(10) == 0 && valleyLodFor(100) == 1 && valleyLodFor(400) == 2);
     ValleyMesh extras, water;
     buildValleyExtras(v, extras);
-    buildValleyWater(v, water);
+    buildValleyWater(v, water, {0, 0}, 360.0f);
     std::printf("  extras %d, water %d triangles\n", extras.triangles(), water.triangles());
     CHECK(extras.triangles() > 50 && extras.triangles() < 800 && water.triangles() >= 2);
 }

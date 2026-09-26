@@ -386,7 +386,10 @@ the real valley with its fourteen places, you and the villagers, riding with you
 dragon's back, the lead, finds and the map's fog, the Wanderings seen in the world, the
 challenges and their cups, the Lantern Festival with the star dragon, and the fixes (mouths,
 sleeping, skins, the den's frame time). Your save carries over. Take it in one or two
-sittings; **Y** saves both screens and the numbers wherever you are.
+sittings; **Y** saves both screens and the numbers wherever you are. Sent to the 3DS at .54 on
+2026-09-26 with the big review's fixes (D88): the lead in your left hand and always there, Rowan's
+cane, trees on the floating islands and thicker woods, the mill bridge's ends on the ground, a
+lower camera, and what A does shown only close by and facing it.
 
 ## 0. Install
 1. In **FBI**: SD → cias → `emberclutch.cia` → Install CIA, over the game (the save stays).
@@ -426,7 +429,8 @@ Tap each pin in turn and look round (A at a door goes in, as before):
    Wandering, the rest. Once your dragon can fly, watch the sky over the floating isles.
 
 ## 5. Riding and flying
-1. With a grown partner, **A** beside it: you climb on and sit on its back. **A** flaps,
+1. With a grown partner, turn to face it (it waits while you stand still) and press **A**: you
+   climb on and sit on its back. **A** flaps,
    **B** dives, **L/R** bank, the circle pad steers.
 2. **Its tail in the wind:** turn right and the tail swings right; dive and it streams out
    straight behind.

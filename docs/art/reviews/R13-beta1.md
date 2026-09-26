@@ -26,5 +26,8 @@ database and read back with ArtifactData (collections `verdicts` and `questions`
 Walking pace; the walking camera's height; the haze; the festival's gift (a rare Starborn
 Glimmermoth); what Beta 2 leads with.
 
-## Answers
-(Read back from the page once Noah has been through it: D88.)
+## Answers (D88, 2026-09-26)
+Loved: the Market, you, discovery, the festival, riding, the challenges, the den, speed. Tweaked
+and done for run 19: the lead (left hand, always shown, above the ground), Rowan's cane, trees on
+the islands, more and painted trees, the mill bridge, prompts only close and facing. The camera
+lower and further behind; the star-born egg kept; pace after playing; Beta 2 leads with all four.

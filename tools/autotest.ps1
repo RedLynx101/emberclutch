@@ -41,6 +41,8 @@ for ($waited = 0; -not $lock; $waited += 5) {
         Start-Sleep -Seconds 5
     }
 }
+# Let go of it however the run ends, even when another run follows in this same PowerShell.
+try {
 New-Item -ItemType Directory -Force $sd | Out-Null
 $kept = Join-Path $backup "kept.txt"  # a previous run kept its save: the backup is the dev save
 if (-not (Test-Path $kept)) {
@@ -130,3 +132,4 @@ if (Test-Path $emuLog) {
         $bad | Select-Object -First 5 | ForEach-Object { "  " + ($_.Line -replace '^\[\s*[\d.]+\]\s*', '') }
     } else { "memory: no unmapped accesses" }
 }
+} finally { if ($lock) { $lock.Close() } }

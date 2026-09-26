@@ -7,6 +7,7 @@
 #include <cstdio>
 
 #include "app/audio.hpp"
+#include "app/autotest.hpp"
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
@@ -68,7 +69,8 @@ void drawBottom(App& app, const Input& in) {
     if (app.titleConfirm == 0) {
         if (hasDragon(app)) {
             if (button(app, {60, 62, 200, 46}, str::kContinue, in) || (in.down & KEY_A)) {
-                if (app.game.world.inValley) resumeValley(app);  // left out in the valley: back there
+                if (!app.game.world.lookMade && !autotest::active()) openCreator(app, SceneId::Den);  // a save from before Beta: your look first, once
+                else if (app.game.world.inValley) resumeValley(app);  // left out in the valley: back there
                 else app.scene = SceneId::Den;
                 audio::playSfx(audio::Sfx::Confirm);
             }

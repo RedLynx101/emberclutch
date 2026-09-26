@@ -378,3 +378,101 @@ All 10 steps done. Noah's notes (D85), with the 3DS's screenshots 85-91 and its 
   read on the 3DS (once 2.3 s), so the run 17 stall was most likely a kind read on the spot.
   One 0.56 s frame in the valley with nothing marked. The den ran 20-26 ms with three grown
   Blazeplume-sized kinds (shots 90-91): over the 16.7 ms budget.
+
+# Run 19 (0.3.0, Beta 1): the valley, its places and people, the challenges, the festival
+
+**For Noah.** Beta 1, all of it at once (D85-D87, [what's in it](beta.md#beta-1-whats-built-2026-09-26-with-creative-freedom-d85-d87)):
+the real valley with its fourteen places, you and the villagers, riding with you on your
+dragon's back, the lead, finds and the map's fog, the Wanderings seen in the world, the
+challenges and their cups, the Lantern Festival with the star dragon, and the fixes (mouths,
+sleeping, skins, the den's frame time). Your save carries over. Take it in one or two
+sittings; **Y** saves both screens and the numbers wherever you are.
+
+## 0. Install
+1. In **FBI**: SD → cias → `emberclutch.cia` → Install CIA, over the game (the save stays).
+2. The banner labs: SD → cias → lab → **Install all CIAs** (four titles, Banner lab B to E;
+   step 9).
+
+## 1. Your look
+1. **Continue:** your character's creator comes first (once, for a save from before Beta): a
+   row each for clothes, hair, hair colour, skin, outfit and eyes; the circle pad turns you;
+   **Done** (a cheer), then the den.
+2. Later: START → Settings → **Your look** changes it any time.
+
+## 2. Out into the valley
+1. From the den, **X** (or the tray's **Outing**) takes you and your partner out by the den's
+   arch in its cliff. A hatchling or juvenile walks on its **lead**; a grown one at your side.
+2. Walk (circle pad), run (**B**), turn the view (**L/R**); walk round the well and the
+   villagers (you slide round them). Try the **3D slider** here.
+3. **The map** (bottom screen): fogged where you haven't been, clearing round you; tap a pin to
+   go there. Far off, a **ring of mountains** stands round the valley.
+
+## 3. The places
+Tap each pin in turn and look round (A at a door goes in, as before):
+1. **The Market:** the **egg of the day** on its stand, and the day's goods on the goods
+   stall (a crate where one's sold out); walk up to either and press **A**: its page of the
+   shop. Buy the egg: it's gone from the stand when you come back out.
+2. The Nesting Stone, the Sanctuary, the Cold Vault, the Trailhead, the Arena, Mirror Lake,
+   the Keeper's Lodge, the Orchard, the **Windmill** (its sails turn), the **Hidden Grotto**
+   (behind the falls), the Floating Isles and Starwatch Ruins (from the air).
+3. At dusk and night: windows glow, and every festival lantern you've lit burns.
+
+## 4. People and the Lantern Festival
+1. Talk to **Rowan** by the falls (**A** near him): the festival's first quest. Each villager
+   turns to you, waves, talks (voiced, a letter at a time, with a portrait) and nods.
+2. Light the den's lantern: stand by it and press **A** (your dragon's breath).
+3. Follow the quests (the **Journal** in the tray shows them, your places and finds): Maple's
+   Fruit Catch, Bram's stray in the meadow (walk your dragon through the flowers), Sable's
+   Wandering, the rest. Once your dragon can fly, watch the sky over the floating isles.
+
+## 5. Riding and flying
+1. With a grown partner, **A** beside it: you climb on and sit on its back. **A** flaps,
+   **B** dives, **L/R** bank, the circle pad steers.
+2. **Its tail in the wind:** turn right and the tail swings right; dive and it streams out
+   straight behind.
+3. Land on flat ground; **D-pad down** gets off.
+
+## 6. Finds and the Wanderings
+1. **Gold stars** glint about the valley (22, ten only from the air): walk or fly to one for
+   Gleam, a trinket, or (twice) a wild egg.
+2. Send a dragon on the **Wanderings** (the Trailhead's door): its pin goes round a loop on the
+   map; walk a while with the 3DS closed and it moves on. A grown one flies circles over its
+   spot.
+
+## 7. The challenges
+1. The notice board by the **arena's gate** (or talking to **Wren**): the Lantern Trial,
+   Ember cup. Watch the crystal lanterns, then tap them in order: your dragon breathes each
+   alight in its element.
+2. The board by the **orchard's cart** (Maple): Fruit Catch, Ember. Flick fruit up from the
+   basket; your dragon leaps, snaps or dives.
+3. With a grown partner: **Sky Rings**, Ember. Fly the gold rings to the floating isles; the
+   last lights their lantern. Try the Flame cup too: your best run flies beside you as a wisp.
+4. In the den: the trophies and rosettes you've won on the shelves.
+
+## 8. The den
+1. With three or more grown dragons out: the frame time (overlay) and **Y**.
+2. At night (or after a nap): the Pouncer family (Pouncer, Blazeplume, Kindlemoss, Lilyfin)
+   curl up like cats to sleep; the Crestwing and Glimmermoth lie down.
+3. Pet a grown Blazeplume's chin and feed it: the mouth's corners in the close-up, never
+   see-through.
+
+## 9. The banner labs
+Each is the game's banner with one thing from the Blazeplume banner that froze (lab A).
+1. On the HOME Menu, rest on **Banner lab B** about 15 seconds (never start it), then **C**,
+   **D** and **E**. If one freezes, hold POWER to turn off, turn on again, note which, and go on
+   with the next.
+2. If they hold: **B** looks just like the game's banner (only names inside changed), **C** is
+   the Blazeplume's body in the egg (patchy on purpose), **D** has its tail raised behind its
+   shoulder, **E** is the old hatchling in the Blazeplume's orange.
+3. Afterwards in FBI: Titles → each "Banner lab" → Delete Title.
+
+## 10. Performance
+**Y** in: the Market's square, flying high over the valley, the arena during a challenge, and
+the den with three grown dragons.
+
+## What to send back
+- How it feels: the valley's look and spacing, getting about, the camera, the people and
+  their talk, riding.
+- The challenges: fun? too easy or hard (Sky Rings' Flame and Starfire especially)?
+- Anything broken, stuck or confusing.
+- Which banner labs froze and which held.

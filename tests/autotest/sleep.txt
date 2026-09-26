@@ -1,0 +1,39 @@
+# The kit's curl (Beta 1): a grown Pouncer settling for the night and asleep, curled like a cat
+# (the den at bedtime; the close-up shows its body), then waking in the morning.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 1
+skip 14
+wait 25
+shot z01-bedtime
+wait 25
+shot z02-curling
+wait 30
+shot z03-asleep
+key R
+wait 1
+shot z04-asleep-side
+skip 10
+wait 20
+shot z05-morning
+quit

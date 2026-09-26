@@ -327,6 +327,19 @@ Everything below was checked in Azahar by scripted runs (`tests/autotest/*.txt`,
   partner, the traveller's Wandering); **the star dragon** is seen circling over the floating
   isles once your dragon has its wings, over the arena on the festival's eve, and after; the
   festival night ends in the star-born egg (a Glimmermoth in its rare colouring, Starborn).
+- **The challenges (WP8-WP11,** built by a builder, `docs/tech/challenges.md`**):** notice
+  boards at the arena's gate and the orchard's cart (and Wren) open the picker: Sky Rings
+  (ridden, the valley's own flight, 11-28 rings a cup, a clock and your best run's ghost; the
+  Ember course ends lighting the floating isles' lantern), the Lantern Trial (crystal lanterns
+  in a pattern, your dragon's breath in its element), Fruit Catch at the orchard (flicked with
+  the stylus; a hop version for the young); Ember to Starfire cups, Gleam, ribbons and
+  trophies on the den's shelves, the cup-day music and the results stingers.
+- **The dragon kit (fixes, by a builder):** mouths closed at their edges from every angle the
+  close-up looks from (13 of 14 kinds were see-through; a new check), no black skin faces (a
+  new scan, 7 kinds fixed), the Pouncer plan's cat curl for sleeping (and the Crestwing's and
+  Glimmermoth's lying down); the other plans' curl notes are in `docs/tech/dragon-kit.md`.
+- **The banner labs:** four (B-E), each X plus one part of lab A (names, geometry, the tail's
+  swing, paint), in `build/lab/beta/` (`docs/tech/banner-labs.md`).
 - **Performance (WP17):** typical valley views 6-7.7k triangles (the Market's square 9k):
   your dragon's lighter model a little way off, the ground's full detail nearer, no places
   past 260 m; the den draws every dragon lighter with three or more out (run 18: 20-26 ms);

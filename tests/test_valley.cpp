@@ -7,6 +7,7 @@
 #include "check.hpp"
 #include "core/flight.hpp"
 #include "core/valley.hpp"
+#include "core/walker.hpp"
 
 using namespace ec;
 
@@ -258,9 +259,76 @@ TEST(walking_in_the_valley) {
     CHECK(f.grounded && f.swimming && splashed);
 }
 
+// On foot (Beta WP5, D81): you walk the way the pad points from the camera's view, run with B,
+// stop at deep water and walls; your partner keeps its spot at your side and, lost far behind,
+// comes when called; the camera stays above the ground and turns with L and R.
+TEST(on_foot_with_your_partner) {
+    const Valley& v = valley();
+    const ValleyPlaceInfo& market = *v.place(kPlaceMarket);
+    Walker you;
+    you.pos = market.at;
+    std::vector<Solid> solids = {{{market.at.x + 12, market.at.y}, 3.0f}};  // a cottage to the east
+    const float dt = 1.0f / 30;
+    WalkInput east;
+    east.x = 1;  // the pad to the right, the camera looking north (yaw pi): walks east
+    const float camYaw = 3.14159f;
+    for (int k = 0; k < 90; ++k) you.update(east, camYaw, v, solids, dt);
+    CHECK(you.pos.x > market.at.x + 4);                              // off it went, east
+    CHECK(you.pos.x < market.at.x + 12 - 3.0f + 0.01f);              // and up against the cottage, not in it
+    const float walked = you.speed;
+    WalkInput run = east;
+    run.run = true;
+    Walker runner;
+    runner.pos = market.at + Vec3{0, 20, 0};
+    for (int k = 0; k < 60; ++k) runner.update(run, camYaw, v, {}, dt);
+    CHECK(runner.speed > 6.0f && runner.speed > walked);
+    // Into the lake: it stops at the water's edge.
+    const ValleyPlaceInfo& lake = *v.place(kPlaceLake);
+    Walker wader;
+    wader.pos = lake.at + Vec3{0, 30, 0};
+    wader.pos.z = v.heightAt(wader.pos.x, wader.pos.y);
+    WalkInput south;
+    south.y = 1;  // the camera looking south (yaw 0): pad up walks south, into the lake
+    for (int k = 0; k < 400; ++k) wader.update(south, 0.0f, v, {}, dt);
+    CHECK(v.heightAt(wader.pos.x, wader.pos.y) > v.water - 0.61f);
+    // The partner: at your side after a walk, facing your way.
+    Follower pal;
+    pal.pos = market.at + Vec3{-6, 4, 0};
+    Walker me;
+    me.pos = market.at + Vec3{0, 30, 0};
+    WalkInput north;
+    north.y = 1;
+    for (int k = 0; k < 120; ++k) {
+        me.update(north, camYaw, v, {}, dt);
+        pal.update(me, v, {}, dt);
+    }
+    for (int k = 0; k < 90; ++k) {
+        me.update(WalkInput{}, camYaw, v, {}, dt);
+        pal.update(me, v, {}, dt);
+    }
+    const Vec3 spot = pal.spot(me);
+    std::printf("  on foot: walked %.1f m/s, ran %.1f m/s; partner %.1f m from its spot\n", walked, runner.speed,
+                std::hypot(pal.pos.x - spot.x, pal.pos.y - spot.y));
+    CHECK(std::hypot(pal.pos.x - spot.x, pal.pos.y - spot.y) < 1.0f && !pal.lost());
+    // Left far behind across the lake: lost, then called to your side.
+    pal.pos = lake.at + Vec3{0, -60, 0};
+    pal.pos.z = v.heightAt(pal.pos.x, pal.pos.y);
+    std::vector<Solid> wall;
+    for (int k = 0; k < 150; ++k) pal.update(me, v, wall, dt);
+    pal.call(me, v);
+    CHECK(std::hypot(pal.pos.x - spot.x, pal.pos.y - spot.y) < 0.5f && !pal.lost());
+    // The camera: above the ground, turning with L/R.
+    WalkCamera cam;
+    cam.update(me, 0, v, dt);
+    const float before = cam.yaw;
+    for (int k = 0; k < 30; ++k) cam.update(me, 1.0f, v, dt);
+    CHECK(cam.yaw != before && cam.eye.z > v.heightAt(cam.eye.x, cam.eye.y) + 1.0f);
+}
+
 void runValleyTests() {
     RUN(the_valley_loads);
     RUN(valley_tiles_join_and_fit_the_budget);
     RUN(flying_over_the_valley);
     RUN(walking_in_the_valley);
+    RUN(on_foot_with_your_partner);
 }

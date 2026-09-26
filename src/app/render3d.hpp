@@ -180,6 +180,11 @@ struct ValleyView {
     Rgb tint{255, 255, 255};           // the day's light on the land
     Vec3 shadowAt;                     // the ground (or the water) under it
     float shadow = 0, shadowRadius = 0;  // its shadow's darkness (0: none) and size, metres
+    u32 lanternsLit = 0;               // the festival's lanterns alight (core/world, a bit per place)
+    bool riderOn = false;              // you on its back
+    bool youShown = false;             // you on foot: where, which way, how fast
+    Vec3 you;
+    float youHeading = 0, youSpeed = 0;
 };
 void drawValley(App& app, const ValleyView& view, s64 now);
 void releaseValley();  // leaving the valley: its GPU memory back

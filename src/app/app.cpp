@@ -9,6 +9,7 @@
 #include "core/items.hpp"
 #include "core/kinds.hpp"
 #include "core/campaign.hpp"
+#include "core/valley.hpp"
 #include "core/world.hpp"
 #include "app/strings.hpp"
 
@@ -100,6 +101,20 @@ void tickWorld(App& app) {
 
 void openMap(App& app) {
     app.photo.active = false;
+    {  // Beta: the valley is the world now: out before the place you're leaving
+        int place = kPlaceDen;
+        switch (app.scene) {
+            case SceneId::Sanctuary: place = kPlaceSanctuary; break;
+            case SceneId::Vault: place = kPlaceVault; break;
+            case SceneId::NestingStone: place = kPlaceStone; break;
+            case SceneId::Market: place = kPlaceMarket; break;
+            case SceneId::Wanderings: place = kPlaceTrailhead; break;
+            default: break;
+        }
+        audio::playSfx(audio::Sfx::MapOpen);
+        openValleyAt(app, place);
+        return;
+    }
     // The places' order on the map (scene_map kPlaces): den, sanctuary, vault, stone, market, trails.
     switch (app.scene) {
         case SceneId::Sanctuary: app.mapFrom = 1; break;

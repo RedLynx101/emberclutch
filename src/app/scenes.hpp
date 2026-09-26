@@ -30,5 +30,7 @@ extern const SceneFns kValleyScene;
 
 // Beta's technical test (WP1): into Skyreach Valley with your dragon, grown (scene_valley).
 void openValley(App& app);
+// Out into the valley, on foot before a place (core/valley ValleyPlace) with your partner.
+void openValleyAt(App& app, int place);
 
 }  // namespace ec

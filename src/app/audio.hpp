@@ -23,6 +23,10 @@ enum class Sfx : u8 {
     // Sound brief 3 (docs/audio/sfx-batch-3.md), the valley and flying: its other sounds are in
     // romfs/sfx already and get a slot as the work that needs them arrives.
     Wingbeat, Takeoff, Landing, DiveWhoosh, WaterSkim, SplashBig, DragonStep,
+    // Beta 1: you on foot, the places, the festival, the challenges
+    StepGrass, StepStone, StepWood, Mount, FindSparkle, LanternLight, LanternRelight, DoorWood, QuestPage,
+    BreathFlame, BreathFrost, BreathGust, BreathLight, BreathMist, BreathSpores, VillageBell, CrowdCheer, CrowdAww,
+    WhistleStart, RingPass, FruitToss, FruitCatch, StarShimmer,
     Count
 };
 // True once a sound's own file is loaded (not a stand-in).
@@ -32,7 +36,8 @@ bool has(Sfx s);
 // fades toward the level last set; set it every frame it's wanted, or it fades out.
 // The valley's: the wind high up, the meadow by day, the night, the lake, and the wings
 // fluttering in a glide.
-enum class Bed : u8 { Hearth, Night, EggHum, Market, WindHigh, Meadow, ValleyNight, Lake, WingFlutter, Count };
+enum class Bed : u8 { Hearth, Night, EggHum, Market, WindHigh, Meadow, ValleyNight, Lake, WingFlutter, Stream, Waterfall,
+                      Village, Count };
 void setBed(Bed b, float level);  // 0..1
 
 // Returns false (and stays silent) if the DSP can't start, e.g. no sdmc:/3ds/dspfirm.cdc.

@@ -149,6 +149,7 @@ enum class KeyboardFor : u8 { None, PlayerName, NameHatchling, Rename };
 enum class MenuPage : u8 { Closed, Main, Settings, DeleteAsk, DeleteSure, Dex };
 
 struct App {
+    bool fromValley = false;  // a place's scene was entered from the valley (leaving goes back out)
     SceneId scene = SceneId::Title;
     C3D_RenderTarget* top = nullptr;
     C3D_RenderTarget* topRight = nullptr;  // the right eye, drawn while the 3D slider is up (WP11e)
@@ -275,7 +276,7 @@ int careNest(const App& app);
 // Moves the care to the next (+1) or previous (-1) one in the den: beds, then nests.
 void cycleCare(App& app, int dir);
 // Opens the world map (from the den: X, or the system menu).
-void openMap(App& app);
+void openMap(App& app);  // Beta: out into the valley, at the place you're leaving
 // Once a second from any scene where time runs: everyone's simulation, and the nesting pair's
 // egg when its day comes (with a toast).
 void tickWorld(App& app);

@@ -38,7 +38,11 @@ const char* const kSfxFiles[] = {
     "orb-rattle", "treat-drop", "bowl-clink", "nest-settle", "egg-lay", "coin", "register", "map-open",
     "travel-whoosh", "trail-depart",
     // sound brief 3: the valley and flying
-    "wingbeat", "takeoff", "landing", "dive-whoosh", "water-skim", "splash-big", "dragon-step-grass"};
+    "wingbeat", "takeoff", "landing", "dive-whoosh", "water-skim", "splash-big", "dragon-step-grass",
+    // Beta 1
+    "step-grass", "step-stone", "step-wood", "mount", "find-sparkle", "lantern-light", "lantern-relight", "door-wood",
+    "quest-page", "breath-flame", "breath-frost", "breath-gust", "breath-light", "breath-mist", "breath-spores",
+    "village-bell", "crowd-cheer", "crowd-aww", "whistle-start", "ring-pass", "fruit-toss", "fruit-catch", "star-shimmer"};
 static_assert(sizeof(kSfxFiles) / sizeof(kSfxFiles[0]) == static_cast<int>(Sfx::Count), "one file per Sfx");
 // Stand-ins (D35) for sound brief 2, in Sfx order from BallRoll: what plays until the sound's
 // own file arrives, and how it's retuned. They match what these moments played before.
@@ -58,6 +62,13 @@ constexpr StandIn kStandIns[] = {
     // brief 3 (its files arrived with it: these only play if one goes missing)
     {Sfx::Flap, 0.8f, 1.0f},     {Sfx::Flap, 0.7f, 1.0f},    {Sfx::Thump, 0.8f, 1.0f},   {Sfx::Flap, 1.4f, 0.4f},
     {Sfx::Splash, 1.2f, 0.6f},   {Sfx::Splash, 0.7f, 1.0f},  {Sfx::Step, 1.0f, 1.0f},
+    // Beta 1 (their files are in: these only if one goes missing)
+    {Sfx::Step, 1.2f, 0.6f},     {Sfx::Step, 1.4f, 0.6f},    {Sfx::Step, 1.1f, 0.7f},    {Sfx::Flap, 1.1f, 0.8f},
+    {Sfx::Sparkle, 1.2f, 1.0f},  {Sfx::Sparkle, 0.8f, 1.0f}, {Sfx::Sparkle, 0.9f, 0.8f}, {Sfx::Thump, 1.1f, 0.8f},
+    {Sfx::Toast, 1.0f, 1.0f},    {Sfx::Rumble, 1.3f, 0.8f},  {Sfx::Sparkle, 1.4f, 0.7f}, {Sfx::Flap, 1.5f, 0.6f},
+    {Sfx::Sparkle, 1.6f, 0.7f},  {Sfx::Splash, 1.5f, 0.5f},  {Sfx::Brush, 0.8f, 0.6f},  {Sfx::Confirm, 0.8f, 1.0f},
+    {Sfx::Confirm, 1.2f, 1.0f},  {Sfx::Whimper, 1.0f, 0.6f}, {Sfx::Toast, 1.4f, 1.0f},  {Sfx::Sparkle, 1.3f, 1.0f},
+    {Sfx::Flap, 1.6f, 0.5f},     {Sfx::Munch, 1.2f, 0.8f},   {Sfx::Sparkle, 0.7f, 1.0f},
 };
 static_assert(sizeof(kStandIns) / sizeof(kStandIns[0]) == static_cast<int>(Sfx::Count) - kFirstBrief2,
               "a stand-in for every brief 2 sound");
@@ -70,12 +81,13 @@ struct Tone {
 };
 constexpr Tone kTones[] = {{Sfx::Step, 0.3f, 650.0f}, {Sfx::DragonStep, 0.55f, 0.0f}};
 const char* const kBedFiles[] = {"amb-hearth", "amb-night", "egg-hum", "amb-market", "amb-wind-high", "amb-meadow",
-                                 "amb-valley-night", "amb-lake", "wing-flutter"};
+                                 "amb-valley-night", "amb-lake", "wing-flutter", "amb-stream", "amb-waterfall",
+                                 "amb-village"};
 const float kBedGain[] = {0.55f, 0.5f, 0.6f, 0.45f, 0.5f, 0.42f, 0.45f, 0.45f, 0.35f};  // under the music and the voices
 // The den's beds stay loaded (they come and go all the time there); the Market's and the
 // valley's load when a scene first wants them and go again a few seconds after they fall
 // silent: preloaded, the valley's five took 1.6 MB of the den's linear memory (run 15's build).
-const bool kBedResident[] = {true, true, true, false, false, false, false, false, false};
+const bool kBedResident[] = {true, true, true, false, false, false, false, false, false, false, false, false};
 constexpr float kBedUnloadAfter = 3.0f;  // seconds silent
 static_assert(sizeof(kBedFiles) / sizeof(kBedFiles[0]) == static_cast<int>(Bed::Count), "one file per Bed");
 

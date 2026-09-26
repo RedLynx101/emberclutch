@@ -1,6 +1,7 @@
 """The animated 3D HOME Menu banner (Alpha 2 WP10, D50) and its flat 2D fallback.
 
-The textured baby Ember peeks out of its cracked, ember-lit egg (the cap sits on its head),
+The face of the game (D80): the Blazeplume's hatchling (tools/dragons/kinds/blazeplume.py, the
+dragon kit's model) peeks out of its cracked, ember-lit egg (the cap sits on its head),
 the Emberclutch wordmark above it, gold sparkles twinkling round them, over the HOME Menu's
 own background, all centred. Twice in a 10 second loop (one turn of the HOME Menu's camera,
 below) it tilts its head, wags its tail, blinks twice and its heart pulses (scale, and a
@@ -10,8 +11,10 @@ The HOME Menu rules (docs/plan/alpha-2.md WP10): the model and its animation are
 COMMON (pycgfx does that), the CGFX stays under 512 KB, and every moving thing is a rigid
 piece animated by node transforms, never skinning. So the posed dragon is frozen and cut
 into pieces at its joints (body, head, eyes, tail, heart), each with its pivot at the joint.
+Each moving piece also carries a collar of the body round its joint, so the joint never opens
+as it turns (0.1.x's baby Ember showed breaks in its skin at the neck and tail; D80).
 
-  blender -b -P tools/blender/banner3d.py -- [--out build/banner] [--assets assets] [--review build/review] [--debug-rig]
+  blender -b -P tools/blender/banner3d.py -- [--kind blazeplume|classic] [--out build/banner] [--assets assets] [--review build/review] [--debug-rig]
     [--no-fit] [--keep-glow] [--keep-backdrop] [--no-anchor] [--no-sparkles]   (banner-lab variants, tools/banner_lab.ps1)
     [--turn | --still] [--short-loop] [--spin-egg]   (holding the banner still: see below)
   py -3.12 tools/banner_cgfx.py build/banner/banner.gltf build/banner/banner.cgfx [--turn "body*:1,egg:1" | --billboard world]
@@ -44,7 +47,7 @@ import sys
 
 import bmesh
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Euler, Matrix, Quaternion, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -56,6 +59,14 @@ OUT = os.path.abspath(dm.arg("--out", os.path.join(ROOT, "build", "banner")))
 ASSETS = os.path.abspath(dm.arg("--assets", os.path.join(ROOT, "assets")))
 REVIEW = os.path.abspath(dm.arg("--review", os.path.join(ROOT, "build", "review")))
 FONT = os.path.join(ROOT, "assets", "fonts", "cinzel-decorative", "CinzelDecorative-Bold.ttf")
+KIND = dm.arg("--kind", "blazeplume")  # a kind of the dragon kit, or "classic": the old baby Ember
+COLLAR = {"head": 0.11, "tail": 0.09}
+TAIL_LIFT = (55.0, 35.0)  # a kind's tail: raised (about X) and swung to its left (about Z), degrees  # each moving piece's collar round its joint (of the dragon's height)
+# A kind's parts coloured per vertex (a feather's bands, "vc" materials): each band takes its
+# palette slot's colour in the colouring, as the exporter paints it in the game.
+SLOT_KEY = {"body_plain": "base", "accent_flat": "accent", "pattern_flat": "pattern", "membrane": "membrane",
+            "horn": "horn", "glow_flat": "glow", "rune": "pattern", "iris": "iris", "pupil": "pupil",
+            "glint": "glint", "tongue": "tongue"}
 
 FPS, FRAMES = 24, 240         # a 10 second loop: one turn of the HOME Menu's camera
 CYCLE = 120                   # the dragon's motions, twice a loop (written on a 96-frame count)
@@ -75,6 +86,8 @@ GLOW = (1.0, 0.52, 0.18)
 GOLD = (0.96, 0.72, 0.26)
 PLUM = (0.16, 0.08, 0.19)
 HEART_DIM, HEART_BRIGHT = (1.0, 0.45, 0.12, 1.0), (1.0, 0.86, 0.45, 1.0)
+if KIND != "classic":  # an ember-orange heart vanishes on the Blazeplume's flame-orange chest
+    HEART_DIM, HEART_BRIGHT = (1.0, 0.80, 0.46, 1.0), (1.0, 0.98, 0.84, 1.0)
 SPARKLE = (1.0, 0.86, 0.45)   # the heart's bright gold
 # The sparkles, in banner units (x across, y depth, + away from you; z up): where, how big,
 # and the frame their glint peaks. Round the egg and the dragon, clear of its face and of the
@@ -163,11 +176,16 @@ def bake_colour(d, size):
     body = d["body"]
     rgba = dragon_texture.bake_skin(body, d["form"], size)
     dragon_texture.preview_material(d["mats"]["body"], rgba, b["pattern"], b["pattern_color"], 0.0)
+    return bake_emission(body, d["mats"]["body"], size)
+
+
+def bake_emission(body, body_mat, size):
+    """The body's previewed colour (before the toon light) baked through its UVs."""
     image = bpy.data.images.new("banner_skin", size, size, alpha=False)
     for slot in body.material_slots:
         nt = slot.material.node_tree
         out = next(n for n in nt.nodes if n.bl_idname == "ShaderNodeOutputMaterial")
-        if slot.material is d["mats"]["body"]:  # colour x detail, before the toon light
+        if slot.material is body_mat:  # colour x detail, before the toon light
             mul = next(n for n in nt.nodes if n.bl_idname == "ShaderNodeMix" and n.blend_type == "MULTIPLY")
             src = mul.inputs["A"].links[0].from_socket
             em = nt.nodes.new("ShaderNodeEmission")
@@ -206,6 +224,44 @@ def peek_pose(d):
     bpy.context.view_layer.update()
 
 
+def build_kind(name):
+    """A kind's hatchling from the dragon kit (the den's lower detail, the eyes at full),
+    textured, sitting as its own sit clip has it, peeking up out of the egg."""
+    from dragonkit import model as km
+    km.use_kind(name)
+    form, t = km.STAGE["hatchling"]
+    km.set_lod(1)
+    d = km.build_dragon(form, 0)
+    for e in d["groups"]["eyes"]:
+        bpy.data.objects.remove(e, do_unlink=True)
+    d["groups"]["eyes"].clear()
+    if "eyes" in d["snap"]:
+        d["snap"]["eyes"].clear()
+    km.set_lod(0)
+    for e in km.build_eyes(d["mats"], "round"):
+        km.attach(d, "eyes", e, "eyes")
+    km.set_lod(1)
+    km.textured(d)
+    km.pose_stage(d, t)
+    arm = d["arm"]
+    idle = {pb.name: pb.rotation_euler.to_quaternion() for pb in arm.pose.bones}
+    rest = {b.name: b.matrix_local.to_quaternion() for b in arm.data.bones}
+    clips = {c.name: c for c in km.PLAN.clips()}
+    clip = clips.get("sit_loop_h") or clips["sit_loop"]
+    for pb in arm.pose.bones:
+        q = Quaternion(clip.sample_q(pb.name, 0.0))
+        pb.rotation_mode = "QUATERNION"
+        pb.rotation_quaternion = idle[pb.name] @ (rest[pb.name].conjugated() @ q @ rest[pb.name])
+    for name, x in {"neck1": -8, "head": -6, "arm_up_L": -24, "arm_up_R": -24}.items():  # looking up, paws on the rim
+        if name in arm.pose.bones:
+            pb = arm.pose.bones[name]
+            pb.rotation_quaternion = pb.rotation_quaternion @ Euler((math.radians(x), 0, 0)).to_quaternion()
+    bpy.context.view_layer.update()
+    d["visible_points"] = km.visible_points
+    d["palette"] = km.variant_colors(0)
+    return d
+
+
 def joint(d, bone):
     arm = d["arm"]
     return arm.matrix_world @ arm.pose.bones[bone].head
@@ -218,10 +274,17 @@ def dragon_pieces(d, skin):
     arm = d["arm"]
     mats = {}
 
+    def colour_of(m):
+        painted = any(n.bl_idname == "ShaderNodeAttribute" and n.attribute_name == "vc" for n in m.node_tree.nodes)
+        key = SLOT_KEY.get(m.name.split(".")[0])
+        if painted and "palette" in d and key:
+            return tuple(d["palette"][key][:3])
+        return toon_colour(m)
+
     def mat_for(m):
         if m.name not in mats:
             mats[m.name] = principled("b_" + m.name, (1, 1, 1), 0.7, skin) if m is d["mats"]["body"] else \
-                principled("b_" + m.name, toon_colour(m), 0.5)
+                principled("b_" + m.name, colour_of(m), 0.5)
         return mats[m.name]
 
     # The body mesh: each face goes with the bone most of its corners follow.
@@ -255,15 +318,30 @@ def dragon_pieces(d, skin):
     body_mats = [mat_for(s.material) for s in body.material_slots]
     pieces = {}
     pivots = {"body": joint(d, "hips"), "head": joint(d, "head"), "tail": joint(d, "tail1")}
+    # The head and the tail each take a collar of the body's faces round their joint as well:
+    # turning, it covers the seam instead of opening a gap in the skin.
+    zs = [v.co.z for v in me.vertices]
+    tall = max(zs) - min(zs)
+    centres = [f.center.copy() for f in me.polygons]
+
+    def keep(fi, p):
+        if face_owner[fi] == p:
+            return True
+        return p in COLLAR and face_owner[fi] == "body" and (centres[fi] - pivots[p]).length < COLLAR[p] * tall
+
     for piece in ("body", "head", "tail"):
-        part = keep_faces(me, lambda fi, p=piece: face_owner[fi] == p)
+        part = keep_faces(me, lambda fi, p=piece: keep(fi, p))
         pieces[piece] = [with_origin(f"{piece}_skin", part, pivots[piece], body_mats)]
     # Wings and the parts: each goes with its bone's piece; the eyes and the heart move alone.
     for w in d["wings"]:
+        if w.hide_render:
+            continue
         pieces["body"].append(with_origin(w.name, frozen(w, dg), pivots["body"], [mat_for(s.material) for s in w.material_slots]))
     eye_meshes, heart_meshes = [], []
     for group, objs in d["groups"].items():
         for o in objs:
+            if o.hide_render:  # a kind's rare parts, not shown on this colouring
+                continue
             bone = o.constraints[0].subtarget if o.constraints else "chest"
             ms = [mat_for(s.material) for s in o.material_slots]
             if group == "eyes":
@@ -296,8 +374,10 @@ def dragon_pieces(d, skin):
         objs[0].name = piece
         merged[piece] = objs[0]
     # The original rig and meshes are done with.
-    for o in [body, arm] + d["wings"] + [p for objs in d["groups"].values() for p in objs]:
+    for o in [body, arm] + d["wings"] + d.get("rare_wings", []) + [p for objs in d["groups"].values() for p in objs]:
         bpy.data.objects.remove(o, do_unlink=True)
+    for piece, o in merged.items():  # their names back, now the kit's own "body" is gone
+        o.name = piece
     return merged, heart_mat
 
 
@@ -389,6 +469,36 @@ def fit_in_egg(pieces, height, width, cut, floor_z, wag=24.0):
     print(f"[banner] fit in the egg: worst {worst(0.0) / height:+.3f} where it was, "
           f"{worst(dy) / height:+.3f} moved {-dy / height:.3f} forward (of the egg's height)")
     return dy
+
+
+def clip_to_egg(o, height, width, cut, floor_z, margin=0.01, yaws=(0.0,)):
+    """Drop the faces of a piece that reach out through the shell below its crack (a kind sits
+    as its own sit clip has it, its paws forward: they would show through the egg). What's cut
+    is inside the shell, so nothing seen changes."""
+    bpy.context.view_layer.update()
+
+    def outside(p):
+        z = p.z - floor_z
+        if z > crack_height(math.atan2(p.y, p.x), height, cut) or z < 0:
+            return z < 0  # under the egg's bottom: out too
+        zn = min(1.0, max(-1.0, z / (0.5 * height) - 1.0))
+        inside = width * egg_taper(zn) * math.sqrt(1.0 - zn * zn) - EGG_WALL * height
+        return math.hypot(p.x, p.y) - inside > -margin * height
+
+    mats = []
+    for yaw in yaws:  # the piece where it rests and at each end of its wag
+        rot = o.rotation_euler.copy()
+        rot.z += math.radians(yaw)
+        mats.append(Matrix.LocRotScale(o.location, rot, o.scale))
+    out = [any(outside(m @ v.co) for m in mats) for v in o.data.vertices]
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    bm.verts.ensure_lookup_table()
+    gone = [f for f in bm.faces if any(out[v.index] for v in f.verts)]
+    bmesh.ops.delete(bm, geom=gone, context="FACES")
+    bm.to_mesh(o.data)
+    bm.free()
+    print(f"[banner] {o.name}: {len(gone)} faces through the shell trimmed")
 
 
 def apply_modifiers(o):
@@ -583,20 +693,26 @@ def build():
     bpy.data.objects.remove(bpy.data.objects["floor"], do_unlink=True)
     scene.render.fps = FPS
     scene.frame_start, scene.frame_end = 0, FRAMES
-    form, t = dm.STAGE["hatchling"]
-    dm.set_lod(1)  # the den's background detail: plenty at banner size, and the CGFX stays small
-    d = dm.build_dragon("ember", form)
-    for e in d["groups"]["eyes"]:  # ...but the eyes at full detail: the light ones lose their pupils
-        bpy.data.objects.remove(e, do_unlink=True)
-    d["groups"]["eyes"].clear()
-    d["snap"]["eyes"].clear()
-    dm.set_lod(0)
-    for e in dm.build_eyes(d["mats"]):
-        dm.attach(d, "eyes", e, "eyes")
-    dm.set_lod(1)
-    dm.pose_stage(d, t, d["breed"]["build"], sit=True)
-    peek_pose(d)
-    skin = bake_colour(d, SKIN)
+    if KIND == "classic":
+        form, t = dm.STAGE["hatchling"]
+        dm.set_lod(1)  # the den's background detail: plenty at banner size, and the CGFX stays small
+        d = dm.build_dragon("ember", form)
+        for e in d["groups"]["eyes"]:  # ...but the eyes at full detail: the light ones lose their pupils
+            bpy.data.objects.remove(e, do_unlink=True)
+        d["groups"]["eyes"].clear()
+        d["snap"]["eyes"].clear()
+        dm.set_lod(0)
+        for e in dm.build_eyes(d["mats"]):
+            dm.attach(d, "eyes", e, "eyes")
+        dm.set_lod(1)
+        dm.pose_stage(d, t, d["breed"]["build"], sit=True)
+        peek_pose(d)
+        skin = bake_colour(d, SKIN)
+        visible_points = dm.visible_points
+    else:
+        d = build_kind(KIND)
+        skin = bake_emission(d["body"], d["mats"]["body"], SKIN)
+        visible_points = d["visible_points"]
     if "--debug-rig" in sys.argv:  # the posed rig as built, before it's frozen into pieces
         cam = banner_camera()
         cam.location = Vector((0, -6.5, 1.1))
@@ -608,7 +724,7 @@ def build():
             scene.render.engine = "BLENDER_EEVEE"
         render(os.path.join(REVIEW, "banner_rig.png"), 600, 600, 0)
         sys.exit(0)
-    head_top = max((dm.visible_points([d]) or [Vector()]), key=lambda p: p.z)
+    head_top = max((visible_points([d]) or [Vector()]), key=lambda p: p.z)
     pieces, heart_mat = dragon_pieces(d, skin)
 
     # Scale: the dragon's height sets the egg's; then everything to banner units. The rim of
@@ -616,22 +732,26 @@ def build():
     lo = min(v.co.z + pieces["body"].location.z for v in pieces["body"].data.vertices)
     hi = head_top.z
     h = hi - lo
-    if "tail" in pieces:  # swung out to its left, round beside the body: its wag shows
+    if "tail" in pieces and KIND == "classic":  # swung out to its left, round beside the body: its wag shows
         pieces["tail"].rotation_euler.z = math.radians(62)
+    elif "tail" in pieces:  # a kind's short tail: raised behind its left shoulder, its tip showing over the rim
+        pieces["tail"].rotation_euler = (math.radians(TAIL_LIFT[0]), 0.0, math.radians(TAIL_LIFT[1]))
     if "heart" in pieces:  # on the front of the chest, just above the shell's rim (the sit pose lifts it to the face)
-        body = pieces["body"]
-        target = lo + 0.54 * h
-        near = [v.co + body.location for v in body.data.vertices
-                if abs(v.co.x + body.location.x) < 0.08 * h and abs(v.co.z + body.location.z - target) < 0.05 * h]
+        # A kind's big round head overhangs its chest: its heart sits lower, in front of the chin too.
+        target = lo + (0.54 if KIND == "classic" else 0.525) * h
+        fronts = [pieces["body"]] if KIND == "classic" else [pieces["body"], pieces["head"]]
+        near = [v.co + o.location for o in fronts for v in o.data.vertices
+                if abs(v.co.x + o.location.x) < 0.08 * h and abs(v.co.z + o.location.z - target) < 0.05 * h]
         if near:
             pieces["heart"].location = (0.0, min(p.y for p in near) - 0.015 * h, target)
     heart_z = pieces["heart"].location.z if "heart" in pieces else lo + 0.5 * h
-    rim = 0.42 * h + 0.1 * h  # up to its belly (above the egg's bottom, 0.1 h below its feet)
-    egg_h = 0.95 * h
+    drop = d.get("egg_drop", 0.1) if isinstance(d, dict) else 0.1  # the egg's bottom this far (of h) below its feet
+    rim = 0.42 * h + drop * h  # up to its belly
+    egg_h = 0.95 * h + (drop - 0.1) * h
     print(f"[banner] dragon {h:.2f} tall; heart at {(heart_z - lo) / h:.2f}; rim at {rim / egg_h:.2f} of the egg")
     egg, cap = egg_halves(egg_h, 0.42 * h, rim / egg_h)
     for o in (egg, cap):
-        o.location.z = lo - 0.1 * h
+        o.location.z = lo - drop * h
         apply_modifiers(o)
     # The cap sits on its head, tipped back a little.
     cap_bottom = min(v.co.z for v in cap.data.vertices)
@@ -639,11 +759,15 @@ def build():
     cap.location = (head_top.x, head_top.y + 0.08 * h, head_top.z - 0.12 * h)
     cap.rotation_euler = (math.radians(-16), math.radians(10), 0)
     cap.scale = (0.5, 0.5, 0.5)
-    dy = fit_in_egg(pieces, egg_h, 0.42 * h, rim / egg_h, lo - 0.1 * h) if "--no-fit" not in sys.argv else 0.0
+    dy = fit_in_egg(pieces, egg_h, 0.42 * h, rim / egg_h, lo - drop * h) if "--no-fit" not in sys.argv else 0.0
     for o in list(pieces.values()) + [cap]:
         o.location.y += dy
+    if KIND != "classic" and "body" in pieces:  # its paws forward in the sit: trimmed where they'd show
+        clip_to_egg(pieces["body"], egg_h, 0.42 * h, rim / egg_h, lo - drop * h)
+    if KIND != "classic" and "tail" in pieces:  # ...and the tail through its whole wag
+        clip_to_egg(pieces["tail"], egg_h, 0.42 * h, rim / egg_h, lo - drop * h, yaws=(-24.0, 0.0, 24.0))
 
-    s = TALL / (hi - lo + 0.2 * h)
+    s = TALL / (hi - lo + 2 * drop * h)
     world_objs = list(pieces.values()) + [egg, cap]
     for o in world_objs:
         o.location = (o.location - Vector((0, 0, lo))) * s

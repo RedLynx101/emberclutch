@@ -91,15 +91,16 @@ Noah flew it on the old 3DS (ten Ys): **the flying is pretty good**. The valley 
 triangles, 19 MB of linear memory free. His note: on the ground the dragon stood stuck; he
 should be able to walk with it. Done in 0.2.1 (run 15): the pad walks it, B runs. (Builds after Alpha 2 are 0.2.x: a CIA's last number stops at 15.)
 
-# Run 15 (0.2.1): the nine new dragons, and walking in the valley
+# Run 15 (0.2.2): the nine new dragons, walking in the valley, the Blazeplume's banner
 
 **For Noah.** The first nine kinds of the dragon revamp on the real 3DS (R11b: all nine
 approved, the Duskwing's ears now grow out of its head), and walking on the ground in the
 valley (run 14's note). Your save doesn't change: on the dev menu, **Next kind** shows every
 dragon in the den as one of the new kinds in turn, for looking only; your dragons become
 new kinds for real in DR3, with their eggs. About 20 minutes; the checklists page has these
-steps (the Run 15 tab). **Y** saves both screens and the numbers, as before. The HOME Menu
-banner is still the old one; the Blazeplume's comes in the next build.
+steps (the Run 15 tab). **Y** saves both screens and the numbers, as before. And the HOME
+Menu's 3D banner is now the Blazeplume's hatchling peeking out of the egg (D80): built exactly
+as X was (the same pieces, nesting and turning), with no breaks at its neck or tail.
 
 **What the emulator says** (to compare): one dragon of a new kind in the den ran 16.6–17.4 ms
 in Azahar, each kind drawing 2,600–3,000 triangles (the rare colourings the most), no memory
@@ -108,7 +109,9 @@ the valley: 5,900–8,600 triangles, 16.7–17.4 ms.
 
 ## 0. Install
 The files are on the SD card (sent 2026-09-26 to the 3DS at .61): in **FBI**, SD → cias →
-`emberclutch.cia` → Install CIA, over the game (the save stays).
+`emberclutch.cia` → Install CIA, over the game (the save stays). It's 0.2.2: the game is
+0.2.1's, with the new banner. `emberclutch-oldbanner.cia` beside it is the same game with X's
+banner, in case the new one misbehaves (step 4).
 
 ## 1. The nine in the den
 1. SELECT, page 1: **Overlay** on, then **Next kind**: every dragon in the den becomes a
@@ -139,9 +142,18 @@ The files are on the SD card (sent 2026-09-26 to the 3DS at .61): in **FBI**, SD
 1. **X** goes back to the den. Page 1, **Next kind** until the toast says their own looks
    are back (or leave them as a kind; it isn't saved).
 
+## 4. The HOME Menu banner
+1. Close the game and rest the cursor on Emberclutch in the HOME Menu: the Blazeplume's
+   hatchling should peek out of its egg, tilt its head, blink, its cream heart pulsing, the
+   sparkles glinting, and hold still while the HOME Menu turns (as X did). Its neck and tail
+   shouldn't show breaks as it moves.
+2. If the HOME Menu freezes: hold **POWER** to turn off, then in FBI install
+   `emberclutch-oldbanner.cia` instead (X's banner, the same game) and tell me.
+
 ## What to send back
 - Which kinds look best and worst on the 3DS's screens, and anything wrong (floating,
   clipping, a colouring that doesn't read).
 - The den's frame time with three of the heaviest kinds.
 - How walking feels: the speed, the turning, running, the camera on foot.
+- The banner: does it look right on the HOME Menu, and does it move cleanly?
 - Anything else before DR3 (your dragons and eggs moving over to the new kinds).

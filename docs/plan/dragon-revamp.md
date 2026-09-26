@@ -4,8 +4,8 @@ Status: **under way, 2026-09-25.** DR1 done (the kit, the engine's groundwork, t
 **DR2 done** (D79: all eight base breeds and the first crossbreed, by Opus 5.5 subagents in
 parallel; [R11b](../art/reviews/R11b-new-dragons.md) answered, D80: all nine kept, the
 Duskwing's ears fixed, rarities and sizes right); run 15 (0.2.1) puts them on the 3DS by the
-dev menu. **Next: DR3**, the new dragons moving in and the old archived, and the Blazeplume
-in the HOME Menu banner (D80). What What
+dev menu, and (0.2.2) the Blazeplume as the HOME Menu banner's hatchling (D80). **Next: DR3**,
+the new dragons moving in and the old archived. What What
 the dragons become is in [dragons, version 2](../design/dragons-v2.md): 8 base breeds and 28
 crossbreeds (36 kinds), each with three painted variants and a rare one, their own bodies,
 babies, eggs and animations, stats, manners and traits, all rideable. It comes before the

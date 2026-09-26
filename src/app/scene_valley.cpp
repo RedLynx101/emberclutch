@@ -545,14 +545,14 @@ Vec2 mapPoint(const Valley& v, float x, float y) {
     return {kMapX + (x - v.x0) / v.size() * kMapSize, kMapY + (1.0f - (y - v.y0) / v.size()) * kMapSize};
 }
 
-void travelTo(App& app, ValleyScene& s, int place) {
+void travelTo(App& app, ValleyScene& s, int place, bool outward) {
     const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(place));
     if (!p) return;
     const PlaceLayout& l = placeLayout(place);
     const Vec2 front = placeToWorld(*p, l.hasDoor ? Vec2{l.door.x, l.door.y + 5.0f} : Vec2{0, 12.0f});
     s.mode = Mode::OnFoot;
     s.you.pos = {front.x, front.y, s.valley.heightAt(front.x, front.y)};
-    s.you.heading = p->heading + 3.14159f;  // facing the place
+    s.you.heading = outward ? p->heading : p->heading + 3.14159f;  // out of its door, or (travelling) facing it
     s.you.speed = 0;
     if (s.partner >= 0) s.pal.call(s.you, s.valley);
     s.wcam = WalkCamera{};
@@ -591,7 +591,7 @@ void drawBottom(App& app, const Input& in) {
     C2D_DrawLine(me.x, me.y, theme::kShell, me.x + std::sin(heading) * 10, me.y + std::cos(heading) * 10, theme::kShell, 2, 0.5f);
     heart(me.x, me.y, 9, theme::kRose);
     if (tappedPlace >= 0) {
-        travelTo(app, s, tappedPlace);
+        travelTo(app, s, tappedPlace, false);
         showToastf(app, str::kTravelledTo, world::placeInfo(tappedPlace).name);
     }
     // The side panel: what you're doing, the quest in hand, the buttons.
@@ -672,7 +672,7 @@ void openValleyAt(App& app, int place) {
     s.pal.gap = 1.6f + 1.4f * kindSize(s.shown) * (s.shown.stage == Stage::Adult ? 1.0f : 0.55f);
     app.scene = SceneId::Valley;
     if (!s.loaded) return;
-    travelTo(app, s, place);
+    travelTo(app, s, place, true);
     if (!(g.world.flags & kFlagEnteredValley)) {  // the first step outside: the Lantern Festival's first step
         g.world.flags |= kFlagEnteredValley;
         campaign::update(g);

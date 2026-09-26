@@ -136,7 +136,17 @@ void WalkCamera::update(const Walker& you, float turn, const Valley& v, float dt
     const Vec3 look{std::sin(yaw), -std::cos(yaw), 0};
     const Vec3 wantTarget = you.pos + Vec3{0, 0, 1.2f} + look * 1.5f;
     Vec3 wantEye = you.pos - look * (distance * 0.78f) + Vec3{0, 0, distance * 0.62f};
-    const float ground = v.heightAt(wantEye.x, wantEye.y) + 1.5f;
+    // Kept in the open: stepping out from you toward where it wants to be, it stops short of any
+    // ground that rises into the way (the den's cliff behind you, a hillside).
+    const Vec3 from = you.pos + Vec3{0, 0, 1.5f};
+    for (int k = 1; k <= 12; ++k) {
+        const Vec3 p = from + (wantEye - from) * (k / 12.0f);
+        if (v.heightAt(p.x, p.y) + 0.9f > p.z) {
+            wantEye = from + (wantEye - from) * ((k - 1) / 12.0f);
+            break;
+        }
+    }
+    const float ground = v.heightAt(wantEye.x, wantEye.y) + 1.2f;
     if (wantEye.z < ground) wantEye.z = ground;
     if (!set) {
         eye = wantEye;

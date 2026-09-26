@@ -159,8 +159,11 @@ LIE = {  # all four legs folded under like a deer, the neck still up in its S
 _LIE_BODY = {k: v for k, v in LIE.items() if not k.startswith(("neck", "head", "tail"))}
 # Curled up asleep: the long neck curves down and round the near side so the head rests by the
 # chest, facing the tail, and the plumed tail wraps round the other way (solved from bone
-# directions). A hatchling just lays its chin on the floor.
-CURL = merge(_LIE_BODY, {
+# directions). A hatchling just lays its chin on the floor. Asleep, the grown one's forelegs
+# fold right under its chest: the lie's forearms stand down and back from the elbow, and on
+# these long legs that held the curled-up body up off the floor, standing (run 18).
+_CURL_LEGS = dict(_LIE_BODY, **{"arm_up*": (75, 0, 0), "arm_lo*": (-165, 0, 0), "hand*": (0, 0, 0)})
+CURL = merge(_CURL_LEGS, {
     "neck1": (-121, -46, -13), "neck2": (3, -7, 42), "neck3": (4, -7, 55), "neck4": (11, -11, 29),
     "head": (62, 13, -5), "crest": (16, 0, 0),
     "tail1": (-12, -26, 0), "tail2": (-8, -34, 0), "tail3": (-12, -38, 0), "tail4": (-28, -34, 0)})

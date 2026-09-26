@@ -526,17 +526,23 @@ def _resting_clips(cl):
     F = WINGS_FOLDED
     legs = {k: v for k, v in _body(cl.LIE).items() if k.rstrip("*") in ("arm_up", "arm_lo", "hand", "leg_up",
                                                                            "leg_lo", "foot")}
+    # Asleep, the forelegs fold right under the chest (the classic lie's forearms stand down and
+    # back from the elbow: on these long legs that held the sleeping body up, standing: run 18,
+    # the curl-up check); down that low, the roof opens a touch so its edges clear the floor.
+    tucked = dict(legs, **{"arm_up*": (60, 0, 0), "arm_lo*": (-145, 0, 0), "hand*": (-5, 0, 0)})
+    low_roof = roof(lift=18, hind_lift=16)
     lie = merge(F, legs, ANT_BACK, {"neck1": (-26, 0, 0), "neck2": (-8, 0, 0), "neck3": (8, 0, 0), "head": (14, 0, 0),
                                     "tail1": (-6, 0, 0), "tail2": (0, 14, 0), "tail3": (0, 20, 0), "tail4": (0, 24, 0)})
     # Curled up: the neck sweeps down and round to its left (the den camera's side), the head
     # laid back beside the forelegs, cheek down; the tail curls round the same way to meet it.
-    curl = merge(F, legs, ANT_SLEEP, aim(NECK_REST, [(-0.3, -0.7, -0.65), (-0.85, -0.15, -0.5), (-0.6, 0.75, -0.25),
-                                                     (-0.15, 0.97, -0.12)], roll={"head": -26}),
+    curl = merge(low_roof, tucked, ANT_SLEEP,
+                 aim(NECK_REST, [(-0.3, -0.7, -0.65), (-0.85, -0.15, -0.5), (-0.6, 0.75, -0.25), (-0.15, 0.97, -0.12)],
+                     roll={"head": -26}),
                  {"tail1": (0, -30, 0), "tail2": (0, -34, 0), "tail3": (0, -36, 0), "tail4": (0, -34, 0)})
     # A baby's big head can't come round: it tucks its chin down on its paws, head tilted.
-    curl_h = merge(F, legs, ANT_SLEEP, {"neck1": (-18, -8, 0), "neck2": (-10, -6, 0), "neck3": (-6, 0, 0),
-                                        "head": (-20, -10, -14), "tail1": (0, -30, 0), "tail2": (0, -34, 0),
-                                        "tail3": (0, -36, 0), "tail4": (0, -34, 0)})
+    curl_h = merge(low_roof, tucked, ANT_SLEEP, {"neck1": (-18, -8, 0), "neck2": (-10, -6, 0), "neck3": (-6, 0, 0),
+                                                 "head": (-20, -10, -14), "tail1": (0, -30, 0), "tail2": (0, -34, 0),
+                                                 "tail3": (0, -36, 0), "tail4": (0, -34, 0)})
     sulk = merge(F, legs, ANT_DROOP, {"neck1": (-42, -24, 0), "neck2": (-12, -16, 0), "neck3": (0, -10, 0),
                                       "head": (4, -14, -12),
                                       "tail1": (0, -30, 0), "tail2": (0, -30, 0), "tail3": (0, -28, 0), "tail4": (0, -26, 0)})

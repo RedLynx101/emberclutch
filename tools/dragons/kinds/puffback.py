@@ -443,6 +443,10 @@ def _toes(kit, mats, baby):
                 o = _dome(kit, f"toe_{side}_{bone}_{j}", out, (0, 0, 1), 0.1 * k, 0.075 * k, 0.07 * k, 6, 1, "horn",
                           mats)
                 o.location = at
+                # The hind toes' rays run on into the front feet: seated at the first skin they
+                # meet, or two of the baby's hind nails sat by its front paws, rode its hind feet
+                # from there and sank through the floor when it lay down (run 18, the curl check).
+                o["snap_first"] = True
                 pieces.append((o, bone))
     return pieces
 

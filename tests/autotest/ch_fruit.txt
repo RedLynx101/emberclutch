@@ -1,0 +1,45 @@
+# Beta WP8/WP11: the orchard's board and Fruit Catch's Ember cup with a young dragon (the hop
+# version), played by itself: the throw, the run and the hop, the catch, eating it, the results.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+key X
+wait 4
+travel 10
+wait 3
+shot f00-orchard
+challenge 0 0
+wait 3
+shot f01-picker
+autoplay on
+key A
+wait 2.2
+shot f02-ready
+wait 0.6
+shot f03-thrown
+wait 0.5
+shot f04-flying
+wait 0.5
+shot f05-catch
+wait 1.2
+shot f06-return
+wait 1.5
+shot f07-eat
+wait 8
+shot f08-later
+wait 10
+shot f09-later2
+wait 14
+shot f10-results
+quit

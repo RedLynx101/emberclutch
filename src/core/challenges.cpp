@@ -412,8 +412,8 @@ Vec2 trialLantern(int lanterns, int k) {
     return {6.5f * std::sin(a), -6.5f * std::cos(a)};  // round the arena's middle, toward the stage
 }
 
-Vec2 trialYou() { return {0.6f, 7.0f}; }
-Vec2 trialDragon() { return {-1.9f, 5.4f}; }
+Vec2 trialYou() { return {1.9f, 3.2f}; }
+Vec2 trialDragon() { return {-0.4f, 1.2f}; }  // on the arena's star, the lanterns round it
 
 Rgb trialColour(int k) {
     static constexpr Rgb kColours[kTrialLanterns] = {{240, 120, 140}, {245, 190, 80}, {126, 206, 110},
@@ -491,7 +491,7 @@ Rgb fruitColour(Fruit f) {
 }
 
 Vec2 fruitYou() { return {0.0f, 9.0f}; }
-Vec2 fruitDragon() { return {2.2f, 9.8f}; }
+Vec2 fruitDragon(bool youngOne) { return youngOne ? Vec2{1.3f, 10.2f} : Vec2{2.4f, 9.6f}; }
 
 bool tossFrom(float flickX, float flickY, Vec3 hand, float heading, bool youngOne, Toss& out) {
     const float speed = std::sqrt(flickX * flickX + flickY * flickY);
@@ -499,8 +499,8 @@ bool tossFrom(float flickX, float flickY, Vec3 hand, float heading, bool youngOn
     const float power = clampf((speed - 250.0f) / 1500.0f, 0, 1);
     const float yaw = clampf(std::atan2(flickX, -flickY), -0.45f, 0.45f);
     const float h = heading - yaw;  // to the right on the screen: to your right
-    const float v0 = youngOne ? 2.5f + 6.5f * power : 5.0f + 13.0f * power;
-    const float up = (youngOne ? 56.0f : 50.0f) * kPi / 180.0f;
+    const float v0 = youngOne ? 2.2f + 7.3f * power : 5.0f + 13.0f * power;
+    const float up = (youngOne ? 62.0f : 50.0f) * kPi / 180.0f;  // a young one's game: lobbed, more time to get under it
     const Vec3 fwd{std::sin(h), -std::cos(h), 0};
     out.from = hand;
     out.vel = fwd * (v0 * std::cos(up)) + Vec3{0, 0, v0 * std::sin(up)};
@@ -520,12 +520,12 @@ Catcher catcherFor(const Dragon& d, Vec3 at, float runSpeed, float size) {
     c.young = young(d);
     const float might = statOf(d, 2), stamina = statOf(d, 4);
     if (c.young) {  // the hop version: short hops, and a tumble at the end
-        c.run = clampf(runSpeed * 1.5f, 3.2f, 6.5f);
-        c.reach = 0.55f * size;
+        c.run = clampf(runSpeed * 1.8f, 3.8f, 6.5f) + 0.15f * (stamina - 5);
+        c.reach = std::fmax(0.35f, 0.55f * size);
         c.leap = 0.55f + 0.03f * (might - 5);
         c.dive = 0.7f;
     } else {
-        c.run = clampf(runSpeed * 1.5f, 6.5f, 12.0f) + 0.25f * (stamina - 5);
+        c.run = clampf(runSpeed * 1.5f, 8.5f, 12.0f) + 0.3f * (stamina - 5);  // (a slow gallop plays quicker: every kind can win)
         c.reach = 1.45f * size;
         c.leap = 1.7f + 0.1f * (might - 5);
         c.dive = 1.8f;

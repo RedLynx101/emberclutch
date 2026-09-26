@@ -5,6 +5,8 @@
 
 namespace ec {
 
+struct Valley;  // core/valley.hpp
+
 struct SceneFns {
     void (*update)(App&, const Input&);  // simulation, may be null
     void (*drawTop)(App&);
@@ -32,5 +34,20 @@ extern const SceneFns kValleyScene;
 void openValley(App& app);
 // Out into the valley, on foot before a place (core/valley ValleyPlace) with your partner.
 void openValleyAt(App& app, int place);
+
+// ---- The challenges (Beta WP8-WP11, scene_challenge.cpp): the notice boards by the arena and
+// the orchard (A at one opens the picker there), the scene itself, and its music.
+extern const SceneFns kChallengeScene;
+bool challengeBoardNear(const Valley& v, Vec3 at, int& place, float& distance);
+void drawChallengeBoards(App& app, const Valley& v, s64 now);  // after r3d::drawValley
+void openChallenges(App& app, int place);
+const char* challengeMusic(const App& app);
+// Scripted runs (autotest): straight into a cup; the challenges play themselves while on.
+void openChallengeCup(App& app, int challenge, int cup);
+void setChallengeAutoplay(bool on);
+// What the valley lends them (scene_valley.cpp): its landscape once loaded (nullptr before), its
+// sky for the time of day (the top, the horizon and fog, the light on the land).
+const Valley* loadedValley();
+void valleySky(s64 now, Rgb& top, Rgb& horizon, Rgb& tint);
 
 }  // namespace ec

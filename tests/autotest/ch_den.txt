@@ -1,0 +1,33 @@
+# Beta WP8: the trophies and ribbons won, on the den's shelves (every cup won; then a few). Two
+# more dragons in the den so its camera stands back far enough to see the shelves.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+key SELECT
+wait 3
+shot d00-den-before
+cups 4 4 4
+wait 1
+shot d01-den-all
+shotin 1.0 d02-den-nudged
+pad -1 0.7 1.4
+cups 1 2 0
+wait 1.5
+shot d03-den-some
+quit

@@ -165,7 +165,7 @@ Fruit fruitFor(int throwIndex, u32 seed);  // the 4th and 8th are golden (double
 Rgb fruitColour(Fruit f);
 // Where you stand in the orchard (its frame), your dragon, and the way you throw.
 Vec2 fruitYou();
-Vec2 fruitDragon();
+Vec2 fruitDragon(bool young);  // a young one waits nearer the throw
 
 struct Toss {
     Vec3 from, vel;

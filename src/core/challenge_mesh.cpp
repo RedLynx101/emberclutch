@@ -303,6 +303,7 @@ void trophy(Shaper& b, Challenge c, u8 cupSlot, u8 baseSlot, u8 signSlot) {
     b.slot = baseSlot;
     b.frustum({0, 0, 0}, {0, 0, 0.1f}, 0.2f, 0.18f, 4, false, true, kPi / 4);
     b.slot = cupSlot;
+    b.emit = 255;  // it gleams a little (its palette slot's glow), even at the back of the den
     b.frustum({0, 0, 0.1f}, {0, 0, 0.29f}, 0.05f, 0.03f, 5, false, false);
     const Vec3 cup[3] = {{0, 0, 0.29f}, {0, 0, 0.38f}, {0, 0, 0.48f}};
     const float r[3] = {0.03f, 0.14f, 0.17f};
@@ -311,6 +312,7 @@ void trophy(Shaper& b, Challenge c, u8 cupSlot, u8 baseSlot, u8 signSlot) {
         const Vec3 arc[3] = {{sx * 0.15f, 0, 0.45f}, {sx * 0.25f, 0, 0.41f}, {sx * 0.12f, 0, 0.33f}};
         for (int k = 0; k < 2; ++k) b.frustum(arc[k], arc[k + 1], 0.02f, 0.02f, 3, false, false);
     }
+    b.emit = 0;
     b.slot = signSlot;
     const Vec3 top{0, 0, 0.5f};
     switch (c) {
@@ -334,12 +336,14 @@ void rosette(Shaper& b, u8 pleatSlot, u8 buttonSlot) {
     constexpr int kPoints = 10;
     const Vec3 face{0, -1, 0};
     b.slot = pleatSlot;
+    b.emit = 255;  // the satin catches the light
     Vec3 ring[kPoints];
     for (int k = 0; k < kPoints; ++k) {  // counter-clockwise seen from the room
         const float a = 2 * kPi * k / kPoints, r = k % 2 ? 0.13f : 0.17f;
         ring[k] = {std::cos(a) * r, 0, std::sin(a) * r};
     }
     b.fan({0, -0.01f, 0}, ring, kPoints, face);
+    b.emit = 0;
     b.slot = buttonSlot;
     Vec3 button[5];
     for (int k = 0; k < 5; ++k) {
@@ -347,10 +351,10 @@ void rosette(Shaper& b, u8 pleatSlot, u8 buttonSlot) {
         button[k] = {std::cos(a) * 0.075f, -0.02f, std::sin(a) * 0.075f};
     }
     b.fan({0, -0.03f, 0}, button, 5, face);
-    b.slot = pleatSlot;  // two tails hanging down, splayed
+    b.slot = pleatSlot;  // two short tails in a V under it (longer ones read as legs from across the den)
     for (float sx : {-1.0f, 1.0f}) {
-        const Vec3 a{sx * 0.035f, 0.005f, -0.05f}, c{sx * 0.12f, 0.005f, -0.32f};
-        const Vec3 side{0.045f, 0, 0};
+        const Vec3 a{sx * 0.03f, 0.005f, -0.08f}, c{sx * 0.08f, 0.005f, -0.25f};
+        const Vec3 side{0.04f, 0, 0};
         b.quad(c - side, c + side, a + side, a - side, face);
     }
 }
@@ -389,7 +393,7 @@ PropMesh shelfMesh(const u8 cups[kChallenges], u16 ribbons) {
     for (int c = 0; c < kChallenges; ++c) {
         if (cups[c] < challenge::kEmber) continue;
         at(trophySpot(static_cast<Challenge>(c)));
-        const int cup = cups[c] > challenge::kStarfire ? challenge::kStarfire : cups[c];
+        const int cup = cups[c] > challenge::kStarfire ? static_cast<int>(challenge::kStarfire) : static_cast<int>(cups[c]);
         trophy(b, static_cast<Challenge>(c), static_cast<u8>(kShelfCup + cup - 1), kShelfBase, static_cast<u8>(kShelfSign + c));
     }
     int slot = 0;
@@ -406,7 +410,10 @@ void shelfPalette(Rgb out[kPalCount], float glow[kPalCount]) {
         out[k] = {110, 72, 52};
         glow[k] = 0;
     }
-    for (int cup = challenge::kEmber; cup <= challenge::kStarfire; ++cup) out[kShelfCup + cup - 1] = challenge::cupColour(cup);
+    for (int cup = challenge::kEmber; cup <= challenge::kStarfire; ++cup) {
+        out[kShelfCup + cup - 1] = challenge::cupColour(cup);
+        glow[kShelfCup + cup - 1] = 0.3f;
+    }
     for (int c = 0; c < kChallenges; ++c) out[kShelfSign + c] = signColour(static_cast<Challenge>(c));
     glow[kShelfSign + static_cast<int>(Challenge::LanternTrial)] = 0.8f;  // the lantern trophy's flame
 }
@@ -434,7 +441,7 @@ PropLook basketLook() {
 PropLook boardLook() { return look({150, 104, 66}, {200, 88, 70}, {250, 240, 220}, {70, 56, 86}); }
 
 PropLook trophyLook(Challenge c, int cup) {
-    return look(challenge::cupColour(cup), {110, 72, 52}, signColour(c), {0, 0, 0}, c == Challenge::LanternTrial ? 0.8f : 0.0f);
+    return look(challenge::cupColour(cup), {110, 72, 52}, signColour(c), {0, 0, 0}, 0.3f);
 }
 
 PropLook rosetteLook(Challenge c, int cup) { return look(challenge::cupColour(cup), signColour(c), {0, 0, 0}, {0, 0, 0}); }

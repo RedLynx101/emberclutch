@@ -1467,6 +1467,8 @@ C3D_Mtx spanMatrix(Vec3 a, Vec3 b) {
     return m;
 }
 
+void drawShelf(App& app, const C3D_Mtx& view);  // the challenges' trophies and ribbons (their section, at the end)
+
 // The toys, the bowl's food and the decor (WP7).
 void drawThings(App& app, const C3D_Mtx& view, const DenThings& t) {
     perf::Scope timed(perf::Room);
@@ -1493,6 +1495,7 @@ void drawThings(App& app, const C3D_Mtx& view, const DenThings& t) {
         modelView(view, placeMatrix(p.at, p.yaw, 1.0f, p.scale));
         drawMesh(app, g, identity);
     }
+    drawShelf(app, view);
     for (int k = 0; k < kToys; ++k) {
         if (!t.toy[k]) continue;
         GpuMesh& g = g_toyMeshes[k];
@@ -3054,6 +3057,128 @@ const C2D_Image* valleyMap(const Valley& v) {
     g_valleyMap = {&g_valleyMapTex, &g_valleyMapSub};
     g_valleyMapOk = true;
     return &g_valleyMap;
+}
+
+}  // namespace ec::r3d
+
+// ================================================================================ the challenges
+// Beta WP8-WP11 (app/scene_challenge.cpp, challenge_*.cpp): the rings, the crystal lanterns, the
+// fruit and its basket, the boards and a trophy, drawn after the valley with its camera, fog and
+// depth (the dragons' program, lit by the day); and in the den, everything won on its shelves.
+#include "core/challenge_mesh.hpp"
+
+namespace ec::r3d {
+namespace {
+
+GpuMesh g_ringMesh, g_crystalMesh, g_fruitMeshes[static_cast<int>(challenge::Fruit::Count)], g_basketMesh, g_boardMesh,
+    g_trophyMeshes[kChallenges];
+// The den's shelf: rebuilt when what's been won changes.
+GpuMesh g_shelfMesh;
+u8 g_shelfCups[kChallenges] = {};
+u16 g_shelfRibbons = 0;
+bool g_shelfBuilt = false;
+
+GpuMesh* challengeMesh(PropKind kind, int variant) {
+    GpuMesh* g = nullptr;
+    PropMesh m;
+    switch (kind) {
+        case PropKind::Ring:
+            g = &g_ringMesh;
+            if (!g->vbo) m = ringMesh();
+            break;
+        case PropKind::Crystal:
+            g = &g_crystalMesh;
+            if (!g->vbo) m = crystalLanternMesh();
+            break;
+        case PropKind::Fruit: {
+            const int f = variant < static_cast<int>(challenge::Fruit::Count) ? variant : 0;
+            g = &g_fruitMeshes[f];
+            if (!g->vbo) m = fruitMesh(static_cast<challenge::Fruit>(f));
+            break;
+        }
+        case PropKind::Basket:
+            g = &g_basketMesh;
+            if (!g->vbo) m = basketMesh();
+            break;
+        case PropKind::Board:
+            g = &g_boardMesh;
+            if (!g->vbo) m = boardMesh();
+            break;
+        case PropKind::Trophy: {
+            const int c = variant < kChallenges ? variant : 0;
+            g = &g_trophyMeshes[c];
+            if (!g->vbo) m = trophyMesh(static_cast<Challenge>(c));
+            break;
+        }
+    }
+    if (g && !g->vbo && (m.idx.empty() || !uploadProp(*g, m))) return nullptr;
+    return g;
+}
+
+// Called from drawThings (the den's props are bound): the trophies and ribbons, one draw.
+void drawShelf(App& app, const C3D_Mtx& view) {
+    const WorldState& w = app.game.world;
+    bool any = w.ribbons != 0;
+    for (u8 c : w.cups) any = any || c > 0;
+    if (!any) return;
+    if (!g_shelfBuilt || std::memcmp(g_shelfCups, w.cups, sizeof(g_shelfCups)) != 0 || g_shelfRibbons != w.ribbons) {
+        g_shelfMesh.release();  // (retired: freed once the GPU is done with it)
+        const PropMesh m = shelfMesh(w.cups, w.ribbons);
+        if (!m.idx.empty()) uploadProp(g_shelfMesh, m);
+        std::memcpy(g_shelfCups, w.cups, sizeof(g_shelfCups));
+        g_shelfRibbons = w.ribbons;
+        g_shelfBuilt = true;
+    }
+    if (!g_shelfMesh.vbo) return;
+    Rgb pal[kPalCount];
+    float glow[kPalCount];
+    shelfPalette(pal, glow);
+    for (int i = 0; i < kPalCount; ++i)
+        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, pal[i].r / 255.0f, pal[i].g / 255.0f, pal[i].b / 255.0f, glow[i]);
+    C3D_Mtx model;
+    Mtx_Identity(&model);  // (built in den space)
+    modelView(view, model);
+    const Mat34 identity[1] = {Mat34::identity()};
+    drawMesh(app, g_shelfMesh, identity);
+}
+
+}  // namespace
+
+void drawChallengeProps(App& app, const ChallengeProp* props, int count, Rgb fog, s64 now) {
+    if (!g_ready || !props || count <= 0 || !g_denViewSet) return;
+    perf::Scope timed(perf::Room);
+    C3D_Mtx projection;
+    topProjection(projection, kValleyNear, kValleyFar, g_viewFocus);  // drawValley's (it set the view and focus)
+    C2D_Flush();
+    if (g_fogOk) {
+        C3D_FogGasMode(GPU_FOG, GPU_PLAIN_DENSITY, false);
+        C3D_FogColor(u32(fog.r) | (u32(fog.g) << 8) | (u32(fog.b) << 16));
+        C3D_FogLutBind(&g_fogLut);
+    }
+    bindDragons(projection);
+    const float plain[3] = {1, 1, 1};
+    lightDragon(dragonLight(dayBlend(now)), plain);
+    lookShading(kLookClassic);
+    bindSkin(nullptr);
+    dragonPattern(kPatternSolid, {0, 0, 0});
+    const Mat34 identity[1] = {Mat34::identity()};
+    for (int i = 0; i < count; ++i) {
+        const ChallengeProp& p = props[i];
+        GpuMesh* g = challengeMesh(p.kind, p.variant);
+        if (!g) continue;
+        C3D_Mtx model;
+        Mtx_Identity(&model);
+        Mtx_Translate(&model, p.at.x, p.at.y, p.at.z, true);
+        Mtx_RotateZ(&model, p.yaw, true);
+        Mtx_RotateX(&model, p.pitch, true);
+        Mtx_RotateY(&model, p.roll, true);
+        Mtx_Scale(&model, p.scale, p.scale, p.scale);
+        modelView(g_denView, model);
+        setLook(p.look, p.look.glow);
+        drawMesh(app, *g, identity);
+    }
+    C3D_FogGasMode(GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
+    end3D();
 }
 
 }  // namespace ec::r3d

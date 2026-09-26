@@ -19,6 +19,10 @@
 //   light                       every festival lantern lit
 //   view <place> <ex> <ey> <ez> <tx> <ty> <tz>   the valley's free camera at a place (its frame; z
 //                               above its anchor), looking at a point
+//   challenge <c> <cup>         (in the valley) straight into a challenge's cup (core/world Challenge:
+//                               0 Fruit Catch, 1 Sky Rings, 2 Lantern Trial; cup 1 Ember .. 4 Starfire)
+//   autoplay <on|off>           the challenges play themselves (the pilot flies, the lanterns, throws)
+//   cups <fruit> <rings> <lantern>   the highest cup won in each (their ribbons too)
 //   quit                        leave (writes shots/done.txt)
 #pragma once
 

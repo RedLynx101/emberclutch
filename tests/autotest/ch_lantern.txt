@@ -1,0 +1,52 @@
+# Beta WP8/WP10: the arena's board in the valley, the challenge picker, and the Lantern Trial's
+# Ember cup played by itself with a young dragon (the pattern shown, its breath lighting the
+# crystals, the round cleared, the results).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+key X
+wait 4
+travel 6
+wait 3
+view 6 1 31 3.5 -4.5 20 1.6
+wait 1.5
+shot l00-board
+challenge 2 0
+wait 3
+shot l01-picker
+key RIGHT
+wait 0.5
+shot l02-picker-flame
+key LEFT
+autoplay on
+key A
+wait 3.5
+shot l03-watch
+wait 3
+shot l04-shown
+wait 3
+shot l05-breath
+wait 1
+shot l06-breath2
+wait 6
+shot l07-round
+wait 10
+shot l08-later
+wait 12
+shot l09-late
+wait 8
+shot l10-results
+wait 2
+shot l11-results2
+quit

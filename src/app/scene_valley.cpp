@@ -39,8 +39,8 @@ namespace {
 
 enum class Mode : u8 { OnFoot, Riding, FreeCam };
 
-// What A does where you stand (checked in this order).
-enum class Action : u8 { None, Talk, Enter, Light, Ride, Call };
+// What A does where you stand (checked in this order; Board: the challenges' picker there).
+enum class Action : u8 { None, Talk, Enter, Light, Ride, Call, Board };
 
 struct ValleyScene {
     Valley valley;
@@ -374,6 +374,12 @@ void findAction(ValleyScene& s) {
             }
         }
     }
+    int board = -1;  // the challenges' boards (scene_challenge)
+    float boardAt = 0;
+    if (challengeBoardNear(s.valley, at, board, boardAt) && boardAt < best) {
+        s.action = Action::Board;
+        s.actionPlace = board;
+    }
     if (s.action == Action::None && grownPartner(s) && std::hypot(at.x - s.pal.pos.x, at.y - s.pal.pos.y) < 4.0f)
         s.action = Action::Ride;
     if (s.action == Action::None && s.partner >= 0 && s.pal.lost()) s.action = Action::Call;
@@ -431,6 +437,10 @@ void doAction(App& app, ValleyScene& s) {
             s.pal.call(s.you, s.valley);
             audio::playSfx(audio::Sfx::Chirp, 1.1f);
             showToastf(app, str::kPartnerCame, s.shown.name);
+            break;
+        case Action::Board:
+            keepPlace(app);
+            openChallenges(app, s.actionPlace);
             break;
         case Action::None: break;
     }
@@ -712,6 +722,7 @@ void drawTop(App& app) {
                             (1.0f - 0.45f * clampf(high / 60.0f, 0.0f, 1.0f));
     }
     if (r3d::ready()) r3d::drawValley(app, view, now);
+    if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
     // What A does here, over the picture.
     const char* hint = nullptr;
     char line[64];
@@ -727,6 +738,7 @@ void drawTop(App& app) {
         case Action::Light: hint = world::lanternLit(app.game, s.actionPlace) ? nullptr : str::kPromptLight; break;
         case Action::Ride: hint = str::kPromptRide; break;
         case Action::Call: hint = str::kPromptCall; break;
+        case Action::Board: hint = str::kPromptBoard; break;
         case Action::None: break;
     }
     if (hint && s.mode == Mode::OnFoot && !talking(app)) {
@@ -887,5 +899,15 @@ void openValleyAt(App& app, int place) {
 void openValley(App& app) { openValleyAt(app, kPlaceDen); }
 
 const SceneFns kValleyScene{update, drawTop, drawBottom};
+
+// For the challenges (scene_challenge): the landscape they're held in, and its sky.
+const Valley* loadedValley() { return vs().loaded ? &vs().valley : nullptr; }
+
+void valleySky(s64 now, Rgb& top, Rgb& horizon, Rgb& tint) {
+    const Sky s = skyFor(now);
+    top = s.top;
+    horizon = s.horizon;
+    tint = s.tint;
+}
 
 }  // namespace ec

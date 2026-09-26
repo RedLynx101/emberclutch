@@ -117,6 +117,61 @@ inline constexpr const char* kRename = "Rename";
 inline constexpr const char* kPersonality = "Personality";
 inline constexpr const char* kRenamed = "A fine new name.";
 
+// The challenges (Beta WP8-WP11: Sky Rings, the Lantern Trial, Fruit Catch)
+inline constexpr const char* kPromptBoard = "A: the challenges";
+inline constexpr const char* kChallenges = "Challenges";
+inline constexpr const char* kHeldAt = "at %s";
+inline constexpr const char* kStartCup = "Start!";
+inline constexpr const char* kLeave = "Leave";
+inline constexpr const char* kGoThere = "Go there";
+inline constexpr const char* kCupLocked = "Locked";
+inline constexpr const char* kBestTime = "Best %.1f s";
+inline constexpr const char* kParTime = "Par %.1f s";
+inline constexpr const char* kBestPoints = "Best %d";
+inline constexpr const char* kGoalPoints = "Goal %d";
+inline constexpr const char* kNoBest = "Not run yet";
+inline constexpr const char* kCupWon = "%s won!";
+inline constexpr const char* kCupPlaced = "So close! A prize for placing.";
+inline constexpr const char* kCupTryAgain = "Not this time. Try again!";
+inline constexpr const char* kNewRibbon = "A new ribbon and trophy for your den!";
+inline constexpr const char* kNewBest = "A new best!";
+inline constexpr const char* kGleamPrize = "+%lu Gleam";
+inline constexpr const char* kAgain = "Again";
+inline constexpr const char* kDone = "Done";
+inline constexpr const char* kGoCount = "Go!";
+inline constexpr const char* kGiveUp = "X: give up";
+inline constexpr const char* kRingsCount = "%d/%d rings";
+inline constexpr const char* kRingsMissed = "%d missed (+%d s)";
+inline constexpr const char* kRingBehind = "The next ring is behind you!";
+inline constexpr const char* kTimeUp = "Time's up!";
+inline constexpr const char* kYourTime = "Your time: %.1f s";
+inline constexpr const char* kHighLantern = "The high lantern is lit!";
+inline constexpr const char* kWatch = "Watch the lanterns...";
+inline constexpr const char* kYourTurn = "Your turn!";
+inline constexpr const char* kRoundOf = "Round %d of %d";
+inline constexpr const char* kRoundCleared = "Round cleared!";
+inline constexpr const char* kWatchAgain = "Oops! Watch again...";
+inline constexpr const char* kTapLanterns = "Tap the lanterns in the same order.";
+inline constexpr const char* kGreatLantern = "The great lantern blazes over the valley!";
+inline constexpr const char* kFlickFruit = "Flick a fruit up and away!";
+inline constexpr const char* kThrowOf = "Throw %d of %d";
+inline constexpr const char* kPoints = "%d points";
+inline constexpr const char* kGoldenNext = "A golden pear: double points!";
+inline constexpr const char* kAteItAnyway = "Missed... but it eats it anyway.";
+inline constexpr const char* kHelpRings = "Pad: steer  A: flap\nB: dive  L/R: bank\nThrough every ring!";
+inline constexpr const char* kHelpPicker = "L/R: challenge\nLeft/Right: cup\nA: start  B: leave";
+// The hosts: Wren at the arena, Maple at the orchard ({D} your dragon, {P} you).
+inline constexpr const char* kHostRings[] = {"Sky Rings! Fly through every ring in order. A missed ring costs three seconds.",
+                                              "Beat the clock and the cup is yours. Your best run flies along as a little wisp!"};
+inline constexpr const char* kHostLanterns[] = {"The Lantern Trial! The crystal lanterns will light up in a pattern.",
+                                                 "Then tap them in the same order, and {D} will breathe each one alight."};
+inline constexpr const char* kHostFruit[] = {"Fruit Catch! Flick a fruit down the meadow and {D} will run for it.",
+                                              "Longer throws score more, fancy catches extra, and golden pears count double!"};
+inline constexpr const char* kHostWon[] = {"Wonderful! What a pair you two are.", "That's the cup! The crowd loves you.",
+                                            "Now that's how it's done!"};
+inline constexpr const char* kHostPlaced[] = {"So close! Next time, I'm sure of it.", "Nearly! Have another go."};
+inline constexpr const char* kHostTry[] = {"Don't worry, everyone starts somewhere.", "A little practice, and you'll get it!"};
+
 // Egg care and hatching (WP7)
 inline constexpr const char* kTurn = "Turn";
 inline constexpr const char* kListen = "Listen";

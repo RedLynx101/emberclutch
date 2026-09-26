@@ -1,0 +1,73 @@
+# Beta WP8/WP9: Sky Rings' Ember cup, flown by the steady pilot on a grown partner from the arena
+# up to the floating isles' high lantern (the countdown, the rings, the ghost-less first run, the
+# lantern lit, the results); then Fruit Catch's Starfire cup with the grown dragon (the leap).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+key X
+wait 4
+travel 6
+wait 3
+challenge 1 0
+wait 3
+shot r00-picker
+autoplay on
+key A
+wait 1.5
+shot r01-countdown
+wait 3
+shot r02-go
+wait 4
+shot r03-rings
+wait 8
+shot r04-rings2
+wait 10
+shot r05-orchard
+wait 10
+shot r06-market
+wait 8
+shot r07-climb
+wait 5
+shot r08-isles
+wait 2
+shot r09-lantern
+wait 3
+shot r10-results
+wait 3
+shot r11-results2
+cups 3 0 0
+challenge 0 4
+wait 4
+shot r12-fruit-ready
+wait 1
+shot r13-fruit-throw
+wait 0.8
+shot r14-fruit-run
+wait 0.6
+shot r15-fruit-leap
+wait 1.5
+shot r16-fruit-return
+wait 12
+shot r17-fruit-later
+quit

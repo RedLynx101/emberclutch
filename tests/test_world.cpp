@@ -2,12 +2,16 @@
 // lit; the quests follow the world in any order and never stick; the save keeps it all and an
 // older save starts a fresh world with the den found.
 #include <cstring>
+#include <string>
 #include <vector>
 
 #include "check.hpp"
 #include "core/campaign.hpp"
 #include "core/items.hpp"
 #include "core/market.hpp"
+#include "core/anim.hpp"
+#include "core/model.hpp"
+#include "core/people.hpp"
 #include "core/save.hpp"
 #include "core/valley.hpp"
 #include "core/villagers.hpp"
@@ -168,10 +172,65 @@ TEST(the_villagers_talk) {
     CHECK(campaign::update(s).starEgg);
 }
 
+// The people: every model loads with the game's reader, binds the one clip library (every
+// bone a track), has its body and eyes (the player six hair styles); their colours follow the
+// creator's choices; the walk and run clips keep pace with the body.
+std::vector<u8> readAll(const char* path) {
+    std::vector<u8> data;
+    if (FILE* f = std::fopen(path, "rb")) {
+        std::fseek(f, 0, SEEK_END);
+        data.resize(static_cast<std::size_t>(std::ftell(f)));
+        std::fseek(f, 0, SEEK_SET);
+        if (std::fread(data.data(), 1, data.size(), f) != data.size()) data.clear();
+        std::fclose(f);
+    }
+    return data;
+}
+
+TEST(the_people) {
+    static AnimLibrary lib;
+    const std::vector<u8> clips = readAll("../romfs/anims/person.eca");
+    CHECK(!clips.empty() && loadAnims(clips.data(), clips.size(), lib));
+    for (const char* name : {"idle", "walk", "run", "wave", "talk", "nod", "cheer", "crouch_pet", "ride", "sit_loop"})
+        CHECK(lib.find(name) >= 0);
+    for (int k = 0; k < kPeople; ++k) {
+        const Person who = static_cast<Person>(k);
+        std::string path = personFile(who);
+        path.replace(0, 6, "../romfs");  // romfs:/people/... -> ../romfs/people/...
+        const std::vector<u8> bytes = readAll(path.c_str());
+        static ModelData m;
+        m = ModelData{};
+        CHECK(!bytes.empty() && loadModel(bytes.data(), bytes.size(), m));
+        CHECK(m.findMesh(kMeshBody, kGroupBody, 0) && m.findMesh(kMeshPart, kGroupEyes, 0));
+        CHECK(m.skel.find("eyes") >= 0 && m.skel.find("head") >= 0);
+        AnimBinding bind;
+        bindAnims(lib, m.skel, bind);
+        for (int b = 0; b < m.skel.count; ++b) CHECK(bind.libBone[b] >= 0);
+        if (who == Person::PlayerA || who == Person::PlayerB)
+            for (int h = 0; h < kHairStyles; ++h) CHECK(m.findMesh(kMeshPart, kGroupHair, static_cast<u8>(h)) != nullptr);
+        CHECK(personWalkSpeed(who) > 0.3f && personRunSpeed(who) > personWalkSpeed(who));
+    }
+    u8 look[kLookParts] = {1, 2, 3, 4, 2, 1};
+    Rgb a[kPalCount], b[kPalCount];
+    playerPalette(look, a);
+    CHECK(playerBody(look) == Person::PlayerB);
+    look[kLookSkin] = 0;
+    playerPalette(look, b);
+    CHECK(a[kPalBase].r != b[kPalBase].r && a[kPalHorn].r == b[kPalHorn].r);
+    look[kLookHairColour] = 200;  // out of range: the first
+    playerPalette(look, b);
+    CHECK(b[kPalHorn].r == 132);
+    villagerPalette(Villager::Traveller, a);
+    CHECK(a[kPalGlow].r == 255);  // the lantern's flame
+    CHECK(std::strcmp(lookChoiceName(kLookHair, 2), "Ponytail") == 0 && lookChoiceName(kLookHair, 9)[0] == 0);
+    CHECK(personFor(Villager::Child) == Person::Child && personHips(Person::Child) < personHips(Person::PlayerA));
+}
+
 void runWorldTests() {
     RUN(places_and_lanterns);
     RUN(the_lantern_festival);
     RUN(the_world_saves);
     RUN(the_goods_stall);
     RUN(the_villagers_talk);
+    RUN(the_people);
 }

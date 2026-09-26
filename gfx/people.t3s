@@ -1,0 +1,7 @@
+--atlas -f rgba8 -z auto
+../assets/sprites/people/keeper.png
+../assets/sprites/people/market.png
+../assets/sprites/people/sanctuary.png
+../assets/sprites/people/steward.png
+../assets/sprites/people/child.png
+../assets/sprites/people/traveller.png

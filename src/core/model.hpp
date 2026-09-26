@@ -22,6 +22,7 @@ enum PartGroup : u8 {
     kGroupMouth = 7,  // teeth and tongue
     kGroupShards = 8, // the egg's shell in pieces, for the hatching (egg.ecm; core/shell_burst)
     kGroupRunes = 9,  // the Runes pattern's glowing glyphs (WP12)
+    kGroupHair = 10,  // a person's hair styles (romfs/people: the player's six, variant = style)
     kGroupBody = 255,
 };
 enum PartSex : u8 { kSexAny = 0, kSexMale = 1, kSexFemale = 2 };

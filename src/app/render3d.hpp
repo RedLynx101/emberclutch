@@ -169,6 +169,22 @@ const AnimBinding* binding(int form, int look = 0);
 // only those in view, built a few a frame and kept), the islands and the den's mouth, the
 // dragon flying, then the water, all fogged into the sky's horizon colour. The scene draws
 // the sky itself (2D) first.
+// A person in the valley (core/people): who, where, which way, their clip (app-driven), colours.
+struct PersonView {
+    u8 form = 0;                // core/people Person
+    Vec3 at;
+    float heading = 0;          // radians (0 faces -Y), as the dragons
+    const Animator* anim = nullptr;
+    Rgb pal[kPalCount];
+    s8 hair = -1;               // the player's style (-1: none)
+    float blink = 0;            // 0 open .. 1 shut
+    float scale = 1.0f;
+    bool seated = false;        // riding: drawn on the flown dragon's seat
+};
+constexpr int kMaxPeopleShown = 8;
+// The people's clip library (romfs:/anims/person.eca), for the scenes to play clips.
+const AnimLibrary* personAnims();
+
 struct ValleyView {
     const Valley* valley = nullptr;
     const Dragon* dragon = nullptr;    // the one flown
@@ -187,6 +203,8 @@ struct ValleyView {
     float youHeading = 0, youSpeed = 0;
     const Dragon* marketEgg = nullptr;  // the egg of the day on the Market's stand (null: bought)
     Item goods[4] = {Item::Count, Item::Count, Item::Count, Item::Count};  // the goods stall (Count: sold out)
+    PersonView people[kMaxPeopleShown];  // you first, then the villagers
+    int peopleCount = 0;
 };
 void drawValley(App& app, const ValleyView& view, s64 now);
 void releaseValley();  // leaving the valley: its GPU memory back

@@ -281,7 +281,7 @@ TEST(on_foot_with_your_partner) {
     Walker runner;
     runner.pos = market.at + Vec3{0, 20, 0};
     for (int k = 0; k < 60; ++k) runner.update(run, camYaw, v, {}, dt);
-    CHECK(runner.speed > 6.0f && runner.speed > walked);
+    CHECK(runner.speed > 5.0f && runner.speed > walked);  // a chibi's run (D86)
     // Into the lake: it stops at the water's edge.
     const ValleyPlaceInfo& lake = *v.place(kPlaceLake);
     Walker wader;

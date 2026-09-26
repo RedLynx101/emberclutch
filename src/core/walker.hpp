@@ -26,7 +26,7 @@ struct WalkInput {
 };
 
 struct WalkTuning {
-    float walkSpeed = 3.2f, runSpeed = 7.5f;  // m/s at a full push
+    float walkSpeed = 2.8f, runSpeed = 5.6f;  // m/s at a full push (a chibi's jog and run, D86)
     float accel = 14.0f, turnRate = 9.0f;     // m/s^2; radians a second at most
     float wade = 0.6f;                        // no deeper into water than this
     float steepest = 0.72f;                   // no climbing ground whose normal is flatter than this

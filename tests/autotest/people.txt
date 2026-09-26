@@ -1,0 +1,81 @@
+# Beta: the people (WP13): you on foot at your partner's side, walking and running; the Market's
+# Maple and Pip at their stalls (a wave hello), talking to Maple (the dialogue box, voiced);
+# Rowan at his lodge; riding your partner (you on its back).
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+key X
+wait 4
+shot q01-you-and-partner
+shotin 1.2 q02-walking
+pad 0 0.5 2
+shotin 1.2 q03-running
+keyhold UP+B 2
+travel 1
+wait 3
+view 1 0 -1 2.2 3 -2 1.0
+wait 1.5
+shot q04-maple
+view 1 -4 3 2.2 -8 6 0.8
+wait 1
+shot q05-pip
+travel 1
+wait 2
+pad 1 0.3 0.6
+wait 0.5
+shot q06-near-maple
+key A
+wait 1.5
+shot q07-talking
+key A
+wait 1
+key A
+wait 1
+key A
+wait 1
+key A
+wait 1
+key A
+wait 1
+key A
+wait 1
+key A
+wait 1
+key A
+wait 1
+shot q07b-after-talk
+travel 8
+wait 3
+view 8 0 10 2.5 2.5 6 1.0
+wait 1.5
+shot q08-rowan
+travel 7
+wait 3
+key A
+wait 3
+shot q09-riding
+keyhold A 2
+shotin 1.5 q10-flying
+keyhold UP 3
+quit

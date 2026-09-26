@@ -26,6 +26,7 @@
 #include "core/kinds.hpp"
 #include "core/market.hpp"
 #include "core/model.hpp"
+#include "core/people.hpp"
 #include "core/place_layout.hpp"
 #include "core/rig.hpp"
 #include "core/valley.hpp"
@@ -74,6 +75,15 @@ struct ValleyScene {
     int breathPlace = -1;
     float stepFor = 0;        // your next footstep
     float foundCheck = 0;     // seconds to the next look round for places
+    // The people as drawn: your clip, the villagers' (turning to you, waving hello), blinks.
+    struct Figure {
+        Animator anim;
+        float heading = 0;
+        float blinkIn = 2, blink = 0;
+        bool waved = false;
+    };
+    Figure youFig;
+    Figure folk[kVillagers];
 };
 
 ValleyScene& vs() {
@@ -234,6 +244,83 @@ void lookRound(App& app, ValleyScene& s) {
 }
 
 void travelTo(App& app, ValleyScene& s, int place, bool outward);
+Vec3 villagerAt(const Valley& v, Villager who);
+
+// A clip by name on a figure (nothing if the library or the clip isn't there).
+void playClip(ValleyScene::Figure& f, const char* name, float rate = 1.0f, float fade = 0.2f) {
+    const AnimLibrary* lib = r3d::personAnims();
+    if (!lib) return;
+    const int c = lib->find(name);
+    if (c < 0) return;
+    f.anim.play(c, fade);
+    f.anim.rate = rate;
+}
+
+bool playing(const ValleyScene::Figure& f, const char* name) {
+    const AnimLibrary* lib = r3d::personAnims();
+    return lib && f.anim.clip >= 0 && f.anim.clip == lib->find(name);
+}
+
+void blinkFigure(App& app, ValleyScene::Figure& f) {
+    f.blinkIn -= app.dt;
+    if (f.blinkIn <= 0) {
+        f.blink = 1;
+        f.blinkIn = 1.5f + app.rng.below(3500) * 0.001f;
+    }
+    f.blink = std::fmax(0.0f, f.blink - app.dt * 7.0f);
+}
+
+// You and the villagers move with what's happening: you walk, jog, run, ride, stand and listen;
+// they idle at their places, turn to you as you come near, wave hello once a visit, talk and nod.
+void animatePeople(App& app, ValleyScene& s) {
+    const AnimLibrary* lib = r3d::personAnims();
+    if (!lib) return;
+    const Person body = playerBody(app.game.world.look);
+    ValleyScene::Figure& me = s.youFig;
+    const bool riding = s.mode == Mode::Riding || (s.mode == Mode::FreeCam && s.before == Mode::Riding);
+    if (riding) {
+        const float roll = s.flight.roll;
+        playClip(me, roll > 0.3f ? "ride_lean_left" : roll < -0.3f ? "ride_lean_right" : "ride", 1.0f, 0.3f);
+    } else if (s.you.speed < 0.25f || talking(app)) {
+        playClip(me, "idle", 1.0f, 0.25f);
+    } else if (s.you.speed < 1.3f) {
+        playClip(me, "walk", clampf(s.you.speed / personWalkSpeed(body), 0.5f, 2.0f));
+    } else {
+        playClip(me, "run", clampf(s.you.speed / personRunSpeed(body), 0.8f, 3.0f));
+    }
+    u8 events[4];
+    me.anim.update(*lib, app.dt, events, 4);
+    blinkFigure(app, me);
+    const bool listening = talking(app);
+    for (int k = 0; k < kVillagers; ++k) {
+        ValleyScene::Figure& f = s.folk[k];
+        const Villager who = static_cast<Villager>(k);
+        const Vec3 at = villagerAt(s.valley, who);
+        const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(villagerInfo(who).place));
+        const float rest = (p ? p->heading : 0.0f) + villagerInfo(who).facing;
+        const float d = std::hypot(s.you.pos.x - at.x, s.you.pos.y - at.y);
+        if (d > 90.0f) continue;  // far off: left as they were
+        // Turning to you when you're near (and while you talk), else back to their place's way.
+        const float want = d < 6.0f ? std::atan2(s.you.pos.x - at.x, -(s.you.pos.y - at.y)) : rest;
+        float err = std::remainder(want - f.heading, 6.2831853f);
+        f.heading += clampf(err, -3.0f * app.dt, 3.0f * app.dt);
+        const bool mine = listening && app.talk.who == who;
+        if (mine) {
+            playClip(f, "talk", 1.0f, 0.25f);
+        } else if (playing(f, "talk")) {
+            playClip(f, "nod", 1.0f, 0.2f);
+        } else if (!f.waved && d < 7.0f) {
+            f.waved = true;
+            playClip(f, "wave", 1.0f, 0.2f);
+        } else if (f.anim.clip < 0 || ((playing(f, "wave") || playing(f, "nod")) && f.anim.finished(*lib))) {
+            playClip(f, "idle", 1.0f, 0.3f);
+            f.anim.time = (k * 0.7f);  // not all breathing together
+        }
+        if (d > 15.0f) f.waved = false;  // a new visit: another hello
+        f.anim.update(*lib, app.dt, events, 4);
+        blinkFigure(app, f);
+    }
+}
 
 // Where a villager stands in the valley.
 Vec3 villagerAt(const Valley& v, Villager who) {
@@ -378,6 +465,11 @@ void update(App& app, const Input& in) {
         return;
     }
     if (!s.loaded) return;
+    for (int k = 0; k < kVillagers && s.folk[0].anim.clip < 0 && r3d::personAnims(); ++k) {
+        const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(villagerInfo(static_cast<Villager>(k)).place));
+        s.folk[k].heading = (p ? p->heading : 0.0f) + villagerInfo(static_cast<Villager>(k)).facing;
+    }
+    animatePeople(app, s);
     if (app.autoTravel >= 0) {  // an autotest's trip
         world::findPlace(app.game, app.autoTravel);
         travelTo(app, s, app.autoTravel, false);
@@ -544,6 +636,27 @@ void drawTop(App& app) {
     view.fog = sky.horizon;
     view.tint = sky.tint;
     view.lanternsLit = app.game.world.lanternsLit;
+    {
+        r3d::PersonView& me = view.people[view.peopleCount++];
+        me.form = static_cast<u8>(playerBody(app.game.world.look));
+        me.at = s.you.pos;
+        me.heading = s.you.heading;
+        me.anim = &s.youFig.anim;
+        playerPalette(app.game.world.look, me.pal);
+        me.hair = static_cast<s8>(app.game.world.look[kLookHair] < kHairStyles ? app.game.world.look[kLookHair] : 0);
+        me.blink = s.youFig.blink;
+        me.seated = s.mode == Mode::Riding || (s.mode == Mode::FreeCam && s.before == Mode::Riding);
+        for (int k = 0; k < kVillagers && view.peopleCount < r3d::kMaxPeopleShown; ++k) {
+            const Villager who = static_cast<Villager>(k);
+            r3d::PersonView& p = view.people[view.peopleCount++];
+            p.form = static_cast<u8>(personFor(who));
+            p.at = villagerAt(s.valley, who);
+            p.heading = s.folk[k].heading;
+            p.anim = &s.folk[k].anim;
+            villagerPalette(who, p.pal);
+            p.blink = s.folk[k].blink;
+        }
+    }
     if (const ValleyPlaceInfo* market = s.valley.place(kPlaceMarket);
         market && std::hypot(market->at.x - s.you.pos.x, market->at.y - s.you.pos.y) < 160.0f) {
         static Dragon standEgg;  // the egg of the day on its stand, till it's bought
@@ -644,12 +757,15 @@ void travelTo(App& app, ValleyScene& s, int place, bool outward) {
     if (s.partner >= 0) s.pal.call(s.you, s.valley);
     s.wcam = WalkCamera{};
     s.wcam.yaw = s.you.heading;
+    s.wcam.update(s.you, 0, s.valley, 0.0f);  // there at once (even if nothing moves this frame)
     audio::playSfx(audio::Sfx::TravelWhoosh);
     (void)app;
 }
 
-void drawBottom(App& app, const Input& in) {
+void drawBottom(App& app, const Input& touch) {
     ValleyScene& s = vs();
+    static const Input kNothing{};
+    const Input& in = talking(app) ? kNothing : touch;  // someone talking: the map and buttons wait
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
     textCentered(app, "Skyreach Valley", 160, 12, 0.6f, theme::kClutchGold, 300, Face::Title);
     if (!s.loaded) return;

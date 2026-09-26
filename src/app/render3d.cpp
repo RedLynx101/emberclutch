@@ -28,6 +28,7 @@
 #include "core/shell_burst.hpp"
 #include "core/prop_mesh.hpp"
 #include "core/rig.hpp"
+#include "core/people.hpp"
 #include "core/place_layout.hpp"
 #include "core/static_mesh.hpp"
 #include "core/valley.hpp"
@@ -2697,6 +2698,119 @@ void drawPlaces(App& app, const Valley& v, const ValleyView& view, const C3D_Mtx
     C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
 }
 
+
+// The valley's people (Beta WP13): your character and the villagers, loaded the first time
+// they're wanted (eight small models), posed from the one clip library, drawn with the dragons'
+// program on the skin's clean corner (vertex paint only).
+struct PersonForm {
+    ModelData model;
+    GpuMesh body, eyes, hair[kHairStyles];
+    AnimBinding bind;
+    int eyesBone = -1;
+    bool ok = false, tried = false;
+    void release() {
+        body.release();
+        eyes.release();
+        for (GpuMesh& h : hair) h.release();
+        ok = tried = false;
+    }
+};
+PersonForm g_personForms[kPeople];
+AnimLibrary g_personLib;
+bool g_personLibOk = false, g_personLibTried = false;
+
+bool personLibReady() {
+    if (!g_personLibTried) {
+        g_personLibTried = true;
+        std::vector<u8> bytes;
+        g_personLibOk = readFile("romfs:/anims/person.eca", bytes) && loadAnims(bytes.data(), bytes.size(), g_personLib);
+    }
+    return g_personLibOk;
+}
+
+PersonForm* personForm(int who) {
+    if (who < 0 || who >= kPeople || !personLibReady()) return nullptr;
+    PersonForm& f = g_personForms[who];
+    if (!f.tried) {
+        f.tried = true;
+        std::vector<u8> bytes;
+        const MeshData* body = nullptr;
+        const MeshData* eyes = nullptr;
+        if (readFile(personFile(static_cast<Person>(who)), bytes) && loadModel(bytes.data(), bytes.size(), f.model) &&
+            (body = f.model.findMesh(kMeshBody, kGroupBody, 0)) && (eyes = f.model.findMesh(kMeshPart, kGroupEyes, 0)) &&
+            fillStatic(f.body, *body) && fillStatic(f.eyes, *eyes)) {
+            for (int h = 0; h < kHairStyles; ++h)
+                if (const MeshData* m = f.model.findMesh(kMeshPart, kGroupHair, static_cast<u8>(h))) fillStatic(f.hair[h], *m);
+            bindAnims(g_personLib, f.model.skel, f.bind);
+            f.eyesBone = f.model.skel.find("eyes");
+            f.ok = true;
+        }
+    }
+    return f.ok ? &f : nullptr;
+}
+
+// A person, posed and drawn (after bindDragons and a lightDragon). `frame` (if set) places
+// them instead of their spot: the rider on its dragon's seat.
+void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_Mtx* frame = nullptr) {
+    PersonForm* f = personForm(p.form);
+    if (!f) return;
+    perf::Scope timed(perf::Pose);
+    BonePose bones[kMaxBones];
+    idlePose(f->model, 0.0f, 0, bones);
+    float root[2] = {0, 0};
+    if (p.anim && p.anim->clip >= 0) {
+        Quat delta[kMaxBones];
+        p.anim->sample(g_personLib, f->bind, f->model.skel.count, delta, root);
+        applyDeltas(bones, delta, f->model.skel.count);
+    }
+    if (f->eyesBone >= 0) bones[f->eyesBone].scale.z *= 1.0f - kBlinkSquash * p.blink;
+    static Mat34 poseMat[kMaxBones], skin[kMaxBones];
+    evaluatePose(f->model.skel, bones, poseMat, skin);
+    C3D_Mtx model, mv;
+    if (frame) {
+        model = *frame;
+    } else {
+        Mtx_Identity(&model);
+        Mtx_Translate(&model, p.at.x, p.at.y, p.at.z + root[1] * p.scale, true);
+        Mtx_RotateZ(&model, p.heading, true);
+        Mtx_Translate(&model, 0, -root[0] * p.scale, 0, true);  // forward is -Y
+        Mtx_Scale(&model, p.scale, p.scale, p.scale);
+    }
+    Mtx_Multiply(&mv, &viewM, &model);
+    C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &mv);
+    lookShading(kLookClassic);
+    for (int i = 0; i < kPalCount; ++i)
+        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, p.pal[i].r / 255.0f, p.pal[i].g / 255.0f, p.pal[i].b / 255.0f, 1.0f);
+    bindSkin(nullptr);
+    dragonPattern(kPatternSolid, {0, 0, 0});
+    drawMesh(app, f->body, skin);
+    drawMesh(app, f->eyes, skin);
+    if (p.hair >= 0 && p.hair < kHairStyles) drawMesh(app, f->hair[p.hair], skin);
+}
+
+// Where the rider sits on the flown dragon (its plan's seat on its seat bone), as a frame for
+// the rider: on the seat, turned and tilted with the dragon.
+bool riderFrame(const Posed& d, const ValleyView& view, const C3D_Mtx& dragonModel, Person rider, C3D_Mtx& out) {
+    if (!d.cache || !isKind(d.cache->look)) return false;
+    const KindInfo& kind = kindInfo(kindOfSlot(d.cache->look));
+    const PlanInfo& plan = planInfo(kind.plan);
+    const int bone = plan.seatBone ? d.form->model.skel.find(plan.seatBone) : -1;
+    if (bone < 0) return false;
+    // The plan's seat: an offset (armature axes) from the bone's head at rest, carried by the
+    // bone's pose as the skin is.
+    const Vec3 head = inverseAffine(d.form->model.skel.invRest[bone]).translation();
+    const Vec3 seat = transformPoint(d.skin[bone], head + plan.seat * kind.formScale[d.cache->form]);
+    const Vec3 w = apply(dragonModel, seat);
+    const Vec3 s = personSeat(rider);
+    Mtx_Identity(&out);
+    Mtx_Translate(&out, w.x, w.y, w.z, true);
+    Mtx_RotateZ(&out, view.heading, true);
+    Mtx_RotateX(&out, view.pitch, true);
+    Mtx_RotateY(&out, -view.roll, true);
+    Mtx_Translate(&out, -s.x, -s.y, -s.z + 0.07f, true);  // a little high: the legs clear a broad back
+    return true;
+}
+
 // The Market's stall: the egg of the day on its stand (gone once bought) and the day's four
 // goods on the stall's mats, each fitted to its spot; a sold-out spot shows a plain crate.
 struct GoodsMesh {
@@ -2776,6 +2890,7 @@ void releaseValley() {
         p.failed = false;
     }
     for (GoodsMesh& g : g_goods) g.mesh.release();
+    for (PersonForm& f : g_personForms) f.release();
     g_valleyOf = nullptr;
     if (g_valleyMapOk) {
         retireTex(g_valleyMapTex);
@@ -2784,6 +2899,7 @@ void releaseValley() {
 }
 
 ValleyStats valleyStats() { return g_valleyStats; }
+const AnimLibrary* personAnims() { return personLibReady() ? &g_personLib : nullptr; }
 
 void drawValley(App& app, const ValleyView& view, s64 now) {
     if (!g_ready || !view.valley) return;
@@ -2867,6 +2983,29 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         if (g_posed.form->headBone >= 0) {
             g_heads[0] = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
             g_headSet[0] = true;
+        }
+        // You on its back.
+        C3D_Mtx seat;
+        const bool seated = view.riderOn && view.peopleCount > 0 && view.people[0].seated &&
+                            riderFrame(g_posed, view, model, static_cast<Person>(view.people[0].form), seat);
+        if (seated) drawPerson(app, view.people[0], viewM, &seat);
+        if (autotest::shooting())
+            autotest::log("rider on %d seated %d look %d kind %d seat (%.2f %.2f %.2f) at (%.2f %.2f %.2f)", view.riderOn,
+                          seated, g_posed.cache ? g_posed.cache->look : -1,
+                          g_posed.cache && isKind(g_posed.cache->look) ? kindOfSlot(g_posed.cache->look) : -1,
+                          seat.r[0].w, seat.r[1].w, seat.r[2].w, view.at.x, view.at.y, view.at.z);
+    }
+    // The people about (you on foot, the villagers), near enough to see.
+    if (view.peopleCount > 0) {
+        bindDragons(projection);
+        const float plain[3] = {1, 1, 1};
+        lightDragon(dragonLight(dayBlend(now)), plain);
+        for (int i = 0; i < view.peopleCount; ++i) {
+            const PersonView& p = view.people[i];
+            if (p.seated) continue;
+            const float d = std::hypot(p.at.x - view.eye.x, p.at.y - view.eye.y);
+            if (d > 70.0f || outsideView(clip, p.at - Vec3{0.8f, 0.8f, 0}, p.at + Vec3{0.8f, 0.8f, 1.8f})) continue;
+            drawPerson(app, p, viewM);
         }
     }
     // The Market's stall (the dragons' program, their light).

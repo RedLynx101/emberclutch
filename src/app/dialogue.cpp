@@ -1,5 +1,8 @@
 #include "app/dialogue.hpp"
 
+#include <citro2d.h>
+
+#include <cmath>
 #include <cstring>
 
 #include "app/audio.hpp"
@@ -8,14 +11,41 @@
 #include "app/ui_draw.hpp"
 #include "core/campaign.hpp"
 
+#include "people_t3x.h"  // the villagers' portraits (gfx/people.t3s, in Villager order)
+
 namespace ec {
 namespace {
 
 constexpr float kLettersPerSecond = 42.0f;
+constexpr float kTextScale = 0.48f, kTextWidth = 228.0f;
+C2D_SpriteSheet g_portraits = nullptr;
+
+// Breaks a line into the box's width at spaces, before it's shown: letter by letter, a word
+// never jumps down a line halfway through.
+void wrapLine(App& app, char* s) {
+    int start = 0, space = -1;
+    auto tooWide = [&](int end) {
+        const char keep = s[end];
+        s[end] = 0;
+        const bool wide = textWidth(app, s + start, kTextScale) > kTextWidth;
+        s[end] = keep;
+        return wide;
+    };
+    const int n = static_cast<int>(std::strlen(s));
+    for (int i = 0; i <= n; ++i) {
+        if (s[i] != ' ' && s[i] != 0) continue;
+        if (space >= start && tooWide(i)) {
+            s[space] = '\n';
+            start = space + 1;
+        }
+        space = i;
+    }
+}
 
 void loadLine(App& app) {
     DialogueState& d = app.talk;
     fillLine(d.talk.lines[d.line], app.game, d.text, sizeof(d.text));
+    wrapLine(app, d.text);
     d.shown = 0;
     d.blipFor = 0;
 }
@@ -90,18 +120,22 @@ void drawTalk(App& app) {
     const float nameW = textWidth(app, who.name, 0.55f) + 22;
     panel({box.x + 58, box.y - 20, nameW, 22}, theme::kDenPlum);
     text(app, who.name, box.x + 69, box.y - 17, 0.55f, theme::kClutchGold, C2D_AlignLeft, nameW);
-    // The portrait: a round face in their colours until the people's portraits arrive.
-    C2D_DrawCircleSolid(box.x + 30, box.y + 30, 0.5f, 25, theme::kDenPlum);
-    C2D_DrawCircleSolid(box.x + 30, box.y + 30, 0.5f, 22, theme::rgba(250, 214, 180));
-    char initial[2] = {who.name[0] == 'O' ? who.name[4] : who.name[0], 0};
-    textCentered(app, initial, box.x + 30, box.y + 30, 0.9f, theme::kDenPlum, 40, Face::Title);
+    // The portrait, in a round frame.
+    C2D_DrawCircleSolid(box.x + 30, box.y + 30, 0.5f, 26, theme::kDenPlum);
+    C2D_DrawCircleSolid(box.x + 30, box.y + 30, 0.5f, 23, theme::rgba(250, 226, 196));
+    if (!g_portraits) g_portraits = C2D_SpriteSheetLoadFromMem(people_t3x, people_t3x_size);
+    if (g_portraits && static_cast<std::size_t>(d.who) < C2D_SpriteSheetCount(g_portraits)) {
+        const C2D_Image face = C2D_SpriteSheetGetImage(g_portraits, static_cast<std::size_t>(d.who));
+        const float bob = std::sin(app.t * 7.0f) * (d.shown < std::strlen(d.text) ? 1.2f : 0.0f);  // talking
+        C2D_DrawImageAt(face, box.x + 30 - 24, box.y + 30 - 26 + bob, 0.5f, nullptr, 0.75f, 0.75f);
+    }
     text(app, who.title, box.x + 30, box.y + 60, 0.32f, withAlpha(theme::kDenPlum, 0.7f), C2D_AlignCenter, 56);
     // The line so far.
     char shown[160];
     const int n = static_cast<int>(d.shown);
     std::memcpy(shown, d.text, static_cast<std::size_t>(n));
     shown[n] = 0;
-    text(app, shown, box.x + 64, box.y + 10, 0.48f, theme::kDenPlum, C2D_AlignLeft, box.w - 72);
+    text(app, shown, box.x + 66, box.y + 10, kTextScale, theme::kDenPlum, C2D_AlignLeft);
     if (n >= static_cast<int>(std::strlen(d.text))) {  // a little arrow: A for more
         const float bob = 2 * std::sin(app.t * 6);
         C2D_DrawTriangle(box.x + box.w - 18, box.y + box.h - 16 + bob, theme::kDenPlum, box.x + box.w - 8,

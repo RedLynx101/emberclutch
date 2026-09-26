@@ -85,6 +85,7 @@ inline constexpr const char* kStarEgg = "A star-born %s egg is yours!";
 inline constexpr const char* kPromptTalk = "A: talk to %s";
 inline constexpr const char* kFindGleam = "Found %u Gleam!";
 inline constexpr const char* kFindTrinket = "Found a %s for the hoard!";
+inline constexpr const char* kFindsFound = "Finds: %d of %d";
 inline constexpr const char* kFindEgg = "Found a wild egg! It's waiting at home.";
 inline constexpr const char* kPromptEggStand = "A: the egg of the day";
 inline constexpr const char* kPromptGoods = "A: see the goods";

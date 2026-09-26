@@ -12,6 +12,7 @@
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
 #include "core/campaign.hpp"
+#include "core/finds.hpp"
 #include "core/items.hpp"
 #include "core/kinds.hpp"
 #include "core/world.hpp"
@@ -130,7 +131,11 @@ void drawJournal(App& app, const Input& in, Dragon& d, s64 now) {
             ++shown;
         }
         std::snprintf(line, sizeof(line), str::kPlacesFound, shown, world::placeCount());
-        text(app, line, 14, 184, 0.4f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, 190);
+        text(app, line, 14, 184, 0.4f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, 150);
+        int finds = 0;
+        for (int i = 0; i < kFindSpots; ++i) finds += findDone(s, i);
+        std::snprintf(line, sizeof(line), str::kFindsFound, finds, kFindSpots);  // the finds (WP7)
+        text(app, line, 170, 184, 0.4f, withAlpha(theme::kClutchGold, 0.85f), C2D_AlignLeft, 140);
     }
     back(app, in);
 }

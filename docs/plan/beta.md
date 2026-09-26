@@ -290,6 +290,48 @@ each suiting certain kinds). Parked until the 1.0 polish: the Blazeplume HOME Me
   den things and tools you don't have yet (random each day), each on its own spot, ordinary
   shop furniture where there's nothing left to sell.
 
+## Beta 1: what's built (2026-09-26, with creative freedom, D85-D87)
+Everything below was checked in Azahar by scripted runs (`tests/autotest/*.txt`, shots in
+`build/autotest/`) and comes to Noah together in one big review with run 19's list.
+- **The valley (WP3):** 2.3 km, a storybook palette; the landscape shaped round the places'
+  models (the den's yard notched into its cliff, the grotto behind the falls, the mill's
+  banks, the ruins' flat top); a **ring of mountains** round the horizon over a far haze (the
+  fog lighter: clear to about 200 m); the waterfall pouring in front of the grotto; the
+  floating islands' undersides banded lilac rock.
+- **The places (WP4):** fourteen built in Blender by a builder (D85,
+  `tools/blender/valley_places.py`, `docs/tech/places.md`), each three baked lighting sets
+  blended by the time of day, windows glowing at night, the festival lanterns lit as you
+  light them, the mill's sails turning; read ahead and built on the GPU as you come near.
+  Their doors, walls and lanterns come from `places.json` (`src/core/places_data.inc`).
+- **The Market (D86):** the egg of the day on its stand (gone once bought); the day's four
+  goods on the goods stall (things you don't have, random each day; a plain crate where one's
+  sold out); walking up to either opens its page of the shop.
+- **Getting about (WP5):** a chibi's pace (a stroll, a jog, a run with B), sliding round walls;
+  the walking camera a little higher, kept out of trees' leaves and in front of the den's
+  arch; your partner at your side; riding with you on its back (its plan's seat); **tails in
+  the wind** (D84); **3D** works in the valley (the slider, per eye); map trips arrive looking at
+  the place; Continue puts you back where you were in the valley.
+- **The map (WP6):** fogged where you haven't been, clearing round you (further from the air).
+- **Discovery (WP7):** the fourteen places found by coming near; **twenty finds** (Gleam,
+  trinkets, two wild eggs), a gold star glinting at each until it's taken, nine reached only
+  from the air; **a dragon out on the Wanderings** goes round a loop through the valley's south,
+  its place following the steps you've walked (walking, or a grown one flying circles), with
+  its loop and pin on the map.
+- **You and the people (WP12-WP13):** your character in the creator's look (after a new
+  game's name, and from Settings any time: clothes, hair, hair colour, skin, outfit, eyes);
+  six villagers at their places (they turn to you, wave hello, talk and nod), each line voiced
+  letter by letter in the dialogue box with their portrait, wrapped before it's shown;
+  **the lead** (D81): a dragon too small to ride walks on one.
+- **The Lantern Festival (WP14):** eight quests follow the world (lanterns lit by your
+  dragon's breath, places found, cups won, the stray in the meadow sniffed out by your
+  partner, the traveller's Wandering); **the star dragon** is seen circling over the floating
+  isles once your dragon has its wings, over the arena on the festival's eve, and after; the
+  festival night ends in the star-born egg (a Glimmermoth in its rare colouring, Starborn).
+- **Performance (WP17):** typical valley views 6-7.7k triangles (the Market's square 9k):
+  your dragon's lighter model a little way off, the ground's full detail nearer, no places
+  past 260 m; the den draws every dragon lighter with three or more out (run 18: 20-26 ms);
+  kinds nothing uses are let go after 30 s.
+
 ## Order of work
 1. ✅ **Prove it** (then R7 decided, D75; **the new dragons, WP2b, R11, before step 2**): WP1 (the flyable valley, measured in the emulator) and WP2 (concept
    images for R7) side by side, and the sound briefs of WP15 early so the music can arrive

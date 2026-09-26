@@ -29,7 +29,7 @@ enum BodyRegion : u8 {
 };
 
 // Where an egg came from (Alpha 2 WP8: the profile's family page).
-enum class Origin : u8 { Starter, Bred, Wild, Market, Count };
+enum class Origin : u8 { Starter, Bred, Wild, Market, Festival, Count };  // Festival: the star-born egg (Beta)
 
 constexpr int kDragonStats = 5;   // Wing, Wit, Might, Breath, Stamina (core/kinds)
 constexpr int kDragonTraits = 3;  // at most (three only on the rare colouring)

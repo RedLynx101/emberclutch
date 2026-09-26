@@ -483,6 +483,56 @@ void playSfx(Sfx s, float pitch, float gain) {
     queueSlices(ch, c.data, c.stereo ? 2 : 1, c.frames, g_sfxBufs[slot], kSfxSlices);
 }
 
+Clip g_letters[26];
+int g_voice = -1;
+
+bool loadVoice(u8 voice) {
+    if (!g_ok) return false;
+    if (g_voice == voice) return true;
+    freeVoice();
+    int loaded = 0;
+    for (int k = 0; k < 26; ++k) {
+        char path[48];
+        std::snprintf(path, sizeof(path), "romfs:/voice/v%d/%c.wav", voice + 1, 'a' + k);
+        loaded += loadWav(path, g_letters[k]);
+    }
+    g_voice = voice;
+    return loaded > 0;
+}
+
+void freeVoice() {
+    for (int k = 0; k < kSfxCount; ++k) ndspChnWaveBufClear(kSfxFirst + k);  // (none still reads a letter)
+    for (Clip& c : g_letters) {
+        if (c.data) linearFree(c.data);
+        c = Clip{};
+    }
+    g_voice = -1;
+}
+
+void playLetter(char c, float pitch, float gain) {
+    if (!g_ok || g_voice < 0) return;
+    const char lower = static_cast<char>(c >= 'A' && c <= 'Z' ? c - 'A' + 'a' : c);
+    if (lower < 'a' || lower > 'z') return;
+    const Clip& clip = g_letters[lower - 'a'];
+    if (!clip.data) return;
+    int slot = g_nextSfx;
+    for (int k = 0; k < kSfxCount; ++k) {
+        const int j = (g_nextSfx + k) % kSfxCount;
+        if (!ndspChnIsPlaying(kSfxFirst + j)) {
+            slot = j;
+            break;
+        }
+    }
+    const int ch = kSfxFirst + slot;
+    g_nextSfx = (slot + 1) % kSfxCount;
+    ndspChnWaveBufClear(ch);
+    setupChannel(ch, 1, static_cast<long>(clip.rate * pitch));
+    ndspChnIirBiquadSetEnable(ch, false);
+    setMix(ch, g_sfxVol * gain * 0.7f);
+    const u32 frames = clip.frames < 2600 ? clip.frames : 2600;  // just the letter's start: a quick blip
+    queueSlices(ch, clip.data, 1, frames, g_sfxBufs[slot], 1);
+}
+
 void setBed(Bed b, float level) {
     const int i = static_cast<int>(b);
     g_bedWant[i] = level < 0.0f ? 0.0f : (level > 1.0f ? 1.0f : level);

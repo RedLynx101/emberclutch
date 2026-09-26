@@ -84,6 +84,7 @@ const char* originText(const Dragon& d) {
         case Origin::Bred: return "Laid at the Nesting Stone";
         case Origin::Wild: return "A wild egg from the Wanderings";
         case Origin::Market: return "An egg from the Market";
+        case Origin::Festival: return "The star dragon's gift at the Lantern Festival";
         default: return "Your very first egg";
     }
 }

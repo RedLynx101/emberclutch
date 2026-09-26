@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "app/audio.hpp"
+#include "app/dialogue.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
@@ -26,6 +27,7 @@
 #include "core/place_layout.hpp"
 #include "core/rig.hpp"
 #include "core/valley.hpp"
+#include "core/villagers.hpp"
 #include "core/walker.hpp"
 #include "core/world.hpp"
 
@@ -35,7 +37,7 @@ namespace {
 enum class Mode : u8 { OnFoot, Riding, FreeCam };
 
 // What A does where you stand (checked in this order).
-enum class Action : u8 { None, Enter, Light, Ride, Call };
+enum class Action : u8 { None, Talk, Enter, Light, Ride, Call };
 
 struct ValleyScene {
     Valley valley;
@@ -65,6 +67,7 @@ struct ValleyScene {
     // Here and now.
     Action action = Action::None;
     int actionPlace = -1;
+    Villager actionWho = Villager::Keeper;
     float breathT = -1;       // a lantern being lit: seconds in (< 0: none)
     int breathPlace = -1;
     float stepFor = 0;        // your next footstep
@@ -228,13 +231,37 @@ void lookRound(App& app, ValleyScene& s) {
     }
 }
 
-// What A would do here, nearest first: a door, a lantern, getting on your partner, calling it.
+// Where a villager stands in the valley.
+Vec3 villagerAt(const Valley& v, Villager who) {
+    const VillagerInfo& info = villagerInfo(who);
+    const ValleyPlaceInfo* p = v.place(static_cast<u8>(info.place));
+    return p ? placeToWorld3(v, *p, {info.at.x, info.at.y, 0}) : Vec3{};
+}
+
+// The Sanctuary's stray, hiding in the meadow's flowers until your partner sniffs her out.
+Vec3 strayAt(const Valley& v) {
+    const ValleyPlaceInfo* p = v.place(kPlaceSanctuary);
+    return p ? placeToWorld3(v, *p, {-46, 58, 0}) : Vec3{};
+}
+
+// What A would do here, nearest first: someone to talk to, a door, a lantern, getting on your
+// partner, calling it.
 void findAction(ValleyScene& s) {
     s.action = Action::None;
     s.actionPlace = -1;
     if (s.mode != Mode::OnFoot) return;
     const Vec3 at = s.you.pos;
     float best = 1e9f;
+    for (int k = 0; k < kVillagers; ++k) {
+        const Vec3 p = villagerAt(s.valley, static_cast<Villager>(k));
+        const float d = std::hypot(at.x - p.x, at.y - p.y);
+        if (d < 3.2f && d < best) {
+            best = d;
+            s.action = Action::Talk;
+            s.actionWho = static_cast<Villager>(k);
+        }
+    }
+    if (s.action == Action::Talk) return;
     for (const ValleyPlaceInfo& p : s.valley.places) {
         const PlaceLayout& l = placeLayout(p.id);
         if (l.hasDoor && sceneOf(p.id) != SceneId::Count) {
@@ -275,6 +302,9 @@ audio::Sfx breathSound(const Dragon& d) {
 
 void doAction(App& app, ValleyScene& s) {
     switch (s.action) {
+        case Action::Talk:
+            startTalk(app, s.actionWho);
+            break;
         case Action::Enter:
             audio::playSfx(s.actionPlace == kPlaceMarket ? audio::Sfx::VillageBell : audio::Sfx::DoorWood);
             leaveTo(app, sceneOf(s.actionPlace));
@@ -345,6 +375,11 @@ void update(App& app, const Input& in) {
     }
     if (!s.loaded) return;
     measureSpeeds(s);
+    if (talking(app)) {  // listening: the world waits (your partner idles beside you)
+        updateTalk(app, in);
+        animatePartner(app, s, false, false, false, 0);
+        return;
+    }
     const float dpadX = (in.held & KEY_DRIGHT ? 1.0f : 0.0f) - (in.held & KEY_DLEFT ? 1.0f : 0.0f);
     const float dpadY = (in.held & KEY_DUP ? 1.0f : 0.0f) - (in.held & KEY_DDOWN ? 1.0f : 0.0f);
     const Valley& va = s.valley;
@@ -433,6 +468,19 @@ void update(App& app, const Input& in) {
         s.breathT = -1;
     }
     lookRound(app, s);
+    // The stray in the meadow (the Sanctuary's quest): your partner near her, it sniffs her out.
+    if (s.mode == Mode::OnFoot && s.partner >= 0 && (app.game.world.flags & kFlagMetSanctuary) &&
+        !(app.game.world.flags & kFlagFoundStray)) {
+        const Vec3 stray = strayAt(va);
+        if (std::hypot(s.pal.pos.x - stray.x, s.pal.pos.y - stray.y) < 9.0f) {
+            app.game.world.flags |= kFlagFoundStray;
+            audio::playSfx(audio::Sfx::Sniff);
+            audio::playSfx(audio::Sfx::FindSparkle);
+            showToastf(app, str::kFoundStray, s.shown.name);
+            campaign::update(app.game);
+            saveNow(app);
+        }
+    }
     // The beds: the meadow by day, the night, the wind high up, the lake, the falls, the village.
     const DayBlend day = dayBlend(nowLocal(app));
     const float night = day.weight(kLightNight) + 0.5f * day.weight(kLightEvening);
@@ -521,6 +569,10 @@ void drawTop(App& app) {
     const char* hint = nullptr;
     char line[64];
     switch (s.action) {
+        case Action::Talk:
+            std::snprintf(line, sizeof(line), str::kPromptTalk, villagerInfo(s.actionWho).name);
+            hint = line;
+            break;
         case Action::Enter:
             std::snprintf(line, sizeof(line), str::kPromptEnter, world::placeInfo(s.actionPlace).name);
             hint = line;
@@ -530,7 +582,7 @@ void drawTop(App& app) {
         case Action::Call: hint = str::kPromptCall; break;
         case Action::None: break;
     }
-    if (hint && s.mode == Mode::OnFoot) {
+    if (hint && s.mode == Mode::OnFoot && !talking(app)) {
         const float w = textWidth(app, hint, 0.5f) + 24;
         panel({200 - w / 2, 200, w, 24}, withAlpha(theme::kDenPlum, 0.8f));
         textCentered(app, hint, 200, 212, 0.5f, theme::kShell, w);
@@ -639,6 +691,7 @@ void drawBottom(App& app, const Input& in) {
         audio::playSfx(audio::Sfx::Back);
         leaveTo(app, SceneId::Den);
     }
+    drawTalk(app);  // someone talking: the box over it all
 }
 
 }  // namespace

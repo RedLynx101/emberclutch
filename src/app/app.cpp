@@ -1,10 +1,12 @@
 #include "app/app.hpp"
 
 #include <cstdio>
+#include <cstring>
 
 #include "app/audio.hpp"
 #include "app/scenes.hpp"
 #include "core/breeding.hpp"
+#include "core/den_roster.hpp"
 #include "core/genetics.hpp"
 #include "core/items.hpp"
 #include "core/kinds.hpp"
@@ -80,6 +82,27 @@ u32 stepCount(const App& app) {
     return steps + app.devSteps;
 }
 
+// The festival's gift (the campaign's end): a star-born egg, a Glimmermoth in its rare
+// colouring with the Starborn trait, into a free nest (else the Cold Vault).
+void giveStarEgg(App& app) {
+    SaveData& s = app.game;
+    if (s.dragonCount >= kMaxDragons) return;
+    Dragon egg = makeEgg(s.nextId++, makePurebred(Element::Lumen, app.rng), rollSex(app.rng), nowLocal(app));
+    const int kind = findKind("glimmermoth");
+    rollKind(egg, kind >= 0 ? kind : 0, kindInfo(kind >= 0 ? kind : 0).rareVariant, app.rng);
+    for (int t = 0; t < traitCount(); ++t)
+        if (std::strcmp(traitName(t), "Starborn") == 0) {
+            egg.traits[0] = static_cast<u8>(t);
+            if (egg.traitCount == 0) egg.traitCount = 1;
+        }
+    egg.origin = Origin::Festival;
+    if (!placeEgg(s, egg) && vaultCount(s) >= kVaultEggs) return;
+    s.dragons[s.dragonCount++] = egg;
+    audio::playSfx(audio::Sfx::StarShimmer);
+    queueToastf(app, str::kStarEgg, kindInfo(egg.kind).title);
+    saveNow(app);
+}
+
 void tickWorld(App& app) {
     const s64 now = nowLocal(app);
     const float cooling = eggCooling(app.game);
@@ -91,6 +114,17 @@ void tickWorld(App& app) {
     u32 trinkets = 0;
     for (u16 n : app.game.hoard) trinkets += n;
     app.ambience.hoard = trinkets > 60 ? 3.0f : trinkets / 20.0f;
+    {  // the Lantern Festival follows the world (a Wandering home, a flag set elsewhere)
+        const campaign::News n = campaign::update(app.game);
+        if (n.finished >= 0) {
+            audio::playStinger("quest-done");
+            queueToastf(app, str::kQuestFinished, campaign::view(app.game, n.finished).title);
+        } else if (n.stepped >= 0) {
+            audio::playSfx(audio::Sfx::QuestPage);
+        }
+        if (n.starEgg) giveStarEgg(app);
+        if (n.finished >= 0 || n.stepped >= 0) saveNow(app);
+    }
     const int egg = layDueEgg(app.game, now, app.rng);  // the pair's egg, the day after they nested
     if (egg >= 0) {
         showToast(app, app.game.dragons[egg].location == Location::Den ? str::kNewEggNest : str::kNewEggVault);

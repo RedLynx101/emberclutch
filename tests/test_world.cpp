@@ -10,6 +10,7 @@
 #include "core/market.hpp"
 #include "core/save.hpp"
 #include "core/valley.hpp"
+#include "core/villagers.hpp"
 #include "core/world.hpp"
 
 using namespace ec;
@@ -119,9 +120,58 @@ TEST(the_goods_stall) {
     for (int k = 0; k < kStallSpots; ++k) CHECK(b[k] == Item::Count);
 }
 
+// The villagers: first meetings settle a flag once, names fill in, and the festival night is told
+// by Rowan or Wren once the Lantern Trial is won.
+TEST(the_villagers_talk) {
+    static SaveData s;
+    s = SaveData{};
+    world::startWorld(s);
+    std::strcpy(s.playerName, "Noah");
+    s.dragons[0] = Dragon{};
+    s.dragons[0].id = 7;
+    std::strcpy(s.dragons[0].name, "Ember");
+    s.dragonCount = 1;
+    s.world.partnerId = 7;
+    campaign::update(s);
+    Talk t = talkTo(s, Villager::Keeper);
+    CHECK(t.count >= 3 && (t.sets & kFlagMetKeeper));
+    char line[160];
+    fillLine(t.lines[0], s, line, sizeof(line));
+    CHECK(std::strstr(line, "Noah") && !std::strchr(line, '{'));
+    fillLine(t.lines[3], s, line, sizeof(line));
+    CHECK(std::strstr(line, "Ember") != nullptr);
+    CHECK(finishTalk(s, Villager::Keeper, t) && !finishTalk(s, Villager::Keeper, t));
+    CHECK(!(talkTo(s, Villager::Keeper).sets & kFlagMetKeeper));  // met: the next talk is ordinary
+    for (int v = 0; v < kVillagers; ++v) {
+        const Talk k = talkTo(s, static_cast<Villager>(v));
+        CHECK(k.count >= 1);
+        for (int i = 0; i < k.count; ++i) {
+            fillLine(k.lines[i], s, line, sizeof(line));
+            CHECK(std::strlen(line) < 150);  // fits the box
+        }
+    }
+    // The meadow stray: Bram asks, then waits for it.
+    finishTalk(s, Villager::Sanctuary, talkTo(s, Villager::Sanctuary));
+    CHECK((s.world.flags & kFlagMetSanctuary) && std::strstr(talkTo(s, Villager::Sanctuary).lines[0], "meadow"));
+    // The festival night: every quest but the last done, the trial won.
+    for (int q = 0; q < 7; ++q) s.world.quest[q] = campaign::kQuestDone;
+    for (int p = 0; p < kPlaceCount; ++p) {
+        world::findPlace(s, p);
+        if (world::placeInfo(p).lantern) world::lightLantern(s, p);
+    }
+    s.world.cups[static_cast<int>(Challenge::LanternTrial)] = 1;
+    campaign::update(s);
+    CHECK(campaign::view(s, 7).stepIndex == 2);
+    t = talkTo(s, Villager::Steward);
+    CHECK(t.sets & kFlagFestival);
+    finishTalk(s, Villager::Steward, t);
+    CHECK(campaign::update(s).starEgg);
+}
+
 void runWorldTests() {
     RUN(places_and_lanterns);
     RUN(the_lantern_festival);
     RUN(the_world_saves);
     RUN(the_goods_stall);
+    RUN(the_villagers_talk);
 }

@@ -40,6 +40,13 @@ enum class Bed : u8 { Hearth, Night, EggHum, Market, WindHigh, Meadow, ValleyNig
                       Village, Count };
 void setBed(Bed b, float level);  // 0..1
 
+// The villagers' voices (D75: letter by letter, in the way of a cozy life-sim): a voice's 26
+// letters (romfs/voice/v<N>/), loaded when a talk starts and freed after; one letter played
+// short and high, pitched per speaker.
+bool loadVoice(u8 voice);
+void playLetter(char c, float pitch, float gain = 1.0f);
+void freeVoice();
+
 // Returns false (and stays silent) if the DSP can't start, e.g. no sdmc:/3ds/dspfirm.cdc.
 bool init();
 void shutdown();

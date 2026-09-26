@@ -5,6 +5,7 @@
 #include <citro2d.h>
 
 #include "app/storage.hpp"
+#include "core/villagers.hpp"
 #include "core/care.hpp"
 #include "core/den_actor.hpp"
 #include "core/den_roster.hpp"
@@ -149,6 +150,7 @@ enum class KeyboardFor : u8 { None, PlayerName, NameHatchling, Rename };
 enum class MenuPage : u8 { Closed, Main, Settings, DeleteAsk, DeleteSure, Dex };
 
 struct App {
+    DialogueState talk;       // talking to someone in the valley (app/dialogue)
     bool fromValley = false;  // a place's scene was entered from the valley (leaving goes back out)
     SceneId scene = SceneId::Title;
     C3D_RenderTarget* top = nullptr;

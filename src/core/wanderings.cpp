@@ -89,6 +89,7 @@ WanderFinds comeBack(SaveData& s, int index, u32 stepCount, s64 now, Rng& rng) {
     f = rollFinds(d, stepsSince(d, stepCount), rng);
     d.wanderSince = 0;
     d.wanderSteps = 0;
+    if (s.world.flags & kFlagMetTraveller) s.world.flags |= kFlagWandered;  // the trailhead's quest (Beta)
     s.gleam += f.gleam;
     for (int t = 0; t < kTrinkets; ++t) s.hoard[t] = static_cast<u16>(s.hoard[t] + f.trinkets[t] > 60000 ? 60000 : s.hoard[t] + f.trinkets[t]);
     // Rarely a wild egg: one chance per 2,000 steps, at most one a trip. Mostly the breeds

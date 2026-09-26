@@ -20,6 +20,7 @@ import sys
 import bmesh
 import bpy
 import numpy as np
+from mathutils import Vector
 
 # Must match src/core/dragon.hpp BodyRegion; REGION_CLEAN is never dirty.
 REGIONS = ["head", "neck", "back", "belly", "left", "right", "tail", "wings"]
@@ -63,9 +64,13 @@ def tag_regions(body, overrides=None):
 
 
 # ------------------------------------------------------------------------------ UVs
-def unwrap(body):
+TINY_ISLAND = 6.0  # texels: a UV island this small may hold no texel centre, so the bake never reaches it
+
+
+def unwrap(body, size=256):
     """Smart-project the skin faces (material slot 0) into [0, SKIN_AREA]^2; everything else
-    sits on the clean corner."""
+    sits on the clean corner. `size` is the texture the skin is baked into (tiny islands are
+    measured in its texels)."""
     for o in bpy.context.selected_objects:
         o.select_set(False)
     body.select_set(True)
@@ -87,6 +92,86 @@ def unwrap(body):
                 uv[li].uv = uv[li].uv * SKIN_AREA
             else:
                 uv[li].uv = CLEAN_UV
+    rescue_tiny_islands(body, size)
+
+
+def uv_islands(bm, uvl, faces):
+    """The faces' UV islands: faces joined across an edge whose two ends have the same UVs on
+    both sides."""
+    parent = {f: f for f in faces}
+
+    def find(f):
+        while parent[f] is not f:
+            parent[f] = parent[parent[f]]
+            f = parent[f]
+        return f
+
+    def uv_at(face, vert):
+        return next(lp[uvl].uv for lp in face.loops if lp.vert is vert)
+
+    for f in faces:
+        for e in f.edges:
+            for g in e.link_faces:
+                if g is f or g not in parent:
+                    continue
+                if all((uv_at(f, v) - uv_at(g, v)).length < 1e-6 for v in e.verts):
+                    parent[find(f)] = find(g)
+    out = {}
+    for f in faces:
+        out.setdefault(find(f), []).append(f)
+    return list(out.values())
+
+
+def rescue_tiny_islands(body, size):
+    """A sliver face standing at a sharp crease (decimation leaves a few) becomes an island of
+    its own, as thin as a fraction of a texel: no texel centre falls inside it, the bake never
+    reaches it, and the game drew it black (the dark-face scan, tools/dragons/dark_faces.py,
+    run 18). Each island under TINY_ISLAND texels is laid onto the neighbouring island that
+    shares most of its vertices, every vertex taking its UV there (the pattern is 3D, so that
+    spot has the right colour); a vertex with no place there takes the mean of the others."""
+    me = body.data
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    uvl = bm.loops.layers.uv["UVMap"]
+    skin = [f for f in bm.faces if f.material_index == 0]
+    islands = uv_islands(bm, uvl, skin)
+    home = {f: i for i, isl in enumerate(islands) for f in isl}
+
+    def area(f):  # in texels (the cut leaves a few quads and ngons)
+        pts = [lp[uvl].uv for lp in f.loops]
+        return abs(sum(p.cross(q) for p, q in zip(pts, pts[1:] + pts[:1]))) * 0.5 * size * size
+
+    moved = 0
+    for i, isl in enumerate(islands):
+        if sum(area(f) for f in isl) >= TINY_ISLAND:
+            continue
+        verts = {v for f in isl for v in f.verts}
+        votes = {}
+        for v in verts:
+            for g in v.link_faces:
+                j = home.get(g)
+                if j is not None and j != i:
+                    votes[j] = votes.get(j, 0) + 1
+        if not votes:
+            continue
+        best = max(votes, key=lambda j: (votes[j], len(islands[j])))
+        place = {}
+        for v in verts:
+            there = [lp for g in v.link_faces if home.get(g) == best for lp in g.loops if lp.vert is v]
+            if there:
+                place[v] = there[0][uvl].uv.copy()
+        if not place:
+            continue
+        mean = sum(place.values(), Vector((0.0, 0.0))) / len(place)
+        for f in isl:
+            for lp in f.loops:
+                lp[uvl].uv = place.get(lp.vert, mean)
+        home.update({f: best for f in isl})
+        moved += len(isl)
+    if moved:
+        bm.to_mesh(me)
+        print(f"[kit] UVs: {moved} face(s) in tiny islands laid onto their neighbours")
+    bm.free()
 
 
 # ------------------------------------------------------------------------------ node helpers
@@ -344,13 +429,40 @@ def bake_skin(body, form, size, kind):
     value = _bake(body, image, "EMIT", lambda nt: channels(nt)["value"])
     ao = _blur(_bake(body, image, "AO", samples=64))
     rgba[:, :, 3] = value * (0.72 + 0.28 * ao)
+    baked = _bake(body, image, "EMIT", lambda nt: const(nt, 1.0)) > 0.5  # the islands and their margin
     for o in hidden:
         o.hide_render = False
     bpy.data.images.remove(image)
+    _fill(rgba, baked)
     lo = int(CLEAN_FROM * size)
     rgba[lo:, lo:, :3] = 0.0
     rgba[lo:, lo:, 3] = 1.0
     return np.clip(rgba, 0.0, 1.0)
+
+
+def _fill(rgba, baked):
+    """Every texel the bake didn't reach (between the islands, past the bake's margin) takes
+    the mean of its reached neighbours, growing out until none is left. The game filters the
+    skin trilinearly, so the smaller mipmaps average the gaps in: left black, they darkened the
+    islands' edges a little way off, and any face that samples outside its island drew black."""
+    todo = ~baked
+    h, w = baked.shape
+    while todo.any():
+        have = (~todo).astype(np.float32)
+        acc = np.zeros_like(rgba)
+        cnt = np.zeros((h, w), dtype=np.float32)
+        for dy in (-1, 0, 1):
+            for dx in (-1, 0, 1):
+                if dy or dx:
+                    ys, yd = slice(max(0, dy), h + min(0, dy)), slice(max(0, -dy), h + min(0, -dy))
+                    xs, xd = slice(max(0, dx), w + min(0, dx)), slice(max(0, -dx), w + min(0, -dx))
+                    acc[yd, xd] += rgba[ys, xs] * have[ys, xs, None]
+                    cnt[yd, xd] += have[ys, xs]
+        grow = todo & (cnt > 0)
+        if not grow.any():
+            break
+        rgba[grow] = acc[grow] / cnt[grow][:, None]
+        todo &= ~grow
 
 
 def _blur(a):

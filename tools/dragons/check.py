@@ -1,15 +1,22 @@
 """Checks a kind's exported files against the budgets and the contract (plain Python).
 
-  python tools/dragons/check.py pouncer [crestwing ...]      (or --all)
+  python tools/dragons/check.py pouncer [crestwing ...]      (or --all)  [--deep]
 
 For each kind: romfs/dragons/<kind>/{hatchling,grown}[_lod1].ecm and their skins exist; the
 skeleton is the plan's (at most 40 bones, body bones first, the names the game looks up);
 every draw uses at most 25 bones; eyes (round and slit pupils), heart and mouth are there;
 the triangle budget holds for the common and the rare variant (LOD0 3,000, LOD1 1,200);
-the plan's clips (romfs/anims/<plan>.eca) cover every required clip. Exit code 1 on failure.
+the plan's clips (romfs/anims/<plan>.eca) cover every required clip; no skin face comes out
+near-black (tools/dragons/dark_faces.py, run 18). Exit code 1 on failure.
+
+--deep also runs the kit's Blender checks on the kinds (headless, a minute or so a kind):
+tools/blender/dragonkit/closeup.py (no see-through mouth from the close-up's angles) and
+tools/blender/dragonkit/curl.py (curled up and asleep: nothing through the floor or the body,
+the head resting).
 """
 import os
 import struct
+import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -17,7 +24,10 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 import dragons  # noqa: E402
 from dragons.clip_names import REQUIRED  # noqa: E402
+from dragons import dark_faces  # noqa: E402
 from dragons import lore  # noqa: E402
+
+BLENDER = os.environ.get("BLENDER", r"C:\Program Files (x86)\Steam\steamapps\common\Blender\blender.exe")
 
 GROUP_NAMES = {0: "eyes", 1: "horns", 2: "frill", 3: "spikes", 4: "tail_tip", 5: "heart", 6: "wings", 7: "mouth",
                9: "runes", 255: "body"}
@@ -163,6 +173,13 @@ def check_kind(name):
         if missing:
             problems.append(f"plan {plan.NAME}: missing clips {missing}")
         lines.append(f"  plan {plan.NAME}: {len(clips)} clips")
+    if all(os.path.exists(os.path.join(folder, f"{s}.ecm")) for s in ("hatchling", "grown")):
+        dark = sum(len(dark_faces.scan(os.path.join(folder, f"{s}.ecm"), os.path.join(folder, f"{s}_skin.t3x"))[0])
+                   for s in ("hatchling", "hatchling_lod1", "grown", "grown_lod1")
+                   if os.path.exists(os.path.join(folder, f"{s}_skin.t3x")))
+        if dark:
+            problems.append(f"{dark} dark skin face samples (python tools/dragons/dark_faces.py {name})")
+        lines.append(f"  skins: {dark} dark faces")
     print(f"[check] {name} ({k.META['title']}, {k.META['element']}, {k.META['rarity']}): "
           f"{'OK' if not problems else 'PROBLEMS'}")
     for ln in lines:
@@ -172,10 +189,26 @@ def check_kind(name):
     return not problems
 
 
+def deep(names):
+    """The Blender checks (see the docstring), each over all the kinds in one Blender run."""
+    ok = True
+    for script in ("closeup.py", "curl.py"):
+        path = os.path.join(ROOT, "tools", "blender", "dragonkit", script)
+        run = subprocess.run([BLENDER, "-b", "-P", path, "--", "--kinds", ",".join(names)],
+                             capture_output=True, text=True)
+        for ln in run.stdout.splitlines():
+            if ln.startswith(("[closeup]", "[curl]")):
+                print(ln)
+        ok &= run.returncode == 0
+    return ok
+
+
 def main():
     names = [m.META["name"] for m in dragons.all_kinds()] if "--all" in sys.argv else \
         [a for a in sys.argv[1:] if not a.startswith("--")]
     ok = all([check_kind(n) for n in names])
+    if "--deep" in sys.argv:
+        ok &= deep(names)
     sys.exit(0 if ok else 1)
 
 

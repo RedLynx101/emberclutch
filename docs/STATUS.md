@@ -151,28 +151,15 @@ after each. Stops:
   haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
-- **Go for the dragon revamp** ([plan](plan/dragon-revamp.md)): its questions are answered
-  (D78); DR1 starts when Noah says so.
-- **Music and sounds, batch 3** ([music](audio/suno-music-batch-3.md),
-  [sounds](audio/sfx-batch-3.md)); `valley-day`, `valley-night` and `place-found` first.
-  Batch 2's sounds are still open too (stand-ins play). All of it, with copy buttons and
-  boxes to tick: [Emberclutch Checklists](https://claude.ai/artifact/TLouY2VFEjKJb7YyqFQvAE) (`tools/checklists/make_checklists.py`
-  rebuilds it from the briefs).
-- **Run 14** (0.1.15, [steps](plan/hardware-check-3.md), and on the checklists page): on the
-  3DS's SD card, to install with FBI; it carries 0.1.14 (run 13's fixes) too.
-- **0.1.12 on the old 3DS** ([steps](plan/hardware-check-1.md)): the final banner for now
-  (lab 8's X), the splash, the stereo sound.
-  [What's left for Alpha 2](plan/alpha-2.md); after Alpha 2, the Beta sit-down (D65),
-  check the banner, sound and icon fixes, read the budget with a full den and with every
-  look in memory, pressing **Y** for a screenshot at each number and anything odd (pulled
-  with `tools\pull_shots.ps1`). Runs 1 and 2: [what they found](plan/alpha-2.md) (WP11b). The boot logo stays makerom's (WP11c can't be done as the system logo, D68). Then the hatching rework (WP12a: the egg bursts
-  into bits that fall to the floor, and the hatchling grows out of a small white blob), WP12
-  (looks per dragon, the Dragondex, the parts library, all 21 breeds, photo mode), the full
-  hardware run (D34) and the Alpha 2 tag.
-- Sound brief 2 (`docs/audio/sfx-batch-2.md`): nothing waits on it (stand-ins play).
-- Whenever convenient: the [sound brief 2](audio/sfx-batch-2.md) (hands-on care and
-  Alpha 2 sounds); a listen to the new sounds, the two UI chimes and the Market loop seam
-  (`assets/audio/music/previews/market-bustle.seam-preview.wav`).
+- **The big Beta 1 review** ([the page](https://claude.ai/artifact/6k6yYxfWQjPepJj2hsHuX4), [R13](art/reviews/R13-beta1.md)): a verdict and a note on each part
+  and five questions on the review page; the answers become D88.
+- **Run 19** (0.3.0 and banner labs B-E, [steps](plan/hardware-check-3.md)): sent to the 3DS at
+  .61 when Noah says it's on.
+- **Sounds for the challenges** (stand-ins play): a countdown tick, a missed ring, a clean glass
+  chime for the crystal lanterns, a soft fizzle for a wrong lantern, fruit bouncing on grass, an
+  orchard crowd ([challenges](tech/challenges.md)). Batch 2 and 3's open sounds too, on the
+  [Emberclutch Checklists](https://claude.ai/artifact/TLouY2VFEjKJb7YyqFQvAE).
+
 ## How to work
 - Build: `tools\build.ps1` · Tests: `tools\test.ps1` · Emulator: `tools\emu.ps1`
 - 3DS: `tools\package_cia.ps1 -Banner3D -Version x.y.z` · to the 3DS (the .3dsx, and the CIAs

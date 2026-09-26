@@ -255,6 +255,7 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 | R8 | The valley blockout, from the air and in the game | Detailing the landscape |
 | R9 | The player character and one villager | The other villagers |
 | R10 | The campaign outline | Writing the dialogue |
+| R13 | **The big Beta 1 review** (D85 (5)): R8, R9, R10 and R12 made with creative freedom and shown together ([R13](../art/reviews/R13-beta1.md)) | Beta 2 (its answers: D88) |
 
 ## The big update (D83, 2026-09-26)
 Noah's call after run 17: **the whole of Beta is the next big update**, to `v0.3.0-beta`

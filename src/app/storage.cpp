@@ -196,6 +196,11 @@ void deleteGame() {
     std::remove(kSlotPath[0]);
     std::remove(kSlotPath[1]);
     std::remove(kLegacyPath);
+    for (int cup = 1; cup <= 4; ++cup) {  // Sky Rings' ghosts of your best runs (app/challenge_rings)
+        char ghost[64];
+        std::snprintf(ghost, sizeof(ghost), "sdmc:/3ds/emberclutch/ghost-rings-%d.bin", cup);
+        std::remove(ghost);
+    }
 }
 
 }  // namespace ec

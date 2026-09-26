@@ -10,7 +10,9 @@ valley: **Sky Rings** (ridden, D74) and the **Lantern Trial** at the arena, run 
 - A **notice board** stands by the arena's gate (across from Wren, arena frame (-5, 20.5)) and by
   the orchard's cart (orchard frame (-3.5, 11)). Walking up to one shows "A: the challenges"
   (`Action::Board` in `scene_valley.cpp`); A opens the challenge scene there. The first visit to
-  the arena's board is also meeting Wren (her hello plays over the picker).
+  the arena's board is also meeting Wren (her hello plays over the picker). **Talking to Wren**
+  opens it too, after whatever she says (but the festival night's story); at the arena the
+  Lantern Trial is offered first on the festival night, or when your dragon is too young to ride.
 - **The picker** (bottom screen): the three challenges (tap, or L/R), their four cups (tap, or the
   D-pad) with a ribbon for each cup won, what the cup needs or your best, Start and Leave. The top
   screen shows the place, you and your partner at the board, the host, and the challenge and cup
@@ -126,7 +128,7 @@ Any cup already opened can be run again.
 - Hooks: `scene_valley.cpp` (the Board action, the boards drawn, `loadedValley`, `valleySky`),
   `app.hpp`/`app.cpp` (`SceneId::Challenge`), `main.cpp` (the music), `dialogue.*` (`startLines`),
   `strings.hpp`, `screenshot.cpp`/`hitch.cpp` (the scene's name), `autotest.*`.
-- Autotests: `tests/autotest/ch_lantern.txt`, `ch_fruit.txt`, `ch_rings.txt`, `ch_breath.txt`,
+- Autotests: `tests/autotest/ch_lantern.txt`, `ch_fruit.txt`, `ch_rings.txt`, `ch_breath.txt`, `ch_wren.txt`, `ch_starfire.txt`,
   `ch_den.txt`; commands `challenge <c> <cup>` (0 Fruit Catch, 1 Sky Rings, 2 Lantern Trial; cup 0
   opens the picker), `autoplay on|off` (the pilot flies, the lanterns are lit right, fruit thrown),
   `cups <fruit> <rings> <lantern>`.

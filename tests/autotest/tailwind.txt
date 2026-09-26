@@ -1,0 +1,44 @@
+# D84: the tail in the wind: flying straight, turning right and left (it swings into the turn),
+# diving (streaming straight, a little up) and climbing (drooping).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+key X
+wait 4
+travel 7
+wait 3
+key A
+wait 3
+keyhold A 3
+shotin 0.3 t01-straight
+wait 1
+shotin 1.0 t02-turning-right
+pad 1 0 1.6
+shotin 1.0 t03-turning-left
+pad -1 0 1.6
+shotin 1.2 t04-diving
+keyhold B 1.6
+shotin 1.0 t05-climbing
+pad 0 -1 1.4
+quit

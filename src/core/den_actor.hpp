@@ -45,6 +45,9 @@ struct DenActor {
     int speedForm = -1;  // the body the walking speeds were measured on
     float speedT = -1;
     float look = 0;      // smoothed look-at-the-player weight
+    // The wind on its tail in flight (D84), set by the valley: a bend across the whole tail in
+    // radians (+yaw toward its right, +pitch up) and how straight the airflow pulls it (0..1).
+    float tailYaw = 0, tailPitch = 0, tailStraight = 0;
 
     void reset(const DenLayout& den, u32 seed, int spot = 0);  // spot: its bed and sulking spot
     // Re-measures walk/trot/run speeds when the body changes (form, growth, build, size).

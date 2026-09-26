@@ -157,6 +157,9 @@ struct Form {
     BoneCapsule caps[kMaxCapsules];      // touch picking (core/care)
     int capCount = 0;
     int headBone = -1, chestBone = -1, eyesBone = -1, jawBone = -1;
+    static constexpr int kMaxTail = 8;
+    s8 tail[kMaxTail] = {};              // tail1, tail2 ... (the wind bends them in flight, D84)
+    int tailCount = 0;
     bool ok = false;
 };
 
@@ -462,6 +465,14 @@ bool loadForm(const char* path, const char* skinPath, Form& f) {
     f.jawBone = f.model.skel.find("jaw");
     f.capCount = buildCapsules(f.model, f.caps, kMaxCapsules);
     f.chestBone = f.model.skel.find("chest");
+    f.tailCount = 0;
+    for (int k = 1; k <= Form::kMaxTail; ++k) {
+        char name[8];
+        std::snprintf(name, sizeof(name), "tail%d", k);
+        const int b = f.model.skel.find(name);
+        if (b < 0) break;
+        f.tail[f.tailCount++] = static_cast<s8>(b);
+    }
     f.ok = true;
     return true;
 }
@@ -680,6 +691,8 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
     out.blobScale = actor ? actor->blobScale : 1.0f;
     BonePose bones[kMaxBones];
     idlePose(f.model, c->t, buildOf(d), bones);
+    Quat tailRest[Form::kMaxTail];  // the tail before the clip moves it (the airflow straightens toward it)
+    for (int k = 0; k < f.tailCount; ++k) tailRest[k] = bones[f.tail[k]].rot;
     out.root[0] = out.root[1] = 0;
     if (actor && animsOkFor(c->look)) {
         Quat delta[kMaxBones];
@@ -705,6 +718,19 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
         // Hands-on care: it looks at the food you hold out, or leans toward your hand.
         if (actor->gazeWeight > 0.01f)
             applyLookAt(f.model.skel, bind, bones, actor->gazeLocal, actor->gazeWeight);
+    }
+    // The wind on the tail in flight (D84): the airflow straightens the clip's sway, and the
+    // tail swings into a turn and lifts or drops with the dive, a share at each joint (an arc).
+    if (actor && f.tailCount > 0 &&
+        (actor->tailStraight > 0.01f || std::fabs(actor->tailYaw) > 0.005f || std::fabs(actor->tailPitch) > 0.005f)) {
+        const Quat bend = mul(quatAxisAngle({0, 0, 1}, actor->tailYaw / f.tailCount),
+                              quatAxisAngle({1, 0, 0}, actor->tailPitch / f.tailCount));
+        for (int k = 0; k < f.tailCount; ++k) {
+            BonePose& b = bones[f.tail[k]];
+            if (actor->tailStraight > 0.01f) b.rot = nlerp(b.rot, tailRest[k], actor->tailStraight);
+            const Quat& rest = bind.rest[f.tail[k]];
+            b.rot = mul(b.rot, mul(mul(conjugate(rest), bend), rest));
+        }
     }
     if (actor && f.jawBone >= 0 && actor->jawOpen > 0.01f) {  // opening for the food (a smaller bite, run 15)
         const Quat q = quatFromPitchYawRoll(-actor->jawOpen * 20.0f * kDegToRad, 0, 0);

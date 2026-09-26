@@ -64,6 +64,7 @@ struct ValleyScene {
     bool speedsSet = false;
     float natWalk = 2.2f, natTrot = 4.0f, natRun = 6.0f;
     float skimFor = 0, swimT = 0;
+    float tailLastHeading = 0, tailTurn = 0, tailYawV = 0, tailPitchV = 0;  // the wind on its tail (windOnTail)
     // The free camera.
     Vec3 freeEye;
     float freeYaw = 0, freePitch = -0.35f;
@@ -185,6 +186,28 @@ void measureSpeeds(ValleyScene& s) {
 }
 
 // The partner's clip for how it's moving (flying, swimming, walking, trotting, running).
+// The tail in the wind (D84): in flight it swings into a turn (right, it swings right), trails
+// straighter and higher in a dive and droops a little climbing, on a spring so it lags and
+// overshoots a touch like a real tail; on the ground it settles back to the clip's own sway.
+void windOnTail(App& app, ValleyScene& s, bool flying, bool diving) {
+    const float dt = std::fmax(app.dt, 1e-4f);
+    float turn = std::remainder(s.flight.heading - s.tailLastHeading, 6.2831853f) / dt;  // + left (CCW)
+    s.tailLastHeading = s.flight.heading;
+    if (!flying) turn = 0;
+    s.tailTurn += (turn - s.tailTurn) * std::fmin(1.0f, dt * 6.0f);
+    const float nose = flying ? s.flight.pitch : 0.0f;  // + nose down (a dive: the tail streams up in line), - climbing (it droops)
+    const float wantYaw = flying ? clampf(-s.tailTurn * 0.55f, -0.95f, 0.95f) : 0.0f;
+    const float wantPitch = flying ? clampf(nose * 0.5f, -0.35f, 0.45f) : 0.0f;
+    const float wantStraight = !flying ? 0.0f : diving ? 0.85f : clampf(0.3f + 0.4f * std::fabs(s.tailTurn), 0.3f, 0.6f);
+    // A spring, a little under-damped.
+    constexpr float kStiff = 38.0f, kDamp = 7.5f;
+    s.tailYawV += ((wantYaw - s.flyer.tailYaw) * kStiff - s.tailYawV * kDamp) * dt;
+    s.tailPitchV += ((wantPitch - s.flyer.tailPitch) * kStiff - s.tailPitchV * kDamp) * dt;
+    s.flyer.tailYaw += s.tailYawV * dt;
+    s.flyer.tailPitch += s.tailPitchV * dt;
+    s.flyer.tailStraight += (wantStraight - s.flyer.tailStraight) * std::fmin(1.0f, dt * 3.0f);
+}
+
 void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swimming, float speed) {
     const AnimLibrary* lib = r3d::animsFor(s.shown);
     if (!lib) return;
@@ -219,6 +242,7 @@ void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swi
                            swimming ? 1.3f : 0.94f + 0.12f * (app.rng.below(100) / 100.0f), swimming ? 0.35f : 0.7f);
     }
     s.flyer.eyes.update(0.0f, app.dt);
+    windOnTail(app, s, flying, diving);
 }
 
 // Where you (or you and your partner, riding) are.

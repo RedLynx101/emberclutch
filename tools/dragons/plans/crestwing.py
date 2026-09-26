@@ -160,12 +160,12 @@ SIT = {  # sits back on its haunches like a proud cat, chest high, the plumed ta
     "leg_up*": (90, 0, 0), "leg_lo*": (-140, 0, 0), "foot*": (60, 0, 0),
     "arm_up*": (-34, 0, 0), "arm_lo*": (4, 0, 0), "hand*": (-12, 0, 0),
     "neck1": (-14, 0, 0), "head": (-8, 0, 0),
-    "tail1": (-36, -24, 0), "tail2": (-6, -34, 0), "tail3": (-6, -38, 0), "tail4": (-20, -36, 0)}
+    "tail1": (-46, -24, 0), "tail2": (-10, -34, 0), "tail3": (-6, -38, 0), "tail4": (-10, -36, 0)}
 LIE = {  # all four legs folded under like a deer, the neck still up in its S
     "arm_up*": (80, 0, 0), "arm_lo*": (-130, 0, 0), "hand*": (50, 0, 0),
     "leg_up*": (70, 0, 0), "leg_lo*": (-130, 0, 0), "foot*": (62, 0, 0),
     "neck1": (-10, 0, 0), "neck2": (2, 0, 0), "head": (-10, 0, 0),
-    "tail1": (-10, 0, 0), "tail2": (0, 18, 0), "tail3": (0, 24, 0), "tail4": (0, 28, 0)}
+    "tail1": (-26, 0, 0), "tail2": (-12, 18, 0), "tail3": (-8, 24, 0), "tail4": (-4, 28, 0)}  # lifted: the plumes clear the floor
 _LIE_BODY = {k: v for k, v in LIE.items() if not k.startswith(("neck", "head", "tail"))}
 # Curled up asleep: the long neck curves down and round the near side so the head rests by the
 # chest, facing the tail, and the plumed tail wraps round the other way (solved from bone
@@ -173,14 +173,15 @@ _LIE_BODY = {k: v for k, v in LIE.items() if not k.startswith(("neck", "head", "
 CURL = merge(_LIE_BODY, {
     "neck1": (-121, -46, -13), "neck2": (3, -7, 42), "neck3": (4, -7, 55), "neck4": (11, -11, 29),
     "head": (62, 13, -5), "crest": (16, 0, 0),
-    "tail1": (4, -26, 0), "tail2": (0, -34, 0), "tail3": (-12, -38, 0), "tail4": (-28, -34, 0)})
+    "tail1": (-12, -26, 0), "tail2": (-8, -34, 0), "tail3": (-12, -38, 0), "tail4": (-28, -34, 0)})
 CURL_BABY = merge(_LIE_BODY, {
     "neck1": (-102, 0, 0), "neck2": (4, -3, 5), "neck3": (1, -1, 3), "neck4": (5, -1, 3), "head": (99, 24, -33),
     "crest": (20, 0, 0), "tail1": (4, -30, 0), "tail2": (0, -40, 0), "tail3": (0, -44, 0), "tail4": (0, -40, 0)})
 CROUCH_BODY = {
     "hips": (-6, 0, 0), "leg_up*": (40, 0, 0), "leg_lo*": (-72, 0, 0), "foot*": (32, 0, 0),
     "arm_up*": (36, 0, 0), "arm_lo*": (-64, 0, 0), "hand*": (26, 0, 0),
-    "neck1": (-18, 0, 0), "neck2": (-6, 0, 0), "head": (8, 0, 0), "tail1": (8, 0, 0)}
+    "neck1": (-18, 0, 0), "neck2": (-6, 0, 0), "head": (8, 0, 0), "tail1": (-8, 0, 0), "tail2": (-6, 0, 0),
+    "tail3": (-4, 0, 0)}
 CROUCH = merge(WINGS_HALF, CROUCH_BODY)
 CROUCH_FOLDED = merge(WINGS_FOLDED, CROUCH_BODY)
 # The long neck reaches the floor, the front legs spread and bend a little.
@@ -192,12 +193,26 @@ EAT_BABY = {"neck1": (-18, 0, 0), "neck2": (-10, 0, 0), "head": (-26, 0, 0),
 BELLY_UP = merge(WINGS_FOLDED, {
     "hips": (0, 0, 160), "chest": (0, 0, 14),
     "arm_up*": (60, 0, 0), "arm_lo*": (-80, 0, 0), "leg_up*": (55, 0, 0), "leg_lo*": (-80, 0, 0),
-    "neck1": (12, 0, -50), "neck2": (0, 0, -45), "neck3": (0, 0, -30), "neck4": (0, 0, -20), "head": (14, 0, -18),
-    "tail1": (0, 20, 0), "tail2": (0, 20, 0), "tail3": (12, 10, 0), "tail4": (30, 0, 0)})
+    # the long neck curves up off the floor to one side, the head upright, looking at you (solved)
+    "neck1": (-112, -55, -25), "neck2": (-31, 2, 16), "neck3": (-8, 0, 6), "neck4": (20, 4, -9),
+    "head": (62, 58, 79),
+    "tail1": (2, 36, 0), "tail2": (2, 30, 0), "tail3": (4, 20, 0), "tail4": (6, 10, 0)})
+# Half way over: on its side, the tail held up off the floor while the body turns.
+_ROLL_BODY = merge(WINGS_FOLDED, {k: v for k, v in LIE.items() if not k.startswith(("tail", "neck", "head"))}, {
+    "hips": (0, 0, 80), "chest": (0, 0, 6),
+    "tail1": (-10, -30, 0), "tail2": (-6, -20, 0), "tail3": (0, -10, 0), "tail4": (0, 0, 0)})
+ROLL_MID = merge(_ROLL_BODY, {"neck1": (-114, 98, 47), "neck2": (-2, 1, -12), "neck3": (26, 2, -6), "neck4": (32, -4, 7),
+                              "head": (43, -32, -27)})
+# The hatchling's short neck: its own solves (belly up, looking at you; half way over).
+_BELLY_BODY = {k: v for k, v in BELLY_UP.items() if not k.startswith(("neck", "head"))}
+BELLY_UP_BABY = merge(_BELLY_BODY, {"neck1": (-82, 19, 39), "neck2": (-20, -1, 2), "neck3": (-15, 1, -3),
+                                    "neck4": (-4, 2, -5), "head": (80, 74, 94), "tail2": (10, 0, 0), "tail3": (10, 0, 0)})
+ROLL_MID_BABY = merge(_ROLL_BODY, {"neck1": (-67, 0, -40), "neck2": (2, 8, -15), "neck3": (3, 4, -9), "neck4": (3, -2, 4),
+                                   "head": (59, -52, -29)})
 SULK = merge(LIE, {
     "neck1": (-30, -24, 0), "neck2": (-14, -18, 0), "neck3": (-6, -8, 0), "head": (-24, -10, -8),
     "crest": (18, 0, 0),
-    "tail1": (0, -30, 0), "tail2": (0, -30, 0), "tail3": (0, -28, 0), "tail4": (0, -26, 0)})
+    "tail1": (-16, -30, 0), "tail2": (-8, -30, 0), "tail3": (-4, -28, 0), "tail4": (0, -26, 0)})
 
 
 # ------------------------------------------------------------------------------ layers
@@ -498,12 +513,14 @@ HAPPY = merge(WINGS_HALF, fan_tail(), {"neck1": (10, 0, 0), "head": (12, 0, 0), 
                           "jaw": (-8, 0, 0), "crest": (-16, 0, 0)}))
  .wave(lambda t: {"head": (4 * sin01(t, 1.6), 0, 0), "jaw": (-3 * sin01(t, 1.6, 0.2), 0, 0)})
  .wave(tail_sway(0.8, 0.8)).event(0.4, "purr"))
-clip("roll_over", 1.2).pose(0.0, STAND).pose(0.5, merge(WINGS_FOLDED, LIE)).pose(1.2, BELLY_UP).event(0.9, "thump")
-(clip("belly_rub", 1.2, loop=True).pose(0.0, BELLY_UP)
- .wave(lambda t: {"leg_up_L": (10 * sin01(t, 0.6), 0, 0), "leg_up_R": (10 * sin01(t, 0.6, 0.5), 0, 0),
-                  "arm_up_L": (8 * sin01(t, 0.6, 0.25), 0, 0), "arm_up_R": (8 * sin01(t, 0.6, 0.75), 0, 0),
-                  "hips": (0, 0, 5 * sin01(t, 1.2))})
- .wave(pant(9.0, 0.6)).event(0.3, "purr"))
+for _sfx, _mid, _up in (("", ROLL_MID, BELLY_UP), ("_h", ROLL_MID_BABY, BELLY_UP_BABY)):
+    (clip("roll_over" + _sfx, 1.2).pose(0.0, STAND).pose(0.45, merge(WINGS_FOLDED, LIE)).pose(0.8, _mid).pose(1.2, _up)
+     .event(0.9, "thump"))
+    (clip("belly_rub" + _sfx, 1.2, loop=True).pose(0.0, _up)
+     .wave(lambda t: {"leg_up_L": (10 * sin01(t, 0.6), 0, 0), "leg_up_R": (10 * sin01(t, 0.6, 0.5), 0, 0),
+                      "arm_up_L": (8 * sin01(t, 0.6, 0.25), 0, 0), "arm_up_R": (8 * sin01(t, 0.6, 0.75), 0, 0),
+                      "hips": (0, 0, 5 * sin01(t, 1.2))})
+     .wave(pant(9.0, 0.6)).event(0.3, "purr"))
 
 
 def shake_wave(t):
@@ -637,7 +654,7 @@ WING_R_UP = merge(WINGS_FOLDED, {n[:-1] + "_R": v for n, v in WINGS_HALF.items()
 # ------------------------------------------------------------------------------ toys
 # A swat at the dangled feather: from a little bow, the left front foot comes up and forward.
 PLAY_READY = merge(WINGS_FOLDED, {"hips": (-4, 0, 0), "arm_up*": (30, 0, 0), "arm_lo*": (-50, 0, 0), "hand*": (20, 0, 0),
-                                  "chest": (-8, 0, 0), "neck1": (-14, 0, 0), "head": (10, 0, 0), "tail1": (10, 0, 0),
+                                  "chest": (-8, 0, 0), "neck1": (-14, 0, 0), "head": (10, 0, 0), "tail1": (-10, 0, 0), "tail2": (-6, 0, 0),
                                   "crest": (-16, 0, 0)})
 SWAT = merge(PLAY_READY, {"arm_up_L": (-84, 12, 0), "arm_lo_L": (-24, 0, 0), "hand_L": (34, 0, 0),
                           "chest": (-4, 0, 6), "head": (14, 8, -12), "jaw": (-14, 0, 0)})
@@ -647,7 +664,7 @@ SWAT = merge(PLAY_READY, {"arm_up_L": (-84, 12, 0), "arm_lo_L": (-24, 0, 0), "ha
 TUG = merge(WINGS_FOLDED, {"hips": (8, 0, 0), "leg_up*": (22, 0, 0), "leg_lo*": (-34, 0, 0), "foot*": (12, 0, 0),
                            "arm_up*": (-12, 0, 0), "arm_lo*": (-20, 0, 0), "hand*": (10, 0, 0),
                            "chest": (-6, 0, 0), "neck1": (-36, 0, 0), "neck2": (-16, 0, 0), "neck3": (-6, 0, 0),
-                           "head": (8, 0, 0), "jaw": (-5, 0, 0), "tail1": (-8, 0, 0), "crest": (10, 0, 0)})
+                           "head": (8, 0, 0), "jaw": (-5, 0, 0), "tail1": (-20, 0, 0), "tail2": (-8, 0, 0), "crest": (10, 0, 0)})
 (clip("tug", 0.9, loop=True).pose(0.0, TUG)
  .wave(lambda t: {"neck1": (0, 12 * sin01(t, 0.45), 0), "neck2": (0, 8 * sin01(t, 0.45, 0.1), 0),
                   "head": (0, 6 * sin01(t, 0.45, 0.2), 10 * sin01(t, 0.45, 0.15)),
@@ -664,7 +681,7 @@ PLAY_BOW = merge(WINGS_HALF, fan_tail(), {
 # Sparring: reared up on the long hind legs, wings open for balance, batting with the front feet.
 SPAR = merge(WINGS_OPEN, {"hips": (26, 0, 0), "chest": (6, 0, 0), "leg_up*": (-6, 0, 0), "leg_lo*": (-36, 0, 0),
                           "foot*": (26, 0, 0), "neck1": (-12, 0, 0), "neck3": (4, 0, 0), "head": (-12, 0, 0),
-                          "tail1": (-24, 0, 0), "tail2": (-6, 0, 0), "crest": (-26, 0, 0)})
+                          "tail1": (-34, 0, 0), "tail2": (-12, 0, 0), "tail3": (-4, 0, 0), "crest": (-26, 0, 0)})
 
 
 def spar_wave(t):

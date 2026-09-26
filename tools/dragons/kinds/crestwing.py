@@ -66,7 +66,7 @@ VARIANTS = [
          horn=(0.82, 0.86, 0.92), membrane=(0.24, 0.27, 0.33), iris=(0.26, 0.48, 0.66), glow=GALE,
          pattern_channel="r", glow_channel=None),
     dict(name="Starplume", base=(0.035, 0.04, 0.14), accent=(0.46, 0.44, 0.78), pattern=(0.10, 0.06, 0.30),
-         horn=(0.06, 0.52, 0.52), membrane=(0.08, 0.10, 0.34), iris=(0.62, 0.62, 0.95), glow=(0.70, 0.95, 1.0),
+         horn=(0.06, 0.52, 0.52), membrane=(0.08, 0.10, 0.34), iris=(0.36, 0.16, 0.62), glow=(0.70, 0.95, 1.0),
          pattern_channel="g", glow_channel="b"),
 ]
 
@@ -90,8 +90,8 @@ GROWN_NODES = _mirrored({
     "neck3": ((0, -0.90, 2.82), (0.23, 0.25)),
     "neck4": ((0, -0.92, 3.08), (0.22, 0.23)),
     "head": ((0, -0.99, 3.33), (0.37, 0.36)),
-    "muzzle": ((0, -1.27, 3.26), (0.21, 0.19)),
-    "snout": ((0, -1.44, 3.21), (0.13, 0.11)),
+    "muzzle": ((0, -1.25, 3.26), (0.215, 0.195)),
+    "snout": ((0, -1.40, 3.21), (0.14, 0.12)),
     "crest": ((0, -0.96, 3.40), (0.01, 0.01)),
     "crest_tip": ((0, -0.83, 3.58), (0.01, 0.01)),
 }, {
@@ -181,7 +181,7 @@ GROWN = dict(
     },
     young_pose={"neck1": -10, "neck2": -4, "head": 12},
     base_pose={"neck1": (-24, 0, 0), "neck2": (-4, 0, 0), "neck3": (18, 0, 0), "neck4": (18, 0, 0), "head": (-12, 0, 0),
-               "tail1": (4, 0, 0), "tail2": (2, 0, 4), "tail3": (4, 0, 6), "tail4": (8, 0, 8)},
+               "tail1": (4, 0, 0), "tail2": (-3, 0, 4), "tail3": (-5, 0, 6), "tail4": (2, 0, 8)},
     builds=BUILDS,
     eyes=dict(at=(0.15, -1.15, 3.39), out=(0.64, -0.72, 0.16), iris=(0.095, 0.108, 0.052),
               pupil=(0.058, 0.074, 0.02), slit=(0.3, 1.12),
@@ -205,12 +205,12 @@ GROWN = dict(
     mask=dict(max_x=0.3, max_z=3.9, min_z=-1.0, tail_cut=(1.2, 1.4)),
     inset={"eyes": 0.02, "horns": 0.03, "spikes": 0.02, "frill": 0.03, "tail_tip": 0.0, "heart": -0.05,
            "runes": -0.012},
-    face=dict(nostril=(0.034, -1.52, 3.24), nostril_r=(0.018, 0.012, 0.007), mouth_r=0.009,
-              mouth=lambda side, a: (side * 0.11 * a ** 0.7, -1.55 + 0.32 * a ** 1.5, 3.165 + 0.045 * a * a)),
-    jaw_hinge=(0, -1.13, 3.19),
+    face=dict(nostril=(0.036, -1.49, 3.245), nostril_r=(0.018, 0.012, 0.007), mouth_r=0.012,
+              mouth=lambda side, a: (side * 0.11 * a ** 0.7, -1.515 + 0.30 * a ** 1.5, 3.165 + 0.045 * a * a)),
+    jaw_hinge=(0, -1.11, 3.19),
     mouth_detail=dict(depth=0.2, fade=0.16, width=0.28, tooth=(0.008, 0.013), fang=(0.009, 0.018), fangs=[],
-                      tongue=(0.045, 0.08, 0.01)),
-    skin=dict(stripe=0.46, spot_cell=0.24, ao=0.5),
+                      tongue=(0.038, 0.062, 0.008)),
+    skin=dict(stripe=0.46, spot_cell=0.24, ao=0.5, plate=0.17),
     sculpt=_grown_sculpt,
 )
 
@@ -302,7 +302,7 @@ HATCH = dict(
     jaw_hinge=(0, -0.62, 0.93),
     mouth_detail=dict(depth=0.14, fade=0.1, width=0.26, tooth=(0.006, 0.01), fang=(0.008, 0.016), fangs=[],
                       tongue=(0.048, 0.075, 0.011)),
-    skin=dict(stripe=0.2, spot_cell=0.12, ao=0.25),
+    skin=dict(stripe=0.2, spot_cell=0.12, ao=0.25, plate=0.085),
 )
 
 FORMS = {"grown": GROWN, "hatchling": HATCH}
@@ -335,7 +335,7 @@ def _plume(kit, name, base, direction, side, length, width, thickness):
     s = (s - d * s.dot(d)).normalized()
     b = V(base)
     if kit.LOD:
-        prof = [(0.55, 0.46), (1.0, 0.0)]
+        prof = [(0.5, 0.42), (0.88, 0.34), (1.0, 0.0)]
     else:
         prof = [(0.28, 0.16), (0.58, 0.44), (0.82, 0.46), (0.95, 0.28), (1.0, 0.0)]
     right = [b + d * length * f + s * width * w for f, w in prof]
@@ -565,7 +565,7 @@ def _plumes(kit, mats, angles, length, width, ocelli=False):
         out.append((o, "tail4"))
         if ocelli:
             c = base + dd * length * lk * 0.74
-            e = _disc(kit, f"ocellus_{j}", c, x.cross(side).normalized(), width * 0.34, 0.03)
+            e = _disc(kit, f"ocellus_{j}", c, dd.cross(side).normalized(), width * 0.34, 0.03)
             _reorigin(kit, e, base)
             e.data.materials.append(mats["glow_flat"])
             out.append((e, "tail4"))
@@ -619,4 +619,14 @@ def texture(tx, nt, p, form):
     legs = 1.25 if form == "grown" else 0.36  # no spots below the body
     body = tx.mul(nt, tx.smoothstep(nt, tx.normal_z(nt), -0.25, 0.2), tx.smoothstep(nt, tx.axis(nt, 2), legs - 0.1, legs + 0.1))
     b = tx.spots(nt, p["spot_cell"], keep=0.46, size=(0.3, 0.2), where=body)
-    return {"r": r, "g": g, "b": b}
+    # The painted value, with a dragon's belly plates: soft bands across the pale belly and
+    # up the throat (along y - z: across the belly, up the neck), only where the accent is.
+    value = tx.mul(nt, tx.grain(nt, p["grain"], p["grain_amount"]), tx.light_from_above(nt, p["light"]))
+    s = tx.math_op(nt, "SUBTRACT", tx.axis(nt, 1), tx.axis(nt, 2))
+    wave = tx.math_op(nt, "SINE", tx.mul(nt, s, 2 * math.pi / p["plate"]))
+    accent = tx.node(nt, "ShaderNodeAttribute", attribute_name="mask")
+    acc = tx.node(nt, "ShaderNodeSeparateColor")
+    nt.links.new(accent.outputs["Color"], acc.inputs[0])
+    plates = tx.mul(nt, tx.smoothstep(nt, wave, 0.45, 0.9), tx.smoothstep(nt, acc.outputs["Green"], 0.35, 0.75))
+    value = tx.mul(nt, value, tx.madd(nt, plates, -0.1, 1.0))
+    return {"r": r, "g": g, "b": b, "value": value}

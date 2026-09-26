@@ -11,7 +11,7 @@ namespace {
 
 constexpr int kMarks = 4, kKept = 16;
 constexpr const char* kScenes[] = {"title", "starter", "den", "map", "sanctuary", "vault",
-                                   "nesting stone", "wanderings", "market", "valley"};
+                                   "nesting stone", "wanderings", "market", "valley", "challenge"};
 
 struct Hitch {
     float ms = 0;

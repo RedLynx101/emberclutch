@@ -24,7 +24,8 @@ namespace {
 constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
-enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View, Creator, Wander, Festival, Goto, Quit };
+enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
+                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Quit };
 
 struct Cmd {
     Op op = Op::Wait;
@@ -111,6 +112,9 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "wander") { c.op = Op::Wander; nums(1); }
     else if (w == "festival") { c.op = Op::Festival; }
     else if (w == "goto") { c.op = Op::Goto; nums(2); }
+    else if (w == "challenge") { c.op = Op::Challenge; nums(2); }
+    else if (w == "autoplay") { c.op = Op::Autoplay; c.a[0] = std::strcmp(rest, "on") == 0; }
+    else if (w == "cups") { c.op = Op::Cups; nums(3); }
     else if (w == "quit") { c.op = Op::Quit; }
     else return false;
     return true;
@@ -255,6 +259,19 @@ Input next(App& app) {
                         world::findPlace(app.game, p);
                         world::lightLantern(app.game, p);
                     }
+                done = true;
+                break;
+            case Op::Challenge:  // (from the valley: it lends the challenges its landscape)
+                openChallengeCup(app, static_cast<int>(c.a[0]), static_cast<int>(c.a[1]));
+                done = true;
+                break;
+            case Op::Autoplay: setChallengeAutoplay(c.a[0] != 0); done = true; break;
+            case Op::Cups:  // each challenge's highest cup won (its ribbons with it)
+                app.game.world.ribbons = 0;
+                for (int k = 0; k < kChallenges; ++k) {
+                    app.game.world.cups[k] = static_cast<u8>(std::clamp(static_cast<int>(c.a[k]), 0, kCups));
+                    for (int cup = 0; cup < app.game.world.cups[k]; ++cup) app.game.world.ribbons |= static_cast<u16>(1u << (k * kCups + cup));
+                }
                 done = true;
                 break;
             case Op::Quit: app.quit = true; done = true; break;

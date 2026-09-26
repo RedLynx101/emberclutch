@@ -319,6 +319,8 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
         for (u8 k : ws.stall) w.u8v(k);
         w.u32v(ws.finds);
         for (u8 k : ws.explored) w.u8v(k);
+        for (const auto& cups : ws.best)  // Beta WP8: the challenges' bests
+            for (u16 b : cups) w.u16v(b);
         w.patchU8(sizeAt, static_cast<u8>(w.pos() - from));
     }
     w.patchU16(at, static_cast<u16>(w.pos() - start));
@@ -487,6 +489,9 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
             ws.finds = r.u32v();
             for (u8& k : ws.explored) k = r.u8v();
         }
+        if (has(kChallenges * kCups * 2))
+            for (auto& cups : ws.best)
+                for (u16& b : cups) b = r.u16v();
         r.seek(from + n);
     }
     world::startWorld(tmp);

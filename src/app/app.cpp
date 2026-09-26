@@ -236,6 +236,7 @@ const SceneFns& sceneFns(SceneId id) {
         case SceneId::Market: return kMarketScene;
         case SceneId::Valley: return kValleyScene;
         case SceneId::Creator: return kCreatorScene;
+        case SceneId::Challenge: return kChallengeScene;
         default: return kTitleScene;
     }
 }

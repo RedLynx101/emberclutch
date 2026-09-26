@@ -79,6 +79,18 @@ void startTalk(App& app, Villager v) {
     loadLine(app);
 }
 
+void startLines(App& app, Villager v, const Talk& lines) {
+    DialogueState& d = app.talk;
+    d = DialogueState{};
+    d.who = v;
+    d.talk = lines;
+    d.talk.sets = 0;
+    if (d.talk.count == 0) return;
+    d.active = true;
+    audio::loadVoice(villagerInfo(v).voice);
+    loadLine(app);
+}
+
 bool talking(const App& app) { return app.talk.active; }
 
 bool updateTalk(App& app, const Input& in) {

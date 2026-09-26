@@ -27,7 +27,8 @@ constexpr int kPixels = kW * kImgH * 3;     // 1200-byte rows: already a multipl
 constexpr int kPhotoPixels = kW * kH * 3;  // a photo: the top screen alone
 
 constexpr const char* kSceneNames[] = {"Title",        "PickStarter", "Den",    "Map",   "Sanctuary",
-                                       "Vault", "NestingStone", "Wanderings", "Market", "Valley", "Creator"};
+                                       "Vault", "NestingStone", "Wanderings", "Market", "Valley", "Creator",
+                                       "Challenge"};
 static_assert(sizeof(kSceneNames) / sizeof(kSceneNames[0]) == static_cast<int>(SceneId::Count));
 
 bool g_wanted = false;

@@ -1,0 +1,58 @@
+# Beta WP9/WP10: the hardest cups, played by themselves on a grown partner: Sky Rings' Starfire
+# course (the weave up to the Nesting Stone's hill and down into the Market) and the Lantern
+# Trial's Starfire cup (six lanterns, patterns to ten). The log has each picture's triangles.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+key X
+wait 4
+travel 6
+wait 3
+cups 3 3 3
+autoplay on
+challenge 1 4
+wait 6
+shot s00-rings-start
+wait 10
+shot s01-rings-orchard
+wait 15
+shot s02-rings-hill
+wait 15
+shot s03-rings-stone
+wait 15
+shot s04-rings-down
+wait 15
+shot s05-rings-market
+wait 12
+shot s06-rings-end
+key X
+wait 1
+challenge 2 4
+wait 8
+shot s07-lantern-show
+wait 10
+shot s08-lantern-mid
+wait 20
+shot s09-lantern-late
+quit

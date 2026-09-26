@@ -234,4 +234,19 @@ ValleyStats valleyStats();
 // The valley from above (north up), for the bottom screen's map (nullptr if it can't be made).
 const C2D_Image* valleyMap(const Valley& v);
 
+// ---- The challenges (Beta WP8-WP11, app/scene_challenge.cpp): their things (core/challenge_mesh),
+// drawn after drawValley with its camera, fog and depth. (The den's shelf of trophies and ribbons
+// is drawn with the den's things, from the save.)
+enum class PropKind : u8 { Ring, Crystal, Fruit, Basket, Board, Trophy };
+struct ChallengeProp {
+    PropKind kind = PropKind::Ring;
+    u8 variant = 0;            // the fruit's kind, the trophy's challenge
+    Vec3 at;
+    float yaw = 0, pitch = 0;  // turned about +Z, then tipped about its own X (a ring's +Y: its way through)
+    float roll = 0;            // then about its own Y (a fruit's tumble)
+    float scale = 1;
+    PropLook look;
+};
+void drawChallengeProps(App& app, const ChallengeProp* props, int count, Rgb fog, s64 now);
+
 }  // namespace ec::r3d

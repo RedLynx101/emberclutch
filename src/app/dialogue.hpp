@@ -13,6 +13,8 @@ namespace ec {
 // (DialogueState lives in core/villagers.hpp: App keeps one.)
 
 void startTalk(App& app, Villager v);
+// Someone saying lines of the game's own (the challenges' hosts): no flags settle after.
+void startLines(App& app, Villager v, const Talk& lines);
 bool talking(const App& app);
 // While talking: advance the letters, read on with A or a tap. Returns true while it's open.
 bool updateTalk(App& app, const Input& in);

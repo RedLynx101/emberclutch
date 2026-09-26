@@ -23,6 +23,10 @@
 //   wander <steps>              the dragon cared for sets off on the Wanderings; that many steps walked
 //   festival                    the Lantern Festival's eve (every other quest done, the lanterns lit)
 //   goto <x> <y>                in the valley: stand there (metres), your partner called
+//   challenge <c> <cup>         (in the valley) straight into a challenge's cup (core/world Challenge:
+//                               0 Fruit Catch, 1 Sky Rings, 2 Lantern Trial; cup 1 Ember .. 4 Starfire)
+//   autoplay <on|off>           the challenges play themselves (the pilot flies, the lanterns, throws)
+//   cups <fruit> <rings> <lantern>   the highest cup won in each (their ribbons too)
 //   quit                        leave (writes shots/done.txt)
 #pragma once
 

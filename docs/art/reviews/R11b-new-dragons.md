@@ -21,6 +21,10 @@ and Kind colouring). Nothing here is from the concept images, which were only re
 Rarer kinds start with better stats (common 28, harder to get 31, rare 34; the crossbreed
 a little above its better parent), and lean to rarer traits (D77).
 
+All nine grown at true size (by rarity: common, harder to get, rare and the crossbreed; each at
+its META size on the common scale, `tools/blender/dragonkit/together.py`):
+![](R11b/together.jpg)
+
 ## 1. Pouncer: Ember, common
 
 The Pouncer (Ember, common): a sleek, cat-like dragon. A kitten of a hatchling with a big round head, huge eyes and a leaf-tipped tail grows into a lithe, panther-like adult: long legs, a small round head with pointed ears and swept-back horns, big scalloped bat wings and a long tail ending in twin fins. Playful and quick; the "classic dragon" of the eight. Concept: docs/art/concept/dragons/dragon_pouncer.jpg (R11).

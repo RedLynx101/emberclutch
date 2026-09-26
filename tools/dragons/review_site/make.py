@@ -133,7 +133,11 @@ QUESTIONS = [
          hint="Now, as a test build (dev menu, Next kind), or after DR3, when they hatch from real eggs in "
               "your save and your current dragons become new kinds.",
          choices=["Send a test build now", "After DR3"]),
-    dict(id="other", q="Anything else?", hint="The look overall, the sizes, stats, names, anything.", choices=[]),
+    dict(id="sizes", q="Do the sizes feel right?",
+         hint="The picture under the table shows all nine grown at true size. The Puffback is the biggest (1.35 of a "
+              "Pouncer), the Glimmermoth the smallest (0.85); each is one number to change.",
+         choices=["Right as they are", "Change some (say which)"]),
+    dict(id="other", q="Anything else?", hint="The look overall, stats, names, anything.", choices=[]),
 ]
 
 
@@ -184,8 +188,15 @@ def main():
             colourings=[v["name"] for v in k.VARIANTS[:3]], rare=k.VARIANTS[3]["name"], blurb=m["blurb"],
             parents=[dragons.kind(p).META["title"] for p in m.get("parents", ())],
             notes=NOTES.get(name, {}), sheets=sheets, game=game))
+    together = None
+    jpg = os.path.join(ROOT, "docs", "art", "reviews", "R11b", "together.jpg")
+    if os.path.exists(jpg):
+        shutil.copy(jpg, os.path.join(SITE, "img", "together.jpg"))
+        w, h = png_size(os.path.join(ROOT, "build", "review", "together.png"))
+        together = dict(src="img/together.jpg", w=w, h=h)
+        files.append("img/together.jpg")
     template = open(os.path.join(HERE, "template.html"), encoding="utf-8").read()
-    data = json.dumps(dict(kinds=kinds, questions=QUESTIONS), ensure_ascii=False)
+    data = json.dumps(dict(kinds=kinds, questions=QUESTIONS, together=together), ensure_ascii=False)
     page = template.replace("/*DATA*/{}", data)
     open(os.path.join(SITE, "index.html"), "w", encoding="utf-8", newline="\n").write(page)
     print(f"[site] {SITE}: {len(kinds)} kinds, {len(files)} files")

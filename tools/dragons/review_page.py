@@ -85,6 +85,14 @@ def main():
                    f"{s['wing']} | {s['wit']} | {s['might']} | {s['breath']} | {s['stamina']} | {sum(s.values())} |")
     out += ["", "Rarer kinds start with better stats (common 28, harder to get 31, rare 34; the crossbreed",
             "a little above its better parent), and lean to rarer traits (D77).", ""]
+    if os.path.exists(os.path.join(ROOT, "build", "review", "together.png")):
+        subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File",
+                        os.path.join(ROOT, "tools", "concept", "to_jpg.ps1"), "-Names", "together", "-OutDir",
+                        os.path.join("docs", "art", "reviews", "R11b"), "-SrcDir", os.path.join("build", "review"),
+                        "-Width", "1400"], check=True, capture_output=True)
+        out += ["All nine grown at true size (by rarity: common, harder to get, rare and the crossbreed; each at",
+                "its META size on the common scale, `tools/blender/dragonkit/together.py`):",
+                "![](R11b/together.jpg)", ""]
     for k in kinds:
         out += section(k)
     open(PAGE, "w", encoding="utf-8", newline="\n").write("\n".join(out) + "\n")

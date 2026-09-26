@@ -248,6 +248,7 @@ footer { margin-top: 40px; color: var(--muted); font-size: 13px; max-width: 72ch
     <h2 id="sum-h">At a glance</h2>
     <div class="table-scroll"><table id="summary"></table></div>
     <p class="note">Rarer kinds start with better stats: common ones total 28, harder to find 31, rare 34, and the Blazeplume sits a little above its better parent. Size is grown size next to a Pouncer; the breeds span about ±50%.</p>
+    <figure id="together" hidden></figure>
   </section>
 
   <div id="kinds"></div>
@@ -392,6 +393,18 @@ function renderKind(k) {
         oninput: () => notesChanged("verdicts", k.id) }),
       h("div", { class: "saved", id: "s-verdicts-" + k.id, "aria-live": "polite" })));
   return art;
+}
+
+function renderTogether() {
+  const t = DATA.together;
+  if (!t) return;
+  const fig = $("#together");
+  lightboxSets.together = { title: "All nine", items: [{ src: t.src, caption: "Grown, at true size" }] };
+  fig.append(
+    h("button", { type: "button", "aria-label": "See full size: all nine at true size", onclick: () => openLightbox("together", 0) },
+      h("img", { src: t.src, alt: "All nine dragons grown, side by side at true size, in rows by rarity", width: t.w, height: t.h })),
+    h("figcaption", {}, "All nine grown, side by side at true size: the common three, the harder to find three, then the rare two and the crossbreed. Is anyone too big or too small?"));
+  fig.hidden = false;
 }
 
 function renderQuestions() {
@@ -553,6 +566,7 @@ async function connect() {
 
 renderRail();
 renderSummary();
+renderTogether();
 const kindsBox = $("#kinds");
 for (const k of DATA.kinds) kindsBox.append(renderKind(k));
 renderQuestions();

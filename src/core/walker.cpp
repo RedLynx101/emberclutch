@@ -47,7 +47,12 @@ Vec2 move(const Valley& v, Vec2 pos, Vec2 dir, float step, float radius, float w
     Vec2 next{pos.x + dir.x * step, pos.y + dir.y * step};
     bool hit = false;
     next = pushOut(next, radius, solids, hit);
-    if (standable(v, pos, next, wade, steepest) && !hit) return next;
+    if (standable(v, pos, next, wade, steepest)) {
+        // Against a wall it slides round it; only when that hardly gets anywhere is it blocked
+        // (a well in the way is walked round, not stopped at).
+        if (hit && std::hypot(next.x - pos.x, next.y - pos.y) < step * 0.3f) blocked = true;
+        return next;
+    }
     blocked = true;
     for (const Vec2 slide : {Vec2{dir.x, 0}, Vec2{0, dir.y}}) {  // along the obstacle
         Vec2 alt{pos.x + slide.x * step, pos.y + slide.y * step};

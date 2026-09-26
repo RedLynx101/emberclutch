@@ -41,7 +41,7 @@ namespace {
 enum class Mode : u8 { OnFoot, Riding, FreeCam };
 
 // What A does where you stand (checked in this order).
-enum class Action : u8 { None, Talk, Enter, Light, Ride, Call };
+enum class Action : u8 { None, Talk, Shop, Enter, Light, Ride, Call };
 
 struct ValleyScene {
     Valley valley;
@@ -74,6 +74,7 @@ struct ValleyScene {
     Action action = Action::None;
     int actionPlace = -1;
     Villager actionWho = Villager::Keeper;
+    u8 actionTab = 0;  // Shop: the Market's page it opens (the egg stand's, the goods stall's)
     float breathT = -1;       // a lantern being lit: seconds in (< 0: none)
     int breathPlace = -1;
     float stepFor = 0;        // your next footstep
@@ -420,6 +421,19 @@ void findAction(ValleyScene& s) {
         }
     }
     if (s.action == Action::Talk) return;
+    // The Market's stalls: the egg of the day's stand and the goods stall open their page.
+    if (const ValleyPlaceInfo* m = s.valley.place(kPlaceMarket)) {
+        const PlaceLayout& L = placeLayout(kPlaceMarket);
+        const Vec2 egg = placeToWorld(*m, {L.eggStand.x, L.eggStand.y});
+        const Vec2 goods = placeToWorld(*m, {(L.goods[0].x + L.goods[3].x) * 0.5f, (L.goods[0].y + L.goods[3].y) * 0.5f});
+        const float de = std::hypot(at.x - egg.x, at.y - egg.y), dg = std::hypot(at.x - goods.x, at.y - goods.y);
+        if (std::fmin(de, dg) < 2.6f) {
+            s.action = Action::Shop;
+            s.actionPlace = kPlaceMarket;
+            s.actionTab = de < dg ? 3 : 1;  // scene_market's tabs: the egg, the goods
+            return;
+        }
+    }
     for (const ValleyPlaceInfo& p : s.valley.places) {
         const PlaceLayout& l = placeLayout(p.id);
         if (l.hasDoor && sceneOf(p.id) != SceneId::Count) {
@@ -462,6 +476,11 @@ void doAction(App& app, ValleyScene& s) {
     switch (s.action) {
         case Action::Talk:
             startTalk(app, s.actionWho);
+            break;
+        case Action::Shop:
+            audio::playSfx(audio::Sfx::VillageBell);
+            app.marketTab = s.actionTab;
+            leaveTo(app, SceneId::Market);
             break;
         case Action::Enter:
             audio::playSfx(s.actionPlace == kPlaceMarket ? audio::Sfx::VillageBell : audio::Sfx::DoorWood);
@@ -800,6 +819,9 @@ void drawTop(App& app) {
             std::snprintf(line, sizeof(line), str::kPromptTalk, villagerInfo(s.actionWho).name);
             hint = line;
             break;
+        case Action::Shop:
+            hint = s.actionTab == 3 ? str::kPromptEggStand : str::kPromptGoods;
+            break;
         case Action::Enter:
             std::snprintf(line, sizeof(line), str::kPromptEnter, world::placeInfo(s.actionPlace).name);
             hint = line;
@@ -948,6 +970,10 @@ void openValleyAt(App& app, int place) {
         s.loaded = loadValleyFile(s.valley);
         if (s.loaded) {
             s.solids = worldSolids(s.valley);
+            for (int k = 0; k < kVillagers; ++k) {  // the villagers: walked round, not through
+                const Vec3 p = villagerAt(s.valley, static_cast<Villager>(k));
+                s.solids.push_back({{p.x, p.y}, 0.45f});
+            }
             s.camWalls = cameraWalls(s.valley);
         }
     }

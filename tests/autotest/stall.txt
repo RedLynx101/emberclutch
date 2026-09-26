@@ -1,0 +1,26 @@
+# The Market: walking up to the egg of the day's stand opens its page (the goods stall its own).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+key X
+wait 4
+travel 1
+wait 3
+pad -0.45 1 2.4
+wait 0.8
+shot s01-at-the-egg-stand
+key A
+wait 2.5
+shot s02-egg-page
+quit

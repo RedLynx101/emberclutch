@@ -374,6 +374,8 @@ def build_skin_body():
         sv = me.skin_vertices[0].data[i]
         sv.radius = nodes[n][1]
         sv.use_root = n == F.get("skin_root", "hips")
+    apply_modifiers(obj)
+    close_holes(obj)
     sub = obj.modifiers.new("sub", "SUBSURF")
     sub.levels = sub.render_levels = int(arg("--subd", "2"))
     sm = obj.modifiers.new("relax", "SMOOTH")
@@ -381,6 +383,26 @@ def build_skin_body():
     sm.iterations = 6
     apply_modifiers(obj)
     return obj
+
+
+def close_holes(obj):
+    """The skin modifier can fail to hull a node where branches meet and leave a hole there
+    (and a stray wire edge): the grown Kindlemoss's and Curlstone's left shoulders were open,
+    a see-through gap in the front leg (the close-up check, run 18). Fill any hole in the
+    coarse hull before it's subdivided, so the patch smooths in with the rest."""
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    wires = [e for e in bm.edges if not e.link_faces]
+    if wires:
+        bmesh.ops.delete(bm, geom=wires, context="EDGES")
+    rims = [e for e in bm.edges if len(e.link_faces) == 1]
+    if rims:
+        bmesh.ops.holes_fill(bm, edges=rims, sides=0)
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)  # closed now: all outward
+        print(f"[kit] {KIND.META['name']}: filled a hole in the skin hull ({len(rims)} edges)")
+    if wires or rims:
+        bm.to_mesh(obj.data)
+    bm.free()
 
 
 META_VISIBLE = 0.575  # a lone metaball of radius 1 (stiffness 2, threshold 0.6) is visible out to 0.575
@@ -1228,26 +1250,53 @@ def cut_mouth(body):
 
 
 def lip_chains(body):
-    """The slit's two lips, each ordered corner -> front -> corner: (upper, lower) indices."""
-    co, no, y_corner = mouth_plane()
-    me = body.data
-    sides = {}
-    for p in me.polygons:
-        s = (Vector(p.center) - co).dot(no)
-        for v in p.vertices:
-            sides.setdefault(v, []).append(s)
-    upper, lower = [], []
-    for v in me.vertices:
-        if abs((v.co - co).dot(no)) > 1e-4 or v.co.y > y_corner + 1e-3 or abs(v.co.x) > F["mouth_detail"]["width"]:
-            continue
-        s = sides.get(v.index, [0.0])
-        if max(s) > 0:
-            upper.append(v.index)
-        if min(s) < 0:
-            lower.append(v.index)
-    behind = Vector((0, y_corner + 1.0, 0))
-    order = lambda i: math.atan2(me.vertices[i].co.x, behind.y - me.vertices[i].co.y)  # noqa: E731
-    return sorted(upper, key=order), sorted(lower, key=order)
+    """The slit's two lips, each ordered corner -> front -> corner (from -x): (upper, lower)
+    indices, sharing the two end vertices where the slit stops.
+
+    Walked along the slit's own open edges. The cut takes whole faces whose centre is in front
+    of the corners and within the width, so the slit runs a little past y_corner, or stops at
+    the width short of it; lips picked by position (on the plane, in front of the corners,
+    within the width, until run 18) missed those ends, and the missing bit of slit opened
+    straight into the head when the jaw dropped: see-through at the mouth's edges in the
+    close-up (a petted Blazeplume). The pocket, its walls and the mouth line follow these."""
+    co, no, _ = mouth_plane()
+    bm = bmesh.new()
+    bm.from_mesh(body.data)
+    bm.verts.ensure_lookup_table()
+    chains = []
+    for sign in (1, -1):  # the lip above the plane, then the one below
+        adj = {}
+        for e in bm.edges:
+            if len(e.link_faces) != 1 or any(abs((v.co - co).dot(no)) > 1e-4 for v in e.verts):
+                continue
+            if (e.link_faces[0].calc_center_median() - co).dot(no) * sign <= 0:
+                continue
+            a, b = (v.index for v in e.verts)
+            adj.setdefault(a, []).append(b)
+            adj.setdefault(b, []).append(a)
+        best, seen = [], set()
+        for start in sorted((v for v, n in adj.items() if len(n) == 1), key=lambda i: bm.verts[i].co.x):
+            if start in seen:
+                continue
+            chain = [start]
+            while True:
+                nxt = [n for n in adj[chain[-1]] if n not in chain]
+                if not nxt:
+                    break
+                chain.append(nxt[0])
+            seen.update(chain)
+            if len(chain) > len(best):  # the slit (a stray open edge elsewhere is shorter)
+                best = chain
+        if bm.verts[best[0]].co.x > bm.verts[best[-1]].co.x:
+            best.reverse()
+        chains.append(best)
+    bm.free()
+    upper, lower = chains
+    assert upper and lower, f"{KIND.META['name']}: no mouth slit"
+    if {upper[0], upper[-1]} != {lower[0], lower[-1]}:
+        print(f"[kit] {KIND.META['name']} {F is KIND.FORMS['grown'] and 'grown' or 'hatchling'}: "
+              f"the lips don't meet at the slit's ends")
+    return upper, lower
 
 
 def chain_point(pts, f):
@@ -1311,7 +1360,8 @@ def build_mouth_pocket(body, upper, lower):
     bm.verts.ensure_lookup_table()
     deform = bm.verts.layers.deform.verify()
     head, jaw = body.vertex_groups["head"].index, body.vertex_groups["jaw"].index
-    y_back = y_corner + md.get("pocket", 0.35) * md["width"]
+    y_ends = max(bm.verts[i].co.y for i in upper + lower)  # the slit can end a little past the corners
+    y_back = max(y_corner, y_ends) + md.get("pocket", 0.35) * md["width"]
 
     def on_plane(x, y):
         return Vector((x, y, co.z - (no.x * (x - co.x) + no.y * (y - co.y)) / no.z))
@@ -1466,9 +1516,12 @@ def add_face_details(body, lip):
         for j in range(3):
             face = bm.faces.new((a[j], a[(j + 1) % 3], b[(j + 1) % 3], b[j]))
             face.material_index = 1
-    for ring in (rings[0], rings[-1]):
+    for ring, out in ((rings[0], path[0][0] - path[1][0]), (rings[-1], path[-1][0] - path[-2][0])):
         face = bm.faces.new(ring)
         face.material_index = 1
+        face.normal_update()
+        if face.normal.dot(out) < 0:  # the end caps face out of the tube too (one faced in)
+            face.normal_flip()
     bm.normal_update()
     for face in bm.faces:
         if face.material_index == 1 and len(face.verts) == 4:
@@ -1503,7 +1556,7 @@ def new_dragon(form, variant):
         mouth_parts = build_mouth_parts(body, upper, lower, mats)
         build_mouth_pocket(body, upper, lower)
     tex.tag_regions(body, PLAN.REGION)
-    tex.unwrap(body)
+    tex.unwrap(body, lod(256, 128))
     groups = {g: [] for g in PART_GROUPS}
     snap = {g: [] for g in F["inset"]}
     d = dict(body=body, arm=arm, wings=[], rare_wings=[], groups=groups, snap=snap, mats=mats, form=form,

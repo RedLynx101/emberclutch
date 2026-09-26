@@ -172,6 +172,44 @@ DRAGON_PROMPTS = {
         "swirls. Hatchling: a round kitten-like chick with fluffy flame-coloured down and a little feather "
         "crest. Juvenile: lanky and cat-like with half-grown feathered wings. Adolescent: longer plumes. Adult: "
         "a graceful, majestic firebird dragon, cat-like and proud, wings of flame-coloured feathers spread wide."),
+    # R12 (DR4, D83): the next five crossbreeds.
+    "dragon_kindlemoss": GROWTH + (
+        "The kind: a crossbreed of a sleek cat-like fire dragon and a round mossy gentle-giant dragon (Ember and "
+        "Grove). A plump, cosy moss-lynx: a round-bellied cat-like dragon body carpeted in soft green moss, a cat face "
+        "with a short rounded snout and lynx ear tufts made of little fern fronds, curled fern fronds along its back "
+        "shaped like little flames with glowing ember-orange tips, a few glowing ember berries in the moss, small "
+        "stubby leafy wings, and a bushy fern-frond tail ending in a glowing ember. Egg: mossy green with ember "
+        "speckles. Hatchling: a fluffy round moss kitten with a single sprout on its head whose bud glows like an "
+        "ember. Adult: plump, warm and gentle, a walking hearth in a forest."),
+    "dragon_cindershell": GROWTH + (
+        "The kind: a crossbreed of a sleek cat-like fire dragon and a pangolin-like stone dragon that curls into a "
+        "ball (Ember and Stone). A lava-pangolin panther: a cat-like dragon head with tall ears capped in smooth "
+        "stone, a body covered in overlapping dark obsidian plates with glowing orange magma seams between them, "
+        "four sturdy legs, short sturdy wings with stone-edged membranes, a tail of stacked plates ending in a "
+        "glowing coal; it can roll up into a glowing ball. Egg: black with glowing orange cracks. Hatchling: a round "
+        "pebble-like kitten with one glowing crack down its back. Adult: strong, calm and warm, like a friendly "
+        "volcano."),
+    "dragon_bloomstone": GROWTH + (
+        "The kind: a crossbreed of a round mossy gentle-giant dragon and a pangolin-like stone dragon (Grove and "
+        "Stone). A walking rock garden: a stout, tortoise-like dragon (still a dragon: a dragon head with a short "
+        "snout and a sleepy gentle smile, no shell opening) whose domed stone back is a tiny garden of moss, "
+        "little flowers, pebbles and one small sapling, stubby elephant-like legs, tiny leaf-shaped wings, and a "
+        "mossy rock club at the end of its short tail. Egg: grey speckled stone with a flower pattern. Hatchling: "
+        "a little pebble with tiny legs, big eyes and one flower growing on top. Adult: huge, slow, peaceful."),
+    "dragon_lilyfin": GROWTH + (
+        "The kind: a crossbreed of a round mossy gentle-giant dragon and a long serpentine water dragon with ribbon "
+        "fins (Grove and Tide). A marsh axolotl-dragon: a soft, long newt-like dragon body on four short webbed "
+        "legs, frilly gill fronds like fern leaves round its head, a lily pad on its head worn like a hat with a "
+        "pink lotus flower, a long paddle tail with reed-like fins, small leafy wings that flutter, teal green with "
+        "a pale belly and dappled spots. Egg: pale jade with lily-pad rings. Hatchling: a tiny tadpole-like newt "
+        "baby with a little lily pad on its head. Adult: graceful and calm, gliding through ponds."),
+    "dragon_frostcurl": GROWTH + (
+        "The kind: a crossbreed of a pangolin-like stone dragon that curls into a ball and a snow-fox dragon with "
+        "a huge fluffy tail (Stone and Frost). A glacier armadillo-fox: fluffy snow-white fur on its face, chest, "
+        "belly and a huge plume of a tail, a back covered in translucent ice-blue crystal plates, frosty crystal "
+        "tips on its fox-like ears, small crystalline wings, a fox-like dragon face with a short snout; it curls up "
+        "under its plates into a snowball. Egg: white with ice-blue crystal facets. Hatchling: a round snowball "
+        "with tiny ice-plate nubs and a fluffy tail. Adult: elegant, cool and kind."),
     "dragon_adults": (
         "Four grown dragons side by side, full body, to scale: a sleek panther-like ember orange dragon with bat-like "
         "wings and a twin-finned tail; a huge round leaf-green gentle giant with mossy flowering plates on its back "

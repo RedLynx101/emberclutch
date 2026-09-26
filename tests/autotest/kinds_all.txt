@@ -26,6 +26,62 @@ wait 0.3
 tap 82 231
 wait 0.3
 key SELECT
+wait 3
+shot h02-puffback
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot h03-curlstone
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot h04-crestwing
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot h05-ribbontail
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot h06-flurrytail
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot h07-glimmermoth
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot h08-duskwing
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot h09-blazeplume
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
 key SELECT
 wait 0.3
 tap 82 106
@@ -54,6 +110,190 @@ wait 0.3
 key SELECT
 wait 3
 shot r01-pouncer-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g02-puffback
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r02-puffback-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g03-curlstone
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r03-curlstone-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g04-crestwing
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r04-crestwing-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g05-ribbontail
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r05-ribbontail-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g06-flurrytail
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r06-flurrytail-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g07-glimmermoth
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r07-glimmermoth-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g08-duskwing
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r08-duskwing-rare
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+key SELECT
+wait 0.3
+tap 82 231
+wait 0.3
+key SELECT
+wait 3
+shot g09-blazeplume
+key SELECT
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+wait 3
+shot r09-blazeplume-rare
 key SELECT
 wait 0.3
 tap 238 231

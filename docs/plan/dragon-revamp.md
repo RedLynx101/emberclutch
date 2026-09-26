@@ -1,8 +1,9 @@
 # The Dragon Revamp: Work Plan (D76–D77)
 
 Status: **under way, 2026-09-25.** DR1 done (the kit, the engine's groundwork, the Pouncer);
-DR2 widened by D79: **all eight base breeds and the first crossbreed** now, by eight Opus 5.5
-subagents in parallel, then R11b. What
+**DR2 built** (D79: all eight base breeds and the first crossbreed, by Opus 5.5 subagents in
+parallel), waiting on Noah's review, [R11b](../art/reviews/R11b-new-dragons.md); DR3 starts
+after it. What
 the dragons become is in [dragons, version 2](../design/dragons-v2.md): 8 base breeds and 28
 crossbreeds (36 kinds), each with three painted variants and a rare one, their own bodies,
 babies, eggs and animations, stats, manners and traits, all rideable. It comes before the
@@ -41,7 +42,7 @@ colouring); `tests/test_kinds.cpp`; `tests/autotest/kinds.txt`. The Pouncer is t
 - **Engine:** a table of kinds (name, body plan, size, base stats, tendencies), the models
   and clips by kind and plan, eyes whose pupils follow the mood, a rider's seat per plan.
 
-## DR2 — The base breeds (D79: all eight, and the first crossbreed; eight subagents in parallel)
+## DR2 — The base breeds (D79: all eight, and the first crossbreed; eight subagents in parallel) ✅ built
 - Common: Pouncer (Ember, the lead), Puffback (Grove), Curlstone (Stone); harder to get:
   Crestwing (Gale), Ribbontail (Tide), Flurrytail (Frost); rare: Glimmermoth (Lumen),
   Duskwing (Shade); crossbreed: Blazeplume (Pouncer x Crestwing).
@@ -50,6 +51,16 @@ colouring); `tests/test_kinds.cpp`; `tests/autotest/kinds.txt`. The Pouncer is t
   passed, the renders.
 - **Review R11b:** a sheet per kind (every stage and variant, a turntable, a strip of its
   key clips), then the four together and in the den.
+
+Done 2026-09-25: nine kinds on eight body plans (the Blazeplume shares the Pouncer's), 36–40
+bones each, 55–81 clips a plan, every model inside 3000 / 1200 triangles for the common and
+the rare. `check.py --all` OK; PC tests 182,810 checks, 0 failures (every kind loads, fits and
+matches Blender's pose within about 0.005); in Azahar every kind as a hatchling, grown and rare in
+the den at 16.7–17.2 ms, no unmapped memory access (`tests/autotest/kinds_all.txt`). Stats
+climb with rarity (totals: common 28, harder to get 31, rare 34, the Blazeplume 33).
+Engine and kit fixes found on the way: contacts from the plan, every `tail*` bone off the
+floor, ear and antenna bones in the head's care zone, eggs in display colours, duplicate part
+groups merged; the rest are in [the kit's gotchas](../tech/dragon-kit.md#gotchas-learned-building-the-first-nine-dr2).
 
 ## DR3 — Into the game (me)
 - Genetics v2 (two breed alleles of eight; the variant; potentials and traits) and a new
@@ -60,15 +71,16 @@ colouring); `tests/test_kinds.cpp`; `tests/autotest/kinds.txt`. The Pouncer is t
 - Tests, scripted runs in Azahar, then **run 15** on the old 3DS (a new tab on the
   checklists page).
 
-## DR4 — The first six crossbreeds
-- Pouncer × Puffback, Pouncer × Crestwing, Pouncer × Ribbontail, Puffback × Crestwing,
-  Puffback × Ribbontail, Crestwing × Ribbontail: concept sheets (**R12**), then six
-  subagents in parallel, each designing a kind of its own (a body plan that suits it), then
-  **R12b**.
+## DR4 — The next crossbreeds
+- With all eight bases built (D79), 27 crossbreeds are left (the Blazeplume, Pouncer ×
+  Crestwing, is the first). Which come next is Noah's call after R11b (the commons' pairs
+  first, so the crossbreeds players meet early exist, is the suggestion): concept sheets
+  (**R12**), then subagents in parallel, each designing a kind of its own (a body plan that
+  suits it), then **R12b**.
 
-## DR5 — Base breeds five to eight, and their crossbreeds
-- Concepts for four more bases (**R13**), built as in DR2 (**R13b**); then their 22
-  crossbreeds in waves of six or so (**R14** on), each concept round before its models.
+## DR5 — The rest of the crossbreeds
+- The remaining crossbreeds in waves of six or so (**R13** on), each concept round before
+  its models, alongside Beta (D78).
 
 ## Checks for every kind
 Triangles and bones in budget; every clip on the list, grown and baby; parts seated on the

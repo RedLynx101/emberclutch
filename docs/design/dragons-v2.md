@@ -26,8 +26,8 @@ majestic. Time and care go into every kind; nothing is a recolour of another.
 
 ## 2b. Elements: each dragon's type (D78)
 - **Each base breed has one element**, a one-word type: **Pouncer Ember, Puffback Grove,
-  Crestwing Gale, Ribbontail Tide**; bases five to eight take **Frost, Lumen** and two new
-  one-word elements (chosen at R13; Stone and Shade are my suggestion). **A crossbreed has
+  Curlstone Stone, Crestwing Gale, Ribbontail Tide, Flurrytail Frost, Glimmermoth Lumen,
+  Duskwing Shade** (D79; all eight built, R11b). **A crossbreed has
   both of its parents' elements**, shown as two types ("Ember · Tide"); a second-layer
   kind has the two its recipe gives it.
 - **What elements do, now and as the game grows:** the heartglow's colour; favourite

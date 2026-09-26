@@ -75,15 +75,16 @@ def main():
            "the first crossbreed. Every image is the game's own model, posed by its own animations, in the",
            "colours and textures the 3DS shows (Blender renders; in the game: dev menu page 1, Next kind",
            "and Kind colouring). Nothing here is from the concept images, which were only reference.", "",
-           "| # | Kind | Element | Rarity | Size | Wing | Wit | Might | Breath | Stamina |",
-           "|---|---|---|---|---|---|---|---|---|---|"]
+           "| # | Kind | Element | Rarity | Size | Wing | Wit | Might | Breath | Stamina | Total |",
+           "|---|---|---|---|---|---|---|---|---|---|---|"]
     for k in kinds:
         m = k.META
         els = m["element"] if isinstance(m["element"], (tuple, list)) else (m["element"],)
         s = m["stats"]
         out.append(f"| {m['dex']} | {m['title']} | {' · '.join(els)} | {m['rarity']} | {m.get('size', 1.0):.2f} | "
-                   f"{s['wing']} | {s['wit']} | {s['might']} | {s['breath']} | {s['stamina']} |")
-    out.append("")
+                   f"{s['wing']} | {s['wit']} | {s['might']} | {s['breath']} | {s['stamina']} | {sum(s.values())} |")
+    out += ["", "Rarer kinds start with better stats (common 28, harder to get 31, rare 34; the crossbreed",
+            "a little above its better parent), and lean to rarer traits (D77).", ""]
     for k in kinds:
         out += section(k)
     open(PAGE, "w", encoding="utf-8", newline="\n").write("\n".join(out) + "\n")

@@ -1,0 +1,122 @@
+# D85: dragons flying in the den (grown: a lap of the sunbeam or across the room), and the circle
+# pad nudging the view (it eases back). Three grown dragons, watched a couple of minutes.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+key SELECT
+wait 1
+skip 9
+wait 4
+pad 1 0 1.5
+shot n01-nudge-right
+wait 1.2
+shot n02-eased-back
+pad -1 0.6 1.5
+shot n03-nudge-left-up
+wait 2
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 238 231
+wait 0.3
+key SELECT
+shot b00
+wait 0.6
+shot b01
+wait 0.6
+shot b02
+wait 0.6
+shot b03
+wait 0.6
+shot b04
+wait 0.6
+shot b05
+wait 0.6
+shot b06
+wait 0.6
+shot b07
+wait 0.6
+shot b08
+wait 0.6
+shot b09
+wait 0.6
+shot b10
+wait 0.6
+shot b11
+wait 0.6
+shot b12
+wait 0.6
+shot b13
+wait 0.6
+shot f00
+wait 5
+shot f01
+wait 5
+shot f02
+wait 5
+shot f03
+wait 5
+shot f04
+wait 5
+shot f05
+wait 5
+shot f06
+wait 5
+shot f07
+wait 5
+shot f08
+wait 5
+shot f09
+wait 5
+shot f10
+wait 5
+shot f11
+wait 5
+shot f12
+wait 5
+shot f13
+wait 5
+shot f14
+wait 5
+shot f15
+wait 5
+shot f16
+wait 5
+shot f17
+wait 5
+shot f18
+wait 5
+shot f19
+wait 5
+shot f20
+wait 5
+shot f21
+wait 5
+shot f22
+wait 5
+shot f23
+wait 5
+quit

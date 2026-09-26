@@ -175,7 +175,7 @@ bool debugMenu(App& app, const Input& in) {
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
         {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26}, {"Next look", 27},
-        {"Force look", 28}, {"GPU probe", 29}, {"Change colour", 30}, {"Dex: this kind", 31}, {"Mix looks", 32}, {"Zoomies", 33}, {"Stereo preview", 34}, {"Next game", 35}, {"Valley test", 36},
+        {"Force look", 28}, {"GPU probe", 29}, {"Change colour", 30}, {"Dex: this kind", 31}, {"Mix looks", 32}, {"Zoomies", 33}, {"Stereo preview", 34}, {"Next game", 35}, {"Valley test", 36}, {"Fly now", 39},
     };
     const Entry* items = app.devPage ? kPage2 : kPage1;
     const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
@@ -334,6 +334,12 @@ bool debugMenu(App& app, const Input& in) {
                 } else {
                     for (float& dust : d.dirt) dust = 100.0f;
                 }
+                break;
+            }
+            case 39: {  // D85: this dragon flies in the den now (a grown one high, a young one a hop-glide)
+                DenBehavior& b = (careActor(app) ? *careActor(app) : app.actors[0]).behavior;
+                b.flyHigh = d.stage == Stage::Adult;
+                b.force(Activity::Fly);
                 break;
             }
             case 12: {  // every behavior state is reachable from here (WP5)

@@ -619,6 +619,14 @@ void update(App& app, const Input& in) {
     fixCare(app);
     // The D-pad moves the care between the den's dragons and eggs; X opens the map.
     if (!app.hatch.active && (in.down & (KEY_DLEFT | KEY_DRIGHT))) cycleCare(app, (in.down & KEY_DRIGHT) ? 1 : -1);
+    {  // The circle pad swings the view round the room and tilts it a little, easing back when let go (D85).
+        static float yaw = 0, pitch = 0;
+        const float wantYaw = in.padX * 0.42f, wantPitch = in.padY * 0.16f;
+        const float k = std::fmin(1.0f, app.dt * (in.padX != 0 || in.padY != 0 ? 5.0f : 3.0f));
+        yaw += (wantYaw - yaw) * k;
+        pitch += (wantPitch - pitch) * k;
+        r3d::setDenNudge(std::fabs(yaw) < 1e-3f ? 0.0f : yaw, std::fabs(pitch) < 1e-3f ? 0.0f : pitch);
+    }
     if (!app.hatch.active && (in.down & KEY_X) && !(in.held & KEY_R)) {
         openMap(app);
         return;

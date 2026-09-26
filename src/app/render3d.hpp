@@ -114,6 +114,10 @@ void setDenThings(const DenThings* things);
 // (run 17: a kind loading on the spot stalled the den). One still needed at once loads then.
 // The old looks (D54) load only when the dev menu shows them.
 bool loadNextLook(const SaveData& s);
+
+// The den's view swung round (radians, + to the right) and tilted (+ higher) by the circle pad
+// (D85); the scene eases it back to 0 when the pad is let go.
+void setDenNudge(float yaw, float pitch);
 // Dev: every dragon drawn in one look (-1: their own).
 void setForceLook(int look);
 int forceLook();

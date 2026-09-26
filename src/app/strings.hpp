@@ -6,7 +6,7 @@ namespace ec::str {
 inline constexpr const char* kGameTitle = "Emberclutch";
 inline constexpr const char* kTagline = "raise, breed and fly with dragons";
 inline constexpr const char* kTouchToBegin = "Touch to begin";
-inline constexpr const char* kBuildLabel = "Alpha 2 in development";
+inline constexpr const char* kBuildLabel = "Beta 1";
 
 inline constexpr const char* kChooseEgg = "Choose your first egg";
 inline constexpr const char* kTapAgain = "Tap again to choose";

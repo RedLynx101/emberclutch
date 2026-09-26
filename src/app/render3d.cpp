@@ -306,6 +306,7 @@ EggForm g_eggLod1;  // the den's egg when there's more to draw (tools/blender/eg
 Vec3 g_camTarget;                // smoothed den camera target
 float g_camRadius = 0;           // smoothed den framing radius (0: not set yet)
 Vec3 g_camEye;                   // last den camera position: where "the player" is
+float g_nudgeYaw = 0, g_nudgePitch = 0;  // the circle pad's swing of the den's view (D85)
 C3D_Mtx g_denView;               // last den camera, for projecting particles and the egg
 bool g_denViewSet = false;
 Vec3 g_heads[kDenShown];         // den dragons' heads in the last drawDen (an egg's top)
@@ -1738,7 +1739,11 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
     g_camTarget = lerp(g_camTarget, want, k);
     g_camRadius += (radius - g_camRadius) * k;
 
-    const Vec3 dir = normalize(Vec3{-0.35f, -0.9f, 0.32f});  // tools/blender/den_model.py CAM_DIR
+    Vec3 dir = normalize(Vec3{-0.35f, -0.9f, 0.32f});  // tools/blender/den_model.py CAM_DIR
+    if (g_nudgeYaw != 0 || g_nudgePitch != 0) {  // swung round the dragons and tilted (D85)
+        const float c = std::cos(g_nudgeYaw), s = std::sin(g_nudgeYaw);
+        dir = normalize(Vec3{dir.x * c - dir.y * s, dir.x * s + dir.y * c, dir.z + g_nudgePitch});
+    }
     const float dist = g_camRadius / std::tan(kFovY * 0.5f) * 0.95f;
     C3D_Mtx projection, view, model;
     topProjection(projection, 0.25f, std::fmax(dist * 4.0f, 70.0f), dist);
@@ -2187,6 +2192,11 @@ bool loadNextLook(const SaveData& s) {
         return true;
     }
     return false;
+}
+
+void setDenNudge(float yaw, float pitch) {
+    g_nudgeYaw = yaw;
+    g_nudgePitch = pitch;
 }
 
 void setForceLook(int look) {

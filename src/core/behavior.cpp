@@ -30,7 +30,7 @@ constexpr const char* kActivityNames[] = {
     "GoSulk", "Sulk", "MakeUp", "Greet",
     "Fetch", "HandFeed", "Refuse", "Bath", "Groomed", "Kick", "Sneeze", "PullAway", "Come", "Hatch",
     "Chase", "Flee", "Nuzzle", "Bask", "Bat", "Tug", "ToyRun", "Play", "Bowl", "TugWar", "Zoomies",
-    "Spar", "Stalk", "Unaware", "TailChase",
+    "Spar", "Stalk", "Unaware", "TailChase", "Fly",
 };
 static_assert(sizeof(kActivityNames) / sizeof(kActivityNames[0]) == static_cast<int>(Activity::Count),
               "one name per activity");
@@ -245,7 +245,7 @@ void DenBehavior::start(Activity a) {
         case Activity::Lie: setClip(ClipId::LieDown, 0.3f, true); timer = between(rng, 8.0f, 18.0f); break;
         case Activity::Yawn: setClip(ClipId::Yawn, 0.3f, true); break;
         case Activity::TailWag: setClip(ClipId::TailWag, 0.25f); timer = between(rng, 2.0f, 3.5f); break;
-        case Activity::Flutter: setClip(ClipId::WingFlutter, 0.3f, true); break;
+        case Activity::Flutter: setClip(ClipId::WingFlutter, 0.3f, true); orbit = 0; break;
         case Activity::GoNap: target = snuggle ? snuggleAt : den.beds[spot]; trot = false; break;
         case Activity::Sleep: setClip(ClipId::Sleep, 0.8f); break;
         case Activity::Wake: setClip(ClipId::Wake, 0.6f, true); break;
@@ -335,6 +335,26 @@ void DenBehavior::start(Activity a) {
         case Activity::Stalk: walkClip = ClipId::Walk; break;
         case Activity::Unaware: setClip(ClipId::Idle, 0.3f); break;
         case Activity::TailChase: setClip(ClipId::TailChase, 0.2f); timer = between(rng, 2.5f, 4.0f); break;
+        case Activity::Fly: {  // up off the floor: a lap round the sunbeam, or over to another spot
+            flyFrom = pos;
+            orbit = 0;
+            flyLoop = flyHigh && rng.chance(3, 5);
+            flyPeak = (flyHigh ? between(rng, 1.1f, 1.5f) : 0.45f) * (size > 0.3f ? size : 0.3f);
+            target = den.sunSpot;
+            if (!flyLoop) {
+                for (int tries = 0; tries < 8; ++tries) {  // somewhere 2.5-5 m off, on the floor
+                    const float ang = between(rng, -3.1f, 3.1f), r = between(rng, 2.5f, 5.0f) * (flyHigh ? 1.0f : 0.6f);
+                    const Vec2 p{pos.x + std::sin(ang) * r, pos.y + std::cos(ang) * r};
+                    if (distance(p, den.home) < den.radius - 0.8f && clearAt(p, kClearance * size)) {
+                        target = p;
+                        break;
+                    }
+                }
+            }
+            flyLen = std::fmax(1.0f, distance(pos, target));
+            setClip(ClipId::FlyFlap, 0.25f);
+            break;
+        }
         case Activity::Zoomies:  // three or four laps' worth of turns, at a run
             step = 3 + static_cast<int>(rng.below(2));
             target = zoomPoint();
@@ -621,6 +641,14 @@ void DenBehavior::chooseAmbient(const Dragon& d, float moveScale) {
         }
         pick -= w[i];
     }
+    // Now and then it flies (D85): a grown dragon up and round the sunbeam or over the room, an
+    // adolescent a little hop-glide; not when it's sulky or tired.
+    if (d.stage >= Stage::Adolescent && d.needs.energy > 45 && moodOf(d) != Mood::Sulky &&
+        rng.chance(1, d.stage == Stage::Adult ? 9 : 14)) {
+        flyHigh = d.stage == Stage::Adult;
+        start(Activity::Fly);
+        return;
+    }
     // Now and then, chasing its own tail: playful ones and babies most (Noah, run 13).
     const int tailOdds = d.personality == Personality::Playful ? 10 : (d.stage == Stage::Hatchling ? 14 : 30);
     if (d.needs.energy > 40 && moodOf(d) != Mood::Sulky && rng.chance(1, tailOdds)) {
@@ -664,6 +692,7 @@ void DenBehavior::chooseAmbient(const Dragon& d, float moveScale) {
 void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt) {
     speed = 0;
     size = moveScale;
+    if (activity != Activity::Fly && air > 0) air = std::fmax(0.0f, air - 1.6f * dt);  // interrupted: down it comes
     if (petTimer > 0) petTimer -= dt;
     const bool bedtime = d.napping || night;
 
@@ -672,8 +701,8 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
         start(Activity::GoSulk);
     } else if (!d.upset && (activity == Activity::GoSulk || activity == Activity::Sulk)) {
         start(Activity::Greet);  // made up some other way (care, dev menu)
-    } else if (bedtime && ambient(activity)) {
-        start(Activity::GoNap);
+    } else if (bedtime && (ambient(activity) || activity == Activity::Fly)) {
+        start(Activity::GoNap);  // (a flight comes down: DenBehavior::air sinks on its own)
     }
 
     switch (activity) {
@@ -764,6 +793,53 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
                 start(Activity::Flee);  // pounced on: bolt
             }
             break;
+        case Activity::Fly: {
+            const float fly = std::fmax(trotSpeed * 1.2f, 1.4f * size);
+            if (step == 0) {  // take off: up, turning to where it's going
+                air += (flyPeak * 0.7f - air) * std::fmin(1.0f, dt * 3.0f);
+                const bool facing = turnTo(headingTo(pos, flyLoop ? den.sunSpot : target), dt);
+                if (facing && air > flyPeak * 0.45f) step = 1;
+                break;
+            }
+            if (step == 1) {  // across (or round the beam once and a bit), up in an easy arc
+                Vec2 aim = target;
+                float progress;
+                if (flyLoop) {
+                    const float r = 1.6f * (size > 0.5f ? size : 0.5f);
+                    if (distance(pos, den.sunSpot) > r * 1.2f && orbit == 0) {
+                        aim = den.sunSpot;  // getting there
+                        progress = 0.2f;
+                    } else {
+                        orbit += fly / r * dt;
+                        const float ang = std::atan2(pos.x - den.sunSpot.x, pos.y - den.sunSpot.y) + 0.6f;
+                        aim = {den.sunSpot.x + std::sin(ang) * r, den.sunSpot.y + std::cos(ang) * r};
+                        progress = 0.2f + 0.7f * std::fmin(1.0f, orbit / 7.5f);
+                    }
+                    if (orbit > 7.5f) step = 2;  // a lap and a bit
+                } else {
+                    progress = 1.0f - distance(pos, target) / flyLen;
+                    if (distance(pos, target) < 0.35f) step = 2;
+                }
+                heading = wrapAngle(heading + clampf(wrapAngle(headingTo(pos, aim) - heading), -2.6f * dt, 2.6f * dt));
+                pos.x += std::sin(heading) * fly * dt;
+                pos.y -= std::cos(heading) * fly * dt;
+                const Vec2 off{pos.x - den.room.x, pos.y - den.room.y};  // never through the walls
+                const float far = std::hypot(off.x, off.y), wall = den.wallRadius - 1.4f;
+                if (far > wall) pos = {den.room.x + off.x / far * wall, den.room.y + off.y / far * wall};
+                const float want = flyPeak * (0.7f + 0.3f * std::sin(3.14159f * std::fmin(1.0f, progress)));
+                air += (want - air) * std::fmin(1.0f, dt * 2.5f);
+                setClip(progress > 0.55f && !flyLoop ? ClipId::FlyGlide : ClipId::FlyFlap, 0.35f);
+                break;
+            }
+            // down again: a glide to the floor; after a lap it lies in the sunbeam a while
+            setClip(ClipId::FlyGlide, 0.3f);
+            air -= std::fmax(0.6f, air * 2.0f) * dt;
+            if (air <= 0.02f) {
+                air = 0;
+                start(flyLoop && !bedtime ? Activity::Bask : Activity::Hop);
+            }
+            break;
+        }
         case Activity::TailChase:  // round and round after its own tail
             heading = wrapAngle(heading + 4.5f * dt);
             if ((timer -= dt) <= 0) start(rng.chance(1, 2) ? Activity::Hop : Activity::TailWag);
@@ -779,10 +855,16 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
             }
             if (timer > 10.0f) start(Activity::TailWag);
             break;
+        case Activity::Flutter:  // a baby's wings flutter it up off the floor in little hops (D85)
+            if (d.stage <= Stage::Juvenile) {
+                orbit += dt;
+                air = 0.1f * (size > 0.3f ? size : 0.3f) * std::fabs(std::sin(orbit * 7.5f)) * (orbit < 1.3f ? 1.0f : 0.0f);
+            }
+            if (clipDone) start(Activity::Idle);
+            break;
         case Activity::LookAround:
         case Activity::Scratch:
         case Activity::Yawn:
-        case Activity::Flutter:
         case Activity::Shake:
         case Activity::Hop:
         case Activity::Greet:

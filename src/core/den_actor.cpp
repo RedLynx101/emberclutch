@@ -128,6 +128,7 @@ int DenActor::update(const Dragon& d, bool night, float moveScale, float dt, con
     behavior.gait = moveScale < 1.0f ? std::fmin(2.0f, 1.0f / std::sqrt(std::fmax(moveScale, 0.05f))) : 1.0f;
     behavior.haste = d.stage == Stage::Hatchling ? kBabyHaste : 1.0f;
     behavior.update(d, night, moveScale, dt);
+    lift = behavior.air;  // off the floor: flying, or a baby's flutter-hop (D85)
     const float k = dt * 3.0f < 1.0f ? dt * 3.0f : 1.0f;
     look += (behavior.lookWeight() - look) * k;
     eyes.update(behavior.eyesClosed(), dt);

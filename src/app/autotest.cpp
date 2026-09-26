@@ -19,7 +19,7 @@ namespace {
 constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
-enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Shot, ShotIn, Name, Skip, Overlay, Splash, Quit };
+enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Quit };
 
 struct Cmd {
     Op op = Op::Wait;
@@ -79,6 +79,7 @@ bool parse(const char* line, Cmd& c) {
     if (w == "wait") { c.op = Op::Wait; nums(1); }
     else if (w == "tap") { c.op = Op::Tap; nums(2); }
     else if (w == "hold") { c.op = Op::Hold; nums(3); }
+    else if (w == "pad") { c.op = Op::Pad; nums(3); }  // pad <x> <y> <seconds>: the circle pad held (-1..1, up +y)
     else if (w == "drag") { c.op = Op::Drag; nums(6); }
     else if (w == "key") { c.op = Op::Key; c.key = keyNamed(rest); }
     else if (w == "keyhold") {
@@ -191,6 +192,13 @@ Input next(App& app) {
             case Op::Key:
                 if (g_frame == 0) in.down = in.held = c.key;
                 done = g_frame >= 2;
+                break;
+            case Op::Pad:
+                if (g_time < c.a[2]) {
+                    in.padX = c.a[0];
+                    in.padY = c.a[1];
+                }
+                done = g_time >= c.a[2];
                 break;
             case Op::KeyHold:
                 in.held = g_time < c.a[0] ? c.key : 0;

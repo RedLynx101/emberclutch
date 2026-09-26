@@ -93,6 +93,9 @@ enum class Activity : u8 {
     // one that isn't looking (Unaware) and pouncing, which starts a chase; alone, chasing its
     // own tail
     Spar, Stalk, Unaware, TailChase,
+    // flying in the den (D85): a grown dragon's short flight, a lap round the sunbeam or across the
+    // room and down again; an adolescent's little hop-glide
+    Fly,
     Count,
 };
 const char* activityName(Activity a);
@@ -184,6 +187,11 @@ struct DenBehavior {
     // Ground speeds (den units per second) that match the walk and trot cycles for this
     // dragon's body, so its feet stay planted (see locomotionSpeed in core/den_actor).
     float walkSpeed = 0.55f, trotSpeed = 1.8f, runSpeed = 3.0f;
+    // Off the floor (D85): its height now (den units; DenActor::lift follows it), and a flight's
+    // shape: how high, a lap of the sunbeam or across the room, and round the lap so far.
+    float air = 0, flyPeak = 0, flyLen = 1, orbit = 0;
+    bool flyHigh = false, flyLoop = false;
+    Vec2 flyFrom;
     // Running (WP12c): this activity's trotting goes at a run (a chase, a far throw, a toy run,
     // zoomies); a hatchling scampers, anything bigger gallops (DenActor sets `baby` with the
     // form).

@@ -521,7 +521,8 @@ TEST(den_dragons_live_together) {
     Rng rng(5);
     bool chased = false, caught = false, nuzzled = false, basked = false, galloped = false;
     bool sparred = false, rolled = false, pounced = false, ambushChase = false, tailChased = false;  // run 13
-    for (int f = 0; f < 6 * 60 * 30; ++f) {
+    bool flew = false, landed = false, inside = true;  // D85: up off the floor, down again, never through the walls
+    for (int f = 0; f < 12 * 60 * 30; ++f) {  // (twelve minutes: flights take their share of the den's time)
         shareCrowd(bs, 3);
         denSocial(social, bs, ds, 3, false, 1.0f, 1.0f / 30, rng);
         for (int i = 0; i < 3; ++i) {
@@ -542,8 +543,13 @@ TEST(den_dragons_live_together) {
                 bs[b.partner]->activity == Activity::Nuzzle && dist(b.pos, bs[b.partner]->pos) < 3.0f)
                 nuzzled = true;
             if (b.activity == Activity::Bask && b.step == 2 && dist(b.pos, den.sunSpot) < 2.5f) basked = true;
+            if (b.activity == Activity::Fly && b.air > 0.6f) flew = true;
+            if (flew && b.activity != Activity::Fly && b.air == 0.0f) landed = true;
+            if (dist(b.pos, den.room) > den.wallRadius) inside = false;
         }
     }
+    std::printf("  flying: up %d, down again %d, inside the walls %d\n", flew, landed, inside);
+    CHECK(flew && landed && inside);
     std::printf("  a bright day: chase %d (ending in a hop %d), nuzzle %d, sunbeam %d\n", chased, caught, nuzzled,
                 basked);
     CHECK(chased && caught && nuzzled && basked && galloped);

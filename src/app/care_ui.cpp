@@ -699,6 +699,7 @@ void freeSprites() {
 r3d::CloseUpView view(const App& app) {
     if (const DenActor* a = careActor(const_cast<App&>(app))) {  // asleep, curled up: its face is tucked away
         if (a->behavior.activity == Activity::Sleep) return r3d::CloseUpView::Body;
+        if (a->behavior.air > 0.2f) return r3d::CloseUpView::Body;  // flying about the den: all of it (D85)
     }
     switch (app.care.tool) {
         case Tool::Hand:  // turned round with L / R: its back and sides

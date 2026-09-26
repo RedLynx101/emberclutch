@@ -101,7 +101,7 @@
 the calls made with creative freedom in D87). Next:
 1. **The big review** (D85 (5)): everything in Beta 1 at once, R8-R10 and R12 made along the
    way, with the emulator's pictures; Noah's answers become D88.
-2. **Run 19** on the old 3DS ([steps](plan/hardware-check-3.md)): 0.3.0 and the four banner
+2. **Run 19** on the old 3DS ([steps](plan/hardware-check-3.md), sent to .54 with D88's fixes): 0.3.0 and the four banner
    labs (B-E, [what each tells us](tech/banner-labs.md)) go to the 3DS when Noah says it's on.
 3. Then Beta 2 from run 19's notes: the curl poses left on the other plans (listed in the kit
    doc), the rest of the crossbreeds (DR5), brushes in the shops, Training and the ground cups
@@ -151,10 +151,10 @@ after each. Stops:
   haven't arrived use stand-ins (D35). Computer use only while testing in the emulator.
 
 ## Waiting on Noah
-- **The big Beta 1 review** ([the page](https://claude.ai/artifact/6k6yYxfWQjPepJj2hsHuX4), [R13](art/reviews/R13-beta1.md)): a verdict and a note on each part
-  and five questions on the review page; the answers become D88.
-- **Run 19** (0.3.0 and banner labs B-E, [steps](plan/hardware-check-3.md)): sent to the 3DS at
-  .61 when Noah says it's on.
+- **Run 19** (0.3.0 with the big review's fixes, D88, and banner labs B-E,
+  [steps](plan/hardware-check-3.md)): on the 3DS at .54 (sdmc:/cias/emberclutch.cia and
+  sdmc:/cias/lab/), sent 2026-09-26. The review ([page](https://claude.ai/artifact/6k6yYxfWQjPepJj2hsHuX4),
+  [R13](art/reviews/R13-beta1.md)) is answered.
 - **Sounds for the challenges** (stand-ins play): a countdown tick, a missed ring, a clean glass
   chime for the crystal lanterns, a soft fizzle for a wrong lantern, fruit bouncing on grass, an
   orchard crowd ([challenges](tech/challenges.md)). Batch 2 and 3's open sounds too, on the

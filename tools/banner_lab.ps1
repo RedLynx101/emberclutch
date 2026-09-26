@@ -1,9 +1,10 @@
 # Banner lab: small test titles for trying HOME Menu banners on the 3DS without touching the
 # game's own title (the HOME Menu caches a title's banner, and a banner that freezes it costs a
-# restart). Each variant is its own title ("Banner lab A", "B", ...; unique IDs 0xEC0D1 up),
+# restart). Each variant is its own title ("Banner lab A", "B", ...; unique IDs from 0xEC0D1),
 # holding the game's code but no romfs: select them on the HOME Menu, never start them.
-#   tools\banner_lab.ps1 -Variants "A=<cgfx>;<wav>[;noflag]", "B=..." [-FirstId 0xEC0D1] [-Deploy <3ds-ip>]
-# Each round takes fresh IDs (-FirstId), and each title its own product code (CTR-P-Lxxx):
+#   tools\banner_lab.ps1 -Variants "A=<cgfx>;<wav>[;noflag]", "B=..." -FirstId <fresh id> [-Deploy <3ds-ip>]
+# Each round takes fresh IDs (-FirstId, no default: docs/tech/banner-labs.md lists the blocks
+# used, and lab A took lab P's 0xEC111 again), and each title its own product code (CTR-P-Lxxx):
 # the HOME Menu kept a banner's sound across titles that shared one (run 8). "noflag" leaves
 # out the SMDH's extendedbanner flag (every one of these banners turned constantly with it).
 # A variant's banner is a CGFX (3D) or a PNG (flat) and a WAV. The CIAs land in build/lab/;
@@ -13,7 +14,7 @@
 param(
     [Parameter(Mandatory = $true)][string[]]$Variants,
     [string]$Deploy = "",
-    [int]$FirstId = 0xEC0D1,
+    [Parameter(Mandatory = $true)][int]$FirstId,
     [string]$ToolsDir = ""
 )
 

@@ -21,6 +21,7 @@ Tracks (filled in as they are added):
 | Cup Day | `romfs/music/cup-day.ogg` | 2026-09-23 | Paid (per brief) |
 | Market Bustle | `romfs/music/market-bustle.ogg` | 2026-09-24 | Paid (per brief) |
 | The HOME Menu banner's sound: one bar (2.8 s) of the title theme | `assets/audio/banner.wav` (from `tools/audio/make_banner_sound.py`) | 2026-09-24 | as the title theme |
+| Valley Day, Valley Night, Village Green, Lantern Festival (batch 3 loops; the brief was written for Suno, confirm the tool) | `romfs/music/valley-day.ogg`, `valley-night.ogg`, `village-green.ogg`, `lantern-festival.ogg` | 2026-09-26 | Paid (per brief) |
 
 *"Plan" records what the brief required. Confirm the plan actually used before the public release.*
 
@@ -37,3 +38,6 @@ must be re-checked before each public release.
 | Hatching (stinger) | `romfs/music/hatching.ogg` | 2026-09-24 |
 | Wanderings Return (stinger) | `romfs/music/wanderings-return.ogg` | 2026-09-24 |
 | Sound effects, Alpha 1 set (26 sounds, 2 beds and an egg hum; `tools/audio/sfx_manifest.json` lists the takes) | `romfs/sfx/*.wav` | 2026-09-24 |
+| Batch 3 stingers: Place Found, Results (First, Placed, Try Again), Cup Won, Quest Done (named as ElevenLabs names its files) | `romfs/music/place-found.ogg`, `results-first.ogg`, `results-placed.ogg`, `results-try-again.ogg`, `cup-won.ogg`, `quest-done.ogg` | 2026-09-26 |
+| Sound effects, batches 2 and 3 (64 sounds and beds; the manifest lists the takes) | `romfs/sfx/*.wav` | 2026-09-26 |
+| The villagers' letter voices: two recorded alphabets (ElevenLabs voices), not yet in the game | `assets/audio/voice/source/` (not committed) | 2026-09-26 |

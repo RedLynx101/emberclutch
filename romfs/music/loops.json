@@ -15,6 +15,14 @@
     "bpm": 75.0,
     "lufs": -16.0
   },
+  "lantern-festival": {
+    "file": "lantern-festival.ogg",
+    "rate": 32000,
+    "loopStart": 354304,
+    "loopLength": 2663040,
+    "bpm": 107.16,
+    "lufs": -16.0
+  },
   "market-bustle": {
     "file": "market-bustle.ogg",
     "rate": 32000,
@@ -53,6 +61,30 @@
     "loopStart": 401603,
     "loopLength": 2823680,
     "bpm": 88.99,
+    "lufs": -16.0
+  },
+  "valley-day": {
+    "file": "valley-day.ogg",
+    "rate": 32000,
+    "loopStart": 324123,
+    "loopLength": 1356800,
+    "bpm": 97.65,
+    "lufs": -16.0
+  },
+  "valley-night": {
+    "file": "valley-night.ogg",
+    "rate": 32000,
+    "loopStart": 539062,
+    "loopLength": 1959680,
+    "bpm": 67.21,
+    "lufs": -16.0
+  },
+  "village-green": {
+    "file": "village-green.ogg",
+    "rate": 32000,
+    "loopStart": 424917,
+    "loopLength": 2022720,
+    "bpm": 89.64,
     "lufs": -16.0
   }
 }

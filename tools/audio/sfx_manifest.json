@@ -1,32 +1,666 @@
 {
-  "_about": "Sound effects: slug -> kind and takes. Takes are the generated files (ElevenLabs Sound Effects, paid plan, 2026-09-24, prompts from docs/audio/suno-sfx-alpha1.md) in the order they become <slug>.wav, <slug>-2.wav, ... Run tools/audio/process_sfx.py.",
-  "dragon-chirp": {"kind": "voice", "takes": ["Small_baby_dragon_ch_#1-1790234704425.wav", "Small_baby_dragon_ch_#2-1790234704425.wav"]},
-  "dragon-trill": {"kind": "voice", "takes": ["Happy_baby_dragon_tr_#1-1790234832089.wav", "Happy_baby_dragon_tr_#2-1790234832090.wav"]},
-  "dragon-purr": {"kind": "voice", "takes": ["Contented_dragon_pur_#1-1790235097098.wav", "Contented_dragon_pur_#4-1790235132856.wav"]},
-  "dragon-squeak": {"kind": "voice", "takes": ["Excited_little_drago_#1-1790235011179.wav", "Excited_little_drago_#2-1790235011181.wav"]},
-  "dragon-whimper": {"kind": "voice", "takes": ["Sad_small_dragon_whi_#1-1790235188076.wav", "Sad_small_dragon_whi_#2-1790235188077.wav", "Sad_small_dragon_whi_#3-1790235188079.wav", "Sad_small_dragon_whi_#4-1790235188080.wav"]},
-  "dragon-yawn": {"kind": "voice", "takes": ["Sleepy_small_dragon__#1-1790235285336.wav", "Sleepy_small_dragon__#2-1790235281547.wav"]},
-  "dragon-sneeze": {"kind": "voice", "takes": ["Tiny_dragon_sneeze_w_#2-1790235578211.wav", "Tiny_dragon_sneeze_w_#3-1790235578213.wav", "Tiny_dragon_sneeze_w_#4-1790235578214.wav"]},
-  "dragon-rumble": {"kind": "low-voice", "takes": ["Low_friendly_dragon__#4-1790235658834.wav", "Low_friendly_dragon__#1-1790235671052.wav", "Low_friendly_dragon__#2-1790235671053.wav"]},
-  "step": {"kind": "body", "takes": ["Single_soft_padded_f_#1-1790235710970.wav"], "floor": -30.0, "max": 0.22},
-  "thump": {"kind": "body", "takes": ["Small_animal_floppin_#1-1790235792485.wav"]},
-  "flap": {"kind": "body", "takes": ["One_leathery_wing_fl_#2-1790235812593.wav", "One_leathery_wing_fl_#4-1790235812595.wav"]},
-  "egg-knock": {"kind": "egg", "takes": ["Egg_wiggling_in_a_st_#2-1790235853421.wav", "Egg_wiggling_in_a_st_#3-1790235853421.wav"]},
-  "egg-crack": {"kind": "egg", "takes": ["Eggshell_cracking,_c_#2-1790235880813.wav", "Eggshell_cracking,_c_#3-1790235880814.wav", "Eggshell_cracking,_c_#4-1790235880815.wav"]},
-  "egg-hatch": {"kind": "egg", "takes": ["Eggshell_bursting_op_#4-1790235912870.wav"]},
-  "egg-hum": {"kind": "loop", "takes": ["Warm_magical_hum_of__#1-1790236188113.wav"], "loop": {"start": 0.3, "length": 2.2, "xfade": 0.45}},
-  "munch": {"kind": "care", "takes": ["Small_animal_munchin_#4-1790236242625.wav", "Small_animal_munchin_#4-1790236257770.wav", "Small_animal_munchin_#1-1790236264074.wav"]},
-  "gulp": {"kind": "care", "takes": ["Cute_swallow_gulp_#1-1790236291814.wav", "Cute_swallow_gulp_#2-1790236291815.wav"]},
-  "brush": {"kind": "care", "takes": ["Soft_brush_strokes_o_#2-1790236325494.wav", "Soft_brush_strokes_o_#3-1790236325494.wav", "Soft_brush_strokes_o_#1-1790236337123.wav"]},
-  "polish-sparkle": {"kind": "care", "takes": ["Magical_sparkle_shim_#1-1790236375944.wav", "Magical_sparkle_shim_#4-1790236375947.wav"]},
-  "splash": {"kind": "care", "takes": ["Small_playful_water__#1-1790236400256.wav", "Small_playful_water__#2-1790236400257.wav", "Small_playful_water__#3-1790236400258.wav", "Small_playful_water__#4-1790236400258.wav"]},
-  "ball-bounce": {"kind": "care", "takes": ["Soft_rubber_ball_bou_#2-1790236447698.wav"]},
-  "ui-tap": {"kind": "ui", "takes": ["Soft_wooden_tap,_gen_#3-1790236483561.wav"]},
-  "ui-confirm": {"kind": "ui", "takes": ["Warm_two-note_chime__#4-1790236508404.wav"], "note": "generated before ui-back (the brief's order); the higher chime"},
-  "ui-back": {"kind": "ui", "takes": ["Warm_two-note_chime__#1-1790236537462.wav"], "note": "generated after ui-confirm; the lower chime"},
-  "ui-error": {"kind": "ui", "takes": ["Muted,_soft_bonk_wit_#4-1790236900745.wav"]},
-  "ui-toast": {"kind": "ui", "takes": ["Tiny_bright_notifica_#4-1790236920753.wav"]},
-  "ui-save": {"kind": "ui", "takes": ["Small_ember_chime,_s_#4-1790236978186.wav"]},
-  "amb-hearth": {"kind": "loop", "takes": ["Crackling_hearth_fir_#2-1790237040589.wav"], "loop": {"start": 1.0, "length": 15.0, "xfade": 2.0}},
-  "amb-night": {"kind": "loop", "takes": ["Night_crickets_and_s_#2-1790237101806.wav"], "loop": {"start": 1.0, "length": 15.0, "xfade": 2.0}}
+ "_about": "Sound effects: slug -> kind and takes. Takes are the generated files (ElevenLabs Sound Effects, paid plan, 2026-09-24, prompts from docs/audio/suno-sfx-alpha1.md) in the order they become <slug>.wav, <slug>-2.wav, ... Run tools/audio/process_sfx.py.",
+ "dragon-chirp": {
+  "kind": "voice",
+  "takes": [
+   "Small_baby_dragon_ch_#1-1790234704425.wav",
+   "Small_baby_dragon_ch_#2-1790234704425.wav"
+  ]
+ },
+ "dragon-trill": {
+  "kind": "voice",
+  "takes": [
+   "Happy_baby_dragon_tr_#1-1790234832089.wav",
+   "Happy_baby_dragon_tr_#2-1790234832090.wav"
+  ]
+ },
+ "dragon-purr": {
+  "kind": "voice",
+  "takes": [
+   "Contented_dragon_pur_#1-1790235097098.wav",
+   "Contented_dragon_pur_#4-1790235132856.wav"
+  ]
+ },
+ "dragon-squeak": {
+  "kind": "voice",
+  "takes": [
+   "Excited_little_drago_#1-1790235011179.wav",
+   "Excited_little_drago_#2-1790235011181.wav"
+  ]
+ },
+ "dragon-whimper": {
+  "kind": "voice",
+  "takes": [
+   "Sad_small_dragon_whi_#1-1790235188076.wav",
+   "Sad_small_dragon_whi_#2-1790235188077.wav",
+   "Sad_small_dragon_whi_#3-1790235188079.wav",
+   "Sad_small_dragon_whi_#4-1790235188080.wav"
+  ]
+ },
+ "dragon-yawn": {
+  "kind": "voice",
+  "takes": [
+   "Sleepy_small_dragon__#1-1790235285336.wav",
+   "Sleepy_small_dragon__#2-1790235281547.wav"
+  ]
+ },
+ "dragon-sneeze": {
+  "kind": "voice",
+  "takes": [
+   "Tiny_dragon_sneeze_w_#2-1790235578211.wav",
+   "Tiny_dragon_sneeze_w_#3-1790235578213.wav",
+   "Tiny_dragon_sneeze_w_#4-1790235578214.wav"
+  ]
+ },
+ "dragon-rumble": {
+  "kind": "low-voice",
+  "takes": [
+   "Low_friendly_dragon__#4-1790235658834.wav",
+   "Low_friendly_dragon__#1-1790235671052.wav",
+   "Low_friendly_dragon__#2-1790235671053.wav"
+  ]
+ },
+ "step": {
+  "kind": "body",
+  "takes": [
+   "Single_soft_padded_f_#1-1790235710970.wav"
+  ],
+  "floor": -30.0,
+  "max": 0.22
+ },
+ "thump": {
+  "kind": "body",
+  "takes": [
+   "Small_animal_floppin_#1-1790235792485.wav"
+  ]
+ },
+ "flap": {
+  "kind": "body",
+  "takes": [
+   "One_leathery_wing_fl_#2-1790235812593.wav",
+   "One_leathery_wing_fl_#4-1790235812595.wav"
+  ]
+ },
+ "egg-knock": {
+  "kind": "egg",
+  "takes": [
+   "Egg_wiggling_in_a_st_#2-1790235853421.wav",
+   "Egg_wiggling_in_a_st_#3-1790235853421.wav"
+  ]
+ },
+ "egg-crack": {
+  "kind": "egg",
+  "takes": [
+   "Eggshell_cracking,_c_#2-1790235880813.wav",
+   "Eggshell_cracking,_c_#3-1790235880814.wav",
+   "Eggshell_cracking,_c_#4-1790235880815.wav"
+  ]
+ },
+ "egg-hatch": {
+  "kind": "egg",
+  "takes": [
+   "Eggshell_bursting_op_#4-1790235912870.wav"
+  ]
+ },
+ "egg-hum": {
+  "kind": "loop",
+  "takes": [
+   "Warm_magical_hum_of__#1-1790236188113.wav"
+  ],
+  "loop": {
+   "start": 0.3,
+   "length": 2.2,
+   "xfade": 0.45
+  }
+ },
+ "munch": {
+  "kind": "care",
+  "takes": [
+   "Small_animal_munchin_#4-1790236242625.wav",
+   "Small_animal_munchin_#4-1790236257770.wav",
+   "Small_animal_munchin_#1-1790236264074.wav"
+  ]
+ },
+ "gulp": {
+  "kind": "care",
+  "takes": [
+   "Cute_swallow_gulp_#1-1790236291814.wav",
+   "Cute_swallow_gulp_#2-1790236291815.wav"
+  ]
+ },
+ "brush": {
+  "kind": "care",
+  "takes": [
+   "Soft_brush_strokes_o_#2-1790236325494.wav",
+   "Soft_brush_strokes_o_#3-1790236325494.wav",
+   "Soft_brush_strokes_o_#1-1790236337123.wav"
+  ]
+ },
+ "polish-sparkle": {
+  "kind": "care",
+  "takes": [
+   "Magical_sparkle_shim_#1-1790236375944.wav",
+   "Magical_sparkle_shim_#4-1790236375947.wav"
+  ]
+ },
+ "splash": {
+  "kind": "care",
+  "takes": [
+   "Small_playful_water__#1-1790236400256.wav",
+   "Small_playful_water__#2-1790236400257.wav",
+   "Small_playful_water__#3-1790236400258.wav",
+   "Small_playful_water__#4-1790236400258.wav"
+  ]
+ },
+ "ball-bounce": {
+  "kind": "care",
+  "takes": [
+   "Soft_rubber_ball_bou_#2-1790236447698.wav"
+  ]
+ },
+ "ui-tap": {
+  "kind": "ui",
+  "takes": [
+   "Soft_wooden_tap,_gen_#3-1790236483561.wav"
+  ]
+ },
+ "ui-confirm": {
+  "kind": "ui",
+  "takes": [
+   "Warm_two-note_chime__#4-1790236508404.wav"
+  ],
+  "note": "generated before ui-back (the brief's order); the higher chime"
+ },
+ "ui-back": {
+  "kind": "ui",
+  "takes": [
+   "Warm_two-note_chime__#1-1790236537462.wav"
+  ],
+  "note": "generated after ui-confirm; the lower chime"
+ },
+ "ui-error": {
+  "kind": "ui",
+  "takes": [
+   "Muted,_soft_bonk_wit_#4-1790236900745.wav"
+  ]
+ },
+ "ui-toast": {
+  "kind": "ui",
+  "takes": [
+   "Tiny_bright_notifica_#4-1790236920753.wav"
+  ]
+ },
+ "ui-save": {
+  "kind": "ui",
+  "takes": [
+   "Small_ember_chime,_s_#4-1790236978186.wav"
+  ]
+ },
+ "amb-hearth": {
+  "kind": "loop",
+  "takes": [
+   "Crackling_hearth_fir_#2-1790237040589.wav"
+  ],
+  "loop": {
+   "start": 1.0,
+   "length": 15.0,
+   "xfade": 2.0
+  }
+ },
+ "amb-night": {
+  "kind": "loop",
+  "takes": [
+   "Night_crickets_and_s_#2-1790237101806.wav"
+  ],
+  "loop": {
+   "start": 1.0,
+   "length": 15.0,
+   "xfade": 2.0
+  }
+ },
+ "ball-roll": {
+  "kind": "care",
+  "takes": [
+   "Small_rubber_ball_ro_#1-1790389699185.wav"
+  ]
+ },
+ "ball-pickup": {
+  "kind": "care",
+  "takes": [
+   "Small_animal_picking_#4-1790390537694.wav"
+  ]
+ },
+ "dragon-grumble": {
+  "kind": "voice",
+  "takes": [
+   "Small_dragon_grumble_#1-1790390563266.wav",
+   "Small_dragon_grumble_#2-1790390563266.wav"
+  ]
+ },
+ "dragon-sniff": {
+  "kind": "voice",
+  "takes": [
+   "Small_animal_sniffin_#1-1790390595957.wav",
+   "Small_animal_sniffin_#3-1790390593027.wav"
+  ]
+ },
+ "dragon-giggle": {
+  "kind": "voice",
+  "takes": [
+   "Ticklish_baby_dragon_#4-1790390628410.wav"
+  ]
+ },
+ "leg-kick": {
+  "kind": "care",
+  "takes": [
+   "Happy_small_animal_t_#2-1790390653387.wav"
+  ]
+ },
+ "tub-slide": {
+  "kind": "care",
+  "takes": [
+   "tub-slide.wav"
+  ]
+ },
+ "suds": {
+  "kind": "care",
+  "takes": [
+   "Soapy_sponge_squishi_#4-1790389664051.wav"
+  ]
+ },
+ "water-pour": {
+  "kind": "care",
+  "takes": [
+   "Water_poured_from_a__#3-1790389611549.wav"
+  ]
+ },
+ "shake-spray": {
+  "kind": "care",
+  "takes": [
+   "Small_animal_shaking_#3-1790390748508.wav"
+  ]
+ },
+ "egg-heartbeat": {
+  "kind": "egg",
+  "takes": [
+   "single_heartbeat_(bu_#4-1790390824265.wav"
+  ]
+ },
+ "egg-turn": {
+  "kind": "egg",
+  "takes": [
+   "A_large_egg_turned_g_#1-1790390840287.wav"
+  ]
+ },
+ "hatch-first-cry": {
+  "kind": "voice",
+  "takes": [
+   "A_newborn_baby_drago_#3-1790390889441.wav"
+  ]
+ },
+ "rope-tug": {
+  "kind": "care",
+  "takes": [
+   "Rope_creaking_under__#4-1790390045698.wav"
+  ]
+ },
+ "feather-flutter": {
+  "kind": "care",
+  "takes": [
+   "Soft_feather_flutter_#1-1790390072172.wav"
+  ]
+ },
+ "orb-rattle": {
+  "kind": "care",
+  "takes": [
+   "Wooden_puzzle_ball_r_#2-1790390109422.wav"
+  ]
+ },
+ "treat-drop": {
+  "kind": "care",
+  "takes": [
+   "Small_treat_dropping_#1-1790390133068.wav"
+  ]
+ },
+ "bowl-clink": {
+  "kind": "care",
+  "takes": [
+   "Food_tipped_into_a_c_#2-1790390158584.wav"
+  ]
+ },
+ "nest-settle": {
+  "kind": "care",
+  "takes": [
+   "Small_creature_settl_#4-1790390015028.wav"
+  ]
+ },
+ "egg-lay": {
+  "kind": "egg",
+  "takes": [
+   "Egg_gently_placed_in_#4-1790389969878.wav"
+  ]
+ },
+ "coin": {
+  "kind": "ui",
+  "takes": [
+   "Warm_magical_coin_ch_#1-1790389895202.wav"
+  ]
+ },
+ "register": {
+  "kind": "ui",
+  "takes": [
+   "Cozy_fantasy_shop_be_#2-1790389920204.wav"
+  ]
+ },
+ "map-open": {
+  "kind": "ui",
+  "takes": [
+   "Old_paper_map_unfold_#2-1790389940337.wav"
+  ]
+ },
+ "travel-whoosh": {
+  "kind": "body",
+  "takes": [
+   "Soft_magical_wind_wh_#3-1790389743345.wav"
+  ]
+ },
+ "trail-depart": {
+  "kind": "voice",
+  "takes": [
+   "Small_dragon's_cheer_#1-1790389772522.wav"
+  ]
+ },
+ "amb-market": {
+  "kind": "loop",
+  "takes": [
+   "Cozy_fantasy_market__#1-1790389853821.wav"
+  ],
+  "loop": {
+   "start": 1.0,
+   "length": 12.0,
+   "xfade": 2.0
+  }
+ },
+ "amb-wind-high": {
+  "kind": "loop",
+  "takes": [
+   "Steady_wind_high_in__#2-1790388888889.wav"
+  ],
+  "loop": {
+   "start": 1.0,
+   "length": 8.0,
+   "xfade": 1.5
+  }
+ },
+ "amb-meadow": {
+  "kind": "loop",
+  "takes": [
+   "Gentle_breeze_throug_#1-1790389038994.wav"
+  ],
+  "loop": {
+   "start": 1.0,
+   "length": 8.0,
+   "xfade": 1.5
+  }
+ },
+ "amb-valley-night": {
+  "kind": "loop",
+  "takes": [
+   "Quiet_summer_night_i_#1-1790389123084.wav"
+  ],
+  "loop": {
+   "start": 1.0,
+   "length": 8.0,
+   "xfade": 1.5
+  }
+ },
+ "amb-waterfall": {
+  "kind": "loop",
+  "takes": [
+   "A_waterfall_heard_fr_#2-1790389217392.wav"
+  ],
+  "loop": {
+   "start": 1.0,
+   "length": 6.0,
+   "xfade": 1.2
+  }
+ },
+ "amb-stream": {
+  "kind": "loop",
+  "takes": [
+   "A_small_river_babbli_#4-1790389276177.wav"
+  ],
+  "loop": {
+   "start": 1.0,
+   "length": 6.0,
+   "xfade": 1.2
+  }
+ },
+ "amb-lake": {
+  "kind": "loop",
+  "takes": [
+   "Calm_lake_water_lapp_#4-1790389322769.wav"
+  ],
+  "loop": {
+   "start": 1.0,
+   "length": 8.0,
+   "xfade": 1.5
+  }
+ },
+ "amb-village": {
+  "kind": "loop",
+  "takes": [
+   "A_cozy_village_outdo_#4-1790391440093.wav"
+  ],
+  "loop": {
+   "start": 1.0,
+   "length": 12.0,
+   "xfade": 2.0
+  }
+ },
+ "wing-flutter": {
+  "kind": "loop",
+  "takes": [
+   "Leathery_wing_membra_#1-1790388743528.wav"
+  ],
+  "loop": {
+   "start": 0.4,
+   "length": 3.0,
+   "xfade": 0.6
+  }
+ },
+ "wingbeat": {
+  "kind": "body",
+  "takes": [
+   "One_powerful_downstr_#2-1790388580646.wav",
+   "One_powerful_downstr_#2-1790388595487.wav",
+   "One_powerful_downstr_#4-1790388573548.wav",
+   "One_powerful_downstr_#4-1790388595488.wav"
+  ]
+ },
+ "takeoff": {
+  "kind": "body",
+  "takes": [
+   "A_large_dragon_launc_#1-1790388679464.wav"
+  ]
+ },
+ "landing": {
+  "kind": "body",
+  "takes": [
+   "A_large_dragon_landi_#4-1790388637063.wav"
+  ]
+ },
+ "dive-whoosh": {
+  "kind": "body",
+  "takes": [
+   "Fast_rushing_wind_wh_#1-1790388786417.wav"
+  ]
+ },
+ "water-skim": {
+  "kind": "care",
+  "takes": [
+   "Claws_skimming_the_s_#3-1790388473340.wav"
+  ]
+ },
+ "splash-big": {
+  "kind": "care",
+  "takes": [
+   "A_large_animal_plung_#4-1790388505628.wav"
+  ]
+ },
+ "step-grass": {
+  "kind": "body",
+  "takes": [
+   "One_footstep_in_shor_#1-1790391147051.wav",
+   "One_footstep_in_shor_#2-1790391150141.wav",
+   "One_footstep_in_shor_#3-1790391152671.wav"
+  ]
+ },
+ "step-stone": {
+  "kind": "body",
+  "takes": [
+   "One_footstep_on_a_st_#1-1790391179808.wav",
+   "One_footstep_on_a_st_#2-1790391179808.wav",
+   "One_footstep_on_a_st_#4-1790391179809.wav"
+  ]
+ },
+ "step-wood": {
+  "kind": "body",
+  "takes": [
+   "One_footstep_on_a_wo_#2-1790391200101.wav",
+   "One_footstep_on_a_wo_#2-1790391236291.wav",
+   "One_footstep_on_a_wo_#3-1790391209452.wav"
+  ]
+ },
+ "dragon-step-grass": {
+  "kind": "body",
+  "takes": [
+   "One_step_of_a_big_cl_#1-1790391291892.wav",
+   "One_step_of_a_big_cl_#2-1790391270084.wav",
+   "One_step_of_a_big_cl_#4-1790391266255.wav"
+  ]
+ },
+ "mount": {
+  "kind": "body",
+  "takes": [
+   "Climbing_onto_a_sadd_#2-1790391320122.wav"
+  ]
+ },
+ "door-wood": {
+  "kind": "care",
+  "takes": [
+   "A_heavy_wooden_door__#3-1790391349992.wav"
+  ]
+ },
+ "village-bell": {
+  "kind": "ui",
+  "takes": [
+   "A_small_village_bell_#1-1790391399130.wav"
+  ]
+ },
+ "find-sparkle": {
+  "kind": "ui",
+  "takes": [
+   "A_small_magical_spar_#1-1790391472003.wav"
+  ]
+ },
+ "crowd-cheer": {
+  "kind": "care",
+  "takes": [
+   "A_small_friendly_cro_#1-1790391581790.wav",
+   "A_small_friendly_cro_#3-1790391587581.wav",
+   "A_small_friendly_cro_#4-1790391569233.wav"
+  ]
+ },
+ "crowd-aww": {
+  "kind": "care",
+  "takes": [
+   "A_small_friendly_cro_#2-1790391630606.wav"
+  ]
+ },
+ "whistle-start": {
+  "kind": "ui",
+  "takes": [
+   "A_referee's_short_wh_#1-1790391655264.wav"
+  ]
+ },
+ "ring-pass": {
+  "kind": "ui",
+  "takes": [
+   "Flying_through_a_mag_#1-1790391687311.wav"
+  ]
+ },
+ "fruit-toss": {
+  "kind": "care",
+  "takes": [
+   "A_piece_of_fruit_tos_#3-1790391732168.wav"
+  ]
+ },
+ "fruit-catch": {
+  "kind": "care",
+  "takes": [
+   "An_animal_snapping_a_#1-1790391772259.wav"
+  ]
+ },
+ "lantern-light": {
+  "kind": "ui",
+  "takes": [
+   "A_crystal_lantern_li_#1-1790391713524.wav"
+  ]
+ },
+ "lantern-relight": {
+  "kind": "ui",
+  "takes": [
+   "A_great_festival_lan_#4-1790389392819.wav"
+  ]
+ },
+ "quest-page": {
+  "kind": "ui",
+  "takes": [
+   "A_page_turned_in_a_s_#4-1790389421963.wav"
+  ]
+ },
+ "star-shimmer": {
+  "kind": "ui",
+  "takes": [
+   "A_falling_star_passi_#4-1790389467571.wav"
+  ]
+ },
+ "breath-flame": {
+  "kind": "body",
+  "takes": [
+   "breath-flame.wav"
+  ]
+ },
+ "breath-frost": {
+  "kind": "body",
+  "takes": [
+   "breath-frost.wav"
+  ]
+ },
+ "breath-gust": {
+  "kind": "body",
+  "takes": [
+   "breath-gust.wav"
+  ]
+ },
+ "breath-light": {
+  "kind": "body",
+  "takes": [
+   "breath-light.wav"
+  ]
+ },
+ "breath-mist": {
+  "kind": "body",
+  "takes": [
+   "breath-mist.wav"
+  ]
+ },
+ "breath-spores": {
+  "kind": "body",
+  "takes": [
+   "breath-spores.wav"
+  ]
+ },
+ "_about_batch3": "Batches 2 and 3 (docs/audio/sfx-batch-2.md, sfx-batch-3.md): ElevenLabs Sound Effects, 2026-09-25/26, matched to the slugs by the prompt each file is named after."
 }

@@ -36,7 +36,9 @@ const char* const kSfxFiles[] = {
     "ball-roll", "ball-pickup", "dragon-grumble", "dragon-sniff", "dragon-giggle", "leg-kick", "tub-slide", "suds",
     "water-pour", "shake-spray", "egg-heartbeat", "egg-turn", "hatch-first-cry", "rope-tug", "feather-flutter",
     "orb-rattle", "treat-drop", "bowl-clink", "nest-settle", "egg-lay", "coin", "register", "map-open",
-    "travel-whoosh", "trail-depart"};
+    "travel-whoosh", "trail-depart",
+    // sound brief 3: the valley and flying
+    "wingbeat", "takeoff", "landing", "dive-whoosh", "water-skim", "splash-big", "dragon-step-grass"};
 static_assert(sizeof(kSfxFiles) / sizeof(kSfxFiles[0]) == static_cast<int>(Sfx::Count), "one file per Sfx");
 // Stand-ins (D35) for sound brief 2, in Sfx order from BallRoll: what plays until the sound's
 // own file arrives, and how it's retuned. They match what these moments played before.
@@ -53,6 +55,9 @@ constexpr StandIn kStandIns[] = {
     {Sfx::Sparkle, 1.0f, 1.0f},  {Sfx::Confirm, 1.0f, 1.0f}, {Sfx::Purr, 0.9f, 0.8f},    {Sfx::EggKnock, 1.0f, 1.0f},
     {Sfx::Sparkle, 1.0f, 1.0f},  {Sfx::Confirm, 1.0f, 1.0f}, {Sfx::Confirm, 1.0f, 1.0f}, {Sfx::Flap, 1.0f, 1.0f},
     {Sfx::Chirp, 1.2f, 1.0f},
+    // brief 3 (its files arrived with it: these only play if one goes missing)
+    {Sfx::Flap, 0.8f, 1.0f},     {Sfx::Flap, 0.7f, 1.0f},    {Sfx::Thump, 0.8f, 1.0f},   {Sfx::Flap, 1.4f, 0.4f},
+    {Sfx::Splash, 1.2f, 0.6f},   {Sfx::Splash, 0.7f, 1.0f},  {Sfx::Step, 1.0f, 1.0f},
 };
 static_assert(sizeof(kStandIns) / sizeof(kStandIns[0]) == static_cast<int>(Sfx::Count) - kFirstBrief2,
               "a stand-in for every brief 2 sound");
@@ -63,9 +68,10 @@ struct Tone {
     float gain;
     float lowpassHz;  // 0: as recorded
 };
-constexpr Tone kTones[] = {{Sfx::Step, 0.3f, 650.0f}};
-const char* const kBedFiles[] = {"amb-hearth", "amb-night", "egg-hum", "amb-market"};
-const float kBedGain[] = {0.55f, 0.5f, 0.6f, 0.45f};  // under the music and the voices
+constexpr Tone kTones[] = {{Sfx::Step, 0.3f, 650.0f}, {Sfx::DragonStep, 0.55f, 0.0f}};
+const char* const kBedFiles[] = {"amb-hearth", "amb-night", "egg-hum", "amb-market", "amb-wind-high", "amb-meadow",
+                                 "amb-valley-night", "amb-lake", "wing-flutter"};
+const float kBedGain[] = {0.55f, 0.5f, 0.6f, 0.45f, 0.5f, 0.42f, 0.45f, 0.45f, 0.35f};  // under the music and the voices
 static_assert(sizeof(kBedFiles) / sizeof(kBedFiles[0]) == static_cast<int>(Bed::Count), "one file per Bed");
 
 struct Stream {

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Turn the generated sound effects into the game's small WAVs: romfs/sfx/<slug>[-N].wav.
 
-  python tools/audio/process_sfx.py --import C:/Users/me/Downloads/batch   (copy + rename the takes)
+  python tools/audio/process_sfx.py --import C:/Users/me/Downloads/batch [slug ...]   (copy + rename the takes)
   python tools/audio/process_sfx.py                                         (process every slug)
   python tools/audio/process_sfx.py dragon-chirp ui-tap                     (just these)
 
@@ -187,8 +187,8 @@ def main() -> None:
     ap.add_argument("--import", dest="import_dir", type=Path, help="copy the manifest's takes from this folder first")
     args = ap.parse_args()
     slugs = manifest()
-    if args.import_dir:
-        import_takes(args.import_dir, slugs)
+    if args.import_dir:  # just the named slugs' takes, if any are named (a batch's own folder)
+        import_takes(args.import_dir, {k: v for k, v in slugs.items() if not args.slugs or k in args.slugs})
     wanted = args.slugs or list(slugs)
     unknown = [s for s in wanted if s not in slugs]
     if unknown:

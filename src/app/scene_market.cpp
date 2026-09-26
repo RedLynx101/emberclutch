@@ -34,7 +34,7 @@ Dragon todaysEgg(const App& app) {
 }
 
 void update(App& app, const Input& in) {
-    audio::setBed(audio::Bed::Market, 1.0f);  // the stalls' murmur (silent until amb-market arrives)
+    audio::setBed(audio::Bed::Market, 1.0f);  // the stalls' murmur
     app.simAccum += app.dt;
     if (app.simAccum >= 1.0f) {
         tickWorld(app);

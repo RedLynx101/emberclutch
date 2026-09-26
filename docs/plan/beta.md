@@ -283,6 +283,13 @@ each suiting certain kinds). Parked until the 1.0 polish: the Blazeplume HOME Me
   freedom and shown together, not waited on.
 - **Banner labs:** a batch of four with the Beta build, one change from X each.
 
+### Beta 1's feel and the Market (D86)
+- Spaced between a cozy life-sim's town and a 3DS-era top-down adventure's field: something
+  always in sight, room to run, glide and fly; beautiful, cute, fun to explore and get round.
+- The Market's egg of the day on its stand in 3D, gone once bought; a daily stall of a few
+  den things and tools you don't have yet (random each day), each on its own spot, ordinary
+  shop furniture where there's nothing left to sell.
+
 ## Order of work
 1. ✅ **Prove it** (then R7 decided, D75; **the new dragons, WP2b, R11, before step 2**): WP1 (the flyable valley, measured in the emulator) and WP2 (concept
    images for R7) side by side, and the sound briefs of WP15 early so the music can arrive

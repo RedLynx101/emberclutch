@@ -1,0 +1,96 @@
+# Beta WP8/WP10: walking up to the arena's board (its prompt, Wren's first hello, the picker), then
+# the Lantern Trial's breath for several kinds (each its element's own: flame, spores, stone's
+# sandy gust, a gust, mist...), each caught at its first breath.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+key X
+wait 4
+travel 6
+wait 2
+pad 1 0.15 1.6
+wait 0.8
+shot b00-board-prompt
+key A
+wait 1.5
+shot b01-wren-hello
+key A
+wait 0.6
+key A
+wait 0.6
+key A
+wait 0.6
+key A
+wait 1
+shot b02-picker
+key B
+wait 2
+autoplay on
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+challenge 2 1
+wait 4.3
+shot b03-breath-kind1
+key X
+wait 1
+key B
+wait 2
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+challenge 2 1
+wait 4.3
+shot b04-breath-kind2
+key X
+wait 1
+key B
+wait 2
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+challenge 2 1
+wait 4.3
+shot b05-breath-kind3
+key X
+wait 1
+key B
+wait 2
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+challenge 2 1
+wait 4.3
+shot b06-breath-kind4
+key X
+wait 1
+key B
+wait 2
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.3
+key SELECT
+challenge 2 1
+wait 4.3
+shot b07-breath-kind5
+quit

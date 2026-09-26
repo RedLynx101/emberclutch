@@ -470,7 +470,7 @@ Outcome trialOutcome(const Trial& t) {
 
 // ------------------------------------------------------------------------------ Fruit Catch
 FruitSetup fruitSetup(int cup, bool young) {
-    static constexpr int kGrown[kCups] = {500, 900, 1300, 1700}, kYoung[kCups] = {450, 750, 1050, 1350};
+    static constexpr int kGrown[kCups] = {600, 1100, 1600, 2100}, kYoung[kCups] = {450, 800, 1200, 1500};
     const int k = validCup(cup) ? cup - 1 : 0;
     const int goal = young ? kYoung[k] : kGrown[k];
     return {8, goal, goal * 7 / 10};

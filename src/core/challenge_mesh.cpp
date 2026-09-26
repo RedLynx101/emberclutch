@@ -192,7 +192,7 @@ PropMesh ringMesh() {
     Shaper b{m};
     b.emit = 0;
     // The band: its inner half glows (slot 1), its outer half is the ring's colour.
-    b.torus({0, 0, 0}, {0, 1, 0}, 1.0f, 0.1f, 22, 6, [](float out) -> u8 { return out < -0.2f ? 1 : 0; });
+    b.torus({0, 0, 0}, {0, 1, 0}, 1.0f, 0.1f, 18, 5, [](float out) -> u8 { return out < -0.2f ? 1 : 0; });
     for (std::size_t v = 0; v < m.paint.size(); v += 4)
         if (m.paint[v] == 1) m.paint[v + 3] = 255;
     b.slot = 2;  // four little stars round it

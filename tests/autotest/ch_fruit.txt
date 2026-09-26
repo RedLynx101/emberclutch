@@ -40,6 +40,10 @@ wait 8
 shot f08-later
 wait 10
 shot f09-later2
-wait 14
-shot f10-results
+wait 12
+shot f10-later3
+wait 12
+shot f11-results
+wait 1.5
+shot f12-results2
 quit

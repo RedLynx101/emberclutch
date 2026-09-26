@@ -56,6 +56,13 @@ wait 3
 shot r10-results
 wait 3
 shot r11-results2
+key A
+wait 9
+shot r11b-ghost
+wait 6
+shot r11c-ghost2
+key X
+wait 1
 cups 3 0 0
 challenge 0 4
 wait 4

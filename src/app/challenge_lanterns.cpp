@@ -112,7 +112,8 @@ void begin(App& app, Set& s) {
     s.hostShown = true;
     s.hostAt = stage::onGround(s, {2.8f, -16.2f}, 1.0f);  // on the festival stage
     s.hostHeading = stage::worldHeading(s, 0);
-    s.wantEye = stage::onGround(s, {0.9f, 9.6f}, 4.3f);
+    const float big = stage::dragonSize(s);  // a big dragon on the star: the camera looks over it
+    s.wantEye = stage::onGround(s, {0.9f, 8.6f + 2.6f * big}, 3.0f + 3.4f * big);
     s.wantTarget = stage::onGround(s, {0.0f, -2.6f}, 1.4f);
     s.snapCam = true;
     stage::playDragon(s, ClipId::Idle);

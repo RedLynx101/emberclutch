@@ -308,8 +308,8 @@ void update(App& app, Set& s, const Input& in) {
         s.snapCam = true;  // (the chase camera eases itself)
     } else {  // the flourish: the camera comes round beside it, the dragon high in the picture (the card's below)
         const Vec3 f = r.flight.forward(), side{-f.y, f.x, 0};
-        s.wantEye = r.flight.pos + side * 8.0f - f * 1.0f + Vec3{0, 0, 1.6f};
-        s.wantTarget = r.flight.pos + f * 1.5f + Vec3{0, 0, -1.4f};
+        s.wantEye = r.flight.pos + side * 13.0f - f * 2.0f + Vec3{0, 0, 1.0f};
+        s.wantTarget = r.flight.pos + f * 1.5f + Vec3{0, 0, -3.0f};
     }
     // The wind high up, and the wings in a glide.
     const float surface = std::fmax(va.heightAt(r.flight.pos.x, r.flight.pos.y), va.water);
@@ -334,9 +334,9 @@ void scene(App& app, Set& s) {
         p.look.glow *= glow;
         stage::addProp(s, p);
     };
-    // The next four, the next one gold; the one just flown through glowing out.
+    // The next three, the next one gold; the one just flown through glowing out.
     const int from = r.endT >= 0 ? n : r.run.next;
-    for (int k = from; k < n && k < from + 4; ++k) ring(k, 1.0f - 0.2f * (k - from), k == from);
+    for (int k = from; k < n && k < from + 3; ++k) ring(k, 1.0f - 0.25f * (k - from), k == from);
     if (r.flash > 0 && r.flashRing >= 0 && r.flashRing < n) {
         const challenge::Ring& g = r.course.rings[r.flashRing];
         if (length(s.eye - g.at) > g.radius * 2.2f) {

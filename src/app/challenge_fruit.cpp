@@ -67,7 +67,7 @@ void nextThrow(Set& s, Play& p) {
     p.fruitShown = p.inMouth = false;
     s.dragonAt = p.home;
     s.dragonHeading = p.homeHeading;
-    stage::playDragon(s, ClipId::Idle, 0.3f);
+    stage::playDragon(s, ClipId::PlayBow, 0.3f, true);  // "throw it!"
     if (p.fruit == challenge::Fruit::Golden) stage::popup(s, str::kGoldenNext, theme::kClutchGold);
 }
 
@@ -207,6 +207,8 @@ void update(App& app, Set& s, const Input& in) {
                     if (c.style == challenge::Style::Dive || c.style == challenge::Style::SkyLeap) audio::playSfx(audio::Sfx::Giggle, 1.1f, 0.6f);
                     stage::burst(s, Fx::Sparkle, c.at, golden ? 10 : 6, 1.4f);
                     stage::playPerson(s.hostFig, "cheer", 1.0f, 0.2f, true);
+                    if (c.style == challenge::Style::Dive || c.style == challenge::Style::SkyLeap || c.style == challenge::Style::Tumble)
+                        stage::playPerson(s.you, "cheer", 1.0f, 0.2f, true);
                 }
             }
             break;

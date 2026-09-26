@@ -10,6 +10,7 @@
 #include <cstring>
 
 #include "app/audio.hpp"
+#include "app/autotest.hpp"
 #include "app/challenge_stage.hpp"
 #include "app/dialogue.hpp"
 #include "app/render3d.hpp"
@@ -184,6 +185,11 @@ void showResults(App& app) {
     else if (s.outcome == challenge::Outcome::Placed) stinger = "results-placed";
     audio::playStinger(stinger);
     const bool crowd = s.place == kPlaceArena;
+    if (!s.riding && s.outcome != challenge::Outcome::TryAgain) {  // on the ground: a happy wag, you cheer
+        stage::playDragon(s, ClipId::TailWag, 0.25f, true);
+        stage::playPerson(s.you, "cheer", 1.0f, 0.2f, true);
+        stage::burst(s, Fx::Heart, stage::mouthOf(s) + Vec3{0, 0, 0.5f}, s.outcome == challenge::Outcome::Won ? 4 : 2);
+    }
     if (s.outcome == challenge::Outcome::Won) {
         audio::playSfx(crowd ? audio::Sfx::CrowdCheer : audio::Sfx::Giggle);
         audio::playSfx(audio::Sfx::Coin, 1.0f, 0.7f);
@@ -430,11 +436,18 @@ void update(App& app, const Input& in) {
     } else {  // results
         c.resultsT += app.dt;
         s.t += app.dt;
+        if (!s.riding && stage::dragonClipDone(s)) stage::playDragon(s, ClipId::Idle, 0.3f);
+        if (stage::personClipDone(s.you)) stage::playPerson(s.you, "idle", 1.0f, 0.3f);
         if (c.autoplay && c.resultsT > 6.0f) backToPicker(app);
         if (c.resultsT > 1.0f && (in.down & KEY_A)) startCup(app);
         if (c.resultsT > 1.0f && (in.down & KEY_B)) backToPicker(app);
     }
-    // The world goes on round it: people blink and breathe, the effects drift, the camera eases.
+    // The world goes on round it: the meadow (and at the arena the crowd's murmur, the village bed),
+    // people blink and breathe, the effects drift, the camera eases.
+    if (!s.riding) {
+        audio::setBed(audio::Bed::Meadow, 0.5f);
+        if (s.place == kPlaceArena) audio::setBed(audio::Bed::Village, 0.35f);
+    }
     s.fx.update(app.dt);
     s.breath.update(app.dt);
     if (s.popupT > 0) s.popupT -= app.dt;
@@ -491,6 +504,10 @@ void drawTop(App& app) {
         }
     }
     drawStage(app, s);
+    if (autotest::shooting())  // (scripted runs: the top screen's load behind each picture)
+        autotest::log("challenge %d cup %d phase %d: %lu triangles, %lu draws, %d props", static_cast<int>(s.pick), s.cup,
+                      static_cast<int>(c.phase), static_cast<unsigned long>(app.stats.tris),
+                      static_cast<unsigned long>(app.stats.draws), s.propCount);
     if (c.phase == Phase::Play || c.phase == Phase::Results) {
         switch (s.pick) {
             case Challenge::SkyRings: rings::hud(app, s); break;

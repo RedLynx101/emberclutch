@@ -266,6 +266,23 @@ in it: the tails in the wind (D84) and 3D in the valley (WP5); brushes of differ
 the rebuilt shops (D83: soft, bristle, a comb for feathered kinds, a buffer for scaly ones,
 each suiting certain kinds). Parked until the 1.0 polish: the Blazeplume HOME Menu banner.
 
+### Run 18's notes and the last answers (D85)
+- **The care tray, six places:** Care (a pop-up: hand, brush, sponge), Food, Toys (pop-up),
+  **Outing** (travel partner, into the valley together, call it home), **Journal** (quest log,
+  what you know of this dragon, finds and places, the Dragondex), **Den** (customisation).
+- **Cameras:** a free-fly camera in the valley; the circle pad nudges fixed views (the den and
+  the other places) about 30 degrees, easing back when let go.
+- **The den more alive:** dragons fly in it a little, classy, cute and careful: hatchlings
+  flutter-hop, youngsters glide down from ledges, grown dragons take short flights up to a
+  perch or round the sunbeam; and more small life about the room.
+- **Fixes carried in:** the close-up's mouth edges (a grown Blazeplume petted), the Flurrytail
+  hatchling's texture seam, the grass step a little louder, a loader thread for kinds (a
+  piece read from the card takes 0.3-2.3 s on the 3DS), the den's frame time with three big
+  kinds (20-26 ms: back under 16.7), the title's "Alpha 2 in development" line.
+- **Reviews:** one big review at the end (D85): R8, R9, R10 and R12 are made with creative
+  freedom and shown together, not waited on.
+- **Banner labs:** a batch of four with the Beta build, one change from X each.
+
 ## Order of work
 1. ✅ **Prove it** (then R7 decided, D75; **the new dragons, WP2b, R11, before step 2**): WP1 (the flyable valley, measured in the emulator) and WP2 (concept
    images for R7) side by side, and the sound briefs of WP15 early so the music can arrive

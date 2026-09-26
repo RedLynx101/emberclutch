@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-26 — Run 18, and the go for Beta 1
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D85 | **Run 18's notes and the last answers before Beta 1.** (1) **The care tray, six places:** **Care** (a pop-up like the toys': the hand, the brush, the sponge: every touch on the dragon), **Food**, **Toys** (pop-up), **Outing** (make this dragon your travel partner and head into the valley with it, or call it home: D81), **Journal** (the Lantern Festival's quest log, what you've found out about this dragon, your finds and places, the Dragondex) and **Den** (customise the den: move and place decor, rugs, nests, the banner). (2) **Cameras:** a free-fly camera in the valley; in fixed-view places like the den the circle pad swings and tilts the view about 30 degrees while held and it eases back when let go. (3) **The den more alive:** dragons fly in it a little (a hatchling's flutter-hop, a youngster's glide down from a ledge, a grown dragon's short flight up to a perch or round the sunbeam; classy, cute, careful), and more going on. (4) **Fixes:** mouths still see-through at the edges in the close-up (a grown Blazeplume petted); the Flurrytail hatchling's texture seam down its middle; the grass step a little louder; kinds read from the card on a thread of their own (a piece takes 0.3-2.3 s on the 3DS); the den with three big kinds over budget (20-26 ms). (5) **One big review at the end of Beta:** the gates partway (R8 the valley's layout, R9 the player character, R10 the campaign outline, R12 the crossbreeds' concepts) no longer stop the work: I make the calls with creative freedom and everything comes to Noah together, with a new run list and the 3DS updated. (6) **Banner labs:** a batch of four with the Beta build, each changing one thing from X | Noah (2026-09-26): run 18's notes; "I want journal and outing. SO make that happen cleanly somehow"; reviews "All in one big review"; den camera "Nudge and spring back"; banner labs "A batch of four"; "make Beta 1 with creative freedom" | Approved |
+
 ## 2026-09-26 — Run 17: grooming, the Dragondex's typing, the big update
 
 | # | Decision | Why | Status |

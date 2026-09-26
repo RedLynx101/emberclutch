@@ -359,3 +359,22 @@ In **FBI**: SD → cias → `emberclutch.cia` → Install CIA, over the game (th
 - How the grooming feels (the turning, the brush against the hand, the bath).
 - Any see-through mouths or clipping wings left.
 - Whether the den froze again.
+
+## Results (2026-09-26)
+All 10 steps done. Noah's notes (D85), with the 3DS's screenshots 85-91 and its hitch log
+(`build/run18`, not in git):
+- **Mouths:** a grown Blazeplume still shows empty space at the edges of its mouth while it's
+  petted; still see-through on the bottom screen (the close-up looks up at the face).
+- **The Flurrytail hatchling** has an obvious rift in its texture down the middle.
+- **The grass step** is good but now a little too quiet.
+- **The tray:** the brush goes under the hand's button as a pop-up, as the toys do (the hand
+  and the brush do the same job now), which frees two places: one for the **Den** (den
+  customisation) and one more that suits the game's plans.
+- **Cameras:** a free-fly camera in the open world; in places like the den, let the player
+  turn the view a little (each place keeps one fixed view, with or without your character).
+- **The den:** dragons fly in it a little (classy, cute, careful), and it's a little more alive.
+- **The hitch log:** no stall in the den this time (saving on its own thread). The title
+  screen stuttered while the save's kinds loaded ahead: one piece of a kind takes 0.3-0.9 s to
+  read on the 3DS (once 2.3 s), so the run 17 stall was most likely a kind read on the spot.
+  One 0.56 s frame in the valley with nothing marked. The den ran 20-26 ms with three grown
+  Blazeplume-sized kinds (shots 90-91): over the 16.7 ms budget.

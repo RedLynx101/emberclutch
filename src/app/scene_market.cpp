@@ -23,8 +23,6 @@ namespace {
 u32 col(u8 r, u8 g, u8 b, float a = 1.0f) { return withAlpha(theme::rgba(r, g, b), a); }
 
 enum Tab : u8 { kFood, kGoods, kSell, kEgg, kTabs };
-constexpr int kGoodsPerPage = 10;
-constexpr int kGoodsPages = (kItems + kGoodsPerPage - 1) / kGoodsPerPage;
 
 // Today's egg as a dragon record (for drawing it; nothing is saved).
 Dragon todaysEgg(const App& app) {
@@ -65,8 +63,10 @@ void drawTop(App& app) {
     for (int i = 0; i < 21; ++i)
         C2D_DrawTriangle(i * 20.0f - 4, 70, col(245, 196, 81), i * 20.0f + 12, 70, col(245, 196, 81), i * 20.0f + 4, 84,
                          i % 2 ? col(63, 167, 168) : col(232, 102, 43), 0);
-    if (app.marketTab == kGoods) {  // the thing picked, on the middle stall
-        const Item it = static_cast<Item>(app.goodsPick);
+    Item today[kStallSpots];
+    stallToday(app.game, dayIndex(nowLocal(app)), today);
+    if (app.marketTab == kGoods && app.goodsPick < kStallSpots && today[app.goodsPick] != Item::Count) {  // on the stall
+        const Item it = today[app.goodsPick];
         const ItemInfo& info = itemInfo(it);
         C2D_DrawEllipseSolid(160, 150, 0, 80, 14, col(120, 84, 56, 0.35f));
         care::drawItem(it, 200, 118 + 3 * std::sin(app.t * 1.6f), 1.2f);
@@ -112,67 +112,54 @@ void foodTab(App& app, const Input& in) {
     textCentered(app, str::kTapToBuy, 160, 192, 0.4f, withAlpha(theme::kShell, 0.75f), 300);
 }
 
-// Things to keep (WP7): toys, grooming things, warm stones and decor, a page at a time. Tap
-// one to see it on the stall; then buy it, or put it up in the den (or take it down).
+// Today's goods stall (D86), in the way of a cozy life-sim's shop: four things you don't have
+// yet, a new pick each day; tap one to see it on the stall, then buy it (it goes to the den, or
+// into the chest: the Den page in the tray puts decor up). A spot sold today stays empty.
 void goodsTab(App& app, const Input& in) {
     SaveData& s = app.game;
-    for (int k = 0; k < kGoodsPerPage; ++k) {
-        const int i = app.goodsPage * kGoodsPerPage + k;
-        if (i >= kItems) break;
-        const Item it = static_cast<Item>(i);
-        const Rect r{8.0f + (k % 5) * 61.0f, 42.0f + (k / 5) * 66.0f, 57, 62};
-        const bool picked = app.goodsPick == i;
+    const s32 day = dayIndex(nowLocal(app));
+    Item today[kStallSpots];
+    stallToday(s, day, today);
+    if (app.goodsPick >= kStallSpots) app.goodsPick = 0;
+    for (int k = 0; k < kStallSpots; ++k) {
+        const Rect r{8.0f + k * 77.0f, 42.0f, 73, 120};
+        const bool picked = app.goodsPick == k;
         panel(r, picked ? withAlpha(theme::kClutchGold, 0.5f) : withAlpha(theme::kShell, 0.18f));
-        care::drawItem(it, r.x + r.w / 2, r.y + 24, 0.62f);
-        char line[32];
-        if (owns(s, it)) std::snprintf(line, sizeof(line), "%s", isUp(s, it) || i < kToys ? str::kInTheDen : str::kYours);
-        else std::snprintf(line, sizeof(line), str::kPrice, static_cast<unsigned long>(itemInfo(it).price));
-        textCentered(app, line, r.x + r.w / 2, r.y + 52, 0.32f, owns(s, it) ? theme::kShell : theme::kClutchGold, r.w - 4);
+        if (today[k] == Item::Count) {  // sold today (or nothing left for you): the stall's bare shelf
+            textCentered(app, str::kStallEmpty, r.x + r.w / 2, r.y + 50, 0.4f, withAlpha(theme::kShell, 0.55f), r.w - 6);
+        } else {
+            const ItemInfo& info = itemInfo(today[k]);
+            care::drawItem(today[k], r.x + r.w / 2, r.y + 36, 0.8f);
+            textCentered(app, info.name, r.x + r.w / 2, r.y + 76, 0.38f, theme::kShell, r.w - 6);
+            char price[24];
+            std::snprintf(price, sizeof(price), str::kPrice, static_cast<unsigned long>(info.price));
+            textCentered(app, price, r.x + r.w / 2, r.y + 96, 0.4f, theme::kClutchGold, r.w - 6);
+        }
         if (in.released && r.contains(in.rx, in.ry) && !picked) {
-            app.goodsPick = static_cast<u8>(i);
+            app.goodsPick = static_cast<u8>(k);
             audio::playSfx(audio::Sfx::Tap);
         }
     }
-    // What can be done with the one picked.
-    const Item it = static_cast<Item>(app.goodsPick);
-    const ItemInfo& info = itemInfo(it);
-    const bool decor = decorSpot(info.kind) >= 0;
-    const Rect act{90, 176, 140, 24};
-    char label[32];
-    if (!owns(s, it)) {
-        std::snprintf(label, sizeof(label), str::kBuyFor, static_cast<unsigned long>(info.price));
+    const int k = app.goodsPick;
+    const Rect act{90, 172, 140, 26};
+    if (today[k] != Item::Count) {
+        char label[32];
+        std::snprintf(label, sizeof(label), str::kBuyFor, static_cast<unsigned long>(itemInfo(today[k]).price));
         if (button(app, act, label, in)) {
-            if (buyItem(s, it)) {
+            const Item it = today[k];
+            if (buyFromStall(s, day, k)) {
                 audio::playSfx(audio::Sfx::Register);
-                showToast(app, decor || static_cast<int>(it) < kToys ? str::kBoughtThing : str::kBoughtKeep);
+                showToast(app, decorSpot(itemInfo(it).kind) >= 0 || static_cast<int>(it) < kToys ? str::kBoughtThing
+                                                                                                    : str::kBoughtKeep);
                 saveNow(app);
             } else {
                 audio::playSfx(audio::Sfx::Error);
                 showToast(app, str::kNotEnoughGleam);
             }
         }
-    } else if (decor && !isUp(s, it)) {
-        if (button(app, act, str::kPutUp, in)) {
-            putUp(s, it);
-            audio::playSfx(audio::Sfx::Confirm);
-            showToast(app, str::kUpInDen);
-            saveNow(app);
-        }
-    } else if (decor) {
-        if (button(app, act, str::kTakeDown, in)) {
-            takeDown(s, decorSpot(info.kind));
-            audio::playSfx(audio::Sfx::Back);
-            showToast(app, str::kBackInChest);
-            saveNow(app);
-        }
     } else {
-        textCentered(app, static_cast<int>(it) < kToys ? str::kInTheDen : str::kYours, 160, 188, 0.45f,
-                     withAlpha(theme::kShell, 0.8f), 200);
+        textCentered(app, str::kStallTomorrow, 160, 185, 0.42f, withAlpha(theme::kShell, 0.8f), 220);
     }
-    // The stall's pages.
-    if (app.goodsPage > 0 && button(app, {8, 176, 40, 24}, "<", in)) app.goodsPage = static_cast<u8>(app.goodsPage - 1);
-    if (app.goodsPage + 1 < kGoodsPages && button(app, {272, 176, 40, 24}, ">", in))
-        app.goodsPage = static_cast<u8>(app.goodsPage + 1);
 }
 
 void sellTab(App& app, const Input& in) {

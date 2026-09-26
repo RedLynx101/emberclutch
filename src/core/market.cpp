@@ -79,4 +79,39 @@ int buyDailyEgg(SaveData& s, s64 now) {
     return s.dragonCount++;
 }
 
+void stallToday(SaveData& s, s32 day, Item out[kStallSpots]) {
+    WorldState& w = s.world;
+    if (w.stallDay != day) {  // a new day: four things you don't have, at random
+        Rng rng(static_cast<std::uint64_t>(static_cast<u32>(day)) * 0xD1B54A32D192ED03ull +
+                (s.dragonCount ? s.dragons[0].id : 7) + 0x57A11u);
+        Item pool[kItems];
+        int n = 0;
+        for (int i = 0; i < kItems; ++i)
+            if (!owns(s, static_cast<Item>(i))) pool[n++] = static_cast<Item>(i);
+        for (int k = 0; k < kStallSpots; ++k) {
+            if (n == 0) {
+                w.stall[k] = 0xFF;
+                continue;
+            }
+            const int pick = static_cast<int>(rng.below(static_cast<u32>(n)));
+            w.stall[k] = static_cast<u8>(pool[pick]);
+            pool[pick] = pool[--n];
+        }
+        w.stallDay = day;
+    }
+    for (int k = 0; k < kStallSpots; ++k) {
+        const u8 v = w.stall[k];
+        out[k] = v < kItems && !owns(s, static_cast<Item>(v)) ? static_cast<Item>(v) : Item::Count;
+    }
+}
+
+bool buyFromStall(SaveData& s, s32 day, int spot) {
+    Item today[kStallSpots];
+    stallToday(s, day, today);
+    if (spot < 0 || spot >= kStallSpots || today[spot] == Item::Count) return false;
+    if (!buyItem(s, today[spot])) return false;
+    s.world.stall[spot] = 0xFF;  // sold: the spot stays empty till tomorrow
+    return true;
+}
+
 }  // namespace ec

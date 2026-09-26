@@ -315,6 +315,8 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
         for (u8 c : ws.cups) w.u8v(c);
         w.u32v(ws.flags);
         w.u16v(ws.ribbons);
+        w.s32v(ws.stallDay);
+        for (u8 k : ws.stall) w.u8v(k);
         w.patchU8(sizeAt, static_cast<u8>(w.pos() - from));
     }
     w.patchU16(at, static_cast<u16>(w.pos() - start));
@@ -474,6 +476,10 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
         if (has(6)) {
             ws.flags = r.u32v();
             ws.ribbons = r.u16v();
+        }
+        if (has(4 + kStallSpots)) {
+            ws.stallDay = r.s32v();
+            for (u8& k : ws.stall) k = r.u8v();
         }
         r.seek(from + n);
     }

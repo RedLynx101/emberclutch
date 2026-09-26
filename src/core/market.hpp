@@ -4,6 +4,7 @@
 #pragma once
 
 #include "core/care.hpp"
+#include "core/items.hpp"
 #include "core/save.hpp"
 #include "core/wanderings.hpp"
 
@@ -35,5 +36,14 @@ DailyEgg dailyEgg(const SaveData& s, s32 day);
 // Buys it (once a day) into a free nest, else the Cold Vault. Returns its index, or -1 (not
 // enough Gleam, already bought today, the Vault is full).
 int buyDailyEgg(SaveData& s, s64 now);
+
+// Today's goods stall (D86), in the way of a cozy life-sim's shop: four spots, each a thing you
+// don't have yet (toys, grooming, the nests' stones, decor), a fresh random pick each day, kept
+// in the save once picked so a thing bought leaves its spot empty till tomorrow. Item::Count:
+// nothing there (plain shop furniture stands in its place).
+void stallToday(SaveData& s, s32 day, Item out[kStallSpots]);
+// Buys what's on a spot (core/items buyItem); the spot is empty after. False: nothing there,
+// or not enough Gleam.
+bool buyFromStall(SaveData& s, s32 day, int spot);
 
 }  // namespace ec

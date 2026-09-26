@@ -81,6 +81,8 @@ inline constexpr const char* kDecorNone = "(bare)";
 inline constexpr const char* kDenHint = "New things turn up at the Market's stall each day.";
 // The valley (Beta)
 inline constexpr const char* kFoundPlace = "Found: %s";
+inline constexpr const char* kStallEmpty = "Sold for today";
+inline constexpr const char* kStallTomorrow = "New things on the stall tomorrow.";
 inline constexpr const char* kLanternLit = "This lantern is burning bright.";
 inline constexpr const char* kLanternFestival = "The great lantern waits for the festival night.";
 inline constexpr const char* kPartnerCame = "%s came running!";

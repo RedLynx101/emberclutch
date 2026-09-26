@@ -6,6 +6,8 @@
 
 #include "check.hpp"
 #include "core/campaign.hpp"
+#include "core/items.hpp"
+#include "core/market.hpp"
 #include "core/save.hpp"
 #include "core/valley.hpp"
 #include "core/world.hpp"
@@ -93,8 +95,33 @@ TEST(the_world_saves) {
     CHECK(out.world.quest[2] == 2 && out.world.cups[1] == 3 && out.world.flags == s.world.flags && out.world.ribbons == 5);
 }
 
+// The Market's goods stall (D86): four different things you don't have, the same all day; one
+// bought leaves its spot empty till tomorrow; a new day, a new pick; nothing left, nothing shown.
+TEST(the_goods_stall) {
+    static SaveData s;
+    s = SaveData{};
+    s.gleam = 100000;
+    Item a[kStallSpots], b[kStallSpots];
+    stallToday(s, 100, a);
+    stallToday(s, 100, b);
+    for (int k = 0; k < kStallSpots; ++k) {
+        CHECK(a[k] != Item::Count && a[k] == b[k] && !owns(s, a[k]));
+        for (int j = 0; j < k; ++j) CHECK(a[j] != a[k]);
+    }
+    CHECK(buyFromStall(s, 100, 2) && owns(s, a[2]));
+    stallToday(s, 100, b);
+    CHECK(b[2] == Item::Count && b[0] == a[0] && b[1] == a[1] && b[3] == a[3]);
+    CHECK(!buyFromStall(s, 100, 2));
+    stallToday(s, 101, b);  // tomorrow: four again, none of them the one bought
+    for (int k = 0; k < kStallSpots; ++k) CHECK(b[k] != Item::Count && b[k] != a[2]);
+    for (int i = 0; i < kItems; ++i) buyItem(s, static_cast<Item>(i));
+    stallToday(s, 102, b);
+    for (int k = 0; k < kStallSpots; ++k) CHECK(b[k] == Item::Count);
+}
+
 void runWorldTests() {
     RUN(places_and_lanterns);
     RUN(the_lantern_festival);
     RUN(the_world_saves);
+    RUN(the_goods_stall);
 }

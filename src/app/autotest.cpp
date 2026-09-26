@@ -24,7 +24,7 @@ namespace {
 constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
-enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View, Creator, Wander, Festival, Quit };
+enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View, Creator, Wander, Festival, Goto, Quit };
 
 struct Cmd {
     Op op = Op::Wait;
@@ -110,6 +110,7 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "creator") { c.op = Op::Creator; }
     else if (w == "wander") { c.op = Op::Wander; nums(1); }
     else if (w == "festival") { c.op = Op::Festival; }
+    else if (w == "goto") { c.op = Op::Goto; nums(2); }
     else if (w == "quit") { c.op = Op::Quit; }
     else return false;
     return true;
@@ -224,6 +225,12 @@ Input next(App& app) {
             case Op::Splash: app.splash = kSplashSeconds; done = true; break;
             case Op::Travel: app.autoTravel = static_cast<int>(c.a[0]); done = true; break;
             case Op::Creator: openCreator(app, app.scene); done = true; break;
+            case Op::Goto:
+                app.autoGoto[0] = c.a[0];
+                app.autoGoto[1] = c.a[1];
+                app.autoGoto[2] = 1;
+                done = true;
+                break;
             case Op::Festival:  // the Lantern Festival's eve: every other quest done, every lantern but the arena's lit
                 for (int q = 0; q < campaign::kQuests - 1; ++q) app.game.world.quest[q] = campaign::kQuestDone;
                 for (int p = 0; p < kPlaceCount; ++p) {

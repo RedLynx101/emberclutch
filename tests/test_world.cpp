@@ -1,6 +1,7 @@
 // Beta's world (core/world) and the Lantern Festival (core/campaign): places found and lanterns
 // lit; the quests follow the world in any order and never stick; the save keeps it all and an
 // older save starts a fresh world with the den found.
+#include <cmath>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -12,6 +13,7 @@
 #include "core/anim.hpp"
 #include "core/model.hpp"
 #include "core/people.hpp"
+#include "core/finds.hpp"
 #include "core/save.hpp"
 #include "core/valley.hpp"
 #include "core/villagers.hpp"
@@ -226,6 +228,58 @@ TEST(the_people) {
     CHECK(personFor(Villager::Child) == Person::Child && personHips(Person::Child) < personHips(Person::PlayerA));
 }
 
+// The finds: each taken once, what it held into the save (an egg into a nest or the Vault),
+// the islands' only from the air; the map's fog clears round you and is saved.
+TEST(finds_and_the_fog) {
+    static Valley v;
+    static bool loaded = false;
+    if (!loaded) {
+        const std::vector<u8> bytes = readAll("../romfs/valley/skyreach.evl");
+        loaded = !bytes.empty() && loadValley(bytes.data(), bytes.size(), v);
+    }
+    CHECK(loaded);
+    if (!loaded) return;
+    static SaveData s;
+    s = SaveData{};
+    world::startWorld(s);
+    s.dragons[0] = Dragon{};
+    s.dragons[0].id = 1;
+    s.dragonCount = 1;
+    s.nextId = 2;
+    Rng rng(5);
+    int eggs = 0, air = 0;
+    for (int i = 0; i < kFindSpots; ++i) {
+        const FindSpot& f = findSpot(i);
+        CHECK(f.gleam > 0 || f.trinket >= 0 || f.egg);  // every spot holds something
+        const Vec3 at = findAt(v, i);
+        CHECK(std::isfinite(at.z) && at.z > v.water - 1);
+        air += f.fromAir;
+        if (!f.fromAir) CHECK(v.heightAt(at.x, at.y) > v.water + 0.3f);  // walked to: on dry land
+        if (f.island >= 0) CHECK(findNear(s, v, at + Vec3{0, 0, 30}, true) < 0);  // not from far above
+        CHECK(findNear(s, v, at, f.fromAir) == i);
+        const u32 gleam = s.gleam;
+        const FindReward r = takeFind(s, i, 0, rng);
+        CHECK(findDone(s, i) && findNear(s, v, at, true) != i);
+        CHECK(r.gleam == 0 || s.gleam == gleam + r.gleam);
+        if (r.egg >= 0) {
+            ++eggs;
+            CHECK(s.dragons[r.egg].stage == Stage::Egg && s.dragons[r.egg].origin == Origin::Wild);
+        }
+        CHECK(takeFind(s, i, 0, rng).gleam == 0);  // once
+    }
+    CHECK(eggs == 2 && air == 9);
+    // The fog: clearing round a spot, then saved and read back.
+    CHECK(explore(s, v, {0, 0}, 150) && !explore(s, v, {0, 0}, 150));
+    const float cell = v.size() / kFogCells;
+    const int cx = static_cast<int>((0 - v.x0) / cell), cy = static_cast<int>((0 - v.y0) / cell);
+    CHECK(explored(s, cx, cy) && !explored(s, 0, 0));
+    std::vector<u8> buf(maxEncodedSize());
+    const std::size_t n = encodeSave(s, 1, 0, buf.data(), buf.size());
+    static SaveData back;
+    CHECK(n > 0 && decodeSave(buf.data(), n, back, nullptr) == LoadResult::Ok);
+    CHECK(back.world.finds == s.world.finds && explored(back, cx, cy) && !explored(back, 0, 0));
+}
+
 void runWorldTests() {
     RUN(places_and_lanterns);
     RUN(the_lantern_festival);
@@ -233,4 +287,5 @@ void runWorldTests() {
     RUN(the_goods_stall);
     RUN(the_villagers_talk);
     RUN(the_people);
+    RUN(finds_and_the_fog);
 }

@@ -39,9 +39,11 @@ constexpr int kCups = 4;  // Ember, Flame, Blaze, Starfire
 
 // The world's bytes in the save (after its size byte): look 6, made 1, x y heading 12, in the
 // valley 1, partner 4, places 4, lanterns 4, quests 8, cups 3, flags 4, ribbons 2, the stall's day 4 and
-// its spots 4.
+// its spots 4, the finds 4, the map's fog 128.
 constexpr int kStallSpots = 4;  // the Market's goods stall (D86)
-constexpr int kWorldBytes = kLookParts + 1 + 12 + 1 + 4 + 4 + 4 + 8 + kChallenges + 4 + 2 + 4 + kStallSpots;
+constexpr int kExploredBytes = 128;  // the map's fog: 32 x 32 cells, a bit each (core/finds)
+constexpr int kWorldBytes =
+    kLookParts + 1 + 12 + 1 + 4 + 4 + 4 + 8 + kChallenges + 4 + 2 + 4 + kStallSpots + 4 + kExploredBytes;
 
 struct WorldState {
     u8 look[kLookParts] = {0, 0, 0, 1, 0, 0};
@@ -57,6 +59,8 @@ struct WorldState {
     u16 ribbons = 0;                    // ribbons won (den decor), all cups together
     s32 stallDay = -1000000;            // the day the Market's goods stall was last picked (D86)
     u8 stall[kStallSpots] = {0xFF, 0xFF, 0xFF, 0xFF};  // its spots (core/items Item; 0xFF: nothing)
+    u32 finds = 0;                      // the valley's finds taken, a bit each (core/finds)
+    u8 explored[kExploredBytes] = {};   // the map's fog cleared, a bit a cell (core/finds)
 };
 
 namespace world {

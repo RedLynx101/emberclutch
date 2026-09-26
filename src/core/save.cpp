@@ -257,7 +257,7 @@ u32 crc32(const u8* data, std::size_t size) {
 
 std::size_t maxEncodedSize() {
     // header + player/settings sections (generous) + dragons with room for growth
-    return kSaveHeaderSize + 512 + kMaxDragons * (kDragonRecordV1 + 2 + 64);
+    return kSaveHeaderSize + 1024 + kMaxDragons * (kDragonRecordV1 + 2 + 64);  // (Beta: the world block and its map)
 }
 
 std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std::size_t cap) {
@@ -317,6 +317,8 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
         w.u16v(ws.ribbons);
         w.s32v(ws.stallDay);
         for (u8 k : ws.stall) w.u8v(k);
+        w.u32v(ws.finds);
+        for (u8 k : ws.explored) w.u8v(k);
         w.patchU8(sizeAt, static_cast<u8>(w.pos() - from));
     }
     w.patchU16(at, static_cast<u16>(w.pos() - start));
@@ -480,6 +482,10 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
         if (has(4 + kStallSpots)) {
             ws.stallDay = r.s32v();
             for (u8& k : ws.stall) k = r.u8v();
+        }
+        if (has(4 + kExploredBytes)) {
+            ws.finds = r.u32v();
+            for (u8& k : ws.explored) k = r.u8v();
         }
         r.seek(from + n);
     }

@@ -21,6 +21,7 @@
 #include "core/clock.hpp"
 #include "core/daylight.hpp"
 #include "core/dragondex.hpp"
+#include "core/finds.hpp"
 #include "core/flight.hpp"
 #include "core/genetics.hpp"
 #include "core/kinds.hpp"
@@ -359,6 +360,25 @@ void lookRound(App& app, ValleyScene& s) {
             saveNow(app);
         }
     }
+    // A find within reach (WP7): taken, a chime and what it was.
+    const bool flying = s.mode == Mode::Riding && !s.flight.grounded;
+    const int f = findNear(app.game, s.valley, flying ? s.flight.pos : at, flying);
+    if (f >= 0) {
+        const FindReward r = takeFind(app.game, f, nowLocal(app), app.rng);
+        audio::playSfx(audio::Sfx::FindSparkle);
+        if (r.egg >= 0) {
+            audio::playStinger("place-found");
+            showToast(app, str::kFindEgg);
+        } else if (r.trinket >= 0) {
+            showToastf(app, str::kFindTrinket, trinketName(static_cast<Trinket>(r.trinket)));
+        } else {
+            std::snprintf(app.toastText, sizeof(app.toastText), str::kFindGleam, static_cast<unsigned>(r.gleam));
+            showToast(app, app.toastText);  // (the toast keeps its text's pointer)
+        }
+        saveNow(app);
+    }
+    // The map's fog lifts round you (further seen from the air).
+    explore(app.game, s.valley, {at.x, at.y}, flying ? 170.0f : 110.0f);
 }
 
 void travelTo(App& app, ValleyScene& s, int place, bool outward);
@@ -608,6 +628,16 @@ void update(App& app, const Input& in) {
     animatePeople(app, s);
     animateWanderer(app, s);
     animateStar(app, s);
+    if (app.autoGoto[2] != 0) {  // an autotest's spot
+        app.autoGoto[2] = 0;
+        s.mode = Mode::OnFoot;
+        s.you.pos = {app.autoGoto[0], app.autoGoto[1], s.valley.heightAt(app.autoGoto[0], app.autoGoto[1])};
+        s.you.speed = 0;
+        if (s.partner >= 0) s.pal.call(s.you, s.valley);
+        s.wcam = WalkCamera{};
+        s.wcam.yaw = s.you.heading;
+        s.wcam.update(s.you, 0, s.valley, 0.0f, &s.camWalls);
+    }
     if (app.autoTravel >= 0) {  // an autotest's trip
         world::findPlace(app.game, app.autoTravel);
         travelTo(app, s, app.autoTravel, false);
@@ -789,6 +819,13 @@ void drawTop(App& app) {
     view.fog = sky.horizon;
     view.tint = sky.tint;
     view.lanternsLit = app.game.world.lanternsLit;
+    for (int i = 0; i < kFindSpots && view.glintCount < r3d::kMaxGlints; ++i) {  // the finds not yet taken, near
+        if (findDone(app.game, i)) continue;
+        const Vec3 g = findAt(s.valley, i);
+        if (std::hypot(g.x - view.eye.x, g.y - view.eye.y) < (findSpot(i).fromAir ? 260.0f : 90.0f) ||
+            std::hypot(g.x - s.you.pos.x, g.y - s.you.pos.y) < 90.0f)
+            view.glints[view.glintCount++] = g;
+    }
     if (const int w = wandererIndex(app.game); w >= 0 && s.wanderId == app.game.dragons[w].id) {
         view.wanderer = &app.game.dragons[w];
         view.wandererActor = &s.wanderActor;
@@ -942,6 +979,22 @@ void drawBottom(App& app, const Input& touch) {
     const Valley& va = s.valley;
     if (const C2D_Image* map = r3d::valleyMap(va))
         C2D_DrawImageAt(*map, kMapX, kMapY, 0.5f, nullptr, kMapSize / 128.0f, kMapSize / 128.0f);
+    // The fog over what you haven't seen yet (WP6), in runs along each row.
+    {
+        const float cell = kMapSize / kFogCells;
+        const u32 fog = withAlpha(theme::rgba(236, 228, 214), 0.82f);
+        for (int cy = 0; cy < kFogCells; ++cy)
+            for (int cx = 0; cx < kFogCells;) {
+                if (explored(app.game, cx, cy)) {
+                    ++cx;
+                    continue;
+                }
+                int end = cx;
+                while (end < kFogCells && !explored(app.game, end, cy)) ++end;
+                C2D_DrawRectSolid(kMapX + cx * cell, kMapY + (kFogCells - 1 - cy) * cell, 0.5f, (end - cx) * cell, cell, fog);
+                cx = end;
+            }
+    }
     // The paths, faint; the places found as pins, the rest as a question mark once you've heard of them.
     for (const std::vector<Vec2>& path : va.paths)
         for (std::size_t k = 1; k < path.size(); ++k) {

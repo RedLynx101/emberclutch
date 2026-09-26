@@ -186,6 +186,7 @@ struct PersonView {
     bool seated = false;        // riding: drawn on the flown dragon's seat
 };
 constexpr int kMaxPeopleShown = 8;
+constexpr int kMaxGlints = 8;
 // The people's clip library (romfs:/anims/person.eca), for the scenes to play clips.
 const AnimLibrary* personAnims();
 // A person on their own on the top screen, lit by the time of day (the creator).
@@ -218,6 +219,8 @@ struct ValleyView {
     const DenActor* skyActor = nullptr;
     Vec3 skyAt;
     float skyHeading = 0;
+    Vec3 glints[8];                      // the finds not yet taken, near enough to glint (WP7)
+    int glintCount = 0;
     PersonView people[kMaxPeopleShown];  // you first, then the villagers
     int peopleCount = 0;
 };

@@ -2941,6 +2941,98 @@ void drawLead(App& app, Vec3 hand, Vec3 collar, Vec3 eye) {
     app.stats.draws += 1;
 }
 
+
+// The finds' glints (WP7): a small gold star turning to face you, pulsing, and a soft halo, added
+// over what's behind; rebuilt each frame into one of two buffers.
+struct GlintGpu {
+    Vec3* pos = nullptr;
+    u8* col = nullptr;
+    u16* idx = nullptr;
+};
+GlintGpu g_glint[2];
+int g_glintFlip = 0;
+
+void drawGlints(App& app, const ValleyView& view, const C3D_Mtx& viewM) {
+    if (view.glintCount <= 0) return;
+    constexpr int kPer = 13;  // a star (a middle, 8 rim points: 8 triangles) and its halo (4 corners: 4 triangles)
+    constexpr int n = kMaxGlints * kPer;
+    g_glintFlip ^= 1;
+    GlintGpu& g = g_glint[g_glintFlip];
+    if (!g.pos) {
+        g.pos = static_cast<Vec3*>(linearAlloc(n * sizeof(Vec3)));
+        g.col = static_cast<u8*>(linearAlloc(n * 4));
+        g.idx = static_cast<u16*>(linearAlloc(kMaxGlints * 36 * sizeof(u16)));
+        if (!g.pos || !g.col || !g.idx) {
+            if (g.pos) linearFree(g.pos);
+            if (g.col) linearFree(g.col);
+            if (g.idx) linearFree(g.idx);
+            g = GlintGpu{};
+            return;
+        }
+        for (int k = 0; k < kMaxGlints; ++k) {
+            u16* q = g.idx + k * 36;
+            const u16 b = static_cast<u16>(k * kPer);
+            for (int t = 0; t < 8; ++t) {  // the star round its middle
+                q[t * 3] = b;
+                q[t * 3 + 1] = static_cast<u16>(b + 1 + t);
+                q[t * 3 + 2] = static_cast<u16>(b + 1 + (t + 1) % 8);
+            }
+            for (int t = 0; t < 4; ++t) {  // the halo round it too
+                q[24 + t * 3] = b;
+                q[24 + t * 3 + 1] = static_cast<u16>(b + 9 + t);
+                q[24 + t * 3 + 2] = static_cast<u16>(b + 9 + (t + 1) % 4);
+            }
+        }
+        GSPGPU_FlushDataCache(g.idx, kMaxGlints * 36 * sizeof(u16));
+    }
+    // The view's right and up (the rows of the view matrix).
+    const Vec3 right{viewM.r[0].x, viewM.r[0].y, viewM.r[0].z}, up{viewM.r[1].x, viewM.r[1].y, viewM.r[1].z};
+    for (int k = 0; k < view.glintCount; ++k) {
+        const Vec3 c = view.glints[k] + Vec3{0, 0, 0.35f * std::sin(app.t * 2.0f + k)};
+        const float dist = length(c - view.eye);
+        const float size = (0.35f + 0.1f * std::sin(app.t * 5.0f + k * 1.7f)) * std::fmax(1.0f, dist / 25.0f);
+        const float spin = app.t * 0.8f + k;
+        Vec3* p = g.pos + k * kPer;
+        u8* col = g.col + k * kPer * 4;
+        p[0] = c;
+        for (int t = 0; t < 8; ++t) {
+            const float a = spin + t * 0.785398f, r = (t % 2 ? 0.28f : 1.0f) * size;
+            p[1 + t] = c + right * (std::cos(a) * r) + up * (std::sin(a) * r);
+        }
+        const float halo = size * 1.9f;
+        p[9] = c + right * halo;
+        p[10] = c + up * halo;
+        p[11] = c - right * halo;
+        p[12] = c - up * halo;
+        for (int v = 0; v < kPer; ++v) {
+            u8* q = col + v * 4;
+            const bool mid = v == 0;
+            const bool haloV = v >= 9;  // dim, warm
+            q[0] = haloV ? 60 : (mid ? 255 : 250);
+            q[1] = haloV ? 46 : (mid ? 250 : 200);
+            q[2] = haloV ? 10 : (mid ? 220 : 80);
+            q[3] = 255;
+        }
+    }
+    const int verts = view.glintCount * kPer;
+    GSPGPU_FlushDataCache(g.pos, verts * sizeof(Vec3));
+    GSPGPU_FlushDataCache(g.col, verts * 4);
+    C3D_BufInfo* buf = C3D_GetBufInfo();
+    BufInfo_Init(buf);
+    BufInfo_Add(buf, g.pos, sizeof(Vec3), 1, 0x0);
+    BufInfo_Add(buf, g.col, 4, 1, 0x1);
+    BufInfo_Add(buf, g.col, 4, 1, 0x2);
+    C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_COLOR);
+    C3D_CullFace(GPU_CULL_NONE);
+    C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_ONE, GPU_ONE, GPU_ZERO, GPU_ONE);
+    C3D_DrawElements(GPU_TRIANGLES, view.glintCount * 36, C3D_UNSIGNED_SHORT, g.idx);
+    C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA,
+                   GPU_ONE_MINUS_SRC_ALPHA);
+    C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+    app.stats.tris += view.glintCount * 12;
+    app.stats.draws += 1;
+}
+
 // Where the rider sits on the flown dragon (its plan's seat on its seat bone), as a frame for
 // the rider: on the seat, turned and tilted with the dragon.
 bool riderFrame(const Posed& d, const ValleyView& view, const C3D_Mtx& dragonModel, Person rider, C3D_Mtx& out) {
@@ -3223,9 +3315,11 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         lightDragon(dragonLight(blend), plain);
         drawStall(app, v, view, viewM);
     }
-    // The places' glows: windows and lamps at night, the festival's lit lanterns.
+    // The places' glows: windows and lamps at night, the festival's lit lanterns; the finds' glints.
     bindValleyStatic(projection, viewM, view.tint);
     drawPlaces(app, v, view, viewM, clip, blend, true);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, 1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f);
+    drawGlints(app, view, viewM);
     // The water and the waterfall: see-through, over everything, writing no depth.
     if (!g_vwater.count) {
         ValleyMesh m;

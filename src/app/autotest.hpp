@@ -22,6 +22,7 @@
 //   creator                     your look (the creator), back to this scene after
 //   wander <steps>              the dragon cared for sets off on the Wanderings; that many steps walked
 //   festival                    the Lantern Festival's eve (every other quest done, the lanterns lit)
+//   goto <x> <y>                in the valley: stand there (metres), your partner called
 //   quit                        leave (writes shots/done.txt)
 #pragma once
 

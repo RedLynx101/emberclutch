@@ -135,7 +135,9 @@ GROWN_PLATES = [
 
 GROWN = dict(
     name="grown", nodes=GROWN_NODES, edges=GROWN_EDGES, body="skin", relax=0.45,
-    body_tris=1150, body_tris_lod1=380, export_scale=1.0,
+    # DR2 sizing: grown at the common scale, the Pouncer's bulk and length (the geometric mean of the
+    # cube root of the body's volume and its length); META size then sizes it in the game.
+    body_tris=1150, body_tris_lod1=380, export_scale=0.81,
     young={
         "bones": {
             "head": (1.08, 1.0, 1.08), "snout": (0.9, 0.74, 0.94),

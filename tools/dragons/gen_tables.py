@@ -106,7 +106,9 @@ def main():
                 cstr(v["name"]), ", ".join(rgb(c[s]) for s in SLOTS), CHANNEL[v.get("pattern_channel")],
                 CHANNEL[v.get("glow_channel")], display_rgb(e[0]), display_rgb(e[1])))
         lines.append("     },")
-        lines.append("     %d, %s}," % (m.get("rare_variant", 3), "true" if m.get("rare_replaces", True) else "false"))
+        scales = [cf(k.FORMS[f].get("export_scale", 1.0)) for f in ("hatchling", "grown")]
+        lines.append("     %d, %s, {%s, %s}}," % (m.get("rare_variant", 3), "true" if m.get("rare_replaces", True) else "false",
+                                               *scales))
     lines.append("};")
     text = "\n".join(lines) + "\n"
     if "--check" in sys.argv:

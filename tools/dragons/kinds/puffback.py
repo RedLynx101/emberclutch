@@ -146,7 +146,9 @@ for _s in (-1, 1):
 
 GROWN = dict(
     name="grown", nodes=GROWN_NODES, meta=GROWN_META, body="meta", voxel=0.04, meta_resolution=0.03,
-    body_tris=1340, body_tris_lod1=450, export_scale=1.0,
+    # DR2 sizing: grown at the common scale, the Pouncer's bulk and length (the geometric mean of the
+    # cube root of the body's volume and its length); META size then sizes it in the game.
+    body_tris=1340, body_tris_lod1=450, export_scale=0.64,
     young={
         "bones": {
             "head": (0.8, 0.8, 0.8), "snout": (0.74, 0.7, 0.74),

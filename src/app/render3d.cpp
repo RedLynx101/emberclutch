@@ -663,6 +663,11 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
     if (actor && animsOkFor(c->look)) {
         Quat delta[kMaxBones];
         actor->anim.sample(lib, bind, f.model.skel.count, delta, out.root);
+        if (isKind(c->look)) {  // the plan's root motion is in its units; the kind's model is baked at its scale
+            const float unit = kindInfo(kindOfSlot(c->look)).formScale[c->form];
+            out.root[0] *= unit;
+            out.root[1] *= unit;
+        }
         applyDeltas(bones, delta, f.model.skel.count);
         // Look at the player: the den camera, brought into the dragon's armature space
         // (the inverse of modelMatrix, with last frame's floor contact).

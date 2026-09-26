@@ -175,7 +175,9 @@ def _grown_sculpt(kit, obj):
 
 GROWN = dict(
     name="grown", nodes=GROWN_NODES, edges=GROWN_EDGES, body="skin",
-    body_tris=1300, body_tris_lod1=480, export_scale=1.0,
+    # DR2 sizing: grown at the common scale, the Pouncer's bulk and length (the geometric mean of the
+    # cube root of the body's volume and its length); META size then sizes it in the game.
+    body_tris=1300, body_tris_lod1=480, export_scale=1.05,
     young={
         "bones": {
             "head": (0.95, 0.9, 1.0), "snout": (0.9, 0.75, 0.95),

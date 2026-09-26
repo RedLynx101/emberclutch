@@ -229,7 +229,9 @@ GROWN_META += [("chain", [(0, 0.42, 1.32), (0, 0.78, 1.40), (0, 0.98, 1.52)], [0
 
 GROWN = dict(
     name="grown", nodes=GROWN_NODES, meta=GROWN_META, body="meta", meta_resolution=0.035, voxel=0.05,
-    body_tris=1700, body_tris_lod1=560, export_scale=1.0,
+    # DR2 sizing: grown at the common scale, the Pouncer's bulk and length (the geometric mean of the
+    # cube root of the body's volume and its length); META size then sizes it in the game.
+    body_tris=1700, body_tris_lod1=560, export_scale=1.15,
     young={
         "bones": {
             "head": (1.1, 1.0, 1.1), "snout": (0.92, 0.72, 0.95),

@@ -241,4 +241,5 @@ def main():
         clip_strips(out, res, "hatchling", BABY_CLIPS, "babyclips.png")
 
 
-main()
+if __name__ == "__main__":
+    main()

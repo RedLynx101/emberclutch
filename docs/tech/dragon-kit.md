@@ -37,6 +37,8 @@ python tools/blender/egg_model.py --kind <kind> --lod 1
 # the checks and the review sheets
 python tools/dragons/check.py <kind>
 blender -b -P tools/blender/dragonkit/review.py -- --kind <kind> --out C:/abs/build/review/<kind> [--quick] [--only lineup,variants]
+blender -b -P tools/blender/dragonkit/measure.py -- [--kinds <kind>,pouncer]      # size vs the Pouncer, export_scale wanted
+blender -b -P tools/blender/dragonkit/together.py -- --out C:/abs/build/review/together.png   # every kind at true size
 ```
 Look at the renders (they are PNGs: open them) after every change. `review.py` writes
 `lineup.png`, `eggs.png`, `variants.png`, `turntable.png`, `portraits.png`, `clips.png` and
@@ -89,8 +91,14 @@ Look at the renders (they are PNGs: open them) after every change. `review.py` w
   a body unlike it (a serpent, a wyvern, four wings) needs its own versions of the clips
   that move differently (walk, run, sit, lie, sleep, curl up, fly, fold the wings...).
   Loops must loop cleanly; root tracks are in adult units.
-- Sizes: the grown kind's META `size` scales it in the game (0.67 to 1.5 of the Pouncer);
-  model the grown form at a comfortable scale like the Pouncer's (about 6 units long).
+- Sizes: model freely, then set the grown form's `export_scale` so the model comes out at
+  the **common scale**: the Pouncer's bulk and length (`tools/blender/dragonkit/measure.py`
+  prints each kind's measure, the geometric mean of the cube root of the body's volume and
+  its length, and the `export_scale` it wants). The kind's META `size` (0.67 to 1.5 of the
+  Pouncer) then sizes it in the game, so never bake the size into the model. Length alone
+  misleads: a round Puffback 6 units long is more than twice a Pouncer's bulk. Hatchlings
+  all come out about the same size and keep `export_scale` 1. `together.py` renders every
+  kind side by side at true size to check.
 - Don't copy anything from the concept images into the game: they are reference only (D74).
 
 ## The look (what Noah asked for)

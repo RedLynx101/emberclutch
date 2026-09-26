@@ -333,7 +333,9 @@ def _keep_largest(bm):
 
 GROWN = dict(
     name="grown", nodes=GROWN_NODES, edges=GROWN_EDGES, body="skin",
-    body_tris=1480, body_tris_lod1=560, export_scale=1.0,
+    # DR2 sizing: grown at the common scale, the Pouncer's bulk and length (the geometric mean of the
+    # cube root of the body's volume and its length); META size then sizes it in the game.
+    body_tris=1480, body_tris_lod1=560, export_scale=1.2,
     young={
         "bones": {
             "head": (0.95, 0.9, 1.0), "snout": (0.9, 0.72, 0.95),

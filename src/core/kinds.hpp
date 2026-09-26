@@ -30,7 +30,7 @@ struct PlanInfo {
     const char* name;         // romfs:/anims/<name>.eca
     const char* contacts[4];  // front left, front right, back left, back right: the bones on the ground
     const char* seatBone;     // where a rider sits
-    Vec3 seat;
+    Vec3 seat;                // in the plan's units: times the kind's formScale
 };
 
 struct KindInfo {
@@ -52,6 +52,8 @@ struct KindInfo {
     KindVariant variants[kKindVariants];
     u8 rareVariant;
     bool rareReplaces;  // a rare part group replaces the common one (else it adds to it)
+    float formScale[2]; // each form's export scale (hatchling, grown): its model is baked at it, so the
+                        // plan's root motion and seat (in the plan's units) are scaled by it too
 };
 
 int kindCount();

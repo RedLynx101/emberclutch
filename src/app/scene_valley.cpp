@@ -18,6 +18,7 @@
 #include "core/dragondex.hpp"
 #include "core/flight.hpp"
 #include "core/genetics.hpp"
+#include "core/kinds.hpp"
 #include "core/model.hpp"
 #include "core/rig.hpp"
 #include "core/valley.hpp"
@@ -126,7 +127,7 @@ void update(App& app, const Input& in) {
         if (m && bind) {
             const int build = s.shown.genome.build < kModelBuilds ? s.shown.genome.build : kBuildNeutral;
             s.flyer.updateSpeeds(*m, *bind, *lib, clips, kFormGrown * r3d::kLookSlots + look, 1.0f, build,
-                                 sizeScale(s.shown.genome), false);
+                                 kindSize(s.shown), false);
             s.natWalk = clampf(s.flyer.behavior.walkSpeed, 0.8f, 4.0f);
             s.natRun = clampf(s.flyer.behavior.runSpeed, s.natWalk * 2.0f, 14.0f);
             s.natTrot = s.flyer.behavior.trotSpeed > s.natWalk && s.flyer.behavior.trotSpeed < s.natRun
@@ -226,7 +227,7 @@ void drawTop(App& app) {
         const float high = std::fmax(0.0f, s.flight.pos.z - surface);
         view.shadowAt = {s.flight.pos.x, s.flight.pos.y, surface};
         view.shadow = s.flight.swimming ? 0.0f : 0.5f * lit * clampf(1.0f - high / 60.0f, 0.0f, 1.0f);
-        view.shadowRadius = 1.9f * sizeScale(s.shown.genome) * (1.0f - 0.45f * clampf(high / 60.0f, 0.0f, 1.0f));
+        view.shadowRadius = 1.9f * kindSize(s.shown) * (1.0f - 0.45f * clampf(high / 60.0f, 0.0f, 1.0f));
     }
     if (r3d::ready()) r3d::drawValley(app, view, now);
 }
@@ -286,12 +287,12 @@ void openValley(App& app) {
         s.tried = true;
         s.loaded = loadValleyFile(s.valley);
     }
-    // Your dragon, grown (a stand-in of its breed and look if it's young yet).
+    // Your dragon, grown (a stand-in of its kind and colouring if it's young yet).
     const Dragon& d = activeDragon(app);
     if (hasDragon(app) && d.stage == Stage::Adult) {
         s.shown = d;
     } else {
-        s.shown = dexDragon(hasDragon(app) ? breedIndex(d.genome) : 0, hasDragon(app) ? d.look : static_cast<u8>(kLookClassic));
+        s.shown = dexDragon(hasDragon(app) ? d.kind : 0, hasDragon(app) ? d.variant : 0);
         if (hasDragon(app)) std::snprintf(s.shown.name, sizeof(s.shown.name), "%s", d.name);
     }
     s.flight = Flight{};

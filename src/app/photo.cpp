@@ -10,6 +10,7 @@
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
 #include "core/genetics.hpp"
+#include "core/kinds.hpp"
 
 namespace ec::photo {
 namespace {
@@ -53,7 +54,7 @@ void drawFrame(App& app, const Dragon& d, s64 now) {
     text(app, str::kGameTitle, kTopW - 16, 12, 0.5f, withAlpha(gold, 0.9f), C2D_AlignRight, 0, Face::Title);
     char name[40], date[48];
     if (d.stage == Stage::Egg)
-        std::snprintf(name, sizeof(name), "%s %s", breedName(d.genome), str::kEggSuffix);
+        std::snprintf(name, sizeof(name), "%s %s", kindTitle(d), str::kEggSuffix);
     else
         std::snprintf(name, sizeof(name), "%s", d.name);
     const std::time_t t = static_cast<std::time_t>(now);  // the 3DS clock is local time already
@@ -112,7 +113,7 @@ void drawBottom(App& app, const Input& in) {
     const Dragon& d = activeDragon(app);
     char who[48];
     if (d.stage == Stage::Egg)
-        std::snprintf(who, sizeof(who), "%s %s", breedName(d.genome), str::kEggSuffix);
+        std::snprintf(who, sizeof(who), "%s %s", kindTitle(d), str::kEggSuffix);
     else
         std::snprintf(who, sizeof(who), "%s", d.name);
     textCentered(app, who, 160, 176, 0.55f, theme::kShell, 200);

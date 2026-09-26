@@ -15,6 +15,7 @@
 #include "core/den_roster.hpp"
 #include "core/egg.hpp"
 #include "core/genetics.hpp"
+#include "core/kinds.hpp"
 
 namespace ec {
 namespace {
@@ -98,7 +99,7 @@ void drawTop(App& app) {
     if (r3d::ready()) r3d::drawShowcase(app, d, &egg, nowLocal(app), 0.5f * std::sin(app.t * 0.4f));
     char line[80];
     if (d.stage == Stage::Egg) {
-        std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", breedName(d.genome), str::kEggSuffix,
+        std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", kindTitle(d), str::kEggSuffix,
                       static_cast<int>(eggProgress(d) * 100), str::kIncubated);
     } else {
         char kind[40];
@@ -111,9 +112,9 @@ void drawTop(App& app) {
 // One card: a heart (dragons) or egg (eggs) in its element's glow, its name, its stage.
 void card(App& app, const Rect& r, const Dragon& d, bool picked) {
     panel(r, picked ? withAlpha(theme::kClutchGold, 0.85f) : withAlpha(theme::kShell, 0.2f));
-    const Rgb glowC = heartglowColor(static_cast<Element>(d.genome.elementA));
+    const Rgb glowC = kindGlow(d);
     if (d.stage == Stage::Egg) {
-        egg(r.x + 16, r.y + r.h * 0.5f, 18, 24, {250, 240, 225}, glowC, 0.3f + 0.7f * eggProgress(d));
+        egg(r.x + 16, r.y + r.h * 0.5f, 18, 24, kindShell(d), glowC, 0.3f + 0.7f * eggProgress(d));
     } else {
         glow(r.x + 16, r.y + r.h * 0.5f, 12, fromRgb(glowC), 0.6f);
         heart(r.x + 16, r.y + r.h * 0.5f, 12, fromRgb(glowC));
@@ -121,7 +122,7 @@ void card(App& app, const Rect& r, const Dragon& d, bool picked) {
     const u32 ink = picked ? theme::kDenPlum : theme::kShell;
     char line[40];
     if (d.stage == Stage::Egg) {
-        text(app, breedName(d.genome), r.x + 32, r.y + 10, 0.42f, ink, C2D_AlignLeft, r.w - 36);
+        text(app, kindTitle(d), r.x + 32, r.y + 10, 0.42f, ink, C2D_AlignLeft, r.w - 36);
         std::snprintf(line, sizeof(line), "%d%%", static_cast<int>(eggProgress(d) * 100));
     } else {
         text(app, d.name, r.x + 32, r.y + 10, 0.45f, ink, C2D_AlignLeft, r.w - 36);
@@ -145,7 +146,7 @@ void drawBottom(App& app, const Input& in) {
     if (app.storeProfile) {  // the picked one's profile (WP8): about it, its family
         const Dragon& d = app.game.dragons[list[app.storePick]];
         char title[40];
-        if (d.stage == Stage::Egg) std::snprintf(title, sizeof(title), "%s %s", breedName(d.genome), str::kEggSuffix);
+        if (d.stage == Stage::Egg) std::snprintf(title, sizeof(title), "%s %s", kindTitle(d), str::kEggSuffix);
         else std::snprintf(title, sizeof(title), "%s", d.name);
         textCentered(app, title, 160, 19, 0.75f, theme::kClutchGold, 300, Face::Title);
         care::drawProfilePages(app, in, d, nowLocal(app), app.storeProfileTab);

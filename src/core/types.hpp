@@ -13,6 +13,7 @@ using s16 = std::int16_t;
 using u32 = std::uint32_t;
 using s32 = std::int32_t;
 using s64 = std::int64_t;
+using u64 = std::uint64_t;
 
 enum class Element : u8 { Ember, Tide, Gale, Grove, Frost, Lumen, Count };
 constexpr int kElementCount = static_cast<int>(Element::Count);

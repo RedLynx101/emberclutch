@@ -221,3 +221,48 @@ old-banner CIA is gone from the card. And `cias/lab/banner-lab-a.cia`: install i
 - The sounds and the music: anything to change?
 - Swimming, running, landing and the shadow: how they feel.
 - Whether the lab banner held, and anything still wrong with the dragons or the den.
+
+# Run 17 (0.2.4): DR3, your dragons become the new kinds
+
+**For Noah.** Your go (D81): every dragon and egg in your save becomes one of the nine new kinds
+the first time 0.2.4 opens it, rolled once from who it is and kept from then on (names, ages,
+bonds and families stay). Only the new kinds from here (D82). Also the voices you asked for, by
+kind and stage. About 10 minutes; the checklists page has these steps (the Run 17 tab). **Y**
+saves both screens and the numbers.
+
+## 0. Install
+When run 16 is done, I put 0.2.4 on the SD card: in **FBI**, SD → cias → `emberclutch.cia` →
+Install CIA, over the game (the save stays, and moves over as it loads).
+
+## 1. Your dragons
+1. The den: each dragon is a kind now, in a common colouring: the top line reads "Name -
+   Colouring Kind Stage" and its manner (Brave, Shy, Playful, Proud, Sleepy, Curious, Gentle,
+   Mischievous, Greedy or Stubborn), which is how it behaves too. Walk through them with < >.
+2. **The profile** (the heart, top right): About shows the five stats (Wing, Wit, Might,
+   Breath, Stamina, out of 10), its elements and how rare its kind is, and its traits (the
+   rarer ones in gold). Family names each one's kind.
+3. **Voices:** a hatchling squeaks well above a grown one, and a big kind sounds deeper than a
+   small one (a Curlstone or Crestwing against a Pouncer).
+
+## 2. Eggs
+1. Your eggs wear their kind's shell and markings, glowing in their element's colour.
+   Listening hints at the manner. Hatch one (or wait): "It's a Moss Puffback!" or the like.
+2. The Market's **egg of the day** is a kind: 150 Gleam for a common one, 250 harder to find,
+   400 rare.
+3. A pair at the Nesting Stone lays the mother's or the father's kind (a Pouncer and a
+   Crestwing's egg is a Blazeplume a third of the time); the rare colouring is 1 in 20, 1 in 10
+   with a rare-coloured parent.
+
+## 3. The Dragondex
+1. START → Dragondex: nine kinds over two pages, four colourings each (the last, "*", the
+   rare one); your hatched dragons are in it. Tap a cell to see that one turning up top.
+   Completing a kind's four colourings hangs its banner in the den.
+
+## 4. The dev menu (if you want it)
+- Page 1 **Next kind** and **Kind colouring** still only show every dragon as a kind (not
+  saved). **Change kind** (page 1) and **Change colour** (page 2) change this dragon for good.
+
+## What to send back
+- Which kinds your dragons became, and whether they feel right (their manners, the stats).
+- The voices: far enough apart now?
+- Anything wrong with the eggs, the Dex or the Market.

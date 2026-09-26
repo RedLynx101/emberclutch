@@ -15,6 +15,7 @@
 #include "core/den_actor.hpp"
 #include "core/kinds.hpp"
 #include "core/rig.hpp"
+#include "core/rng.hpp"
 
 using namespace ec;
 
@@ -229,9 +230,68 @@ TEST(every_plan_has_every_clip) {
 
 }  // namespace
 
+TEST(every_dragon_is_a_kind) {
+    // DR3 (D77-D80): rolls for a new dragon, the pair's kind, the finds by rarity, the rare
+    // colouring's odds.
+    Rng rng(4242);
+    int rareTraits = 0, tierTop = 0;
+    for (int k = 0; k < kindCount(); ++k)
+        for (int v = 0; v < kKindVariants; ++v)
+            for (int n = 0; n < 40; ++n) {
+                Dragon d;
+                rollKind(d, k, v, rng);
+                const bool rare = v == kindInfo(k).rareVariant;
+                CHECK(d.kind == k && d.variant == v && d.manner < mannerCount());
+                for (u8 st : d.stats) CHECK(st >= 1 && st <= 10);
+                CHECK(d.traitCount >= 1 && d.traitCount <= (rare ? 3 : 2));
+                if (rare) rareTraits += d.traitCount == 3;
+                for (int i = 0; i < d.traitCount; ++i) {
+                    CHECK(d.traits[i] < traitCount());
+                    for (int j = 0; j < i; ++j) CHECK(d.traits[i] != d.traits[j]);
+                    if (!rare) CHECK(traitTier(d.traits[i]) <= (kindInfo(k).rarity == Rarity::Rare ? 2 : 1));
+                    tierTop += traitTier(d.traits[i]) == 3;
+                }
+            }
+    std::printf("  rare colourings with three traits: %d; a top-tier trait %d times\n\n", rareTraits, tierTop);
+    CHECK(rareTraits > 0 && tierTop > 0);
+    // A pair of one kind breeds true; the Pouncer and the Crestwing now and then have a Blazeplume.
+    const int pouncer = findKind("pouncer"), crest = findKind("crestwing"), blaze = findKind("blazeplume");
+    CHECK(pouncer >= 0 && crest >= 0 && blaze >= 0 && crossbreedOf(crest, pouncer) == blaze);
+    int blazes = 0;
+    for (int n = 0; n < 3000; ++n) {
+        CHECK(childKind(pouncer, pouncer, rng) == pouncer);
+        const int c = childKind(pouncer, crest, rng);
+        CHECK(c == pouncer || c == crest || c == blaze);
+        blazes += c == blaze;
+    }
+    std::printf("  Pouncer x Crestwing: a Blazeplume %.0f%% of the time\n\n", 100.0 * blazes / 3000);
+    CHECK(blazes > 800 && blazes < 1200);
+    // Finds by rarity, never a crossbreed; the rare colouring about 1 in 20 (1 in 10 with a rare parent).
+    int byRarity[3] = {}, rare = 0, rareP = 0;
+    for (int n = 0; n < 20000; ++n) {
+        const int k = randomKind(rng);
+        CHECK(kindInfo(k).parents[0] < 0);
+        ++byRarity[static_cast<int>(kindInfo(k).rarity)];
+        rare += rollVariant(rng) == kKindVariants - 1;
+        rareP += rollVariant(rng, true) == kKindVariants - 1;
+    }
+    std::printf("  finds: common %d, harder to find %d, rare %d; rare colourings %d, with a rare parent %d (of 20000)\n\n",
+                byRarity[0], byRarity[1], byRarity[2], rare, rareP);
+    CHECK(byRarity[0] > byRarity[1] && byRarity[1] > byRarity[2] && byRarity[2] > 0);
+    CHECK(rare > 700 && rare < 1300 && rareP > 1600 && rareP < 2400);
+    // Sizes, names.
+    Dragon d;
+    d.kind = static_cast<u8>(findKind("puffback"));
+    CHECK(kindSize(d) > 1.2f && kindSize(d) < 1.5f);
+    char els[32];
+    kindElements(blaze, els, sizeof(els));
+    CHECK(std::strcmp(els, "Ember / Gale") == 0);
+}
+
 void runKindTests() {
     RUN(the_kinds_table_is_sound);
     RUN(kind_colours_shift_a_little_per_dragon);
     RUN(every_kind_loads_and_fits);
     RUN(every_plan_has_every_clip);
+    RUN(every_dragon_is_a_kind);
 }

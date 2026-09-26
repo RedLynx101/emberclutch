@@ -3,6 +3,7 @@
 #include "core/clock.hpp"
 #include "core/den_roster.hpp"
 #include "core/genetics.hpp"
+#include "core/kinds.hpp"
 
 namespace ec {
 namespace {
@@ -53,15 +54,20 @@ DailyEgg dailyEgg(const SaveData& s, s32 day) {
     e.genome = makePurebred(el, rng);
     e.sex = rollSex(rng);
     e.look = rollLook(rng);
-    e.price = kDailyEggPrice;
+    e.kind = static_cast<u8>(randomKind(rng, 3, 5, 2));
+    e.variant = static_cast<u8>(rollVariant(rng));
+    static constexpr u32 kPrice[3] = {150, kDailyEggPrice, 400};  // common, harder to find, rare
+    e.price = kPrice[static_cast<int>(kindInfo(e.kind).rarity)];
     return e;
 }
 
 int buyDailyEgg(SaveData& s, s64 now) {
     const s32 today = dayIndex(now);
-    if (s.eggBoughtDay == today || s.gleam < kDailyEggPrice || s.dragonCount >= static_cast<int>(kMaxDragons)) return -1;
     const DailyEgg e = dailyEgg(s, today);
+    if (s.eggBoughtDay == today || s.gleam < e.price || s.dragonCount >= static_cast<int>(kMaxDragons)) return -1;
     Dragon egg = makeEgg(s.nextId++, e.genome, e.sex, now, e.look);
+    Rng rng(static_cast<std::uint64_t>(egg.id) * 0x9E3779B97F4A7C15ull + 0x3A7u);
+    rollKind(egg, e.kind, e.variant, rng);
     egg.origin = Origin::Market;
     if (!placeEgg(s, egg) && vaultCount(s) >= kVaultEggs) {
         --s.nextId;

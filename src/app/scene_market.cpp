@@ -15,6 +15,7 @@
 #include "core/genetics.hpp"
 #include "core/items.hpp"
 #include "core/market.hpp"
+#include "core/kinds.hpp"
 
 namespace ec {
 namespace {
@@ -29,6 +30,8 @@ constexpr int kGoodsPages = (kItems + kGoodsPerPage - 1) / kGoodsPerPage;
 Dragon todaysEgg(const App& app) {
     const DailyEgg e = dailyEgg(app.game, dayIndex(nowLocal(app)));
     Dragon d = makeEgg(0xFFFFFFF0u, e.genome, e.sex, 0);
+    d.kind = e.kind;  // today's kind, in its colouring (the egg shows it)
+    d.variant = e.variant;
     d.warmth = 80;
     return d;
 }
@@ -198,11 +201,11 @@ void sellTab(App& app, const Input& in) {
 void eggTab(App& app, const Input& in) {
     const DailyEgg e = dailyEgg(app.game, dayIndex(nowLocal(app)));
     char line[64];
-    std::snprintf(line, sizeof(line), str::kTodaysEgg, e.sex == Sex::Female ? "female" : "male", breedName(e.genome));
+    std::snprintf(line, sizeof(line), str::kTodaysEgg, e.sex == Sex::Female ? "female" : "male", kindInfo(e.kind).title);
     textCentered(app, line, 160, 80, 0.6f, theme::kShell, 300);
     std::snprintf(line, sizeof(line), str::kPrice, static_cast<unsigned long>(e.price));
     textCentered(app, line, 160, 104, 0.5f, theme::kClutchGold, 300);
-    egg(160, 140, 26, 34, {250, 240, 225}, heartglowColor(static_cast<Element>(e.genome.elementA)), 0.8f);
+    egg(160, 140, 26, 34, kindInfo(e.kind).variants[e.variant % kKindVariants].egg[0], elementGlow(kindInfo(e.kind).elements[0]), 0.8f);
     const bool sold = app.game.eggBoughtDay == dayIndex(nowLocal(app));
     if (sold) {
         textCentered(app, str::kEggTomorrowMarket, 160, 180, 0.45f, withAlpha(theme::kShell, 0.8f), 300);

@@ -12,6 +12,7 @@
 #include "core/behavior.hpp"
 #include "core/dragon_mesh.hpp"
 #include "core/egg.hpp"
+#include "core/kinds.hpp"
 #include "core/genetics.hpp"
 #include "core/names.hpp"
 #include "core/shell_burst.hpp"
@@ -41,6 +42,7 @@ const ModelData& eggModel() {
 Dragon anEgg(float progress, float warmth) {
     Rng rng(3);
     Dragon d = makeEgg(1, makePurebred(Element::Ember, rng), Sex::Female, 0);
+    d.variant = 0;  // a common colouring (the rare one's egg shows faint cracks from the start)
     d.incubationSeconds = static_cast<s32>(progress * kIncubationSeconds);
     d.warmth = warmth;
     return d;
@@ -134,8 +136,8 @@ TEST(egg_cracks_open_on_schedule) {
     }
     CHECK(glow[kPalBase] == 0 && glow[kPalGlow] > 0);
     const float coolGlow = glow[kPalGlow];
-    Dragon wild = anEgg(0.5f, 60);  // a wild egg (D54): its cracks glow faintly before they open
-    wild.look = kLookWild;
+    Dragon wild = anEgg(0.5f, 60);  // a rare colouring's egg: its cracks glow faintly before they open
+    wild.variant = kindInfo(wild.kind).rareVariant;
     eggPalette(wild, 1.0f, pal, glow);
     CHECK(glow[kPalPattern] > 0 && glow[kPalPattern] < 0.5f && glow[kPalMembrane] > 0);
     eggPalette(anEgg(0.5f, 60), 1.0f, pal, glow);
@@ -220,9 +222,11 @@ TEST(listening_to_the_egg) {
     Dragon young = anEgg(0.1f, 60), grown = anEgg(0.9f, 60);
     CHECK(heartbeatOf(young).strength < heartbeatOf(grown).strength);
     int seen[static_cast<int>(Personality::Count)] = {};
-    for (u32 id = 1; id <= 120; ++id) {
+    for (u32 id = 1; id <= 400; ++id) {
         Dragon d = anEgg(0.9f, 60);
         d.id = id;
+        Rng roll(id);
+        rollKind(d, static_cast<int>(id % kindCount()), 0, roll);  // its manner, its temperament
         const Personality p = temperamentOf(d);
         ++seen[static_cast<int>(p)];
         Dragon hatched = d;
@@ -231,10 +235,16 @@ TEST(listening_to_the_egg) {
         tryHatch(hatched, 1000, rng);
         CHECK(hatched.personality == p);
     }
-    for (int n : seen) CHECK(n >= 8);
+    for (int n : seen) CHECK(n >= 1);  // every temperament turns up (kinds lean to their own manners)
     Dragon sleepy = grown, playful = grown;
-    for (u32 id = 1; id < 200 && temperamentOf(sleepy) != Personality::Sleepy; ++id) sleepy.id = id;
-    for (u32 id = 1; id < 200 && temperamentOf(playful) != Personality::Playful; ++id) playful.id = id;
+    sleepy.manner = static_cast<u8>(Personality::Sleepy);
+    playful.manner = static_cast<u8>(Personality::Playful);
+    auto manner = [](const char* name) {
+        for (int m = 0; m < mannerCount(); ++m)
+            if (std::strcmp(mannerName(m), name) == 0) return m;
+        return -1;
+    };
+    CHECK(personalityOf(manner("Gentle")) == Personality::Sleepy && personalityOf(manner("Stubborn")) == Personality::Proud);
     CHECK(heartbeatOf(sleepy).bpm < heartbeatOf(playful).bpm - 40);
 }
 

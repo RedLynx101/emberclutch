@@ -532,10 +532,12 @@ float framingRadius(const ModelData& m, float t, int build, Vec3* center, float*
     return length(hi - lo) * 0.5f * 1.25f;
 }
 
+int variantOf(const Dragon& d, int look);  // (below, with lookOf)
+
 // Rebuilds the merged part mesh, ground offset and framing when the dragon, its growth or
 // its genome changes (growth is slow: days, not frames).
 void refreshCache(Cache& c, const Dragon& d, const Growth& gr, int build, int lod, int look) {
-    const int variant = isKind(look) ? g_devVariant : 0;
+    const int variant = variantOf(d, look);
     const bool slit = isKind(look) && moodOf(d) <= Mood::Sulky;
     const bool same = c.valid && c.id == d.id && c.form == gr.form && c.lod == lod && c.look == look &&
                       c.variant == variant && c.slit == slit && std::fabs(c.t - gr.t) < 0.002f && c.sex == d.sex &&
@@ -572,13 +574,18 @@ int buildOf(const Dragon& d) { return d.genome.build < kModelBuilds ? d.genome.b
 
 bool loadLook(int look);
 
-// The look a dragon is drawn in: its own (or the dev menu's), loaded on the spot if the
-// splash hasn't got to it yet; the classic look if its models are missing.
+// The look a dragon is drawn in: its kind (DR3, D80; or the dev menu's look or kind), loaded
+// on the spot if the splash hasn't got to it yet; the classic look if its models are missing.
 int lookOf(const Dragon& d) {
-    int look = g_forceLook >= 0 ? g_forceLook : (d.look < kLookCount ? static_cast<int>(d.look) : 0);
-    if (d.stage == Stage::Egg) look = look < kLookCount ? look : kLookClassic;  // eggs stay the old ones for now
+    int look = g_forceLook >= 0 ? g_forceLook : kLookCount + (d.kind < kindCount() ? d.kind : 0);
     if (!g_lookLoaded[look] && !loadLook(look)) look = kLookClassic;
     return look;
+}
+
+// The colouring it's drawn in: its own, or the dev menu's while the dev menu shows a kind.
+int variantOf(const Dragon& d, int look) {
+    if (!isKind(look)) return 0;
+    return g_forceLook >= kLookCount ? g_devVariant : (d.variant < kKindVariants ? d.variant : 0);
 }
 
 // The dragon's cache slot, refreshed if its growth or genome changed. nullptr if the
@@ -650,7 +657,7 @@ bool pose(App& app, const Dragon& d, const DenActor* actor, s64 now, int lod, Po
     const AnimBinding& bind = g_bind[c->look][c->form];
     const AnimLibrary& lib = libFor(c->look);
     updateDust(*c, f, d);
-    out.size = sizeScale(d.genome);
+    out.size = kindSize(d);  // DR3: the kind's size (D77: +-50%), a little either way
     out.scale = growthScale(growthFor(d.stage, stageProgress(d, now))) * out.size;
     out.pos = actor ? actor->behavior.pos : Vec2{};
     out.heading = actor ? actor->behavior.heading : 0.0f;
@@ -1683,7 +1690,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         } else {
             const Cache* c = cacheFor(d, now, i == 0 ? 0 : 1);
             if (!c) continue;
-            r = viewRadius(*c, sizeScale(d.genome));
+            r = viewRadius(*c, kindSize(d));
             at[i] = dragons[i].actor ? dragons[i].actor->behavior.pos : Vec2{};
         }
         maxRadius = std::fmax(maxRadius, r);
@@ -1866,7 +1873,7 @@ void drawPair(App& app, const Dragon& a, const DenActor& actorA, const Dragon& b
         const Cache* c = cacheFor(*ds[i], now, 0);
         if (!c) return;
         reach = std::fmax(reach, std::hypot(as[i]->behavior.pos.x - mid.x, as[i]->behavior.pos.y - mid.y) +
-                                     viewRadius(*c, sizeScale(ds[i]->genome)) * 0.8f);
+                                     viewRadius(*c, kindSize(*ds[i])) * 0.8f);
     }
     C3D_Mtx projection, view, model;
     const Vec3 target{mid.x, mid.y, reach * 0.45f};

@@ -31,6 +31,9 @@ enum BodyRegion : u8 {
 // Where an egg came from (Alpha 2 WP8: the profile's family page).
 enum class Origin : u8 { Starter, Bred, Wild, Market, Count };
 
+constexpr int kDragonStats = 5;   // Wing, Wit, Might, Breath, Stamina (core/kinds)
+constexpr int kDragonTraits = 3;  // at most (three only on the rare colouring)
+
 struct Dragon {
     u32 id = 0;
     BodyPlan bodyPlan = BodyPlan::Draconic;
@@ -76,6 +79,16 @@ struct Dragon {
     float dayLowestSum = 0;
     float dayHours = 0;
     bool dayVisited = false;
+
+    // Dragons, version 2 (D77-D80, DR3): its kind (core/kinds, drawn from the look slots after
+    // the genome's old looks), its colouring (0-2 common, 3 the rare one: a surprise until it
+    // hatches), its stats (1..10), its manner and its traits (core/kinds tables).
+    u8 kind = 0;
+    u8 variant = 0;
+    u8 stats[kDragonStats] = {};
+    u8 manner = 0;
+    u8 traits[kDragonTraits] = {};
+    u8 traitCount = 0;
 };
 
 constexpr s32 kIncubationSeconds = 24 * 3600;
@@ -95,7 +108,7 @@ void kindName(const Dragon& d, char* out, int cap);
 Dragon makeEgg(u32 id, const Genome& g, Sex sex, s64 now, u8 look = kLookClassic);
 // Hatches the egg if incubation is complete. Returns true if it hatched.
 bool tryHatch(Dragon& d, s64 now, Rng& rng);
-// The personality it will hatch with, fixed from its id (listening to the egg hints at it).
+// The temperament it will hatch with: its manner's (DR3; listening to the egg hints at it).
 Personality temperamentOf(const Dragon& d);
 
 // Advance the simulation from d's last update time to `now`, in <= 1 hour steps.

@@ -243,13 +243,13 @@ inline constexpr const char* kKeeper = "Keeper";
 // The Dragondex (WP12)
 inline constexpr const char* kDex = "Dragondex";
 inline constexpr const char* kDexUnknown = "Not met yet";
-inline constexpr const char* kDexBreedLine = "%s: %d of %d looks";
+inline constexpr const char* kDexBreedLine = "%s: %d of %d colourings";
 inline constexpr const char* kDexDone = "Complete! Its banner is yours.";
 inline constexpr const char* kDexHang = "Hang banner";
-inline constexpr const char* kDexRares = "Rare traits";
+inline constexpr const char* kDexRares = "Rare colourings";
 inline constexpr const char* kDexTakeDown = "Take it down";
 inline constexpr const char* kDexNew = "New in the Dragondex: %s";
-inline constexpr const char* kDexRare = "A rare trait for the Dragondex: %s!";
-inline constexpr const char* kDexComplete = "Every %s look found! +150 Gleam and a banner";
+inline constexpr const char* kDexRare = "A rare colouring for the Dragondex: %s!";
+inline constexpr const char* kDexComplete = "Every %s colouring found! +150 Gleam and a banner";
 
 }  // namespace ec::str

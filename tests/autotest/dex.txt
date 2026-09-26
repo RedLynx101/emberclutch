@@ -1,5 +1,5 @@
-# The Dragondex (WP12): the hatchling's entry and its toast, a completed breed's banner in the
-# den (dev menu page 2: Dex: this breed), then the book from the system menu.
+# The Dragondex (WP12; by kind, DR3): the hatchling's entry and its toast, a completed kind's banner in the
+# den (dev menu page 2: Dex: this kind), then the book from the system menu.
 overlay off
 wait 2.5
 name Noah

@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "core/genetics.hpp"
+#include "core/kinds.hpp"
 
 namespace ec {
 namespace {
@@ -93,10 +94,11 @@ int eggCracks(const Dragon& d) {
 }
 
 void eggPalette(const Dragon& d, float pulse, Rgb out[kPalCount], float glow[kPalCount], float t) {
-    Rgb light = heartglowColor(static_cast<Element>(d.genome.elementA));
-    if (d.genome.elementB != d.genome.elementA)  // two elements: the light drifts between them
-        light = mixRgb(light, heartglowColor(static_cast<Element>(d.genome.elementB)),
-                       0.5f + 0.5f * std::sin(t * 0.9f));
+    // DR3: its kind's egg (the shell and its markings, in the colouring it was laid in: a rare
+    // egg looks it) and the kind's elements' light inside, drifting between two.
+    const KindInfo& ki = kindInfo(d.kind < kindCount() ? d.kind : 0);
+    Rgb light = elementGlow(ki.elements[0]);
+    if (ki.elementCount > 1) light = mixRgb(light, elementGlow(ki.elements[1]), 0.5f + 0.5f * std::sin(t * 0.9f));
     // Each element's shell (WP12): its own tint and speckles; a hybrid's speckles are its
     // second element's, so the shell hints at both.
     static constexpr Rgb kShell[kElementCount] = {
@@ -110,14 +112,16 @@ void eggPalette(const Dragon& d, float pulse, Rgb out[kPalCount], float glow[kPa
     static constexpr Rgb kSpeckle[kElementCount] = {
         {150, 62, 34}, {38, 116, 128}, {92, 128, 198}, {92, 100, 52}, {146, 136, 206}, {196, 148, 58},
     };
-    const Rgb breed = hsvToRgb(d.genome.baseH, d.genome.baseS, d.genome.baseV);
-    const Rgb shell = mixRgb(kShell[d.genome.elementA % kElementCount], breed, 0.1f);
+    (void)kShell;
+    const KindVariant& kv = ki.variants[d.variant % kKindVariants];
+    const Rgb shell = kv.egg[0];
     const float warm = d.warmth / 100.0f;
     for (int i = 0; i < kPalCount; ++i) {
         out[i] = shell;
         glow[i] = 0;
     }
-    out[kPalAccent] = mixRgb(kSpeckle[d.genome.elementB % kElementCount], breed, 0.2f);  // speckles
+    (void)kSpeckle;
+    out[kPalAccent] = kv.egg[1];  // its markings
     out[kPalIris] = mixRgb(shell, {200, 170, 150}, 0.35f);       // the inside of the shell
     out[kPalGlow] = mixRgb(shell, light, 0.3f + 0.7f * warm);    // the light inside
     glow[kPalGlow] = (0.2f + 0.6f * warm + 0.2f * eggProgress(d)) * pulse;
@@ -132,7 +136,7 @@ void eggPalette(const Dragon& d, float pulse, Rgb out[kPalCount], float glow[kPa
         if (k < open) {
             out[slots[k]] = crackDim;
             glow[slots[k]] = pulse;
-        } else if (d.look == kLookWild) {  // a wild egg (D54): a faint glowing crack pattern from the start
+        } else if (d.variant == ki.rareVariant) {  // a rare colouring's egg: a faint glowing crack pattern from the start
             out[slots[k]] = mixRgb(shell, crack, 0.45f);
             glow[slots[k]] = 0.3f * pulse;
         }

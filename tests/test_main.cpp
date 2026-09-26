@@ -10,6 +10,7 @@
 #include "core/clock.hpp"
 #include "core/dragon.hpp"
 #include "core/genetics.hpp"
+#include "core/kinds.hpp"
 #include "core/den_roster.hpp"
 #include "core/dragondex.hpp"
 #include "core/items.hpp"
@@ -776,8 +777,8 @@ TEST(save_round_trip) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots + kBreedCount + 6 + 2 + 5 + 2 + 2 +
-                   5 * (132 + 16 + 9 + 1 + 12 + 2 + 2 + 1 + kRegionCount));
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots + kBreedCount + 6 + (1 + kDexKindSlots + 8 + 1) + 2 + 5 + 2 + 2 +
+                   5 * (132 + 16 + 9 + 1 + 12 + 2 + 2 + 1 + kRegionCount + 12));
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
@@ -883,12 +884,16 @@ TEST(the_looks) {
     steam.elementB = static_cast<u8>(Element::Tide);
     lookBreedName(kLookWild, steam, name, sizeof(name));
     CHECK(std::strcmp(name, "Cinderveined Steam") == 0);
+    // Since DR3 a dragon goes by its kind: an egg by the kind alone (its colouring a surprise
+    // until it hatches), a hatched one by its colouring and kind.
     Dragon egg = makeEgg(5, tide, Sex::Male, kT0, kLookTallneck);
+    egg.kind = static_cast<u8>(findKind("pouncer"));
+    egg.variant = 1;
     kindName(egg, name, sizeof(name));
-    CHECK(egg.look == kLookTallneck && std::strcmp(name, "Tide") == 0);  // a surprise until it hatches
+    CHECK(std::strcmp(name, "Pouncer") == 0);
     egg.stage = Stage::Hatchling;
     kindName(egg, name, sizeof(name));
-    CHECK(std::strcmp(name, "Tallneck Tide") == 0);
+    CHECK(std::strcmp(name, "Tabby Pouncer") == 0);
 
     // A record from before the looks: cut the field off, and its look comes from its id.
     SaveData& s = sampleSave();
@@ -897,9 +902,10 @@ TEST(the_looks) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 1, kT0, buf.data(), buf.size());
     std::vector<u8> old1(buf.begin(), buf.begin() + n);
-    const std::size_t rec = n - (132 + 16 + 9 + 1 + 12 + 2 + 1 + kRegionCount) - 2;  // the one record's size field
-    old1[rec] = static_cast<u8>(old1[rec] - 1 - kRegionCount);  // no look, no mud
-    old1.resize(old1.size() - 1 - kRegionCount);
+    constexpr std::size_t kKindBytes = 12;  // DR3's fields, after the look and the mud
+    const std::size_t rec = n - (132 + 16 + 9 + 1 + 12 + 2 + 1 + kRegionCount + kKindBytes) - 2;  // the record's size field
+    old1[rec] = static_cast<u8>(old1[rec] - 1 - kRegionCount - kKindBytes);  // no look, no mud, no kind
+    old1.resize(old1.size() - 1 - kRegionCount - kKindBytes);
     // Fix up the header's payload size and checksum for the shorter payload.
     const u32 payload = static_cast<u32>(old1.size() - kSaveHeaderSize);
     std::memcpy(&old1[12], &payload, 4);
@@ -908,48 +914,55 @@ TEST(the_looks) {
     static SaveData out;
     CHECK(decodeSave(old1.data(), old1.size(), out) == LoadResult::Ok);
     CHECK(out.dragons[0].look == lookForOldDragon(out.dragons[0].id));
+    // ...and, from before the revamp, a kind in a common colouring, fixed by its id (D80).
+    Dragon want = out.dragons[0];
+    migrateToKind(want);
+    CHECK(out.dragons[0].kind == want.kind && out.dragons[0].variant == want.variant && out.dragons[0].variant < 3);
+    CHECK(std::memcmp(out.dragons[0].stats, want.stats, sizeof(want.stats)) == 0 && out.dragons[0].manner == want.manner);
+    static SaveData again;  // the same every load
+    CHECK(decodeSave(old1.data(), old1.size(), again) == LoadResult::Ok && again.dragons[0].kind == want.kind);
 }
 
-// The Dragondex (WP12): hatched dragons fill it in (eggs don't); all four looks of a breed
-// complete it once, for Gleam and its banner (hung the first time); the rare traits count;
-// the book saves.
+// The Dragondex (WP12; by kind since DR3): hatched dragons fill it in (eggs don't); all four
+// colourings of a kind complete it once, for Gleam and its banner (hung the first time); a
+// rare colouring is news; the book saves.
 TEST(the_dragondex) {
     static SaveData s;
     s = SaveData{};
+    const int pouncer = findKind("pouncer"), puff = findKind("puffback");
+    Dragon d = makeEgg(1, Genome{}, Sex::Female, kT0);
     Rng rng(31);
-    Dragon d = makeEgg(1, makePurebred(Element::Tide, rng), Sex::Female, kT0, kLookClassic);
-    CHECK(!dexSee(s, d).newEntry && dexCount(s) == 0);  // an egg: its look is still a surprise
+    rollKind(d, pouncer, 0, rng);
+    CHECK(!dexSee(s, d).newEntry && dexCount(s) == 0);  // an egg: its colouring is still a surprise
     d.stage = Stage::Hatchling;
     CHECK(dexSee(s, d).newEntry && !dexSee(s, d).newEntry && dexCount(s) == 1);
-    const int tide = breedIndex(d.genome);
-    CHECK(dexHas(s, tide, kLookClassic) && !dexHas(s, tide, kLookWild) && !dexComplete(s, tide));
+    CHECK(dexHas(s, pouncer, 0) && !dexHas(s, pouncer, 3) && !dexComplete(s, pouncer));
     const u32 gleam = s.gleam;
     DexNews last;
-    for (u8 look : {kLookPebbleback, kLookTallneck, kLookWild}) {
-        d.look = look;
+    for (u8 v : {1, 2, 3}) {
+        d.variant = v;
         last = dexSee(s, d);
     }
-    CHECK(last.completed == tide && dexComplete(s, tide) && s.gleam == gleam + kDexBreedGleam);
-    CHECK(bannerBreed(s) == tide);  // up at once
+    CHECK(last.newRare && last.completed == pouncer && dexComplete(s, pouncer) && s.gleam == gleam + kDexBreedGleam);
+    CHECK(bannerKind(s) == pouncer);  // up at once
     CHECK(dexSee(s, d).completed < 0 && s.gleam == gleam + kDexBreedGleam);  // paid once
-    Dragon e = makeEgg(2, makePurebred(Element::Ember, rng), Sex::Male, kT0, kLookClassic);
+    Dragon e = makeEgg(2, Genome{}, Sex::Male, kT0);
+    rollKind(e, puff, 0, rng);
     e.stage = Stage::Adult;
-    for (u8 look = 0; look < kLookCount; ++look) {
-        e.look = look;
+    for (u8 v = 0; v < kKindVariants; ++v) {
+        e.variant = v;
         dexSee(s, e);
     }
-    CHECK(bannerBreed(s) == tide && dexComplete(s, breedIndex(e.genome)));  // a banner already hangs: kept
-    CHECK(hangBanner(s, breedIndex(e.genome)) && bannerBreed(s) == breedIndex(e.genome));
-    CHECK(!hangBanner(s, 20));  // Prism: not complete
+    CHECK(bannerKind(s) == pouncer && dexComplete(s, puff));  // a banner already hangs: kept
+    CHECK(hangBanner(s, puff) && bannerKind(s) == puff);
+    CHECK(!hangBanner(s, findKind("duskwing")));  // not complete
     takeDownBanner(s);
-    CHECK(bannerBreed(s) == -1);
-    e.genome.rareFlags = kRareStarspeckle;
-    CHECK(dexSee(s, e).newRare && dexRare(s, kRareStarspeckle) && !dexRare(s, kRareMelanistic));
-    CHECK(dexCount(s) == 8);
-    // The book shows the same dragon for an entry every time, of the right breed.
-    for (int b = 0; b < kBreedCount; ++b) {
-        const Dragon x = dexDragon(b, kLookWild), y = dexDragon(b, kLookWild);
-        CHECK(breedIndex(x.genome) == b && x.look == kLookWild && std::memcmp(&x.genome, &y.genome, sizeof(Genome)) == 0);
+    CHECK(bannerKind(s) == -1);
+    CHECK(dexCount(s) == 8 && dexRareCount(s) == 2 && dexEntries() == kindCount() * kKindVariants);
+    // The book shows the same dragon for an entry every time, of the right kind and colouring.
+    for (int k = 0; k < kindCount(); ++k) {
+        const Dragon x = dexDragon(k, 3), y = dexDragon(k, 3);
+        CHECK(x.kind == k && x.variant == 3 && x.stage == Stage::Adult && std::memcmp(x.stats, y.stats, sizeof(x.stats)) == 0);
     }
     // It saves.
     s.dragonCount = 0;
@@ -957,8 +970,8 @@ TEST(the_dragondex) {
     const std::size_t n = encodeSave(s, 1, kT0, buf.data(), buf.size());
     static SaveData out;
     CHECK(decodeSave(buf.data(), n, out) == LoadResult::Ok);
-    CHECK(std::memcmp(out.dexLooks, s.dexLooks, sizeof(s.dexLooks)) == 0 && out.dexRares == s.dexRares &&
-          out.dexDone == s.dexDone && out.bannerBreed == s.bannerBreed);
+    CHECK(std::memcmp(out.dexKinds, s.dexKinds, sizeof(s.dexKinds)) == 0 && out.dexKindsDone == s.dexKindsDone &&
+          out.bannerKind == s.bannerKind);
 }
 
 TEST(save_full_capacity_fits) {

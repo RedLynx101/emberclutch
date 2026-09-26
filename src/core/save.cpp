@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+#include "core/kinds.hpp"
+
 namespace ec {
 namespace {
 
@@ -123,6 +125,12 @@ void writeDragon(Writer& w, const Dragon& d) {
     w.u8v(d.known);
     w.u8v(d.look);  // Alpha 2 WP12: its look (D54)
     for (float m : d.mud) w.u8v(static_cast<u8>(m + 0.5f));  // Alpha 2 WP12: mud (D46)
+    w.u8v(d.kind);  // DR3 (D80): the kind, its colouring, stats, manner and traits
+    w.u8v(d.variant);
+    for (u8 s : d.stats) w.u8v(s);
+    w.u8v(d.manner);
+    w.u8v(d.traitCount);
+    for (u8 t : d.traits) w.u8v(t);
     w.patchU16(sizeAt, static_cast<u16>(w.pos() - start));
 }
 
@@ -199,6 +207,20 @@ bool readDragon(Reader& r, Dragon& d) {
             const u8 v = r.u8v();
             m = v > 100 ? 100.0f : v;
         }
+    constexpr std::size_t kKindBytes = 2 + kDragonStats + 2 + kDragonTraits;
+    bool kinded = false;
+    if (r.pos() + kKindBytes <= start + size) {  // DR3: its kind
+        d.kind = r.u8v();
+        d.variant = r.u8v();
+        for (u8& s : d.stats) s = r.u8v();
+        d.manner = r.u8v();
+        d.traitCount = r.u8v();
+        for (u8& t : d.traits) t = r.u8v();
+        kinded = d.kind < kindCount() && d.variant < kKindVariants && d.manner < mannerCount() &&
+                 d.traitCount <= kDragonTraits;
+        for (int i = 0; i < d.traitCount && kinded; ++i) kinded = d.traits[i] < traitCount();
+    }
+    if (!kinded) migrateToKind(d);  // from before the revamp (D80): a new kind, fixed by its id
     r.seek(start + size);  // skip fields from newer builds
 
     if (!inRange(plan, 2) || !inRange(sex, 2) || !inRange(personality, static_cast<u8>(Personality::Count)) ||
@@ -268,6 +290,11 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
     w.u8v(data.dexRares);
     w.u32v(data.dexDone);
     w.u8v(data.bannerBreed);
+    w.u8v(static_cast<u8>(kDexKindSlots));  // DR3: the Dragondex by kind (its size first, so it can grow)
+    for (u8 k : data.dexKinds) w.u8v(k);
+    w.u32v(static_cast<u32>(data.dexKindsDone));
+    w.u32v(static_cast<u32>(data.dexKindsDone >> 32));
+    w.u8v(data.bannerKind);
     w.patchU16(at, static_cast<u16>(w.pos() - start));
 
     // Settings section
@@ -380,6 +407,17 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
         tmp.dexDone = r.u32v() & ((1u << kBreedCount) - 1);
         tmp.bannerBreed = r.u8v();
         if (tmp.bannerBreed >= kBreedCount) tmp.bannerBreed = 0xFF;
+    }
+    if (r.pos() + 1 <= start + sectionSize) {  // DR3: the Dragondex by kind (older saves: empty; main.cpp fills it)
+        const int slots = r.u8v();
+        for (int k = 0; k < slots; ++k) {
+            const u8 v = r.u8v();
+            if (k < kDexKindSlots) tmp.dexKinds[k] = static_cast<u8>(v & ((1u << kKindVariants) - 1));
+        }
+        const u64 lo = r.u32v(), hi = r.u32v();
+        tmp.dexKindsDone = lo | (hi << 32);
+        tmp.bannerKind = r.u8v();
+        if (tmp.bannerKind >= kindCount()) tmp.bannerKind = 0xFF;
     }
     r.seek(start + sectionSize);
 

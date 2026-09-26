@@ -7,6 +7,7 @@
 #include "core/breeding.hpp"
 #include "core/genetics.hpp"
 #include "core/items.hpp"
+#include "core/kinds.hpp"
 #include "app/strings.hpp"
 
 namespace ec {
@@ -164,7 +165,7 @@ void cycleCare(App& app, int dir) {
     audio::playSfx(audio::Sfx::Tap);
     const Dragon& d = activeDragon(app);
     if (d.stage == Stage::Egg)
-        showToastf(app, "%s egg", breedName(d.genome));
+        showToastf(app, "%s egg", kindTitle(d));
     else
         showToastf(app, "%s", d.name);
 }

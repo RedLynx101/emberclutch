@@ -15,6 +15,7 @@
 #include "core/genetics.hpp"
 #include "core/market.hpp"
 #include "core/profile.hpp"
+#include "core/kinds.hpp"
 #include "care.h"      // sprite indices (gfx/care.t3s, tools/blender/care_sprites.py)
 #include "care_t3x.h"  // the sprite atlas, linked into the program
 
@@ -515,7 +516,7 @@ void selectTool(App& app, Dragon& d, Tool t) {
 }
 
 u32 glowOf(const Dragon& d, u8 alpha = 255) {
-    return fromRgb(heartglowColor(static_cast<Element>(d.genome.elementA)), alpha);
+    return fromRgb(kindGlow(d), alpha);
 }
 
 // One of the family: a heart in its colour, its name and breed (or "Unknown").
@@ -529,13 +530,13 @@ void kinBox(App& app, Rect r, const SaveData& s, int who, const char* role) {
     const Dragon& k = s.dragons[who];
     heart(r.x + 11, r.y + r.h / 2, 7, glowOf(k));
     text(app, k.name, r.x + 20, r.y + 3, 0.38f, theme::kShell, C2D_AlignLeft, r.w - 23);
-    text(app, breedName(k.genome), r.x + 20, r.y + r.h / 2 + 1, 0.32f, withAlpha(theme::kShell, 0.7f), C2D_AlignLeft, r.w - 23);
+    text(app, kindTitle(k), r.x + 20, r.y + r.h / 2 + 1, 0.32f, withAlpha(theme::kShell, 0.7f), C2D_AlignLeft, r.w - 23);
 }
 
 void profileAbout(App& app, const Dragon& d, s64 now) {
     char line[96];
     if (d.stage == Stage::Egg) {  // what's inside is a surprise until it hatches
-        std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", breedName(d.genome), str::kEggSuffix,
+        std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", kindTitle(d), str::kEggSuffix,
                       static_cast<int>(eggProgress(d) * 100), str::kIncubated);
         textCentered(app, line, 160, 110, 0.5f, theme::kShell, 300);
         textCentered(app, originText(d), 160, 134, 0.42f, withAlpha(theme::kShell, 0.75f), 300);
@@ -546,38 +547,38 @@ void profileAbout(App& app, const Dragon& d, s64 now) {
     std::snprintf(line, sizeof(line), "%s %s %s  -  %s %d", sexName(d.sex), kind, stageName(d.stage),
                   str::kDay, daysSinceHatch(d, now) + 1);
     textCentered(app, line, 160, 76, 0.46f, theme::kShell, 304);
-    std::snprintf(line, sizeof(line), "%s  -  %s", personalityName(d.personality), str::kBond);
+    std::snprintf(line, sizeof(line), "%s  -  %s", mannerName(d.manner), str::kBond);
     const float w = textWidth(app, line, 0.44f);
     text(app, line, 160 - (w + 70) / 2, 86, 0.44f, withAlpha(theme::kShell, 0.85f), C2D_AlignLeft);
     for (int h = 0; h < 5; ++h)  // bond, a heart per 200
         heart(160 - (w + 70) / 2 + w + 10 + h * 13, 94, 5.5f, d.bond >= (h + 1) * 200 ? glowOf(d) : withAlpha(theme::kShell, 0.25f));
-    // Stats (left) and looks (right).
-    const Stats st = statsOf(d);
-    const char* const names[3] = {str::kStatWing, str::kStatWit, str::kStatSpark};
-    const int values[3] = {st.wing, st.wit, st.spark};
-    for (int k = 0; k < 3; ++k) {
-        const float y = 110 + k * 16;
-        text(app, names[k], 14, y, 0.4f, theme::kShell, C2D_AlignLeft);
-        C2D_DrawRectSolid(56, y + 4, 0.5f, 90, 7, withAlpha(theme::kShell, 0.15f));
-        C2D_DrawRectSolid(56, y + 4, 0.5f, 90 * values[k] / 100.0f, 7, theme::kClutchGold);
+    // Its stats (left: Wing, Wit, Might, Breath, Stamina, out of 10) and what it is (right):
+    // its element(s) and how rare its kind is, its manner and its traits (DR3, D77-D78).
+    static constexpr const char* kStatNames[kDragonStats] = {"Wing", "Wit", "Might", "Breath", "Stamina"};
+    for (int k = 0; k < kDragonStats; ++k) {
+        const float y = 104 + k * 12;
+        text(app, kStatNames[k], 14, y, 0.36f, theme::kShell, C2D_AlignLeft);
+        C2D_DrawRectSolid(64, y + 3, 0.5f, 80, 6, withAlpha(theme::kShell, 0.15f));
+        C2D_DrawRectSolid(64, y + 3, 0.5f, 8.0f * d.stats[k], 6, theme::kClutchGold);
     }
-    const Genome& g = d.genome;
-    std::snprintf(line, sizeof(line), "%s build, %s horns", buildName(g.build), hornsName(g.horns));
-    text(app, line, 160, 110, 0.36f, theme::kShell, C2D_AlignLeft, 152);
-    std::snprintf(line, sizeof(line), "%s frill, %s wings", frillName(g.frill), wingsName(g.wings));
-    text(app, line, 160, 126, 0.36f, theme::kShell, C2D_AlignLeft, 152);
-    const char* rare = rareName(g.rareFlags);
-    std::snprintf(line, sizeof(line), "%s tail, %s%s%s", tailName(g.tailTip), patternName(g.pattern), rare ? ", " : "",
-                  rare ? rare : "");
-    text(app, line, 160, 142, 0.36f, theme::kShell, C2D_AlignLeft, 152);
+    const KindInfo& ki = kindInfo(d.kind < kindCount() ? d.kind : 0);
+    char els[32];
+    kindElements(d.kind, els, sizeof(els));
+    std::snprintf(line, sizeof(line), "%s, %s", els, rarityName(ki.rarity));
+    text(app, line, 160, 104, 0.36f, theme::kShell, C2D_AlignLeft, 152);
+    for (int t = 0; t < d.traitCount && t < kDragonTraits; ++t) {  // (its manner is up top)
+        const bool rareTrait = traitTier(d.traits[t]) >= 2;
+        text(app, traitName(d.traits[t]), 160 + (t % 2) * 76, 120 + (t / 2) * 14, 0.36f,
+             rareTrait ? theme::kClutchGold : withAlpha(theme::kShell, 0.9f), C2D_AlignLeft, 74);
+    }
     // What you've found out.
     if (d.known & kKnownSweetSpot) std::snprintf(line, sizeof(line), str::kSweetSpotIs, sweetSpotText(d));
     else std::snprintf(line, sizeof(line), "%s", str::kSweetSpotUnknown);
-    textCentered(app, line, 160, 168, 0.4f, theme::kClutchGold, 300);
+    textCentered(app, line, 160, 170, 0.4f, theme::kClutchGold, 300);
     if ((d.known & kKnownFavourite) && d.favoriteFood < static_cast<int>(Food::Count))
         std::snprintf(line, sizeof(line), str::kFavouriteIs, foodInfo(static_cast<Food>(d.favoriteFood)).name);
     else std::snprintf(line, sizeof(line), "%s", str::kFavouriteUnknown);
-    textCentered(app, line, 160, 184, 0.4f, theme::kClutchGold, 300);
+    textCentered(app, line, 160, 185, 0.4f, theme::kClutchGold, 300);
 }
 
 void profileFamily(App& app, const Dragon& d) {
@@ -607,7 +608,7 @@ void profileFamily(App& app, const Dragon& d) {
     text(app, d.name, me.x + 22, me.y + 2, 0.42f, theme::kShell, C2D_AlignLeft, me.w - 26);
     char young[32];
     if (f.young > 0) std::snprintf(young, sizeof(young), str::kYoungCount, f.young);
-    else std::snprintf(young, sizeof(young), "%s", breedName(d.genome));
+    else std::snprintf(young, sizeof(young), "%s", kindTitle(d));
     text(app, young, me.x + 22, me.y + 17, 0.34f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, me.w - 26);
 }
 
@@ -770,8 +771,8 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
     gauge(app, 144, 4, str::kShine, d.needs.shine);
     gauge(app, 212, 4, str::kPlay, d.needs.play);
     const float level = heartglowLevel(d, app.t);
-    glow(298, 16, 14, fromRgb(heartglowColor(static_cast<Element>(d.genome.elementA))), level);
-    heart(298, 16, 11, fromRgb(heartglowColor(static_cast<Element>(d.genome.elementA)), static_cast<u8>(120 + 135 * level)));
+    glow(298, 16, 14, fromRgb(kindGlow(d)), level);
+    heart(298, 16, 11, fromRgb(kindGlow(d), static_cast<u8>(120 + 135 * level)));
 
     // The heartglow opens the profile card; while it's open, the tools rest.
     if (in.released && !c.stroke.down && Rect{276, 0, 44, 36}.contains(in.rx, in.ry)) {

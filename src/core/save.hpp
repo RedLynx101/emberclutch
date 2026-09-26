@@ -30,6 +30,8 @@ struct Settings {
     u8 seenHatch = 0;  // the hatching has been watched once: it can be skipped after that
 };
 
+constexpr int kDexKindSlots = 64;  // the Dragondex's room for kinds (36 planned, then second layers)
+
 struct SaveData {
     char playerName[16] = {};
     s64 lastSim = 0;    // local unix time the simulation last advanced to
@@ -62,6 +64,12 @@ struct SaveData {
     u8 dexRares = 0;
     u32 dexDone = 0;
     u8 bannerBreed = 0xFF;
+    // DR3 (D80): the Dragondex by kind (the breed book above is archived with the breeds): per
+    // kind, the colourings seen (a bit each); the kinds completed (a bit each); the kind whose
+    // banner hangs in the den (0xFF: none). Room for 64 kinds.
+    u8 dexKinds[kDexKindSlots] = {};
+    u64 dexKindsDone = 0;
+    u8 bannerKind = 0xFF;
     Settings settings{};
     u16 dragonCount = 0;
     Dragon dragons[kMaxDragons];

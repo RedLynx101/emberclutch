@@ -1,0 +1,15 @@
+# The first egg (D18; DR3): the three common kinds' eggs, in their colours; each picked shows
+# its kind and blurb.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+shot s01-choose
+tap 160 120
+wait 0.6
+shot s02-second
+tap 260 120
+wait 0.6
+shot s03-third
+quit

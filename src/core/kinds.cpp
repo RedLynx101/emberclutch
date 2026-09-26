@@ -1,5 +1,6 @@
 #include "core/kinds.hpp"
 
+#include <cstdio>
 #include <cstring>
 
 namespace ec {
@@ -61,6 +62,15 @@ const char* elementName(int e) { return e >= 0 && e < elementCount() ? kElementN
 Rgb elementGlow(int e) { return e >= 0 && e < elementCount() ? kElementGlow[e] : Rgb{255, 255, 255}; }
 int mannerCount() { return count(kMannerNames); }
 const char* mannerName(int m) { return m >= 0 && m < mannerCount() ? kMannerNames[m] : "?"; }
+
+Personality personalityOf(int m) {
+    static constexpr Personality kActsLike[] = {Personality::Sleepy, Personality::Playful, Personality::Curious,
+                                                Personality::Proud};
+    constexpr int kOwn = static_cast<int>(Personality::Count);
+    if (m >= 0 && m < kOwn) return static_cast<Personality>(m);
+    return m - kOwn < static_cast<int>(sizeof(kActsLike) / sizeof(kActsLike[0])) ? kActsLike[m - kOwn]
+                                                                                 : Personality::Playful;
+}
 int traitCount() { return count(kTraitNames); }
 const char* traitName(int t) { return t >= 0 && t < traitCount() ? kTraitNames[t] : "?"; }
 int traitTier(int t) { return t >= 0 && t < traitCount() ? kTraitTier[t] : 0; }
@@ -109,6 +119,132 @@ bool buildKindParts(const ModelData& m, bool rare, bool rareReplaces, bool slitE
     const MeshData* meshes[16];
     const int n = selectKindParts(m, rare, rareReplaces, slitEyes, meshes);
     return mergeParts(meshes, n, t, build, out);
+}
+
+
+// ---- DR3: every dragon a kind
+
+namespace {
+
+static_assert(kDragonStats == kKindStats, "a dragon's stats are its kind's");
+
+u8 clampStat(int v) { return static_cast<u8>(v < 1 ? 1 : (v > 10 ? 10 : v)); }
+
+bool isCrossbreed(int k) { return kindInfo(k).parents[0] >= 0; }
+
+}  // namespace
+
+void rollKind(Dragon& d, int kind, int variant, Rng& rng) {
+    if (kind < 0 || kind >= kindCount()) kind = 0;
+    const KindInfo& k = kindInfo(kind);
+    const bool rare = variant == k.rareVariant;
+    d.kind = static_cast<u8>(kind);
+    d.variant = static_cast<u8>(variant >= 0 && variant < kKindVariants ? variant : 0);
+    // A manner it leans to (the first most, four to one), now and then any.
+    if (k.mannerCount > 0 && !rng.chance(1, 5)) {
+        int total = 0;
+        for (int i = 0; i < k.mannerCount; ++i) total += k.mannerCount - i;
+        int pick = static_cast<int>(rng.below(static_cast<u32>(total)));
+        int i = 0;
+        while (pick >= k.mannerCount - i) pick -= k.mannerCount - i++;
+        d.manner = k.manners[i];
+    } else {
+        d.manner = static_cast<u8>(rng.below(static_cast<u32>(mannerCount())));
+    }
+    // Stats: the kind's, a point either way, one more all round on the rare colouring, then the
+    // manner's nudge (one up, one down).
+    for (int s = 0; s < kKindStats; ++s) d.stats[s] = clampStat(k.stats[s] + rng.range(-1, 1) + (rare ? 1 : 0));
+    const u8* nudge = kMannerNudge[d.manner % mannerCount()];
+    d.stats[nudge[0]] = clampStat(d.stats[nudge[0]] + 1);
+    d.stats[nudge[1]] = clampStat(d.stats[nudge[1]] - 1);
+    // Traits from those it leans to (earlier in its list more likely): one or two, three on
+    // the rare colouring. The rare colouring alone reaches the rarest tier, and weights rarer
+    // traits up; a rare kind reaches one tier further than the rest.
+    const int want = rare ? 3 : (rng.chance(2, 5) ? 2 : 1);
+    const int reach = rare ? 3 : (k.rarity == Rarity::Rare ? 2 : 1);
+    d.traitCount = 0;
+    for (int n = 0; n < want && n < kDragonTraits; ++n) {
+        int weights[6] = {}, total = 0;
+        for (int i = 0; i < k.traitCount; ++i) {
+            const int t = k.traits[i], tier = kTraitTier[t];
+            bool taken = false;
+            for (int j = 0; j < d.traitCount; ++j) taken |= d.traits[j] == t;
+            if (taken || tier > reach) continue;
+            weights[i] = (k.traitCount - i) * (rare ? 1 + tier : 1);
+            total += weights[i];
+        }
+        if (total == 0) break;
+        int pick = static_cast<int>(rng.below(static_cast<u32>(total)));
+        int i = 0;
+        while (pick >= weights[i]) pick -= weights[i++];
+        d.traits[d.traitCount++] = k.traits[i];
+    }
+    d.personality = personalityOf(d.manner);  // (an egg's is set again as it hatches: the same)
+}
+
+int rollVariant(Rng& rng, bool rareParent) {
+    if (rng.chance(1, rareParent ? 10 : 20)) return kKindVariants - 1;
+    return static_cast<int>(rng.below(kKindVariants - 1));
+}
+
+int crossbreedOf(int a, int b) {
+    for (int k = 0; k < kindCount(); ++k) {
+        const KindInfo& ki = kindInfo(k);
+        if ((ki.parents[0] == a && ki.parents[1] == b) || (ki.parents[0] == b && ki.parents[1] == a)) return k;
+    }
+    return -1;
+}
+
+int childKind(int a, int b, Rng& rng) {
+    if (a == b) return a;
+    const int cross = crossbreedOf(a, b);
+    if (cross >= 0 && rng.chance(1, 3)) return cross;
+    return rng.chance(1, 2) ? a : b;
+}
+
+int randomKind(Rng& rng, int common, int uncommon, int rare) {
+    int total = 0;
+    const int weight[3] = {common, uncommon, rare};
+    for (int k = 0; k < kindCount(); ++k)
+        if (!isCrossbreed(k)) total += weight[static_cast<int>(kindInfo(k).rarity)];
+    if (total <= 0) return 0;
+    int pick = static_cast<int>(rng.below(static_cast<u32>(total)));
+    for (int k = 0; k < kindCount(); ++k) {
+        if (isCrossbreed(k)) continue;
+        pick -= weight[static_cast<int>(kindInfo(k).rarity)];
+        if (pick < 0) return k;
+    }
+    return 0;
+}
+
+void migrateToKind(Dragon& d) {
+    Rng rng(static_cast<std::uint64_t>(d.id) * 0x9E3779B97F4A7C15ull + 0xD3A11u);
+    const int kind = static_cast<int>(rng.below(static_cast<u32>(kindCount())));  // any, crossbreeds too (Noah: "randomize")
+    rollKind(d, kind, static_cast<int>(rng.below(kKindVariants - 1)), rng);
+}
+
+const char* kindTitle(const Dragon& d) { return kindInfo(d.kind < kindCount() ? d.kind : 0).title; }
+
+Rgb kindGlow(const Dragon& d) { return elementGlow(kindInfo(d.kind < kindCount() ? d.kind : 0).elements[0]); }
+
+Rgb kindShell(const Dragon& d) {
+    return kindInfo(d.kind < kindCount() ? d.kind : 0).variants[d.variant % kKindVariants].egg[0];
+}
+
+float kindSize(const Dragon& d) {
+    return kindInfo(d.kind < kindCount() ? d.kind : 0).size * (0.94f + 0.12f * (static_cast<float>(d.genome.size) / 255.0f));
+}
+
+void kindElements(int kind, char* out, int cap) {
+    const KindInfo& k = kindInfo(kind < kindCount() ? kind : 0);
+    if (k.elementCount > 1)
+        std::snprintf(out, static_cast<std::size_t>(cap), "%s / %s", elementName(k.elements[0]), elementName(k.elements[1]));
+    else
+        std::snprintf(out, static_cast<std::size_t>(cap), "%s", elementName(k.elements[0]));
+}
+
+const char* rarityName(Rarity r) {
+    return r == Rarity::Rare ? "Rare" : (r == Rarity::Uncommon ? "Harder to find" : "Common");
 }
 
 }  // namespace ec

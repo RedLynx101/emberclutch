@@ -8,6 +8,7 @@
 #include "app/theme.hpp"
 #include "core/clock.hpp"
 #include "core/genetics.hpp"
+#include "core/kinds.hpp"
 
 namespace ec {
 
@@ -246,7 +247,7 @@ void dragonPlaceholder(const Dragon& d, float cx, float groundY, float scale, fl
     }
     // Heartglow, drawn last so the hatchling's big head never covers it. White-hot core so it
     // reads even when the glow matches the body (Tide on teal).
-    const Rgb glowRgb = heartglowColor(static_cast<Element>(g.elementA));
+    const Rgb glowRgb = kindGlow(d);
     const float level = heartglowLevel(d, t);
     const float heartX = bodyX - bodyW * 0.08f, heartY = bodyY + bodyH * 0.18f + bob;
     glow(heartX, heartY, 16 + 10 * s, fromRgb(glowRgb), level);

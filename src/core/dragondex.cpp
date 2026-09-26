@@ -4,39 +4,28 @@ namespace ec {
 
 namespace {
 
-Genome breedGenome(int index) {
-    u8 a, b;
-    breedAlleles(index, a, b);
-    Rng rng(0xD1A6u + static_cast<u32>(index) * 977u);
-    const Genome pa = makePurebred(static_cast<Element>(a), rng);
-    if (a == b) return pa;
-    const Genome pb = makePurebred(static_cast<Element>(b), rng);
-    return ec::breed(pa, pb, rng);  // allele A from the first, B from the second: this hybrid
-}
+bool validKind(int k) { return k >= 0 && k < kindCount() && k < kDexKindSlots; }
 
 }  // namespace
 
+int dexEntries() { return kindCount() * kKindVariants; }
+
 DexNews dexSee(SaveData& s, const Dragon& d) {
     DexNews news;
-    if (d.stage == Stage::Egg) return news;
-    const int b = breedIndex(d.genome);
-    const int look = d.look < kLookCount ? static_cast<int>(d.look) : static_cast<int>(kLookClassic);
-    const u8 bit = static_cast<u8>(1u << look);
-    if (!(s.dexLooks[b] & bit)) {
-        s.dexLooks[b] = static_cast<u8>(s.dexLooks[b] | bit);
+    if (d.stage == Stage::Egg || !validKind(d.kind)) return news;
+    const int k = d.kind, v = d.variant % kKindVariants;
+    const u8 bit = static_cast<u8>(1u << v);
+    if (!(s.dexKinds[k] & bit)) {
+        s.dexKinds[k] = static_cast<u8>(s.dexKinds[k] | bit);
         news.newEntry = true;
+        news.newRare = v == kindInfo(k).rareVariant;
     }
-    const u8 rares = static_cast<u8>(d.genome.rareFlags & 0x0F);
-    if (rares & ~s.dexRares) {
-        s.dexRares = static_cast<u8>(s.dexRares | rares);
-        news.newRare = true;
-    }
-    const u32 done = 1u << b;
-    if (s.dexLooks[b] == (1u << kLookCount) - 1 && !(s.dexDone & done)) {
-        s.dexDone |= done;
+    const u64 done = 1ull << k;
+    if (s.dexKinds[k] == (1u << kKindVariants) - 1 && !(s.dexKindsDone & done)) {
+        s.dexKindsDone |= done;
         s.gleam += kDexBreedGleam;
-        if (s.bannerBreed == 0xFF) s.bannerBreed = static_cast<u8>(b);  // up at once, the first time
-        news.completed = b;
+        if (s.bannerKind == 0xFF) s.bannerKind = static_cast<u8>(k);  // up at once, the first time
+        news.completed = k;
     }
     return news;
 }
@@ -45,45 +34,51 @@ void dexSeeAll(SaveData& s) {
     for (int i = 0; i < s.dragonCount; ++i) dexSee(s, s.dragons[i]);
 }
 
-bool dexHas(const SaveData& s, int breed, int look) {
-    return breed >= 0 && breed < kBreedCount && look >= 0 && look < kLookCount && (s.dexLooks[breed] >> look) & 1;
+bool dexHas(const SaveData& s, int kind, int variant) {
+    return validKind(kind) && variant >= 0 && variant < kKindVariants && (s.dexKinds[kind] >> variant) & 1;
 }
 
-bool dexComplete(const SaveData& s, int breed) { return breed >= 0 && breed < kBreedCount && (s.dexDone >> breed) & 1; }
-
-bool dexRare(const SaveData& s, u8 rareFlag) { return (s.dexRares & rareFlag) != 0; }
+bool dexComplete(const SaveData& s, int kind) { return validKind(kind) && (s.dexKindsDone >> kind) & 1; }
 
 int dexCount(const SaveData& s) {
     int n = 0;
-    for (int b = 0; b < kBreedCount; ++b)
-        for (int l = 0; l < kLookCount; ++l) n += (s.dexLooks[b] >> l) & 1;
+    for (int k = 0; k < kindCount() && k < kDexKindSlots; ++k)
+        for (int v = 0; v < kKindVariants; ++v) n += (s.dexKinds[k] >> v) & 1;
     return n;
 }
 
-int bannerBreed(const SaveData& s) { return s.bannerBreed < kBreedCount ? s.bannerBreed : -1; }
+int dexRareCount(const SaveData& s) {
+    int n = 0;
+    for (int k = 0; k < kindCount() && k < kDexKindSlots; ++k) n += (s.dexKinds[k] >> kindInfo(k).rareVariant) & 1;
+    return n;
+}
 
-bool hangBanner(SaveData& s, int breed) {
-    if (!dexComplete(s, breed)) return false;
-    s.bannerBreed = static_cast<u8>(breed);
+int bannerKind(const SaveData& s) { return s.bannerKind < kindCount() ? s.bannerKind : -1; }
+
+bool hangBanner(SaveData& s, int kind) {
+    if (!dexComplete(s, kind)) return false;
+    s.bannerKind = static_cast<u8>(kind);
     return true;
 }
 
-void takeDownBanner(SaveData& s) { s.bannerBreed = 0xFF; }
+void takeDownBanner(SaveData& s) { s.bannerKind = 0xFF; }
 
-Dragon dexDragon(int breed, int look) {
-    Dragon d = makeEgg(0xFFFFFF00u + static_cast<u32>(breed * kLookCount + look), breedGenome(breed), Sex::Male, 0,
-                       static_cast<u8>(look));
+Dragon dexDragon(int kind, int variant) {
+    const u32 id = 0xFFFFFF00u + static_cast<u32>(kind * kKindVariants + variant);
+    Dragon d = makeEgg(id, Genome{}, Sex::Male, 0);
+    Rng rng(0xD1A6u + id * 977u);
+    rollKind(d, kind, variant, rng);
     d.stage = Stage::Adult;
     d.incubationSeconds = kIncubationSeconds;
     d.needs = Needs{90, 90, 90, 90};
     return d;
 }
 
-void breedColours(int breed, Rgb& base, Rgb& accent, Rgb& glow) {
-    const Genome g = breedGenome(breed);
-    base = hsvToRgb(g.baseH, g.baseS, g.baseV);
-    accent = hsvToRgb(g.accentH, static_cast<u8>(g.baseS / 2), g.accentV);
-    glow = heartglowColor(static_cast<Element>(g.elementA));
+void kindColours(int kind, Rgb& base, Rgb& accent, Rgb& glow) {
+    const KindInfo& k = kindInfo(validKind(kind) ? kind : 0);
+    base = k.variants[0].pal[kPalBase];
+    accent = k.variants[0].pal[kPalAccent];
+    glow = elementGlow(k.elements[0]);
 }
 
 }  // namespace ec

@@ -4,8 +4,9 @@ Status: **under way, 2026-09-25.** DR1 done (the kit, the engine's groundwork, t
 **DR2 done** (D79: all eight base breeds and the first crossbreed, by Opus 5.5 subagents in
 parallel; [R11b](../art/reviews/R11b-new-dragons.md) answered, D80: all nine kept, the
 Duskwing's ears fixed, rarities and sizes right); run 15 (0.2.1) puts them on the 3DS by the
-dev menu, and (0.2.2) the Blazeplume as the HOME Menu banner's hatchling (D80). **Next: DR3**,
-the new dragons moving in and the old archived. What What
+dev menu, and (0.2.2) the Blazeplume as the HOME Menu banner's hatchling (D80). **DR3 done**
+(D82, 0.2.4): every dragon and egg is a kind, the save's own rolled once; the old breeds are
+archived. **Next: DR4**, the commons' pairs. What What
 the dragons become is in [dragons, version 2](../design/dragons-v2.md): 8 base breeds and 28
 crossbreeds (36 kinds), each with three painted variants and a rare one, their own bodies,
 babies, eggs and animations, stats, manners and traits, all rideable. It comes before the
@@ -72,8 +73,16 @@ groups merged; the rest are in [the kit's gotchas](../tech/dragon-kit.md#gotchas
   them out; the Dragondex for 144 entries; the Market's eggs; sizes in the den (±50%).
 - The eggs: each kind's egg in the den and the Market, bursting into pieces when it hatches as
   the eggs do now (the review sheets' "opened" egg was only a picture, R11b).
-- Tests, scripted runs in Azahar, then **run 16** on the old 3DS (a new tab on the
+- Tests, scripted runs in Azahar, then **run 17** on the old 3DS (a new tab on the
   checklists page).
+- **Done 2026-09-26 (D82, 0.2.4).** As built: kind, colouring, five stats, manner and up to
+  three traits on every dragon (12 bytes more a record; older saves migrate as they load);
+  eggs from pairs, the Market and the Wanderings roll kinds; the three commons as first eggs;
+  the manner is the temperament; the profile, the Dragondex (36 entries now), the eggs, glows,
+  names and voices follow the kind. Genetics v2's two breed alleles wait for DR4, where the
+  crossbreeds need them; the old genome still gives the sex, a +-6% size and the favourite
+  food. PC tests (227,051 checks) and Azahar runs `tests/autotest/dr3.txt` (an old save
+  migrating), `starter.txt`, `hatch.txt`, `profile.txt`, `dex.txt`, `market.txt`.
 
 ## DR4 — The next crossbreeds: the commons' pairs (D80)
 - With all eight bases built (D79), 27 crossbreeds are left (the Blazeplume, Pouncer ×

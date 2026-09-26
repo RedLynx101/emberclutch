@@ -24,11 +24,13 @@ bool sellTrinket(SaveData& s, Trinket t);
 struct DailyEgg {
     Genome genome;
     Sex sex = Sex::Female;
-    u8 look = kLookClassic;  // the base odds (D54); a surprise at hatching
-    u32 price = 0;
+    u8 look = kLookClassic;  // (the old looks: archived)
+    u8 kind = 0;             // DR3: its kind (mostly the harder to find ones: the commons are the starters)
+    u8 variant = 0;          // and its colouring (a surprise at hatching)
+    u32 price = 0;           // by the kind's rarity
 };
 // Today's egg, the same all day for everyone with this save (from the day and the save's
-// first dragon), mostly Grove, Frost or Lumen.
+// first dragon): a kind by rarity, weighted toward the harder to find.
 DailyEgg dailyEgg(const SaveData& s, s32 day);
 // Buys it (once a day) into a free nest, else the Cold Vault. Returns its index, or -1 (not
 // enough Gleam, already bought today, the Vault is full).

@@ -1,12 +1,14 @@
 // Dragons, version 2 (D77-D78): the kinds of dragon, their body plans, the eight elements,
 // manners and traits. The tables are generated from tools/dragons (tools/dragons/gen_tables.py
 // -> kinds_data.inc); each kind's models are in romfs:/dragons/<name>/ and its plan's clips in
-// romfs:/anims/<plan>.eca. Until the revamp replaces the old dragons (DR3) the game shows a
-// kind only through the dev menu.
+// romfs:/anims/<plan>.eca. Since DR3 (D80) every dragon is a kind: the old breeds and looks
+// are archived (the genome stays for what it still does: sex, the size gene, favourite food).
 #pragma once
 
+#include "core/dragon.hpp"
 #include "core/dragon_mesh.hpp"
 #include "core/model.hpp"
+#include "core/rng.hpp"
 #include "core/types.hpp"
 
 namespace ec {
@@ -66,9 +68,42 @@ const char* elementName(int element);
 Rgb elementGlow(int element);
 int mannerCount();
 const char* mannerName(int manner);
+// How a manner behaves in the den: the first six are the den's own temperaments; the rest
+// act like the nearest (Gentle: Sleepy, Mischievous: Playful, Greedy: Curious, Stubborn: Proud).
+Personality personalityOf(int manner);
 int traitCount();
 const char* traitName(int trait);
 int traitTier(int trait);  // 0 common .. 3 legendary
+
+// ---- DR3: every dragon a kind
+// A new dragon or egg of `kind` in `variant` (0-2 common, 3 rare): its stats (the kind's, a point
+// either way, a point more on the rare colouring, then its manner's nudge), a manner the kind
+// leans to (now and then any), one or two traits it leans to (three on the rare colouring,
+// which alone reaches its rarest; a rare kind reaches one tier higher).
+void rollKind(Dragon& d, int kind, int variant, Rng& rng);
+// The colouring an egg is laid in: the rare one about 1 in 20 (1 in 10 with a rare parent).
+int rollVariant(Rng& rng, bool rareParent = false);
+// The crossbreed of two kinds (-1 if there isn't one yet).
+int crossbreedOf(int a, int b);
+// The kind a pair's egg is: the parents' own if they match; else their crossbreed about a third
+// of the time if there is one, otherwise one parent's kind.
+int childKind(int a, int b, Rng& rng);
+// A kind for an egg found or bought, by rarity (weights {common, uncommon, rare}); crossbreeds
+// only come from breeding.
+int randomKind(Rng& rng, int common = 6, int uncommon = 3, int rare = 1);
+// A dragon from before the revamp (or anything without a kind): a random kind in a common
+// colouring, its stats, manner and traits rolled, all fixed by its id (the same every load).
+void migrateToKind(Dragon& d);
+// What the game calls it: "Pouncer"; hatched, with its colouring: "Tabby Pouncer".
+const char* kindTitle(const Dragon& d);
+// Its heartglow's colour (its kind's first element) and its egg's shell (its colouring's).
+Rgb kindGlow(const Dragon& d);
+Rgb kindShell(const Dragon& d);
+// Its grown size next to a Pouncer (0.67..1.5): the kind's, a little either way (the size gene).
+float kindSize(const Dragon& d);
+// The kind's elements (1 or 2) as text: "Ember" or "Ember / Gale".
+void kindElements(int kind, char* out, int cap);
+const char* rarityName(Rarity r);  // "Common", "Harder to find", "Rare"
 
 // A kind's colours for one variant, shifted a little per dragon (D78: no two quite alike):
 // seed 0 gives the variant exactly; any other seed nudges the hue and brightness of the body

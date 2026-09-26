@@ -13,6 +13,7 @@
 #include "core/den_roster.hpp"
 #include "core/egg.hpp"
 #include "core/genetics.hpp"
+#include "core/kinds.hpp"
 
 namespace ec {
 namespace {
@@ -132,9 +133,8 @@ void drawFinds(App& app, const Input& in) {
     }
     y += ((shown + 1) / 2) * 17.0f;
     if (f.wildEgg >= 0) {
-        std::snprintf(line, sizeof(line), str::kFoundWildEgg, breedName(app.game.dragons[f.wildEgg].genome));
-        egg(30, y + 8, 10, 13, {250, 240, 225},
-            heartglowColor(static_cast<Element>(app.game.dragons[f.wildEgg].genome.elementA)), 0.8f);
+        std::snprintf(line, sizeof(line), str::kFoundWildEgg, kindTitle(app.game.dragons[f.wildEgg]));
+        egg(30, y + 8, 10, 13, kindShell(app.game.dragons[f.wildEgg]), kindGlow(app.game.dragons[f.wildEgg]), 0.8f);
         text(app, line, 42, y, 0.5f, theme::kClutchGold, C2D_AlignLeft, 260);
         y += 20;
         any = true;
@@ -158,7 +158,7 @@ void drawBottom(App& app, const Input& in) {
     if (out >= 0) {  // out on the trails: how far, and call it back
         const u32 steps = stepsSince(app.game.dragons[out], stepCount(app));
         drawTrail(18, 40, 284, 110, steps / kTrailSteps,
-                  fromRgb(heartglowColor(static_cast<Element>(app.game.dragons[out].genome.elementA))));
+                  fromRgb(kindGlow(app.game.dragons[out])));
         std::snprintf(line, sizeof(line), str::kStepsSoFar, static_cast<unsigned long>(steps));
         textCentered(app, line, 160, 170, 0.55f, theme::kShell, 300);
         if (button(app, {16, 200, 150, 34}, str::kCallBack, in)) {

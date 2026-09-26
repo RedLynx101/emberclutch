@@ -17,6 +17,7 @@
 #include "core/daylight.hpp"
 #include "core/egg.hpp"
 #include "core/genetics.hpp"
+#include "core/kinds.hpp"
 #include "core/items.hpp"
 #include "core/profile.hpp"
 #include "core/prop_mesh.hpp"
@@ -25,16 +26,20 @@
 namespace ec {
 namespace {
 
-Rgb glowOf(const Dragon& d) { return heartglowColor(static_cast<Element>(d.genome.elementA)); }
+Rgb glowOf(const Dragon& d) { return kindGlow(d); }
 
-// Babies squeak high; voices deepen with growth and vary a little per dragon (size gene).
+// Babies squeak high; voices deepen with growth, and a big kind's voice is deeper than a small
+// one's (its size, as drawn: a Curlstone rumbles, a Pouncer chirps). Clamped so the samples
+// stay recognisable (0.6x .. 1.9x).
 float voicePitch(const Dragon& d, s64 now) {
-    return (1.45f - 0.55f * bodyScale(d, now)) * (1.08f - 0.16f * (d.genome.size / 255.0f));
+    const float stage = 1.75f - 0.85f * bodyScale(d, now);  // hatchling ~1.5, grown ~0.9
+    const float kind = std::pow(kindSize(d), -0.6f);          // size 0.7 -> 1.24, 1.4 -> 0.82
+    return std::fmin(std::fmax(stage * kind, 0.6f), 1.9f);
 }
 
 // The dragon's size relative to an adult, for walking speed and hop height.
 float moveScaleOf(const Dragon& d, s64 now) {
-    return growthScale(growthFor(d.stage, stageProgress(d, now))) * sizeScale(d.genome);
+    return growthScale(growthFor(d.stage, stageProgress(d, now))) * kindSize(d);
 }
 
 // Animation markers become sounds. Voices are pitched per dragon (up for babies, down for
@@ -44,7 +49,7 @@ void playEventSound(App& app, u8 event, const Dragon& d, Activity doing, s64 now
     const float voice = voicePitch(d, now);
     auto play = [&](audio::Sfx s, float pitch) { audio::playSfx(s, pitch, gain); };
     switch (event) {
-        case kAnimFootstep: play(audio::Sfx::Step, 0.95f + 0.1f * (d.genome.size / 255.0f)); break;
+        case kAnimFootstep: play(audio::Sfx::Step, std::fmin(std::fmax(1.15f - 0.2f * kindSize(d), 0.8f), 1.1f)); break;
         case kAnimChomp: play(audio::Sfx::Munch, 1.0f); break;
         case kAnimSwallow: play(audio::Sfx::Gulp, voice); break;
         case kAnimPurr: play(audio::Sfx::Purr, voice); break;
@@ -150,7 +155,7 @@ void matchSpeeds(DenActor& actor, const Dragon& d, s64 now) {
     const AnimLibrary* lib = r3d::animsFor(d);
     if (!lib) return;
     actor.updateSpeeds(*m, *bind, *lib, r3d::clipIndexFor(d, g.form), g.form * r3d::kLookSlots + look, g.t, build,
-                       sizeScale(d.genome), g.form == kFormHatchling);
+                       kindSize(d), g.form == kFormHatchling);
 }
 
 // Moves the den's dragons along: behavior decides, animation follows (core/den_actor). Each
@@ -473,11 +478,11 @@ void hatchLife(App& app, const Input& in, s64 now) {
         app.game.settings.seenHatch = 1;
         showToastf(app, str::kSayHello, d.name);
         if (h.dex.completed >= 0) {  // then the Dragondex's news, the biggest
-            u8 a, b;
-            breedAlleles(h.dex.completed, a, b);
-            queueToastf(app, str::kDexComplete, breedName(static_cast<Element>(a), static_cast<Element>(b)));
-        } else if (h.dex.newRare) {
-            queueToastf(app, str::kDexRare, rareName(d.genome.rareFlags));
+            queueToastf(app, str::kDexComplete, kindInfo(h.dex.completed).title);
+        } else if (h.dex.newRare) {  // its kind's rare colouring
+            char kind[40];
+            kindName(d, kind, sizeof(kind));
+            queueToastf(app, str::kDexRare, kind);
         } else if (h.dex.newEntry) {
             char kind[40];
             kindName(d, kind, sizeof(kind));
@@ -581,9 +586,9 @@ void denThings(App& app, const DenRoster& r, s64 now) {
     }
     t.bowlFood = bowlFood(s);
     for (int p = 0; p < kDecorSpots; ++p) t.decor[p] = decorAt(s, p);
-    if (const int breed = bannerBreed(s); breed >= 0) {  // a completed breed's banner (the Dragondex)
+    if (const int kind = bannerKind(s); kind >= 0) {  // a completed kind's banner (the Dragondex)
         Rgb base, accent, glow;
-        breedColours(breed, base, accent, glow);
+        kindColours(kind, base, accent, glow);
         t.breedBanner = true;
         t.breedLook = breedBannerLook(base, accent, glow);
     }
@@ -644,7 +649,7 @@ void update(App& app, const Input& in) {
 
 // While its profile is open (WP8): the dragon posing, turning slowly in its heartglow's light.
 void drawProfileTop(App& app, const Dragon& d, s64 now) {
-    const Rgb glow = heartglowColor(static_cast<Element>(d.genome.elementA));
+    const Rgb glow = kindGlow(d);
     verticalGradient(0, 0, kTopW, kScreenH, theme::rgba(40, 28, 52), theme::kDenPlum);
     const float at = r3d::eyeShift();  // the glow and the shadow at the dragon's depth in 3D
     C2D_DrawEllipseSolid(80 + r3d::eyeShift(1.15f), 150, 0, 240, 70, withAlpha(fromRgb(glow), 0.18f));
@@ -737,14 +742,14 @@ void drawTop(App& app) {
             if (room) r3d::project({nest.x, nest.y, 0.55f}, ex, ey, ppu);  // unchanged if it fails
             egg(ex, ey, 0.8f * ppu, 1.05f * ppu, {250, 240, 225}, glowOf(d), 0.3f + 0.7f * d.warmth / 100.0f);
         }
-        std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", breedName(d.genome), str::kEggSuffix,
+        std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", kindTitle(d), str::kEggSuffix,
                       static_cast<int>(progress * 100 > 100 ? 100 : progress * 100), str::kIncubated);
         text(app, line, 200, 14, 0.6f, theme::kShell);
         if (d.warmth <= 20) text(app, str::kGettingCold, 200, 184, 0.5f, theme::kRose);
     } else {
         if (!r3d::ready()) dragonPlaceholder(d, 200, 205, bodyScale(d, now), app.t);
         if (app.hatch.active)  // no name yet
-            std::snprintf(line, sizeof(line), "%s  -  %s %s", str::kHatching, sexName(d.sex), breedName(d.genome));
+            std::snprintf(line, sizeof(line), "%s  -  %s %s", str::kHatching, sexName(d.sex), kindTitle(d));
         else {
             char kind[40];
             kindName(d, kind, sizeof(kind));
@@ -752,7 +757,7 @@ void drawTop(App& app) {
         }
         text(app, line, 200, 8, 0.6f, theme::kShell);
         std::snprintf(line, sizeof(line), "%s %d  -  %s  -  %s%s%s", str::kDay, daysSinceHatch(d, now) + 1,
-                      moodName(moodOf(d)), personalityName(d.personality), d.napping ? "  -  " : "",
+                      moodName(moodOf(d)), mannerName(d.manner), d.napping ? "  -  " : "",
                       d.napping ? str::kNapping : "");
         text(app, line, 200, 26, 0.45f, theme::kClutchGold);
     }

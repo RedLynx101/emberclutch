@@ -33,16 +33,6 @@ void forceNextStage(Dragon& d, s64 now) {
     simulate(d, now, now);  // re-evaluates the stage
 }
 
-// Swap the dragon to the next starter breed (keeps sex, stage and care): for checking
-// every breed's parts in the renderer.
-// Through all 21 breeds: the purebreds, then the hybrids (a purebred of each parent element, bred).
-void nextBreed(Dragon& d, Rng& rng) {
-    u8 a, b;
-    breedAlleles((breedIndex(d.genome) + 1) % kBreedCount, a, b);
-    d.genome = a == b ? makePurebred(static_cast<Element>(a), rng)
-                      : breed(makePurebred(static_cast<Element>(a), rng), makePurebred(static_cast<Element>(b), rng), rng);
-}
-
 }  // namespace
 
 const char* gpuProbeName(u8 probe) {
@@ -177,7 +167,7 @@ bool debugMenu(App& app, const Input& in) {
     };
     static constexpr Entry kPage1[] = {
         {"+1 hour", 0},   {"+1 day", 1},     {"+7 days", 2},      {"Fill needs", 3},
-        {"Drain needs", 4}, {"Hatch now", 5}, {"Next stage", 6},   {"Next breed", 10},
+        {"Drain needs", 4}, {"Hatch now", 5}, {"Next stage", 6},   {"Change kind", 10},
         {"Next activity", 12}, {"Add dragon", 11}, {"Overlay", 7}, {"Save now", 8},
         {"Reset save", 9}, {"Dust/mud/bath", 13}, {"Add egg", 14}, {"Breed-ready", 15},
         {"Next kind", 37}, {"Kind colouring", 38},
@@ -185,7 +175,7 @@ bool debugMenu(App& app, const Input& in) {
     static constexpr Entry kPage2[] = {
         {"+1,000 steps", 20}, {"+10,000 steps", 21}, {"Gleam +100", 22}, {"All things", 23},
         {"Next decor", 24}, {"Fill bowl", 25}, {"Add family", 26}, {"Next look", 27},
-        {"Force look", 28}, {"GPU probe", 29}, {"Next rare", 30}, {"Dex: this breed", 31}, {"Mix looks", 32}, {"Zoomies", 33}, {"Stereo preview", 34}, {"Next game", 35}, {"Valley test", 36},
+        {"Force look", 28}, {"GPU probe", 29}, {"Change colour", 30}, {"Dex: this kind", 31}, {"Mix looks", 32}, {"Zoomies", 33}, {"Stereo preview", 34}, {"Next game", 35}, {"Valley test", 36},
     };
     const Entry* items = app.devPage ? kPage2 : kPage1;
     const int kCount = app.devPage ? static_cast<int>(sizeof(kPage2) / sizeof(kPage2[0]))
@@ -204,7 +194,12 @@ bool debugMenu(App& app, const Input& in) {
             case 7: app.overlay = !app.overlay; break;
             case 8: saveNow(app); showToast(app, "Saved."); audio::playSfx(audio::Sfx::Save); break;
             case 9: deleteGame(); resetForNewGame(app); app.slots = SaveSlots{}; app.scene = SceneId::Title; app.devMenu = false; break;
-            case 10: nextBreed(d, app.rng); break;
+            case 10: {  // DR3: this dragon becomes the next kind for good (its colouring kept; stats, manner and
+                        // traits rolled afresh). "Next kind" (37) only shows every dragon as one, unsaved.
+                rollKind(d, (d.kind + 1) % kindCount(), d.variant, app.rng);
+                showToastf(app, "Kind: %s", kindTitle(d));
+                break;
+            }
             case 11: devAddDragon(app, false); break;
             case 14: devAddDragon(app, true); break;
             case 20: app.devSteps += 1000; break;
@@ -229,20 +224,14 @@ bool debugMenu(App& app, const Input& in) {
                 }
                 break;
             case 26: devAddFamily(app); break;
-            case 30: {  // the rare traits in turn (WP12): none, iridescent, melanistic, leucistic, starspeckle
-                static const u8 kRares[] = {0, kRareIridescent, kRareMelanistic, kRareLeucistic, kRareStarspeckle};
-                static const char* const kRareNames[] = {"none", "iridescent", "melanistic", "leucistic", "starspeckle"};
-                int k = 0;
-                while (k < 5 && kRares[k] != d.genome.rareFlags) ++k;
-                k = (k + 1) % 5;
-                d.genome.rareFlags = kRares[k];
-                showToastf(app, "Rare trait: %s", kRareNames[k]);
+            case 30: {  // DR3: this dragon in its kind's next colouring, for good (the last is the rare one)
+                d.variant = static_cast<u8>((d.variant + 1) % kKindVariants);
+                showToastf(app, "Colouring: %s", kindInfo(d.kind).variants[d.variant].name);
                 break;
             }
-            case 31: {  // WP12: every look of this one's breed in the Dragondex (completes it: the banner)
-                const int breed = breedIndex(d.genome);
-                for (int l = 0; l < kLookCount; ++l) dexSee(app.game, dexDragon(breed, l));
-                showToastf(app, "Dragondex: %s complete", breedName(d.genome));
+            case 31: {  // WP12: every colouring of this one's kind in the Dragondex (completes it: the banner)
+                for (int v = 0; v < kKindVariants; ++v) dexSee(app.game, dexDragon(d.kind, v));
+                showToastf(app, "Dragondex: %s complete", kindTitle(d));
                 break;
             }
             case 37: {  // the dragon revamp (D77): every hatched dragon as a new kind, in turn

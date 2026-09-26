@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-26 — DR3: the new dragons move in
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D82 | **DR3: every dragon a kind.** (1) **The save's dragons and eggs become kinds**, each rolled once from its id (any of the nine, the Blazeplume too, in a common colouring) with its stats, manner and traits; everything else kept (name, age, bond, family, care). Save records grow by 12 bytes a dragon; an older save migrates as it loads. (2) **New eggs are kinds:** a pair's egg is the mother's or the father's kind, or their crossbreed a third of the time when one exists; the rare colouring is 1 in 20, 1 in 10 with a rare-coloured parent. The Market's egg of the day is a kind (common 3, harder to find 5, rare 2 in 10), priced by rarity (150, 250, 400 Gleam). A found egg's kind is by rarity. (3) **The first egg** is one of the three commons: the Pouncer, the Puffback or the Curlstone. (4) **The manner is the temperament:** the first six manners are the den's six temperaments; Gentle acts Sleepy, Mischievous Playful, Greedy Curious, Stubborn Proud; the egg's heartbeat tells it. (5) **The profile** shows the five stats (out of 10), the elements and rarity, the manner and the traits (the rarer in gold). (6) **The Dragondex by kind:** 9 kinds x 4 colourings (36 entries now, 144 at 36 kinds), the rare colouring counted apart; completing a kind gives its banner; the breed book is archived. (7) **Eggs, glows and names** follow the kind (the shell and markings of its colouring, its element's glow). (8) **Voices by kind and stage:** a hatchling about 1.5x, grown about 0.9x, times the kind's size to the -0.6 (a big kind deeper), held within 0.6-1.9x; footsteps by size. (9) The old genome stays under the hood for now (the sex, the size gene's +-6%, the favourite food); genetics v2 (two breed alleles) waits for DR4's crossbreeds | Noah (2026-09-26): "Feel free to randomize my save file dragons and use just the new set in the game from now on"; "Consider pitching up and down further for dragon sounds based on breed and stage of them" | Approved |
+
 ## 2026-09-26 — R11b answered: the new dragons, into the game
 
 | # | Decision | Why | Status |

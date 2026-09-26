@@ -2,6 +2,7 @@
 
 #include "core/clock.hpp"
 #include "core/den_roster.hpp"
+#include "core/kinds.hpp"
 
 namespace ec {
 namespace {
@@ -73,6 +74,11 @@ Dragon layEgg(u32 id, Dragon& a, Dragon& b, s64 now, Rng& rng) {
     egg.origin = Origin::Bred;
     egg.motherId = mother.id;
     egg.fatherId = father.id;
+    // DR3: its kind from theirs (their crossbreed now and then), the rare colouring likelier
+    // if a parent has it.
+    const bool rareParent = mother.variant == kindInfo(mother.kind).rareVariant ||
+                            father.variant == kindInfo(father.kind).rareVariant;
+    rollKind(egg, childKind(mother.kind, father.kind, rng), rollVariant(rng, rareParent), rng);
     mother.lastBredAt = father.lastBredAt = now;
     return egg;
 }

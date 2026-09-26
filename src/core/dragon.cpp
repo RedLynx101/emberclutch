@@ -4,6 +4,7 @@
 #include <initializer_list>
 
 #include "core/clock.hpp"
+#include "core/kinds.hpp"
 #include "core/mud.hpp"
 
 namespace ec {
@@ -148,10 +149,12 @@ Stage stageFor(int days, int stars) {
 Sex rollSex(Rng& rng) { return rng.chance(1, 2) ? Sex::Male : Sex::Female; }
 
 void kindName(const Dragon& d, char* out, int cap) {
-    if (d.stage == Stage::Egg)
-        std::snprintf(out, static_cast<std::size_t>(cap), "%s", breedName(d.genome));
+    const int k = d.kind < kindCount() ? d.kind : 0;
+    if (d.stage == Stage::Egg)  // its colouring is a surprise until it hatches
+        std::snprintf(out, static_cast<std::size_t>(cap), "%s", kindInfo(k).title);
     else
-        lookBreedName(d.look, d.genome, out, cap);
+        std::snprintf(out, static_cast<std::size_t>(cap), "%s %s", kindInfo(k).variants[d.variant % kKindVariants].name,
+                      kindInfo(k).title);
 }
 
 Dragon makeEgg(u32 id, const Genome& g, Sex sex, s64 now, u8 look) {
@@ -163,6 +166,8 @@ Dragon makeEgg(u32 id, const Genome& g, Sex sex, s64 now, u8 look) {
     d.stage = Stage::Egg;
     d.laidAt = now;
     d.day = dayIndex(now);
+    Rng rng(static_cast<std::uint64_t>(id) * 0xA24BAED4963EE407ull + 0x5EEDu);  // a kind by rarity, fixed by its id:
+    rollKind(d, randomKind(rng), rollVariant(rng), rng);                          // breeding and the Market choose their own
     return d;
 }
 
@@ -265,10 +270,7 @@ bool turnEgg(Dragon& d, s64 now) {
     return true;
 }
 
-Personality temperamentOf(const Dragon& d) {
-    Rng r(d.id * 0x9E3779B97F4A7C15ull + 0x7E3Du);
-    return static_cast<Personality>(r.below(static_cast<u32>(Personality::Count)));
-}
+Personality temperamentOf(const Dragon& d) { return personalityOf(d.manner); }
 
 void makeUp(Dragon& d) {
     d.upset = false;

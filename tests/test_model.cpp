@@ -10,6 +10,7 @@
 #include "check.hpp"
 #include "core/dragon_mesh.hpp"
 #include "core/egg.hpp"
+#include "core/kinds.hpp"
 #include "core/model.hpp"
 #include "core/mud.hpp"
 #include "core/rig.hpp"
@@ -313,26 +314,32 @@ TEST(rare_traits_change_the_colours) {
     CHECK(a.baseH == g.baseH && b.baseH != g.baseH && turned >= -22 && turned <= 22);
 }
 
-// Each element's egg has its own shell and speckles; a hybrid's speckles are its second element's.
-TEST(eggs_show_their_elements) {
-    Rng rng(9);
-    Rgb pal[kElementCount][kPalCount];
+// Since DR3 each kind's egg wears its own colours (its colouring's shell and markings), and
+// the light inside is its element's; a crossbreed's drifts between its two.
+TEST(eggs_show_their_kinds) {
+    static Rgb pal[kMaxKinds][kPalCount];
     float glow[kPalCount];
-    for (int e = 0; e < kElementCount; ++e) {
-        Dragon d = makeEgg(1, makePurebred(static_cast<Element>(e), rng), Sex::Female, 0);
-        eggPalette(d, 1.0f, pal[e], glow);
+    for (int k = 0; k < kindCount(); ++k) {
+        Dragon d = makeEgg(1, Genome{}, Sex::Female, 0);
+        d.kind = static_cast<u8>(k);
+        d.variant = 0;
+        eggPalette(d, 1.0f, pal[k], glow);
+        const Rgb shell = kindInfo(k).variants[0].egg[0], marks = kindInfo(k).variants[0].egg[1];
+        CHECK(pal[k][kPalBase].r == shell.r && pal[k][kPalBase].g == shell.g && pal[k][kPalBase].b == shell.b);
+        CHECK(pal[k][kPalAccent].r == marks.r && pal[k][kPalAccent].g == marks.g && pal[k][kPalAccent].b == marks.b);
     }
-    bool distinct = true;
-    for (int i = 0; i < kElementCount; ++i)
-        for (int j = i + 1; j < kElementCount; ++j)
-            distinct = distinct && (pal[i][kPalAccent].r != pal[j][kPalAccent].r || pal[i][kPalAccent].g != pal[j][kPalAccent].g ||
-                                    pal[i][kPalAccent].b != pal[j][kPalAccent].b);
-    CHECK(distinct);
-    Genome steam = makePurebred(Element::Ember, rng);
-    steam.elementB = static_cast<u8>(Element::Tide);
-    Rgb hybrid[kPalCount];
-    eggPalette(makeEgg(2, steam, Sex::Male, 0), 1.0f, hybrid, glow);
-    CHECK(hybrid[kPalAccent].b > hybrid[kPalAccent].r);  // teal speckles on an Ember-coloured shell
+    for (int i = 0; i < kindCount(); ++i)
+        for (int j = i + 1; j < kindCount(); ++j)
+            CHECK(std::memcmp(&pal[i][kPalBase], &pal[j][kPalBase], sizeof(Rgb)) != 0 ||
+                  std::memcmp(&pal[i][kPalAccent], &pal[j][kPalAccent], sizeof(Rgb)) != 0);
+    Dragon blaze = makeEgg(2, Genome{}, Sex::Male, 0);
+    blaze.kind = static_cast<u8>(findKind("blazeplume"));
+    blaze.variant = 0;
+    blaze.warmth = 100;
+    Rgb at0[kPalCount], at1[kPalCount];
+    eggPalette(blaze, 1.0f, at0, glow, 1.745f);  // the drift at one end (all Gale)...
+    eggPalette(blaze, 1.0f, at1, glow, 5.236f);  // ...and the other (all Ember)
+    CHECK(std::memcmp(&at0[kPalGlow], &at1[kPalGlow], sizeof(Rgb)) != 0);
 }
 
 TEST(palette_and_ground_offset) {
@@ -555,6 +562,6 @@ void runModelTests() {
     RUN(part_keys_blend_between_stages);
     RUN(parts_follow_the_genome_and_merge_into_one_draw);
     RUN(rare_traits_change_the_colours);
-    RUN(eggs_show_their_elements);
+    RUN(eggs_show_their_kinds);
     RUN(palette_and_ground_offset);
 }

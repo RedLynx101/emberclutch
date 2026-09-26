@@ -1,0 +1,28 @@
+# DR3 (D80): an old save's dragons become kinds (each one rolled once from its id, then kept);
+# their profiles show the kind's stats, manner and traits; the Dragondex fills in by kind.
+# Run on a save from before DR3 (the dev save), without -ResetSave.
+overlay off
+wait 3
+tap 160 107
+wait 3
+shot d01-den
+wait 3
+shot d02-den
+tap 298 16
+wait 1.2
+shot d03-about
+tap 221 50
+wait 0.8
+shot d04-family
+tap 264 219
+wait 0.8
+key START
+wait 0.5
+tap 160 136
+wait 1
+shot d05-book
+key B
+wait 0.5
+key START
+wait 0.5
+quit

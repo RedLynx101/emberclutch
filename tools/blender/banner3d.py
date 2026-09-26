@@ -59,7 +59,7 @@ OUT = os.path.abspath(dm.arg("--out", os.path.join(ROOT, "build", "banner")))
 ASSETS = os.path.abspath(dm.arg("--assets", os.path.join(ROOT, "assets")))
 REVIEW = os.path.abspath(dm.arg("--review", os.path.join(ROOT, "build", "review")))
 FONT = os.path.join(ROOT, "assets", "fonts", "cinzel-decorative", "CinzelDecorative-Bold.ttf")
-KIND = dm.arg("--kind", "blazeplume")  # a kind of the dragon kit, or "classic": the old baby Ember
+KIND = dm.arg("--kind", "classic")  # "classic": the old baby Ember (X, the banner that holds on the 3DS); or a kit kind (blazeplume: froze the HOME Menu in run 15, D81)
 COLLAR = {"head": 0.11, "tail": 0.09}
 TAIL_LIFT = (55.0, 35.0)  # a kind's tail: raised (about X) and swung to its left (about Z), degrees  # each moving piece's collar round its joint (of the dragon's height)
 # A kind's parts coloured per vertex (a feather's bands, "vc" materials): each band takes its

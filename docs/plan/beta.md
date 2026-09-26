@@ -164,6 +164,17 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 - The flight animation set (take-off, flap loop, glide, bank left/right, dive, hover,
   landing; a young dragon's flutter-hop), the rider's poses, the follow camera and its
   collisions with the ground.
+- **Your dragon and you (D81):** on foot, a dragon too small to ride walks beside you on a
+  lead, pathing round things to stay at your side; a big one can be walked too; only a
+  dragon that can fly can be ridden (get on, fly, get off and run about). Looking at your
+  dragon shows its options and the buttons. The travel partner is chosen in the den, and
+  **Call** brings it to your side when it's lost or stuck.
+- **Water (D81):** dragons swim and float when they go in (the test valley's on-foot walk
+  does a basic paddle already); a proper swim clip for every body plan comes here.
+- **Speeds and tells (D81):** running at least 3× the test's first speed; landing allowed a
+  little faster; the dragon's shadow on the ground as it comes down.
+- **The size (D81):** the real valley is at least 5× the test valley (about 1 km across now),
+  with empty room kept for places added later.
 
 ### WP6 — The painted map
 - A painted top view of the valley (rendered from the landscape, then stylised), pins for

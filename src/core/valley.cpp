@@ -354,35 +354,44 @@ void buildValleyExtras(const Valley& v, ValleyMesh& out) {
     for (const ValleyIsland& isl : v.islands) {
         const Vec3 c = isl.at;
         const float r = isl.radius;
-        const u8 grass[3] = {104, 156, 78}, rock[3] = {120, 104, 96};
+        const u8 grass[3] = {104, 156, 78};
         const u16 top = addVertex(out, c, grass[0], grass[1], grass[2]);
-        u16 rim[kSides], lip[kSides];
+        u16 rim[kSides];
         for (int s = 0; s < kSides; ++s) {
             const float a = 2 * kPi * s / kSides, wob = 1.0f + 0.12f * std::sin(a * 3 + c.x);
             rim[s] = addVertex(out, {c.x + std::cos(a) * r * wob, c.y + std::sin(a) * r * wob, c.z}, grass[0], grass[1],
                                grass[2]);
         }
         for (int s = 0; s < kSides; ++s) tri(out, top, rim[s], rim[(s + 1) % kSides]);
-        // The rocky underside: a lip under the grass, then down to a point.
-        const Vec3 apex{c.x + r * 0.1f, c.y - r * 0.08f, c.z - r * 1.7f};
-        for (int s = 0; s < kSides; ++s) {
-            const float a = 2 * kPi * s / kSides;
-            const Vec3 p{c.x + std::cos(a) * r * 0.92f, c.y + std::sin(a) * r * 0.92f, c.z - r * 0.28f};
-            u8 col[3];
-            shaded(rock, Vec3{std::cos(a), std::sin(a), -0.2f}, col);
-            lip[s] = addVertex(out, p, col[0], col[1], col[2]);
-        }
-        for (int s = 0; s < kSides; ++s) {
-            const int e = (s + 1) % kSides;
-            const Vec3 a0 = out.pos[rim[s]], a1 = out.pos[rim[e]];
-            u8 col[3];
-            shaded(rock, cross(a1 - a0, out.pos[lip[s]] - a0) * -1.0f, col);
-            const u16 r0 = addVertex(out, a0, col[0], col[1], col[2]), r1 = addVertex(out, a1, col[0], col[1], col[2]);
-            tri(out, r0, lip[s], lip[e]);
-            tri(out, r0, lip[e], r1);
-            const u16 tip = addVertex(out, apex, col[0] / 2, col[1] / 2, col[2] / 2);
-            tri(out, lip[s], tip, lip[e]);
-        }
+        // The rocky underside, a storybook turnip: a mossy lip under the grass, then banded lilac
+        // rock bulging and narrowing in four rings down to a point, faceted.
+        constexpr int kRings = 4;
+        constexpr float kDown[kRings] = {0.26f, 0.62f, 1.02f, 1.42f}, kWide[kRings] = {0.94f, 0.82f, 0.56f, 0.26f};
+        const u8 bands[kRings][3] = {{96, 132, 84}, {150, 134, 160}, {126, 110, 124}, {140, 124, 150}};  // moss, then rock
+        Vec3 ring[kRings + 1][kSides];
+        for (int s = 0; s < kSides; ++s) ring[0][s] = out.pos[rim[s]];
+        for (int k = 0; k < kRings; ++k)
+            for (int s = 0; s < kSides; ++s) {
+                const float a = 2 * kPi * s / kSides, wob = 1.0f + 0.1f * std::sin(a * 2 + k * 1.7f + c.y);
+                ring[k + 1][s] = {c.x + std::cos(a) * r * kWide[k] * wob + r * 0.05f * k, c.y + std::sin(a) * r * kWide[k] * wob,
+                                  c.z - r * kDown[k]};
+            }
+        const Vec3 apex{c.x + r * 0.22f, c.y - r * 0.06f, c.z - r * 1.8f};
+        for (int k = 0; k <= kRings; ++k)
+            for (int s = 0; s < kSides; ++s) {
+                const int e = (s + 1) % kSides;
+                const Vec3 a0 = ring[k][s], a1 = ring[k][e];
+                const Vec3 b0 = k < kRings ? ring[k + 1][s] : apex, b1 = k < kRings ? ring[k + 1][e] : apex;
+                u8 col[3];
+                shaded(bands[k < kRings ? k : kRings - 1], cross(a1 - a0, b0 - a0) * -1.0f, col);
+                const u16 i0 = addVertex(out, a0, col[0], col[1], col[2]), i1 = addVertex(out, a1, col[0], col[1], col[2]);
+                const u16 j0 = addVertex(out, b0, col[0], col[1], col[2]);
+                tri(out, i0, j0, i1);
+                if (k < kRings) {
+                    const u16 j1 = addVertex(out, b1, col[0], col[1], col[2]);
+                    tri(out, i1, j0, j1);
+                }
+            }
         const u8 green[3] = {44, 96, 50};
         for (int k = 0; k < 3; ++k) {
             const float a = k * 2.1f + c.y;

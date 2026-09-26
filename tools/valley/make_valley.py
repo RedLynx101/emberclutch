@@ -247,11 +247,11 @@ def mill_banks(x, y, h):
     if d > 30.0:
         return h
     u, f = local(x, y, P_MILL)
-    bank = WATER + MILL_WATER
+    bank = WATER + MILL_WATER + 0.25  # (a touch above the bridge's ends, so they sit in it: Beta 1 review)
     w = 1.0 - smoothstep(18.0, 28.0, d)
-    if abs(u) < 6.5:  # the channel under the bridge
+    if abs(u) < 4.6:  # the channel under the bridge's arch
         return h + (min(h, WATER - 2.2) - h) * w
-    return h + (bank - h) * w * smoothstep(6.5, 9.0, abs(u))
+    return h + (bank - h) * w * smoothstep(4.6, 5.6, abs(u))
 
 
 def grotto_notch(x, y, h):
@@ -372,16 +372,16 @@ def scatter(hs):
         props.append((x, y, kind, size, rng.randrange(256), rng.randrange(256)))
 
     # Woods and single trees over the open ground.
-    for gy in range(int(Y0), int(Y0 + 2 * HALF), 13):
-        for gx in range(int(X0), int(X0 + 2 * HALF), 13):
-            x, y = gx + rng.uniform(0, 13), gy + rng.uniform(0, 13)
+    for gy in range(int(Y0), int(Y0 + 2 * HALF), 11):  # (Beta 1 review: more trees)
+        for gx in range(int(X0), int(X0 + 2 * HALF), 11):
+            x, y = gx + rng.uniform(0, 11), gy + rng.uniform(0, 11)
             if math.hypot(x, y) > HALF * 0.95:
                 continue
             h = ground(hs, x, y)
             if h < WATER + 1.5 or slope_at(hs, x, y) > 0.5:
                 continue
             forest = fbm(x / 120.0, y / 120.0, 3, 41)
-            if forest < 0.55 and rng.random() > 0.035:
+            if forest < 0.52 and rng.random() > 0.08:
                 continue  # open ground, now and then a lone tree
             if near_place(x, y, 10.0) or near_path(x, y, 6.0) or near_water(x, y, 10.0):
                 continue

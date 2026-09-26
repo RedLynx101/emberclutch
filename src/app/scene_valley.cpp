@@ -475,6 +475,15 @@ Vec3 strayAt(const Valley& v) {
 
 // What A would do here, nearest first: someone to talk to, a door, a lantern, getting on your
 // partner, calling it.
+// Whether you're looking toward a spot: within `degrees` either side of the way you face (Beta 1
+// review: what A does shows only close by and when you look at it).
+bool facing(const Walker& you, Vec2 to, float degrees) {
+    const float dx = to.x - you.pos.x, dy = to.y - you.pos.y, d = std::hypot(dx, dy);
+    if (d < 0.6f) return true;  // right beside it
+    const Vec3 f = you.forward();
+    return (dx * f.x + dy * f.y) / d > std::cos(degrees * 0.0174533f);
+}
+
 void findAction(ValleyScene& s) {
     s.action = Action::None;
     s.actionPlace = -1;
@@ -484,7 +493,7 @@ void findAction(ValleyScene& s) {
     for (int k = 0; k < kVillagers; ++k) {
         const Vec3 p = villagerAt(s.valley, static_cast<Villager>(k));
         const float d = std::hypot(at.x - p.x, at.y - p.y);
-        if (d < 3.2f && d < best) {
+        if (d < 2.6f && d < best && facing(s.you, {p.x, p.y}, 70.0f)) {
             best = d;
             s.action = Action::Talk;
             s.actionWho = static_cast<Villager>(k);
@@ -497,7 +506,7 @@ void findAction(ValleyScene& s) {
         const Vec2 egg = placeToWorld(*m, {L.eggStand.x, L.eggStand.y});
         const Vec2 goods = placeToWorld(*m, {(L.goods[0].x + L.goods[3].x) * 0.5f, (L.goods[0].y + L.goods[3].y) * 0.5f});
         const float de = std::hypot(at.x - egg.x, at.y - egg.y), dg = std::hypot(at.x - goods.x, at.y - goods.y);
-        if (std::fmin(de, dg) < 2.6f) {
+        if (std::fmin(de, dg) < 2.4f && facing(s.you, de < dg ? egg : goods, 70.0f)) {
             s.action = Action::Shop;
             s.actionPlace = kPlaceMarket;
             s.actionTab = de < dg ? 3 : 1;  // scene_market's tabs: the egg, the goods
@@ -509,7 +518,7 @@ void findAction(ValleyScene& s) {
         if (l.hasDoor && sceneOf(p.id) != SceneId::Count) {
             const Vec2 door = placeToWorld(p, l.door);
             const float d = std::hypot(at.x - door.x, at.y - door.y);
-            if (d < 4.5f && d < best) {
+            if (d < 3.6f && d < best && facing(s.you, door, 75.0f)) {
                 best = d;
                 s.action = Action::Enter;
                 s.actionPlace = p.id;
@@ -518,7 +527,7 @@ void findAction(ValleyScene& s) {
         if (l.hasLantern && s.partner >= 0) {
             const Vec2 lan = placeToWorld(p, {l.lantern.x, l.lantern.y});
             const float d = std::hypot(at.x - lan.x, at.y - lan.y);
-            if (d < 5.0f && d < best && s.breathT < 0) {
+            if (d < 4.2f && d < best && s.breathT < 0 && facing(s.you, lan, 75.0f)) {
                 best = d;
                 s.action = Action::Light;
                 s.actionPlace = p.id;
@@ -531,7 +540,9 @@ void findAction(ValleyScene& s) {
         s.action = Action::Board;
         s.actionPlace = board;
     }
-    if (s.action == Action::None && grownPartner(s) && std::hypot(at.x - s.pal.pos.x, at.y - s.pal.pos.y) < 4.0f)
+    // Riding: near your grown partner and turned toward it (it walks at your side, so not always).
+    if (s.action == Action::None && grownPartner(s) && std::hypot(at.x - s.pal.pos.x, at.y - s.pal.pos.y) < s.pal.gap + 0.8f &&
+        facing(s.you, {s.pal.pos.x, s.pal.pos.y}, 45.0f))
         s.action = Action::Ride;
     if (s.action == Action::None && s.partner >= 0 && s.pal.lost()) s.action = Action::Call;
 }
@@ -717,6 +728,15 @@ void update(App& app, const Input& in) {
         s.wcam.update(s.you, (in.held & KEY_R ? 1.0f : 0.0f) - (in.held & KEY_L ? 1.0f : 0.0f), va, app.dt, &s.camWalls);
         if (s.partner >= 0) {
             s.pal.update(s.you, va, s.solids, app.dt);
+            if (s.shown.stage != Stage::Adult) {  // on its lead: it can't fall further behind than the lead
+                const float dx = s.pal.pos.x - s.you.pos.x, dy = s.pal.pos.y - s.you.pos.y, d = std::hypot(dx, dy);
+                constexpr float kLead = 3.0f;
+                if (d > kLead && d < 20.0f) {
+                    s.pal.pos.x = s.you.pos.x + dx * (kLead / d);
+                    s.pal.pos.y = s.you.pos.y + dy * (kLead / d);
+                    s.pal.pos.z = std::fmax(va.heightAt(s.pal.pos.x, s.pal.pos.y), va.water - 0.8f);
+                }
+            }
             partnerSpeed = s.pal.speed;
             swimming = va.heightAt(s.pal.pos.x, s.pal.pos.y) < va.water - 0.4f;
         }

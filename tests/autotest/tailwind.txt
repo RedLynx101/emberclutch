@@ -28,6 +28,8 @@ key X
 wait 4
 travel 7
 wait 3
+pad -1 0 0.3
+wait 0.8
 key A
 wait 3
 keyhold A 3

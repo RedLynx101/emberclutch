@@ -88,7 +88,7 @@ COAT_K = [(0.72, 0.085, 0.075, 0.075), (0.62, 0.15, 0.118, 0.124), (0.48, 0.152,
 
 def keeper():
     """The old dragon keeper, your guide: a little stooped, white hair swept back, bushy brows,
-    a big white beard, round brass spectacles, a long teal coat with gold hems, a crooked staff."""
+    a big white beard, round brass spectacles, a long teal coat with gold hems, a crooked cane."""
     p = person("keeper", leg=0.29, torso=0.95, stoop=0.05, eyes_at=(21.0, -8.0))
     h, m = p.head, p.body
     head_and_face(p, open_top=1, mouth=False, nose=False, ears=None,
@@ -115,10 +115,13 @@ def keeper():
         arm(p, side, sleeve_mat="outfit", long_sleeve=True, sleeve_r=0.058)
         shin(p, side, "leather_dark", r=0.048)
         shoe(p, side, "leather", size=(0.06, 0.09, 0.052))
+    # A walking cane, its crook just above his hand (Beta 1 review: a staff up past his head went
+    # through it whenever he turned or talked).
     c = hand_c(p, "L")
-    x, y = c[0] - 0.004, c[1] - 0.006
-    tube(m, [(x, y, 0.07), (x + 0.012, y, 0.75), (x, y - 0.02, 1.26), (x, y - 0.11, 1.34), (x, y - 0.16, 1.25)],
-         [0.02, 0.022, 0.025, 0.026, 0.022], 4, "leather", rigid("hand_L"), tip1=0.02)
+    x, y, top = c[0] - 0.004, c[1] - 0.006, c[2] + 0.2
+    tube(m, [(x, y, 0.07), (x + 0.006, y, top - 0.12), (x, y - 0.015, top), (x, y - 0.065, top + 0.05),
+             (x, y - 0.11, top - 0.01)],
+         [0.02, 0.022, 0.024, 0.024, 0.02], 4, "leather", rigid("hand_L"), tip1=0.02)
     seat_under(p, 0.305)
     return p
 

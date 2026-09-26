@@ -75,7 +75,8 @@ TEST(valley_tiles_join_and_fit_the_budget) {
             }
     std::printf("  valley tiles: worst %d / %d / %d, mean %.0f / %.0f / %.0f triangles\n", worst[0], worst[1], worst[2],
                 mean[0], mean[1], mean[2]);
-    CHECK(worst[0] <= 1800 && worst[1] <= 520 && worst[2] <= 80);  // Beta's rounder storybook props (the densest wood)
+    CHECK(worst[0] <= 1800 && worst[1] <= 560 && worst[2] <= 80);  // Beta's rounder storybook props (the densest wood;
+                                                                     // the Beta 1 review's thicker woods)
     // A view: three tiles near, six mid, twelve far (culled by the view, in fog beyond): a
     // typical one, and the worst (the densest forest tile everywhere, which can't happen).
     const double typical = 3 * mean[0] + 6 * mean[1] + 12 * mean[2];
@@ -85,7 +86,7 @@ TEST(valley_tiles_join_and_fit_the_budget) {
     // ~9,800 triangles, which runs at 17-18 ms on the old 3DS; the test valley's 7,000 ran at
     // 17 ms there (run 16). The valley's target is 30 fps (33 ms, Beta plan), so even the
     // impossible worst (the densest wood on every near tile) has room.
-    CHECK(typical <= 5000 && view <= 9000);
+    CHECK(typical <= 5000 && view <= 9400);
     // Neighbours at the same level share their edge exactly; the ground faces up; the skirts
     // face out of the tile.
     buildValleyTile(v, 5, 7, 0, a);
@@ -112,7 +113,7 @@ TEST(valley_tiles_join_and_fit_the_budget) {
     buildValleyExtras(v, extras);
     buildValleyWater(v, water, {0, 0}, 360.0f);
     std::printf("  extras %d, water %d triangles\n", extras.triangles(), water.triangles());
-    CHECK(extras.triangles() > 50 && extras.triangles() < 800 && water.triangles() >= 2);
+    CHECK(extras.triangles() > 50 && extras.triangles() < 1400 && water.triangles() >= 2);
 }
 
 TEST(flying_over_the_valley) {
@@ -306,17 +307,22 @@ TEST(on_foot_with_your_partner) {
         me.update(WalkInput{}, camYaw, v, {}, dt);
         pal.update(me, v, {}, dt);
     }
-    const Vec3 spot = pal.spot(me);
-    std::printf("  on foot: walked %.1f m/s, ran %.1f m/s; partner %.1f m from its spot\n", walked, runner.speed,
-                std::hypot(pal.pos.x - spot.x, pal.pos.y - spot.y));
-    CHECK(std::hypot(pal.pos.x - spot.x, pal.pos.y - spot.y) < 1.0f && !pal.lost());
+    // (Standing still, it stays where it caught up rather than circling to its exact spot.)
+    const float near = std::hypot(pal.pos.x - me.pos.x, pal.pos.y - me.pos.y);
+    std::printf("  on foot: walked %.1f m/s, ran %.1f m/s; partner %.1f m from you\n", walked, runner.speed, near);
+    CHECK(near < pal.gap * 1.9f && near > 0.5f && pal.settled && !pal.lost());
+    const Vec3 still = pal.pos;
+    me.heading += 1.5f;  // looking about: it stays put
+    for (int k = 0; k < 60; ++k) pal.update(me, v, {}, dt);
+    CHECK(std::hypot(pal.pos.x - still.x, pal.pos.y - still.y) < 0.05f);
     // Left far behind across the lake: lost, then called to your side.
     pal.pos = lake.at + Vec3{0, -60, 0};
     pal.pos.z = v.heightAt(pal.pos.x, pal.pos.y);
     std::vector<Solid> wall;
     for (int k = 0; k < 150; ++k) pal.update(me, v, wall, dt);
     pal.call(me, v);
-    CHECK(std::hypot(pal.pos.x - spot.x, pal.pos.y - spot.y) < 0.5f && !pal.lost());
+    const Vec3 side = pal.spot(me);
+    CHECK(std::hypot(pal.pos.x - side.x, pal.pos.y - side.y) < 0.5f && !pal.lost());
     // The camera: above the ground, turning with L/R.
     WalkCamera cam;
     cam.update(me, 0, v, dt);

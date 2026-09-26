@@ -1,0 +1,66 @@
+# The Beta 1 review's notes, checked: the lead above the ground, Rowan's cane, trees on the
+# floating islands, the mill bridge's ends on the ground, the thicker woods, the lower camera,
+# and "climb on" only close to your grown dragon and facing it.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+key X
+wait 4
+shot r01-camera-and-lead
+shotin 1.5 r02-lead-walking
+pad 0.3 1 2.5
+travel 8
+wait 3
+view 8 1 9 1.9 2.5 6 1.0
+wait 1.5
+shot r03-rowan-front
+view 8 5 7 1.9 2.5 6 1.0
+wait 1.5
+shot r04-rowan-side
+view 9 45 45 25 0 0 2
+wait 2
+shot r05-island-trees
+view 11 14 9 3.5 0 0 1
+wait 2
+shot r06-bridge-east
+view 11 -8 12 3.5 0 0 1
+wait 2
+shot r07-bridge-west
+travel 3
+wait 3
+shot r08-woods-walk
+tap 248 216
+wait 3
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 1
+key X
+wait 4
+travel 7
+wait 3
+shot r09-no-ride-prompt
+pad -1 0 0.3
+wait 0.8
+shot r10-facing-dragon
+key A
+wait 3
+shot r11-riding
+quit

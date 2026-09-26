@@ -54,6 +54,7 @@ struct Follower {
     float heading = 0, speed = 0;
     float walk = 2.2f, trot = 4.0f, run = 7.0f;  // its gaits' speeds, set from its legs
     float gap = 2.2f;                            // how far to the side it walks (bigger dragons, further)
+    bool settled = false;                        // staying put by you while you stand still
     float stuckFor = 0;                          // seconds getting no nearer while far off
     bool lost() const { return stuckFor > 3.0f; }
 
@@ -74,7 +75,7 @@ struct CameraWall {
 struct WalkCamera {
     Vec3 eye, target;
     float yaw = 0;       // the way it looks, radians about Z (0 faces -Y)
-    float distance = 10.5f;
+    float distance = 9.0f;
     bool set = false;
     void update(const Walker& you, float turn, const Valley& v, float dt,
                 const std::vector<CameraWall>* walls = nullptr);

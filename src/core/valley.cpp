@@ -11,7 +11,7 @@ namespace {
 
 constexpr float kPi = 3.14159265f;
 constexpr float kSkirt = 3.0f;         // metres a skirt hangs below the edge, at full detail
-constexpr float kLodNear = 38.0f;      // tiles nearer than this: full detail (Beta: the places and people need room)
+constexpr float kLodNear = 34.0f;      // tiles nearer than this: full detail (Beta: the places and people need room)
 constexpr float kLodMid = 115.0f;      // then half; beyond, a quarter
 
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
@@ -52,6 +52,17 @@ Vec3 ringPoint(Vec3 c, float r, float sx, float sy, float a, float turn) {
 
 // A bipyramid blob: a waist ring of `sides` at `mid`, a top point `up` above and a bottom point
 // `down` below (0: no bottom, it sits on the ground); faces shaded, the top a little lighter.
+// A little painted variety (Beta 1 review: "texture them"): a steady pseudo-random 0..1 from a
+// point, and a colour lightened or darkened by k with a touch of warm sunlight.
+float dapple(Vec3 p) {
+    const float v = std::sin(p.x * 12.9898f + p.y * 78.233f + p.z * 37.719f) * 43758.5453f;
+    return v - std::floor(v);
+}
+void tinted(const u8 c[3], float k, float warm, u8 out[3]) {
+    const float add[3] = {22.0f * warm, 16.0f * warm, 0.0f};
+    for (int i = 0; i < 3; ++i) out[i] = static_cast<u8>(std::fmin(255.0f, std::fmax(0.0f, c[i] * k + add[i])));
+}
+
 void blob(ValleyMesh& m, Vec3 mid, float r, float up, float down, int sides, float turn, const u8 col[3],
           float squash = 1.0f) {
     const Vec3 top{mid.x, mid.y, mid.z + up};
@@ -61,13 +72,21 @@ void blob(ValleyMesh& m, Vec3 mid, float r, float up, float down, int sides, flo
     for (int s = 0; s < sides; ++s) {
         const float a0 = 2 * kPi * s / sides, a1 = 2 * kPi * (s + 1) / sides;
         const Vec3 p0 = ringPoint(mid, r, 1.0f, squash, a0, turn), p1 = ringPoint(mid, r, 1.0f, squash, a1, turn);
-        u8 c[3];
+        u8 c[3], c0[3], c1[3], ct[3];
+        // Each facet painted: its edge dappled leaf by leaf, its crown sunlit and warm.
         shaded(light, cross(p1 - p0, top - p0), c);
-        tri(m, addVertex(m, p0, c[0], c[1], c[2]), addVertex(m, p1, c[0], c[1], c[2]), addVertex(m, top, c[0], c[1], c[2]));
-        if (down > 0) {
+        tinted(c, 0.82f + 0.22f * dapple(p0), 0.0f, c0);
+        tinted(c, 0.82f + 0.22f * dapple(p1), 0.0f, c1);
+        tinted(c, 1.1f, 1.0f, ct);
+        tri(m, addVertex(m, p0, c0[0], c0[1], c0[2]), addVertex(m, p1, c1[0], c1[1], c1[2]), addVertex(m, top, ct[0], ct[1], ct[2]));
+        if (down > 0) {  // the underside in shade, deepest in the middle
             shaded(col, cross(bottom - p0, p1 - p0), c);
-            tri(m, addVertex(m, p0, c[0], c[1], c[2]), addVertex(m, bottom, c[0], c[1], c[2]),
-                addVertex(m, p1, c[0], c[1], c[2]));
+            u8 cb[3];
+            tinted(c, 0.86f + 0.14f * dapple(p0 + Vec3{0, 0, 1}), 0.0f, c0);
+            tinted(c, 0.86f + 0.14f * dapple(p1 + Vec3{0, 0, 1}), 0.0f, c1);
+            tinted(c, 0.66f, 0.0f, cb);
+            tri(m, addVertex(m, p0, c0[0], c0[1], c0[2]), addVertex(m, bottom, cb[0], cb[1], cb[2]),
+                addVertex(m, p1, c1[0], c1[1], c1[2]));
         }
     }
 }
@@ -78,10 +97,12 @@ void trunk(ValleyMesh& m, Vec3 base, float h, float r, int sides, const u8 col[3
         const float a0 = 2 * kPi * s / sides, a1 = 2 * kPi * (s + 1) / sides;
         const Vec3 p0 = ringPoint(base, r, 1, 1, a0, 0.3f), p1 = ringPoint(base, r, 1, 1, a1, 0.3f);
         const Vec3 q0{p0.x, p0.y, p0.z + h}, q1{p1.x, p1.y, p1.z + h};
-        u8 c[3];
+        u8 c[3], lo[3], hi[3];
         shaded(col, cross(p1 - p0, q0 - p0), c);
-        const u16 a = addVertex(m, p0, c[0], c[1], c[2]), b = addVertex(m, p1, c[0], c[1], c[2]),
-                  d = addVertex(m, q1, c[0], c[1], c[2]), e = addVertex(m, q0, c[0], c[1], c[2]);
+        tinted(c, 0.72f, 0.0f, lo);  // bark darker at the foot, lighter up under the leaves
+        tinted(c, 1.06f, 0.3f, hi);
+        const u16 a = addVertex(m, p0, lo[0], lo[1], lo[2]), b = addVertex(m, p1, lo[0], lo[1], lo[2]),
+                  d = addVertex(m, q1, hi[0], hi[1], hi[2]), e = addVertex(m, q0, hi[0], hi[1], hi[2]);
         tri(m, a, b, d);
         tri(m, a, d, e);
     }
@@ -350,7 +371,7 @@ void buildValleyTile(const Valley& v, int tx, int ty, int lod, ValleyMesh& out) 
 
 void buildValleyExtras(const Valley& v, ValleyMesh& out) {
     out.clear();
-    constexpr int kSides = 10;
+    constexpr int kSides = 9;
     for (const ValleyIsland& isl : v.islands) {
         const Vec3 c = isl.at;
         const float r = isl.radius;
@@ -392,11 +413,17 @@ void buildValleyExtras(const Valley& v, ValleyMesh& out) {
                     tri(out, i1, j0, j1);
                 }
             }
-        const u8 green[3] = {44, 96, 50};
+        // Round storybook trees round the top (Beta 1 review), clear of the middle where a place
+        // may stand (the isles' lantern).
+        const u8 bark[3] = {118, 84, 58};
         for (int k = 0; k < 3; ++k) {
-            const float a = k * 2.1f + c.y;
-            tree(out, {c.x + std::cos(a) * r * 0.45f, c.y + std::sin(a) * r * 0.45f, c.z - 0.2f}, 7.0f + 2 * k, 2.4f, 6,
-                 green);
+            const float a = k * 2.1f + c.y * 0.01f, d = r * (0.42f + 0.12f * (k % 2));
+            const Vec3 base{c.x + std::cos(a) * d, c.y + std::sin(a) * d, c.z - 0.3f};
+            const float h = 6.5f + 1.5f * (k % 3);
+            const u8 leaf[3] = {static_cast<u8>(70 + 10 * (k % 3)), static_cast<u8>(136 + 8 * k), static_cast<u8>(62 + 6 * (k % 2))};
+            trunk(out, base, h * 0.45f, h * 0.07f, 3, bark);
+            blob(out, {base.x, base.y, base.z + h * 0.55f}, h * 0.38f, h * 0.26f, h * 0.2f, 5, a, leaf);
+            blob(out, {base.x + h * 0.12f, base.y - h * 0.08f, base.z + h * 0.78f}, h * 0.24f, h * 0.18f, h * 0.1f, 5, a + 0.8f, leaf);
         }
     }
     // (The places themselves are models: romfs/valley/places, drawn by render3d.)

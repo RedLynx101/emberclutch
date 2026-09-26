@@ -2855,8 +2855,8 @@ void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_M
     }
     Mtx_Multiply(&mv, &viewM, &model);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &mv);
-    if (handOut) {
-        const int hand = f->model.skel.find("hand_L");
+    if (handOut) {  // your left hand (the people kit's hand_R: its _R bones are the person's own left)
+        const int hand = f->model.skel.find("hand_R");
         *handOut = hand >= 0 ? apply(model, poseMat[hand].translation()) : p.at + Vec3{0, 0, 0.5f};
     }
     lookShading(kLookCount);  // the storybook look, as the kinds (D75): soft bands, a face never in shadow
@@ -2885,13 +2885,13 @@ struct LeadGpu {
     u16* idx = nullptr;
 };
 constexpr int kLeadSegments = 12;
-constexpr float kLeadLength = 3.4f;  // metres
+constexpr float kLeadLength = 2.9f;  // metres
 LeadGpu g_lead[2];
 int g_leadFlip = 0;
 
-void drawLead(App& app, Vec3 hand, Vec3 collar, Vec3 eye) {
+void drawLead(App& app, const Valley& v, Vec3 hand, Vec3 collar, Vec3 eye) {
     const float d = length(collar - hand);
-    if (d > kLeadLength * 1.6f || d < 0.05f) return;
+    if (d > 15.0f || d < 0.05f) return;  // (only a trip or a call apart: taut or slack, it's always there)
     g_leadFlip ^= 1;
     LeadGpu& g = g_lead[g_leadFlip];
     constexpr int n = 2 * (kLeadSegments + 1);
@@ -2914,16 +2914,18 @@ void drawLead(App& app, Vec3 hand, Vec3 collar, Vec3 eye) {
         }
         GSPGPU_FlushDataCache(g.idx, kLeadSegments * 6 * sizeof(u16));
     }
-    // A parabola for the sag: deeper the more slack there is.
-    const float sag = 0.4f * std::sqrt(std::fmax(0.0f, kLeadLength * kLeadLength - d * d));
+    // A parabola for the sag, deeper the more slack there is; where it would dip below the ground
+    // it lies along it instead (Beta 1 review: the lead went underground).
+    const float sag = 0.3f * std::sqrt(std::fmax(0.0f, kLeadLength * kLeadLength - d * d));
+    auto at = [&](float t) {
+        t = std::fmin(1.0f, std::fmax(0.0f, t));
+        Vec3 p = hand + (collar - hand) * t - Vec3{0, 0, sag * 4.0f * t * (1.0f - t)};
+        p.z = std::fmax(p.z, v.heightAt(p.x, p.y) + 0.05f);
+        return p;
+    };
     for (int k = 0; k <= kLeadSegments; ++k) {
-        const float t = static_cast<float>(k) / kLeadSegments;
-        const Vec3 p = hand + (collar - hand) * t - Vec3{0, 0, sag * 4.0f * t * (1.0f - t)};
-        const float dt = 1.0f / kLeadSegments;
-        const Vec3 ahead = hand + (collar - hand) * std::fmin(1.0f, t + dt) -
-                           Vec3{0, 0, sag * 4.0f * std::fmin(1.0f, t + dt) * (1.0f - std::fmin(1.0f, t + dt))};
-        const Vec3 behind = hand + (collar - hand) * std::fmax(0.0f, t - dt) -
-                            Vec3{0, 0, sag * 4.0f * std::fmax(0.0f, t - dt) * (1.0f - std::fmax(0.0f, t - dt))};
+        const float t = static_cast<float>(k) / kLeadSegments, dt = 1.0f / kLeadSegments;
+        const Vec3 p = at(t), ahead = at(t + dt), behind = at(t - dt);
         Vec3 side = cross(ahead - behind, eye - p);
         const float len = length(side);
         side = len > 1e-5f ? side * (0.018f / len) : Vec3{0.018f, 0, 0};
@@ -3305,7 +3307,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     // The dragon.
     Vec3 collar, hand;
     bool collarSet = false, handSet = false;
-    const int partnerLod = length(view.at - view.eye) > 9.0f ? 1 : 0;  // the lighter model a little way off
+    const int partnerLod = length(view.at - view.eye) > 6.0f ? 1 : 0;  // the lighter model a little way off
     if (view.dragon && pose(app, *view.dragon, view.actor, now, partnerLod, g_posed)) {
         bindDragons(projection);
         const float plain[3] = {1, 1, 1};
@@ -3381,7 +3383,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     if (view.lead && collarSet && handSet) {
         bindValleyStatic(projection, viewM, view.tint);
         C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
-        drawLead(app, hand, collar, view.eye);
+        drawLead(app, v, hand, collar, view.eye);
     }
     // The Market's stall (the dragons' program, their light).
     if (const ValleyPlaceInfo* market = v.place(kPlaceMarket);

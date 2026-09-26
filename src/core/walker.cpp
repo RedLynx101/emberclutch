@@ -102,7 +102,17 @@ void Follower::update(const Walker& you, const Valley& v, const std::vector<Soli
     const Vec3 goal = spot(you);
     const float dx = goal.x - pos.x, dy = goal.y - pos.y, dist = std::hypot(dx, dy);
     float want = 0;
-    if (dist > 0.4f) {
+    // You standing still with it near: it stays where it is (turning to you), rather than circling
+    // round to your side each time you look about, so you can turn to it and climb on (Beta 1
+    // review); it follows again once you walk on or leave it behind.
+    const float fromYou = std::hypot(you.pos.x - pos.x, you.pos.y - pos.y);
+    settled = you.speed < 0.3f && fromYou < gap * 1.9f && (settled || dist < 1.0f || fromYou < gap * 1.3f);
+    if (settled) {
+        if (fromYou > 0.5f) {
+            const float face = std::atan2(you.pos.x - pos.x, -(you.pos.y - pos.y));
+            heading = wrap(heading + clampf(wrap(face - heading), -2.0f * dt, 2.0f * dt));
+        }
+    } else if (dist > 0.4f) {
         const float face = std::atan2(dx, -dy);
         const float err = wrap(face - heading);
         heading = wrap(heading + clampf(err, -5.0f * dt, 5.0f * dt));
@@ -140,8 +150,9 @@ void WalkCamera::update(const Walker& you, float turn, const Valley& v, float dt
         if (std::fabs(err) < 2.2f) yaw = wrap(yaw + clampf(err, -0.6f * dt, 0.6f * dt));
     }
     const Vec3 look{std::sin(yaw), -std::cos(yaw), 0};
-    const Vec3 wantTarget = you.pos + Vec3{0, 0, 1.0f} + look * 2.2f;
-    Vec3 wantEye = you.pos - look * (distance * 0.78f) + Vec3{0, 0, distance * 0.62f};
+    // Low and behind you (Beta 1 review: "lower, more behind"), looking a little ahead.
+    const Vec3 wantTarget = you.pos + Vec3{0, 0, 1.2f} + look * 2.8f;
+    Vec3 wantEye = you.pos - look * (distance * 0.92f) + Vec3{0, 0, distance * 0.4f};
     // Kept in the open: stepping out from you toward where it wants to be, it stops short of any
     // ground that rises into the way (the den's cliff behind you, a hillside).
     const Vec3 from = you.pos + Vec3{0, 0, 1.5f};

@@ -72,6 +72,8 @@ wait 1.5
 shot q08-rowan
 travel 7
 wait 3
+pad -1 0 0.3
+wait 0.8
 key A
 wait 3
 shot q09-riding

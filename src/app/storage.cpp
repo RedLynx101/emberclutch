@@ -1,5 +1,7 @@
 #include "app/storage.hpp"
 
+#include <3ds.h>
+
 #include <cstdio>
 #include <cstring>
 #include <sys/stat.h>
@@ -14,6 +16,73 @@ constexpr const char* kLegacyPath = "sdmc:/3ds/emberclutch/dev-save.bin";
 // Encode/decode buffers are static: the 3DS main thread stack is small.
 u8 g_bufA[32 * 1024];
 u8 g_bufB[32 * 1024];
+
+// The save thread: the next save waiting (the newest wins), and the one being written.
+u8 g_queued[32 * 1024];
+u8 g_writing[32 * 1024];
+std::size_t g_queuedLen = 0;
+int g_queuedSlot = 0;
+bool g_hasQueued = false;
+bool g_busy = false;
+volatile bool g_failed = false;
+volatile bool g_quit = false;
+bool g_started = false;
+Thread g_thread = nullptr;
+LightEvent g_wake;
+LightLock g_lock;
+
+bool writeSlot(int target, const u8* buf, std::size_t n) {
+    mkdir("sdmc:/3ds", 0777);
+    mkdir(kDir, 0777);
+    FILE* f = std::fopen(kSlotPath[target], "wb");
+    if (!f) return false;
+    const bool ok = std::fwrite(buf, 1, n, f) == n;
+    const bool closed = std::fclose(f) == 0;
+    return ok && closed;
+}
+
+void saveThread(void*) {
+    while (!g_quit) {
+        LightEvent_Wait(&g_wake);
+        for (;;) {
+            LightLock_Lock(&g_lock);
+            if (!g_hasQueued) {
+                g_busy = false;
+                LightLock_Unlock(&g_lock);
+                break;
+            }
+            const std::size_t n = g_queuedLen;
+            const int slot = g_queuedSlot;
+            std::memcpy(g_writing, g_queued, n);
+            g_hasQueued = false;
+            g_busy = true;
+            LightLock_Unlock(&g_lock);
+            if (!writeSlot(slot, g_writing, n)) g_failed = true;
+        }
+    }
+}
+
+void startThread() {
+    if (g_started) return;
+    LightEvent_Init(&g_wake, RESET_ONESHOT);
+    LightLock_Init(&g_lock);
+    s32 prio = 0x30;
+    svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
+    g_quit = false;
+    g_thread = threadCreate(saveThread, nullptr, 32 * 1024, prio + 1, -2, false);  // below the game's
+    g_started = g_thread != nullptr;
+}
+
+void waitIdle() {
+    if (!g_started) return;
+    for (;;) {
+        LightLock_Lock(&g_lock);
+        const bool idle = !g_hasQueued && !g_busy;
+        LightLock_Unlock(&g_lock);
+        if (idle) return;
+        svcSleepThread(2 * 1000 * 1000);
+    }
+}
 
 std::size_t readFile(const char* path, u8* buf, std::size_t cap) {
     FILE* f = std::fopen(path, "rb");
@@ -77,22 +146,53 @@ bool loadGame(SaveData& out, SaveSlots& slots) {
 }
 
 bool saveGame(const SaveData& data, SaveSlots& slots, s64 savedAt) {
+    waitIdle();
     const std::size_t n = encodeSave(data, slots.seq + 1, savedAt, g_bufA, sizeof(g_bufA));
     if (n == 0) return false;
-    mkdir("sdmc:/3ds", 0777);
-    mkdir(kDir, 0777);
     const int target = slots.slot < 0 ? 0 : slots.slot ^ 1;
-    FILE* f = std::fopen(kSlotPath[target], "wb");
-    if (!f) return false;
-    const bool ok = std::fwrite(g_bufA, 1, n, f) == n;
-    const bool closed = std::fclose(f) == 0;
-    if (!ok || !closed) return false;
+    if (!writeSlot(target, g_bufA, n)) return false;
     slots.seq += 1;
     slots.slot = target;
     return true;
 }
 
+bool saveGameAsync(const SaveData& data, SaveSlots& slots, s64 savedAt) {
+    startThread();
+    if (!g_started) return saveGame(data, slots, savedAt);
+    const std::size_t n = encodeSave(data, slots.seq + 1, savedAt, g_bufA, sizeof(g_bufA));
+    if (n == 0) return false;
+    const int target = slots.slot < 0 ? 0 : slots.slot ^ 1;
+    LightLock_Lock(&g_lock);
+    std::memcpy(g_queued, g_bufA, n);
+    g_queuedLen = n;
+    g_queuedSlot = target;
+    g_hasQueued = true;
+    LightLock_Unlock(&g_lock);
+    LightEvent_Signal(&g_wake);
+    slots.seq += 1;  // (the loader takes the newest good slot, should this write fail)
+    slots.slot = target;
+    return true;
+}
+
+bool saveWriteFailed() {
+    const bool failed = g_failed;
+    g_failed = false;
+    return failed;
+}
+
+void finishSaves() {
+    if (!g_started) return;
+    waitIdle();
+    g_quit = true;
+    LightEvent_Signal(&g_wake);
+    threadJoin(g_thread, U64_MAX);
+    threadFree(g_thread);
+    g_thread = nullptr;
+    g_started = false;
+}
+
 void deleteGame() {
+    waitIdle();
     std::remove(kSlotPath[0]);
     std::remove(kSlotPath[1]);
     std::remove(kLegacyPath);

@@ -16,8 +16,15 @@ bool loadGame(SaveData& out, SaveSlots& slots);
 
 // Writes to the slot that does NOT hold the newest save. Returns false on I/O failure.
 bool saveGame(const SaveData& data, SaveSlots& slots, s64 savedAt);
+// The same, but only the encoding happens now: the write goes to a thread of its own, so a slow
+// SD card never stalls the game (run 17: the den froze for seconds once, and it saves every
+// minute). A save asked for while one is being written waits its turn (the newest wins).
+// Returns false if the save can't be encoded; a failed write shows up in saveWriteFailed().
+bool saveGameAsync(const SaveData& data, SaveSlots& slots, s64 savedAt);
+bool saveWriteFailed();  // a write on the thread failed since the last call
+void finishSaves();      // at exit: the last write lands, and the thread ends
 
-// Deletes both slots and the legacy dev save.
+// Deletes both slots and the legacy dev save (after any write in progress).
 void deleteGame();
 
 }  // namespace ec

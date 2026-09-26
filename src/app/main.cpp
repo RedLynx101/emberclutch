@@ -10,6 +10,7 @@
 #include "app/audio.hpp"
 #include "app/autotest.hpp"
 #include "app/care_ui.hpp"
+#include "app/hitch.hpp"
 #include "app/keyboard.hpp"
 #include "app/perf.hpp"
 #include "app/debug.hpp"
@@ -125,7 +126,12 @@ int main() {
                 slow = 0;
             }
         }
+        hitch::endFrame(ms, static_cast<int>(app.scene));  // a long frame: what happened in it (run 17's stall)
         app.dt = ms > 100.0f ? 0.1f : ms / 1000.0f;     // clamp after suspend
+        if (saveWriteFailed()) {  // (the save thread's news)
+            showToast(app, "Couldn't save to the SD card.");
+            audio::playSfx(audio::Sfx::Error);
+        }
         app.t += app.dt;
         tickToast(app);
         if (app.saveFlash > 0) app.saveFlash -= app.dt;
@@ -136,7 +142,7 @@ int main() {
         const bool paused = app.menu != MenuPage::Closed;  // the game waits under the menu
 
         perf::frameStart();
-        if (r3d::ready()) r3d::loadNextLook();  // the other looks, a form a frame (the splash hides it)
+        if (r3d::ready()) r3d::loadNextLook(app.game);  // the save's kinds, a piece a frame (the splash hides it)
         const SceneFns& scene = sceneFns(app.scene);
         if (scene.update && !app.devMenu && !paused) {
             perf::Scope timed(perf::Update);
@@ -208,6 +214,8 @@ int main() {
     }
 
     if (hasDragon(app) && !app.quit) saveNow(app);  // (Save & quit has just saved)
+    finishSaves();  // the save thread's last write lands before the game goes
+    hitch::write();
     autotest::finish();
     screenshot::finish();
     audio::shutdown();

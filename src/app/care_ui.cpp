@@ -32,7 +32,7 @@ constexpr float kFoodRowY = 164;   // the food picker, above the tray
 constexpr Rect kView{0, kTopBar, 320, kFoodRowY - kTopBar};  // where the stylus meets the dragon
 constexpr float kFlickSpeed = 160;  // px/s: faster than this on release throws the ball
 
-constexpr Tool kTools[] = {Tool::Hand, Tool::Food, Tool::Brush, Tool::Cloth, Tool::Sponge, Tool::Ball};  // the last: a toy
+constexpr Tool kTools[] = {Tool::Hand, Tool::Food, Tool::Brush, Tool::Sponge, Tool::Ball};  // the last: a toy (no cloth, D83)
 constexpr int kToolCount = sizeof(kTools) / sizeof(kTools[0]);
 constexpr Rect kBowlDrop{262, kFoodRowY - 38, 54, 34};  // drop a food here to fill the bowl
 constexpr float kOrbRadiusPx = 17;
@@ -163,6 +163,51 @@ void gazeAt(App& app, Vec3 target, float weight) {
     a.gazeWeight = weight;
 }
 
+// What a stroke of the hand or the brush does (D83): Play and bond (the brush a little faster
+// and a little more, more on the dragon's liked zone), hearts, and its sweet spot. Turned with
+// L / R, it keeps showing you that side while you stroke it.
+void strokeEffects(App& app, const Input& in, Dragon& d, const TouchHit& h, bool brush) {
+    CareState& c = app.care;
+    DenBehavior& b = actor(app).behavior;
+    const float liking = zoneLiking(d, h.zone);
+    if ((c.petTick -= app.dt) <= 0) {
+        c.petTick = brush ? 0.2f : 0.25f;
+        if (brush)
+            brushed(d, 4.0f * liking * brushRate(app.game) * (c.withGrain ? 1.0f : 0.5f));
+        else
+            pet(d, 3.0f * liking);
+        markVisit(d, nowLocal(app));
+        if (!brush) {
+            if (b.activity == Activity::Groomed && b.groomFacing != 0)  // turned round: stay turned
+                b.care(h.region == kRegionBelly ? Care::GroomBelly : Care::GroomBody, d);
+            else
+                b.care(Care::Pet, d, h.zone);
+        }
+    }
+    if ((c.heartWait -= app.dt) <= 0) {
+        c.heartWait = liking > 1.0f ? 0.22f : 0.35f;
+        emit(app, kFxHeart, {in.tx, in.ty - 10}, 1);
+    }
+    if (atSweetSpot(d, h.zone, h.outward)) {
+        c.sweetTime += app.dt;
+        if (c.sweetTime > 0.8f && c.sweetCooldown <= 0) {
+            c.sweetCooldown = 6.0f;
+            b.care(Care::SweetSpot, d);
+            audio::playSfx(audio::Sfx::Giggle);
+            emit(app, kFxHeart, {in.tx, in.ty - 10}, 4);
+            if (!c.sweetFound) {
+                c.sweetFound = true;
+                addBond(d, 3);
+                if (!(d.known & kKnownSweetSpot)) showToastf(app, str::kFoundSweetSpot, sweetSpotText(d));
+                else showToast(app, str::kSweetSpot);
+                d.known |= kKnownSweetSpot;  // (the profile shows it from now on)
+            }
+        }
+    } else {
+        c.sweetTime = 0;
+    }
+}
+
 void useHand(App& app, const Input& in, Dragon& d, bool hit, const TouchHit& h, Stroke kind) {
     CareState& c = app.care;
     DenBehavior& b = actor(app).behavior;
@@ -187,34 +232,7 @@ void useHand(App& app, const Input& in, Dragon& d, bool hit, const TouchHit& h, 
     }
     if (kind == Stroke::None) return;
     gazeAt(app, h.local, 0.55f);  // lean toward the hand
-    if ((c.petTick -= app.dt) <= 0) {
-        c.petTick = 0.25f;
-        pet(d, 3);
-        markVisit(d, nowLocal(app));
-        b.care(Care::Pet, d, h.zone);
-    }
-    if ((c.heartWait -= app.dt) <= 0) {
-        c.heartWait = 0.35f;
-        emit(app, kFxHeart, {in.tx, in.ty - 10}, 1);
-    }
-    if (atSweetSpot(d, h.zone, h.outward)) {
-        c.sweetTime += app.dt;
-        if (c.sweetTime > 0.8f && c.sweetCooldown <= 0) {
-            c.sweetCooldown = 6.0f;
-            b.care(Care::SweetSpot, d);
-            audio::playSfx(audio::Sfx::Giggle);
-            emit(app, kFxHeart, {in.tx, in.ty - 10}, 4);
-            if (!c.sweetFound) {
-                c.sweetFound = true;
-                addBond(d, 3);
-                if (!(d.known & kKnownSweetSpot)) showToastf(app, str::kFoundSweetSpot, sweetSpotText(d));
-                else showToast(app, str::kSweetSpot);
-                d.known |= kKnownSweetSpot;  // (the profile shows it from now on)
-            }
-        }
-    } else {
-        c.sweetTime = 0;
-    }
+    strokeEffects(app, in, d, h, false);
 }
 
 // Food: bites when it's held to the mouth; the jaw opens as it comes close.
@@ -266,41 +284,19 @@ void useFood(App& app, const Input& in, Dragon& d) {
 }
 
 // The brush and the cloth: strokes on the dragon fill its regions.
-void useGroomTool(App& app, const Input& in, Dragon& d, bool hit, const TouchHit& h, float moved) {
+// A brush stroke (D83): a little faster than the hand, and it pleases a little more; with the
+// grain (head to tail) it counts fully, against it half. It no longer cleans: the bath does.
+void useBrush(App& app, const Input& in, Dragon& d, bool hit, const TouchHit& h, float moved) {
     CareState& c = app.care;
-    DenBehavior& b = actor(app).behavior;
     if (!hit || moved < 0.5f) return;
-    b.care(h.region == kRegionBelly ? Care::GroomBelly : Care::GroomBody, d);
-    const Vec2 at{in.tx, in.ty};
-    if (c.tool == Tool::Brush) {
-        const Vec2 dir = c.stroke.dir;
-        const bool withGrain = dir.x * h.grain.x + dir.y * h.grain.y > 0.2f;
-        const float dusty = h.region < kRegionCount ? d.dirt[h.region] + d.mud[h.region] : 0.0f;
-        if (c.groom.brush(d, h.region, moved / 520.0f * brushRate(app.game), withGrain)) {  // the silver brush: faster
-            emit(app, kFxSparkle, at, 6);
-            audio::playSfx(audio::Sfx::Toast);
-        }
-        if (dusty > 5 && app.rng.chance(1, 3)) emit(app, kFxDust, at, 1);
-        if ((c.soundWait -= app.dt) <= 0) {
-            c.soundWait = 0.32f;
-            audio::playSfx(audio::Sfx::Brush);
-        }
-    } else {  // the cloth: polishing counts fully once a region is brushed
-        const float amount = moved / 450.0f * (c.groom.brushed[h.region] >= 0.5f ? 1.0f : 0.5f);
-        if (c.groom.polish(d, h.region, amount)) emit(app, kFxSparkle, at, 8);
-        if (app.rng.chance(1, 2)) emit(app, kFxSparkle, at, 1);
-        if ((c.soundWait -= app.dt) <= 0) {
-            c.soundWait = 0.45f;
-            audio::playSfx(audio::Sfx::Sparkle);
-        }
+    actor(app).behavior.care(h.region == kRegionBelly ? Care::GroomBelly : Care::GroomBody, d);
+    const Vec2 dir = c.stroke.dir;
+    c.withGrain = dir.x * h.grain.x + dir.y * h.grain.y > 0.2f;
+    if ((c.soundWait -= app.dt) <= 0) {
+        c.soundWait = 0.32f;
+        audio::playSfx(audio::Sfx::Brush);
     }
-    markVisit(d, nowLocal(app));
-    if (c.groom.checkGleam()) {  // the whole dragon, brushed and polished
-        for (int i = 0; i < 4; ++i) emit(app, kFxSparkle, {frand(app, 60, 260), frand(app, 50, 150)}, 5);
-        audio::playSfx(audio::Sfx::Trill, 1.0f);
-        addBond(d, 3);
-        showToast(app, str::kGleaming);
-    }
+    strokeEffects(app, in, d, h, true);
 }
 
 // The sponge: suds while it sits in the tub. Rinsed, it hops out and shakes off; the tub stays
@@ -331,14 +327,14 @@ void rinse(App& app, Dragon& d) {
     CareState& c = app.care;
     audio::playSfx(audio::Sfx::WaterPour);
     for (int i = 0; i < 10; ++i) emit(app, kFxDrop, {frand(app, 80, 240), frand(app, 40, 90)}, 1);
-    if (c.suds > 0.3f) {
+    if (c.suds > 0.3f) {  // clean again, and gleaming (D83: the bath is the gleaming moment now)
         bathe(d);
-        if (bathShine(app.game) > 0) {  // bubble soap: a lasting sparkle
-            groom(d, bathShine(app.game));
-            for (int i = 0; i < 3; ++i) emit(app, kFxSparkle, {frand(app, 100, 220), frand(app, 50, 120)}, 4);
-        }
+        const int sparkles = bathShine(app.game) > 0 ? 7 : 4;  // bubble soap: more of a sparkle
+        for (int i = 0; i < sparkles; ++i) emit(app, kFxSparkle, {frand(app, 60, 260), frand(app, 40, 140)}, 5);
+        audio::playSfx(audio::Sfx::Trill, 1.0f);
+        if (bathShine(app.game) > 0) addBond(d, 1);
         markVisit(d, nowLocal(app));
-        showToast(app, str::kSplash);
+        showToast(app, str::kGleaming);
     }
     c.suds = 0;
     actor(app).behavior.care(Care::BathDone, d);
@@ -651,7 +647,6 @@ const char* hintFor(Tool t) {
     switch (t) {
         case Tool::Food: return str::kHintFood;
         case Tool::Brush: return str::kHintBrush;
-        case Tool::Cloth: return str::kHintCloth;
         case Tool::Sponge: return str::kHintBath;
         case Tool::Ball: return str::kHintBall;
         case Tool::Feather: return str::kHintFeather;
@@ -701,8 +696,12 @@ r3d::CloseUpView view(const App& app) {
         if (a->behavior.activity == Activity::Sleep) return r3d::CloseUpView::Body;
     }
     switch (app.care.tool) {
+        case Tool::Hand:  // turned round with L / R: its back and sides
+            if (const DenActor* a = careActor(const_cast<App&>(app));
+                a && a->behavior.activity == Activity::Groomed && a->behavior.groomFacing != 0)
+                return r3d::CloseUpView::Body;
+            return r3d::CloseUpView::Face;
         case Tool::Brush:
-        case Tool::Cloth:
         case Tool::Sponge: return r3d::CloseUpView::Body;
         case Tool::Food: return r3d::CloseUpView::Feed;
         default: return r3d::CloseUpView::Face;
@@ -768,7 +767,7 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
     // Needs along the top, the heartglow at the top right.
     gauge(app, 8, 4, str::kBelly, d.needs.belly);
     gauge(app, 76, 4, str::kEnergy, d.needs.energy);
-    gauge(app, 144, 4, str::kShine, d.needs.shine);
+    gauge(app, 144, 4, str::kClean, d.needs.clean);
     gauge(app, 212, 4, str::kPlay, d.needs.play);
     const float level = heartglowLevel(d, app.t);
     glow(298, 16, 14, fromRgb(kindGlow(d)), level);
@@ -881,12 +880,13 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
         audio::playSfx(audio::Sfx::Purr, 1.0f);
         showToast(app, str::kMadeUp);
     }
-    // L / R with a brush or cloth in hand: it turns the other flank to you, whether or not it's
-    // being groomed right now (it only listened mid-stroke before, so it seemed to do nothing).
-    // care() ignores a sleeping or upset one.
-    if ((in.down & (KEY_L | KEY_R)) && (c.tool == Tool::Brush || c.tool == Tool::Cloth)) {
-        b.groomSide = (in.down & KEY_L) ? -1 : 1;
+    // L / R with the hand or the brush: it turns round a quarter at a time (you, its right flank,
+    // its back, its left flank) so you can reach its back and sides (D83). care() ignores a
+    // sleeping or upset one.
+    if ((in.down & (KEY_L | KEY_R)) && (c.tool == Tool::Hand || c.tool == Tool::Brush)) {
+        b.turnAround((in.down & KEY_L) ? -1 : 1);
         b.care(Care::GroomBody, d);
+        if (b.activity == Activity::Groomed) b.petTimer = 4.0f;  // time to reach round before it wanders off
     }
 
     // The stylus on the dragon.
@@ -913,8 +913,7 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
             switch (c.tool) {
                 case Tool::Hand: useHand(app, in, d, hit, h, kind); break;
                 case Tool::Food: useFood(app, in, d); break;
-                case Tool::Brush:
-                case Tool::Cloth: useGroomTool(app, in, d, hit, h, moved); break;
+                case Tool::Brush: useBrush(app, in, d, hit, h, moved); break;
                 case Tool::Sponge: useSponge(app, in, d, hit, moved); break;
                 case Tool::Feather: useFeather(app, in, d); break;
                 case Tool::Rope: useRope(app, in, d, moved); break;
@@ -970,7 +969,6 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
                 sprite(care_brush_idx, in.tx, in.ty - 4, 0.7f, c.stroke.dir.x == 0 && c.stroke.dir.y == 0 ? 0.0f : ang * 0.35f);
                 break;
             }
-            case Tool::Cloth: sprite(care_cloth_idx, in.tx, in.ty - 4, 0.62f); break;
             case Tool::Sponge: sprite(care_sponge_idx, in.tx, in.ty - 4, 0.62f); break;
             case Tool::Ball:
                 if (!app.ball.held) sprite(care_ball_idx, in.tx, in.ty, 0.5f);

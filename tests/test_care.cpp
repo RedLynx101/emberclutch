@@ -158,26 +158,31 @@ TEST(each_dragon_has_its_own_quirks) {
     CHECK(bathMoodOf(dragonWithId(3, Element::Gale)) == BathMood::Fine);
 }
 
-TEST(grooming_sessions_clean_and_shine) {
+// Grooming, simpler (D83): the brush pleases more than the hand (Play and bond), its liked zone
+// half as much again; only the bath cleans, and it fills Clean.
+TEST(brushing_pleases_and_the_bath_cleans) {
     Dragon d = dragonWithId(7);
     d.stage = Stage::Hatchling;
-    for (float& dust : d.dirt) dust = 100;
-    d.needs.shine = 20;
-    GroomSession g;
-    int finished = 0;
-    for (int stroke = 0; stroke < 4; ++stroke)  // against the grain: half as effective
-        finished += g.brush(d, kRegionBack, 0.25f, false);
-    CHECK(finished == 0 && std::fabs(g.brushed[kRegionBack] - 0.5f) < 1e-4f);
-    for (int r = 0; r < kRegionCount; ++r)
-        for (int stroke = 0; stroke < 4; ++stroke) finished += g.brush(d, r, 0.25f, true);
-    CHECK(finished == kRegionCount);
-    for (float dust : d.dirt) CHECK(dust == 0.0f);
-    CHECK(d.needs.shine > 20 + 8 * 7);
-    CHECK(!g.checkGleam());  // not polished yet
-    for (int r = 0; r < kRegionCount; ++r) g.polish(d, r, 1.0f);
-    CHECK(g.checkGleam());
-    CHECK(!g.checkGleam());  // the moment happens once
-    CHECK(g.coverage() == 1.0f);
+    Dragon e = d;
+    d.needs.play = e.needs.play = 20;
+    for (int k = 0; k < 4; ++k) pet(d, 3.0f);     // a second of the hand (0.25 s ticks)
+    for (int k = 0; k < 5; ++k) brushed(e, 4.0f); // a second of the brush (0.2 s ticks)
+    CHECK(e.needs.play > d.needs.play && e.bond > d.bond);
+    for (float& dust : e.dirt) dust = 60;
+    e.needs.clean = 30;
+    brushed(e, 4.0f);
+    CHECK(e.dirt[kRegionBack] == 60.0f && e.needs.clean == 30.0f);  // brushing doesn't clean
+    bathe(e);
+    CHECK(e.dirt[kRegionBack] == 0.0f && e.needs.clean == 100.0f);
+    int differ = 0;
+    for (u32 id = 1; id <= 200; ++id) {
+        const Dragon x = dragonWithId(id);
+        const PetZone liked = likedZoneOf(x);
+        CHECK(liked != sweetSpotOf(x).zone);
+        CHECK(zoneLiking(x, liked) == 1.5f && zoneLiking(x, liked == PetZone::Head ? PetZone::Tail : PetZone::Head) == 1.0f);
+        differ += liked != likedZoneOf(dragonWithId(id + 1));
+    }
+    CHECK(differ > 100);
 }
 
 TEST(a_thrown_ball_bounces_rolls_and_rests) {
@@ -233,6 +238,6 @@ void runCareTests() {
     RUN(zones_and_regions_follow_the_body);
     RUN(strokes_are_named_by_how_they_move);
     RUN(each_dragon_has_its_own_quirks);
-    RUN(grooming_sessions_clean_and_shine);
+    RUN(brushing_pleases_and_the_bath_cleans);
     RUN(a_thrown_ball_bounces_rolls_and_rests);
 }

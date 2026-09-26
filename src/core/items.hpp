@@ -12,7 +12,7 @@ namespace ec {
 enum class Item : u8 {
     // toys, in DenToys order: they lie on the den floor and the dragons play with them
     FeatherWand, TugRope, PuzzleOrb, FoodBowl,
-    // grooming: the silver brush shines faster, bubble soap leaves a bath's sparkle
+    // grooming: the silver brush pleases more, bubble soap leaves a bath's sparkle
     SilverBrush, BubbleSoap,
     // the egg nests: eggs cool half as fast
     WarmStones,
@@ -74,7 +74,7 @@ int feedFromBowl(SaveData& s, s64 now);
 
 // How fast eggs cool in the den's nests (warm stones halve it).
 float eggCooling(const SaveData& s);
-// Brushing speed (the silver brush) and the bath's extra shine (bubble soap).
+// How much a brush stroke counts (the silver brush) and the bath's extra sparkle (bubble soap).
 float brushRate(const SaveData& s);
 float bathShine(const SaveData& s);
 

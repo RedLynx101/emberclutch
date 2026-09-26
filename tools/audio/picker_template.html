@@ -1,0 +1,217 @@
+<title>Emberclutch Sound Takes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=JetBrains+Mono:wght@500&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+:root {
+  --bg: #FBF4E6; --panel: #FFFDF8; --ink: #34233F; --muted: #74647A; --line: #E8DAC3;
+  --accent: #C9521B; --accent-soft: #FBE4D3; --gold: #B8860B; --gold-soft: #FCEFC8;
+  --teal: #2A8586; --teal-soft: #DCF0EE; --code: #F4EBDC; --focus: #3FA7A8; --wave: #9C8A9E;
+  --display: "Cinzel Decorative", Georgia, "Times New Roman", serif;
+  --body: "Nunito", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #1E1427; --panel: #2A1D34; --ink: #FFF3DC; --muted: #B8A6B7; --line: #43324E;
+    --accent: #F28C57; --accent-soft: #46271F; --gold: #F5C451; --gold-soft: #3D3120;
+    --teal: #62C6C3; --teal-soft: #1C3739; --code: #231829; --focus: #62C6C3; --wave: #8E7C92;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #1E1427; --panel: #2A1D34; --ink: #FFF3DC; --muted: #B8A6B7; --line: #43324E;
+  --accent: #F28C57; --accent-soft: #46271F; --gold: #F5C451; --gold-soft: #3D3120;
+  --teal: #62C6C3; --teal-soft: #1C3739; --code: #231829; --focus: #62C6C3; --wave: #8E7C92;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 400 15px/1.55 var(--body); padding-inline: 16px; padding-block: 0 64px; }
+.wrap { max-width: 880px; margin: 0 auto; }
+header { padding-block: 22px 14px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+header h1 { margin: 0; font: 700 26px/1.1 var(--display); color: var(--accent); }
+header h1 span { color: var(--ink); font: 800 20px var(--body); margin-left: 6px; }
+.status { margin-left: auto; font-size: 12.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.status.ok::before { background: var(--teal); } .status.err::before { background: var(--accent); }
+.lede { color: var(--muted); max-width: 66ch; margin: 14px 0 0; }
+section.sound { margin-top: 26px; display: grid; gap: 12px; }
+.head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+.head h2 { margin: 0; font: 800 19px/1.25 var(--body); text-wrap: balance; }
+.slug { font: 500 13px var(--mono); background: var(--code); border-radius: 5px; padding: 1px 6px; }
+.where { color: var(--muted); font-size: 13.5px; margin: 0; max-width: 70ch; }
+.takes { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.take { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px; transition: border-color .15s, background .15s; }
+.take.keep { border-color: var(--teal); background: var(--teal-soft); }
+.take.cut { border-color: var(--accent); background: var(--accent-soft); }
+.take.playing { border-color: var(--gold); }
+.row { display: flex; align-items: center; gap: 10px; }
+.num { font: 700 20px var(--display); color: var(--gold); min-width: 1.4em; }
+.secs { font: 500 12.5px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; margin-left: auto; }
+canvas { width: 100%; height: 56px; display: block; border-radius: 6px; background: var(--code); }
+button { font: 700 13.5px var(--body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button:focus-visible, textarea:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.play { display: inline-flex; align-items: center; gap: 6px; }
+.play::before { content: ""; border-style: solid; border-width: 6px 0 6px 10px; border-color: transparent transparent transparent currentColor; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.seg button[aria-pressed="true"].k { background: var(--teal); border-color: var(--teal); color: var(--panel); }
+.seg button[aria-pressed="true"].c { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bar small { color: var(--muted); font-size: 12.5px; }
+label.n { display: block; font: 800 12px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+textarea { width: 100%; min-height: 60px; resize: vertical; font: 400 14px/1.5 var(--body); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.summary { font-size: 13.5px; color: var(--muted); }
+.summary b { color: var(--ink); font-weight: 800; }
+@media (prefers-reduced-motion: reduce) { .take { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Emberclutch <span>sound takes</span></h1>
+    <span class="status" id="status">Loading</span>
+  </header>
+  <p class="lede">Play each take and mark it keep or cut. "Play in turn" plays them the way the game does, one step after another at a walking pace. Your picks save here and Claude reads them back.</p>
+  <div id="sounds"></div>
+</div>
+
+<script type="application/json" id="data">/*DATA*/</script>
+<script>
+(function () {
+  const SOUNDS = JSON.parse(document.getElementById("data").textContent);
+  const picks = {};
+  let db = null, ctx = null;
+  const buffers = {};
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const status = document.getElementById("status");
+  const setStatus = (t, k) => { status.textContent = t; status.className = "status " + (k || ""); };
+
+  function audio() { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === "suspended") ctx.resume(); return ctx; }
+  async function load(file) {
+    if (buffers[file]) return buffers[file];
+    const bytes = await (await fetch(file)).arrayBuffer();
+    const c = audio();
+    buffers[file] = await new Promise((ok, no) => c.decodeAudioData(bytes, ok, no));
+    return buffers[file];
+  }
+  function play(buf, card) {
+    const c = audio(), src = c.createBufferSource();
+    src.buffer = buf; src.connect(c.destination); src.start();
+    if (card) { card.classList.add("playing"); src.onended = () => card.classList.remove("playing"); }
+  }
+  function draw(canvas, buf) {
+    const dpr = window.devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    const g = canvas.getContext("2d"); g.scale(dpr, dpr);
+    const data = buf.getChannelData(0), step = Math.max(1, Math.floor(data.length / w));
+    g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--wave").trim() || "#999";
+    for (let x = 0; x < w; x++) {
+      let lo = 0, hi = 0;
+      for (let i = x * step; i < (x + 1) * step && i < data.length; i++) { const v = data[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
+      const y0 = (1 - hi) * h / 2, y1 = (1 - lo) * h / 2;
+      g.fillRect(x, y0, 1, Math.max(1, y1 - y0));
+    }
+  }
+
+  const queues = {}, timers = {};
+  function save(slug) {
+    const body = { takes: picks[slug].takes, note: picks[slug].note || "", at: new Date().toISOString() };
+    if (!db) { setStatus("Not saved: open this page from its claude.ai link", "err"); return; }
+    const prev = queues[slug] || Promise.resolve();
+    queues[slug] = prev.then(() => db.doc("picks/" + slug).set(body)).then(
+      () => setStatus("Saved", "ok"),
+      (e) => setStatus("Couldn't save (" + ((e && e.code) || "error") + "); try again", "err"));
+  }
+
+  const views = {};
+  SOUNDS.forEach((s) => {
+    picks[s.slug] = { takes: {}, note: "" };
+    const sec = el("section", "sound");
+    const head = el("div", "head");
+    head.append(el("h2", null, s.title), el("span", "slug", s.slug));
+    sec.append(head, el("p", "where", s.where));
+    const bar = el("div", "bar");
+    const turn = el("button", "play", "Play in turn");
+    const summary = el("span", "summary");
+    bar.append(turn, summary);
+    sec.append(bar);
+    const grid = el("div", "takes");
+    const cards = [];
+    s.takes.forEach((t) => {
+      const card = el("div", "take");
+      const row = el("div", "row");
+      const p = el("button", "play", "Play");
+      p.setAttribute("aria-label", "Play take " + t.n);
+      row.append(el("span", "num", String(t.n)), p, el("span", "secs", t.secs.toFixed(2) + " s"));
+      const cv = el("canvas"); cv.setAttribute("aria-hidden", "true");
+      const seg = el("div", "seg");
+      const k = el("button", "k", "Keep"), c = el("button", "c", "Cut");
+      k.id = s.slug + "-" + t.n + "-keep"; c.id = s.slug + "-" + t.n + "-cut";
+      seg.append(k, c);
+      card.append(row, cv, seg);
+      grid.append(card);
+      const set = (v) => {
+        picks[s.slug].takes[t.n] = picks[s.slug].takes[t.n] === v ? null : v;
+        render(); save(s.slug);
+      };
+      k.onclick = () => set("keep"); c.onclick = () => set("cut");
+      p.onclick = async () => play(await load(t.file), card);
+      cards.push({ t, card, k, c, cv });
+      load(t.file).then((b) => draw(cv, b)).catch(() => {});
+    });
+    sec.append(grid);
+    const nw = el("div");
+    const lab = el("label", "n", "Notes for Claude"); lab.htmlFor = "note-" + s.slug;
+    const ta = el("textarea"); ta.id = "note-" + s.slug; ta.placeholder = "For example: 2 sounds like a slap; 1 and 3 are good. Or: all too loud.";
+    ta.oninput = () => { picks[s.slug].note = ta.value; clearTimeout(timers[s.slug]); timers[s.slug] = setTimeout(() => save(s.slug), 700); };
+    nw.append(lab, ta);
+    sec.append(nw);
+    document.getElementById("sounds").append(sec);
+    turn.onclick = async () => {
+      const bufs = await Promise.all(s.takes.map((t) => load(t.file)));
+      const c = audio(), gap = 0.42;
+      for (let i = 0; i < bufs.length * 2; i++) {
+        const src = c.createBufferSource(); src.buffer = bufs[i % bufs.length]; src.connect(c.destination);
+        src.start(c.currentTime + 0.05 + i * gap);
+        const card = cards[i % cards.length].card;
+        setTimeout(() => { card.classList.add("playing"); setTimeout(() => card.classList.remove("playing"), 300); }, (0.05 + i * gap) * 1000);
+      }
+    };
+    function render() {
+      const tk = picks[s.slug].takes;
+      cards.forEach(({ t, card, k, c }) => {
+        const v = tk[t.n];
+        card.classList.toggle("keep", v === "keep"); card.classList.toggle("cut", v === "cut");
+        k.setAttribute("aria-pressed", String(v === "keep")); c.setAttribute("aria-pressed", String(v === "cut"));
+      });
+      const kept = s.takes.filter((t) => tk[t.n] === "keep").map((t) => t.n);
+      const cut = s.takes.filter((t) => tk[t.n] === "cut").map((t) => t.n);
+      summary.innerHTML = "";
+      if (!kept.length && !cut.length) summary.textContent = "Nothing marked yet";
+      else {
+        summary.append("Keep ", el("b", null, kept.join(", ") || "none"), ", cut ", el("b", null, cut.join(", ") || "none"));
+      }
+      if (document.activeElement !== ta) ta.value = picks[s.slug].note || "";
+    }
+    views[s.slug] = render;
+    render();
+  });
+
+  window.addEventListener("resize", () => {
+    SOUNDS.forEach((s) => s.takes.forEach((t, i) => { if (buffers[t.file]) draw(document.querySelectorAll("#sounds section")[SOUNDS.indexOf(s)].querySelectorAll("canvas")[i], buffers[t.file]); }));
+  });
+
+  const use = window.claude && window.claude.use ? window.claude.use("db") : Promise.resolve(null);
+  use.then((d) => {
+    db = d;
+    if (!db) { setStatus("Not saving here: open it from its claude.ai link", "err"); return; }
+    setStatus("Ready", "ok");
+    db.collection("picks").onSnapshot((snap) => {
+      snap.docs.forEach((doc) => {
+        const v = doc.data();
+        if (v && picks[doc.id]) { picks[doc.id].takes = v.takes || {}; picks[doc.id].note = v.note || ""; if (views[doc.id]) views[doc.id](); }
+      });
+    });
+  }).catch(() => setStatus("Not saving here: open it from its claude.ai link", "err"));
+})();
+</script>

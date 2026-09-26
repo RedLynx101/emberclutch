@@ -45,8 +45,8 @@ void tickToast(App& app) {
     showToast(app, app.toastText);
 }
 
-void saveNow(App& app) {
-    if (!saveGame(app.game, app.slots, nowLocal(app))) {
+void saveNow(App& app) {  // the writing happens on the save thread (app/storage)
+    if (!saveGameAsync(app.game, app.slots, nowLocal(app))) {
         showToast(app, "Couldn't save to the SD card.");
         audio::playSfx(audio::Sfx::Error);
     } else {
@@ -156,6 +156,7 @@ void cycleCare(App& app, int dir) {
         if (app.care.bathOut) a->behavior.care(Care::BathDone, activeDragon(app));
         a->gazeWeight = 0;
         a->jawOpen = 0;
+        a->behavior.groomFacing = 0;
     }
     app.careIndex = order[((at < 0 ? 0 : at) + dir + n) % n];
     const bool card = app.care.profileOpen;  // switching from the profile card keeps it open

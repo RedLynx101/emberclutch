@@ -107,11 +107,13 @@ struct DenThings {
     float daylight = 1;  // 0 night .. 1 day: lanterns and moonflowers glow brighter at night
 };
 void setDenThings(const DenThings* things);
-// The looks (D54): each dragon is drawn in its own (core/genetics Look), from its look's models
-// (romfs:/models/, v1/, v2/, v3/). The classic look loads with init(); call loadNextLook() once
-// a frame (it loads one form each time, false when every look is in) so the rest arrive while
-// the splash plays; a look needed before that loads on the spot.
-bool loadNextLook();
+// Every dragon is drawn as its kind (DR3; romfs:/dragons/<kind>/, its plan's clips). The classic
+// look loads with init() (the fallback); call loadNextLook() once a frame: it loads one piece of
+// a kind the save has and hasn't loaded yet (its clips, then a form at a time; false when all
+// are in), so they arrive while the splash plays and a wanderer's kind is in before it walks in
+// (run 17: a kind loading on the spot stalled the den). One still needed at once loads then.
+// The old looks (D54) load only when the dev menu shows them.
+bool loadNextLook(const SaveData& s);
 // Dev: every dragon drawn in one look (-1: their own).
 void setForceLook(int look);
 int forceLook();

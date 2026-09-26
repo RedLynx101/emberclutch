@@ -8,13 +8,13 @@
 namespace ec {
 
 struct Needs {
-    float belly = 80, energy = 80, shine = 80, play = 80;  // 0..100
+    float belly = 80, energy = 80, clean = 80, play = 80;  // 0..100 (clean was Shine until D83)
     float lowest() const;
 };
 
 enum class Location : u8 { Den, Sanctuary, Vault /* eggs only */ };
 
-// Body regions for dirt (D46) and, later, shine (WP7 brushing). The model tags every body
+// Body regions for dirt (D46). The model tags every body
 // vertex with one (tools/blender/dragon_model.py body_regions); the wings are one region.
 enum BodyRegion : u8 {
     kRegionHead,
@@ -121,11 +121,10 @@ void markVisit(Dragon& d, s64 now);
 
 // Interactions (clamped, bond-aware). Amounts are need points.
 void feed(Dragon& d, float amount, bool favorite);
-void pet(Dragon& d, float amount);
+void pet(Dragon& d, float amount);    // a stroke of the hand: Play up a little, a bond point
+void brushed(Dragon& d, float amount); // a stroke of the brush: Play up a little more (D83)
 void addBond(Dragon& d, int amount);  // nothing while upset; tracks the high-water mark
-void groom(Dragon& d, float amount);  // a quick groom: shine up, dust off every region
-void cleanRegion(Dragon& d, int region, float amount);  // brushing one region (WP7)
-void bathe(Dragon& d);                                   // the bath: every region clean
+void bathe(Dragon& d);  // the bath: every region clean, Clean full (the only way, D83)
 void play(Dragon& d, float amount);
 void warmEgg(Dragon& d, float amount);
 // Turning the egg. Returns true when the turn counts (up to kMaxEggTurns, kEggTurnGap apart).

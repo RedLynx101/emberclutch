@@ -103,7 +103,7 @@ void writeDragon(Writer& w, const Dragon& d) {
     w.s32v(d.incubationSeconds);
     w.f32v(d.needs.belly);
     w.f32v(d.needs.energy);
-    w.f32v(d.needs.shine);
+    w.f32v(d.needs.clean);
     w.f32v(d.needs.play);
     w.u16v(d.bond);
     w.u16v(d.bondHigh);
@@ -162,7 +162,7 @@ bool readDragon(Reader& r, Dragon& d) {
     d.incubationSeconds = r.s32v();
     d.needs.belly = r.f32v();
     d.needs.energy = r.f32v();
-    d.needs.shine = r.f32v();
+    d.needs.clean = r.f32v();
     d.needs.play = r.f32v();
     d.bond = r.u16v();
     d.bondHigh = r.u16v();

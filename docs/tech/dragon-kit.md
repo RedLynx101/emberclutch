@@ -153,3 +153,13 @@ Things that tripped the builders; the kit may fix some later, until then work wi
   by parts still get skin weights (keep them away from the body); there's no hook after
   decimation; `review.py`'s clip strips are a fixed list; `glow_flat` previews flat in
   Blender but glows in the game.
+- **Check an open mouth from the side, culled (run 17).** The mouth pocket's roof and floor
+  meet at a back line, but a wide open mouth seen from the side looked straight through it
+  (in at one side, out at the other) until `build_mouth_pocket` grew a dark wall down each side
+  from the upper lip to the lower (the lips' outer 45% across). `build/tools/mouth_look.py
+  --jaw 45 --views mouth,mouth_top,mouth_side --cull 1` renders it the way the game culls.
+- **A baby's folded wings can sink into a round body (run 17).** The plan's fold suits the
+  grown body; a chubby hatchling's flank bulges past its little wings. Turn them out with the
+  hatchling form's `base_pose` (the Pouncer's and the Blazeplume's: `wing_arm_R` (-20, 0, -55),
+  mirrored for L; the third angle, negative for the right wing, lifts it off the body), and
+  look from behind and above, culled (`build/tools/wing_look.py --close 1`, `wing_try.py`).

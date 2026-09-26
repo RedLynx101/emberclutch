@@ -28,7 +28,7 @@ tap 96 168
 wait 1
 shot a04-renamed
 # A whole fetch: throw, chase, carry back, drop at your feet.
-tap 290 221
+tap 238 221
 wait 0.5
 drag 160 150 166 70 0.15
 wait 16

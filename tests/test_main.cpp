@@ -179,7 +179,7 @@ static Dragon raise(int visitsPerDay, int days) {
             markVisit(d, t);
             if (d.upset) makeUp(d);
             feed(d, 100, false);
-            groom(d, 100);
+            bathe(d);
             play(d, 100);
             pet(d, 100);
         }
@@ -632,12 +632,10 @@ TEST(dirt_settles_and_grooming_clears_it) {
     CHECK(d.dirt[kRegionWings] > 25 && d.dirt[kRegionWings] < d.dirt[kRegionBelly]);
     simulate(d, kT0 + 32 * kHour, kT0 + 80 * kHour);  // two more days: fully dusty
     CHECK(d.dirt[kRegionBack] == 100.0f);
-    cleanRegion(d, kRegionBack, 60);
-    CHECK(d.dirt[kRegionBack] == 40.0f && d.dirt[kRegionBelly] == 100.0f);
-    groom(d, 40);
-    CHECK(d.dirt[kRegionBack] == 0.0f && d.dirt[kRegionBelly] == 40.0f);
-    bathe(d);
+    d.needs.clean = 30;
+    bathe(d);  // the bath is the only way to clean up (D83)
     for (float dust : d.dirt) CHECK(dust == 0.0f);
+    CHECK(d.needs.clean == 100.0f);
     d.location = Location::Sanctuary;
     simulate(d, kT0 + 80 * kHour, kT0 + 104 * kHour);
     CHECK(d.dirt[kRegionBelly] < 10.0f);
@@ -653,12 +651,8 @@ TEST(mud_brushes_out_and_washes_off) {
     for (float m : d.mud) CHECK(m == 0.0f);
     d.mud[kRegionBelly] = 80;
     d.mud[kRegionTail] = 50;
-    cleanRegion(d, kRegionBelly, 40);
-    CHECK(d.mud[kRegionBelly] == 60.0f && d.mud[kRegionTail] == 50.0f);
     simulate(d, kT0 + 8 * kHour, kT0 + 32 * kHour);  // a day: 36 flaked off
-    CHECK(std::fabs(d.mud[kRegionBelly] - 24.0f) < 0.5f && d.mud[kRegionTail] < 15.0f);
-    groom(d, 20);
-    CHECK(std::fabs(d.mud[kRegionBelly] - 9.0f) < 0.5f && d.mud[kRegionTail] == 0.0f);
+    CHECK(std::fabs(d.mud[kRegionBelly] - 44.0f) < 0.5f && d.mud[kRegionTail] < 15.0f);
     d.mud[kRegionLeft] = 100;
     bathe(d);
     for (float m : d.mud) CHECK(m == 0.0f);

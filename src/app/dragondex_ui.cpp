@@ -1,7 +1,8 @@
 // The Dragondex (D55, D66; WP12; by kind since DR3, D80): the collection book, opened from the
-// system menu. The bottom screen is the book, seven kinds a page, their four colourings across
-// (the last is the rare one); the top shows the one picked, turning slowly, once you've met it.
-// A completed kind's banner can be hung in the den.
+// system menu. The bottom screen is the book, seven kinds a page, each with its typing (a dot per
+// element, D83) and its four colourings across (the last is the rare one); the top shows the one
+// picked, turning slowly, once you've met it, and always its typing, so a missing crossbreed
+// says which two types to pair. A completed kind's banner can be hung in the den.
 #include "app/dragondex_ui.hpp"
 
 #include <cmath>
@@ -23,6 +24,22 @@ constexpr int kRowsPerPage = 7;
 constexpr float kRowY = 30, kRowH = 22, kCellX = 118, kCellW = 46, kCellH = 18;
 
 int pages() { return (kindCount() + kRowsPerPage - 1) / kRowsPerPage; }
+
+// A kind's typing as chips centred on cx: each element's name on its glow colour.
+void typingChips(App& app, const KindInfo& k, float cx, float y) {
+    float widths[2] = {}, total = 0;
+    for (int e = 0; e < k.elementCount; ++e) {
+        widths[e] = textWidth(app, elementName(k.elements[e]), 0.45f) + 14;
+        total += widths[e] + (e ? 6 : 0);
+    }
+    float x = cx - total / 2;
+    for (int e = 0; e < k.elementCount; ++e) {
+        const Rgb g = elementGlow(k.elements[e]);
+        panel({x, y, widths[e], 17}, fromRgb(g, 230));
+        textCentered(app, elementName(k.elements[e]), x + widths[e] / 2, y + 8.5f, 0.45f, theme::rgba(30, 20, 36), widths[e]);
+        x += widths[e] + 6;
+    }
+}
 
 }  // namespace
 
@@ -52,7 +69,15 @@ void drawDexTop(App& app) {
         egg(200, 132, 64, 84, {70, 58, 84}, {90, 70, 110}, 0.2f);
         textCentered(app, "?", 200, 132, 1.2f, withAlpha(theme::kShell, 0.6f), 60, Face::Title);
         textCentered(app, str::kDexUnknown, 200, 42, 0.5f, withAlpha(theme::kShell, 0.7f), 380);
+        // How you might find it (D83): a crossbreed's two types to pair; a first kind's own.
+        if (k.elementCount > 1)
+            std::snprintf(line, sizeof(line), "A crossbreed: pair a %s kind with a %s kind", elementName(k.elements[0]),
+                          elementName(k.elements[1]));
+        else
+            std::snprintf(line, sizeof(line), "One of the first kinds: %s", elementName(k.elements[0]));
+        textCentered(app, line, 200, 188, 0.45f, withAlpha(theme::kShell, 0.75f), 380);
     }
+    typingChips(app, k, 200, 56);
     int seen = 0;
     for (int v = 0; v < kKindVariants; ++v) seen += dexHas(s, kind, v);
     char els[32];
@@ -76,8 +101,10 @@ void drawDexBottom(App& app, const Input& in) {
         if (kind >= kindCount()) break;
         const KindInfo& k = kindInfo(kind);
         const float y = kRowY + row * kRowH;
-        text(app, k.title, 10, y + 3, 0.42f, theme::kShell, C2D_AlignLeft, 92);
-        if (dexComplete(s, kind)) heart(106, y + 9, 9, theme::kClutchGold);
+        text(app, k.title, 10, y + 3, 0.42f, theme::kShell, C2D_AlignLeft, 74);
+        for (int e = 0; e < k.elementCount; ++e)  // its typing: a dot per element (D83)
+            C2D_DrawCircleSolid(88 + e * 10, y + 9, 0.5f, 4, fromRgb(elementGlow(k.elements[e])));
+        if (dexComplete(s, kind)) heart(109, y + 9, 8, theme::kClutchGold);
         Rgb base, accent, glow;
         kindColours(kind, base, accent, glow);
         for (int v = 0; v < kKindVariants; ++v) {

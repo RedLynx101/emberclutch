@@ -69,7 +69,7 @@ void stepHatched(Dragon& d, s64 t, float hours) {
     const float sleepy = d.personality == Personality::Sleepy ? 1.5f : 1.0f;
 
     n.belly -= (asleep ? 3.0f : 6.0f) * hours * scale;
-    n.shine -= 2.0f * hours * scale;
+    n.clean -= 1.2f * hours * scale;  // a bath every two days or so (D83)
     const float playDrain = (asleep ? 1.0f : 4.0f) * (d.personality == Personality::Playful ? 0.75f : 1.0f);
     n.play -= playDrain * hours * scale;
     if (night) {
@@ -82,7 +82,7 @@ void stepHatched(Dragon& d, s64 t, float hours) {
 
     n.belly = clamp100(n.belly);
     n.energy = clamp100(n.energy);
-    n.shine = clamp100(n.shine);
+    n.clean = clamp100(n.clean);
     n.play = clamp100(n.play);
 
     // Dust settles over a day or two (D46): fastest where a dragon meets the floor, slowest
@@ -95,7 +95,7 @@ void stepHatched(Dragon& d, s64 t, float hours) {
         // Keepers tend stored dragons: needs never fall below 50, mood holds.
         if (n.belly < 50) n.belly = 50;
         if (n.energy < 50) n.energy = 50;
-        if (n.shine < 50) n.shine = 50;
+        if (n.clean < 50) n.clean = 50;
         if (n.play < 50) n.play = 50;
         return;
     }
@@ -117,7 +117,7 @@ void stepHatched(Dragon& d, s64 t, float hours) {
 float Needs::lowest() const {
     float m = belly;
     if (energy < m) m = energy;
-    if (shine < m) m = shine;
+    if (clean < m) m = clean;
     if (play < m) m = play;
     return m;
 }
@@ -232,23 +232,15 @@ void pet(Dragon& d, float amount) {
     addBond(d, d.personality == Personality::Shy ? 2 : 1);
 }
 
-void groom(Dragon& d, float amount) {
-    d.needs.shine = clamp100(d.needs.shine + amount);
-    for (float& dust : d.dirt) dust = clamp100(dust - amount * 1.5f);
-    for (float& m : d.mud) m = clamp100(m - amount * 0.75f);
-    addBond(d, 1);
-}
-
-void cleanRegion(Dragon& d, int region, float amount) {
-    if (region < 0 || region >= kRegionCount) return;
-    d.dirt[region] = clamp100(d.dirt[region] - amount);
-    d.mud[region] = clamp100(d.mud[region] - amount * 0.5f);  // mud takes longer to brush out
+void brushed(Dragon& d, float amount) {
+    d.needs.play = clamp100(d.needs.play + amount * 0.7f);
+    addBond(d, d.personality == Personality::Shy ? 2 : 1);
 }
 
 void bathe(Dragon& d) {
     for (float& dust : d.dirt) dust = 0;
     for (float& m : d.mud) m = 0;
-    d.needs.shine = clamp100(d.needs.shine + 30);
+    d.needs.clean = 100;
     addBond(d, 1);
 }
 
@@ -281,7 +273,7 @@ void makeUp(Dragon& d) {
 Mood moodOf(const Dragon& d) {
     if (d.upset) return Mood::Upset;
     const Needs& n = d.needs;
-    const float score = (n.belly + n.energy + n.shine + n.play + n.lowest()) / 5.0f;
+    const float score = (n.belly + n.energy + n.clean + n.play + n.lowest()) / 5.0f;
     if (score >= 80) return Mood::Joyful;
     if (score >= 60) return Mood::Content;
     if (score >= 40) return Mood::Restless;

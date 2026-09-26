@@ -216,8 +216,10 @@ HATCH = dict(
         "parts": {"eyes": 1.12, "horns": 0.6, "frill": 0.9, "wings": 0.56, "spikes": 0.85,
                   "tail_tip": 0.9, "heart": 1.0, "runes": 0.9},
     },
+    # The baby's little wings turned up and back off its round body (run 17: folded as the adult's,
+    # they sank into its back and flank).
     base_pose={"head": (4, 0, 0), "tail1": (6, 0, 0), "tail2": (4, 0, 10), "tail3": (8, 0, 12),
-               "tail4": (12, 0, 14)},
+               "tail4": (12, 0, 14), "wing_arm_R": (-20, 0, -55), "wing_arm_L": (-20, 0, 55)},
     builds={"neutral": {}, "sturdy": {}, "sleek": {}, "long": {}},
     eyes=dict(at=(0.17, -0.78, 1.09), out=(0.42, -0.90, 0.07), iris=(0.118, 0.132, 0.066),
               pupil=(0.08, 0.094, 0.03), slit=(0.32, 1.1),

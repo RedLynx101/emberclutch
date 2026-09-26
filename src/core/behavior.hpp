@@ -121,7 +121,7 @@ enum class Care : u8 {
     OfferFood,   // food held out near it (every frame while held)
     Bath,        // the tub is out: hop in
     BathDone,    // rinsed: hop out and shake off
-    GroomBody,   // being brushed or polished (every stroke)
+    GroomBody,   // being brushed, or petted once turned with L / R (every stroke)
     GroomBelly,  // ...on the belly: sit up for it
     GroomWing,   // ...on a wing: lift it
     SweetSpot,   // scratched just right
@@ -175,7 +175,11 @@ struct DenBehavior {
     bool nudged = false, knocked = false;
     bool tugWinner = false;  // a tug-of-war: this one ends up with the rope
     u8 pushes = 0;           // the orb pushed along so far
-    s8 groomSide = 1;       // which flank it shows while groomed (+1 its right, -1 its left)
+    u8 groomFacing = 0;     // which way it turns while petted or brushed (D83): 0 you, 1 its right
+                            // flank, 2 its back, 3 its left flank (L / R step round; back to 0
+                            // when the grooming ends)
+    void turnAround(int dir) { groomFacing = static_cast<u8>((groomFacing + 4 + (dir < 0 ? -1 : 1)) % 4); }
+    float groomAngle() const;
     ClipId walkClip = ClipId::Walk;  // what walking looks like (carrying a toy: Carry)
     // Ground speeds (den units per second) that match the walk and trot cycles for this
     // dragon's body, so its feet stay planted (see locomotionSpeed in core/den_actor).

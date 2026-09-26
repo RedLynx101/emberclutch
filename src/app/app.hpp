@@ -63,7 +63,7 @@ struct CareState {
     float chewT = 0;   // chewing a bite (run 15): into the current chew
     int chewLeft = 0;  // ...and the chews still to come
     StrokeTracker stroke;
-    GroomSession groom;
+    bool withGrain = true;  // the brush's last stroke went head to tail
     bool onDragon = false;       // this contact started on the dragon
     bool reported = false;       // a rough stroke / a call was reported this contact
     TouchHit lastHit;            // (render3d) the last spot touched

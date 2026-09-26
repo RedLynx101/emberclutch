@@ -83,6 +83,11 @@ struct SweetSpot {
 };
 SweetSpot sweetSpotOf(const Dragon& d);
 bool atSweetSpot(const Dragon& d, PetZone zone, Vec3 outward);
+// Another place it likes (D83): petting or brushing there counts half as much again. Never
+// the sweet spot's zone.
+PetZone likedZoneOf(const Dragon& d);
+// How much a stroke there pleases it: 1.5 on its liked zone, else 1.
+float zoneLiking(const Dragon& d, PetZone zone);
 
 enum class Food : u8 {
     Firepepper, RiverFish, Skyberry, Honeyroot, Frostmelon, Starfruit,  // each element's favourite, in Element order
@@ -104,23 +109,5 @@ Taste tasteOf(const Dragon& d, Food f);
 
 enum class BathMood : u8 { Loves, Fine, Grudging };
 BathMood bathMoodOf(const Dragon& d);  // Tide loves it, Ember grudges it, the rest don't mind
-
-// ------------------------------------------------------------------------------ grooming
-// One grooming visit: how much of each region has been brushed and polished. Not saved;
-// the dragon's dirt and Shine are. Brushing with the grain (head to tail) counts fully,
-// against it half.
-struct GroomSession {
-    float brushed[kRegionCount] = {};   // 0..1 per region
-    float polished[kRegionCount] = {};  // 0..1
-    bool gleamed = false;
-
-    // Brushing `amount` (0..1 of a region's worth) on a region; also takes that much dust off
-    // and raises Shine. Returns true when this stroke finishes the region.
-    bool brush(Dragon& d, int region, float amount, bool withGrain);
-    bool polish(Dragon& d, int region, float amount);
-    // True once, the first time every region is both brushed and polished: the gleaming moment.
-    bool checkGleam();
-    float coverage() const;  // brushed share of the body, 0..1
-};
 
 }  // namespace ec

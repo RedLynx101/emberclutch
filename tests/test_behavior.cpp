@@ -280,7 +280,9 @@ TEST(hands_on_care_reactions) {
     // Grooming: it turns a flank to the camera, sits up for the belly, lifts a wing, then
     // shakes off when the brushing stops.
     a = fresh(43);
-    a.behavior.groomSide = -1;
+    CHECK(a.behavior.groomFacing == 0);  // facing you to begin with
+    a.behavior.turnAround(-1);  // L: its left flank (D83)
+    CHECK(a.behavior.groomFacing == 3);
     a.behavior.care(Care::GroomBody, d);
     CHECK(a.behavior.activity == Activity::Groomed);
     CHECK(run(a, d, false, 3, [&](const DenBehavior& b) {
@@ -288,6 +290,11 @@ TEST(hands_on_care_reactions) {
         return b.step == 1;
     }));
     CHECK(std::fabs(a.behavior.heading + 1.25f) < 0.15f);
+    a.behavior.turnAround(-1);  // its back to you
+    CHECK(run(a, d, false, 4, [&](const DenBehavior& b) {
+        a.behavior.petTimer = 1.0f;
+        return b.step == 1 && std::fabs(std::fabs(b.heading) - 3.14159f) < 0.15f;
+    }));
     a.behavior.care(Care::GroomWing, d);
     CHECK(a.behavior.clip == ClipId::LiftWing);
     CHECK(run(a, d, false, 3, [&](const DenBehavior& b) {

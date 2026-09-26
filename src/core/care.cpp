@@ -196,6 +196,18 @@ bool atSweetSpot(const Dragon& d, PetZone zone, Vec3 outward) {
     return (outward.x > 0.15f && s.side > 0) || (outward.x < -0.15f && s.side < 0);
 }
 
+PetZone likedZoneOf(const Dragon& d) {
+    static constexpr PetZone kZones[] = {PetZone::Head, PetZone::Cheek, PetZone::Chin, PetZone::Neck,
+                                         PetZone::Back, PetZone::Belly, PetZone::Tail};
+    constexpr u32 n = sizeof(kZones) / sizeof(kZones[0]);
+    const PetZone sweet = sweetSpotOf(d).zone;
+    u32 k = mix(d.id * 0x85EBCA6Bu + 0x11CEu) % n;
+    if (kZones[k] == sweet) k = (k + 1 + mix(d.id) % (n - 1)) % n;
+    return kZones[k];
+}
+
+float zoneLiking(const Dragon& d, PetZone zone) { return zone == likedZoneOf(d) ? 1.5f : 1.0f; }
+
 const FoodInfo& foodInfo(Food f) {
     static const FoodInfo kFoods[static_cast<int>(Food::Count)] = {
         {"Firepepper", 30, 2, false}, {"River fish", 32, 3, false},  {"Skyberry", 26, 2, false},
@@ -228,49 +240,6 @@ BathMood bathMoodOf(const Dragon& d) {
         case Element::Ember: return BathMood::Grudging;
         default: return BathMood::Fine;
     }
-}
-
-// ------------------------------------------------------------------------------ grooming
-namespace {
-constexpr float kShinePerRegion = 8.0f;   // a whole region brushed; polishing adds half as much
-constexpr float kDustPerRegion = 110.0f;  // a whole region brushed takes all its dust off
-float clamp01(float v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
-float clamp100(float v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }
-}  // namespace
-
-bool GroomSession::brush(Dragon& d, int region, float amount, bool withGrain) {
-    if (region < 0 || region >= kRegionCount || amount <= 0) return false;
-    const float a = withGrain ? amount : amount * 0.5f;
-    const float before = brushed[region];
-    brushed[region] = clamp01(before + a);
-    const float gained = brushed[region] - before;
-    cleanRegion(d, region, a * kDustPerRegion);
-    d.needs.shine = clamp100(d.needs.shine + gained * kShinePerRegion);
-    const bool done = before < 1.0f && brushed[region] >= 1.0f;
-    if (done) addBond(d, 1);
-    return done;
-}
-
-bool GroomSession::polish(Dragon& d, int region, float amount) {
-    if (region < 0 || region >= kRegionCount || amount <= 0) return false;
-    const float before = polished[region];
-    polished[region] = clamp01(before + amount);
-    d.needs.shine = clamp100(d.needs.shine + (polished[region] - before) * kShinePerRegion * 0.5f);
-    return before < 1.0f && polished[region] >= 1.0f;
-}
-
-bool GroomSession::checkGleam() {
-    if (gleamed) return false;
-    for (int r = 0; r < kRegionCount; ++r)
-        if (brushed[r] < 1.0f || polished[r] < 1.0f) return false;
-    gleamed = true;
-    return true;
-}
-
-float GroomSession::coverage() const {
-    float sum = 0;
-    for (float b : brushed) sum += b;
-    return sum / kRegionCount;
 }
 
 }  // namespace ec

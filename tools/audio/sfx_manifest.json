@@ -535,10 +535,11 @@
  "dragon-step-grass": {
   "kind": "body",
   "takes": [
-   "One_step_of_a_big_cl_#1-1790391291892.wav",
-   "One_step_of_a_big_cl_#2-1790391270084.wav",
    "One_step_of_a_big_cl_#4-1790391266255.wav"
-  ]
+  ],
+  "lp": 2600,
+  "gain": -4.0,
+  "attack": 0.012
  },
  "mount": {
   "kind": "body",

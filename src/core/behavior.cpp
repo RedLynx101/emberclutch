@@ -919,19 +919,22 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
             break;
         case Activity::Groomed:
             if (step == 0) {  // show a flank to the camera, face half turned toward it
-                if (turnTo(groomSide * 1.25f, dt)) {
+                if (turnTo(groomAngle(), dt)) {
                     step = 1;
                     setClip(ClipId::Idle, 0.25f);
                 }
             } else if (step == 1) {
-                if (std::fabs(wrapAngle(groomSide * 1.25f - heading)) > 0.3f) step = 0;  // asked to turn
+                if (std::fabs(wrapAngle(groomAngle() - heading)) > 0.3f) step = 0;  // asked to turn
             } else if (step == 2) {  // sitting up for the belly
                 if (clipDone && clip == ClipId::Sit) setClip(ClipId::SitLoop, 0.2f);
             } else if (step == 3 && clipDone) {  // the wing goes back down
                 step = 1;
                 setClip(ClipId::Idle, 0.3f);
             }
-            if (petTimer <= 0) start(Activity::Shake);  // done: shake off the loose scales
+            if (petTimer <= 0) {  // done: shake off the loose scales, and face you next time
+                groomFacing = 0;
+                start(Activity::Shake);
+            }
             break;
         case Activity::Come:
             if (step == 0) {
@@ -1423,6 +1426,13 @@ float DenBehavior::lookWeight() const {
         default:
             return 0.0f;  // eating, sleeping, sulking, its own business (hand-feeding looks at the food)
     }
+}
+
+float DenBehavior::groomAngle() const {
+    // A flank half turned toward you (the face still in view), or its back (the camera looks
+    // along the dragon from behind), or facing you.
+    static constexpr float kAngles[4] = {0.0f, 1.25f, 3.14159265f, -1.25f};
+    return kAngles[groomFacing & 3];
 }
 
 void DenBehavior::care(Care c, const Dragon& d, PetZone zone) {

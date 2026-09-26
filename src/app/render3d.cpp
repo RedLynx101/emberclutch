@@ -1,5 +1,7 @@
 #include "app/render3d.hpp"
 
+#include "app/hitch.hpp"
+
 #include <3ds.h>
 #include <citro2d.h>
 #include <citro3d.h>
@@ -578,6 +580,7 @@ bool loadLook(int look);
 // on the spot if the splash hasn't got to it yet; the classic look if its models are missing.
 int lookOf(const Dragon& d) {
     int look = g_forceLook >= 0 ? g_forceLook : kLookCount + (d.kind < kindCount() ? d.kind : 0);
+    if (!g_lookLoaded[look]) hitch::mark("kind on the spot");
     if (!g_lookLoaded[look] && !loadLook(look)) look = kLookClassic;
     return look;
 }
@@ -2129,13 +2132,21 @@ bool loadLook(int look) {
 
 }  // namespace
 
-bool loadNextLook() {
+bool loadNextLook(const SaveData& s) {
     if (!g_ready) return false;
-    for (int look = 0; look < kLookCount; ++look) {
+    for (int i = 0; i < s.dragonCount; ++i) {
+        const int look = kLookCount + (s.dragons[i].kind < kindCount() ? s.dragons[i].kind : 0);
         if (g_lookLoaded[look] || g_lookFailed[look]) continue;
+        const int plan = planOfSlot(look);
+        if (!g_planTried[plan]) {  // its clips first (the biggest piece), then a form a call
+            hitch::mark("clips");
+            if (!loadPlan(plan)) g_lookFailed[look] = true;
+            return true;
+        }
         for (int k = 0; k < 4; ++k) {
             const int form = k < 2 ? kFormHatchling : kFormGrown;
-            if (!g_forms[look][form][k % 2].ok) {  // one form a call
+            if (!g_forms[look][form][k % 2].ok) {
+                hitch::mark("form");
                 if (!loadLookForm(look, k)) g_lookFailed[look] = true;
                 return true;
             }

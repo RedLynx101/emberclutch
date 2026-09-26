@@ -43,7 +43,9 @@ RATE = 22050
 # hp: high-pass Hz; shelf: low-shelf gain (dB) below 200 Hz; target: loudest-100 ms RMS
 # (dBFS); floor: where a sound ends, relative to its peak (dB); tail: kept after that (s);
 # limit: how far (dB) peaks may be pushed into the soft limiter. A manifest entry may
-# override floor / tail and cap the length with "max" (s).
+# override floor / tail and cap the length with "max" (s), and soften a sound: "lp" (a low-pass,
+# Hz: takes the click off a step), "gain" (dB against the kind's target) and "attack" (s: a
+# fade-in over the first hit).
 KINDS = {
     "voice": dict(hp=110, shelf=-3.0, target=-14.0, floor=-40.0, tail=0.06, limit=0.0),
     "low-voice": dict(hp=50, shelf=0.0, target=-14.0, floor=-40.0, tail=0.08, limit=0.0),
@@ -72,10 +74,12 @@ def import_takes(src_dir: Path, slugs: dict) -> None:
     print(f"[sfx] imported {sum(len(e['takes']) for e in slugs.values())} takes into {SOURCE_DIR}")
 
 
-def decode(path: Path, kind: dict) -> array.array:
+def decode(path: Path, kind: dict, lp: float | None = None) -> array.array:
     chain = [f"pan=mono|c0=0.5*c0+0.5*c1", f"highpass=f={kind['hp']}:poles=2"]
     if kind["shelf"]:
         chain.append(f"lowshelf=f=200:g={kind['shelf']}")
+    if lp:
+        chain.append(f"lowpass=f={lp}:poles=2")
     chain.append(f"aresample={RATE}")
     raw = subprocess.run(["ffmpeg", "-v", "error", "-i", str(path), "-af", ",".join(chain), "-f", "f32le",
                           "-acodec", "pcm_f32le", "-"], check=True, stdout=subprocess.PIPE).stdout
@@ -160,13 +164,17 @@ def process(slug: str, entry: dict) -> list[str]:
         src = SOURCE_DIR / f"{slug}-{i}.wav"
         if not src.exists():
             sys.exit(f"error: {src} missing (run with --import <download folder>)")
-        x = decode(src, kind)
+        x = decode(src, kind, entry.get("lp"))
         if entry["kind"] == "loop":
             y = loop_cut(x, **entry["loop"])
             level, target = rms(y), kind["rms"]
         else:
             y = trim(x, entry.get("floor", kind["floor"]), entry.get("tail", kind["tail"]), entry.get("max"))
-            level, target = loudest_rms(y), kind["target"]
+            level, target = loudest_rms(y), kind["target"] + entry.get("gain", 0.0)
+            if entry.get("attack"):  # soften the first hit
+                n = max(1, int(entry["attack"] * RATE))
+                for k in range(min(n, len(y))):
+                    y[k] *= (k / n) ** 0.5
         peak = max(abs(v) for v in y)
         gain_db = min(target - db(level), PEAK_CEILING + kind["limit"] - db(peak))
         if kind["limit"]:

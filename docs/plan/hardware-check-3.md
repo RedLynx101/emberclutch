@@ -297,3 +297,65 @@ In **FBI**: SD → cias → `emberclutch.cia` → Install CIA, over the game (th
 - Whether the lab banner held, and anything still wrong with the dragons or the den.
 - Note: on the dev menu, **Change kind** (page 1) and **Change colour** (page 2) change a dragon
   for good; **Next kind** and **Kind colouring** only show.
+
+## Results (2026-09-26)
+All 20 steps done. Noah's notes (D83):
+- **Mouths:** the Blazeplume's open mouth is still see-through **from above** (others may be
+  too); the see-through issues show at least on the Blazeplume.
+- **A stall:** the game froze in the den once for a few seconds, then carried on by itself.
+- **Sounds:** one of the dragon's grass steps sounds bad, one good: to pick by ear
+  ([the takes page](https://claude.ai/artifact/BP8VgPaAL3MnsN59jW7jxE)).
+- **The valley:** the 3D slider does nothing there (fine for the test valley; the real one needs it).
+- **Banner lab A froze** the HOME Menu: the size (materials and pieces) isn't what freezes the
+  Blazeplume banner. X stays.
+- **Grooming, simpler:** cleanliness instead of shine, the polishing cloth out, the brush a
+  slightly faster stroke than the hand (for attention and play), petting and brushing both
+  turning the dragon with L/R and reaching its back, sides, head, neck and chin; brushes of
+  different kinds from shops later.
+- Everything else passed: the dragons moved over to their new kinds, the profile, voices,
+  eggs, the Market, the Dragondex, the sounds, swimming, running, landing, the shadow, the
+  Puffback's wings, the Duskwing baby, the heads apart, feeding, the den.
+
+# Run 18 (0.2.5): grooming made simpler, run 17's fixes
+
+**For Noah.** Run 17's notes (D83): grooming the way you described it, the mouths closed at
+the sides, the babies' wings, one soft grass step, the Dragondex's typing, and the den's stall
+chased two ways (saving no longer waits for the SD card; your dragons' kinds load ahead
+instead of on the spot). About 10 minutes. **Y** saves both screens and the numbers.
+
+## 0. Install
+In **FBI**: SD → cias → `emberclutch.cia` → Install CIA, over the game (the save stays).
+
+## 1. Grooming
+1. The top bar reads **Clean** where Shine was, and the tray has no cloth: hand, food, brush,
+   sponge, toy.
+2. **The hand:** press **R**: it turns its right flank to you, and the close-up shows its body;
+   again: its back; again: its left flank; again: facing you (**L** goes the other way). Stroke
+   its back, sides, neck, head and chin; one place it likes more (the hearts come faster).
+3. **The brush:** a little faster than the hand and it pleases more (Play fills quicker); L / R
+   turn it the same way. It no longer cleans.
+4. **The bath:** rub the suds in and rinse: "Clean and gleaming, nose to tail!", a burst of
+   sparkles, and Clean fills right up. Only the bath cleans now; muddy trips knock Clean down.
+
+## 2. The dragons
+1. **Mouths:** watch a Blazeplume (and others) yawn, from the side and from above: dark inside
+   right across, never see-through.
+2. **Babies' wings:** a Pouncer and a Blazeplume hatchling show their little wings on their
+   backs instead of sinking into them.
+
+## 3. The valley and the Dragondex
+1. SELECT, page 2, **Valley test**: walking on grass has one soft step now, a little different
+   each time.
+2. **START → Dragondex:** every kind shows its typing (a dot per element on the list, chips up
+   top); one you haven't met says what to pair ("A crossbreed: pair an Ember kind with a Gale
+   kind").
+
+## 4. The den
+1. Play in the den a good while. If it ever freezes for a moment, carry on and close the game
+   normally afterwards: it writes what happened to `hitches.txt` on the SD card, and I read it
+   next time.
+
+## What to send back
+- How the grooming feels (the turning, the brush against the hand, the bath).
+- Any see-through mouths or clipping wings left.
+- Whether the den froze again.

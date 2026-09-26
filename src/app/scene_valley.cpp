@@ -168,8 +168,9 @@ void update(App& app, const Input& in) {
         for (int k = 0; k < n; ++k) {
             if (events[k] == kAnimFlap) audio::playSfx(audio::Sfx::Wingbeat, 1.0f, 0.8f);
             if (events[k] == kAnimFootstep && s.flight.grounded)
-                audio::playSfx(s.flight.swimming ? audio::Sfx::Splash : audio::Sfx::DragonStep,
-                               s.flight.swimming ? 1.3f : 1.0f, s.flight.swimming ? 0.35f : 1.0f);
+                audio::playSfx(s.flight.swimming ? audio::Sfx::Splash : audio::Sfx::DragonStep,  // one take (run 17):
+                               s.flight.swimming ? 1.3f : 0.94f + 0.12f * (app.rng.below(100) / 100.0f),  // each step a little
+                               s.flight.swimming ? 0.35f : 0.8f);                                      // different
         }
     }
     s.flyer.eyes.update(0.0f, app.dt);

@@ -84,10 +84,12 @@ groups merged; the rest are in [the kit's gotchas](../tech/dragon-kit.md#gotchas
   food. PC tests (227,051 checks) and Azahar runs `tests/autotest/dr3.txt` (an old save
   migrating), `starter.txt`, `hatch.txt`, `profile.txt`, `dex.txt`, `market.txt`.
 
-## DR4 — The next crossbreeds: the commons' pairs (D80)
+## DR4 — The next crossbreeds: the commons' pairs and two more (D80, D83)
 - With all eight bases built (D79), 27 crossbreeds are left (the Blazeplume, Pouncer ×
   Crestwing, is the first). Next, the three pairs of the common breeds, the crossbreeds
-  players meet first: **Pouncer × Puffback, Pouncer × Curlstone, Puffback × Curlstone**.
+  players meet first: **Pouncer × Puffback, Pouncer × Curlstone, Puffback × Curlstone**, and
+  (D83) **two common × harder-to-find pairs** chosen for bodies unlike any yet, so five in all,
+  built alongside Beta's big update.
   Concept sheets (**R12**), then subagents in parallel, each designing a kind of its own (a
   body plan that suits it), sized on the common scale (`measure.py`, `together.py`), then
   **R12b**.

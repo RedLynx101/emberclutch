@@ -118,6 +118,7 @@ WanderFinds comeBack(SaveData& s, int index, u32 stepCount, s64 now, Rng& rng) {
     dirty(kRegionRight, 0.8f);
     dirty(kRegionTail, 0.9f);
     dirty(kRegionBack, 0.3f);
+    d.needs.clean = std::fmax(0.0f, d.needs.clean - 0.4f * std::fmin(mud, 100.0f));  // not so clean now (D83)
     markVisit(d, now);
     return f;
 }

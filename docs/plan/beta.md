@@ -175,6 +175,13 @@ Checked in Azahar, then on Noah's old 3DS (D34):
   little faster; the dragon's shadow on the ground as it comes down.
 - **The size (D81):** the real valley is at least 5× the test valley (about 1 km across now),
   with empty room kept for places added later.
+- **Tails in the wind (D84):** in flight a dragon's tail follows the air, a chain that trails
+  its body's motion: bank or turn right and it swings right (and left for left), dive and it
+  streams straight out behind, climb and it drags low, glide and it waves slowly, a hard stop
+  and it swings through; built for every body plan's tail chain (and the long ones, the
+  Ribbontail's and the Flurrytail's plume, loosest), on top of the flight clips.
+- **3D in the valley (D83):** the 3D slider works there as it does in the den (the test
+  valley draws one eye).
 
 ### WP6 — The painted map
 - A painted top view of the valley (rendered from the landscape, then stylised), pins for
@@ -248,6 +255,16 @@ Checked in Azahar, then on Noah's old 3DS (D34):
 | R8 | The valley blockout, from the air and in the game | Detailing the landscape |
 | R9 | The player character and one villager | The other villagers |
 | R10 | The campaign outline | Writing the dialogue |
+
+## The big update (D83, 2026-09-26)
+Noah's call after run 17: **the whole of Beta is the next big update**, to `v0.3.0-beta`
+(Phases B to E below), and alongside it **five more crossbreeds** (the revamp's DR4, grown from
+three): the commons' three pairs (Pouncer × Puffback, Pouncer × Curlstone, Puffback ×
+Curlstone) and two common × harder-to-find pairs, picked for bodies unlike any yet, concept
+sheets (R12) first, then Opus 5.5 subagents build them in parallel with the valley work. Also
+in it: the tails in the wind (D84) and 3D in the valley (WP5); brushes of different kinds in
+the rebuilt shops (D83: soft, bristle, a comb for feathered kinds, a buffer for scaly ones,
+each suiting certain kinds). Parked until the 1.0 polish: the Blazeplume HOME Menu banner.
 
 ## Order of work
 1. ✅ **Prove it** (then R7 decided, D75; **the new dragons, WP2b, R11, before step 2**): WP1 (the flyable valley, measured in the emulator) and WP2 (concept

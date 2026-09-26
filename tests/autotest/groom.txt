@@ -1,0 +1,52 @@
+# Grooming, simpler (D83): Clean instead of Shine, no cloth in the tray; the hand and the brush
+# turn the dragon round with L / R (its right flank, its back, its left flank); the brush a
+# faster stroke; the bath fills Clean and is the gleaming moment.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+shot g01-care
+# The hand, turned round a quarter at a time.
+key R
+wait 1.5
+shotin 0.6 g02-hand-right-flank
+drag 110 90 210 100 1.2
+key R
+wait 1.8
+shotin 0.6 g03-hand-back
+drag 110 90 210 100 1.2
+key R
+wait 1.8
+shot g04-hand-left-flank
+key R
+wait 1.8
+shot g05-facing-you-again
+# The brush.
+tap 134 221
+wait 1.2
+shotin 0.6 g06-brush
+drag 90 110 230 110 1.4
+key L
+wait 1.8
+shotin 0.6 g07-brush-left
+drag 90 110 230 110 1.4
+# The bath: gleaming after.
+tap 186 221
+wait 5
+drag 120 90 200 110 1.2
+drag 200 110 120 90 1.2
+tap 282 146
+wait 1.0
+shot g08-gleaming
+wait 3
+shot g09-after
+quit

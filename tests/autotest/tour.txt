@@ -51,17 +51,17 @@ drag 20 182 162 118 1.2 2.4
 overlay off
 wait 1
 shot 14b-food-after
-# Brushing and polishing.
+# Brushing (D83: a faster stroke; L / R turns it round, here to its back).
 tap 134 221
 wait 1.2
 shotin 0.8 15-brush
 drag 90 110 230 110 1.4
-tap 186 221
-wait 0.6
-shotin 0.8 16-cloth
+key R
+wait 1.2
+shotin 0.8 16-brush-back
 drag 120 110 200 110 1.2
 # The bath.
-tap 238 221
+tap 186 221
 wait 5
 shot 17-bath
 key SELECT
@@ -75,7 +75,7 @@ wait 1.2
 shot 19-rinse
 wait 4
 # Fetch: flick the ball up into the den.
-tap 290 221
+tap 238 221
 wait 0.6
 drag 160 150 168 60 0.15
 wait 0.7

@@ -1337,9 +1337,42 @@ def build_mouth_pocket(body, upper, lower):
             f.material_index = 2
         return rim, backs
 
+    def cheek(up, lo, end):
+        """The side of the mouth from the corner forward along the lips (their outer 45% across):
+        a dark wall from the upper lip down to the lower one, facing in, so a mouth opened wide
+        and seen from the side shows its far side instead of a way through (run 17: the
+        Blazeplume's yawn). Folded flat while the mouth is shut; seen from outside, culled."""
+        n_up, n_lo = len(up), len(lo)
+        if n_up < 2 or n_lo < 2:
+            return
+        order = range(n_up) if end == 0 else range(n_up - 1, -1, -1)
+        side = 1.0 if up[0 if end == 0 else -1].co.x > 0 else -1.0
+        widest = max(abs(v.co.x) for v in up)
+        pairs = []
+        for i in order:
+            a = up[i]
+            if abs(a.co.x) < 0.55 * widest and pairs:
+                break
+            j = round(i * (n_lo - 1) / (n_up - 1))
+            pairs.append((a, lo[j]))
+        facing = Vector((-side, 0, 0))
+        for (a, b), (c, e) in zip(pairs, pairs[1:]):
+            verts = [a, c, e, b]
+            if (a.co - b.co).length < 1e-6:  # the corner: the lips meet
+                verts = [a, c, e]
+            if len({id(v) for v in verts}) < len(verts):
+                continue
+            f = bm.faces.new(verts)
+            f.normal_update()
+            if f.normal.dot(facing) < 0:
+                f.normal_flip()
+            f.material_index = 2
+
     upper, lower = [bm.verts[i] for i in upper], [bm.verts[i] for i in lower]  # before any are added
     up_rim, up_back = strip(upper, -no)
     lo_rim, lo_back = strip(lower, no)
+    cheek(up_rim, lo_rim, 0)
+    cheek(up_rim, lo_rim, -1)
     for u, l, t in ((up_rim[0], lo_rim[0], up_back[0]), (up_rim[-1], lo_rim[-1], up_back[-1])):
         if (u.co - l.co).length < 1e-6 and (u.co - t.co).length < 1e-6:
             continue

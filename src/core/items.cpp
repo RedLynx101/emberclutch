@@ -10,7 +10,7 @@ constexpr ItemInfo kInfo[kItems] = {
     {"Tug rope", "A knotted rope for tug-of-war.", 80, ItemKind::Toy, 1},
     {"Puzzle orb", "Roll it about: a treat drops out.", 120, ItemKind::Toy, 2},
     {"Food bowl", "Fill it, and they eat when hungry.", 90, ItemKind::Toy, 3},
-    {"Silver brush", "Brushing shines twice as fast.", 150, ItemKind::Grooming, 0},
+    {"Silver brush", "Brushing pleases half as much again.", 150, ItemKind::Grooming, 0},
     {"Bubble soap", "Baths leave a lasting sparkle.", 100, ItemKind::Grooming, 1},
     {"Warm stones", "Eggs in the nests cool half as fast.", 200, ItemKind::Nest, 0},
     {"Ember rug", "Red and gold, like the hearth.", 120, ItemKind::Rug, 0},
@@ -146,7 +146,7 @@ int feedFromBowl(SaveData& s, s64 now) {
 }
 
 float eggCooling(const SaveData& s) { return owns(s, Item::WarmStones) ? 0.5f : 1.0f; }
-float brushRate(const SaveData& s) { return owns(s, Item::SilverBrush) ? 2.0f : 1.0f; }
+float brushRate(const SaveData& s) { return owns(s, Item::SilverBrush) ? 1.5f : 1.0f; }
 float bathShine(const SaveData& s) { return owns(s, Item::BubbleSoap) ? 15.0f : 0.0f; }
 
 }  // namespace ec

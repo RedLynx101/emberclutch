@@ -1,8 +1,10 @@
 # The Beta runs on the old 3DS (WP17, D34)
 
 Runs 1–12 are in [hardware-check-1.md](hardware-check-1.md), run 13 (Alpha 2) in
-[hardware-check-2.md](hardware-check-2.md). Beta plans three: run 14 (the flyable valley,
-WP1), run 15 (after flying, the map and a few places), run 16 (the whole milestone).
+[hardware-check-2.md](hardware-check-2.md). Beta's runs: run 14 (the flyable valley, WP1),
+run 15 (the nine new dragons of the revamp and walking in the valley, 0.2.1), then run 16
+(the new dragons for real, DR3), run 17 (after flying, the map and a few places) and run 18
+(the whole milestone).
 
 # Run 14 (0.1.15): the flyable valley
 
@@ -82,3 +84,64 @@ The controls: **A** flaps (hold to climb; from the ground it takes off), let go 
   cross the valley), the camera, landing.
 - The fog and draw distance, and the 3D.
 - Anything else before the valley's real landscape starts (step 2).
+
+## Results (2026-09-25)
+Noah flew it on the old 3DS (ten Ys): **the flying is pretty good**. The valley ran
+16.5–18.3 ms (the worst frame of a second 28–49 ms, at most one slow frame), 6,500–8,600
+triangles, 19 MB of linear memory free. His note: on the ground the dragon stood stuck; he
+should be able to walk with it. Done in 0.2.1 (run 15): the pad walks it, B runs. (Builds after Alpha 2 are 0.2.x: a CIA's last number stops at 15.)
+
+# Run 15 (0.2.1): the nine new dragons, and walking in the valley
+
+**For Noah.** The first nine kinds of the dragon revamp on the real 3DS (R11b: all nine
+approved, the Duskwing's ears now grow out of its head), and walking on the ground in the
+valley (run 14's note). Your save doesn't change: on the dev menu, **Next kind** shows every
+dragon in the den as one of the new kinds in turn, for looking only; your dragons become
+new kinds for real in DR3, with their eggs. About 20 minutes; the checklists page has these
+steps (the Run 15 tab). **Y** saves both screens and the numbers, as before. The HOME Menu
+banner is still the old one; the Blazeplume's comes in the next build.
+
+**What the emulator says** (to compare): one dragon of a new kind in the den ran 16.6–17.4 ms
+in Azahar, each kind drawing 2,600–3,000 triangles (the rare colourings the most), no memory
+faults; three dragons of one kind are heavier, which is one of the questions here. On foot in
+the valley: 5,900–8,600 triangles, 16.7–17.4 ms.
+
+## 0. Install
+The files are on the SD card (sent 2026-09-26 to the 3DS at .61): in **FBI**, SD → cias →
+`emberclutch.cia` → Install CIA, over the game (the save stays).
+
+## 1. The nine in the den
+1. SELECT, page 1: **Overlay** on, then **Next kind**: every dragon in the den becomes a
+   **Pouncer** (a toast names the kind). SELECT to close; watch them a while (walking,
+   sitting, playing, sleeping), then press **Y**.
+2. Again for each of the nine (Puffback, Curlstone, Crestwing, Ribbontail, Flurrytail,
+   Glimmermoth, Duskwing, Blazeplume): SELECT, **Next kind**, SELECT, watch, **Y**. After the
+   ninth, Next kind gives them their own looks back.
+3. On any you like: **Kind colouring** steps through its four colourings (the fourth is the
+   rare one): **Y** on the rare.
+4. They show at the stage your dragons are; **Next stage** grows the chosen one along.
+5. The **Duskwing**: its ears should join its head from the side and from behind now.
+6. Which kinds are heaviest with three in the den? Note the overlay's ms (and **Y**) on the
+   slowest.
+
+## 2. Walking in the valley
+1. Choose a kind first (page 1, **Next kind**), then page 2: **Valley test**. You start on
+   the grass before the den's cliff, as that kind, grown.
+2. **Circle pad up** walks; left and right turn it as it goes. Hold **B** as well to run
+   (a trot, then a gallop; the Curlstone tucks into its rolling ball). Let go and it stops.
+   **Y** walking and running.
+3. It stops at deep water and at slopes too steep to climb; walk off a high edge and it
+   glides.
+4. **A** takes off as before; land slowly on flat ground and walk on.
+5. Try two or three kinds, flying and walking each (each has its own wings and gait): **Y**.
+
+## 3. Home
+1. **X** goes back to the den. Page 1, **Next kind** until the toast says their own looks
+   are back (or leave them as a kind; it isn't saved).
+
+## What to send back
+- Which kinds look best and worst on the 3DS's screens, and anything wrong (floating,
+  clipping, a colouring that doesn't read).
+- The den's frame time with three of the heaviest kinds.
+- How walking feels: the speed, the turning, running, the camera on foot.
+- Anything else before DR3 (your dragons and eggs moving over to the new kinds).

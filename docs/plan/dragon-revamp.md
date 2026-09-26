@@ -1,9 +1,11 @@
 # The Dragon Revamp: Work Plan (D76–D77)
 
 Status: **under way, 2026-09-25.** DR1 done (the kit, the engine's groundwork, the Pouncer);
-**DR2 built** (D79: all eight base breeds and the first crossbreed, by Opus 5.5 subagents in
-parallel), waiting on Noah's review, [R11b](../art/reviews/R11b-new-dragons.md) (the [review page](https://claude.ai/artifact/XJaAes23wB7FnQyuhGD8Xp) keeps his verdicts); DR3 starts
-after it. What
+**DR2 done** (D79: all eight base breeds and the first crossbreed, by Opus 5.5 subagents in
+parallel; [R11b](../art/reviews/R11b-new-dragons.md) answered, D80: all nine kept, the
+Duskwing's ears fixed, rarities and sizes right); run 15 (0.2.1) puts them on the 3DS by the
+dev menu. **Next: DR3**, the new dragons moving in and the old archived, and the Blazeplume
+in the HOME Menu banner (D80). What What
 the dragons become is in [dragons, version 2](../design/dragons-v2.md): 8 base breeds and 28
 crossbreeds (36 kinds), each with three painted variants and a rare one, their own bodies,
 babies, eggs and animations, stats, manners and traits, all rideable. It comes before the
@@ -68,15 +70,18 @@ groups merged; the rest are in [the kit's gotchas](../tech/dragon-kit.md#gotchas
   fixed by who it is, keeping everything else (D77).
 - Stats, manners and traits in the core with PC tests; the profile shows them as you find
   them out; the Dragondex for 144 entries; the Market's eggs; sizes in the den (±50%).
-- Tests, scripted runs in Azahar, then **run 15** on the old 3DS (a new tab on the
+- The eggs: each kind's egg in the den and the Market, bursting into pieces when it hatches as
+  the eggs do now (the review sheets' "opened" egg was only a picture, R11b).
+- Tests, scripted runs in Azahar, then **run 16** on the old 3DS (a new tab on the
   checklists page).
 
-## DR4 — The next crossbreeds
+## DR4 — The next crossbreeds: the commons' pairs (D80)
 - With all eight bases built (D79), 27 crossbreeds are left (the Blazeplume, Pouncer ×
-  Crestwing, is the first). Which come next is Noah's call after R11b (the commons' pairs
-  first, so the crossbreeds players meet early exist, is the suggestion): concept sheets
-  (**R12**), then subagents in parallel, each designing a kind of its own (a body plan that
-  suits it), then **R12b**.
+  Crestwing, is the first). Next, the three pairs of the common breeds, the crossbreeds
+  players meet first: **Pouncer × Puffback, Pouncer × Curlstone, Puffback × Curlstone**.
+  Concept sheets (**R12**), then subagents in parallel, each designing a kind of its own (a
+  body plan that suits it), sized on the common scale (`measure.py`, `together.py`), then
+  **R12b**.
 
 ## DR5 — The rest of the crossbreeds
 - The remaining crossbreeds in waves of six or so (**R13** on), each concept round before

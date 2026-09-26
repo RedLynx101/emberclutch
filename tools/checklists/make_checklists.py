@@ -7,7 +7,7 @@ Everything comes from the briefs and the run's steps in docs/, so the page follo
   docs/audio/suno-music-batch-3.md   the music cues (style, lyrics, what to keep)
   docs/audio/sfx-batch-2.md          sounds from batch 2 (any already in romfs/sfx/ are left out)
   docs/audio/sfx-batch-3.md          sounds from batch 3
-  docs/plan/hardware-check-3.md      the run's sections and steps (from "# Run 14")
+  docs/plan/hardware-check-3.md      the run's sections and steps (from "# Run <RUN>")
 The page is published as an Artifact with the `db` capability: the ticks and notes are kept
 in its database (collections `checks` and `notes`), where Claude reads them back.
 """
@@ -18,7 +18,7 @@ import re
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 OUT = os.path.join(ROOT, "build", "checklists", "emberclutch-checklists.html")
-RUN = "Run 14"
+RUN = "Run 15"
 
 
 def read(rel):
@@ -95,6 +95,7 @@ def sounds(rel, batch):
 def run_steps():
     s = read("docs/plan/hardware-check-3.md")
     s = s[s.index("# " + RUN):]
+    s = s.split("\n# Run ", 1)[0]  # this run only, not the ones after it
     head, rest = s.split("\n", 1)
     intro_text = rest.split("\n## ", 1)[0]
     sections = []
@@ -118,7 +119,7 @@ def run_steps():
                 if not items and not bullets:
                     pre.append("")  # keeps the lead's paragraphs apart
         n = re.match(r"(\d+)\. (.*)", title)
-        sid = f"r14.{n[1] if n else 'end'}"
+        sid = f"r{RUN.split()[1]}.{n[1] if n else 'end'}"
         steps = [dict(id=f"{sid}-{i + 1}", text=inline("\n".join(it))) for i, it in enumerate(items)]
         lead = paragraphs("\n".join(pre))
         if not steps and not bullets and lead:  # a section that is one thing to do (Install)

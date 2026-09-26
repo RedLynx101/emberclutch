@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-26 — R11b answered: the new dragons, into the game
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D80 | **R11b answered: all nine kinds stay** (Keep for eight; the Duskwing's adult ears floated at the sides, now grown into the head). The **rarities** and the **sizes** (on one scale, D79's META sizes) are right as they are. The **next crossbreeds are the commons' pairs** (Pouncer × Puffback, Pouncer × Curlstone, Puffback × Curlstone; DR4). A **test build now** (run 15, 0.2.1: the nine in the den by the dev menu, and walking in the valley). **The Blazeplume is the new face of the game**: the HOME Menu's 3D banner shows it in the egg in place of the old dragon, the same kind of animation, cleaner (the old one's texture breaks as it moves). **The new dragons move in and the old ones are archived** (DR3). Run 14: the flying is pretty good; on the ground you walk with your dragon (the pad walks, B runs; in 0.2.1). Builds after Alpha 2 are numbered 0.2.x (a CIA's last number stops at 15). | Noah (2026-09-26, the R11b page and chat): "Use this one as the new face of the game in the banner ... Just put him in the egg instead of the other; same kind of animation, just cleaner"; "We should certainly plan on moving the new dragons in and archive the older ones"; "I should also be able to walk with the dragons" | Approved |
+
 ## 2026-09-25 — R7: the valley's look, and new dragons
 
 | # | Decision | Why | Status |

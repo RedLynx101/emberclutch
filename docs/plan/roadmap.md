@@ -24,7 +24,7 @@ of Alpha 2 at the latest**, before content volume makes a rendering change expen
 | **Alpha 1** | *A living pet* | Phases 1–2: 3D dragon, care, growth, naming, real saves, music, CIA | ✅ Done (2026-09-24, `v0.1.0-alpha1`) |
 | **Alpha 2** | *A den* | Phase 3: several dragons, breeding, eggs, Sanctuary/Vault, Market, Wanderings, map with fast travel; style review R5; first hardware runs | ✅ Done (2026-09-25, `v0.2.0-alpha2`; [plan](alpha-2.md), [checklist](alpha-2-checklist.md)) |
 | **Beta** | *The valley* | Phase 6 + air half of Phase 5 (moved up, D73): the open valley, the places in it, the painted map, flying and riding, Sky Rings, Lantern Trial, Fruit Catch, the player character, villagers and a first campaign | Settled (D73–D74) · [plan](beta.md) · **next** |
-| **1.0** | *A trainer* | Phase 4 + ground half of Phase 5 + Phase 7 polish: tricks, voice, the training yard, Command Trial, Shine Show, grooming, economy, more campaign, public release | Planned · **sit-down first** |
+| **1.0** | *A trainer* | **Now one pass with Beta** ([plan](v1.md), D90): turn-based battles in the valley with leagues, themed pageant shows with accessories, training at Frostspire Hollow, four new places, care and progression, economy, polish; public release on Noah's word | **Next** |
 | **1.x** | *Friends* | Sky Visits (local wireless) | Later · **sit-down first** |
 | **2.0** | *The meadow* | Equine line: horse, pegasus, unicorn, alicorn | Later · **sit-down first** |
 

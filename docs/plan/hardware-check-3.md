@@ -480,3 +480,45 @@ the den with three grown dragons.
 - The challenges: fun? too easy or hard (Sky Rings' Flame and Starfire especially)?
 - Anything broken, stuck or confusing.
 - Which banner labs froze and which held.
+
+## Results (2026-09-26)
+All 30 steps done, notes on the review page's checklist (D89). **Every banner lab held** (B, C,
+D, E; C is ugly by design): none of lab A's parts alone freezes the HOME Menu, so the next labs
+pair them. Noah's notes, grouped:
+- **The creator:** left/right both change the choice and turn you (turning goes to L/R); the
+  help text is too small (controls on the left, Done at the bottom right).
+- **The den:** the Blazeplume adults go "spaghetti" when selected (any look; not in the
+  Dragondex); the circle pad's view nudge is liked and wanted in photo mode too; X should open
+  the Outing panel rather than put you outside.
+- **The valley:** a lot of flickering (leaving the den, and generally: a deep pass); the ground
+  and map too bald (texture rather than more triangles); particles (fireflies, falling leaves);
+  your running steps the dragons' own, pitched; the den's heart sign's pole over its face (and
+  the other places' signs); A to go back into the den when close, on foot or riding; flying,
+  the dragon climbs a mountainside far too fast (keep its height, float down against it); L/R
+  turn the wrong way on foot; a small dragon on its lead faces a little counter-clockwise of
+  its way; photos from the free camera; X in the valley (the journal?); fast travel asks to
+  confirm ("Travel to X" below the map); a road runs through the pond; the island over the lake
+  can't be stood on; the Trailhead's modelled road doubles the generated one (and at other
+  places); the Nesting Stone's texture inverted (its outer ring unseen); the Cold Vault faces
+  the wrong way (turn 180) and its trail is too steep to walk; the arena sits partly under the
+  ground.
+- **Care:** a new need, **Love** (petting and brushing), apart from Play; Energy as a bar
+  under the others, spent by games and challenges, refilled by sleep (items later); walking
+  together raises bond, Love and Play slowly and lowers Belly a little faster, so you care for
+  your dragon out in the valley too (feeding there).
+- **The Market's** top screen when buying and selling: a cozy interface to match the 3D Market.
+  **The Wanderings'** top screen needs a redesign.
+- **Quests:** track one in the Journal; its destination or search area shows on the map.
+- **Riding:** an animated hop on and off, with a cute sound.
+- **Finds:** random and regenerating.
+- **The challenges:** too easy: two feel like participation; the memory one is fine. Sky Rings
+  wants more than your own times; L/R for something else in flight (a speed burst ...), "Flight"
+  renamed Stamina (from the dragon's stats), momentum, the wind's sound by speed. Fruit Catch:
+  stats should set how far the dragon reaches; your character splits in 3D when the dragon is
+  far. Trophies feel like participation. **Two main challenges to come:** a Pokemon-like
+  **battle** in the valley itself (you and a challenger and your dragons, many modes,
+  challengers, rewards and quests) and a **beauty pageant** (stats, bonuses, cleanliness, bond,
+  accessories, skin and kind rarity; random challengers by difficulty), each on its own board
+  with **leagues**, and every award kept **per dragon**.
+- **The egg:** its cracks random across the whole shell, not one band and one edge.
+- **Sounds:** many more, generated where they needn't be specific (cute synths).

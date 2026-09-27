@@ -2,6 +2,13 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-26 — Run 19, and the sit-down for Beta and 1.0 together
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D90 | **Beta and 1.0 are one pass** ([plan](v1.md)), to a polished game that works end to end, one large review afterwards and a small set of banner labs. **Battles: turn-based, one dragon each**, in the valley itself (you, a challenger and your dragons), four moves each, the five stats and element matchups, leagues Ember → Starfire on their own board. **The pageant: themed shows** (Look, Poise, Performance against random challengers by league, each show's theme favouring elements, colours and accessories), its own board and leagues. Every award kept **per dragon**. **Four new places:** Emberpeak Caldera (the battle league's finals), Moonpetal Glade (the pageant's hall, accessory and dye stalls), Driftwood Cove (fishing, shells, tide finds) and **Frostspire Hollow, a training ground** (wild dragons to battle for experience, floor by floor, with progression). The flicker is shimmering surfaces, things popping in and out and parts vanishing for a moment. More items, customisation (accessories, dyes, outfits), interface where needed, more sounds (generated synths where they needn't be specific) | Noah (2026-09-26): the sit-down's answers; "Frostspire Hollow should be a training place for fighting wild dragons for xp. And progression within it"; "make it a polished game that works end-to-end, feels like a game" | Approved |
+| D89 | **Run 19's notes** ([results](hardware-check-3.md)): every banner lab held (B-E); the creator's controls; the Blazeplume's spaghetti when selected in the den; X in the den opens Outing, in the valley the Journal; photos from the free camera and the view nudge in photo mode; the flicker; textured ground and particles; your steps the dragons', pitched; signs' poles; A back into the den; flying against mountainsides; L/R on foot flipped; the lead's dragon's facing; fast travel confirms; the pond's road, the lake island, doubled roads, the Nesting Stone's faces, the Cold Vault's direction and trail, the arena's height; hop on and off animated; the egg's cracks; random renewing finds; Love and Energy; walking together as care; cozy Market and Wanderings screens; tracked quests on the map; harder challenges worth more (no repeat daily rewards, Sky Rings rivals, burst and brake, momentum, wind by speed; Fruit Catch reach from stats); trophies with meaning; two main challenges to come (battles, a pageant) | Noah's run 19 checklist and notes (2026-09-26) | Approved |
+
 ## 2026-09-26 — Run 18, and the go for Beta 1
 
 | # | Decision | Why | Status |

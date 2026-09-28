@@ -614,5 +614,107 @@ inline constexpr const char* kStallBoughtDye = "Bought! Dye in the wardrobe.";
 inline constexpr const char* kStallPrize = "Won at the shows";
 inline constexpr const char* kGladeStallTomorrow = "New things tomorrow.";
 inline constexpr const char* kStallStyles = "Styles: %s";
+// ---- 1.0: battles, the league and Frostspire Hollow (workstream B: app/battle_view.cpp,
+// feature_league.cpp, feature_hollow.cpp)
+inline constexpr const char* kPromptBattle = "A: battle %s";
+inline constexpr const char* kPromptRematch = "A: rematch %s";
+inline constexpr const char* kPromptRead = "A: read %s";
+inline constexpr const char* kLeagueBoardName = "the league board";
+inline constexpr const char* kBattleUsed = "%s used %s!";
+inline constexpr const char* kBattleDodged = "%s dodged it!";
+inline constexpr const char* kBattleMissed = "It missed!";
+inline constexpr const char* kBattleCrit = "A critical hit!";
+inline constexpr const char* kBattleStrong = "It's super effective!";
+inline constexpr const char* kBattleWeak = "It's not very effective...";
+inline constexpr const char* kBattleRose = "%s's %s rose!";
+inline constexpr const char* kBattleRoseSharply = "%s's %s rose sharply!";
+inline constexpr const char* kBattleFell = "%s's %s fell!";
+inline constexpr const char* kBattleNothing = "Nothing more happened.";
+inline constexpr const char* kBattleHealed = "%s caught its breath!";
+inline constexpr const char* kBattleTiredOut = "%s is tired out!";
+inline constexpr const char* kBattleTimeUp = "Both are worn out! %s has more left.";
+inline constexpr const char* kBattleStageNames[5] = {"Might", "Breath", "Wit", "Wing", "guard"};
+inline constexpr const char* kBattleStatNames[5] = {"Wing", "Wit", "Might", "Breath", "Stamina"};
+inline constexpr const char* kBattleWhatWill = "What will %s do?";
+inline constexpr const char* kBattleWatching = "...";
+inline constexpr const char* kBattleFaster = "A: faster";
+inline constexpr const char* kBattleWon = "You won!";
+inline constexpr const char* kBattleLost = "Not this time...";
+inline constexpr const char* kBattleGaveUpTitle = "You called it off.";
+inline constexpr const char* kBattleGiveUp = "Give up";
+inline constexpr const char* kBattleGiveUpAsk = "Give up this battle?";
+inline constexpr const char* kBattleYes = "Yes";
+inline constexpr const char* kBattleNo = "Keep going";
+inline constexpr const char* kBattleContinue = "Continue";
+inline constexpr const char* kBattleWantsTo = "%s wants to battle!";
+inline constexpr const char* kBattleWildAppears = "A wild %s comes out!";
+inline constexpr const char* kBattleGuardian = "The Hollow's guardian!";
+inline constexpr const char* kBattleWildName = "the wild %s";
+inline constexpr const char* kBattleNeedsBreather = "Needs a breather";
+inline constexpr const char* kBattleUsedUp = "Used";
+inline constexpr const char* kBattleStrongTag = "Strong!";
+inline constexpr const char* kBattleWeakTag = "Weak";
+inline constexpr const char* kBattlePowerAcc = "%s  Power %d  Acc %d";
+inline constexpr const char* kBattleHelp = "Tap a move, or the D-pad and A";
+inline constexpr const char* kBattleXp = "%s gained %lu exp";
+inline constexpr const char* kBattleLevelUp = "%s grew to level %d!";
+inline constexpr const char* kBattleLearned = "%s learned %s!";
+inline constexpr const char* kBattleLearnedSwap = "Learned %s: swap it in from the profile";
+inline constexpr const char* kBattleGleam = "+%lu Gleam";
+inline constexpr const char* kBattlePaid = "(today's prize was won already)";
+inline constexpr const char* kBattleTitle = "%s earned a title: %s!";
+inline constexpr const char* kBattlePrize = "Prize: %d %s and a %s";
+inline constexpr const char* kBattleChampionOpen = "The champion waits at Emberpeak Caldera!";
+inline constexpr const char* kBattleNextLeague = "The %s league arrives in the valley!";
+inline constexpr const char* kBattleAllWon = "Every league is yours!";
+inline constexpr const char* kBattleTooTired = "{D} looks tired. Let it rest, then come back and we'll battle!";
+inline constexpr const char* kBattleNoPartner = "Come back with a dragon, and we'll battle!";
+inline constexpr const char* kBattleNoRoom = "There's no room to battle here.";
+inline constexpr const char* kBattleAskTitle = "Battle %s?";
+inline constexpr const char* kBattleAskGo = "Battle!";
+inline constexpr const char* kBattleAskNot = "Not now";
+inline constexpr const char* kBattleAskTheirs = "%s: %s, level %d";
+inline constexpr const char* kBattleAskYours = "%s: level %d";
+inline constexpr const char* kBattleAskEnergy = "Energy %d (a battle uses %d)";
+inline constexpr const char* kChampionWaits = "Beat my league's four challengers first. Then come and find me here, at the ring.";
+inline constexpr const char* kLeagueBoardTitle = "The %s league";
+inline constexpr const char* kBoardBeaten = "Beaten";
+inline constexpr const char* kBoardAt = "at %s";
+inline constexpr const char* kLeagueBoardLocked = "Beat the four to meet the champion";
+inline constexpr const char* kBoardOpen = "The champion waits at the caldera";
+inline constexpr const char* kLeagueBoardWon = "League won";
+inline constexpr const char* kBoardTrack = "Track";
+inline constexpr const char* kBoardTracking = "Tracking";
+inline constexpr const char* kBoardWheel = "Each beats the next:";
+inline constexpr const char* kBoardPair = "Lumen and Shade: each beats the other";
+inline constexpr const char* kBoardTitles = "Won: %d of 4 leagues";
+// Frostspire Hollow's keeper and floors
+inline constexpr const char* kHollowKeeper = "Tove";
+inline constexpr const char* kHollowKeeperTitle = "keeps Frostspire Hollow";
+inline constexpr const char* kPromptHollow = "A: talk to %s";
+inline constexpr const char* kHollowFirst[3] = {
+    "Welcome to Frostspire Hollow, keeper. I'm Tove. Wild dragons live in the caves behind me.",
+    "Each floor, one comes out to test you. The deeper you go, the stronger they are.",
+    "Every fifth floor there's a guardian. Beat one and you can start from there next time."};
+inline constexpr const char* kHollowAgain[3] = {"Back for more training? The caves are waiting.",
+                                                "The cold makes a dragon strong. Down you go?",
+                                                "{D} looks ready. Mind the guardians."};
+inline constexpr const char* kHollowTitle = "Frostspire Hollow";
+inline constexpr const char* kHollowFloor = "Floor %d";
+inline constexpr const char* kHollowFloorOf = "Floor %d of %d";
+inline constexpr const char* kHollowPick = "Where will you start?";
+inline constexpr const char* kHollowDeepestOf = "%s's deepest: floor %d";
+inline constexpr const char* kHollowAllDeepest = "Deepest of all your dragons: floor %d";
+inline constexpr const char* kHollowGoDeeper = "Deeper!";
+inline constexpr const char* kHollowLeave = "Leave";
+inline constexpr const char* kHollowCleared = "Floor %d cleared!";
+inline constexpr const char* kHollowCheckpoint = "Checkpoint: next time, start at floor %d";
+inline constexpr const char* kHollowTrained = "%s's %s grew by a point!";
+inline constexpr const char* kHollowBottom = "The very bottom of the Hollow!";
+inline constexpr const char* kHollowTooTired = "{D} is too tired to go deeper. Rest, and come back tomorrow.";
+inline constexpr const char* kHollowLost = "Well fought, both of you. The cold makes you stronger: come back soon.";
+inline constexpr const char* kHollowLeft = "Good training today. The caves will be here.";
+inline constexpr const char* kHollowNext = "Next: floor %d";
+inline constexpr const char* kHollowDone = "Back to Tove";
 
 }  // namespace ec::str

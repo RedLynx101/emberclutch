@@ -37,3 +37,4 @@ void runPlaceTests();     // tests/test_places.cpp
 void runInterfaceTests(); // tests/test_interface.cpp (1.0 interface: the tracked goal, the tips)
 void runFishingTests();   // tests/test_fishing.cpp (Driftwood Cove, workstream C)
 void runPageantTests();   // tests/test_pageant.cpp (the pageant, accessories and dyes)
+void runBattleTests();    // tests/test_battle.cpp (1.0 battles, workstream B)

@@ -209,6 +209,7 @@ struct ValleyDragon {
     float scale = 1;
     s8 lod = -1;  // the challenges (workstream C): 1 keeps a racer on the light model near or far (-1: by distance)
     bool lite = false;  // the lighter model however near (the pageant: a stage of several)
+    float lodFar = 30.0f;  // metres from the camera past which its lighter model draws (1.0 battles, workstream B)
 };
 constexpr int kMaxOthers = 4;
 
@@ -250,6 +251,9 @@ struct ValleyView {
     float focus = 0;
 };
 void drawValley(App& app, const ValleyView& view, s64 now);
+// Another dragon's head (view.others[i]) as the last drawValley posed it, for a breath to start
+// from its mouth (1.0 battles, workstream B). False if it wasn't drawn.
+bool otherHead(int i, Vec3& out);
 void releaseValley();  // leaving the valley: its GPU memory back
 // The look lab (2026-09-28): 0 smooth ground with the painted texture (as it is), 1 faceted
 // low-poly without, 2 faceted with the texture. The tiles rebuild.

@@ -14,6 +14,7 @@
 #include "app/audio.hpp"
 #include "app/cove.hpp"  // Driftwood Cove (workstream C)
 #include "app/glade.hpp"  // the pageant
+#include "app/battle_feature.hpp"  // 1.0 battles (workstream B)
 #include "app/scenes.hpp"
 #include "core/campaign.hpp"
 #include "core/trainer.hpp"
@@ -33,7 +34,8 @@ enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Nam
                      Sound,  // (sounds, 1.0: bed, sfx, sfxcheck)
                      Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard, Wear,  // (U: Open .. Wear)
                      Energy, Cove,  // (workstream C)
-                     Pageant, Ground };  // the pageant's own commands (app/glade.hpp pageantCommand)
+                     Pageant, Ground,
+                     Battle /* 1.0 battles (workstream B) */ };  // the pageant's own commands (app/glade.hpp pageantCommand)
 
 struct Cmd {
     Op op = Op::Wait;
@@ -145,6 +147,7 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "hoard") { c.op = Op::Hoard; nums(1); }
     else if (w == "wear") { c.op = Op::Wear; nums(5); }
     else if (w == "pg") { c.op = Op::Pageant; c.text = rest; }  // the pageant: pg give / wear / show ...
+    else if (w == "battle") { c.op = Op::Battle; c.text = rest; }  // 1.0 battles (workstream B)
     else return false;
     return true;
 }
@@ -305,8 +308,10 @@ Input next(App& app) {
             case Op::Autoplay:
                 setChallengeAutoplay(c.a[0] != 0);
                 cove::setAutoplay(c.a[0] != 0);  // (Driftwood Cove fishes by itself too)
+                battleCommand(app, c.a[0] != 0 ? "auto on" : "auto off");  // 1.0 battles (workstream B)
                 done = true;
                 break;
+            case Op::Battle: battleCommand(app, c.text.c_str()); done = true; break;  // 1.0 battles (workstream B)
             case Op::Cups:  // each challenge's highest cup won (its ribbons with it)
                 app.game.world.ribbons = 0;
                 for (int k = 0; k < kChallenges; ++k) {

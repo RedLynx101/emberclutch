@@ -9,6 +9,7 @@
 #include "app/app.hpp"
 #include "app/audio.hpp"
 #include "app/autotest.hpp"
+#include "app/battle_feature.hpp"  // 1.0 battles (workstream B)
 #include "app/care_ui.hpp"
 #include "app/hitch.hpp"
 #include "app/prefetch.hpp"
@@ -60,6 +61,7 @@ Input readInput() {
 // Which loop fits the moment (docs/audio/suno-music-brief.md).
 const char* musicFor(const App& app) {
     if (app.scene == SceneId::Market) return "market-bustle";
+    if (app.scene == SceneId::Valley && battleMusic(app)) return battleMusic(app);  // 1.0 battles (workstream B)
     if (app.scene == SceneId::Valley) return isNight(nowLocal(app)) ? "valley-night" : "valley-day";  // batch 3
     if (app.scene == SceneId::Challenge) return challengeMusic(app);  // Beta WP8: cup day
     if (app.scene == SceneId::Wardrobe) return wardrobeMusic(app);    // the pageant: the music it was opened to

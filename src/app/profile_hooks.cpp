@@ -5,36 +5,26 @@
 
 #include "app/wardrobe.hpp"
 #include "core/accessories.hpp"
+#include "core/battle.hpp"
 
 namespace ec::hooks {
 
-bool moveView(u8 move, MoveView& out) {
-    // B: fill `out` from core/battle's move table (name, element, power, status).
-    (void)move;
+bool moveView(u8 move, MoveView& out) {  // (the battles' move table)
     out = MoveView{};
-    return false;
+    if (move == kNone || move >= battle::moveCount()) return false;
+    const battle::MoveInfo& m = battle::moveInfo(move);
+    out.name = m.name;
+    out.element = m.element == battle::kBody ? -1 : m.element;
+    out.power = m.power;
+    out.status = m.power == 0;
+    return true;
 }
 
-int knownMoves(const Dragon& d, u8* out, int cap) {
-    // B: core/battle's known moves for d (its elements and level), best first.
-    (void)d;
-    (void)out;
-    (void)cap;
-    return 0;
-}
+int knownMoves(const Dragon& d, u8* out, int cap) { return battle::bestKnownMoves(d, out, cap); }
 
-void equippedMoves(const Dragon& d, u8 out[kMoveSlots]) {
-    // B: d.moves with its empty slots filled from the best known (core/battle).
-    for (int i = 0; i < kMoveSlots; ++i) out[i] = d.moves[i];
-}
+void equippedMoves(const Dragon& d, u8 out[kMoveSlots]) { battle::equippedMoves(d, out); }
 
-bool equipMove(Dragon& d, int slot, u8 move) {
-    // B: core/battle's equipMove(d, slot, move).
-    (void)d;
-    (void)slot;
-    (void)move;
-    return false;
-}
+bool equipMove(Dragon& d, int slot, u8 move) { return battle::equipMove(d, slot, move); }
 
 const char* accessoryName(u8 accessory) {
     return accessory < accessoryCount() ? accessoryInfo(accessory).name : "";  // (the pageant's)

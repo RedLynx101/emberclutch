@@ -1,0 +1,92 @@
+# 1.0 battles (workstream B): breath from an open mouth, both sides, and two of the biggest grown
+# dragons (a Puffback against Oren's Moss) not clipping into each other. Played by hand with both
+# breathing every turn (battle breathe on), then with their own moves (their lunges); shots as the
+# quicker one moves and as the other answers. Overlay off.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+# ...and a Puffback (Change kind once: the biggest kind).
+tap 238 106
+wait 0.3
+key SELECT
+wait 2
+skip 9
+valley
+wait 5
+battle level 6
+battle breathe on
+battle start 0 1
+wait 4.5
+key A
+wait 0.3
+shot m01a-first
+wait 0.25
+shot m01b-first-later
+wait 0.9
+shot m01c-second
+wait 0.25
+shot m01d-second-later
+wait 3
+key A
+wait 0.3
+shot m02a-first
+wait 0.25
+shot m02b-first-later
+wait 0.9
+shot m02c-second
+wait 0.25
+shot m02d-second-later
+wait 3
+key A
+wait 0.3
+shot m03a-first
+wait 0.25
+shot m03b-first-later
+wait 0.9
+shot m03c-second
+wait 0.25
+shot m03d-second-later
+wait 3
+# Their own moves now (lunges): another battle with Oren.
+battle breathe off
+battle start 0 1
+wait 4.5
+key RIGHT
+key A
+wait 0.3
+shot m04a-first
+wait 0.25
+shot m04b-first-later
+wait 0.9
+shot m04c-second
+wait 0.25
+shot m04d-second-later
+wait 3
+key A
+wait 0.3
+shot m05a-first
+wait 0.25
+shot m05b-first-later
+wait 0.9
+shot m05c-second
+wait 0.25
+shot m05d-second-later
+quit

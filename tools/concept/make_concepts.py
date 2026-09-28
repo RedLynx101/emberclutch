@@ -4,6 +4,7 @@ from them ships (everything in the game is built by script in Blender, as always
   python tools/concept/make_concepts.py [--only name,name] [--model gpt-image-1] [--quality medium]
   python tools/concept/make_concepts.py --lowpoly ...    (R7's look B)
   python tools/concept/make_concepts.py --dragons ...    (R11: the new dragons' growth sheets)
+  python tools/concept/make_concepts.py --looklab ...    (the look lab: faceted, and faceted + painted)
 
 Calls the OpenAI images API with the standard library only (the key from OPENAI_API_KEY),
 writes the full images to build/concept/<name>.png; tools/concept/to_jpg.ps1 makes the small
@@ -33,6 +34,35 @@ STYLE_LOWPOLY = ("Concept render for a cozy Nintendo 3DS dragon-raising game in 
                  "colours. Where the scene has dragons, they are cute faceted low-poly dragons (a turquoise Tide dragon, "
                  "an orange Ember dragon with a cream belly); put none where it doesn't ask for them. No text, no logos, "
                  "no UI.")
+
+# The look lab (2026-09-28, Noah: "consider a low poly option for terrain"): the valley in crisp
+# faceted low-poly, flat-shaded, and the same with soft painted textures on the facets.
+STYLE_FACETED = ("Screenshot-like concept render for a cozy Nintendo 3DS dragon game, real-time low-poly 3D with a "
+                 "deliberate faceted style: the ground is large flat-shaded triangles you can count, each face one "
+                 "flat colour lit by the sun on its own slope, crisp bands of colour for grass, earth paths, sand and "
+                 "rock, chunky faceted trees (round two-tone crowns and simple cone pines), faceted mountains with "
+                 "snow caps against a clear blue sky, light haze only far away. Clean, readable, charming, like a "
+                 "polished handheld game. No text, no logos, no UI.")
+STYLE_FACETED_PAINTED = ("Screenshot-like concept render for a cozy Nintendo 3DS dragon game, real-time low-poly 3D: "
+                         "large faceted flat-shaded triangles for the ground and mountains, but each facet carries a "
+                         "soft hand-painted texture (painterly grass strokes, speckled earth paths, stone grain), "
+                         "chunky faceted trees with lightly painted leaves, snow-capped faceted mountains, a clear sky. "
+                         "Warm storybook colours, readable at a handheld's small screen. No text, no logos, no UI.")
+LOOKLAB_PROMPTS = {
+    "lab_walk": (
+        "A third-person view from just behind and above a small cute keeper character walking a young orange "
+        "dragon on a red lead along an earth path through a green meadow; ahead the path crosses a stone bridge "
+        "by a little windmill on a river, then climbs toward a ring of snowy mountains; scattered round trees and "
+        "pine woods. Late morning."),
+    "lab_den": (
+        "A warm grey cliff with a round cave mouth (a dragons' den) with lanterns, a waterfall pouring from the "
+        "plateau above into a round pool, a small wooden lodge beside it, a clearing where a turquoise dragon "
+        "stands; forest and mountains beyond."),
+    "lab_lake": (
+        "Seen from high above (from a flying dragon's back), a round blue lake with a wooden jetty, a village of "
+        "rounded roofs beside it, a circular arena, earth paths between them, woods, two small floating grassy "
+        "islands in the sky, snowy mountains around the valley."),
+}
 
 PROMPTS = {
     "valley_overview": (
@@ -254,6 +284,13 @@ def main():
     model, quality = arg("--model", "gpt-image-1"), arg("--quality", "medium")
     ok = 0
     lowpoly = "--lowpoly" in argv  # look B: written as <name>_lowpoly.png
+    if "--looklab" in argv:  # the look lab: each scene faceted, and faceted with painted textures
+        only = arg("--only", "").split(",") if "--only" in argv else list(LOOKLAB_PROMPTS)
+        for name in only:
+            ok += generate(name + "_faceted", LOOKLAB_PROMPTS[name], model, quality, "1536x1024", STYLE_FACETED)
+            ok += generate(name + "_painted", LOOKLAB_PROMPTS[name], model, quality, "1536x1024", STYLE_FACETED_PAINTED)
+        print(f"[concept] {ok} of {2 * len(only)} made")
+        return
     if "--dragons" in argv:  # R11: the new dragons' sheets
         only = arg("--only", "").split(",") if "--only" in argv else list(DRAGON_PROMPTS)
         for name in only:

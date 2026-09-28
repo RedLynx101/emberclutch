@@ -328,6 +328,8 @@ C3D_Mtx g_denView;               // last den camera, for projecting particles an
 bool g_denViewSet = false;
 Vec3 g_heads[kDenShown];         // den dragons' heads in the last drawDen (an egg's top)
 bool g_headSet[kDenShown] = {};
+Vec3 g_otherHeads[kMaxOthers];   // the valley's other dragons' heads in the last drawValley (1.0 battles, workstream B)
+bool g_otherHeadSet[kMaxOthers] = {};
 Vec3 g_mouths[kDenShown];        // ...and their mouths (a carried ball rides there)
 bool g_mouthSet[kDenShown] = {};
 Vec3 g_backs[kDenShown][2];      // ...and their backs, chest to hips (Starspeckle's glints)
@@ -2465,6 +2467,12 @@ bool backOf(int i, Vec3& chest, Vec3& hips) {
     return true;
 }
 
+bool otherHead(int i, Vec3& out) {  // (1.0 battles, workstream B)
+    if (i < 0 || i >= kMaxOthers || !g_otherHeadSet[i]) return false;
+    out = g_otherHeads[i];
+    return true;
+}
+
 bool headOf(int i, Vec3& out) {
     if (i < 0 || i >= kDenShown || !g_headSet[i]) return false;
     out = g_heads[i];
@@ -3515,6 +3523,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     }
     ++g_valleyFrame;
     g_valleyStats = {};
+    for (bool& set : g_otherHeadSet) set = false;  // (1.0 battles, workstream B)
     perf::Scope timed(perf::Room);
     C3D_Mtx projection, viewM, clip;
     const float focus = std::fmax(4.0f, view.focus > 0 ? view.focus : length(view.at - view.eye));  // (focus: the challenges)
@@ -3739,14 +3748,14 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     mark();
     // A dragon out on the Wanderings, if it's near (D69), and the star dragon in the sky.
     auto another = [&](const Dragon* d, const DenActor* actor, Vec3 at, float heading, float reach, float bank, float grow,
-                       float pitch = 0.0f, int forceLod = -1) {
+                       float pitch = 0.0f, int forceLod = -1, float lodFar = 30.0f, int other = -1) {
         if (!d) return;
         const float box = 5.0f * grow * kindSize(*d);  // (its wings' reach, by its size)
         if (std::hypot(at.x - view.eye.x, at.y - view.eye.y) > reach ||
             outsideView(clip, at - Vec3{box, box, box * 0.5f}, at + Vec3{box, box, box * 1.2f}))
             return;
         static Posed posed;
-        const int lod = forceLod >= 0 ? forceLod : length(at - view.eye) > 30.0f ? 1 : 0;
+        const int lod = forceLod >= 0 ? forceLod : length(at - view.eye) > lodFar ? 1 : 0;
         if (!pose(app, *d, actor, now, lod, posed)) return;
         bindDragons(projection);
         const float plain[3] = {1, 1, 1};
@@ -3760,12 +3769,16 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         Mtx_Scale(&model, posed.size * grow, posed.size * grow, posed.size * grow);
         Mtx_Translate(&model, 0, 0, -posed.ground, true);
         submit(app, posed, viewM, model);
+        if (other >= 0 && other < kMaxOthers && posed.form->headBone >= 0) {  // (its head: 1.0 battles, workstream B)
+            g_otherHeads[other] = apply(model, posed.poseMat[posed.form->headBone].translation());
+            g_otherHeadSet[other] = true;
+        }
     };
     another(view.wanderer, view.wandererActor, view.wandererAt, view.wandererHeading, 220.0f, 0.0f, 1.0f);
     another(view.skyDragon, view.skyActor, view.skyAt, view.skyHeading, 380.0f, -0.35f, 1.8f);  // a legend: larger
     for (int i = 0; i < view.otherCount && i < kMaxOthers; ++i) {  // challengers, wild ones, rivals (1.0)
         const ValleyDragon& o = view.others[i];
-        another(o.dragon, o.actor, o.at, o.heading, 220.0f, -o.roll, o.scale, o.pitch, o.lite ? 1 : o.lod);
+        another(o.dragon, o.actor, o.at, o.heading, 220.0f, -o.roll, o.scale, o.pitch, o.lite ? 1 : o.lod, o.lodFar, i);
     }
     mark();
     // The people about (you on foot, the villagers), near enough to see.

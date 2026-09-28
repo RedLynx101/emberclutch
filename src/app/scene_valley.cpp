@@ -15,6 +15,7 @@
 #include "app/autotest.hpp"
 #include "app/care_ui.hpp"
 #include "app/cove.hpp"  // Driftwood Cove (workstream C)
+#include "app/battle_feature.hpp"  // 1.0 battles (workstream B)
 #include "app/dialogue.hpp"
 #include "app/photo.hpp"
 #include "app/render3d.hpp"
@@ -1260,6 +1261,7 @@ void drawTop(App& app) {
                       s.pal.pos.y, s.pal.pos.z, static_cast<int>(s.mode));
     if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
     if (r3d::ready()) cove::drawCoveThings(app, s.valley, now);  // Driftwood Cove's shells, bobber and catch (workstream C)
+    if (r3d::ready()) drawLeagueBoards(app, s.valley, now);  // 1.0 battles: the league's boards (workstream B)
     if (feat >= 0) {
         if (vext::feature(feat).drawTop) vext::feature(feat).drawTop(app, s.stage);
         return;

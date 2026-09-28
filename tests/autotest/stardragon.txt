@@ -15,7 +15,7 @@ name Cinder
 wait 11
 skip 9
 festival
-key X
+valley
 wait 6
 travel 6
 wait 4

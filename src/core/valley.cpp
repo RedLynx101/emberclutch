@@ -302,6 +302,21 @@ float Valley::heightAt(float x, float y) const {
     return (row0[0] * (1 - u) + row0[1] * u) * (1 - w) + (row1[0] * (1 - u) + row1[1] * u) * w;
 }
 
+int Valley::islandAt(float x, float y, float z) const {
+    for (std::size_t k = 0; k < islands.size(); ++k) {
+        const ValleyIsland& isl = islands[k];
+        // (the grass top wobbles 12% round its radius: stand within the inside of it; from a
+        // little below its top a body steps up onto it, far below it's under it)
+        if (std::hypot(x - isl.at.x, y - isl.at.y) < isl.radius * 0.86f && z > isl.at.z - 2.5f) return static_cast<int>(k);
+    }
+    return -1;
+}
+
+float Valley::groundAt(float x, float y, float z) const {
+    const int k = islandAt(x, y, z);
+    return k >= 0 ? islands[std::size_t(k)].at.z : heightAt(x, y);
+}
+
 Vec3 Valley::normalAt(float x, float y) const {
     const float e = spacing;
     const float dx = (heightAt(x + e, y) - heightAt(x - e, y)) / (2 * e);

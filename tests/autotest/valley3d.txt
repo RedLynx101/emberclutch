@@ -14,7 +14,7 @@ key SELECT
 name Cinder
 wait 11
 skip 9
-key X
+valley
 wait 4
 travel 1
 wait 3

@@ -25,7 +25,7 @@ constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
 enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
-                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Quit };
+                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Valley, Quit };
 
 struct Cmd {
     Op op = Op::Wait;
@@ -115,6 +115,7 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "challenge") { c.op = Op::Challenge; nums(2); }
     else if (w == "autoplay") { c.op = Op::Autoplay; c.a[0] = std::strcmp(rest, "on") == 0; }
     else if (w == "cups") { c.op = Op::Cups; nums(3); }
+    else if (w == "valley") { c.op = Op::Valley; }  // out into the valley at the den's door (X did it before run 19)
     else if (w == "quit") { c.op = Op::Quit; }
     else return false;
     return true;
@@ -229,6 +230,7 @@ Input next(App& app) {
             case Op::Splash: app.splash = kSplashSeconds; done = true; break;
             case Op::Travel: app.autoTravel = static_cast<int>(c.a[0]); done = true; break;
             case Op::Creator: openCreator(app, app.scene); done = true; break;
+            case Op::Valley: openMap(app); done = true; break;
             case Op::Goto:
                 app.autoGoto[0] = c.a[0];
                 app.autoGoto[1] = c.a[1];

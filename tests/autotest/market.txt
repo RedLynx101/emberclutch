@@ -18,7 +18,7 @@ tap 82 221
 wait 0.8
 shot m01-pouch
 # Locked on the map for a hatchling.
-key X
+valley
 wait 0.8
 tap 92 182
 wait 0.5

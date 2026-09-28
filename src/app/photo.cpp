@@ -32,7 +32,18 @@ void snap(App& app) {
 
 // The frame: a gold border with a little diamond at each corner, the wordmark small at the top
 // right, and a plate at the bottom with the name and the date.
+void drawFrameTitled(App& app, const char* name, s64 now);
+
 void drawFrame(App& app, const Dragon& d, s64 now) {
+    char name[40];
+    if (d.stage == Stage::Egg)
+        std::snprintf(name, sizeof(name), "%s %s", kindTitle(d), str::kEggSuffix);
+    else
+        std::snprintf(name, sizeof(name), "%s", d.name);
+    drawFrameTitled(app, name, now);
+}
+
+void drawFrameTitled(App& app, const char* name, s64 now) {
     const u32 gold = theme::kClutchGold, dark = withAlpha(theme::rgba(30, 18, 36), 0.85f);
     constexpr float kIn = 5, kT = 4;
     C2D_DrawRectSolid(0, 0, 0, kTopW, kIn, dark);  // a dark edge outside the gold
@@ -52,11 +63,7 @@ void drawFrame(App& app, const Dragon& d, s64 now) {
             C2D_DrawCircleSolid(x, y, 0, 2.2f, theme::kEmber);
         }
     text(app, str::kGameTitle, kTopW - 16, 12, 0.5f, withAlpha(gold, 0.9f), C2D_AlignRight, 0, Face::Title);
-    char name[40], date[48];
-    if (d.stage == Stage::Egg)
-        std::snprintf(name, sizeof(name), "%s %s", kindTitle(d), str::kEggSuffix);
-    else
-        std::snprintf(name, sizeof(name), "%s", d.name);
+    char date[48];
     const std::time_t t = static_cast<std::time_t>(now);  // the 3DS clock is local time already
     std::strftime(date, sizeof(date), "%d %B %Y", std::gmtime(&t));
     const float w = std::fmax(textWidth(app, name, 0.62f, Face::Title), textWidth(app, date, 0.42f)) + 36;
@@ -80,7 +87,7 @@ void update(App& app, const Input& in) {
     if (p.snap) {  // last frame was the picture: the shutter
         p.snap = false;
         p.flash = 1;
-        audio::playSfx(audio::Sfx::Tap, 1.4f, 0.8f);
+        audio::playSfx(audio::Sfx::Shutter);
     }
     if (p.flash > 0) p.flash = std::fmax(0.0f, p.flash - app.dt / kFlashTime);
     if ((in.down & KEY_A) || p.tapped) snap(app);
@@ -125,6 +132,24 @@ void drawBottom(App& app, const Input& in) {
         app.photo.active = false;
         audio::playSfx(audio::Sfx::Back);
     }
+}
+
+void snapNow(App& app) { snap(app); }
+
+void tick(App& app) {
+    PhotoState& p = app.photo;
+    if (p.snap) {  // last frame was the picture: the shutter
+        p.snap = false;
+        p.flash = 1;
+        audio::playSfx(audio::Sfx::Shutter);
+    }
+    if (p.flash > 0) p.flash = std::fmax(0.0f, p.flash - app.dt / kFlashTime);
+}
+
+void drawTitled(App& app, const char* title, s64 now) {
+    if (app.photo.snap) drawFrameTitled(app, title, now);
+    if (app.photo.flash > 0)
+        C2D_DrawRectSolid(0, 0, 0, kTopW, kScreenH, withAlpha(theme::rgba(255, 255, 255), 0.8f * app.photo.flash));
 }
 
 bool cameraButton(App& app, const Input& in) {

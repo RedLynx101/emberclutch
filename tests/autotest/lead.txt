@@ -13,7 +13,7 @@ key SELECT
 name Cinder
 wait 11
 skip 9
-key X
+valley
 wait 4
 shot l01-on-its-lead
 shotin 1.5 l02-walking

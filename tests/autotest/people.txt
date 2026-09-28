@@ -25,7 +25,7 @@ wait 0.3
 key SELECT
 wait 0.5
 skip 9
-key X
+valley
 wait 4
 shot q01-you-and-partner
 shotin 1.2 q02-walking

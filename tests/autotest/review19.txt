@@ -15,7 +15,7 @@ key SELECT
 name Cinder
 wait 11
 skip 9
-key X
+valley
 wait 4
 shot r01-camera-and-lead
 shotin 1.5 r02-lead-walking

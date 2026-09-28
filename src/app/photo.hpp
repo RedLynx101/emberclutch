@@ -19,5 +19,9 @@ void drawBottom(App& app, const Input& in);
 // The den's care screen: the little camera under the heartglow. True if it was tapped.
 constexpr float kButtonX = 280, kButtonY = 36, kButtonW = 38, kButtonH = 28;
 bool cameraButton(App& app, const Input& in);
+// The valley's free camera (run 19): a framed shot of the view, titled with where it is.
+void snapNow(App& app);                               // this frame is the picture (if the last is written)
+void tick(App& app);                                  // once a frame: the shutter after a snap, the flash fading
+void drawTitled(App& app, const char* title, s64 now);  // over the picture: its frame when it's taken, the flash
 
 }  // namespace ec::photo

@@ -8,7 +8,7 @@ wait 1.5
 tap 60 120
 wait 2
 # The map from the den: to the Sanctuary, caught mid-trip.
-key X
+valley
 wait 1
 tap 62 96
 wait 0.4

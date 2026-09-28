@@ -1,0 +1,42 @@
+# The valley's triangle budget (<= 9,000 top-screen triangles in typical views, D90): arriving
+# at each place by travel with the dev overlay on; the shots' log lines carry the counts.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+light
+valley
+view 1 -14 -20 3 6 10 0
+wait 3
+shot z01-market-low
+view 2 -10 -12 3 0 0 1
+wait 3
+shot z02-stone-low
+view 6 -20 20 4 0 0 1
+wait 3
+shot z03-arena-low
+view 3 -15 -15 3 0 0 0
+wait 3
+shot z04-sanctuary-low
+view 5 -8 -14 3 0 4 0
+wait 3
+shot z05-trailhead-low
+view 0 0 18 4 0 0 2
+wait 3
+shot z06-den-low
+view 8 -10 14 3 0 0 1
+wait 3
+shot z07-keeper-low
+view 7 0 12 3 0 -10 0
+wait 3
+shot z08-lake-low

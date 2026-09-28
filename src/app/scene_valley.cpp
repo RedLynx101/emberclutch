@@ -12,7 +12,10 @@
 #include <vector>
 
 #include "app/audio.hpp"
+#include "app/autotest.hpp"
+#include "app/care_ui.hpp"
 #include "app/dialogue.hpp"
+#include "app/photo.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
@@ -105,6 +108,7 @@ struct ValleyScene {
     ExtraFigure extraFig[vext::kMaxFolk];
     int actionExtra = -1;
     vext::Stage stage;
+    int travelAsk = -1;  // a pin tapped: its place, until Go or Stay (run 19: travel asks first)
     // A dragon out on the Wanderings (D69): its place on the loop, its clip.
     DenActor wanderActor;
     ClipId wanderClip = ClipId::Count;
@@ -152,6 +156,8 @@ void keepPlace(App& app) {
 
 void leaveTo(App& app, SceneId scene) {
     keepPlace(app);
+    app.care.page = CarePage::None;  // (the valley's Journal closed)
+    vs().travelAsk = -1;
     r3d::releaseValley();
     app.game.world.inValley = 0;
     app.fromValley = scene != SceneId::Den;
@@ -564,6 +570,16 @@ bool facing(const Walker& you, Vec2 to, float degrees) {
 void findAction(ValleyScene& s) {
     s.action = Action::None;
     s.actionPlace = -1;
+    if (s.mode == Mode::Riding && s.flight.grounded && s.flight.speed < 4.0f) {  // riding up to the den's mouth: home (run 19)
+        if (const ValleyPlaceInfo* den = s.valley.place(kPlaceDen)) {
+            const Vec2 door = placeToWorld(*den, placeLayout(kPlaceDen).door);
+            if (std::hypot(s.flight.pos.x - door.x, s.flight.pos.y - door.y) < 9.0f) {
+                s.action = Action::Enter;
+                s.actionPlace = kPlaceDen;
+            }
+        }
+        return;
+    }
     if (s.mode != Mode::OnFoot) return;
     const Vec3 at = s.you.pos;
     float best = 1e9f;
@@ -607,7 +623,8 @@ void findAction(ValleyScene& s) {
         if (l.hasDoor && sceneOf(p.id) != SceneId::Count) {
             const Vec2 door = placeToWorld(p, l.door);
             const float d = std::hypot(at.x - door.x, at.y - door.y);
-            if (d < 3.6f && d < best && facing(s.you, door, 75.0f)) {
+            const float reach = p.id == kPlaceDen ? 7.0f : 3.6f;  // (the den's yard: home from anywhere near its mouth, run 19)
+            if (d < reach && d < best && facing(s.you, door, p.id == kPlaceDen ? 100.0f : 75.0f)) {
                 best = d;
                 s.action = Action::Enter;
                 s.actionPlace = p.id;
@@ -669,9 +686,11 @@ void lendStage(App& app, ValleyScene& s) {
 void takeStage(ValleyScene& s) {
     const vext::Stage& g = s.stage;
     if (s.mode == Mode::Riding) return;  // (a feature that wants you down gets you off first)
-    s.you.pos = {g.you.x, g.you.y, s.valley.heightAt(g.you.x, g.you.y)};
+    s.you.pos = {g.you.x, g.you.y, s.valley.groundAt(g.you.x, g.you.y, s.you.pos.z)};
     s.you.heading = g.youHeading;
-    s.pal.pos = {g.pal.x, g.pal.y, std::fmax(s.valley.heightAt(g.pal.x, g.pal.y), s.valley.water - 0.8f)};
+    s.pal.pos = {g.pal.x, g.pal.y,
+                 s.valley.islandAt(g.pal.x, g.pal.y, s.pal.pos.z) >= 0 ? s.valley.groundAt(g.pal.x, g.pal.y, s.pal.pos.z)
+                                                                     : std::fmax(s.valley.heightAt(g.pal.x, g.pal.y), s.valley.water - 0.8f)};
     s.pal.heading = g.palHeading;
 }
 
@@ -743,7 +762,11 @@ void getOff(App& app, ValleyScene& s) {
     s.mode = Mode::OnFoot;
     const Vec3 f = s.flight.forward();
     s.you.pos = s.flight.pos + Vec3{-f.y, f.x, 0} * -2.4f;  // down on its left
-    s.you.pos.z = s.valley.heightAt(s.you.pos.x, s.you.pos.y);
+    s.you.pos.z = s.valley.groundAt(s.you.pos.x, s.you.pos.y, s.flight.pos.z);  // (an island's top too)
+    if (s.valley.islandAt(s.flight.pos.x, s.flight.pos.y, s.flight.pos.z) >= 0 &&
+        s.valley.islandAt(s.you.pos.x, s.you.pos.y, s.flight.pos.z) < 0) {  // on an island: down beside it, on it
+        s.you.pos = s.flight.pos;
+    }
     s.you.heading = s.flight.heading;
     s.you.speed = 0;
     s.pal.pos = s.flight.pos;
@@ -762,10 +785,16 @@ void update(App& app, const Input& in) {
         tickWorld(app);
         app.simAccum = 0;
     }
-    if ((in.down & KEY_X) && vext::activeFeature(app) < 0) {  // home to the den (from anywhere in the valley)
-        audio::playSfx(audio::Sfx::Back);
-        leaveTo(app, SceneId::Den);
-        return;
+    photo::tick(app);
+    if ((in.down & KEY_X) && vext::activeFeature(app) < 0 && !talking(app)) {
+        if (s.mode == Mode::FreeCam) {  // the free camera: back to walking or riding
+            s.mode = s.before;
+            audio::playSfx(audio::Sfx::Back);
+        } else {  // the Journal on the bottom screen (run 19), X again to close
+            app.care.page = app.care.page == CarePage::Journal ? CarePage::None : CarePage::Journal;
+            if (app.care.page == CarePage::Journal) app.care.journalTab = 0;
+            audio::playSfx(app.care.page == CarePage::Journal ? audio::Sfx::QuestPage : audio::Sfx::Back);
+        }
     }
     if (!s.loaded) return;
     for (int k = 0; k < kVillagers && s.folk[0].anim.clip < 0 && r3d::personAnims(); ++k) {
@@ -855,7 +884,7 @@ void update(App& app, const Input& in) {
         s.freeEye = s.freeEye + fwd * (in.padY * speed) + right * (in.padX * -speed) + Vec3{0, 0, dpadY * speed};
         s.freePitch = clampf(s.freePitch + dpadX * 0.8f * app.dt, -1.2f, 0.4f);
         s.freeEye.z = std::fmax(s.freeEye.z, va.heightAt(s.freeEye.x, s.freeEye.y) + 0.6f);
-        if (in.down & (KEY_A | KEY_Y)) s.mode = s.before;
+        if (in.down & KEY_A) photo::snapNow(app);  // a framed photo of the view (run 19)
         animatePartner(app, s, s.before == Mode::Riding && !s.flight.grounded, false, false, 0);
         return;
     }
@@ -865,8 +894,10 @@ void update(App& app, const Input& in) {
         wi.y = clampf(in.padY + dpadY, -1, 1);
         wi.run = in.held & KEY_B;
         s.you.update(wi, s.wcam.yaw, va, s.solids, app.dt);
-        s.wcam.update(s.you, (in.held & KEY_R ? 1.0f : 0.0f) - (in.held & KEY_L ? 1.0f : 0.0f), va, app.dt, &s.camWalls);
+        // L/R turn the view (run 19: the other way round, L to the left)
+        s.wcam.update(s.you, (in.held & KEY_L ? 1.0f : 0.0f) - (in.held & KEY_R ? 1.0f : 0.0f), va, app.dt, &s.camWalls);
         if (s.partner >= 0) {
+            const Vec3 palWas = s.pal.pos;
             s.pal.update(s.you, va, s.solids, app.dt);
             if (s.shown.stage != Stage::Adult) {  // on its lead: it can't fall further behind than the lead
                 const float dx = s.pal.pos.x - s.you.pos.x, dy = s.pal.pos.y - s.you.pos.y, d = std::hypot(dx, dy);
@@ -876,21 +907,34 @@ void update(App& app, const Input& in) {
                     s.pal.pos.y = s.you.pos.y + dy * (kLead / d);
                     s.pal.pos.z = std::fmax(va.heightAt(s.pal.pos.x, s.pal.pos.y), va.water - 0.8f);
                 }
+                // It faces the way it actually goes (run 19: pulled along by the lead, it faced a
+                // little off to one side, toward where it meant to be).
+                const float mx = s.pal.pos.x - palWas.x, my = s.pal.pos.y - palWas.y;
+                if (std::hypot(mx, my) > 0.35f * app.dt) {
+                    const float way = std::atan2(mx, -my);
+                    s.pal.heading += clampf(std::remainder(way - s.pal.heading, 6.2831853f), -6.0f * app.dt, 6.0f * app.dt);
+                }
             }
             partnerSpeed = s.pal.speed;
-            swimming = va.heightAt(s.pal.pos.x, s.pal.pos.y) < va.water - 0.4f;
+            swimming = va.islandAt(s.pal.pos.x, s.pal.pos.y, s.pal.pos.z) < 0 && va.heightAt(s.pal.pos.x, s.pal.pos.y) < va.water - 0.4f;
         }
-        // Your footsteps, by what's underfoot.
+        // Your footsteps: the dragons' own step, lighter and higher (run 19), a little brighter on stone.
         if (s.you.speed > 0.4f && (s.stepFor -= app.dt * s.you.speed) <= 0) {
             s.stepFor = 1.1f;
-            const float d = std::hypot(s.you.pos.x - va.place(kPlaceMarket)->at.x, s.you.pos.y - va.place(kPlaceMarket)->at.y);
-            audio::playSfx(d < 38.0f ? audio::Sfx::StepStone : audio::Sfx::StepGrass, 0.95f + 0.1f * (app.rng.below(100) / 100.0f),
-                           0.6f);
+            const ValleyPlaceInfo* market = va.place(kPlaceMarket);
+            const bool stone = market && std::hypot(s.you.pos.x - market->at.x, s.you.pos.y - market->at.y) < 38.0f;
+            audio::playSfx(audio::Sfx::DragonStep, (stone ? 1.75f : 1.55f) + 0.12f * (app.rng.below(100) / 100.0f),
+                           s.you.speed > 3.0f ? 0.5f : 0.38f);
         }
         findAction(s);
         if (in.down & KEY_A) doAction(app, s);
         if (app.scene != SceneId::Valley) return;
     } else {  // riding
+        findAction(s);  // (riding up to the den's door: A goes home instead of taking off)
+        if (s.action == Action::Enter && (in.down & KEY_A)) {
+            doAction(app, s);
+            return;
+        }
         FlightInput fi;
         fi.steer = clampf(in.padX + dpadX, -1, 1);
         fi.pitch = clampf(in.padY + dpadY, -1, 1);
@@ -1109,7 +1153,8 @@ void drawTop(App& app) {
         const DayBlend day = dayBlend(now);
         const float lit = day.weight(kLightDay) + 0.6f * day.weight(kLightEvening) + 0.25f * day.weight(kLightNight);
         const Valley& va = s.valley;
-        const float surface = std::fmax(va.heightAt(view.at.x, view.at.y), va.water);
+        const float surface = va.islandAt(view.at.x, view.at.y, view.at.z) >= 0 ? va.groundAt(view.at.x, view.at.y, view.at.z)
+                                                                                 : std::fmax(va.heightAt(view.at.x, view.at.y), va.water);
         const float high = std::fmax(0.0f, view.at.z - surface);
         view.shadowAt = {view.at.x, view.at.y, surface};
         const bool afloat = riding && s.flight.swimming;
@@ -1127,6 +1172,9 @@ void drawTop(App& app) {
         }
     }
     if (r3d::ready()) r3d::drawValley(app, view, now);
+    if (autotest::shooting())
+        autotest::log("you (%.1f %.1f %.1f) partner (%.1f %.1f %.1f) mode %d", s.you.pos.x, s.you.pos.y, s.you.pos.z, s.pal.pos.x,
+                      s.pal.pos.y, s.pal.pos.z, static_cast<int>(s.mode));
     if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
     if (feat >= 0) {
         if (vext::feature(feat).drawTop) vext::feature(feat).drawTop(app, s.stage);
@@ -1159,10 +1207,24 @@ void drawTop(App& app) {
             break;
         case Action::None: break;
     }
-    if (hint && s.mode == Mode::OnFoot && !talking(app)) {
+    if (s.action == Action::Enter && s.mode == Mode::Riding) hint = str::kPromptHome;
+    if (hint && (s.mode == Mode::OnFoot || s.mode == Mode::Riding) && !talking(app) && !app.photo.snap) {
         const float w = textWidth(app, hint, 0.5f) + 24;
         panel({200 - w / 2, 200, w, 24}, withAlpha(theme::kDenPlum, 0.8f));
         textCentered(app, hint, 200, 212, 0.5f, theme::kShell, w);
+    }
+    if (s.mode == Mode::FreeCam || app.photo.flash > 0) {  // the free camera's photo: framed with where it is
+        const Vec3 eye = s.freeEye;
+        const char* where = str::kValleyPhoto;
+        float nearest = 140.0f;
+        for (const ValleyPlaceInfo& p : s.valley.places) {
+            const float d = std::hypot(eye.x - p.at.x, eye.y - p.at.y);
+            if (d < nearest && world::placeFound(app.game, p.id)) {
+                nearest = d;
+                where = world::placeInfo(p.id).name;
+            }
+        }
+        photo::drawTitled(app, where, now);
     }
 }
 
@@ -1199,6 +1261,12 @@ void drawBottom(App& app, const Input& touch) {
     const Input& in = talking(app) ? kNothing : touch;  // someone talking: the map and buttons wait
     if (const int f = vext::activeFeature(app); f >= 0 && s.loaded && vext::feature(f).drawBottom) {
         vext::feature(f).drawBottom(app, in, s.stage);  // a 1.0 feature's screen (a battle's moves ...)
+        drawTalk(app);
+        return;
+    }
+    if (app.care.page == CarePage::Journal && s.loaded) {  // the Journal (X), over the map
+        Dragon& d = s.partner >= 0 ? app.game.dragons[s.partner] : activeDragon(app);
+        if (!care::drawPage(app, in, d, nowLocal(app))) app.care.page = CarePage::None;
         drawTalk(app);
         return;
     }
@@ -1258,9 +1326,27 @@ void drawBottom(App& app, const Input& touch) {
     const float heading = s.mode == Mode::Riding ? s.flight.heading : s.you.heading;
     C2D_DrawLine(me.x, me.y, theme::kShell, me.x + std::sin(heading) * 10, me.y + std::cos(heading) * 10, theme::kShell, 2, 0.5f);
     heart(me.x, me.y, 9, theme::kRose);
-    if (tappedPlace >= 0) {
-        travelTo(app, s, tappedPlace, false);
-        showToastf(app, str::kTravelledTo, world::placeInfo(tappedPlace).name);
+    if (tappedPlace >= 0) {  // asked first (run 19): "Travel to X?" below the map
+        s.travelAsk = tappedPlace == s.travelAsk ? -1 : tappedPlace;
+        audio::playSfx(audio::Sfx::Tap);
+    }
+    if (s.travelAsk >= 0) {
+        const Vec2 m = mapPoint(va, va.place(static_cast<u8>(s.travelAsk)) ? va.place(static_cast<u8>(s.travelAsk))->at.x : 0,
+                                va.place(static_cast<u8>(s.travelAsk)) ? va.place(static_cast<u8>(s.travelAsk))->at.y : 0);
+        const float ring = 6.5f + std::sin(app.t * 5.0f);
+        C2D_DrawCircleSolid(m.x, m.y, 0.5f, ring, withAlpha(theme::kClutchGold, 0.5f));
+        char ask[64];
+        std::snprintf(ask, sizeof(ask), str::kTravelAsk, world::placeInfo(s.travelAsk).name);
+        text(app, ask, kMapX, 202, 0.4f, theme::kShell, C2D_AlignLeft, kMapSize);
+        if (button(app, {kMapX, 214, 80, 22}, str::kTravelGo, in)) {
+            const int go = s.travelAsk;
+            s.travelAsk = -1;
+            travelTo(app, s, go, false);
+            showToastf(app, str::kTravelledTo, world::placeInfo(go).name);
+        } else if (button(app, {kMapX + 92, 214, 80, 22}, str::kTravelStay, in)) {
+            s.travelAsk = -1;
+            audio::playSfx(audio::Sfx::Back);
+        }
     }
     // The side panel: what you're doing, the quest in hand, the buttons.
     char line[80];
@@ -1303,9 +1389,15 @@ void drawBottom(App& app, const Input& touch) {
         s.pal.call(s.you, va);
         audio::playSfx(audio::Sfx::Chirp, 1.1f);
     }
-    if (button(app, {x, 200, 128, 32}, str::kHomeX, in)) {
+    if (button(app, {x, 200, 62, 32}, str::kHomeX, in)) {
         audio::playSfx(audio::Sfx::Back);
         leaveTo(app, SceneId::Den);
+        return;
+    }
+    if (button(app, {x + 66, 200, 62, 32}, str::kJournal, in)) {  // (X too)
+        app.care.page = CarePage::Journal;
+        app.care.journalTab = 0;
+        audio::playSfx(audio::Sfx::QuestPage);
     }
     drawTalk(app);  // someone talking: the box over it all
 }

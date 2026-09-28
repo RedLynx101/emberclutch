@@ -10,13 +10,15 @@
 namespace ec {
 namespace {
 
+// Voices (Noah, 2026-09-28): 0 is the alphabet made from his own voice, for the men; 1 his second
+// recording, for the women and the child (romfs/voice/v1, v2).
 const VillagerInfo kVillagers_[kVillagers] = {
-    {"keeper", "Old Rowan", "the valley's keeper", kPlaceKeeper, {2.5f, 6.0f}, 0.0f, 1, 1.35f},
-    {"market", "Maple", "keeps the Market", kPlaceMarket, {3.0f, -2.0f}, 0.3f, 0, 2.0f},
-    {"sanctuary", "Bram", "keeps the Sanctuary", kPlaceSanctuary, {-2.0f, 8.0f}, 0.0f, 1, 1.6f},
-    {"steward", "Wren", "the arena's steward", kPlaceArena, {4.0f, 24.0f}, 0.0f, 0, 1.8f},
-    {"child", "Pip", "loves dragons", kPlaceMarket, {-8.0f, 6.0f}, -0.6f, 0, 2.5f},
-    {"traveller", "Sable", "a traveller", kPlaceTrailhead, {-4.0f, 5.0f}, 0.4f, 1, 1.5f},
+    {"keeper", "Old Rowan", "the valley's keeper", kPlaceKeeper, {2.5f, 6.0f}, 0.0f, 0, 1.2f},
+    {"market", "Maple", "keeps the Market", kPlaceMarket, {3.0f, -2.0f}, 0.3f, 1, 1.45f},
+    {"sanctuary", "Bram", "keeps the Sanctuary", kPlaceSanctuary, {-2.0f, 8.0f}, 0.0f, 0, 1.45f},
+    {"steward", "Wren", "the arena's steward", kPlaceArena, {4.0f, 24.0f}, 0.0f, 1, 1.35f},
+    {"child", "Pip", "loves dragons", kPlaceMarket, {-8.0f, 6.0f}, -0.6f, 1, 1.8f},
+    {"traveller", "Sable", "a traveller", kPlaceTrailhead, {-4.0f, 5.0f}, 0.4f, 0, 1.35f},
 };
 
 Talk lines(std::initializer_list<const char*> l, u32 sets = 0) {

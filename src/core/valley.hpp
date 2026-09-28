@@ -66,6 +66,10 @@ struct Valley {
     float tileSize() const { return kTileQuads * spacing; }
     // Ground height (bilinear), clamped at the edges; the water's surface isn't counted.
     float heightAt(float x, float y) const;
+    // What a body at height z stands on at (x, y): a floating island's grassy top when it's over
+    // one and not below it (run 19: they couldn't be stood on), else the land.
+    float groundAt(float x, float y, float z) const;
+    int islandAt(float x, float y, float z) const;  // the island it stands on there (-1: the land)
     Vec3 normalAt(float x, float y) const;
     const ValleyPlaceInfo* place(u8 id) const;
     bool inside(float x, float y) const;

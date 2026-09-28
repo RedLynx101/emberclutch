@@ -20,7 +20,7 @@ wait 0.3
 tap 238 206
 key SELECT
 wait 1
-key X
+valley
 wait 0.8
 tap 276 138
 wait 0.4

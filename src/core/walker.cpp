@@ -18,9 +18,12 @@ float wrap(float a) {
 
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
-// Can a body stand at (x, y) coming from `from`? Not in deep water, not up too steep a slope.
-bool standable(const Valley& v, Vec2 from, Vec2 to, float wade, float steepest) {
+// Can a body at height z stand at (x, y) coming from `from`? Not in deep water, not up too
+// steep a slope, not off the edge of a floating island.
+bool standable(const Valley& v, Vec2 from, Vec2 to, float z, float wade, float steepest) {
     if (!v.inside(to.x, to.y)) return false;
+    const int on = v.islandAt(from.x, from.y, z);
+    if (on >= 0) return v.islandAt(to.x, to.y, z) == on;  // an island's top is flat; its edge a wall
     const float g = v.heightAt(to.x, to.y);
     if (g < v.water - wade) return false;
     const float g0 = v.heightAt(from.x, from.y);
@@ -42,12 +45,12 @@ Vec2 pushOut(Vec2 p, float radius, const std::vector<Solid>& solids, bool& hit) 
 
 // A step from `pos` along `dir` of `step` metres: straight if it can, else sliding along
 // whatever's in the way (a wall of water, a slope, a solid). Returns the new position.
-Vec2 move(const Valley& v, Vec2 pos, Vec2 dir, float step, float radius, float wade, float steepest,
+Vec2 move(const Valley& v, Vec2 pos, float z, Vec2 dir, float step, float radius, float wade, float steepest,
           const std::vector<Solid>& solids, bool& blocked) {
     Vec2 next{pos.x + dir.x * step, pos.y + dir.y * step};
     bool hit = false;
     next = pushOut(next, radius, solids, hit);
-    if (standable(v, pos, next, wade, steepest)) {
+    if (standable(v, pos, next, z, wade, steepest)) {
         // Against a wall it slides round it; only when that hardly gets anywhere is it blocked
         // (a well in the way is walked round, not stopped at).
         if (hit && std::hypot(next.x - pos.x, next.y - pos.y) < step * 0.3f) blocked = true;
@@ -58,9 +61,15 @@ Vec2 move(const Valley& v, Vec2 pos, Vec2 dir, float step, float radius, float w
         Vec2 alt{pos.x + slide.x * step, pos.y + slide.y * step};
         bool h2 = false;
         alt = pushOut(alt, radius, solids, h2);
-        if (standable(v, pos, alt, wade, steepest)) return alt;
+        if (standable(v, pos, alt, z, wade, steepest)) return alt;
     }
-    return hit && standable(v, pos, next, wade, steepest) ? next : pos;
+    return hit && standable(v, pos, next, z, wade, steepest) ? next : pos;
+}
+
+// Where a body ends up standing at p (from height z): an island's top, else the land or the
+// water it wades in.
+float standZ(const Valley& v, Vec2 p, float z, float wade) {
+    return v.islandAt(p.x, p.y, z) >= 0 ? v.groundAt(p.x, p.y, z) : std::fmax(v.heightAt(p.x, p.y), v.water - wade);
 }
 
 }  // namespace
@@ -87,9 +96,9 @@ void Walker::update(const WalkInput& in, float cameraYaw, const Valley& v, const
         return;
     }
     const Vec2 dir{std::sin(heading), -std::cos(heading)};
-    const Vec2 p = move(v, {pos.x, pos.y}, dir, speed * dt, tune.radius, tune.wade, tune.steepest, solids, blocked);
+    const Vec2 p = move(v, {pos.x, pos.y}, pos.z, dir, speed * dt, tune.radius, tune.wade, tune.steepest, solids, blocked);
     if (blocked) speed *= 0.6f;
-    pos = {p.x, p.y, std::fmax(v.heightAt(p.x, p.y), v.water - tune.wade)};
+    pos = {p.x, p.y, standZ(v, p, pos.z, tune.wade)};
 }
 
 Vec3 Follower::spot(const Walker& you) const {
@@ -125,9 +134,9 @@ void Follower::update(const Walker& you, const Valley& v, const std::vector<Soli
     speed += clampf(want - speed, -18.0f * dt, 12.0f * dt);
     if (speed > 0.01f) {
         bool blocked = false;
-        const Vec2 p = move(v, {pos.x, pos.y}, {std::sin(heading), -std::cos(heading)}, speed * dt, gap * 0.3f, 0.8f, 0.6f,
-                            solids, blocked);
-        pos = {p.x, p.y, std::fmax(v.heightAt(p.x, p.y), v.water - 0.8f)};
+        const Vec2 p = move(v, {pos.x, pos.y}, pos.z, {std::sin(heading), -std::cos(heading)}, speed * dt, gap * 0.3f, 0.8f,
+                            0.6f, solids, blocked);
+        pos = {p.x, p.y, standZ(v, p, pos.z, 0.8f)};
     } else {
         speed = 0;
     }
@@ -136,8 +145,9 @@ void Follower::update(const Walker& you, const Valley& v, const std::vector<Soli
 }
 
 void Follower::call(const Walker& you, const Valley& v) {
-    const Vec3 s = spot(you);
-    pos = {s.x, s.y, std::fmax(v.heightAt(s.x, s.y), v.water - 0.8f)};
+    Vec3 s = spot(you);
+    if (v.islandAt(you.pos.x, you.pos.y, you.pos.z) >= 0 && v.islandAt(s.x, s.y, you.pos.z) < 0) s = you.pos;  // (on an island: beside you on it)
+    pos = {s.x, s.y, standZ(v, {s.x, s.y}, you.pos.z, 0.8f)};
     heading = you.heading;
     speed = 0;
     stuckFor = 0;

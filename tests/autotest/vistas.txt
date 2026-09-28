@@ -15,7 +15,7 @@ name Cinder
 wait 11
 skip 9
 light
-key X
+valley
 wait 5
 view 1 -60 -160 70 20 120 10
 wait 3

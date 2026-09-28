@@ -34,7 +34,7 @@ wait 1
 shot w5-stopped
 shotin 1 w6-taking-off
 keyhold A 3
-key X
+valley
 wait 3
 key SELECT
 wait 0.3

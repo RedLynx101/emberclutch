@@ -24,7 +24,7 @@ wait 0.3
 key SELECT
 wait 0.5
 skip 9
-key X
+valley
 wait 3
 shot w01-outside-the-den
 pad 0 1 3

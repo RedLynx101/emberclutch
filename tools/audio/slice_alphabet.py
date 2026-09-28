@@ -4,8 +4,10 @@ way of a cozy life-sim) into one short clip a letter: romfs/voice/v<N>/<letter>.
 
   python tools/audio/slice_alphabet.py
 
-Sources: assets/audio/voice/source/voice-alphabet.mp3 (v1) and voice-alphabet-2.mp3 (v2), the
-26 letters A to Z said one at a time (not in git: Noah's recordings). The loudness envelope is
+Sources: assets/audio/voice/source/voice-alphabet.mp3 (v1: the first, made from Noah's voice; the
+men speak with it) and voice-alphabet-2.m4a (v2: the women's and the child's; Noah's second
+recording, 2026-09-28, in place of the first female voice), the 26 letters A to Z said one at a
+time (not in git: Noah's recordings). The loudness envelope is
 cut at the quiet between letters, the threshold swept until exactly 26 letters stand out (the
 first voice speaks fast, with little quiet between). Each letter is trimmed, faded, levelled and
 written as 22,050 Hz 16-bit mono; the game plays them quick and high-pitched, one per letter
@@ -22,7 +24,10 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 SRC = os.path.join(ROOT, "assets", "audio", "voice", "source")
 OUT = os.path.join(ROOT, "romfs", "voice")
 RATE = 22050
-VOICES = [("v1", "voice-alphabet.mp3"), ("v2", "voice-alphabet-2.mp3")]
+# (name, source, how its letters are found: "sweep" for a fast speaker with little quiet between,
+# "spaced" for one letter every second or so with a real pause, where a low threshold finds each
+# letter whole and a W's or a Z's tail joins its letter)
+VOICES = [("v1", "voice-alphabet.mp3", "sweep"), ("v2", "voice-alphabet-2.m4a", "spaced")]
 
 
 def decode(path):
@@ -54,10 +59,17 @@ def regions(env, thresh, merge):
     return [r for r in merged if r[1] - r[0] >= 3]  # not clicks
 
 
-def slice_voice(x):
+def slice_voice(x, mode="sweep"):
     win = RATE // 100  # 10 ms
     env = envelope(x, win)
     peak = max(env)
+    if mode == "spaced":
+        for merge in (40, 32, 24):  # gaps under 0.24-0.4 s are inside a letter
+            for k in range(40):
+                r = regions(env, peak * (0.04 + 0.004 * k), merge)
+                if len(r) == 26:
+                    return [(a * win, b * win) for a, b in r]
+        sys.exit("error: couldn't find 26 spaced letters")
     for merge in (6, 4, 3, 2):
         for k in range(200):
             t = peak * (0.5 - 0.0024 * k)
@@ -79,13 +91,13 @@ def write(path, y):
 
 
 def main():
-    for name, src in VOICES:
+    for name, src, mode in VOICES:
         path = os.path.join(SRC, src)
         if not os.path.exists(path):
             print(f"[voice] {src} missing: skipped")
             continue
         x = decode(path)
-        cuts = slice_voice(x)
+        cuts = slice_voice(x, mode)
         os.makedirs(os.path.join(OUT, name), exist_ok=True)
         lengths = []
         for i, (a, b) in enumerate(cuts):

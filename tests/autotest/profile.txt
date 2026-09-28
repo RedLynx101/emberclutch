@@ -39,7 +39,7 @@ shot p03-cinder-family
 tap 264 219
 wait 0.8
 # The Sanctuary, where the grandparents live: a profile from its grid.
-key X
+valley
 wait 0.8
 tap 62 96
 wait 0.4

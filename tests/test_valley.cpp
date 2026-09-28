@@ -331,7 +331,60 @@ TEST(on_foot_with_your_partner) {
     CHECK(cam.yaw != before && cam.eye.z > v.heightAt(cam.eye.x, cam.eye.y) + 1.0f);
 }
 
+// Run 19: the floating islands stood on (landing on one, walking its top, never off its edge),
+// and flying into a mountainside keeps its height instead of shooting up the slope.
+TEST(islands_and_mountainsides) {
+    const Valley& v = valley();
+    CHECK(v.islands.size() >= 2);
+    if (v.islands.size() < 2) return;
+    const ValleyIsland& isl = v.islands[1];  // over the lake
+    CHECK(v.islandAt(isl.at.x, isl.at.y, isl.at.z + 0.1f) == 1 && v.islandAt(isl.at.x, isl.at.y, isl.at.z - 10) < 0);
+    CHECK(std::fabs(v.groundAt(isl.at.x, isl.at.y, isl.at.z + 3) - isl.at.z) < 1e-3f);
+    // Gliding in from the west a little above its top: it comes down on it and lands.
+    Flight f;
+    f.pos = isl.at + Vec3{-isl.radius - 25, 0, 9};
+    f.heading = 1.5707963f;  // east
+    f.grounded = false;
+    f.speed = 11;
+    FlightInput none;
+    for (int k = 0; k < 30 * 10 && !f.grounded; ++k) f.update(none, v, 1.0f / 30);
+    std::printf("  onto the island: grounded %d at (%.0f %.0f %.1f), its top %.1f\n", f.grounded, f.pos.x, f.pos.y, f.pos.z,
+                isl.at.z);
+    CHECK(f.grounded && std::fabs(f.pos.z - isl.at.z) < 0.05f && v.islandAt(f.pos.x, f.pos.y, f.pos.z) == 1);
+    // On foot there: walking east for a while never steps off its edge.
+    Walker you;
+    you.pos = isl.at;
+    WalkInput east;
+    east.x = 1;
+    std::vector<Solid> none2;
+    for (int k = 0; k < 30 * 12; ++k) {
+        you.update(east, 0.0f, v, none2, 1.0f / 30);
+        CHECK(v.islandAt(you.pos.x, you.pos.y, you.pos.z) == 1 && std::fabs(you.pos.z - isl.at.z) < 1e-3f);
+    }
+    // A partner called beside you there stands on it too.
+    Follower pal;
+    pal.call(you, v);
+    CHECK(v.islandAt(pal.pos.x, pal.pos.y, pal.pos.z) == 1);
+    // Flying west at the den's cliff: it slides along the face, no higher than a wingbeat's worth.
+    Flight g;
+    g.grounded = false;
+    g.pos = {-575.0f, 60.0f, v.heightAt(-575.0f, 60.0f) + 25.0f};
+    g.heading = -1.5707963f;  // west, at the cliff
+    g.speed = 16;
+    const float z0 = g.pos.z;
+    float top = z0;
+    for (int k = 0; k < 30 * 6; ++k) {
+        g.update(none, v, 1.0f / 30);
+        top = std::fmax(top, g.pos.z);
+        CHECK(g.pos.z >= v.heightAt(g.pos.x, g.pos.y) - 0.01f);
+    }
+    std::printf("  into the cliff: rose %.1f m (from %.0f), now x %.0f z %.0f, speed %.1f\n", top - z0, z0, g.pos.x, g.pos.z,
+                g.speed);
+    CHECK(top - z0 < 6.0f);
+}
+
 void runValleyTests() {
+    RUN(islands_and_mountainsides);
     RUN(the_valley_loads);
     RUN(valley_tiles_join_and_fit_the_budget);
     RUN(flying_over_the_valley);

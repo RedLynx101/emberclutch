@@ -40,7 +40,7 @@ tap 274 43
 wait 1
 shot s04-egg-sent
 # The map, then the Sanctuary.
-key X
+valley
 wait 1
 shot s05-map
 tap 62 96

@@ -26,7 +26,7 @@ void Flight::update(const FlightInput& in, const Valley& v, float dt, const Flig
     landed = tookOff = flapped = splashed = skimming = false;
     sinceFlap += dt;
     const float ground = v.groundAt(pos.x, pos.y, pos.z);  // (an island's top too)
-    const bool onIsland = v.islandAt(pos.x, pos.y, pos.z) >= 0;
+    const bool onIsland = v.islandAt(pos.x, pos.y, pos.z) >= 0 || v.deckAt(pos.x, pos.y, pos.z) >= 0;  // (or a deck)
     const float floatAt = v.water - tune.swimDepth;  // where a swimmer's feet are
     if (grounded) {
         stamina = std::fmin(1.0f, stamina + 0.25f * dt);

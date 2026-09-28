@@ -51,6 +51,8 @@ Vec2 placeToWorld(const ValleyPlaceInfo& p, Vec2 local);
 Vec3 placeToWorld3(const Valley& v, const ValleyPlaceInfo& p, Vec3 local);
 // A point in a place's frame, its z a height in the frame (above the place's anchor), in the valley.
 Vec3 placeFrameToWorld(const ValleyPlaceInfo& p, Vec3 local);
+// The places' decks into the valley (1.0: the mill's bridge, the cove's jetty), after it loads.
+void addPlaceDecks(Valley& v);
 // Every place's walls in the valley, for walking round.
 std::vector<Solid> worldSolids(const Valley& v);
 // The faces the walking camera keeps in front of: the den's arch in its cliff.

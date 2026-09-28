@@ -75,6 +75,44 @@ Vec3 placeFrameToWorld(const ValleyPlaceInfo& p, Vec3 local) {
     return {w.x, w.y, p.at.z + local.z};
 }
 
+void addPlaceDecks(Valley& v) {
+    v.decks.clear();
+    // The mill's bridge (tools/blender/valley_places.py build_mill): across the river along its
+    // local X from -9 to 9, 1.45 m either side of the middle, its top 0.12 m over the anchor at
+    // the ends rising 1.45 m in the middle.
+    if (const ValleyPlaceInfo* m = v.place(kPlaceMill)) {
+        ValleyDeck d;
+        d.a = placeToWorld(*m, {-9.0f, 0.0f});
+        d.b = placeToWorld(*m, {9.0f, 0.0f});
+        d.halfWidth = 1.45f;
+        d.z0 = d.z1 = m->at.z + 0.12f;
+        d.arch = 1.45f;
+        v.decks.push_back(d);
+    }
+    // The cove's jetty (build_cove): along its local +Y from 33.5 m (0.3 m over the sand there)
+    // sloping to the deck's level at 41 m (its fish_spot's height), level out to 53 m, 0.95 m wide
+    // either side.
+    if (const ValleyPlaceInfo* c = v.place(kPlaceCove)) {
+        const PlaceAnchor spot = placeAnchor(kPlaceCove, "fish_spot");
+        const float level = c->at.z + (spot ? spot.at(0).z : -0.4f);
+        const Vec2 foot = placeToWorld(*c, {0.0f, 33.5f}), bend = placeToWorld(*c, {0.0f, 41.0f}),
+                   end = placeToWorld(*c, {0.0f, 53.0f});
+        ValleyDeck slope;
+        slope.a = foot;
+        slope.b = bend;
+        slope.halfWidth = 0.95f;
+        slope.z0 = v.heightAt(foot.x, foot.y) + 0.3f;
+        slope.z1 = level;
+        v.decks.push_back(slope);
+        ValleyDeck out;
+        out.a = bend;
+        out.b = end;
+        out.halfWidth = 0.95f;
+        out.z0 = out.z1 = level;
+        v.decks.push_back(out);
+    }
+}
+
 std::vector<CameraWall> cameraWalls(const Valley& v) {
     std::vector<CameraWall> out;
     if (const ValleyPlaceInfo* den = v.place(kPlaceDen)) {  // its arch stands out of the cliff at local y -1.9

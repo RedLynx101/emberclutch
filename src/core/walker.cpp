@@ -24,6 +24,7 @@ bool standable(const Valley& v, Vec2 from, Vec2 to, float z, float wade, float s
     if (!v.inside(to.x, to.y)) return false;
     const int on = v.islandAt(from.x, from.y, z);
     if (on >= 0) return v.islandAt(to.x, to.y, z) == on;  // an island's top is flat; its edge a wall
+    if (v.deckAt(to.x, to.y, z) >= 0) return v.groundAt(to.x, to.y, z) < z + 0.6f;  // along a deck (a step up at most)
     const float g = v.heightAt(to.x, to.y);
     if (g < v.water - wade) return false;
     const float g0 = v.heightAt(from.x, from.y);
@@ -69,7 +70,8 @@ Vec2 move(const Valley& v, Vec2 pos, float z, Vec2 dir, float step, float radius
 // Where a body ends up standing at p (from height z): an island's top, else the land or the
 // water it wades in.
 float standZ(const Valley& v, Vec2 p, float z, float wade) {
-    return v.islandAt(p.x, p.y, z) >= 0 ? v.groundAt(p.x, p.y, z) : std::fmax(v.heightAt(p.x, p.y), v.water - wade);
+    return v.islandAt(p.x, p.y, z) >= 0 || v.deckAt(p.x, p.y, z) >= 0 ? v.groundAt(p.x, p.y, z)
+                                                                      : std::fmax(v.heightAt(p.x, p.y), v.water - wade);
 }
 
 }  // namespace

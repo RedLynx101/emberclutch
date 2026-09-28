@@ -157,12 +157,14 @@ PLACES = {
 ISLANDS = [(120.0, 200.0, 190.0, 55.0), (300.0, -330.0, 150.0, 40.0), (-250.0, 480.0, 172.0, 35.0),
            (480.0, 300.0, 212.0, 30.0), (-150.0, -250.0, 160.0, 28.0), (700.0, 120.0, 185.0, 26.0)]
 PATHS = [
-    [(DEN[0] + 14, DEN[1]), (-470, 70), (-300, 62), (-120, 60), (-6, 60), (130, 80), (260, 110), (330, 120)],
+    # (over the mill's bridge along its deck: its ends at 9 m either side of its middle)
+    [(DEN[0] + 14, DEN[1]), (-470, 70), (-300, 62), (-120, 60), (-24, 50), (-13.8, 55.6), (1.8, 64.4), (12, 70), (130, 80),
+     (260, 110), (330, 120)],
     [(330, 120), (440, 80), (560, 40)],                                  # the orchard
     [(330, 120), (400, -40), (520, -200), (620, -300), (660, -330)],     # the arena
     [(330, 120), (430, 280), (520, 420), (575, 490), (600, 520)],        # up the hill to the Stone
     [(330, 120), (320, 260), (280, 420), (190, 540), (268, 582), (172, 622), (262, 656), (190, 690), (230, 720)],  # up to the Vault, winding up its shoulder
-    [(-6, 60), (-140, -130), (-300, -330), (-420, -470)],                # the meadow
+    [(-24, 50), (-140, -130), (-300, -330), (-420, -470)],               # the meadow
     [(-420, -470), (-260, -640), (-80, -790), (60, -880)],               # the trailhead
     [(330, 120), (320, -40), (300, -178)],                               # the lake's jetty
     [(DEN[0] + 14, DEN[1]), (-560, 110), (-522, 165), (-524, 205), (CLIFF_X + 70, FALLS_Y + 52)],  # the lodge, round the pool
@@ -205,7 +207,7 @@ PLACE_BASE = {}
 
 
 PATH_GRADE = 0.55      # the steepest a path climbs (about 29 degrees: the walker manages 44)
-PATH_CORE, PATH_EDGE = 3.5, 8.5  # graded fully within this of a path, blended out to this
+PATH_CORE, PATH_EDGE = 6.0, 12.0  # graded fully within this of a path, blended out to this (the 4 m grid needs room)
 FORD = WATER - 0.25    # a path crossing a stream wades it here (the walker wades 0.6 m)
 _PROFILES = None
 
@@ -217,11 +219,13 @@ def path_profiles():
         return _PROFILES
     out = []
     for path in PATHS:
-        pts, acc = [], [0.0]
+        pts, acc, corners = [], [0.0], []
         for k in range(len(path) - 1):
             (ax, ay), (bx, by) = path[k], path[k + 1]
             seg = math.hypot(bx - ax, by - ay)
             n = max(1, int(seg / 4.0))
+            if k > 0:
+                corners.append(len(pts))  # a bend: its sample
             for i in range(n):
                 t = i / n
                 pts.append((ax + (bx - ax) * t, ay + (by - ay) * t))
@@ -234,6 +238,9 @@ def path_profiles():
             lo, hi = max(0, i - 6), min(len(raw), i + 7)
             sm.append(sum(raw[lo:hi]) / (hi - lo))
         for _ in range(3):  # held to the grade, forward and back, the ends kept where they meet their places
+            for c in corners:  # level through each bend (a switchback's legs meet at one height there)
+                for i in range(max(1, c - 3), min(len(sm) - 1, c + 4)):
+                    sm[i] = sm[c]
             sm[0], sm[-1] = raw[0], raw[-1]
             for i in range(1, len(sm)):
                 step = PATH_GRADE * (acc[i] - acc[i - 1])
@@ -244,16 +251,22 @@ def path_profiles():
                 sm[i] = min(max(sm[i], sm[i + 1] - step), sm[i + 1] + step)
         xs = [q[0] for q in pts]
         ys = [q[1] for q in pts]
-        out.append((pts, sm, (min(xs) - PATH_EDGE, max(xs) + PATH_EDGE, min(ys) - PATH_EDGE, max(ys) + PATH_EDGE)))
+        bends = [(pts[i][0], pts[i][1], sm[i]) for i in corners]
+        out.append((pts, sm, (min(xs) - PATH_EDGE - 4, max(xs) + PATH_EDGE + 4, min(ys) - PATH_EDGE - 4, max(ys) + PATH_EDGE + 4),
+                    bends))
     _PROFILES = out
     return out
 
 
 def graded(x, y, h):
     """The land pulled to the paths' graded profiles within their corridors."""
-    for path, (pts, prof, (x0, x1, y0, y1)) in zip(PATHS, path_profiles()):
-        if x < x0 or x > x1 or y < y0 or y > y1 or poly_near(x, y, path, PATH_EDGE) >= PATH_EDGE:
+    for path, (pts, prof, (x0, x1, y0, y1), bends) in zip(PATHS, path_profiles()):
+        if x < x0 or x > x1 or y < y0 or y > y1 or poly_near(x, y, path, PATH_EDGE + 4) >= PATH_EDGE + 4:
             continue
+        for bx, by, bz in bends:  # each bend a flat landing to turn on (a switchback's corner)
+            db = math.hypot(x - bx, y - by)
+            if db < PATH_EDGE + 4:
+                h = h + (bz - h) * (1.0 - smoothstep(PATH_CORE + 3, PATH_EDGE + 4, db))
         best, at = PATH_EDGE, None
         for i in range(len(pts) - 1):
             ax, ay = pts[i]
@@ -317,8 +330,10 @@ def land(x, y):
             if pid not in PLACE_BASE:
                 PLACE_BASE[pid] = base_height(px, py)[0]
             fh = PLACE_BASE[pid]
-        w = 1.0 - smoothstep(fr * 0.7, fr * 1.25, math.hypot(x - px, y - py))
-        h = h + (fh + 1.0 * (fbm(x / 40.0, y / 40.0, 2, 9) - 0.5) - h) * w
+        d = math.hypot(x - px, y - py)
+        w = 1.0 - smoothstep(fr * 0.7, fr * 1.25, d)
+        rim = smoothstep(fr * 0.7, fr * 1.05, d)  # exactly flat inside, a little unevenness at the rim (models sit true)
+        h = h + (fh + 1.0 * (fbm(x / 40.0, y / 40.0, 2, 9) - 0.5) * rim - h) * w
     h = den_notch(x, y, h, h0)
     h = caldera(x, y, h)
     h = hollow(x, y, h)

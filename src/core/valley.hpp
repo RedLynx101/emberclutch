@@ -48,6 +48,14 @@ struct ValleyPlaceInfo {
     Vec3 at;
     float heading;  // which way it faces (the den's cave mouth: out of the cliff)
 };
+// A deck (1.0): a walkway over water, the mill's bridge or the cove's jetty, walked on at its own
+// height. A strip from `a` to `b` (world metres), `halfWidth` either side, its top rising from z0
+// at a to z1 at b, and `arch` higher in the middle (a bridge's hump). core/place_layout adds them.
+struct ValleyDeck {
+    Vec2 a, b;
+    float halfWidth = 1;
+    float z0 = 0, z1 = 0, arch = 0;
+};
 
 struct Valley {
     int n = 0;                       // samples a side
@@ -57,6 +65,7 @@ struct Valley {
     std::vector<ValleyTree> trees;
     std::vector<ValleyIsland> islands;
     std::vector<ValleyPlaceInfo> places;
+    std::vector<ValleyDeck> decks;         // (not in the file: core/place_layout addPlaceDecks)
     std::vector<std::vector<Vec2>> paths;  // the earth paths between the places (EVL2)
     std::vector<float> tileLow, tileHigh;  // per tile: its lowest and highest ground (culling)
     std::vector<std::vector<int>> tileTrees;  // per tile: the trees standing in it
@@ -70,6 +79,8 @@ struct Valley {
     // one and not below it (run 19: they couldn't be stood on), else the land.
     float groundAt(float x, float y, float z) const;
     int islandAt(float x, float y, float z) const;  // the island it stands on there (-1: the land)
+    int deckAt(float x, float y, float z) const;    // the deck it stands on there (-1: none)
+    float deckTop(int deck, float x, float y) const;
     Vec3 normalAt(float x, float y) const;
     const ValleyPlaceInfo* place(u8 id) const;
     bool inside(float x, float y) const;

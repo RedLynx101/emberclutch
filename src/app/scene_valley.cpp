@@ -147,7 +147,9 @@ bool loadValleyFile(Valley& v) {
     std::size_t n;
     while ((n = std::fread(buf, 1, sizeof(buf), f)) > 0) data.insert(data.end(), buf, buf + n);
     std::fclose(f);
-    return loadValley(data.data(), data.size(), v);
+    if (!loadValley(data.data(), data.size(), v)) return false;
+    addPlaceDecks(v);  // the mill's bridge, the cove's jetty
+    return true;
 }
 
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }

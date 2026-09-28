@@ -6,6 +6,7 @@
 
 #include "check.hpp"
 #include "core/flight.hpp"
+#include "core/place_layout.hpp"
 #include "core/valley.hpp"
 #include "core/walker.hpp"
 
@@ -26,6 +27,7 @@ const Valley& valley() {
         while ((n = std::fread(buf, 1, sizeof(buf), f)) > 0) data.insert(data.end(), buf, buf + n);
         std::fclose(f);
         loadValley(data.data(), data.size(), v);
+        addPlaceDecks(v);  // (as the game: the mill's bridge, the cove's jetty)
     }
     return v;
 }
@@ -383,8 +385,51 @@ TEST(islands_and_mountainsides) {
     CHECK(top - z0 < 6.0f);
 }
 
+// Run 19: every earth path can be walked end to end (the Cold Vault's trail wasn't): a walker
+// steered at each next point along it arrives at its end.
+TEST(every_path_walks) {
+    const Valley& v = valley();
+    CHECK(!v.paths.empty());
+    std::vector<Solid> none;
+    for (std::size_t k = 0; k < v.paths.size(); ++k) {
+        const std::vector<Vec2>& path = v.paths[k];
+        if (path.size() < 2) continue;
+        Walker w;
+        w.pos = {path[0].x, path[0].y, v.heightAt(path[0].x, path[0].y)};
+        std::size_t next = 1;
+        float stuck = 0;
+        for (int step = 0; step < 30 * 600 && next < path.size(); ++step) {
+            const Vec2 to = path[next], from = path[next - 1];
+            if (std::hypot(to.x - w.pos.x, to.y - w.pos.y) < 3.0f) {
+                ++next;
+                continue;
+            }
+            // Steered along the path (a point 5 m on from the nearest one on this stretch), as a
+            // player follows it, not straight at the next bend across the hillside.
+            const float sx = to.x - from.x, sy = to.y - from.y, len = std::hypot(sx, sy);
+            float along = len > 0 ? ((w.pos.x - from.x) * sx + (w.pos.y - from.y) * sy) / len : 0;
+            along = std::fmin(len, std::fmax(0.0f, along) + 5.0f);
+            const float dx = from.x + sx / len * along - w.pos.x, dy = from.y + sy / len * along - w.pos.y;
+            // Pad up with the camera turned toward the point: the walker heads there.
+            WalkInput in;
+            in.y = 1;
+            in.run = true;
+            const float yaw = std::atan2(dx, -dy);
+            const Vec3 before = w.pos;
+            w.update(in, yaw, v, none, 1.0f / 30);
+            stuck = length(w.pos - before) < 0.01f ? stuck + 1.0f / 30 : 0.0f;
+            if (stuck > 3.0f) break;
+        }
+        if (next < path.size())
+            std::printf("  path %d stuck at (%.0f %.0f), heading for point %d (%.0f %.0f)\n", static_cast<int>(k), w.pos.x, w.pos.y,
+                        static_cast<int>(next), path[next].x, path[next].y);
+        CHECK(next >= path.size());
+    }
+}
+
 void runValleyTests() {
     RUN(islands_and_mountainsides);
+    RUN(every_path_walks);
     RUN(the_valley_loads);
     RUN(valley_tiles_join_and_fit_the_budget);
     RUN(flying_over_the_valley);

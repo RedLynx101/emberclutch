@@ -3056,8 +3056,7 @@ def build_cove(pl):
             cylinder(s, 0.12, deck(y) - zb + 0.12, 5, DARKWOOD, T(sx * (hw + 0.02), y, zb), top=True, smooth=False)
     lamp_post(pl, M @ T(0, 0, ze), -hw + 0.1, J1 - 0.4, h=1.4, rng=4.5)
     cylinder(s, 0.14, 0.34, 5, (0.62, 0.62, 0.66), T(hw - 0.25, J1 - 0.5, ze), r_top=0.18, top=True, smooth=False)
-    for k in range(7):  # keep walkers off its foot (they'd pass under it): the fishing takes you out
-        pl.solid(M, 0, J0 + 0.5 + 1.8 * k, 1.1)
+    # (walkers walk out along it: the game has it as a deck, core/place_layout addPlaceDecks)
     pl.extra["anchors"]["fish_spot"] = [0.2, round(J1 - 0.9, 2), round(ze, 3)]
     pl.extra["anchors"]["jetty"] = [0.0, round(J0 - 1.1, 2)]
     pl.mark("jetty")

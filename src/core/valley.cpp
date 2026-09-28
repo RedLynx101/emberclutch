@@ -312,9 +312,35 @@ int Valley::islandAt(float x, float y, float z) const {
     return -1;
 }
 
+int Valley::deckAt(float x, float y, float z) const {
+    for (std::size_t k = 0; k < decks.size(); ++k) {
+        const ValleyDeck& d = decks[k];
+        const float dx = d.b.x - d.a.x, dy = d.b.y - d.a.y, L2 = dx * dx + dy * dy;
+        if (L2 < 1e-6f) continue;
+        const float t = ((x - d.a.x) * dx + (y - d.a.y) * dy) / L2;
+        if (t < 0 || t > 1) continue;
+        const float side = std::fabs((x - d.a.x) * dy - (y - d.a.y) * dx) / std::sqrt(L2);
+        if (side > d.halfWidth) continue;
+        if (z > deckTop(static_cast<int>(k), x, y) - 1.2f) return static_cast<int>(k);  // (from a little below: stepping up)
+    }
+    return -1;
+}
+
+float Valley::deckTop(int k, float x, float y) const {
+    if (k < 0 || k >= static_cast<int>(decks.size())) return heightAt(x, y);
+    const ValleyDeck& d = decks[std::size_t(k)];
+    const float dx = d.b.x - d.a.x, dy = d.b.y - d.a.y, L2 = dx * dx + dy * dy;
+    float t = L2 > 1e-6f ? ((x - d.a.x) * dx + (y - d.a.y) * dy) / L2 : 0.0f;
+    t = t < 0 ? 0 : (t > 1 ? 1 : t);
+    return d.z0 + (d.z1 - d.z0) * t + d.arch * 4.0f * t * (1.0f - t);
+}
+
 float Valley::groundAt(float x, float y, float z) const {
     const int k = islandAt(x, y, z);
-    return k >= 0 ? islands[std::size_t(k)].at.z : heightAt(x, y);
+    if (k >= 0) return islands[std::size_t(k)].at.z;
+    const int d = deckAt(x, y, z);
+    const float land = heightAt(x, y);
+    return d >= 0 ? std::fmax(land, deckTop(d, x, y)) : land;
 }
 
 Vec3 Valley::normalAt(float x, float y) const {

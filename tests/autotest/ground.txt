@@ -1,0 +1,45 @@
+# The valley's triangle budget (<= 9,000 top-screen triangles in typical views, D90): arriving
+# at each place by travel with the dev overlay on; the shots' log lines carry the counts.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+light
+valley
+hour 11
+wait 5
+shot g01-den-door-day
+travel 1
+wait 4
+shot g02-market-day
+view 7 40 180 60 0 -150 0
+wait 3
+shot g03-lake-arena
+travel 4
+wait 4
+shot g04-vault-trail
+view 4 -40 -120 30 0 -40 10
+wait 3
+shot g05-vault-trail-from-below
+travel 10
+wait 4
+shot g06-orchard-leaves
+hour 21
+wait 4
+shot g07-orchard-night-fireflies
+travel 15
+wait 4
+shot g08-glade-night
+travel 14
+wait 4
+shot g09-caldera-night

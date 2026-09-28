@@ -93,10 +93,10 @@ void profileTraining(App& app, const Input& in, Dragon& d) {
     // Its level and how far to the next.
     const int level = trainer::levelOf(d);
     std::snprintf(line, sizeof(line), str::kLevel, level);
-    text(app, line, 12, 62, 0.72f, theme::kClutchGold, C2D_AlignLeft, 88, Face::Title);
+    text(app, line, 12, 62, 0.72f, theme::kClutchGold, C2D_AlignLeft, 100, Face::Title);
     u32 into = 0, span = 0;
     trainer::levelProgress(d, into, span);
-    const Rect bar{104, 70, 204, 8};
+    const Rect bar{118, 70, 190, 8};
     panel(bar, theme::kTrack);
     if (span == 0) {
         panel(bar, theme::kClutchGold);

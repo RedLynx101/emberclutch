@@ -175,7 +175,7 @@ void drawBottom(App& app, const Input& in) {
     }
     if (n > 0 && button(app, {8, 200, 112, 34}, app.storeProfile ? str::kProfileClose : str::kProfile, in)) {
         app.storeProfile = !app.storeProfile;
-        if (vault(app)) app.storeProfileTab = 1;  // an egg's page is its family
+        if (vault(app)) app.storeProfileTab = care::kTabFamily;  // an egg's page is its family
     }
     if (n > 0 && button(app, {124, 200, 100, 34}, str::kToTheDen, in)) {
         const int idx = list[app.storePick];

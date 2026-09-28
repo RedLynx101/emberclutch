@@ -388,7 +388,6 @@ inline constexpr const char* kLevel = "Level %d";
 inline constexpr const char* kXpToNext = "%lu / %lu to the next";
 inline constexpr const char* kXpTop = "The highest level!";
 inline constexpr const char* kStatNames[5] = {"Wing", "Wit", "Might", "Breath", "Stamina"};
-inline constexpr const char* kStatKindTrained = "kind %d  +%d trained";
 inline constexpr const char* kMoves = "Moves";
 inline constexpr const char* kNoMove = "-";
 inline constexpr const char* kNoMovesYet = "No moves learned yet: battles teach them.";
@@ -416,7 +415,6 @@ inline constexpr const char* kFullProfile = "Full profile";
 // The Journal's tracked goal
 inline constexpr const char* kTrack = "Track";
 inline constexpr const char* kTracking = "Tracking";
-inline constexpr const char* kTrackingLine = "Tracking: %s";
 inline constexpr const char* kNowTracking = "Now tracking: %s";
 inline constexpr const char* kTrackHint = "Tap a goal to track it: the map shows the way.";
 inline constexpr const char* kTrackPlaceHint = "Tap a place to track it on the map.";
@@ -428,21 +426,13 @@ inline constexpr const char* kGoalShowStep = "%s league: win its shows at the gl
 inline constexpr const char* kGoalHollowStep = "Deepest floor so far: %d";
 inline constexpr const char* kGoalHollowNew = "Wild dragons wait, floor after floor";
 inline constexpr const char* kGoalPlaceStep = "Head for %s";
-inline constexpr const char* kGoalSearch = "Somewhere in the circle on the map";
-inline constexpr const char* kGoalNowhere = "Nowhere on the map: time and care";
 // The Market's top screen
-inline constexpr const char* kStallFood = "Food";
-inline constexpr const char* kStallGoods = "Goods";
-inline constexpr const char* kStallTrade = "Trade";
-inline constexpr const char* kStallEgg = "Egg of the day";
-inline constexpr const char* kStallSoldOut = "Sold out";
 inline constexpr const char* kHoardCount = "%d trinkets in the hoard";
 inline constexpr const char* kStallFoodCap = "Fresh food for the pouch";
 inline constexpr const char* kPouchHolds = "%d in your pouch";
 inline constexpr const char* kTradeCap = "Maple buys trinkets for Gleam";
 inline constexpr const char* kEggRarityPrice = "%s  -  %lu Gleam";
 inline constexpr const char* kGoodsCap = "New things on the stall each day";
-inline constexpr const char* kGoodsPickHint = "Tap one below to see it here";
 // The Wanderings' top screen
 inline constexpr const char* kTrailSign = "Trails";
 inline constexpr const char* kReadyToGo = "%s is ready to go!";

@@ -50,6 +50,10 @@ key L
 key L
 wait 0.5
 shot m08-night-food
+overlay on
+wait 1
+shot m09-overlay
+overlay off
 skip 12
 open wander
 wait 2
@@ -58,7 +62,7 @@ tap 91 217
 wait 1.5
 shot w02-out
 wander 1800
-wait 1
+wait 2.5
 shot w03-pond
 wander 2400
 wait 1
@@ -69,4 +73,8 @@ shot w05-far
 tap 91 217
 wait 1.5
 shot w06-finds
+overlay on
+wait 1
+shot w07-overlay
+overlay off
 quit

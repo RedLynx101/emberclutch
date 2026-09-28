@@ -62,7 +62,7 @@ void stall(App& app, const paint::Light& l, int tab, bool on) {
     C2D_DrawRectSolid(x - 3, kStallY, 0, w + 6, 6, paint::lit(l, pal::kWoodLight));
     for (int k = 1; k < 3; ++k)  // the boards of its front
         C2D_DrawRectSolid(x, kStallY + 4 + k * 13, 0, w, 1.2f, paint::lit(l, pal::kWoodDark, 0.5f));
-    static const char* const kNames[4] = {str::kStallFood, str::kStallGoods, str::kStallTrade, str::kStallEgg};
+    static const char* const kNames[4] = {str::kTabFood, str::kTabGoods, str::kTabSell, str::kTabEgg};  // (as the pages below)
     const Rect plaque{x + 8, kStallY + 13, w - 16, 18};
     panel(plaque, on ? theme::kClutchGold : paint::lit(l, pal::kAwningCream));
     textCentered(app, kNames[tab], cx, plaque.y + plaque.h / 2, 0.42f, theme::kDenPlum, plaque.w - 6);

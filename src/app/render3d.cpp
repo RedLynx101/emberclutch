@@ -2591,10 +2591,14 @@ std::vector<u8> g_tileLod;  // each tile's level last drawn (the hysteresis in t
 
 // A tile's level by distance, kept until the distance is 8 m past the line either way (the camera
 // swinging round you moved tiles back and forth across it: the ground and its trees popped).
+float g_lodScale = 1.0f;   // the ground's detail distances, scaled (nearer while views run over budget)
+int g_lastValleyTris = 0;  // the last valley view's triangles
+
 int tileLod(const Valley& v, int tx, int ty, float d) {
     const int t = v.tiles();
     if (g_tileLod.size() != std::size_t(t) * t) g_tileLod.assign(std::size_t(t) * t, 0xFF);
     u8& last = g_tileLod[std::size_t(ty) * t + tx];
+    d /= g_lodScale;
     const int want = valleyLodFor(d);
     if (last != 0xFF && want != last) {
         const int nearer = valleyLodFor(d - 8.0f), further = valleyLodFor(d + 8.0f);
@@ -3584,6 +3588,16 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     ++g_valleyFrame;
     g_valleyStats = {};
     for (bool& set : g_otherHeadSet) set = false;  // (1.0 battles, workstream B)
+    // The ground's detail follows the budget: while a view runs over ~9,600 triangles (the Market, a
+    // battle there) its detail distances come nearer, a little a frame (to 72%), and go back out
+    // under 8,600 (the tiles' own band keeps them from flickering between levels).
+    if (g_lastValleyTris > 9600) g_lodScale = std::fmax(0.72f, g_lodScale - 0.01f);
+    else if (g_lastValleyTris < 8600) g_lodScale = std::fmin(1.0f, g_lodScale + 0.01f);
+    struct Count {
+        App& app;
+        int before;
+        ~Count() { g_lastValleyTris = static_cast<int>(app.stats.tris) - before; }
+    } count{app, static_cast<int>(app.stats.tris)};
     perf::Scope timed(perf::Room);
     C3D_Mtx projection, viewM, clip;
     const float focus = std::fmax(4.0f, view.focus > 0 ? view.focus : length(view.at - view.eye));  // (focus: the challenges)
@@ -3770,7 +3784,12 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         const float d = length(view.at - view.eye);
         partnerLod = d > 7.0f ? 1 : d < 5.0f ? 0 : partnerLod;
     }
-    if (view.dragon && pose(app, *view.dragon, view.actor, now, partnerLod, g_posed)) {
+    // (out of the frame, a show's close-up of the judges: not drawn; its posed size bounds it)
+    const auto partnerSeen = [&] {
+        const float r = (g_posed.cache ? g_posed.cache->radius : 3.0f) * g_posed.size + 0.5f;
+        return !outsideView(clip, view.at - Vec3{r, r, 0.5f}, view.at + Vec3{r, r, 2.0f * r});
+    };
+    if (view.dragon && pose(app, *view.dragon, view.actor, now, partnerLod, g_posed) && partnerSeen()) {
         bindDragons(projection);
         const float plain[3] = {1, 1, 1};
         lightDragon(dragonLight(dayBlend(now)), plain);
@@ -3899,8 +3918,8 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         autotest::log("valley split: sky %u ground %u places %u isles+shadow %u partner %u others %u people+stall %u glows %u water %u",
                       split[0], split[1], split[2], split[3], split[4], split[5], split[6], split[7], split[8]);
     if (autotest::shooting())
-        autotest::log("valley tris %u: ground %d (%d tiles, %d built) places %d, the rest %d; sky dragon %s (%.0f %.0f %.0f) eye (%.0f %.0f %.0f)",
-                      app.stats.tris, g_valleyStats.ground, g_valleyStats.tiles, g_valleyStats.built, g_valleyStats.places,
+        autotest::log("valley tris %u: ground %d (%d tiles, %d built, detail x%.2f) places %d, the rest %d; sky dragon %s (%.0f %.0f %.0f) eye (%.0f %.0f %.0f)",
+                      app.stats.tris, g_valleyStats.ground, g_valleyStats.tiles, g_valleyStats.built, g_lodScale, g_valleyStats.places,
                       static_cast<int>(app.stats.tris) - g_valleyStats.ground - g_valleyStats.places,
                       view.skyDragon ? "up" : "none", view.skyAt.x, view.skyAt.y, view.skyAt.z, view.eye.x, view.eye.y, view.eye.z);
 }

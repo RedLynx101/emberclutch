@@ -153,7 +153,7 @@ A2 holds, the old freeze was lab A sharing lab P's ID and the kit's banners can 
 py -3.12 tools/banner_graft.py names,geometry --out build/banner_labs/F   (G names,tail; H names,paint; I geometry,tail; J geometry,paint; K tail,paint)
 py -3.12 tools/banner_cgfx.py build/banner_labs/F/banner.gltf build/banner_labs/F/banner.cgfx --turn "body*:1,egg:1"   (and the rest)
 py -3.12 tools/banner_cgfx.py assets/banner3d/lab-a/banner.gltf build/banner_labs/L/banner.cgfx --turn "body*:1,egg:1"
-toolsanner_lab.ps1 -Variants "F=buildanner_labs\Fanner.cgfx;assetsudioanner.wav", ..., "A2=buildanner_labs\Lanner.cgfx;assetsudioanner.wav" -FirstId 0xEC161
+tools\banner_lab.ps1 -Variants "F=build\banner_labs\F\banner.cgfx;assets\audio\banner.wav", ..., "A2=build\banner_labs\L\banner.cgfx;assets\audio\banner.wav" -FirstId 0xEC161
 ```
 All seven CIAs (`build/lab/banner-lab-f.cia` ... `-a2.cia`) pass `check_3ds.py`.
 

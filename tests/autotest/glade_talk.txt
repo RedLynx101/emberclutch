@@ -18,7 +18,7 @@ wait 12
 pg grown
 pg give
 pg bond 400
-key X
+valley
 wait 4
 travel 15
 wait 5

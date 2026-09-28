@@ -19,7 +19,7 @@ pg give
 pg wear 2 11 16 24
 pg bond 600
 pg clean
-key X
+valley
 wait 4
 travel 15
 wait 5

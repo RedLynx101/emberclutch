@@ -12,6 +12,7 @@
 #include <cstring>
 
 #include "app/audio.hpp"
+#include "app/tips_ui.hpp"
 #include "app/autotest.hpp"
 #include "app/challenge_stage.hpp"
 #include "app/dialogue.hpp"
@@ -918,6 +919,7 @@ void drawChallengeBoards(App& app, const Valley& v, s64 now) {
 }
 
 void openChallenges(App& app, int place) {
+    showTip(app, tips::kTipChallenge);  // (a cup pays once a day; Energy)
     Set& s = stage::get();
     Scene& c = sc();
     s.valley = loadedValley();

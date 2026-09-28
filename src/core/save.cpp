@@ -384,6 +384,10 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
         w.u32v(static_cast<u32>(p.claims >> 32));
         w.u32v(p.tips);
         for (u16 c : p.counts) w.u16v(c);
+        w.s32v(p.coveDay);  // (the cove's day, after the rest)
+        w.u8v(p.coveFish);
+        w.u8v(p.coveShells);
+        w.u8v(p.coveRod);
         w.patchU16(sizeAt, static_cast<u16>(w.pos() - from));
     }
     w.patchU16(at, static_cast<u16>(w.pos() - start));
@@ -582,6 +586,12 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
             p.claims = lo | (hi << 32);
             p.tips = r.u32v();
             for (u16& c : p.counts) c = r.u16v();
+        }
+        if (has(kProgressCoveBytes)) {  // the cove's day (older progress blocks: none yet)
+            p.coveDay = r.s32v();
+            p.coveFish = r.u8v();
+            p.coveShells = r.u8v();
+            p.coveRod = r.u8v() ? 1 : 0;
         }
         r.seek(from + n);
     }

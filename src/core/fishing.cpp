@@ -31,6 +31,20 @@ CoveSpots coveSpots(const Valley& v) {
     };
     const float shore = shoreAt(0.0f);
     s.fishSpot = {0.0f, shore - 1.3f};
+    // The cove's own anchors (workstream A): the jetty's end to fish from (a deck: core/place_layout
+    // addPlaceDecks), Tam by his shack, the shells along the water's edge.
+    if (const PlaceAnchor spot = placeAnchor(kPlaceCove, "fish_spot")) {
+        s.fishSpot = {spot.at(0).x, spot.at(0).y};
+        s.castTo = {s.fishSpot.x + 0.4f, s.fishSpot.y + 9.0f};
+        s.partner = {s.fishSpot.x - 0.85f, s.fishSpot.y - 0.9f};  // at your side on the narrow jetty (in the camera's view)
+        const PlaceAnchor tam = placeAnchor(kPlaceCove, "fisher");
+        s.fisher = tam ? Vec2{tam.at(0).x, tam.at(0).y} : Vec2{-5.2f, shore - 3.4f};
+        s.fisherFacing = 0.55f;
+        const PlaceAnchor shells = placeAnchor(kPlaceCove, "shells");
+        for (int k = 0; k < kShellSpots; ++k)
+            s.shells[k] = k < shells.count ? Vec2{shells.at(k).x, shells.at(k).y} : Vec2{-18.0f + 8.0f * k, shore - 0.9f};
+        return s;
+    }
     // The bobber and your partner follow your spot (with the anchors: fish_spot at the jetty's
     // end, your partner beside you on its deck, the bobber out past it).
     s.castTo = {s.fishSpot.x + 0.6f, s.fishSpot.y + 10.8f};

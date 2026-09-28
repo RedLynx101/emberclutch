@@ -18,6 +18,7 @@
 #include <cstring>
 
 #include "app/audio.hpp"
+#include "app/tips_ui.hpp"
 #include "app/dialogue.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
@@ -42,88 +43,26 @@ float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : 
 Vec3 forwardOf(float heading) { return {std::sin(heading), -std::cos(heading), 0}; }
 Vec3 rightOf(float heading) { return {-std::cos(heading), -std::sin(heading), 0}; }  // (heading 0 faces -Y: its right is -X)
 
-// ---------------------------------------------------------------------- the day, on the SD card
-// The day's catch (the stock), the shells picked and Tam's rod. The save has no room for them
-// (1.0's progress block is spoken for), so until the lead gives the cove a few bits there they're
-// kept in a small file of their own beside the ghosts, written on a thread (an SD write can
-// stall): they renew each day and don't come back by restarting the game.
+// ---------------------------------------------------------------------- the day
+// The day's catch (the stock), the shells picked and Tam's rod, in the save's progress block
+// (core/trainer Progress::cove*): they renew each day and don't come back by restarting.
 struct Day {
-    s32 day = -1000000;
-    u8 fish = 0;     // catches landed today
-    u8 shells = 0;   // the beach's spots picked today, a bit each
-    u8 rod = 0;      // Tam has lent you his rod (for good)
-    u32 stamp = 0;   // whose game it is (a new game, after deleting the save, starts afresh)
+    s32& day;
+    u8& fish;    // catches landed today
+    u8& shells;  // the beach's spots picked today, a bit each
+    u8& rod;     // Tam has lent you his rod (for good)
 };
-Day g_day;
-bool g_dayLoaded = false;
-u8 g_dayBytes[16];
-volatile bool g_dayBusy = false;
-constexpr const char* kDayPath = "sdmc:/3ds/emberclutch/cove.bin";
-constexpr u8 kDayMagic[4] = {'E', 'C', 'V', '1'};
 
-void writeDay(void*) {
-    mkdir("sdmc:/3ds", 0777);
-    mkdir("sdmc:/3ds/emberclutch", 0777);
-    if (FILE* f = std::fopen(kDayPath, "wb")) {
-        std::fwrite(g_dayBytes, 1, sizeof(g_dayBytes), f);
-        std::fclose(f);
-    }
-    g_dayBusy = false;
-}
-
-void saveDay() {
-    if (g_dayBusy) return;
-    std::memcpy(g_dayBytes, kDayMagic, 4);
-    const u32 d = static_cast<u32>(g_day.day);
-    for (int k = 0; k < 4; ++k) g_dayBytes[4 + k] = static_cast<u8>(d >> (8 * k));
-    g_dayBytes[8] = g_day.fish;
-    g_dayBytes[9] = g_day.shells;
-    g_dayBytes[10] = g_day.rod;
-    g_dayBytes[11] = 0;
-    for (int k = 0; k < 4; ++k) g_dayBytes[12 + k] = static_cast<u8>(g_day.stamp >> (8 * k));
-    g_dayBusy = true;
-    s32 prio = 0x30;
-    svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
-    if (!threadCreate(writeDay, nullptr, 8 * 1024, prio + 1, -2, true)) writeDay(nullptr);
-}
-
-void loadDay() {
-    if (g_dayLoaded) return;
-    g_dayLoaded = true;
-    FILE* f = std::fopen(kDayPath, "rb");
-    if (!f) return;
-    u8 b[16] = {};
-    const std::size_t n = std::fread(b, 1, sizeof(b), f);
-    std::fclose(f);
-    if (n < 16 || std::memcmp(b, kDayMagic, 4) != 0) return;
-    g_day.day = static_cast<s32>(b[4] | (b[5] << 8) | (b[6] << 16) | (static_cast<u32>(b[7]) << 24));
-    g_day.fish = b[8];
-    g_day.shells = b[9];
-    g_day.rod = b[10];
-    g_day.stamp = b[12] | (b[13] << 8) | (b[14] << 16) | (static_cast<u32>(b[15]) << 24);
-}
-
-// Whose game: the first dragon's id and when its egg was laid (a new game's differ).
-u32 stampOf(const SaveData& g) {
-    return g.dragonCount ? g.dragons[0].id * 2654435761u ^ static_cast<u32>(g.dragons[0].laidAt) : 0u;
-}
-
-// Today's: on a new day the stock renews and new shells wash up (the rod stays lent); another
-// game's file starts afresh.
-Day& today(const App& app) {
-    loadDay();
-    const u32 stamp = stampOf(app.game);
-    if (g_day.stamp != stamp) {
-        g_day = Day{};
-        g_day.stamp = stamp;
-    }
+// Today's: on a new day the stock renews and new shells wash up (the rod stays lent).
+Day today(const App& app) {
+    Progress& p = const_cast<App&>(app).game.progress;  // (the day's bookkeeping, even from a const look)
     const s32 d = dayIndex(nowLocal(app));
-    if (g_day.day != d) {
-        g_day.day = d;
-        g_day.fish = 0;
-        g_day.shells = 0;
+    if (p.coveDay != d) {
+        p.coveDay = d;
+        p.coveFish = 0;
+        p.coveShells = 0;
     }
-    return g_day;
+    return {p.coveDay, p.coveFish, p.coveShells, p.coveRod};
 }
 
 bool hasRod(const App& app) { return today(app).rod || app.game.progress.counts[kCountFish] > 0; }
@@ -152,7 +91,10 @@ const Spots& spots(const Valley& v) {
     s.ok = true;
     s.local = fishing::coveSpots(v);
     const fishing::CoveSpots& L = s.local;
-    auto at = [&](Vec2 local, float up = 0) { return placeToWorld3(v, *p, {local.x, local.y, up}); };
+    auto at = [&](Vec2 local, float up = 0) {  // on the ground there, or on the jetty's deck
+        const Vec2 w = placeToWorld(*p, local);
+        return Vec3{w.x, w.y, v.groundAt(w.x, w.y, p->at.z + 2.0f) + up};
+    };
     s.fish = at(L.fishSpot);
     s.partner = at(L.partner);
     s.fisher = at(L.fisher);
@@ -240,6 +182,7 @@ int partnerIndex(const App& app) {
 }
 
 void startFishing(App& app) {
+    showTip(app, tips::kTipFishing);
     State& f = st();
     f.step = Step::Ready;
     f.t = 0;
@@ -271,9 +214,8 @@ void cast(App& app, State& f, vext::Stage& stage) {
 // Landed: into the pouch (or its worth in Gleam), counted, a nibble for your partner.
 void land(App& app, State& f) {
     const fishing::CatchInfo& info = fishing::catchInfo(f.on);
-    Day& d = today(app);
+    Day d = today(app);
     if (d.fish < 255) ++d.fish;
-    saveDay();
     std::snprintf(f.landedLine, sizeof(f.landedLine), str::kLandedCatch, info.name);
     f.landedLine2[0] = 0;
     if (info.food != Food::Count) {
@@ -319,12 +261,12 @@ void lose(State& f, const char* why, audio::Sfx sound) {
 
 // Tam's words: the first time he lends you his rod; after that a tip, and how the fish are today.
 void talkToFisher(App& app) {
-    Day& d = today(app);
+    Day d = today(app);
     Talk t;
     if (!hasRod(app)) {
         for (const char* line : str::kFisherHello) t.lines[t.count++] = line;
         d.rod = 1;
-        saveDay();
+        saveNow(app);
     } else {
         static char countLine[64];
         const int caught = app.game.progress.counts[kCountFish];
@@ -348,11 +290,10 @@ void talkToFisher(App& app) {
 }
 
 void pickShell(App& app, int k) {
-    Day& d = today(app);
+    Day d = today(app);
     const u8 bit = static_cast<u8>(1u << k);
     if (!(fishing::shellsToday(d.day) & bit) || (d.shells & bit)) return;
     d.shells = static_cast<u8>(d.shells | bit);
-    saveDay();
     const u32 worth = fishing::shellGleam(d.day, k);
     app.game.gleam += worth;
     trainer::count(app.game, kCountShells);
@@ -419,7 +360,7 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
         f.reach = 2.2f;
     }
     // The day's shells not yet picked up (drawn by drawCoveThings).
-    const Day& d = today(app);
+    const Day d = today(app);
     const u8 lying = static_cast<u8>(fishing::shellsToday(d.day) & ~d.shells);
     for (int k = 0; k < fishing::kShellSpots && n < cap; ++k) {
         if (!(lying & (1u << k))) continue;
@@ -601,11 +542,11 @@ void update(App& app, const Input& in, vext::Stage& stage) {
 
 void drawCoveThings(App& app, const Valley& v, s64 now) {
     const Spots& s = spots(v);
-    if (!s.ok || !r3d::ready() || !g_dayLoaded) return;  // (the day's file is read once you're near: folk())
+    if (!s.ok || !r3d::ready()) return;
     r3d::ChallengeProp props[fishing::kShellSpots + 2];
     int n = 0;
     // The day's shells on the wet sand (near enough to see).
-    const Day& d = today(app);
+    const Day d = today(app);
     const u8 lying = static_cast<u8>(fishing::shellsToday(d.day) & ~d.shells);
     for (int k = 0; k < fishing::kShellSpots; ++k) {
         if (!(lying & (1u << k))) continue;
@@ -838,7 +779,7 @@ void autotest(App& app, int what) {
             startFishing(app);
         }
     } else if (what == 2) {
-        const Day& d = today(app);
+        const Day d = today(app);
         const u8 lying = static_cast<u8>(fishing::shellsToday(d.day) & ~d.shells);
         for (int k = 0; k < fishing::kShellSpots; ++k)
             if (lying & (1u << k)) {

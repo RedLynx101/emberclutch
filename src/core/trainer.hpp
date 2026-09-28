@@ -51,10 +51,15 @@ struct Progress {
     u64 claims = 0;
     u32 tips = 0;                          // the tutorial's tips shown, a bit each
     u16 counts[kRecordCounts] = {};        // RecordCount
+    // Driftwood Cove's day (app/cove): the day it's for, the catches landed (the stock), the
+    // beach's shells picked (a bit each), Tam's rod lent (for good).
+    s32 coveDay = -1000000;
+    u8 coveFish = 0, coveShells = 0, coveRod = 0;
 };
 
 // The progress block's bytes in the save (after its u16 size).
 constexpr int kProgressBytes = kAccessoryBytes + 4 + 2 + 1 + kLeagues + 1 + kLeagues + 1 + 8 + 4 + 8 + 4 + 2 * kRecordCounts;
+constexpr int kProgressCoveBytes = 4 + 3;  // (after them: the cove's day, read if there)
 
 namespace trainer {
 

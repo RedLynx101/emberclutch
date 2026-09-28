@@ -477,6 +477,7 @@ void update(App& app, Set& s, const Input& in) {
     }
     // The wind rushing by, louder the faster you go (a burst or a dive roars); the wings in a glide.
     audio::setBed(audio::Bed::WindHigh, clampf((r.flight.speed - 6.0f) / 20.0f, 0.12f, 1.0f));
+    audio::setBed(audio::Bed::Rush, clampf((r.flight.speed - 16.0f) / 14.0f, 0.0f, 1.0f));  // the rush of a burst (sounds)
     if (r.flight.sinceFlap > 0.8f) audio::setBed(audio::Bed::WingFlutter, clampf(r.flight.speed / 18.0f, 0.3f, 1.0f));
 }
 

@@ -31,6 +31,7 @@ const Valley& coveValley() {
         while ((n = std::fread(buf, 1, sizeof(buf), f)) > 0) data.insert(data.end(), buf, buf + n);
         std::fclose(f);
         loadValley(data.data(), data.size(), v);
+        addPlaceDecks(v);  // (the jetty, as the game)
     }
     return v;
 }
@@ -46,13 +47,13 @@ TEST(fishing_cove_spots) {
     CHECK(p != nullptr);
     if (!p) return;
     const CoveSpots s = coveSpots(v);
-    auto above = [&](Vec2 local) {
+    auto above = [&](Vec2 local) {  // what you'd stand on there (the jetty's deck, the sand) over the water
         const Vec2 w = placeToWorld(*p, local);
-        return v.heightAt(w.x, w.y) - v.water;
+        return v.groundAt(w.x, w.y, v.water + 3.0f) - v.water;
     };
     std::printf("  the cove: you at (%.1f %.1f) %.2f m above the water, the bobber at (%.1f %.1f) %.2f m, the fisher at (%.1f %.1f)\n",
                 s.fishSpot.x, s.fishSpot.y, above(s.fishSpot), s.castTo.x, s.castTo.y, above(s.castTo), s.fisher.x, s.fisher.y);
-    CHECK(above(s.fishSpot) > 0.0f && above(s.fishSpot) < 1.2f);  // dry sand, at the water's edge
+    CHECK(above(s.fishSpot) > 0.0f && above(s.fishSpot) < 1.5f);  // the jetty's end, just over the water
     CHECK(above(s.castTo) < -0.3f);                                // out on the water
     CHECK(above(s.fisher) > 0.0f && above(s.partner) > 0.0f);
     CHECK(s.castTo.y > s.fishSpot.y + 5);

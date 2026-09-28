@@ -790,7 +790,7 @@ TEST(save_round_trip) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots + kBreedCount + 6 + (1 + kDexKindSlots + 8 + 1) + (1 + kWorldBytes) + (2 + kProgressBytes) + 2 + 5 + 2 + 2 +
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots + kBreedCount + 6 + (1 + kDexKindSlots + 8 + 1) + (1 + kWorldBytes) + (2 + kProgressBytes + kProgressCoveBytes) + 2 + 5 + 2 + 2 +
                    5 * (132 + 16 + 9 + 1 + 12 + 2 + 2 + 1 + kRegionCount + 12 + 37));
     static SaveData out;
     SaveHeaderInfo info;

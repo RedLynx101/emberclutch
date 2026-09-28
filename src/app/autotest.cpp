@@ -33,7 +33,7 @@ enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Nam
                      Sound,  // (sounds, 1.0: bed, sfx, sfxcheck)
                      Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard, Wear,  // (U: Open .. Wear)
                      Energy, Cove,  // (workstream C)
-                     Pageant };  // the pageant's own commands (app/glade.hpp pageantCommand)
+                     Pageant, Ground };  // the pageant's own commands (app/glade.hpp pageantCommand)
 
 struct Cmd {
     Op op = Op::Wait;
@@ -125,7 +125,8 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "challenge") { c.op = Op::Challenge; nums(2); }
     else if (w == "autoplay") { c.op = Op::Autoplay; c.a[0] = std::strcmp(rest, "on") == 0; }
     else if (w == "cups") { c.op = Op::Cups; nums(3); }
-    else if (w == "valley") { c.op = Op::Valley; }  // out into the valley at the den's door (X did it before run 19)
+    else if (w == "valley") { c.op = Op::Valley; }
+    else if (w == "ground") { c.op = Op::Ground; nums(1); }  // the look lab: ground 0 smooth, 1 faceted, 2 faceted + texture  // out into the valley at the den's door (X did it before run 19)
     else if (w == "energy") { c.op = Op::Energy; nums(1); }  // energy <0..100>: every dragon's (the challenges, workstream C)
     else if (w == "cove") { c.op = Op::Cove; nums(1); }      // cove <0 talk to Tam, 1 fish, 2 a shell> (workstream C)
     else if (w == "quit") { c.op = Op::Quit; }
@@ -264,6 +265,7 @@ Input next(App& app) {
             case Op::Travel: app.autoTravel = static_cast<int>(c.a[0]); done = true; break;
             case Op::Creator: openCreator(app, app.scene); done = true; break;
             case Op::Valley: openMap(app); done = true; break;
+            case Op::Ground: r3d::setGroundLook(static_cast<int>(c.a[0])); done = true; break;
             case Op::Goto:
                 app.autoGoto[0] = c.a[0];
                 app.autoGoto[1] = c.a[1];

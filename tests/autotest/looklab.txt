@@ -1,0 +1,79 @@
+# The valley's triangle budget (<= 9,000 top-screen triangles in typical views, D90): arriving
+# at each place by travel with the dev overlay on; the shots' log lines carry the counts.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+light
+valley
+hour 11
+ground 0
+wait 4
+shot l01-den-door
+view 1 -60 -160 70 20 120 10
+wait 4
+shot l02-village-to-heights
+view 7 40 180 60 0 -150 0
+wait 4
+shot l03-lake-and-arena
+view 11 40 50 22 -10 0 5
+wait 4
+shot l04-mill-and-river
+view 3 -40 -60 6 60 80 20
+wait 4
+shot l05-meadow-low
+travel 10
+wait 4
+shot l06-orchard-walk
+valley
+wait 4
+ground 1
+wait 4
+shot l11-den-door
+view 1 -60 -160 70 20 120 10
+wait 4
+shot l12-village-to-heights
+view 7 40 180 60 0 -150 0
+wait 4
+shot l13-lake-and-arena
+view 11 40 50 22 -10 0 5
+wait 4
+shot l14-mill-and-river
+view 3 -40 -60 6 60 80 20
+wait 4
+shot l15-meadow-low
+travel 10
+wait 4
+shot l16-orchard-walk
+valley
+wait 4
+ground 2
+wait 4
+shot l21-den-door
+view 1 -60 -160 70 20 120 10
+wait 4
+shot l22-village-to-heights
+view 7 40 180 60 0 -150 0
+wait 4
+shot l23-lake-and-arena
+view 11 40 50 22 -10 0 5
+wait 4
+shot l24-mill-and-river
+view 3 -40 -60 6 60 80 20
+wait 4
+shot l25-meadow-low
+travel 10
+wait 4
+shot l26-orchard-walk
+valley
+wait 4

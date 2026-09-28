@@ -115,5 +115,9 @@ void buildValleyHorizon(const Valley& v, ValleyMesh& out);
 void buildValleyWater(const Valley& v, ValleyMesh& out, Vec2 centre, float radius);
 // The detail level for a tile this far from the camera (metres).
 int valleyLodFor(float distance);
+// The look lab (2026-09-28): how the ground is built. 0 smooth (a vertex a sample, shared), 1
+// faceted low-poly (a coarser grid, each triangle its own colour lit by its own face).
+void setValleyGroundStyle(int style);
+int valleyGroundStyle();
 
 }  // namespace ec

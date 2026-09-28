@@ -251,6 +251,10 @@ struct ValleyView {
 };
 void drawValley(App& app, const ValleyView& view, s64 now);
 void releaseValley();  // leaving the valley: its GPU memory back
+// The look lab (2026-09-28): 0 smooth ground with the painted texture (as it is), 1 faceted
+// low-poly without, 2 faceted with the texture. The tiles rebuild.
+void setGroundLook(int look);
+int groundLook();
 struct ValleyStats {
     int tiles = 0, built = 0, ground = 0;  // drawn and built last frame; the ground's triangles
     int places = 0;                        // the places' triangles drawn

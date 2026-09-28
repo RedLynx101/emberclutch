@@ -253,6 +253,7 @@ shaderProgram_s g_staticProgram;
 int g_locSProjection = -1, g_locSModelView = -1, g_locSBlend = -1, g_locSTint = -1, g_locSDetailU = -1, g_locSDetailV = -1;
 C3D_Tex g_groundTex;  // the valley ground's detail (run 19), made at start, mipmapped (no shimmer far off)
 bool g_groundTexOk = false;
+int g_groundLook = 0;  // the look lab: 0 smooth + texture, 1 faceted, 2 faceted + texture
 C3D_AttrInfo g_staticAttr;
 C3D_LightEnv g_lightEnv;
 C3D_Light g_light;
@@ -2682,7 +2683,7 @@ void bindValleyStatic(const C3D_Mtx& projection, const C3D_Mtx& view, Rgb tint) 
 void groundDetail(bool on) {
     C3D_TexEnv* env = C3D_GetTexEnv(0);
     C3D_TexEnvInit(env);
-    if (!on || !g_groundTexOk) {
+    if (!on || !g_groundTexOk || g_groundLook == 1) {
         C3D_TexEnvSrc(env, C3D_Both, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
         C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
         C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, 0, 0, 0, 0);
@@ -3476,6 +3477,19 @@ void releaseValley() {
 
 ValleyStats valleyStats() { return g_valleyStats; }
 
+void setGroundLook(int look) {
+    look = look < 0 ? 0 : (look > 2 ? 2 : look);
+    if (look == g_groundLook) return;
+    g_groundLook = look;
+    setValleyGroundStyle(look == 0 ? 0 : 1);
+    for (ValleyGpu& g : g_vtiles) g.release();  // (rebuilt in the new style as they're next drawn)
+    g_tileLod.clear();
+    g_vhorizon.release();  // (the mountains' ring too)
+    g_horizonBase.clear();
+}
+
+int groundLook() { return g_groundLook; }
+
 void drawPersonShowcase(App& app, const PersonView& p, s64 now) {
     if (!g_ready) return;
     C3D_Mtx projection, view;
@@ -3509,9 +3523,12 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     g_denView = viewM;  // project() works in the valley too
     g_denViewSet = true;
     Mtx_Multiply(&clip, &projection, &viewM);
-    if (!g_fogOk) {  // fog: clear to ~200 m, a third by the ground's edge (340 m): the far haze takes over there
-        FogLut_Exp(&g_fogLut, 1.0f / 450.0f, 4.0f, kValleyNear, kValleyFar);  // clear to ~150 m, gone by the edge
+    static int fogFor = -1;
+    if (!g_fogOk || fogFor != g_groundLook) {  // fog: clear to ~200 m, a third by the ground's edge (340 m): the far haze takes over there
+        // (the faceted looks: lighter, so the facets and far woods read crisply)
+        FogLut_Exp(&g_fogLut, g_groundLook == 0 ? 1.0f / 450.0f : 1.0f / 700.0f, 4.0f, kValleyNear, kValleyFar);
         g_fogOk = true;
+        fogFor = g_groundLook;
     }
     C2D_Flush();
     C3D_FogGasMode(GPU_FOG, GPU_PLAIN_DENSITY, false);
@@ -3536,8 +3553,9 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
                               static_cast<u8>(view.fog.b * 0.62f + 92 * 0.38f * view.tint.b / 255.0f)};
             const u8 fog[3] = {view.fog.r, view.fog.g, view.fog.b};
             for (std::size_t i = 0; i < bytes; i += 4) {
-                const int level = (i / 4) % 3;  // the foot lost in the haze, the shoulder half, the top clearest
-                const float k = level == 0 ? 1.0f : level == 1 ? 0.62f : 0.42f;
+                const int level = g_horizonBase[i + 3] < 3 ? g_horizonBase[i + 3] : static_cast<int>((i / 4) % 3);  // foot, shoulder, top
+                const float k = g_groundLook == 0 ? (level == 0 ? 1.0f : level == 1 ? 0.62f : 0.42f)
+                                                  : (level == 0 ? 0.85f : level == 1 ? 0.38f : 0.2f);  // (faceted: the mountains keep their colour)
                 const u8 to[3] = {level == 0 ? farHaze.r : fog[0], level == 0 ? farHaze.g : fog[1], level == 0 ? farHaze.b : fog[2]};
                 for (int c = 0; c < 3; ++c)
                     haze[i + c] = static_cast<u8>(g_horizonBase[i + c] + (to[c] - g_horizonBase[i + c]) * k);

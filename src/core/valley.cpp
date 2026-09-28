@@ -374,12 +374,19 @@ int valleyLodFor(float distance) {
     return distance < kLodNear ? 0 : distance < kLodMid ? 1 : distance < kLodFar ? 2 : 3;
 }
 
+int g_groundStyle = 0;
+void setValleyGroundStyle(int style) { g_groundStyle = style == 1 ? 1 : 0; }
+int valleyGroundStyle() { return g_groundStyle; }
+
 void buildValleyTile(const Valley& v, int tx, int ty, int lod, ValleyMesh& out) {
     out.clear();
     const int t = v.tiles();
     if (tx < 0 || ty < 0 || tx >= t || ty >= t) return;
     lod = lod < 0 ? 0 : (lod >= kValleyLods ? kValleyLods - 1 : lod);
-    const int step = 1 << (lod < 2 ? lod : 2), quads = kTileQuads / step, side = quads + 1;
+    const bool faceted = g_groundStyle == 1;
+    // (faceted: twice as coarse, 8 m quads near, then 16 m and 32 m: the facets are the look)
+    const int step = faceted ? (lod == 0 ? 2 : lod == 1 ? 4 : 8) : 1 << (lod < 2 ? lod : 2);
+    const int quads = kTileQuads / step, side = quads + 1;
     const int i0 = tx * kTileQuads, j0 = ty * kTileQuads;
     auto sample = [&](int a, int b) {  // grid point (a, b) of this tile at this level
         const int i = i0 + a * step, j = j0 + b * step;
@@ -391,13 +398,44 @@ void buildValleyTile(const Valley& v, int tx, int ty, int lod, ValleyMesh& out) 
             addVertex(out, {v.x0 + (i0 + a * step) * v.spacing, v.y0 + (j0 + b * step) * v.spacing, v.h[s]},
                       v.rgb[s * 3], v.rgb[s * 3 + 1], v.rgb[s * 3 + 2]);
         }
-    for (int b = 0; b < quads; ++b)
-        for (int a = 0; a < quads; ++a) {
-            const u16 p = static_cast<u16>(b * side + a), q = static_cast<u16>(p + 1), r = static_cast<u16>(p + side),
-                      s = static_cast<u16>(r + 1);
-            tri(out, p, q, s);  // counter-clockwise seen from above
-            tri(out, p, s, r);
-        }
+    if (faceted) {  // each triangle its own three vertices, one colour: the grid's, lit by its own face
+        const Vec3 sun = normalize(Vec3{-0.45f, -0.5f, 0.74f});
+        auto face = [&](u16 i0, u16 i1, u16 i2) {
+            const Vec3 a = out.pos[i0], b = out.pos[i1], c = out.pos[i2];
+            const Vec3 n = normalize(cross(b - a, c - a));
+            const Vec3 mid = (a + b + c) * (1.0f / 3.0f);
+            const float smooth = 0.62f + 0.55f * std::fmax(0.0f, dot(v.normalAt(mid.x, mid.y), sun));
+            const float own = 0.62f + 0.55f * std::fmax(0.0f, dot(n, sun));
+            const float k = own / smooth;  // (the baked light is the smooth ground's: this face's instead)
+            u8 col[3];
+            for (int ch = 0; ch < 3; ++ch) {
+                const float avg = (out.color[i0 * 4 + ch] + out.color[i1 * 4 + ch] + out.color[i2 * 4 + ch]) / 3.0f;
+                col[ch] = static_cast<u8>(clampf(avg * k, 0, 255));
+            }
+            tri(out, addVertex(out, a, col[0], col[1], col[2]), addVertex(out, b, col[0], col[1], col[2]),
+                addVertex(out, c, col[0], col[1], col[2]));
+        };
+        for (int b = 0; b < quads; ++b)
+            for (int a = 0; a < quads; ++a) {
+                const u16 p = static_cast<u16>(b * side + a), q = static_cast<u16>(p + 1), r = static_cast<u16>(p + side),
+                          s = static_cast<u16>(r + 1);
+                if ((a + b) % 2) {  // (the diagonal alternating: a woven, less stripy facet pattern)
+                    face(p, q, r);
+                    face(q, s, r);
+                } else {
+                    face(p, q, s);
+                    face(p, s, r);
+                }
+            }
+    } else {
+        for (int b = 0; b < quads; ++b)
+            for (int a = 0; a < quads; ++a) {
+                const u16 p = static_cast<u16>(b * side + a), q = static_cast<u16>(p + 1), r = static_cast<u16>(p + side),
+                          s = static_cast<u16>(r + 1);
+                tri(out, p, q, s);  // counter-clockwise seen from above
+                tri(out, p, s, r);
+            }
+    }
     // Props, nearer levels only (simpler further off; the little ones only near).
     if (lod < kTreeLods)
         for (int k : v.tileTrees[std::size_t(ty) * t + tx]) prop(out, v, v.trees[std::size_t(k)], lod);
@@ -503,18 +541,56 @@ void buildValleyHorizon(const Valley& v, ValleyMesh& out) {
             if (h > peak[k].z) peak[k] = {x, y, h};
         }
     }
+    // A skyline of peaks and passes (every other ray a little lower, a steady wobble on top), the
+    // shoulder at a varying height so the slopes don't read as one band.
+    for (int k = 0; k < kRays; ++k) {
+        const float wob = 0.5f + 0.5f * std::sin(k * 1.7f + 0.6f) * std::cos(k * 0.45f);
+        const float jag = (k % 2 ? 0.86f : 1.0f) * (0.9f + 0.18f * wob);
+        peak[k].z = v.water + (peak[k].z - v.water) * jag;
+    }
+    auto shade = [&](float t, float bright) {  // lavender rock toward snow as t goes to 1
+        const float r = 150 + (240 - 150) * t, g = 136 + (244 - 136) * t, b = 164 + (252 - 164) * t;
+        return std::array<u8, 3>{static_cast<u8>(clampf(r * bright, 0, 255)), static_cast<u8>(clampf(g * bright, 0, 255)),
+                                 static_cast<u8>(clampf(b * bright, 0, 255))};
+    };
+    auto shoulderOf = [&](int k) {
+        const Vec3 p = peak[k];
+        return Vec3{p.x, p.y, v.water + (p.z - v.water) * (0.55f + 0.1f * std::sin(k * 2.3f))};
+    };
+    if (g_groundStyle == 1) {  // faceted: each face its own colour, lit by its own slope; the snow on the high faces
+        const Vec3 sun = normalize(Vec3{-0.45f, -0.5f, 0.74f});
+        const float half2 = v.size() * 0.5f;
+        const Vec3 centre{v.x0 + half2, v.y0 + half2, v.water};
+        auto face = [&](Vec3 a, u8 la, Vec3 b, u8 lb, Vec3 c, u8 lc) {
+            Vec3 n = normalize(cross(b - a, c - a));
+            if (dot(n, centre - a) < 0) n = n * -1.0f;  // (facing the valley)
+            const float lit = 0.72f + 0.45f * std::fmax(0.0f, dot(n, sun));
+            const float high = std::fmax(a.z, std::fmax(b.z, c.z));
+            const float snow = high > 200.0f && (la + lb + lc) >= 3 ? std::fmin(1.0f, (high - 200.0f) / 60.0f) : 0.0f;
+            const auto col = shade(snow * 0.9f, lit);
+            tri(out, addVertex(out, a, col[0], col[1], col[2], la), addVertex(out, b, col[0], col[1], col[2], lb),
+                addVertex(out, c, col[0], col[1], col[2], lc));
+        };
+        for (int k = 0; k < kRays; ++k) {
+            const int e = (k + 1) % kRays;
+            const Vec3 fa{peak[k].x, peak[k].y, v.water - 2.0f}, fb{peak[e].x, peak[e].y, v.water - 2.0f};
+            const Vec3 sa = shoulderOf(k), sb = shoulderOf(e);
+            face(fa, 0, fb, 0, sb, 1);
+            face(fa, 0, sb, 1, sa, 1);
+            face(sa, 1, sb, 1, peak[e], 2);
+            face(sa, 1, peak[e], 2, peak[k], 2);
+        }
+        return;
+    }
     for (int k = 0; k < kRays; ++k) {  // three to a ray: the foot, the shoulder, the top
         const Vec3 p = peak[k];
         const float snow = std::fmin(1.0f, std::fmax(0.0f, (p.z - 190.0f) / 90.0f));
-        auto shade = [&](float t, float bright) {
-            const float r = 150 + (240 - 150) * t, g = 136 + (244 - 136) * t, b = 164 + (252 - 164) * t;
-            return std::array<u8, 3>{static_cast<u8>(r * bright), static_cast<u8>(g * bright), static_cast<u8>(b * bright)};
-        };
         const float lit = 0.86f + 0.14f * std::cos(k * (2 * kPi / kRays) - 2.4f);  // the sun's side a touch brighter
         const auto foot = shade(0.0f, lit * 0.9f), shoulder = shade(snow * 0.4f, lit), top = shade(snow, lit * 1.04f);
-        addVertex(out, {p.x, p.y, v.water - 2.0f}, foot[0], foot[1], foot[2]);
-        addVertex(out, {p.x, p.y, v.water + (p.z - v.water) * 0.62f}, shoulder[0], shoulder[1], shoulder[2]);
-        addVertex(out, {p.x, p.y, p.z}, top[0], top[1], top[2]);
+        const Vec3 sh = shoulderOf(k);
+        addVertex(out, {p.x, p.y, v.water - 2.0f}, foot[0], foot[1], foot[2], 0);
+        addVertex(out, sh, shoulder[0], shoulder[1], shoulder[2], 1);
+        addVertex(out, {p.x, p.y, p.z}, top[0], top[1], top[2], 2);
     }
     for (int k = 0; k < kRays; ++k) {
         const u16 a = static_cast<u16>(k * 3), b = static_cast<u16>(((k + 1) % kRays) * 3);

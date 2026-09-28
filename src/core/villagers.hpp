@@ -46,6 +46,15 @@ struct DialogueState {
     float shown = 0;      // letters of the line shown so far
     float blipFor = 0;    // seconds to the next voiced letter
     char text[160] = {};  // the line, filled in
+    // Someone who isn't one of the villagers (1.0: a challenger, a keeper, a host): their name,
+    // title, voice and pitch, and a portrait from the people sheet (-1: their initial, drawn).
+    bool custom = false;
+    const char* name = "";
+    const char* title = "";
+    u8 voice = 0;
+    float pitch = 1.0f;
+    s8 portrait = -1;
+    Rgb tint{250, 226, 196};  // the initial's disc (a custom speaker without a portrait)
 };
 
 // A line with {D} (your partner's name) and {P} (yours) filled in.

@@ -8,6 +8,7 @@
 // (tap one to travel there), what A does here, and the buttons.
 #include <cmath>
 #include <cstdio>
+#include <utility>
 #include <vector>
 
 #include "app/audio.hpp"
@@ -17,6 +18,7 @@
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
+#include "app/valley_ext.hpp"
 #include "core/campaign.hpp"
 #include "core/clock.hpp"
 #include "core/daylight.hpp"
@@ -42,7 +44,7 @@ namespace {
 enum class Mode : u8 { OnFoot, Riding, FreeCam };
 
 // What A does where you stand (checked in this order; Board: the challenges' picker there).
-enum class Action : u8 { None, Talk, Shop, Enter, Light, Ride, Call, Board };
+enum class Action : u8 { None, Talk, Shop, Enter, Light, Ride, Call, Board, Folk };
 
 struct ValleyScene {
     Valley valley;
@@ -90,6 +92,19 @@ struct ValleyScene {
     };
     Figure youFig;
     Figure folk[kVillagers];
+    // 1.0's features (app/valley_ext): the people they stand about near you (gathered a few times
+    // a second), each with a figure kept by who it is; the stage lent to a feature with the valley.
+    vext::Folk extra[vext::kMaxFolk];
+    int extraFeature[vext::kMaxFolk] = {};
+    int extraCount = 0;
+    float extraCheck = 0;
+    struct ExtraFigure {
+        u16 key = 0xFFFF;  // feature * 256 + id
+        Figure fig;
+    };
+    ExtraFigure extraFig[vext::kMaxFolk];
+    int actionExtra = -1;
+    vext::Stage stage;
     // A dragon out on the Wanderings (D69): its place on the loop, its clip.
     DenActor wanderActor;
     ClipId wanderClip = ClipId::Count;
@@ -310,7 +325,10 @@ void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swi
     const int* clips = r3d::clipIndexFor(s.shown, form);
     ClipId want = ClipId::Idle;
     float natural = 0, fastest = 1.6f;
-    if (flying) {
+    const bool staged = vext::activeFeature(app) >= 0 && s.stage.palClip != ClipId::Count;  // a feature's clip
+    if (staged) {
+        want = s.stage.palClip;
+    } else if (flying) {
         want = diving ? ClipId::FlyDive : s.flight.sinceFlap < 0.8f ? ClipId::FlyFlap : ClipId::FlyGlide;
     } else if (swimming) {
         want = ClipId::Walk;
@@ -327,7 +345,7 @@ void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swi
         if (index >= 0) s.flyer.anim.play(index, 0.3f, want != ClipId::FlyDive && want != ClipId::FlyGlide);
         s.clip = want;
     }
-    s.flyer.anim.rate = natural > 0 ? clampf(speed / natural, 0.5f, fastest) : 1.0f;
+    s.flyer.anim.rate = staged ? s.stage.palClipRate : natural > 0 ? clampf(speed / natural, 0.5f, fastest) : 1.0f;
     u8 events[8];
     const int n = s.flyer.anim.update(*lib, app.dt, events, 8);
     for (int k = 0; k < n; ++k) {
@@ -408,6 +426,39 @@ void blinkFigure(App& app, ValleyScene::Figure& f) {
     f.blink = std::fmax(0.0f, f.blink - app.dt * 7.0f);
 }
 
+// A 1.0 feature's person's figure, kept by who they are (a free one taken for someone new).
+ValleyScene::Figure& extraFigure(ValleyScene& s, int k) {
+    const u16 key = static_cast<u16>(s.extraFeature[k] * 256 + s.extra[k].id);
+    int freeSlot = -1;
+    for (int i = 0; i < vext::kMaxFolk; ++i) {
+        if (s.extraFig[i].key == key) return s.extraFig[i].fig;
+        if (freeSlot < 0) {
+            bool used = false;
+            for (int j = 0; j < s.extraCount && !used; ++j)
+                used = s.extraFig[i].key == static_cast<u16>(s.extraFeature[j] * 256 + s.extra[j].id);
+            if (!used) freeSlot = i;
+        }
+    }
+    if (freeSlot < 0) freeSlot = 0;
+    s.extraFig[freeSlot].key = key;
+    s.extraFig[freeSlot].fig = ValleyScene::Figure{};
+    return s.extraFig[freeSlot].fig;
+}
+
+// The features' people near you, a few times a second.
+void gatherExtras(App& app, ValleyScene& s) {
+    if ((s.extraCheck -= app.dt) > 0) return;
+    s.extraCheck = 0.2f;
+    s.extraCount = 0;
+    for (int f = 0; f < vext::featureCount() && s.extraCount < vext::kMaxFolk; ++f) {
+        const vext::Feature& ft = vext::feature(f);
+        if (!ft.folk) continue;
+        const int n = ft.folk(app, s.valley, s.you.pos, 80.0f, s.extra + s.extraCount, vext::kMaxFolk - s.extraCount);
+        for (int k = 0; k < n; ++k) s.extraFeature[s.extraCount + k] = f;
+        s.extraCount += n;
+    }
+}
+
 // You and the villagers move with what's happening: you walk, jog, run, ride, stand and listen;
 // they idle at their places, turn to you as you come near, wave hello once a visit, talk and nod.
 void animatePeople(App& app, ValleyScene& s) {
@@ -419,6 +470,8 @@ void animatePeople(App& app, ValleyScene& s) {
     if (riding) {
         const float roll = s.flight.roll;
         playClip(me, roll > 0.3f ? "ride_lean_left" : roll < -0.3f ? "ride_lean_right" : "ride", 1.0f, 0.3f);
+    } else if (vext::activeFeature(app) >= 0 && s.stage.youClip) {
+        // (a feature's clip: played in update)
     } else if (s.you.speed < 0.25f || talking(app)) {
         playClip(me, "idle", 1.0f, 0.25f);
     } else if (s.you.speed < 1.3f) {
@@ -442,7 +495,7 @@ void animatePeople(App& app, ValleyScene& s) {
         const float want = d < 6.0f ? std::atan2(s.you.pos.x - at.x, -(s.you.pos.y - at.y)) : rest;
         float err = std::remainder(want - f.heading, 6.2831853f);
         f.heading += clampf(err, -3.0f * app.dt, 3.0f * app.dt);
-        const bool mine = listening && app.talk.who == who;
+        const bool mine = listening && !app.talk.custom && app.talk.who == who;
         if (mine) {
             playClip(f, "talk", 1.0f, 0.25f);
         } else if (playing(f, "talk")) {
@@ -455,6 +508,30 @@ void animatePeople(App& app, ValleyScene& s) {
             f.anim.time = (k * 0.7f);  // not all breathing together
         }
         if (d > 15.0f) f.waved = false;  // a new visit: another hello
+        f.anim.update(*lib, app.dt, events, 4);
+        blinkFigure(app, f);
+    }
+    // The features' people: idle where they stand, turning to you when you come near.
+    for (int k = 0; k < s.extraCount; ++k) {
+        vext::Folk& who = s.extra[k];
+        if (!who.shown) continue;
+        ValleyScene::Figure& f = extraFigure(s, k);
+        const Vec3 at = who.look.at;
+        const float d = std::hypot(s.you.pos.x - at.x, s.you.pos.y - at.y);
+        if (f.anim.clip < 0) {
+            f.heading = who.look.heading;
+            playClip(f, "idle", 1.0f, 0.0f);
+            f.anim.time = k * 0.37f;
+        }
+        const float want = d < 6.0f ? std::atan2(s.you.pos.x - at.x, -(s.you.pos.y - at.y)) : who.look.heading;
+        f.heading += clampf(std::remainder(want - f.heading, 6.2831853f), -3.0f * app.dt, 3.0f * app.dt);
+        if (!f.waved && d < 7.0f) {
+            f.waved = true;
+            playClip(f, "wave", 1.0f, 0.2f);
+        } else if ((playing(f, "wave") || playing(f, "nod")) && f.anim.finished(*lib)) {
+            playClip(f, "idle", 1.0f, 0.3f);
+        }
+        if (d > 15.0f) f.waved = false;
         f.anim.update(*lib, app.dt, events, 4);
         blinkFigure(app, f);
     }
@@ -500,6 +577,18 @@ void findAction(ValleyScene& s) {
         }
     }
     if (s.action == Action::Talk) return;
+    // The 1.0 features' people and spots (challengers, keepers, hosts, the jetty's end).
+    s.actionExtra = -1;
+    for (int k = 0; k < s.extraCount; ++k) {
+        const vext::Folk& who = s.extra[k];
+        const float d = std::hypot(at.x - who.look.at.x, at.y - who.look.at.y);
+        if (d < who.reach && d < best && facing(s.you, {who.look.at.x, who.look.at.y}, 70.0f)) {
+            best = d;
+            s.action = Action::Folk;
+            s.actionExtra = k;
+        }
+    }
+    if (s.action == Action::Folk) return;
     // The Market's stalls: the egg of the day's stand and the goods stall open their page.
     if (const ValleyPlaceInfo* m = s.valley.place(kPlaceMarket)) {
         const PlaceLayout& L = placeLayout(kPlaceMarket);
@@ -559,6 +648,33 @@ audio::Sfx breathSound(const Dragon& d) {
     return audio::Sfx::BreathLight;                              // Lumen, Stone, Shade
 }
 
+// The stage lent to a 1.0 feature: you and your partner as they are; what it sets comes back.
+void lendStage(App& app, ValleyScene& s) {
+    vext::Stage& g = s.stage;
+    g.valley = &s.valley;
+    g.riding = s.mode == Mode::Riding;
+    g.you = g.riding ? s.flight.pos : s.you.pos;
+    g.youHeading = g.riding ? s.flight.heading : s.you.heading;
+    g.pal = g.riding ? s.flight.pos : s.pal.pos;
+    g.palHeading = g.riding ? s.flight.heading : s.pal.heading;
+    g.partner = s.partner;
+    g.shown = s.partner >= 0 ? &s.shown : nullptr;
+    g.palClip = ClipId::Count;
+    g.palClipRate = 1.0f;
+    g.youClip = nullptr;
+    g.camSet = false;
+    (void)app;
+}
+
+void takeStage(ValleyScene& s) {
+    const vext::Stage& g = s.stage;
+    if (s.mode == Mode::Riding) return;  // (a feature that wants you down gets you off first)
+    s.you.pos = {g.you.x, g.you.y, s.valley.heightAt(g.you.x, g.you.y)};
+    s.you.heading = g.youHeading;
+    s.pal.pos = {g.pal.x, g.pal.y, std::fmax(s.valley.heightAt(g.pal.x, g.pal.y), s.valley.water - 0.8f)};
+    s.pal.heading = g.palHeading;
+}
+
 void doAction(App& app, ValleyScene& s) {
     switch (s.action) {
         case Action::Talk:
@@ -609,6 +725,16 @@ void doAction(App& app, ValleyScene& s) {
             keepPlace(app);
             openChallenges(app, s.actionPlace);
             break;
+        case Action::Folk:
+            if (s.actionExtra >= 0 && s.actionExtra < s.extraCount) {
+                const vext::Feature& ft = vext::feature(s.extraFeature[s.actionExtra]);
+                if (ft.act) {
+                    lendStage(app, s);
+                    ft.act(app, s.extra[s.actionExtra], s.stage);
+                    takeStage(s);
+                }
+            }
+            break;
         case Action::None: break;
     }
 }
@@ -636,7 +762,7 @@ void update(App& app, const Input& in) {
         tickWorld(app);
         app.simAccum = 0;
     }
-    if (in.down & KEY_X) {  // home to the den (from anywhere in the valley)
+    if ((in.down & KEY_X) && vext::activeFeature(app) < 0) {  // home to the den (from anywhere in the valley)
         audio::playSfx(audio::Sfx::Back);
         leaveTo(app, SceneId::Den);
         return;
@@ -646,6 +772,7 @@ void update(App& app, const Input& in) {
         const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(villagerInfo(static_cast<Villager>(k)).place));
         s.folk[k].heading = (p ? p->heading : 0.0f) + villagerInfo(static_cast<Villager>(k)).facing;
     }
+    gatherExtras(app, s);
     animatePeople(app, s);
     animateWanderer(app, s);
     animateStar(app, s);
@@ -700,6 +827,19 @@ void update(App& app, const Input& in) {
             openChallenges(app, kPlaceArena);
             return;
         }
+        animatePartner(app, s, false, false, false, 0);
+        return;
+    }
+    if (const int f = vext::activeFeature(app); f >= 0) {  // a 1.0 feature has the valley (a battle, a show, fishing)
+        if (s.mode == Mode::FreeCam) s.mode = s.before;
+        if (s.mode == Mode::Riding) getOff(app, s);
+        lendStage(app, s);
+        vext::feature(f).update(app, in, s.stage);
+        takeStage(s);
+        s.you.speed = 0;
+        s.pal.speed = 0;
+        s.action = Action::None;
+        if (s.stage.youClip) playClip(s.youFig, s.stage.youClip, 1.0f, 0.2f);
         animatePartner(app, s, false, false, false, 0);
         return;
     }
@@ -884,15 +1024,43 @@ void drawTop(App& app) {
         me.blink = s.youFig.blink;
         me.seated = s.mode == Mode::Riding || (s.mode == Mode::FreeCam && s.before == Mode::Riding);
         view.lead = !me.seated && s.partner >= 0 && s.shown.stage != Stage::Adult;  // too small to ride: on its lead
-        for (int k = 0; k < kVillagers && view.peopleCount < r3d::kMaxPeopleShown; ++k) {
-            const Villager who = static_cast<Villager>(k);
+        // The villagers and the features' people, nearest first, as many as there's room for.
+        struct Near {
+            float d;
+            int k;  // villager k, or kVillagers + a feature's person
+        };
+        Near near[kVillagers + vext::kMaxFolk];
+        int nearCount = 0;
+        for (int k = 0; k < kVillagers; ++k) {
+            const Vec3 p = villagerAt(s.valley, static_cast<Villager>(k));
+            near[nearCount++] = {std::hypot(p.x - view.eye.x, p.y - view.eye.y) + std::hypot(p.x - s.you.pos.x, p.y - s.you.pos.y), k};
+        }
+        for (int k = 0; k < s.extraCount; ++k)
+            if (s.extra[k].shown) {
+                const Vec3 p = s.extra[k].look.at;
+                near[nearCount++] = {std::hypot(p.x - view.eye.x, p.y - view.eye.y) + std::hypot(p.x - s.you.pos.x, p.y - s.you.pos.y),
+                                     kVillagers + k};
+            }
+        for (int a = 1; a < nearCount; ++a)  // (a handful: a simple insertion sort)
+            for (int b = a; b > 0 && near[b].d < near[b - 1].d; --b) std::swap(near[b], near[b - 1]);
+        for (int n = 0; n < nearCount && view.peopleCount < r3d::kMaxPeopleShown; ++n) {
             r3d::PersonView& p = view.people[view.peopleCount++];
-            p.form = static_cast<u8>(personFor(who));
-            p.at = villagerAt(s.valley, who);
-            p.heading = s.folk[k].heading;
-            p.anim = &s.folk[k].anim;
-            villagerPalette(who, p.pal);
-            p.blink = s.folk[k].blink;
+            const int k = near[n].k;
+            if (k < kVillagers) {
+                const Villager who = static_cast<Villager>(k);
+                p.form = static_cast<u8>(personFor(who));
+                p.at = villagerAt(s.valley, who);
+                p.heading = s.folk[k].heading;
+                p.anim = &s.folk[k].anim;
+                villagerPalette(who, p.pal);
+                p.blink = s.folk[k].blink;
+            } else {
+                ValleyScene::Figure& f = extraFigure(s, k - kVillagers);
+                p = s.extra[k - kVillagers].look;
+                p.heading = f.heading;
+                p.anim = &f.anim;
+                p.blink = f.blink;
+            }
         }
     }
     if (const ValleyPlaceInfo* market = s.valley.place(kPlaceMarket);
@@ -949,8 +1117,21 @@ void drawTop(App& app) {
         view.shadowRadius = 1.9f * kindSize(s.shown) * (s.shown.stage == Stage::Adult ? 1.0f : 0.55f) *
                             (1.0f - 0.45f * clampf(high / 60.0f, 0.0f, 1.0f));
     }
+    const int feat = vext::activeFeature(app);
+    if (feat >= 0) {  // a 1.0 feature has the valley: its dragons, people and camera
+        const vext::Feature& ft = vext::feature(feat);
+        if (ft.view) ft.view(app, s.stage, view);
+        if (s.stage.camSet) {
+            view.eye = s.stage.eye;
+            view.target = s.stage.target;
+        }
+    }
     if (r3d::ready()) r3d::drawValley(app, view, now);
     if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
+    if (feat >= 0) {
+        if (vext::feature(feat).drawTop) vext::feature(feat).drawTop(app, s.stage);
+        return;
+    }
     // What A does here, over the picture.
     const char* hint = nullptr;
     char line[64];
@@ -970,6 +1151,12 @@ void drawTop(App& app) {
         case Action::Ride: hint = str::kPromptRide; break;
         case Action::Call: hint = str::kPromptCall; break;
         case Action::Board: hint = str::kPromptBoard; break;
+        case Action::Folk:
+            if (s.actionExtra >= 0 && s.actionExtra < s.extraCount) {
+                std::snprintf(line, sizeof(line), s.extra[s.actionExtra].prompt, s.extra[s.actionExtra].name);
+                hint = line;
+            }
+            break;
         case Action::None: break;
     }
     if (hint && s.mode == Mode::OnFoot && !talking(app)) {
@@ -1010,6 +1197,11 @@ void drawBottom(App& app, const Input& touch) {
     ValleyScene& s = vs();
     static const Input kNothing{};
     const Input& in = talking(app) ? kNothing : touch;  // someone talking: the map and buttons wait
+    if (const int f = vext::activeFeature(app); f >= 0 && s.loaded && vext::feature(f).drawBottom) {
+        vext::feature(f).drawBottom(app, in, s.stage);  // a 1.0 feature's screen (a battle's moves ...)
+        drawTalk(app);
+        return;
+    }
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
     textCentered(app, "Skyreach Valley", 160, 12, 0.6f, theme::kClutchGold, 300, Face::Title);
     if (!s.loaded) return;

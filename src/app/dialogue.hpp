@@ -15,6 +15,16 @@ namespace ec {
 void startTalk(App& app, Villager v);
 // Someone saying lines of the game's own (the challenges' hosts): no flags settle after.
 void startLines(App& app, Villager v, const Talk& lines);
+// Anyone else (1.0: a challenger, the Hollow's keeper, a pageant host): their lines, nothing settled.
+struct Speaker {
+    const char* name = "";   // (static strings: the box keeps the pointers)
+    const char* title = "";
+    u8 voice = 0;
+    float pitch = 1.0f;
+    s8 portrait = -1;        // the people sheet's (villager order), or -1: their initial on a disc
+    Rgb tint{250, 226, 196};
+};
+void startSpeech(App& app, const Speaker& who, const Talk& lines);
 bool talking(const App& app);
 // While talking: advance the letters, read on with A or a tap. Returns true while it's open.
 bool updateTalk(App& app, const Input& in);

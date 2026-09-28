@@ -54,7 +54,7 @@ void finish(App& app) {
     DialogueState& d = app.talk;
     d.active = false;
     audio::freeVoice();
-    if (finishTalk(app.game, d.who, d.talk)) {
+    if (!d.custom && finishTalk(app.game, d.who, d.talk)) {
         const campaign::News n = campaign::update(app.game);
         if (n.finished >= 0) {
             audio::playStinger("quest-done");
@@ -91,6 +91,24 @@ void startLines(App& app, Villager v, const Talk& lines) {
     loadLine(app);
 }
 
+void startSpeech(App& app, const Speaker& who, const Talk& lines) {
+    DialogueState& d = app.talk;
+    d = DialogueState{};
+    d.custom = true;
+    d.name = who.name;
+    d.title = who.title;
+    d.voice = who.voice;
+    d.pitch = who.pitch;
+    d.portrait = who.portrait;
+    d.tint = who.tint;
+    d.talk = lines;
+    d.talk.sets = 0;
+    if (d.talk.count == 0) return;
+    d.active = true;
+    audio::loadVoice(who.voice);
+    loadLine(app);
+}
+
 bool talking(const App& app) { return app.talk.active; }
 
 bool updateTalk(App& app, const Input& in) {
@@ -102,10 +120,10 @@ bool updateTalk(App& app, const Input& in) {
         d.shown += kLettersPerSecond * app.dt;
         if (d.shown > len) d.shown = static_cast<float>(len);
         // A voiced blip every other letter shown (a letter's sound, quick and high).
-        const VillagerInfo& who = villagerInfo(d.who);
+        const float pitch = d.custom ? d.pitch : villagerInfo(d.who).pitch;
         for (int k = before; k < static_cast<int>(d.shown); ++k)
             if (k % 2 == 0 && ((d.text[k] >= 'a' && d.text[k] <= 'z') || (d.text[k] >= 'A' && d.text[k] <= 'Z')))
-                audio::playLetter(d.text[k], who.pitch * (0.95f + 0.1f * ((k * 7) % 5) / 4.0f), 0.8f);
+                audio::playLetter(d.text[k], pitch * (0.95f + 0.1f * ((k * 7) % 5) / 4.0f), 0.8f);
     }
     if ((in.down & (KEY_A | KEY_B)) || in.tapped) {
         if (d.shown < len && !(in.down & KEY_B)) {
@@ -124,24 +142,29 @@ bool updateTalk(App& app, const Input& in) {
 void drawTalk(App& app) {
     const DialogueState& d = app.talk;
     if (!d.active) return;
-    const VillagerInfo& who = villagerInfo(d.who);
+    const char* whoName = d.custom ? d.name : villagerInfo(d.who).name;
+    const char* whoTitle = d.custom ? d.title : villagerInfo(d.who).title;
+    const int face = d.custom ? d.portrait : static_cast<int>(d.who);
     // The box, low on the screen; the name on a tab above it, the portrait at its left.
     const Rect box{8, 134, 304, 98};
     panel({box.x - 2, box.y - 2, box.w + 4, box.h + 4}, withAlpha(theme::kClutchGold, 0.9f));
     panel(box, theme::rgba(252, 244, 228));
-    const float nameW = textWidth(app, who.name, 0.55f) + 22;
+    const float nameW = textWidth(app, whoName, 0.55f) + 22;
     panel({box.x + 58, box.y - 20, nameW, 22}, theme::kDenPlum);
-    text(app, who.name, box.x + 69, box.y - 17, 0.55f, theme::kClutchGold, C2D_AlignLeft, nameW);
+    text(app, whoName, box.x + 69, box.y - 17, 0.55f, theme::kClutchGold, C2D_AlignLeft, nameW);
     // The portrait, in a round frame.
     C2D_DrawCircleSolid(box.x + 30, box.y + 30, 0.5f, 26, theme::kDenPlum);
-    C2D_DrawCircleSolid(box.x + 30, box.y + 30, 0.5f, 23, theme::rgba(250, 226, 196));
+    C2D_DrawCircleSolid(box.x + 30, box.y + 30, 0.5f, 23, d.custom ? fromRgb(d.tint) : theme::rgba(250, 226, 196));
     if (!g_portraits) g_portraits = C2D_SpriteSheetLoadFromMem(people_t3x, people_t3x_size);
-    if (g_portraits && static_cast<std::size_t>(d.who) < C2D_SpriteSheetCount(g_portraits)) {
-        const C2D_Image face = C2D_SpriteSheetGetImage(g_portraits, static_cast<std::size_t>(d.who));
-        const float bob = std::sin(app.t * 7.0f) * (d.shown < std::strlen(d.text) ? 1.2f : 0.0f);  // talking
-        C2D_DrawImageAt(face, box.x + 30 - 24, box.y + 30 - 26 + bob, 0.5f, nullptr, 0.75f, 0.75f);
+    const float bob = std::sin(app.t * 7.0f) * (d.shown < std::strlen(d.text) ? 1.2f : 0.0f);  // talking
+    if (g_portraits && face >= 0 && static_cast<std::size_t>(face) < C2D_SpriteSheetCount(g_portraits)) {
+        const C2D_Image img = C2D_SpriteSheetGetImage(g_portraits, static_cast<std::size_t>(face));
+        C2D_DrawImageAt(img, box.x + 30 - 24, box.y + 30 - 26 + bob, 0.5f, nullptr, 0.75f, 0.75f);
+    } else if (whoName[0]) {  // no portrait: their initial
+        const char initial[2] = {whoName[0], 0};
+        textCentered(app, initial, box.x + 30, box.y + 30 + bob, 0.9f, theme::kDenPlum, 40, Face::Title);
     }
-    text(app, who.title, box.x + 30, box.y + 60, 0.32f, withAlpha(theme::kDenPlum, 0.7f), C2D_AlignCenter, 56);
+    text(app, whoTitle, box.x + 30, box.y + 60, 0.32f, withAlpha(theme::kDenPlum, 0.7f), C2D_AlignCenter, 56);
     // The line so far.
     char shown[160];
     const int n = static_cast<int>(d.shown);

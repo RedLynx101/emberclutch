@@ -23,7 +23,8 @@ const char* battleMusic(const App& app);
 // challenger's battle, "talk <league> <slot>" up to them and A (their lines, then "Battle?"),
 // "hollow <floor>" into a floor of the Hollow, "keeper" up to its keeper and A, "board" the league's board at
 // the arena, "level <n>" your partner's level, "league <won> [beaten bits]" the leagues'
-// progress, "auto on|off" battles playing themselves.
+// progress, "auto on|off" battles playing themselves, "breathe on|off" both sides breathing
+// every turn (to look at breath).
 void battleCommand(App& app, const char* args);
 // (feature_hollow.cpp, for the command) A floor of the Hollow at once, from wherever you are;
 // or up to its keeper and A.

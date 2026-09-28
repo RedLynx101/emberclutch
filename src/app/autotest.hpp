@@ -29,7 +29,8 @@
 //   cups <fruit> <rings> <lantern>   the highest cup won in each (their ribbons too)
 //   battle <what> ...           1.0 battles (app/battle_feature.hpp battleCommand): start <league>
 //                               <slot>, talk <league> <slot>, hollow <floor>, keeper, board, level <n>, league <won> [beaten
-//                               bits], energy <n>, auto on|off (autoplay on also plays battles)
+//                               bits], energy <n>, breathe on|off, auto on|off (autoplay on
+//                               also plays battles)
 //   quit                        leave (writes shots/done.txt)
 #pragma once
 

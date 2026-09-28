@@ -240,6 +240,9 @@ struct ValleyView {
     int otherCount = 0;
 };
 void drawValley(App& app, const ValleyView& view, s64 now);
+// Another dragon's head (view.others[i]) as the last drawValley posed it, for a breath to start
+// from its mouth (1.0 battles, workstream B). False if it wasn't drawn.
+bool otherHead(int i, Vec3& out);
 void releaseValley();  // leaving the valley: its GPU memory back
 struct ValleyStats {
     int tiles = 0, built = 0, ground = 0;  // drawn and built last frame; the ground's triangles

@@ -106,10 +106,14 @@ bool startFloor(App& app, vext::Stage& st, int floor) {
     const Dragon& mine = app.game.dragons[st.partner];
     const float sizeYou = bview::dragonSize(mine), sizeFoe = bview::dragonSize(s.wild) * setup.foeScale;
     const Vec2 arena = hollow::arenaSpot();
-    setup.youAt = at3(v, {arena.x, arena.y + 5.0f});
+    // Your dragon toward the mouth, the wild one toward the door, a clear gap more apart than
+    // their reaches (the biggest kinds too); you behind yours.
     const bool small = mine.stage != Stage::Adult;
-    setup.palAt = small ? at3(v, {arena.x + 1.3f, arena.y + 4.0f}) : at3(v, {arena.x, arena.y + 3.8f - 1.3f * sizeYou});
-    setup.foeAt = at3(v, {arena.x, arena.y - 1.5f - 1.3f * sizeFoe});
+    const float palY = 0.5f * bview::kStandingGap + bview::kReachPerSize * (small ? 0.5f : sizeYou);
+    const float foeY = 0.5f * bview::kStandingGap + bview::kReachPerSize * sizeFoe;
+    setup.youAt = at3(v, {arena.x, arena.y + palY + 1.2f + 1.3f * sizeYou});
+    setup.palAt = small ? at3(v, {arena.x + 1.3f, arena.y + palY + 1.0f}) : at3(v, {arena.x, arena.y + palY});
+    setup.foeAt = at3(v, {arena.x, arena.y - foeY});
     // The camera on the bowl's far side from Tove, unless the rim rises in its way there.
     setup.camSide = -1.0f;
     Vec3 eye, target;

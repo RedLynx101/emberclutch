@@ -127,16 +127,19 @@ bool placeBattle(const Valley& v, Vec3 chAt, Vec3 you, float heading, Vec2 middl
     dir = d < 0.5f ? Vec2{std::sin(heading), -std::cos(heading)} : Vec2{dir.x / d, dir.y / d};
     float best = -1e9f;
     bview::Setup pick = out;
-    for (float dist : {11.0f, 9.5f, 8.0f}) {
+    // How far you stand from them: the dragons a clear gap more apart than their reaches (the
+    // biggest kinds too), each a step before its trainer; a little more room if there is some.
+    const float palOut = small ? 1.0f : 1.0f + 1.1f * sizeYou;
+    const float foeOut = 1.0f + 1.1f * sizeFoe;
+    const float least = bview::standApart(small ? 0.0f : sizeYou, sizeFoe) + (small ? 0.0f : palOut) + foeOut;
+    for (float extra : {2.0f, 1.0f, 0.0f}) {
         for (int i = 0; i < 12; ++i) {
             const float turn = (i % 2 ? 1.0f : -1.0f) * static_cast<float>((i + 1) / 2) * (kPi / 6.0f);  // 0, 30, -30, 60 ...
             const Vec2 w{dir.x * std::cos(turn) - dir.y * std::sin(turn), dir.x * std::sin(turn) + dir.y * std::cos(turn)};
             const Vec2 side{w.y, -w.x};
-            const float along = dist;
+            const float along = least + extra;
             const Vec2 youAt{chAt.x + w.x * along, chAt.y + w.y * along};
-            const float palOut = small ? 1.0f : 1.2f + 1.3f * sizeYou;
             const Vec2 palAt{youAt.x - w.x * palOut + (small ? side.x * 1.3f : 0), youAt.y - w.y * palOut + (small ? side.y * 1.3f : 0)};
-            const float foeOut = 1.2f + 1.3f * sizeFoe;
             const Vec2 foeAt{chAt.x + w.x * foeOut, chAt.y + w.y * foeOut};
             if (!bview::goodGround(v, chAt, youAt) || !bview::goodGround(v, chAt, palAt) || !bview::goodGround(v, chAt, foeAt)) continue;
             if (!clear(solids, youAt, 0.6f) || !clear(solids, palAt, 0.9f * sizeYou) || !clear(solids, foeAt, 0.9f * sizeFoe)) continue;
@@ -198,8 +201,9 @@ void placeFinal(const Valley& v, float sizeYou, float sizeFoe, bool small, bview
     const Vec3 side{w.y, -w.x, 0};
     out.youAt = you;
     out.trainerLook.at = them;
-    out.palAt = small ? you - w * 1.0f + side * 1.2f : ring + w * (1.0f + 1.3f * sizeYou);
-    out.foeAt = ring - w * (1.0f + 1.3f * sizeFoe);
+    // (on the ring, the two a clear gap more apart than their reaches: the biggest kinds too)
+    out.palAt = small ? you - w * 1.0f + side * 1.2f : ring + w * (0.5f * bview::kStandingGap + bview::kReachPerSize * sizeYou);
+    out.foeAt = ring - w * (0.5f * bview::kStandingGap + bview::kReachPerSize * sizeFoe);
     if (small) out.palAt.z = v.heightAt(out.palAt.x, out.palAt.y);
     out.foeFrom = them + side * 1.6f;
     out.foeFrom.z = v.heightAt(out.foeFrom.x, out.foeFrom.y);
@@ -391,6 +395,7 @@ void goBattle(App& app, vext::Stage& st) {
     if (!beginBattle(app, st, s.id)) {  // (nowhere to stand: rare) its Energy back
         d.needs.energy = std::fmin(100.0f, d.needs.energy + trainer::kEnergyBattle);
         s.mode = Mode::None;
+        showToast(app, str::kBattleNoRoom);
     }
 }
 
@@ -411,7 +416,10 @@ void update(App& app, const Input& in, vext::Stage& st) {
         const int id = s.pendingStart;
         s.pendingStart = -1;
         s.id = id;
-        if (!standBefore(st, id, 3.0f) || !beginBattle(app, st, id)) s.mode = Mode::None;
+        if (!standBefore(st, id, 3.0f) || !beginBattle(app, st, id)) {
+            s.mode = Mode::None;
+            showToast(app, str::kBattleNoRoom);
+        }
         return;
     }
     if (s.pendingTalk >= 0) {  // a scripted run: up to them, and A
@@ -658,6 +666,8 @@ void battleCommand(App& app, const char* args) {
         app.game.progress.battleLeague = static_cast<u8>(a < 0 ? 0 : (a > kLeagues ? kLeagues : a));
         if (n >= 3 && app.game.progress.battleLeague < kLeagues)
             app.game.progress.battleBeaten[app.game.progress.battleLeague] = static_cast<u8>(b);
+    } else if (std::strcmp(word, "breathe") == 0) {
+        bview::setBreathOnly(std::strstr(args, "on") != nullptr);
     } else if (std::strcmp(word, "auto") == 0) {
         bview::setAutoplay(std::strstr(args, "on") != nullptr);
     } else if (std::strcmp(word, "energy") == 0) {

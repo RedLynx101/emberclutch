@@ -48,6 +48,7 @@ struct Side {
     float lungeT = -1, lunge = 0;  // a body move's run at the other and back (seconds in, how far)
     float knockT = -1;             // knocked back by a hit
     float flash = 0;               // a hit's white flash, fading
+    float jaw = 0, jawHold = 0;    // its jaw's opening, and how long it's held open (a breath, a roar)
     float shownHp = 0;             // its health as the events so far have played
     float bar = 0;                 // the bar, draining toward it
     bool lying = false;            // tired out
@@ -83,6 +84,7 @@ struct State {
     bool camSnap = true;
     float fade = 0;
     bool foeShown = false;
+    int foeOther = 0;  // the foe's place in the view's other dragons (its head: r3d::otherHead)
     float walkT = 0;  // the foe coming in
     float bannerT = 0;
 };
@@ -93,6 +95,7 @@ State& st() {
 }
 
 bool g_autoplay = false;
+bool g_breathOnly = false;  // scripted runs: both sides breathe every turn (for looking at breath)
 
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
 float smooth(float k) {
@@ -151,12 +154,15 @@ void stepFigure(App& app, Figure& f) {
 // ---- Where things are on the dragons.
 float sizeOf(const Side& sd) { return sd.dragon ? dragonSize(*sd.dragon) : 1.0f; }
 
-Vec3 mouthOf(const Side& sd, int who) {
+// The mouth: the head as it was last posed (yours the valley's partner, theirs its other dragon),
+// a little forward along its heading; before it's been drawn, about where a head is.
+Vec3 mouthOf(const Side& sd, int who, int foeOther) {
     const float size = sizeOf(sd);
     const Vec3 fwd = forwardOf(sd.heading);
     Vec3 head;
-    if (who == 0 && r3d::headOf(0, head) && length(head - sd.pos) < 6.0f * size + 2.0f) return head + fwd * (0.35f * size);
-    return sd.pos + Vec3{0, 0, 1.25f * size} + fwd * (1.35f * size);
+    const bool posed = who == 0 ? r3d::headOf(0, head) : r3d::otherHead(foeOther, head);
+    if (posed && length(head - sd.pos) < 6.0f * size + 2.0f) return head + fwd * (0.35f * size);
+    return sd.pos + Vec3{0, 0, 1.45f * size} + fwd * (1.5f * size);
 }
 
 Vec3 chestOf(const Side& sd) { return sd.pos + Vec3{0, 0, 0.8f * sizeOf(sd)} + forwardOf(sd.heading) * (0.5f * sizeOf(sd)); }
@@ -207,7 +213,7 @@ float beginEvent(App& app, State& s, const Event& e) {
             if (m.kind == battle::MoveKind::Body) {
                 me.lungeT = 0;
                 const float gap = length(other.home - me.home);
-                me.lunge = std::fmax(0.5f, gap - 1.0f * (sizeOf(me) + sizeOf(other)));
+                me.lunge = std::fmax(0.3f, gap - kReachPerSize * (sizeOf(me) + sizeOf(other)));  // (nose to nose, no nearer)
                 if (me.dragon && me.dragon->stage != Stage::Adult) me.lunge *= 0.6f;  // (on its lead)
                 playClip(me, ClipId::Pounce, 0.12f, true, 1.25f);
                 audio::playSfx(audio::Sfx::Swipe, pitch);
@@ -215,6 +221,7 @@ float beginEvent(App& app, State& s, const Event& e) {
             }
             if (m.kind == battle::MoveKind::Breath) {
                 audio::playSfx(breathSound(m.element), pitch * (me.dragon && me.dragon->stage != Stage::Adult ? 1.15f : 1.0f));
+                me.jawHold = 0.75f + 0.2f;  // open for the whole breath (and a moment after)
                 return 0.75f;
             }
             if (m.effect == battle::Effect::Heal) playClip(me, ClipId::Shake, 0.2f, true);
@@ -222,8 +229,10 @@ float beginEvent(App& app, State& s, const Event& e) {
                      m.effect == battle::Effect::RaiseWit || m.effect == battle::Effect::RaiseWing ||
                      m.effect == battle::Effect::RaiseGuard)
                 playClip(me, ClipId::WingFlutter, 0.2f, true);
-            else
+            else {
                 audio::playSfx(audio::Sfx::Rumble, pitch);  // a roar at them
+                me.jawHold = 0.7f;
+            }
             return 0.8f;
         }
         case Ev::Miss:
@@ -420,20 +429,22 @@ void stepSides(App& app, State& s, const Valley* v) {
             sd.actor.anim.update(*lib, app.dt, events, 8);
         }
         sd.actor.eyes.update(sd.lying ? 1.0f : 0.0f, app.dt);
-        sd.actor.jawOpen = 0;
+        // The jaw: wide open while it's held (a breath, a roar), eased shut after.
+        const float jawRate = s.faster || g_autoplay ? 2.0f : 1.0f;  // (in step with the events)
+        sd.jawHold -= app.dt * jawRate;
+        sd.jaw = sd.jawHold > 0 ? std::fmin(1.3f, sd.jaw + app.dt * 10.0f) : std::fmax(0.0f, sd.jaw - app.dt * 5.0f);
+        sd.actor.jawOpen = sd.jaw;
     }
-    // A breath: the mouth open and its stream while the move is being used.
+    // A breath: its stream from the open mouth to the other's chest while the move is used (the
+    // jaw opens first).
     if (s.phase == Phase::Play && s.evAt < s.evCount) {
         const Event& e = s.ev[s.evAt];
         const battle::MoveInfo& m = battle::moveInfo(e.move);
-        if (e.kind == Ev::Use && (m.kind == battle::MoveKind::Breath || (m.kind == battle::MoveKind::Status && m.effect <= battle::Effect::LowerWing &&
-                                                                          m.effect >= battle::Effect::LowerMight))) {
-            Side& me = s.side[e.side];
-            me.actor.jawOpen = clampf(s.evT * 6.0f, 0.0f, 1.0f) * (s.evT < s.evLen * 0.8f ? 1.0f : 0.0f);
-            if (m.kind == battle::MoveKind::Breath && s.evT > 0.05f && s.evT < 0.5f && s.breath.count() < 60) {
-                s.breath.look = challenge::breathFor(m.element);
-                s.breath.emit(s.breath.look, mouthOf(me, e.side), chestOf(s.side[1 - e.side]), 2, 0.35f);
-            }
+        Side& me = s.side[e.side];
+        if (e.kind == Ev::Use && m.kind == battle::MoveKind::Breath && s.evT > 0.08f && s.evT < 0.5f && me.jaw > 0.6f &&
+            s.breath.count() < 60) {
+            s.breath.look = challenge::breathFor(m.element);
+            s.breath.emit(s.breath.look, mouthOf(me, e.side, s.foeOther), chestOf(s.side[1 - e.side]), 2, 0.35f);
         }
     }
 }
@@ -607,6 +618,15 @@ void start(App& app, const Setup& setup) {
     battle::Battler mine = battle::makeBattler(s.pal), theirs = battle::makeBattler(s.setup.foe);
     std::snprintf(theirs.name, sizeof(theirs.name), "%s", setup.foeName[0] ? setup.foeName : theirs.name);
     battle::begin(s.bt, mine, theirs);
+    for (int k = 0; k < 2 && g_breathOnly; ++k) {  // (a scripted run's look at breath: nothing but)
+        for (int slot = 0; slot < kMoveSlots; ++slot)
+            if (battle::validMove(s.bt.side[k].moves[slot]) &&
+                battle::moveInfo(s.bt.side[k].moves[slot]).kind == battle::MoveKind::Breath) {
+                const u8 breath = s.bt.side[k].moves[slot];
+                for (u8& m : s.bt.side[k].moves) m = breath;
+                break;
+            }
+    }
     s.side[0].dragon = &s.pal;
     s.side[1].dragon = &s.setup.foe;
     s.side[0].home = s.side[0].pos = setup.palAt;
@@ -634,6 +654,7 @@ void lastCamera(Vec3& eye, Vec3& target) {
 }
 void stop() { st().phase = Phase::Idle; }
 void setAutoplay(bool on) { g_autoplay = on; }
+void setBreathOnly(bool on) { g_breathOnly = on; }
 bool autoplay() { return g_autoplay; }
 
 void update(App& app, const Input& in, vext::Stage& stage) {
@@ -772,6 +793,7 @@ void view(App& app, const vext::Stage& stage, r3d::ValleyView& view) {
     if (v) view.shadowAt = {view.at.x, view.at.y, std::fmax(v->heightAt(view.at.x, view.at.y), v->water)};
     // Theirs.
     if (s.foeShown && view.otherCount < r3d::kMaxOthers) {
+        s.foeOther = view.otherCount;
         r3d::ValleyDragon& o = view.others[view.otherCount++];
         o.dragon = &s.setup.foe;
         o.actor = &s.side[1].actor;

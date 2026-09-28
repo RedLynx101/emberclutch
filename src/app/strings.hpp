@@ -423,6 +423,7 @@ inline constexpr const char* kBattleNextLeague = "The %s league arrives in the v
 inline constexpr const char* kBattleAllWon = "Every league is yours!";
 inline constexpr const char* kBattleTooTired = "{D} looks tired. Let it rest, then come back and we'll battle!";
 inline constexpr const char* kBattleNoPartner = "Come back with a dragon, and we'll battle!";
+inline constexpr const char* kBattleNoRoom = "There's no room to battle here.";
 inline constexpr const char* kBattleAskTitle = "Battle %s?";
 inline constexpr const char* kBattleAskGo = "Battle!";
 inline constexpr const char* kBattleAskNot = "Not now";

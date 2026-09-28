@@ -55,10 +55,16 @@ void lastCamera(Vec3& eye, Vec3& target);
 // Scripted runs: it plays itself (your moves chosen for you, the lines and the card moving on).
 void setAutoplay(bool on);
 bool autoplay();
+void setBreathOnly(bool on);  // (scripted runs: both sides breathe every turn, to look at breath)
 
 // Staging: a dragon's size (metres-ish; smaller while young), and whether a spot is good ground
 // to stand on (not under the water, not up a slope from `from`).
 float dragonSize(const Dragon& d);
+// How far a dragon of this size reaches from where it stands (its nose ahead of it): a lunge stops
+// with two dragons' reaches touching; they stand a clear gap more apart than that.
+constexpr float kReachPerSize = 1.6f;
+constexpr float kStandingGap = 2.0f;
+inline float standApart(float sizeA, float sizeB) { return kReachPerSize * (sizeA + sizeB) + kStandingGap; }
 bool goodGround(const Valley& v, Vec3 from, Vec2 at);
 // The camera's place for a battle staged so (you, your dragon, theirs; the larger's size), for
 // the features to check it's clear before they settle on a side.

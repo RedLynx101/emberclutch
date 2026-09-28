@@ -173,6 +173,7 @@ void keepPlace(App& app) {
 void leaveTo(App& app, SceneId scene) {
     keepPlace(app);
     app.care.page = CarePage::None;  // (the valley's Journal closed)
+    holdTips(false);
     vs().travelAsk = -1;
     r3d::releaseValley();
     app.game.world.inValley = 0;
@@ -855,6 +856,7 @@ void update(App& app, const Input& in) {
         const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(villagerInfo(static_cast<Villager>(k)).place));
         s.folk[k].heading = (p ? p->heading : 0.0f) + villagerInfo(static_cast<Villager>(k)).facing;
     }
+    holdTips(vext::activeFeature(app) >= 0);  // (a battle's or a show's own top screen: the tips wait)
     gatherExtras(app, s);
     animatePeople(app, s);
     animateWanderer(app, s);

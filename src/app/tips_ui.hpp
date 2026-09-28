@@ -16,5 +16,8 @@ void showTip(App& app, tips::Tip tip);
 void drawTipCard(App& app);
 // The settings' "Show tips again": every tip due once more, and nothing waiting.
 void resetTips(App& app);
+// While something has the whole top screen's upper part (a battle's health bars, a show), the card
+// waits hidden and its time stands still (set every frame; false lets it go on).
+void holdTips(bool hold);
 
 }  // namespace ec

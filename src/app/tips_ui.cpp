@@ -57,8 +57,12 @@ void resetTips(App& app) {
     g_card = TipCard{};
 }
 
+bool g_hold = false;
+
+void holdTips(bool hold) { g_hold = hold; }
+
 void drawTipCard(App& app) {
-    if (g_card.showing < 0) return;
+    if (g_card.showing < 0 || g_hold) return;
     if (app.menu == MenuPage::Closed) g_card.t += app.dt;  // (the right eye's pass has dt 0)
     if (g_card.t >= g_card.life) {
         next();

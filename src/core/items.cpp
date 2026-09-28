@@ -30,8 +30,6 @@ constexpr ItemInfo kInfo[kItems] = {
     {"Star banner", "A lumen crest on cream.", 100, ItemKind::Banner, 2},
 };
 
-constexpr u8 kNone = 0xFF;
-
 // Where each toy is first set down: around the rug, clear of the beds and the nests.
 constexpr Vec2 kToySpots[kToys] = {{-3.0f, 1.6f}, {-2.4f, -0.9f}, {2.0f, 1.9f}, {-1.4f, 3.0f}};
 

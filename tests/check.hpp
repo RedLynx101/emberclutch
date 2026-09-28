@@ -32,3 +32,4 @@ void runValleyTests();    // tests/test_valley.cpp
 void runKindTests();      // tests/test_kinds.cpp
 void runWorldTests();     // tests/test_world.cpp
 void runChallengeTests(); // tests/test_challenges.cpp
+void runTrainerTests();   // tests/test_trainer.cpp

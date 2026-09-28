@@ -14,6 +14,7 @@
 #include <cstddef>
 
 #include "core/dragon.hpp"
+#include "core/trainer.hpp"
 #include "core/world.hpp"
 
 namespace ec {
@@ -74,6 +75,9 @@ struct SaveData {
     // Beta (D73-D86): the world: your look, where you are, your partner, places, lanterns,
     // quests, cups (core/world).
     WorldState world{};
+    // 1.0 (D90): accessories and dyes owned, the leagues, Frostspire Hollow, the day's rewards,
+    // the tracked goal, the tips, your records (core/trainer).
+    Progress progress{};
     Settings settings{};
     u16 dragonCount = 0;
     Dragon dragons[kMaxDragons];

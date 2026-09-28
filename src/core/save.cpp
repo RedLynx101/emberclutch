@@ -133,6 +133,20 @@ void writeDragon(Writer& w, const Dragon& d) {
     w.u8v(d.manner);
     w.u8v(d.traitCount);
     for (u8 t : d.traits) w.u8v(t);
+    w.u32v(d.xp);  // 1.0 (D90): a trainer's dragon, and its record
+    for (u8 t : d.trained) w.u8v(t);
+    for (u8 m : d.moves) w.u8v(m);
+    for (u8 a : d.wear) w.u8v(a);
+    w.u8v(d.dye);
+    w.u8v(d.battleTitle);
+    w.u8v(d.showTitle);
+    w.u16v(d.battleWins);
+    w.u16v(d.showWins);
+    w.u16v(d.wildWins);
+    w.u16v(d.cupsWon);
+    w.u32v(d.ribbons);
+    w.u8v(d.frostDeepest);
+    w.f32v(d.needs.love);
     w.patchU16(sizeAt, static_cast<u16>(w.pos() - start));
 }
 
@@ -223,6 +237,31 @@ bool readDragon(Reader& r, Dragon& d) {
         for (int i = 0; i < d.traitCount && kinded; ++i) kinded = d.traits[i] < traitCount();
     }
     if (!kinded) migrateToKind(d);  // from before the revamp (D80): a new kind, fixed by its id
+    constexpr std::size_t kTrainerBytes = 4 + kDragonStats + kMoveSlots + kWearSlots + 1 + 2 + 8 + 4 + 1 + 4;
+    if (r.pos() + kTrainerBytes <= start + size) {  // 1.0: older records start at level 1, unworn, no record
+        d.xp = r.u32v();
+        for (u8& t : d.trained) {
+            t = r.u8v();
+            if (t > kMaxTrained) t = kMaxTrained;
+        }
+        for (u8& m : d.moves) m = r.u8v();
+        for (u8& a : d.wear) a = r.u8v();
+        d.dye = r.u8v();
+        d.battleTitle = r.u8v();
+        d.showTitle = r.u8v();
+        if (d.battleTitle > kLeagues) d.battleTitle = kLeagues;
+        if (d.showTitle > kLeagues) d.showTitle = kLeagues;
+        d.battleWins = r.u16v();
+        d.showWins = r.u16v();
+        d.wildWins = r.u16v();
+        d.cupsWon = static_cast<u16>(r.u16v() & ((1u << (kChallenges * kCups)) - 1));
+        d.ribbons = r.u32v();
+        d.frostDeepest = r.u8v();
+        const float love = r.f32v();
+        d.needs.love = std::isfinite(love) ? (love < 0 ? 0.0f : (love > 100 ? 100.0f : love)) : 80.0f;
+    } else {
+        d.needs.love = d.needs.play;  // older records: as fond as it was playful
+    }
     r.seek(start + size);  // skip fields from newer builds
 
     if (!inRange(plan, 2) || !inRange(sex, 2) || !inRange(personality, static_cast<u8>(Personality::Count)) ||
@@ -257,7 +296,8 @@ u32 crc32(const u8* data, std::size_t size) {
 
 std::size_t maxEncodedSize() {
     // header + player/settings sections (generous) + dragons with room for growth
-    return kSaveHeaderSize + 1024 + kMaxDragons * (kDragonRecordV1 + 2 + 64);  // (Beta: the world block and its map)
+    // (Beta: the world block and its map; 1.0: the progress block, a trainer's record per dragon)
+    return kSaveHeaderSize + 2048 + kMaxDragons * (kDragonRecordV1 + 2 + 128);
 }
 
 std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std::size_t cap) {
@@ -322,6 +362,29 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
         for (const auto& cups : ws.best)  // Beta WP8: the challenges' bests
             for (u16 b : cups) w.u16v(b);
         w.patchU8(sizeAt, static_cast<u8>(w.pos() - from));
+    }
+    {  // 1.0: your progress (its size first, so it can grow; core/trainer)
+        const Progress& p = data.progress;
+        const std::size_t sizeAt = w.pos();
+        w.u16v(0);
+        const std::size_t from = w.pos();
+        for (u8 k : p.accessories) w.u8v(k);
+        w.u32v(p.dyes);
+        w.u8v(p.trackKind);
+        w.u8v(p.trackId);
+        w.u8v(p.battleLeague);
+        for (u8 k : p.battleBeaten) w.u8v(k);
+        w.u8v(p.showLeague);
+        for (u8 k : p.showWon) w.u8v(k);
+        w.u8v(p.hollowDeepest);
+        w.s32v(p.findsDay);
+        w.u32v(p.findsSeed);
+        w.s32v(p.claimDay);
+        w.u32v(static_cast<u32>(p.claims));
+        w.u32v(static_cast<u32>(p.claims >> 32));
+        w.u32v(p.tips);
+        for (u16 c : p.counts) w.u16v(c);
+        w.patchU16(sizeAt, static_cast<u16>(w.pos() - from));
     }
     w.patchU16(at, static_cast<u16>(w.pos() - start));
 
@@ -495,6 +558,33 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
         r.seek(from + n);
     }
     world::startWorld(tmp);
+    if (r.pos() + 2 <= start + sectionSize) {  // 1.0: your progress (older saves: none yet)
+        const std::size_t n = r.u16v(), from = r.pos();
+        Progress& p = tmp.progress;
+        auto has = [&](std::size_t bytes) { return r.pos() + bytes <= from + n; };
+        if (has(kProgressBytes)) {
+            for (u8& k : p.accessories) k = r.u8v();
+            p.dyes = r.u32v();
+            p.trackKind = r.u8v();
+            p.trackId = r.u8v();
+            if (p.trackKind >= static_cast<u8>(Tracked::Count)) p.trackKind = 0;
+            p.battleLeague = r.u8v();
+            for (u8& k : p.battleBeaten) k = r.u8v();
+            p.showLeague = r.u8v();
+            for (u8& k : p.showWon) k = r.u8v();
+            if (p.battleLeague > kLeagues) p.battleLeague = kLeagues;
+            if (p.showLeague > kLeagues) p.showLeague = kLeagues;
+            p.hollowDeepest = r.u8v();
+            p.findsDay = r.s32v();
+            p.findsSeed = r.u32v();
+            p.claimDay = r.s32v();
+            const u64 lo = r.u32v(), hi = r.u32v();
+            p.claims = lo | (hi << 32);
+            p.tips = r.u32v();
+            for (u16& c : p.counts) c = r.u16v();
+        }
+        r.seek(from + n);
+    }
     r.seek(start + sectionSize);
 
     sectionSize = r.u16v();

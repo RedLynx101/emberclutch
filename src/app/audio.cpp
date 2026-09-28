@@ -42,7 +42,11 @@ const char* const kSfxFiles[] = {
     // Beta 1
     "step-grass", "step-stone", "step-wood", "mount", "find-sparkle", "lantern-light", "lantern-relight", "door-wood",
     "quest-page", "breath-flame", "breath-frost", "breath-gust", "breath-light", "breath-mist", "breath-spores",
-    "village-bell", "crowd-cheer", "crowd-aww", "whistle-start", "ring-pass", "fruit-toss", "fruit-catch", "star-shimmer"};
+    "village-bell", "crowd-cheer", "crowd-aww", "whistle-start", "ring-pass", "fruit-toss", "fruit-catch", "star-shimmer",
+    // 1.0
+    "hop-on", "hop-off", "nuzzle", "shutter", "equip", "level-up", "unlock", "notice", "battle-start", "swipe", "hit",
+    "hit-big", "whiff", "faint", "stat-up", "stat-down", "victory", "defeat", "pose", "twirl", "ribbon", "cast", "plop",
+    "bite", "reel", "shell-pick", "ice-crack", "step-sand", "step-snow", "burst", "brake"};
 static_assert(sizeof(kSfxFiles) / sizeof(kSfxFiles[0]) == static_cast<int>(Sfx::Count), "one file per Sfx");
 // Stand-ins (D35) for sound brief 2, in Sfx order from BallRoll: what plays until the sound's
 // own file arrives, and how it's retuned. They match what these moments played before.
@@ -69,6 +73,15 @@ constexpr StandIn kStandIns[] = {
     {Sfx::Sparkle, 1.6f, 0.7f},  {Sfx::Splash, 1.5f, 0.5f},  {Sfx::Brush, 0.8f, 0.6f},  {Sfx::Confirm, 0.8f, 1.0f},
     {Sfx::Confirm, 1.2f, 1.0f},  {Sfx::Whimper, 1.0f, 0.6f}, {Sfx::Toast, 1.4f, 1.0f},  {Sfx::Sparkle, 1.3f, 1.0f},
     {Sfx::Flap, 1.6f, 0.5f},     {Sfx::Munch, 1.2f, 0.8f},   {Sfx::Sparkle, 0.7f, 1.0f},
+    // 1.0 (until the synths are in)
+    {Sfx::Mount, 1.3f, 0.8f},    {Sfx::Thump, 1.2f, 0.6f},   {Sfx::Purr, 1.3f, 0.7f},    {Sfx::Tap, 0.7f, 1.0f},
+    {Sfx::Sparkle, 1.1f, 0.8f},  {Sfx::Confirm, 1.3f, 1.0f}, {Sfx::Sparkle, 0.9f, 1.0f}, {Sfx::Toast, 1.2f, 0.8f},
+    {Sfx::WhistleStart, 1.0f, 1.0f}, {Sfx::Flap, 1.6f, 0.7f}, {Sfx::Thump, 1.0f, 1.0f}, {Sfx::Thump, 0.8f, 1.0f},
+    {Sfx::Flap, 2.0f, 0.4f},     {Sfx::Whimper, 0.8f, 0.8f}, {Sfx::Sparkle, 1.4f, 0.7f}, {Sfx::Rumble, 1.5f, 0.5f},
+    {Sfx::CrowdCheer, 1.0f, 1.0f}, {Sfx::CrowdAww, 1.0f, 1.0f}, {Sfx::Sparkle, 1.2f, 0.6f}, {Sfx::Flap, 1.3f, 0.6f},
+    {Sfx::Confirm, 1.1f, 1.0f},  {Sfx::Flap, 1.8f, 0.5f},    {Sfx::Splash, 1.6f, 0.5f},  {Sfx::Splash, 1.2f, 0.8f},
+    {Sfx::BallRoll, 1.4f, 0.6f}, {Sfx::BowlClink, 1.3f, 0.7f}, {Sfx::EggCrack, 0.7f, 0.9f}, {Sfx::Step, 0.9f, 0.6f},
+    {Sfx::Step, 0.8f, 0.6f},     {Sfx::DiveWhoosh, 1.2f, 0.8f}, {Sfx::Flap, 0.6f, 0.7f},
 };
 static_assert(sizeof(kStandIns) / sizeof(kStandIns[0]) == static_cast<int>(Sfx::Count) - kFirstBrief2,
               "a stand-in for every brief 2 sound");

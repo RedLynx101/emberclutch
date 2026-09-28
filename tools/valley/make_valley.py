@@ -46,7 +46,7 @@ SUN = (-0.45, -0.5, 0.74)  # towards the sun (the south-east, high)
 HALF = (N - 1) * SPACING / 2
 
 (P_DEN, P_MARKET, P_STONE, P_SANCTUARY, P_VAULT, P_TRAILHEAD, P_ARENA, P_LAKE, P_KEEPER, P_ISLES, P_ORCHARD,
- P_MILL, P_GROTTO, P_RUINS) = range(14)
+ P_MILL, P_GROTTO, P_RUINS, P_CALDERA, P_GLADE, P_COVE, P_HOLLOW) = range(18)
 # Prop kinds (core/valley ValleyPropKind).
 K_TREE, K_PINE, K_FRUIT, K_BUSH, K_ROCK, K_FLOWERS, K_REEDS = range(7)
 
@@ -122,13 +122,22 @@ STONE_HILL = (600.0, 520.0)
 MILL_HEADING = math.atan2(0.49, 0.87)
 MILL_WATER = 1.3        # the mill's anchor above the water (places.json water_z)
 GROTTO_FLOOR = WATER + 1.0
+# 1.0 (D90): Emberpeak Caldera, a volcano in the east whose crater floor is the battle league's
+# stage, open west through a gap in its rim toward the arena; Frostspire Hollow, a bowl ringed
+# with ice cut into the cold heights, open east toward the Vault's trail.
+CALDERA = (900.0, -120.0)
+CALDERA_FLOOR = 60.0
+CALDERA_GAP = math.atan2(-210.0, -240.0)   # the rim's gap, toward the arena
+HOLLOW = (-20.0, 800.0)
+HOLLOW_FLOOR = 150.0
+COVE_GROUND = WATER + 1.6
 # place: (x, y, flat radius, ground height or None: its own ground before flattening), heading
 PLACES = {
     P_DEN: (DEN[0] + 4.0, DEN[1], 0.0, None, math.pi / 2),        # in a notch in the cliff (den_notch)
     P_MARKET: (330.0, 120.0, 85.0, 14.0, 0.0),
     P_STONE: (STONE_HILL[0], STONE_HILL[1], 30.0, 72.0, math.pi),
     P_SANCTUARY: (-420.0, -470.0, 110.0, 16.0, 0.3),
-    P_VAULT: (230.0, 720.0, 30.0, 152.0, math.pi),
+    P_VAULT: (230.0, 720.0, 30.0, 152.0, 0.0),                     # its mouth toward its path (run 19)
     P_TRAILHEAD: (60.0, -880.0, 35.0, 22.0, math.pi),
     P_ARENA: (660.0, -330.0, 62.0, 15.0, -0.6),
     P_LAKE: (300.0, -178.0, 0.0, None, math.pi),
@@ -138,6 +147,12 @@ PLACES = {
     P_MILL: (-6.0, 60.0, 0.0, None, MILL_HEADING),               # its bridge across the river (mill_banks)
     P_GROTTO: (CLIFF_X - 6.0, FALLS_Y, 0.0, None, -math.pi / 2),  # in the cliff behind the falls, open east
     P_RUINS: (CRAG[0], CRAG[1], 16.0, None, math.pi * 1.2),      # flattened at the crag's own top
+    # 1.0: the caldera's crater (caldera()), front toward the gap; the glade in the west woods; the
+    # cove's beach on the lake's south shore, facing the water; the hollow's bowl (hollow()), open east.
+    P_CALDERA: (CALDERA[0], CALDERA[1], 0.0, None, math.atan2(math.cos(CALDERA_GAP), -math.sin(CALDERA_GAP))),
+    P_GLADE: (-330.0, 430.0, 46.0, None, math.atan2(-0.768, 0.640)),
+    P_COVE: (320.0, -508.0, 26.0, COVE_GROUND, math.pi),
+    P_HOLLOW: (HOLLOW[0], HOLLOW[1], 0.0, None, math.pi / 2),
 }
 ISLANDS = [(120.0, 200.0, 190.0, 55.0), (300.0, -330.0, 150.0, 40.0), (-250.0, 480.0, 172.0, 35.0),
            (480.0, 300.0, 212.0, 30.0), (-150.0, -250.0, 160.0, 28.0), (700.0, 120.0, 185.0, 26.0)]
@@ -151,7 +166,11 @@ PATHS = [
     [(-420, -470), (-260, -640), (-80, -790), (60, -880)],               # the trailhead
     [(330, 120), (320, -40), (300, -178)],                               # the lake's jetty
     [(DEN[0] + 14, DEN[1]), (-575, 140), (CLIFF_X + 70, FALLS_Y + 52)],  # the keeper's lodge
-    [(-300, -330), (-160, -520), (60, -600), (200, -500), (300, -178)],  # round the lake's south
+    [(-300, -330), (-160, -520), (60, -600), (200, -562), (300, -522)],  # round the lake's south to the cove
+    # 1.0: up the caldera's flank from the arena, through the gap in its rim
+    [(660, -330), (727, -272), (787, -219), (840, -173), (CALDERA[0] - 22, CALDERA[1] - 19)],
+    [(CLIFF_X + 70, FALLS_Y + 52), (-470, 318), (-400, 380), (-352, 412)],  # the lodge to the glade
+    [(230, 720), (150, 760), (70, 792), (8, 800)],                       # along the heights to the hollow
 ]
 
 
@@ -217,6 +236,8 @@ def height(x, y):
         h = h + (min(h, bowl) - h) * (1.0 - smoothstep(0.85, 1.3, e))
     h = mill_banks(x, y, h)
     h = grotto_notch(x, y, h)
+    h = caldera(x, y, h)
+    h = hollow(x, y, h)
     return h
 
 
@@ -266,6 +287,42 @@ def grotto_notch(x, y, h):
     return h + (GROTTO_FLOOR - h) * w
 
 
+def caldera(x, y, h):
+    """Emberpeak: a cone on the valley's east side, its crater's floor flat (the league's stage),
+    its inner walls steep, a gap in the rim toward the arena with a ramp down the flank."""
+    cx, cy = CALDERA
+    d = math.hypot(x - cx, y - cy)
+    if d > 320.0:
+        return h
+    rim = CALDERA_FLOOR + 24.0 + 4.0 * (fbm(x / 30.0, y / 30.0, 2, 57) - 0.5)
+    if d < 50.0:
+        cone = CALDERA_FLOOR + (rim - CALDERA_FLOOR) * smoothstep(33.0, 50.0, d) ** 1.4
+        hc = cone
+    else:
+        cone = rim - 0.31 * (d - 50.0) - 6.0 * smoothstep(50.0, 70.0, d) * 0.0
+        hc = max(h, cone)
+    a = math.atan2(y - cy, x - cx) - CALDERA_GAP
+    a = (a + math.pi) % (2 * math.pi) - math.pi
+    gap = 1.0 - smoothstep(0.10, 0.24, abs(a))
+    ramp = CALDERA_FLOOR if d < 33.0 else max(h, CALDERA_FLOOR - 0.19 * (d - 33.0))
+    return hc + (ramp - hc) * gap * (1.0 - smoothstep(260.0, 320.0, d))
+
+
+def hollow(x, y, h):
+    """Frostspire Hollow: a flat bowl cut into the heights, ringed by a raised rim of rock and ice,
+    with a corridor out through the rim at its front (east) to the trail."""
+    hx, hy = HOLLOW
+    d = math.hypot(x - hx, y - hy)
+    if d > 80.0:
+        return h
+    rim = HOLLOW_FLOOR + 16.0 * (1.0 - smoothstep(24.0, 70.0, d)) + 3.0 * (fbm(x / 12.0, y / 12.0, 2, 63) - 0.5)
+    hr = max(h, rim) if d > 15.0 else h
+    u, f = local(x, y, P_HOLLOW)
+    room = 1.0 - smoothstep(15.0, 19.0, d)
+    mouth = (1.0 - smoothstep(3.5, 6.5, abs(u))) * smoothstep(6.0, 10.0, f) * (1.0 - smoothstep(48.0, 64.0, f))
+    return hr + (HOLLOW_FLOOR - hr) * max(room, mouth)
+
+
 # The storybook palette.
 GRASS = (126, 178, 84)
 GRASS_DEEP = (84, 146, 72)
@@ -276,6 +333,10 @@ ROCK = (150, 134, 142)
 SNOW = (240, 244, 252)
 SAND = (228, 208, 154)
 SHALLOW = (104, 164, 158)
+BASALT = (84, 72, 78)
+ASH = (128, 112, 110)
+MOSS_NIGHT = (70, 128, 112)
+ICE = (206, 226, 244)
 
 
 def mix(a, b, t):
@@ -310,6 +371,15 @@ def region_colour(x, y, h, slope):
     c = mix(c, COBBLE, 1.0 - smoothstep(26.0, 40.0, dm))
     ax, ay = PLACES[P_ARENA][0], PLACES[P_ARENA][1]
     c = mix(c, PATH, (1.0 - smoothstep(28.0, 40.0, math.hypot(x - ax, y - ay))) * 0.8)
+    # 1.0: the caldera's ash and basalt, the glade's deep moss, the cove's sand, the hollow's ice.
+    dc = math.hypot(x - CALDERA[0], y - CALDERA[1])
+    c = mix(c, mix(ASH, BASALT, 1.0 - smoothstep(40.0, 90.0, dc)), 1.0 - smoothstep(120.0, 240.0, dc))
+    gx, gy = PLACES[P_GLADE][0], PLACES[P_GLADE][1]
+    c = mix(c, MOSS_NIGHT, (1.0 - smoothstep(30.0, 60.0, math.hypot(x - gx, y - gy))) * 0.85)
+    kx, ky = PLACES[P_COVE][0], PLACES[P_COVE][1]
+    if h > WATER - 0.4:
+        c = mix(c, SAND, 1.0 - smoothstep(28.0, 46.0, math.hypot(x - kx, y - ky)))
+    c = mix(c, ICE, 1.0 - smoothstep(18.0, 30.0, math.hypot(x - HOLLOW[0], y - HOLLOW[1])))
     return c
 
 
@@ -389,6 +459,9 @@ def scatter(hs):
                 continue
             if h > 150:
                 continue  # the snow line
+            if (math.hypot(x - CALDERA[0], y - CALDERA[1]) < 230.0 or math.hypot(x - HOLLOW[0], y - HOLLOW[1]) < 40.0
+                    or math.hypot(x - PLACES[P_COVE][0], y - PLACES[P_COVE][1]) < 48.0):
+                continue  # bare ash, the ice bowl, the beach
             kind = K_PINE if h > 70 or (forest > 0.62 and rng.random() < 0.3) else K_TREE
             add(x, y, kind, rng.uniform(7.0, 12.0) if kind == K_PINE else rng.uniform(5.5, 9.0))
     # The orchard: fruit trees in rows beside the orchard's corner.
@@ -419,6 +492,8 @@ def scatter(hs):
         h, sl = ground(hs, x, y), slope_at(hs, x, y)
         if near_place(x, y, 4.0) or near_path(x, y, 4.5):
             continue
+        if math.hypot(x - CALDERA[0], y - CALDERA[1]) < 52.0 or math.hypot(x - HOLLOW[0], y - HOLLOW[1]) < 20.0:
+            continue
         if WATER - 0.5 < h < WATER + 1.2 and rng.random() < 0.6:
             add(x, y, K_REEDS, rng.uniform(1.0, 1.8))
         elif sl > 0.35 and h > WATER + 2 and rng.random() < 0.25:
@@ -447,6 +522,10 @@ def places(hs):
             out.append((pid, x, y, WATER + MILL_WATER, heading))
         elif pid == P_GROTTO:
             out.append((pid, x, y, GROTTO_FLOOR, heading))
+        elif pid == P_CALDERA:
+            out.append((pid, x, y, CALDERA_FLOOR, heading))
+        elif pid == P_HOLLOW:
+            out.append((pid, x, y, HOLLOW_FLOOR, heading))
         else:
             out.append((pid, x, y, ground(hs, x, y), heading))
     return out

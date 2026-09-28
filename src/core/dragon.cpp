@@ -72,6 +72,10 @@ void stepHatched(Dragon& d, s64 t, float hours) {
     n.clean -= 1.2f * hours * scale;  // a bath every two days or so (D83)
     const float playDrain = (asleep ? 1.0f : 4.0f) * (d.personality == Personality::Playful ? 0.75f : 1.0f);
     n.play -= playDrain * hours * scale;
+    // Love (D89): it misses your hands through the day, less while it sleeps; a Shy one holds on
+    // to it longer, a Proud one wants it less.
+    const float loveDrain = (asleep ? 0.8f : 3.0f) * (d.personality == Personality::Shy ? 0.8f : 1.0f);
+    n.love -= loveDrain * hours * scale;
     if (night) {
         n.energy += 12.0f * hours * sleepy;
     } else if (d.napping) {
@@ -84,6 +88,7 @@ void stepHatched(Dragon& d, s64 t, float hours) {
     n.energy = clamp100(n.energy);
     n.clean = clamp100(n.clean);
     n.play = clamp100(n.play);
+    n.love = clamp100(n.love);
 
     // Dust settles over a day or two (D46): fastest where a dragon meets the floor, slowest
     // on the wings; the keepers keep Sanctuary dragons tidy.
@@ -97,6 +102,7 @@ void stepHatched(Dragon& d, s64 t, float hours) {
         if (n.energy < 50) n.energy = 50;
         if (n.clean < 50) n.clean = 50;
         if (n.play < 50) n.play = 50;
+        if (n.love < 50) n.love = 50;
         return;
     }
 
@@ -116,9 +122,9 @@ void stepHatched(Dragon& d, s64 t, float hours) {
 
 float Needs::lowest() const {
     float m = belly;
-    if (energy < m) m = energy;
     if (clean < m) m = clean;
     if (play < m) m = play;
+    if (love < m) m = love;
     return m;
 }
 
@@ -176,7 +182,7 @@ bool tryHatch(Dragon& d, s64 now, Rng& rng) {
     d.stage = Stage::Hatchling;
     d.hatchedAt = now;
     d.lastVisitAt = now;
-    d.needs = Needs{70, 70, 70, 70};
+    d.needs = Needs{70, 70, 70, 70, 70};
     d.personality = temperamentOf(d);
     d.bond = d.bondHigh = static_cast<u16>(kBondPerEggTurn * (d.eggTurns < kMaxEggTurns ? d.eggTurns : kMaxEggTurns));
     // Favourite food leans toward the breed's own (food index == element for now).
@@ -228,12 +234,12 @@ void feed(Dragon& d, float amount, bool favorite) {
 }
 
 void pet(Dragon& d, float amount) {
-    d.needs.play = clamp100(d.needs.play + amount * 0.5f);
+    d.needs.love = clamp100(d.needs.love + amount * 0.6f);
     addBond(d, d.personality == Personality::Shy ? 2 : 1);
 }
 
 void brushed(Dragon& d, float amount) {
-    d.needs.play = clamp100(d.needs.play + amount * 0.7f);
+    d.needs.love = clamp100(d.needs.love + amount * 0.8f);
     addBond(d, d.personality == Personality::Shy ? 2 : 1);
 }
 
@@ -273,7 +279,9 @@ void makeUp(Dragon& d) {
 Mood moodOf(const Dragon& d) {
     if (d.upset) return Mood::Upset;
     const Needs& n = d.needs;
-    const float score = (n.belly + n.energy + n.clean + n.play + n.lowest()) / 5.0f;
+    // The four cared-for needs and the lowest of them; a tired dragon is only a little glummer.
+    const float tired = n.energy < 20 ? (20 - n.energy) * 0.5f : 0.0f;
+    const float score = (n.belly + n.clean + n.play + n.love + n.lowest()) / 5.0f - tired;
     if (score >= 80) return Mood::Joyful;
     if (score >= 60) return Mood::Content;
     if (score >= 40) return Mood::Restless;

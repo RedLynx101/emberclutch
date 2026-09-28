@@ -379,6 +379,30 @@
         [5.26, -5.22, 0.6],
         [7.54, -3.98, 0.6]
       ]
+    },
+    "caldera": {
+      "flat": 20.0,
+      "door": null,
+      "lantern": null,
+      "solids": []
+    },
+    "glade": {
+      "flat": 16.0,
+      "door": null,
+      "lantern": null,
+      "solids": []
+    },
+    "cove": {
+      "flat": 14.0,
+      "door": null,
+      "lantern": null,
+      "solids": []
+    },
+    "hollow": {
+      "flat": 10.0,
+      "door": null,
+      "lantern": null,
+      "solids": []
     }
   }
 }

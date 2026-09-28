@@ -70,7 +70,7 @@ Dragon dexDragon(int kind, int variant) {
     rollKind(d, kind, variant, rng);
     d.stage = Stage::Adult;
     d.incubationSeconds = kIncubationSeconds;
-    d.needs = Needs{90, 90, 90, 90};
+    d.needs = Needs{90, 90, 90, 90, 90};
     return d;
 }
 

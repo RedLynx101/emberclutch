@@ -248,7 +248,7 @@ static Dragon readyAdult(u32 id, Element e, Sex sex, Rng& rng) {
     d.stage = Stage::Adult;
     d.hatchedAt = kT0 - 20 * kDay;
     d.bond = d.bondHigh = 400;
-    d.needs = Needs{90, 90, 90, 90};
+    d.needs = Needs{90, 90, 90, 90, 90};
     return d;
 }
 
@@ -600,6 +600,20 @@ static SaveData& sampleSave() {
         d.lastTurnedAt = kT0 + i * kHour;
         d.motherId = i;
         d.location = static_cast<Location>(i % 2);
+        d.xp = static_cast<u32>(i * 777);  // 1.0: a trainer's dragon and its record
+        d.trained[i] = static_cast<u8>(i + 2);
+        d.moves[0] = static_cast<u8>(i);
+        d.wear[1] = static_cast<u8>(10 + i);
+        d.dye = static_cast<u8>(i);
+        d.battleTitle = static_cast<u8>(i % 5);
+        d.showTitle = static_cast<u8>((i + 1) % 5);
+        d.battleWins = static_cast<u16>(100 + i);
+        d.showWins = static_cast<u16>(200 + i);
+        d.wildWins = static_cast<u16>(300 + i);
+        d.cupsWon = static_cast<u16>(0x0A5 << i & 0xFFF);
+        d.ribbons = 0x80000001u >> i;
+        d.frostDeepest = static_cast<u8>(i * 3);
+        d.needs.love = 12.5f * i;
         s.dragons[i] = d;
     }
     return s;
@@ -614,7 +628,12 @@ static bool sameDragon(const Dragon& a, const Dragon& b) {
            a.upset == b.upset && a.napping == b.napping &&
            std::memcmp(a.dirt, b.dirt, sizeof(a.dirt)) == 0 && a.eggTurns == b.eggTurns &&
            a.lastTurnedAt == b.lastTurnedAt && a.denSlot == b.denSlot && a.wanderSince == b.wanderSince &&
-           a.wanderSteps == b.wanderSteps && a.origin == b.origin && a.known == b.known && a.look == b.look;
+           a.wanderSteps == b.wanderSteps && a.origin == b.origin && a.known == b.known && a.look == b.look &&
+           a.needs.love == b.needs.love && a.xp == b.xp && std::memcmp(a.trained, b.trained, sizeof(a.trained)) == 0 &&
+           std::memcmp(a.moves, b.moves, sizeof(a.moves)) == 0 && std::memcmp(a.wear, b.wear, sizeof(a.wear)) == 0 &&
+           a.dye == b.dye && a.battleTitle == b.battleTitle && a.showTitle == b.showTitle &&
+           a.battleWins == b.battleWins && a.showWins == b.showWins && a.wildWins == b.wildWins &&
+           a.cupsWon == b.cupsWon && a.ribbons == b.ribbons && a.frostDeepest == b.frostDeepest;
 }
 
 // Dust settles over a day or two, faster on the belly than the wings; grooming, brushing a
@@ -771,8 +790,8 @@ TEST(save_round_trip) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots + kBreedCount + 6 + (1 + kDexKindSlots + 8 + 1) + (1 + kWorldBytes) + 2 + 5 + 2 + 2 +
-                   5 * (132 + 16 + 9 + 1 + 12 + 2 + 2 + 1 + kRegionCount + 12));
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots + kBreedCount + 6 + (1 + kDexKindSlots + 8 + 1) + (1 + kWorldBytes) + (2 + kProgressBytes) + 2 + 5 + 2 + 2 +
+                   5 * (132 + 16 + 9 + 1 + 12 + 2 + 2 + 1 + kRegionCount + 12 + 37));
     static SaveData out;
     SaveHeaderInfo info;
     CHECK(decodeSave(buf.data(), n, out, &info) == LoadResult::Ok);
@@ -897,9 +916,10 @@ TEST(the_looks) {
     const std::size_t n = encodeSave(s, 1, kT0, buf.data(), buf.size());
     std::vector<u8> old1(buf.begin(), buf.begin() + n);
     constexpr std::size_t kKindBytes = 12;  // DR3's fields, after the look and the mud
-    const std::size_t rec = n - (132 + 16 + 9 + 1 + 12 + 2 + 1 + kRegionCount + kKindBytes) - 2;  // the record's size field
-    old1[rec] = static_cast<u8>(old1[rec] - 1 - kRegionCount - kKindBytes);  // no look, no mud, no kind
-    old1.resize(old1.size() - 1 - kRegionCount - kKindBytes);
+    constexpr std::size_t kTrainerBytes = 37;  // 1.0's, after them
+    const std::size_t rec = n - (132 + 16 + 9 + 1 + 12 + 2 + 1 + kRegionCount + kKindBytes + kTrainerBytes) - 2;  // the record's size field
+    old1[rec] = static_cast<u8>(old1[rec] - 1 - kRegionCount - kKindBytes - kTrainerBytes);  // no look, no mud, no kind
+    old1.resize(old1.size() - 1 - kRegionCount - kKindBytes - kTrainerBytes);
     // Fix up the header's payload size and checksum for the shorter payload.
     const u32 payload = static_cast<u32>(old1.size() - kSaveHeaderSize);
     std::memcpy(&old1[12], &payload, 4);
@@ -1027,6 +1047,7 @@ int main() {
     runKindTests();
     runWorldTests();
     runChallengeTests();
+    runTrainerTests();
     std::printf("\n%d checks, %d failures\n", g_checks, g_failures);
     return g_failures == 0 ? 0 : 1;
 }

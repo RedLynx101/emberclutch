@@ -27,6 +27,12 @@ enum class Sfx : u8 {
     StepGrass, StepStone, StepWood, Mount, FindSparkle, LanternLight, LanternRelight, DoorWood, QuestPage,
     BreathFlame, BreathFrost, BreathGust, BreathLight, BreathMist, BreathSpores, VillageBell, CrowdCheer, CrowdAww,
     WhistleStart, RingPass, FruitToss, FruitCatch, StarShimmer,
+    // 1.0 (D89-D91): riding, Love, photos, the trainer's game (battles, the pageant, the cove, the
+    // hollow) and the challenges' new touches; cute synths made by tools/audio/make_synth_sfx.py
+    // where they needn't be specific (a stand-in plays until a file is in).
+    HopOn, HopOff, Nuzzle, Shutter, Equip, LevelUp, Unlock, Notice,
+    BattleStart, Swipe, Hit, HitBig, Whiff, Faint, StatUp, StatDown, Victory, Defeat,
+    Pose, Twirl, Ribbon, Cast, Plop, Bite, Reel, ShellPick, IceCrack, StepSand, StepSnow, Burst, Brake,
     Count
 };
 // True once a sound's own file is loaded (not a stand-in).

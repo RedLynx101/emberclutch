@@ -2626,7 +2626,8 @@ constexpr const char* kPlaceFiles[kPlaceCount] = {
     "romfs:/valley/places/sanctuary.esm", "romfs:/valley/places/vault.esm",   "romfs:/valley/places/trailhead.esm",
     "romfs:/valley/places/arena.esm",     "romfs:/valley/places/lake.esm",    "romfs:/valley/places/keeper.esm",
     "romfs:/valley/places/isles.esm",     "romfs:/valley/places/orchard.esm", "romfs:/valley/places/mill.esm",
-    "romfs:/valley/places/grotto.esm",    "romfs:/valley/places/ruins.esm"};
+    "romfs:/valley/places/grotto.esm",    "romfs:/valley/places/ruins.esm",   "romfs:/valley/places/caldera.esm",
+    "romfs:/valley/places/glade.esm",     "romfs:/valley/places/cove.esm",    "romfs:/valley/places/hollow.esm"};
 constexpr float kPlaceWant = 420.0f, kPlaceLoad = 330.0f, kPlaceDrop = 480.0f;
 
 u8 placeRole(const char* name) {
@@ -3344,7 +3345,8 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
                           seat.r[0].w, seat.r[1].w, seat.r[2].w, view.at.x, view.at.y, view.at.z);
     }
     // A dragon out on the Wanderings, if it's near (D69), and the star dragon in the sky.
-    auto another = [&](const Dragon* d, const DenActor* actor, Vec3 at, float heading, float reach, float bank, float grow) {
+    auto another = [&](const Dragon* d, const DenActor* actor, Vec3 at, float heading, float reach, float bank, float grow,
+                       float pitch = 0.0f) {
         if (!d || std::hypot(at.x - view.eye.x, at.y - view.eye.y) > reach ||
             outsideView(clip, at - Vec3{5, 5, 2}, at + Vec3{5, 5, 6}))
             return;
@@ -3358,6 +3360,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         Mtx_Identity(&model);
         Mtx_Translate(&model, at.x, at.y, at.z, true);
         Mtx_RotateZ(&model, heading, true);
+        if (pitch != 0.0f) Mtx_RotateX(&model, pitch, true);
         Mtx_RotateY(&model, bank, true);
         Mtx_Scale(&model, posed.size * grow, posed.size * grow, posed.size * grow);
         Mtx_Translate(&model, 0, 0, -posed.ground, true);
@@ -3365,6 +3368,10 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     };
     another(view.wanderer, view.wandererActor, view.wandererAt, view.wandererHeading, 220.0f, 0.0f, 1.0f);
     another(view.skyDragon, view.skyActor, view.skyAt, view.skyHeading, 380.0f, -0.35f, 1.8f);  // a legend: larger
+    for (int i = 0; i < view.otherCount && i < kMaxOthers; ++i) {  // challengers, wild ones, rivals (1.0)
+        const ValleyDragon& o = view.others[i];
+        another(o.dragon, o.actor, o.at, o.heading, 220.0f, -o.roll, o.scale, o.pitch);
+    }
     // The people about (you on foot, the villagers), near enough to see.
     if (view.peopleCount > 0) {
         bindDragons(projection);

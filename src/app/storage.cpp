@@ -14,8 +14,8 @@ constexpr const char* kSlotPath[2] = {"sdmc:/3ds/emberclutch/save.a", "sdmc:/3ds
 constexpr const char* kLegacyPath = "sdmc:/3ds/emberclutch/dev-save.bin";
 
 // Encode/decode buffers are static: the 3DS main thread stack is small.
-u8 g_bufA[32 * 1024];
-u8 g_bufB[32 * 1024];
+u8 g_bufA[64 * 1024];  // (1.0: a full 200-dragon save is ~55 KB)
+u8 g_bufB[64 * 1024];
 
 // The save thread: the next save waiting (the newest wins), and the one being written.
 u8 g_queued[32 * 1024];
@@ -123,7 +123,7 @@ bool importLegacy(SaveData& out) {
 }  // namespace
 
 bool loadGame(SaveData& out, SaveSlots& slots) {
-    static_assert(sizeof(g_bufA) >= 27 * 1024, "save buffer must hold a full save");
+    static_assert(sizeof(g_bufA) >= 32 + 2048 + 200 * (132 + 2 + 128), "save buffer must hold a full save");
     const std::size_t na = readFile(kSlotPath[0], g_bufA, sizeof(g_bufA));
     const std::size_t nb = readFile(kSlotPath[1], g_bufB, sizeof(g_bufB));
     const int newest = pickNewestSlot(na ? g_bufA : nullptr, na, nb ? g_bufB : nullptr, nb);

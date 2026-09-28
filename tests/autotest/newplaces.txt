@@ -1,0 +1,36 @@
+# 1.0 (D90): the four new places' ground from the air: Emberpeak Caldera's cone and crater, the
+# Moonpetal Glade in the west woods, Driftwood Cove's beach and Frostspire Hollow's bowl.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+key X
+wait 5
+view 14 -330 -290 160 0 0 0
+wait 4
+shot n01-caldera-from-the-arena
+view 14 -60 -52 30 30 26 -4
+wait 4
+shot n02-caldera-crater
+view 15 90 -90 45 0 0 0
+wait 4
+shot n03-glade
+view 16 0 -70 22 0 60 0
+wait 4
+shot n04-cove
+view 17 110 -30 55 0 0 0
+wait 4
+shot n05-hollow
+view 17 30 0 8 -10 0 3
+wait 4
+shot n06-hollow-inside

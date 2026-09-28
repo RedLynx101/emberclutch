@@ -44,7 +44,7 @@ const World& world() {
 Dragon contentDragon() {
     Dragon d;
     d.stage = Stage::Adult;
-    d.needs = Needs{75, 75, 75, 75};
+    d.needs = Needs{75, 75, 75, 75, 75};
     d.personality = Personality::Curious;
     return d;
 }

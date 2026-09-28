@@ -192,6 +192,18 @@ const AnimLibrary* personAnims();
 // A person on their own on the top screen, lit by the time of day (the creator).
 void drawPersonShowcase(App& app, const PersonView& p, s64 now);
 
+// Another dragon about (1.0): a challenger's in a battle, a wild one in Frostspire Hollow, a
+// pageant rival, a racer in Sky Rings. Drawn as the wanderer, tipped by pitch (nose down +) and
+// banked by roll.
+struct ValleyDragon {
+    const Dragon* dragon = nullptr;
+    const DenActor* actor = nullptr;
+    Vec3 at;
+    float heading = 0, pitch = 0, roll = 0;
+    float scale = 1;
+};
+constexpr int kMaxOthers = 4;
+
 struct ValleyView {
     const Valley* valley = nullptr;
     const Dragon* dragon = nullptr;    // the one flown
@@ -223,6 +235,8 @@ struct ValleyView {
     int glintCount = 0;
     PersonView people[kMaxPeopleShown];  // you first, then the villagers
     int peopleCount = 0;
+    ValleyDragon others[kMaxOthers];     // other dragons about (1.0)
+    int otherCount = 0;
 };
 void drawValley(App& app, const ValleyView& view, s64 now);
 void releaseValley();  // leaving the valley: its GPU memory back

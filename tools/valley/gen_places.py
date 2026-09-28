@@ -9,7 +9,7 @@ import os
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 ORDER = ["den", "market", "stone", "sanctuary", "vault", "trailhead", "arena", "lake", "keeper", "isles",
-         "orchard", "mill", "grotto", "ruins"]  # core/valley ValleyPlace
+         "orchard", "mill", "grotto", "ruins", "caldera", "glade", "cove", "hollow"]  # core/valley ValleyPlace
 
 
 def f(v):

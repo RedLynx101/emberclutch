@@ -158,16 +158,16 @@ TEST(each_dragon_has_its_own_quirks) {
     CHECK(bathMoodOf(dragonWithId(3, Element::Gale)) == BathMood::Fine);
 }
 
-// Grooming, simpler (D83): the brush pleases more than the hand (Play and bond), its liked zone
-// half as much again; only the bath cleans, and it fills Clean.
+// Grooming, simpler (D83): the brush pleases more than the hand (Love, D89, and bond), its liked
+// zone half as much again; only the bath cleans, and it fills Clean.
 TEST(brushing_pleases_and_the_bath_cleans) {
     Dragon d = dragonWithId(7);
     d.stage = Stage::Hatchling;
     Dragon e = d;
-    d.needs.play = e.needs.play = 20;
+    d.needs.love = e.needs.love = 20;
     for (int k = 0; k < 4; ++k) pet(d, 3.0f);     // a second of the hand (0.25 s ticks)
     for (int k = 0; k < 5; ++k) brushed(e, 4.0f); // a second of the brush (0.2 s ticks)
-    CHECK(e.needs.play > d.needs.play && e.bond > d.bond);
+    CHECK(e.needs.love > d.needs.love && e.bond > d.bond);
     for (float& dust : e.dirt) dust = 60;
     e.needs.clean = 30;
     brushed(e, 4.0f);

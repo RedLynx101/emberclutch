@@ -295,6 +295,10 @@ const PlaceRow kPlaceRows[] = {
     {17.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 198, 12, -1.300f},  // mill
     {7.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 210, 31, 0.000f},  // grotto
     {12.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 241, 25, 0.000f},  // ruins
+    {20.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 266, 0, 0.000f},  // caldera
+    {16.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 266, 0, 0.000f},  // glade
+    {14.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 266, 0, 0.000f},  // cove
+    {10.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 266, 0, 0.000f},  // hollow
 };
 
 const float kMarketEggStand[3] = {-3.792f, 4.520f, 1.500f};

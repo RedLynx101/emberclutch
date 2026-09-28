@@ -8,8 +8,11 @@
 namespace ec {
 
 struct Needs {
-    float belly = 80, energy = 80, clean = 80, play = 80;  // 0..100 (clean was Shine until D83)
-    float lowest() const;
+    // 0..100 (clean was Shine until D83). Love (1.0, D89): petting and brushing, apart from Play
+    // (games and toys). Energy is shown apart, below the four (spent by games and challenges,
+    // back with sleep), and doesn't count toward mood or care stars.
+    float belly = 80, energy = 80, clean = 80, play = 80, love = 80;
+    float lowest() const;  // of the four cared-for needs: belly, clean, play, love
 };
 
 enum class Location : u8 { Den, Sanctuary, Vault /* eggs only */ };
@@ -33,6 +36,9 @@ enum class Origin : u8 { Starter, Bred, Wild, Market, Festival, Count };  // Fes
 
 constexpr int kDragonStats = 5;   // Wing, Wit, Might, Breath, Stamina (core/kinds)
 constexpr int kDragonTraits = 3;  // at most (three only on the rare colouring)
+constexpr int kMoveSlots = 4;     // 1.0 (D90): the moves it battles with (core/battle)
+constexpr int kWearSlots = 4;     // 1.0: what it wears (core/accessories: head, neck, back, tail)
+constexpr u8 kNone = 0xFF;        // an empty move or accessory slot
 
 struct Dragon {
     u32 id = 0;
@@ -89,6 +95,24 @@ struct Dragon {
     u8 manner = 0;
     u8 traits[kDragonTraits] = {};
     u8 traitCount = 0;
+    // 1.0, a trainer's dragon (D90): its experience (core/trainer: its level), the stat points
+    // training and battles have added to its kind's, the moves it battles with (core/battle ids;
+    // kNone: empty, filled from what it knows), what it wears (core/accessories) and its dye (0:
+    // its own colours).
+    u32 xp = 0;
+    u8 trained[kDragonStats] = {};
+    u8 moves[kMoveSlots] = {kNone, kNone, kNone, kNone};
+    u8 wear[kWearSlots] = {kNone, kNone, kNone, kNone};
+    u8 dye = 0;
+    // Its record, kept per dragon (D90): the highest battle and pageant leagues it has won (0
+    // none .. 4 Starfire), its wins, the challenge cups won with it (a bit per challenge * 4 +
+    // cup - 1), the show themes it has won (a bit per core/pageant theme) and the deepest floor
+    // of Frostspire Hollow it has cleared.
+    u8 battleTitle = 0, showTitle = 0;
+    u16 battleWins = 0, showWins = 0, wildWins = 0;
+    u16 cupsWon = 0;
+    u32 ribbons = 0;
+    u8 frostDeepest = 0;
 };
 
 constexpr s32 kIncubationSeconds = 24 * 3600;
@@ -121,8 +145,8 @@ void markVisit(Dragon& d, s64 now);
 
 // Interactions (clamped, bond-aware). Amounts are need points.
 void feed(Dragon& d, float amount, bool favorite);
-void pet(Dragon& d, float amount);    // a stroke of the hand: Play up a little, a bond point
-void brushed(Dragon& d, float amount); // a stroke of the brush: Play up a little more (D83)
+void pet(Dragon& d, float amount);    // a stroke of the hand: Love up, a bond point
+void brushed(Dragon& d, float amount); // a stroke of the brush: Love up a little more (D83, D89)
 void addBond(Dragon& d, int amount);  // nothing while upset; tracks the high-water mark
 void bathe(Dragon& d);  // the bath: every region clean, Clean full (the only way, D83)
 void play(Dragon& d, float amount);

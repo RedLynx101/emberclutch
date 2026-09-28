@@ -187,8 +187,8 @@ bool debugMenu(App& app, const Input& in) {
             case 0: app.game.devOffset += kHour; break;
             case 1: app.game.devOffset += kDay; break;
             case 2: app.game.devOffset += 7 * kDay; break;
-            case 3: d.needs = Needs{100, 100, 100, 100}; d.upset = false; break;
-            case 4: d.needs = Needs{5, 5, 5, 5}; break;
+            case 3: d.needs = Needs{100, 100, 100, 100, 100}; d.upset = false; break;
+            case 4: d.needs = Needs{5, 5, 5, 5, 5}; break;
             case 5: if (d.stage == Stage::Egg) d.incubationSeconds = kIncubationSeconds; break;
             case 6: forceNextStage(d, now); break;
             case 7: app.overlay = !app.overlay; break;
@@ -321,7 +321,7 @@ bool debugMenu(App& app, const Input& in) {
                 while (d.stage != Stage::Egg && d.stage != Stage::Adult) forceNextStage(d, now);
                 if (d.bond < 400) d.bond = 400;
                 if (d.bondHigh < d.bond) d.bondHigh = d.bond;
-                d.needs = Needs{95, 95, 95, 95};
+                d.needs = Needs{95, 95, 95, 95, 95};
                 d.upset = false;
                 d.lastBredAt = 0;
                 break;

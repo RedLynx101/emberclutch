@@ -25,6 +25,10 @@ const PlaceInfo kPlaces[kPlaceCount] = {
     {"Windmill Bridge", "A bridge over the river by a sleepy windmill.", PlaceKind::Landmark, kLand, false, false, 30},
     {"The Hidden Grotto", "Behind the falls, where the light is green.", PlaceKind::Secret, kSecret, false, false, 14},
     {"Starwatch Ruins", "An old tower on a crag, looking at the sky.", PlaceKind::Secret, kSecret, false, true, 20},
+    {"Emberpeak Caldera", "A volcano's rim: the battle league's grand stage.", PlaceKind::Challenge, kChal, false, false, 45},
+    {"Moonpetal Glade", "A night garden of glowing flowers: the pageant's hall.", PlaceKind::Challenge, kChal, false, false, 40},
+    {"Driftwood Cove", "Sand, shells and fishing on the lake's far shore.", PlaceKind::Landmark, kLand, false, false, 40},
+    {"Frostspire Hollow", "An ice cave in the heights where wild dragons train.", PlaceKind::Challenge, kChal, false, false, 35},
 };
 
 bool valid(int p) { return p >= 0 && p < kPlaceCount; }

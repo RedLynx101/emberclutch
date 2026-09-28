@@ -2,6 +2,18 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-09-28 — The long run: Beta and 1.0 built together
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D92 | **Voices:** the men speak with the alphabet made from Noah's own voice (v1), the women and the child with his second recording (v2, 2026-09-28, replacing the first female voice); new speakers follow the same rule (voice 0 men, 1 women and children) | Noah: "So the males in the game should use mine and females use this new one" | Approved |
+| D93 | **The work split** (docs/plan/v1-work.md): a shared foundation first (the save's trainer fields and progress block, the four places' ids and ground, sound slots, the valley's feature hooks), then six workstreams (places, battles and the Hollow, challenges and fishing, pageant and accessories, interface, sounds) in worktrees on Opus 5.5, merged by the lead | Noah allowed subagents where it makes sense; one owner per area keeps merges small | My call (creative freedom) |
+| D94 | **Care:** Love is the fourth cared-for need (petting and brushing), Energy is shown apart and doesn't count toward mood or care stars; games spend Energy (a fetch or tug about 2, half the fun when tired, a worn-out dragon won't chase); walking together raises bond (a point per 150 m), Love and Play and lowers Belly a little; a Feed button feeds your partner from the pouch in the valley | Run 19 (D89) | My call (within D89) |
+| D95 | **The flicker's causes and fixes:** dragons' mesh caches were rebuilt in place while a queued draw read them (the Blazeplume's "spaghetti", parts vanishing) and one cache flipped between detail levels in a frame: caches per level, fresh buffers, never taken from a dragon drawn this frame; the valley's tiles flipped detail at the line (8 m of hysteresis now), holes where nothing was built yet (the coarsest built at once), whole woods popping in at 115 m (far cones to 175 m), places culled early at their corners | Run 19 (D89) | My call |
+| D96 | **The valley's ground:** every path graded (at most ~29 degrees, level through bends) and forded where it crosses a stream; the lodge's path round the falls' pool; the Cold Vault's trail winding up a gentler shoulder; places exactly flat inside; **decks** (the mill's bridge could never be crossed on foot; the cove's jetty walks out to the fishing spot); **islands** stood on (the isles' festival lantern couldn't be reached on foot); a PC test walks every path | Run 19 (D89) and what the checks found | My call |
+| D97 | **Finds:** the 22 treasures stay found once; ten little finds a day (Gleam, a treat, now and then a trinket) scatter afresh each morning on open ground | Run 19: "Finds random and regenerating" | My call |
+| D98 | **Controls:** X in the valley opens the Journal (X again closes it; Home is a button), X in the den opens the Outing panel; the free camera's A takes a framed photo titled with the place, X goes back; a tapped map pin asks "Travel to X?"; A goes home near the den's mouth, on foot or riding up to it; L/R turn the view the other way on foot; the creator's L/R turn you, the pad chooses | Run 19 (D89) | My call (within D89) |
+
 ## 2026-09-26 — Run 19, and the sit-down for Beta and 1.0 together
 
 | # | Decision | Why | Status |

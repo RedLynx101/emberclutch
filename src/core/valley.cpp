@@ -13,6 +13,7 @@ constexpr float kPi = 3.14159265f;
 constexpr float kSkirt = 3.0f;         // metres a skirt hangs below the edge, at full detail
 constexpr float kLodNear = 34.0f;      // tiles nearer than this: full detail (Beta: the places and people need room)
 constexpr float kLodMid = 115.0f;      // then half; beyond, a quarter
+constexpr float kLodFar = 175.0f;      // ...with its trees as far cones; beyond, the ground alone (the fog has them)
 
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
@@ -108,11 +109,22 @@ void trunk(ValleyMesh& m, Vec3 base, float h, float r, int sides, const u8 col[3
     }
 }
 
-// One prop at a detail level (0 near, 1 further; nothing beyond).
+// One prop at a detail level (0 near, 1 further, 2 far: trees only, as cones; nothing beyond).
 void prop(ValleyMesh& m, const Valley& v, const ValleyTree& p, int lod) {
     const float z = v.heightAt(p.x, p.y);
     const float h = p.height, turn = p.yaw * (2 * kPi / 256.0f);
     const u8 k = p.shade;
+    if (lod >= 2) {  // far off: a three-sided cone in its leaves' colour, the same size (no pop as it nears)
+        u8 c[3];
+        if (p.kind == kPropPine) {
+            c[0] = static_cast<u8>(40 + k % 22), c[1] = static_cast<u8>(96 + k % 28), c[2] = static_cast<u8>(62 + k % 18);
+            tree(m, {p.x, p.y, z - 0.3f}, h, h * 0.3f, 3, c);
+        } else if (p.kind == kPropTree || p.kind == kPropFruit) {
+            c[0] = static_cast<u8>(64 + k % 30), c[1] = static_cast<u8>(128 + k % 40), c[2] = static_cast<u8>(58 + k % 22);
+            blob(m, {p.x, p.y, z + h * 0.2f}, h * 0.42f, h * 0.7f, 0, 3, turn, c);  // (a crown with no underside: far below the eye)
+        }
+        return;
+    }
     switch (p.kind) {
         case kPropTree: {  // a round storybook tree: a stout trunk under two soft clumps of leaves
             const u8 leaf[3] = {static_cast<u8>(64 + k % 30), static_cast<u8>(128 + k % 40), static_cast<u8>(58 + k % 22)};
@@ -358,14 +370,16 @@ const ValleyPlaceInfo* Valley::place(u8 id) const {
 
 bool Valley::inside(float x, float y) const { return x >= x0 && y >= y0 && x <= x0 + size() && y <= y0 + size(); }
 
-int valleyLodFor(float distance) { return distance < kLodNear ? 0 : (distance < kLodMid ? 1 : 2); }
+int valleyLodFor(float distance) {
+    return distance < kLodNear ? 0 : distance < kLodMid ? 1 : distance < kLodFar ? 2 : 3;
+}
 
 void buildValleyTile(const Valley& v, int tx, int ty, int lod, ValleyMesh& out) {
     out.clear();
     const int t = v.tiles();
     if (tx < 0 || ty < 0 || tx >= t || ty >= t) return;
     lod = lod < 0 ? 0 : (lod >= kValleyLods ? kValleyLods - 1 : lod);
-    const int step = 1 << lod, quads = kTileQuads / step, side = quads + 1;
+    const int step = 1 << (lod < 2 ? lod : 2), quads = kTileQuads / step, side = quads + 1;
     const int i0 = tx * kTileQuads, j0 = ty * kTileQuads;
     auto sample = [&](int a, int b) {  // grid point (a, b) of this tile at this level
         const int i = i0 + a * step, j = j0 + b * step;

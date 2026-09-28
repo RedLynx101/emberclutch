@@ -14,8 +14,8 @@
 namespace ec {
 
 constexpr int kTileQuads = 16;   // quads a side at full detail (a tile is 64 m at 4 m spacing)
-constexpr int kValleyLods = 3;   // 16, 8 and 4 quads a side
-constexpr int kTreeLods = 2;     // trees on the two nearer levels only
+constexpr int kValleyLods = 4;   // 16, 8, 4 and 4 quads a side (the last two: with far trees, and without)
+constexpr int kTreeLods = 3;     // trees on the three nearer levels (the third: far cones)
 
 // The places (core/world names them; the valley file places them). Beta adds the keeper's lodge
 // by the waterfall, the floating isles' top, an orchard, a windmill bridge and two secrets; 1.0

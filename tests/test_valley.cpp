@@ -75,20 +75,21 @@ TEST(valley_tiles_join_and_fit_the_budget) {
                 mean[lod] += a.triangles() / double(v.tiles() * v.tiles());
                 CHECK(a.pos.size() < 65536 && a.color.size() == a.pos.size() * 4);
             }
-    std::printf("  valley tiles: worst %d / %d / %d, mean %.0f / %.0f / %.0f triangles\n", worst[0], worst[1], worst[2],
-                mean[0], mean[1], mean[2]);
-    CHECK(worst[0] <= 1800 && worst[1] <= 560 && worst[2] <= 80);  // Beta's rounder storybook props (the densest wood;
-                                                                     // the Beta 1 review's thicker woods)
-    // A view: three tiles near, six mid, twelve far (culled by the view, in fog beyond): a
-    // typical one, and the worst (the densest forest tile everywhere, which can't happen).
-    const double typical = 3 * mean[0] + 6 * mean[1] + 12 * mean[2];
-    const int view = 3 * worst[0] + 6 * worst[1] + 12 * worst[2];
+    std::printf("  valley tiles: worst %d / %d / %d / %d, mean %.0f / %.0f / %.0f / %.0f triangles\n", worst[0], worst[1],
+                worst[2], worst[3], mean[0], mean[1], mean[2], mean[3]);
+    CHECK(worst[0] <= 1800 && worst[1] <= 560 && worst[2] <= 220 && worst[3] <= 80);  // (the densest wood; far cones)
+    // A view: three tiles near, six mid, five with far trees, eight far (culled by the view, in
+    // fog beyond): a typical one, and the worst (the densest forest tile everywhere, which can't happen).
+    const double typical = 3 * mean[0] + 6 * mean[1] + 5 * mean[2] + 8 * mean[3];
+    const int view = 3 * worst[0] + 6 * worst[1] + 5 * worst[2] + 8 * worst[3];
     std::printf("  a view: typically %.0f terrain triangles, at most %d\n", typical, view);
     // With the ridden dragon (3,000) and you (600) a typical view stays under the full den's
     // ~9,800 triangles, which runs at 17-18 ms on the old 3DS; the test valley's 7,000 ran at
     // 17 ms there (run 16). The valley's target is 30 fps (33 ms, Beta plan), so even the
     // impossible worst (the densest wood on every near tile) has room.
-    CHECK(typical <= 5000 && view <= 9400);
+    // (Counted with every tile's skirts; since the flicker pass they're drawn only beside another
+    // level, a few hundred triangles fewer in a real view.)
+    CHECK(typical <= 5000 && view <= 10000);
     // Neighbours at the same level share their edge exactly; the ground faces up; the skirts
     // face out of the tile.
     buildValleyTile(v, 5, 7, 0, a);
@@ -102,15 +103,15 @@ TEST(valley_tiles_join_and_fit_the_budget) {
     bool up = true;
     for (std::size_t i = 0; i < groundTris; i += 3) up &= faceNormal(a, i).z > 0;
     CHECK(up);
-    const Vec3 south = faceNormal(a, groundTris);  // the first skirt: the south edge
+    const Vec3 south = faceNormal(a, a.skirtFrom);  // the first skirt (after the props): the south edge
     CHECK(south.y < 0 && std::fabs(south.z) < std::fabs(south.y));
     // The skirt hangs below its edge at every level.
     for (int lod = 0; lod < kValleyLods; ++lod) {
         buildValleyTile(v, 8, 8, lod, a);
-        const int q = kTileQuads >> lod, s = q + 1;
-        CHECK(a.pos[std::size_t(s) * s].z < a.pos[0].z - 2.0f);
+        const u16 top = a.idx[a.skirtFrom], low = a.idx[a.skirtFrom + 1];  // (reversed south skirt: top, low, ...)
+        CHECK(a.pos[low].z < a.pos[top].z - 2.0f);
     }
-    CHECK(valleyLodFor(10) == 0 && valleyLodFor(100) == 1 && valleyLodFor(400) == 2);
+    CHECK(valleyLodFor(10) == 0 && valleyLodFor(100) == 1 && valleyLodFor(150) == 2 && valleyLodFor(400) == 3);
     ValleyMesh extras, water;
     buildValleyExtras(v, extras);
     buildValleyWater(v, water, {0, 0}, 360.0f);

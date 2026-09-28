@@ -27,28 +27,28 @@ wait 1.5
 tap 298 16
 wait 1.2
 shot p01-about
-tap 221 50
+tap 275 50
 wait 0.8
 shot p02-family
 # Cinder: the first egg.
 key LEFT
 wait 1.2
-tap 221 50
+tap 275 50
 wait 0.8
 shot p03-cinder-family
 tap 264 219
 wait 0.8
-# The Sanctuary, where the grandparents live: a profile from its grid.
-valley
-wait 0.8
-tap 62 96
-wait 0.4
-tap 62 96
-wait 2.5
+# The Sanctuary, where the grandparents live: a profile from its grid (the old map is the valley
+# now: straight in).
+open sanctuary
+wait 1.5
 tap 64 217
 wait 0.8
 shot p04-sanctuary-about
-tap 221 50
+tap 275 50
 wait 0.6
 shot p05-sanctuary-family
+key L
+wait 0.6
+shot p06-sanctuary-record
 quit

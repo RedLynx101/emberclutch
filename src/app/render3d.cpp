@@ -1933,7 +1933,30 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
     if (fx) drawParticles(app, *fx, true);
 }
 
+// U (the Market's and the Wanderings' top screens): the next showcase framed smaller and off
+// centre, for one call: the camera `zoom` times as far and moved so the middle lands (dx, dy) px
+// from the screen's.
+namespace {
+struct ShowFrame {
+    bool set = false;
+    float zoom = 1, dx = 0, dy = 0;
+} g_showFrame;
+
+void applyShowFrame(const ShowFrame& f, Vec3 dir, Vec3& target, float& dist) {
+    if (!f.set) return;
+    dist *= f.zoom;
+    const float perPx = dist * std::tan(kFovY * 0.5f) / (kScreenH * 0.5f);  // world units a pixel at that depth
+    const Vec3 right = normalize(cross(dir * -1.0f, Vec3{0, 0, 1}));
+    const Vec3 up = cross(right, dir * -1.0f);
+    target = target - right * (f.dx * perPx) + up * (f.dy * perPx);
+}
+}  // namespace
+
+void frameShowcase(float zoom, float dx, float dy) { g_showFrame = {true, zoom, dx, dy}; }
+
 void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, float spin, ClipId clip) {
+    const ShowFrame frame = g_showFrame;  // U: this call's framing only, even if it draws nothing
+    g_showFrame.set = false;
     if (!g_ready) return;
     ++g_frame;
     C3D_Mtx projection, view;
@@ -1941,8 +1964,9 @@ void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, floa
     const Vec3 dir = normalize(Vec3{-0.35f * std::cos(spin) - 0.9f * std::sin(spin), 0.35f * std::sin(spin) - 0.9f * std::cos(spin), 0.3f});
     if (d.stage == Stage::Egg) {
         if (!g_egg.ok || !egg) return;
-        const Vec3 target{0, 0, 0.62f};
-        const float dist = 1.0f / std::tan(kFovY * 0.5f);
+        Vec3 target{0, 0, 0.62f};
+        float dist = 1.0f / std::tan(kFovY * 0.5f);
+        applyShowFrame(frame, dir, target, dist);  // U
         topProjection(projection, 0.05f, dist * 4.0f, dist);
         lookAt(view, target + dir * dist, target);
         C2D_Flush();
@@ -1981,8 +2005,9 @@ void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, floa
     modelMatrix(g_posed, model);
     const Vec3 hips = apply(model, g_posed.poseMat[0].translation());
     const float radius = g_posed.cache->radius * g_posed.size;
-    const Vec3 target{hips.x, hips.y, hips.z + radius * 0.25f};
-    const float dist = radius * 1.05f / std::tan(kFovY * 0.5f);
+    Vec3 target{hips.x, hips.y, hips.z + radius * 0.25f};
+    float dist = radius * 1.05f / std::tan(kFovY * 0.5f);
+    applyShowFrame(frame, dir, target, dist);  // U
     topProjection(projection, 0.05f, dist * 4.0f, dist);
     lookAt(view, target + dir * dist, target);
     C2D_Flush();

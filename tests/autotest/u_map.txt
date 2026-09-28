@@ -1,0 +1,33 @@
+# 1.0 interface (U): the tracked goal on the valley's map and in its side panel. Needs the lead's
+# hooks in scene_valley (drawTrackedOnMap after the pins, drawTrackedPanel for the quest lines).
+# The quest in hand (meet the keeper: a flag where he stands), a place not found yet tracked (a
+# soft circle to search), the festival's eve (the Lantern Trial: the arena's board), the meadow's
+# stray (a search area in the flowers).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips seen
+key X
+wait 4
+shot v01-keeper
+track 5 1
+wait 0.8
+shot v02-search-market
+festival
+track 0 0
+wait 0.8
+shot v03-festival-arena
+track 5 3
+wait 0.8
+shot v04-sanctuary
+quit

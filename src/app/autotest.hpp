@@ -29,6 +29,16 @@
 //   autoplay <on|off>           the challenges play themselves (the pilot flies, the lanterns, throws)
 //   cups <fruit> <rings> <lantern>   the highest cup won in each (their ribbons too)
 //   quit                        leave (writes shots/done.txt)
+// The interface (1.0, workstream U):
+//   open <market|wander|sanctuary|vault|den|valley>   straight into that scene
+//   xp <n>                      experience for the dragon cared for
+//   record                      a well-travelled record for it (titles, wins, cups, ribbons, training)
+//   needs <belly> <clean> <play> <love> <energy>   its needs set
+//   track <kind> <id>           the Journal's tracked goal (core/trainer Tracked: 1 quest .. 5 place)
+//   tips <reset|seen>           every tip due again, or none left to show
+//   gleam <n>                   your Gleam set
+//   hoard <n>                   n of each trinket in the hoard
+//   wear <head> <neck> <back> <tail> <dye>   what it wears (core/accessories ids, 255: none), its dye
 #pragma once
 
 #include <cstddef>

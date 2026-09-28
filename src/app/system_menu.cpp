@@ -1,6 +1,9 @@
 #include "app/system_menu.hpp"
 
+#include <cstdio>
+
 #include "app/audio.hpp"
+#include "app/tips_ui.hpp"
 #include "app/dragondex_ui.hpp"
 #include "app/storage.hpp"
 #include "app/scenes.hpp"
@@ -64,22 +67,38 @@ void mainPage(App& app, const Input& in) {
     }
 }
 
+// An on/off setting as a button ("3D: On"); a tap flips it. Returns true if it changed.
+bool toggleButton(App& app, const Input& in, const Rect& r, const char* label, u8& value) {
+    char line[32];
+    std::snprintf(line, sizeof(line), str::kToggleIs, label, value ? str::kOn : str::kOff);
+    if (!button(app, r, line, in, value ? 0 : withAlpha(theme::kShell, 0.55f))) return false;
+    value = value ? 0 : 1;
+    return true;
+}
+
+// 1.0 (U): the volumes, the 3D and the voices, the tips shown again, your look, the clock's
+// note, deleting the save.
 void settingsPage(App& app, const Input& in) {
     heading(app, str::kSettings);
     Settings& s = app.game.settings;
-    bool changed = volumeRow(app, in, 48, str::kMusic, s.musicVolume);
-    changed = volumeRow(app, in, 86, str::kSounds, s.sfxVolume) || changed;
+    bool changed = volumeRow(app, in, 42, str::kMusic, s.musicVolume);
+    changed = volumeRow(app, in, 76, str::kSounds, s.sfxVolume) || changed;
     if (changed) audio::setVolumes(s.musicVolume, s.sfxVolume);
-    text(app, str::kClockNote1, 160, 128, 0.45f, withAlpha(theme::kShell, 0.8f), C2D_AlignCenter, 296);
-    text(app, str::kClockNote2, 160, 144, 0.45f, withAlpha(theme::kShell, 0.8f), C2D_AlignCenter, 296);
-    if (hasDragon(app) && button(app, {90, 158, 140, 28}, str::kYourLook, in)) {  // the creator, any time
+    toggleButton(app, in, {16, 114, 140, 28}, str::kStereo3d, s.stereo3d);  // main.cpp reads it each frame
+    toggleButton(app, in, {164, 114, 140, 28}, str::kVoices, s.voiceEnabled);  // the letters' blips (dialogue)
+    if (hasDragon(app) && button(app, {16, 148, 140, 28}, str::kTipsAgain, in)) {
+        resetTips(app);
+        showToast(app, str::kTipsReset);
+    }
+    if (hasDragon(app) && button(app, {164, 148, 140, 28}, str::kYourLook, in)) {  // the creator, any time
         saveNow(app);
         app.menu = MenuPage::Closed;
         openCreator(app, app.scene);
     }
-    if (hasDragon(app) && button(app, {16, 190, 136, 36}, str::kDeleteSave, in, theme::kRose))
+    text(app, str::kClockNote, 160, 181, 0.38f, withAlpha(theme::kShell, 0.75f), C2D_AlignCenter, 300);
+    if (hasDragon(app) && button(app, {16, 200, 136, 34}, str::kDeleteSave, in, theme::kRose))
         app.menu = MenuPage::DeleteAsk;
-    if (button(app, {168, 190, 136, 36}, str::kBack, in) || (in.down & KEY_B)) {
+    if (button(app, {168, 200, 136, 34}, str::kBack, in) || (in.down & KEY_B)) {
         if (hasDragon(app)) saveNow(app);
         app.menu = MenuPage::Main;
     }

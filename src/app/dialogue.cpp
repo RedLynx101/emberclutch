@@ -121,7 +121,7 @@ bool updateTalk(App& app, const Input& in) {
         if (d.shown > len) d.shown = static_cast<float>(len);
         // A voiced blip every other letter shown (a letter's sound, quick and high).
         const float pitch = d.custom ? d.pitch : villagerInfo(d.who).pitch;
-        for (int k = before; k < static_cast<int>(d.shown); ++k)
+        for (int k = app.game.settings.voiceEnabled ? before : len; k < static_cast<int>(d.shown); ++k)  // U: voices off in the settings
             if (k % 2 == 0 && ((d.text[k] >= 'a' && d.text[k] <= 'z') || (d.text[k] >= 'A' && d.text[k] <= 'Z')))
                 audio::playLetter(d.text[k], pitch * (0.95f + 0.1f * ((k * 7) % 5) / 4.0f), 0.8f);
     }

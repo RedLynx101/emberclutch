@@ -6,8 +6,6 @@
 namespace ec::campaign {
 namespace {
 
-enum class Need : u8 { Flag, Place, Lantern, Cup, GrownPartner, AllLanterns };
-
 struct Step {
     const char* text;
     Need need;
@@ -148,6 +146,13 @@ int currentQuest(const SaveData& s) {
     for (int q = 0; q < kQuests; ++q)
         if (s.world.quest[q] != 0 && s.world.quest[q] != kQuestDone) return q;
     return -1;
+}
+
+StepNeed stepNeed(const SaveData& s, int q) {
+    if (q < 0 || q >= kQuests) return {};
+    const u8 at = s.world.quest[q];
+    const Step& st = kQuests_[q].steps[at == 0 || at == kQuestDone ? 0 : at - 1];
+    return {st.need, st.arg};
 }
 
 }  // namespace ec::campaign

@@ -11,7 +11,7 @@ shot d02-den
 tap 298 16
 wait 1.2
 shot d03-about
-tap 221 50
+tap 275 50
 wait 0.8
 shot d04-family
 tap 264 219

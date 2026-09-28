@@ -1,0 +1,41 @@
+# 1.0 interface (U): the profile with moves and clothes filled in (workstreams B and P through
+# app/profile_hooks; with the stand-ins the slots show empty), the move picker, a grown dragon's
+# record; the Sanctuary's profile with the same pages.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips seen
+key SELECT
+wait 0.3
+tap 238 206
+wait 0.3
+key SELECT
+wait 0.5
+record
+wear 0 1 2 3 1
+tap 298 16
+wait 1.2
+shot q01-about-wears
+key R
+wait 0.6
+shot q02-training-moves
+tap 238 162
+wait 0.5
+shot q03-picker
+tap 240 135
+wait 0.6
+shot q04-swapped
+key R
+wait 0.6
+shot q05-record
+quit

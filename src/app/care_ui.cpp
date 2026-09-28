@@ -8,7 +8,9 @@
 #include "app/audio.hpp"
 #include "app/perf.hpp"
 #include "app/photo.hpp"
+#include "app/profile_hooks.hpp"
 #include "app/strings.hpp"
+#include "app/tips_ui.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
 #include "core/egg.hpp"
@@ -26,7 +28,7 @@ C2D_SpriteSheet g_sheet = nullptr;
 
 enum FxKind : u8 { kFxHeart, kFxDust, kFxSparkle, kFxSuds, kFxDrop, kFxCrumb, kFxSteam };
 
-constexpr float kTopBar = 26;      // the need gauges
+constexpr float kTopBar = 36;      // the need gauges, and Energy under them (1.0)
 constexpr float kTrayY = 202;      // the tool tray
 constexpr float kFoodRowY = 164;   // the food picker, above the tray
 constexpr Rect kView{0, kTopBar, 320, kFoodRowY - kTopBar};  // where the stylus meets the dragon
@@ -163,7 +165,7 @@ void gazeAt(App& app, Vec3 target, float weight) {
     a.gazeWeight = weight;
 }
 
-// What a stroke of the hand or the brush does (D83): Play and bond (the brush a little faster
+// What a stroke of the hand or the brush does (D83, D89): Love and bond (the brush a little faster
 // and a little more, more on the dragon's liked zone), hearts, and its sweet spot. Turned with
 // L / R, it keeps showing you that side while you stroke it.
 void strokeEffects(App& app, const Input& in, Dragon& d, const TouchHit& h, bool brush) {
@@ -532,7 +534,7 @@ void kinBox(App& app, Rect r, const SaveData& s, int who, const char* role) {
 
 }  // namespace
 
-void profileAbout(App& app, const Dragon& d, s64 now) {
+void profileAbout(App& app, const Dragon& d, s64 now, const Input* in) {
     char line[96];
     if (d.stage == Stage::Egg) {  // what's inside is a surprise until it hatches
         std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", kindTitle(d), str::kEggSuffix,
@@ -551,14 +553,24 @@ void profileAbout(App& app, const Dragon& d, s64 now) {
     text(app, line, 160 - (w + 70) / 2, 86, 0.44f, withAlpha(theme::kShell, 0.85f), C2D_AlignLeft);
     for (int h = 0; h < 5; ++h)  // bond, a heart per 200
         heart(160 - (w + 70) / 2 + w + 10 + h * 13, 94, 5.5f, d.bond >= (h + 1) * 200 ? glowOf(d) : withAlpha(theme::kShell, 0.25f));
-    // Its stats (left: Wing, Wit, Might, Breath, Stamina, out of 10) and what it is (right):
-    // its element(s) and how rare its kind is, its manner and its traits (DR3, D77-D78).
-    static constexpr const char* kStatNames[kDragonStats] = {"Wing", "Wit", "Might", "Breath", "Stamina"};
-    for (int k = 0; k < kDragonStats; ++k) {
-        const float y = 104 + k * 12;
-        text(app, kStatNames[k], 14, y, 0.36f, theme::kShell, C2D_AlignLeft);
-        C2D_DrawRectSolid(64, y + 3, 0.5f, 80, 6, withAlpha(theme::kShell, 0.15f));
-        C2D_DrawRectSolid(64, y + 3, 0.5f, 8.0f * d.stats[k], 6, theme::kClutchGold);
+    // What it wears and its dye (left; 1.0: its stats are on the Training page now, D90) and what
+    // it is (right): its element(s) and how rare its kind is, its manner and its traits (DR3,
+    // D77-D78). The accessories' names come from workstream P (app/profile_hooks).
+    text(app, str::kWears, 14, 102, 0.38f, theme::kClutchGold, C2D_AlignLeft);
+    bool wearsAny = false;
+    for (int k = 0; k < kWearSlots; ++k) {
+        const char* name = d.wear[k] != kNone ? hooks::accessoryName(d.wear[k]) : "";
+        if (!name[0]) continue;
+        text(app, name, 22 + (k % 2) * 70, 116 + (k / 2) * 13, 0.34f, theme::kShell, C2D_AlignLeft, 68);
+        wearsAny = true;
+    }
+    if (!wearsAny) text(app, str::kWearNothing, 22, 116, 0.34f, withAlpha(theme::kShell, 0.5f), C2D_AlignLeft, 130);
+    std::snprintf(line, sizeof(line), str::kDye, d.dye && hooks::dyeName(d.dye)[0] ? hooks::dyeName(d.dye) : str::kDyeNatural);
+    if (d.dye) C2D_DrawCircleSolid(18, 150, 0.5f, 3.5f, fromRgb(hooks::dyeColour(d.dye)));
+    text(app, line, d.dye ? 26 : 14, 143, 0.34f, withAlpha(theme::kShell, 0.8f), C2D_AlignLeft, 140);
+    if (in && button(app, {236, 148, 76, 18}, str::kDressUp, *in)) {  // the wardrobe (workstream P)
+        const int index = static_cast<int>(&d - app.game.dragons);
+        if (!hooks::openWardrobe(app, index)) showToast(app, str::kWardrobeSoon);
     }
     const KindInfo& ki = kindInfo(d.kind < kindCount() ? d.kind : 0);
     char els[32];
@@ -648,6 +660,23 @@ void drawProfile(App& app, const Input& in, Dragon& d, s64 now) {
     }
 }
 
+// The needs (1.0, D89): Belly, Clean, Play and Love, the four you fill by caring; Energy apart,
+// a thinner bar under them in its own colour (games and challenges spend it, sleep brings it
+// back), with a word when it's low.
+void needGauges(App& app, const Dragon& d) {
+    gauge(app, 8, 2, str::kBelly, d.needs.belly);
+    gauge(app, 76, 2, str::kClean, d.needs.clean);
+    gauge(app, 144, 2, str::kPlay, d.needs.play);
+    gauge(app, 212, 2, str::kLove, d.needs.love);
+    const float e = d.needs.energy;
+    const bool tired = e < 20;
+    text(app, str::kEnergy, 8, 24, 0.36f, withAlpha(theme::kShell, 0.85f), C2D_AlignLeft);
+    const Rect bar{46, 28, tired ? 196.0f : 232.0f, 5};
+    panel(bar, theme::kTrack);
+    if (e > 1) panel({bar.x, bar.y, bar.w * e / 100.0f, bar.h}, tired ? theme::kRose : theme::kSkyTeal);
+    if (tired) text(app, str::kTired, 278, 24, 0.36f, theme::kRose, C2D_AlignRight);
+}
+
 const char* hintFor(Tool t) {
     switch (t) {
         case Tool::Food: return str::kHintFood;
@@ -665,21 +694,40 @@ const char* hintFor(Tool t) {
 
 void drawFood(Food f, float x, float y, float scale) { sprite(foodSprite(f), x, y, scale); }
 
-void drawProfilePages(App& app, const Input& in, const Dragon& d, s64 now, u8& tab) {
-    static const char* const kTabs[2] = {str::kTabAbout, str::kTabFamily};
-    for (int k = 0; k < 2; ++k) {
-        const Rect r{40.0f + k * 122.0f, 38, 118, 24};
-        const bool on = tab == k;
+void drawProfilePages(App& app, const Input& in, Dragon& d, s64 now, u8& tab) {
+    // A hatched dragon: About, Training, Record, Family (1.0); an egg: About and Family.
+    static const char* const kNames[kProfileTabs] = {str::kTabAbout, str::kTabTraining, str::kTabRecord, str::kTabFamily};
+    static const u8 kHatched[] = {kTabAbout, kTabTraining, kTabRecord, kTabFamily};
+    static const u8 kEgg[] = {kTabAbout, kTabFamily};
+    const bool egg = d.stage == Stage::Egg;
+    const u8* tabs = egg ? kEgg : kHatched;
+    const int n = egg ? 2 : 4;
+    int at = 0;
+    for (int k = 0; k < n; ++k)
+        if (tabs[k] == tab) at = k;
+    tab = tabs[at];  // (an egg's page for a tab it hasn't: its About)
+    if (in.down & (KEY_L | KEY_R)) {
+        at = (at + ((in.down & KEY_R) ? 1 : n - 1)) % n;
+        tab = tabs[at];
+        audio::playSfx(audio::Sfx::Tap);
+    }
+    for (int k = 0; k < n; ++k) {
+        const float w = egg ? 118.0f : 73.0f;
+        const Rect r{egg ? 40.0f + k * 122.0f : 8.0f + k * 77.0f, 38, w, 24};
+        const bool on = at == k;
         panel(r, on ? theme::kClutchGold : withAlpha(theme::kShell, 0.2f));
-        textCentered(app, kTabs[k], r.x + r.w / 2, r.y + r.h / 2, 0.44f, on ? theme::kDenPlum : theme::kShell, r.w - 6);
+        textCentered(app, kNames[tabs[k]], r.x + r.w / 2, r.y + r.h / 2, 0.44f, on ? theme::kDenPlum : theme::kShell, r.w - 6);
         if (in.released && r.contains(in.rx, in.ry) && !on) {
-            tab = static_cast<u8>(k);
+            tab = tabs[k];
             audio::playSfx(audio::Sfx::Tap);
         }
     }
-    if (in.down & (KEY_L | KEY_R)) tab ^= 1;
-    if (tab == 0) profileAbout(app, d, now);
-    else profileFamily(app, d);
+    switch (tab) {
+        case kTabTraining: profileTraining(app, in, d); break;
+        case kTabRecord: profileRecord(app, in, d); break;
+        case kTabFamily: profileFamily(app, d); break;
+        default: profileAbout(app, d, now, &in); break;
+    }
 }
 
 void drawItem(Item i, float x, float y, float scale) {
@@ -770,11 +818,12 @@ void update(App& app, Dragon& d) {
 void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
     CareState& c = app.care;
     DenBehavior& b = actor(app).behavior;
-    // Needs along the top, the heartglow at the top right.
-    gauge(app, 8, 4, str::kBelly, d.needs.belly);
-    gauge(app, 76, 4, str::kEnergy, d.needs.energy);
-    gauge(app, 144, 4, str::kClean, d.needs.clean);
-    gauge(app, 212, 4, str::kPlay, d.needs.play);
+    // Needs along the top (Love the fourth, Energy under them), the heartglow at the top right.
+    needGauges(app, d);
+    showTip(app, tips::kTipCare);  // the tutorial (U): caring, the first time; Love and Energy low
+    if (d.needs.love < 35) showTip(app, tips::kTipLove);
+    if (d.needs.energy < 25) showTip(app, tips::kTipEnergy);
+    if (trainer::levelOf(d) > 1) showTip(app, tips::kTipLevelUp);  // (a first level gained somewhere)
     const float level = heartglowLevel(d, app.t);
     glow(298, 16, 14, fromRgb(kindGlow(d)), level);
     heart(298, 16, 11, fromRgb(kindGlow(d), static_cast<u8>(120 + 135 * level)));

@@ -20,6 +20,8 @@
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
+#include "app/tips_ui.hpp"
+#include "app/tracking_ui.hpp"
 #include "app/ui_draw.hpp"
 #include "app/valley_ext.hpp"
 #include "core/campaign.hpp"
@@ -768,6 +770,7 @@ void doAction(App& app, ValleyScene& s) {
                 break;
             }
             s.mode = Mode::Riding;
+            showTip(app, tips::kTipRide);
             s.flight = Flight{};
             s.flight.pos = s.pal.pos;
             s.flight.heading = s.pal.heading;
@@ -950,6 +953,8 @@ void update(App& app, const Input& in) {
         return;
     }
     if (s.mode == Mode::OnFoot) {
+        showTip(app, tips::kTipValley);
+        if (s.partner >= 0 && app.game.dragons[s.partner].needs.energy < 25) showTip(app, tips::kTipEnergy);
         WalkInput wi;
         wi.x = clampf(in.padX + dpadX, -1, 1);
         wi.y = clampf(in.padY + dpadY, -1, 1);
@@ -981,7 +986,9 @@ void update(App& app, const Input& in) {
             // Out walking together: fonder and livelier, a little hungrier (run 19; core/trainer).
             if (s.you.speed > 0.3f && !s.pal.lost()) {
                 Dragon& real = app.game.dragons[s.partner];
+                const u16 bondWas = real.bond;
                 trainer::walkTogether(real, s.you.speed * app.dt, s.walkCarry);
+                if (real.bond > bondWas) showTip(app, tips::kTipWalk);
                 s.shown.needs = real.needs;
                 s.shown.bond = real.bond;
             }
@@ -1270,7 +1277,10 @@ void drawTop(App& app) {
             std::snprintf(line, sizeof(line), str::kPromptEnter, world::placeInfo(s.actionPlace).name);
             hint = line;
             break;
-        case Action::Light: hint = world::lanternLit(app.game, s.actionPlace) ? nullptr : str::kPromptLight; break;
+        case Action::Light:
+            hint = world::lanternLit(app.game, s.actionPlace) ? nullptr : str::kPromptLight;
+            if (hint) showTip(app, tips::kTipLantern);
+            break;
         case Action::Ride: hint = str::kPromptRide; break;
         case Action::Call: hint = str::kPromptCall; break;
         case Action::Board: hint = str::kPromptBoard; break;
@@ -1396,6 +1406,8 @@ void drawBottom(App& app, const Input& touch) {
         C2D_DrawCircleSolid(w.x, w.y, 0.5f, 4.0f + 0.5f * bob, theme::kDenPlum);
         C2D_DrawCircleSolid(w.x, w.y, 0.5f, 3.0f + 0.5f * bob, theme::kClutchGold);
     }
+    drawTrackedOnMap(app, va, kMapX, kMapY, kMapSize);  // the Journal's tracked goal: its spot or search area
+    showTip(app, tips::kTipMap);
     const Vec3 at = hereAt(s);
     const Vec2 me = mapPoint(va, at.x, at.y);
     const float heading = s.mode == Mode::Riding ? s.flight.heading : s.you.heading;
@@ -1434,12 +1446,7 @@ void drawBottom(App& app, const Input& touch) {
         panel(bar, theme::kDenPlum);
         panel({bar.x, bar.y, bar.w * s.flight.stamina, bar.h}, theme::kClutchGold);
     }
-    const int q = campaign::currentQuest(app.game);
-    if (q >= 0) {
-        const campaign::QuestView v = campaign::view(app.game, q);
-        text(app, v.title, x, 58, 0.4f, theme::kClutchGold, C2D_AlignLeft, 132);
-        text(app, v.step, x, 72, 0.36f, withAlpha(theme::kShell, 0.85f), C2D_AlignLeft, 132);
-    }
+    drawTrackedPanel(app, x, 56, 132);  // what the Journal tracks (the quest in hand unless you picked another)
     std::snprintf(line, sizeof(line), str::kPlacesAndLanterns, world::placesFound(app.game), world::placeCount(),
                   world::lanternsLit(app.game), world::lanternCount());
     text(app, line, x, 104, 0.36f, withAlpha(theme::kShell, 0.7f), C2D_AlignLeft, 132);

@@ -77,6 +77,9 @@ bool pickCloseUp(Vec2 touch, TouchHit& out);
 // top screen over whatever 2D the scene drew first, turned `spin` radians toward the viewer's
 // left, standing a little below centre: the Sanctuary, the Cold Vault, the Market's egg.
 void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, float spin, ClipId clip = ClipId::Idle);
+// U (the Market's and the Wanderings' top screens): the next drawShowcase only, framed `zoom`
+// times smaller (1: as it frames itself) with its middle (dx, dy) px from the screen's (+y down).
+void frameShowcase(float zoom, float dx, float dy);
 // Two dragons on the top screen, animated by their actors (standing where their behaviors
 // put them), framed together: the Nesting Stone's pair.
 void drawPair(App& app, const Dragon& a, const DenActor& actorA, const Dragon& b, const DenActor& actorB, s64 now);

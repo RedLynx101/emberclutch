@@ -1,0 +1,84 @@
+# 1.0 interface (U): the needs (Love the fourth, Energy under them), the first tips (caring, then
+# Love and Energy running low), the profile's four pages (About with what it wears, Training with
+# its level, stats and moves, Record, Family), the Journal's goals tracked with a tap (a quest, a
+# place) and the settings (volumes, 3D, voices, the tips shown again).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+shot c01-gauges-care-tip
+needs 70 60 50 30 15
+wait 7.5
+shot c02-love-tip
+wait 8
+shot c03-energy-tip
+wait 7
+# The profile: tap the heartglow. A record to show on it (titles, wins, cups, ribbons, training).
+record
+needs 80 80 80 80 80
+tap 298 16
+wait 1.2
+shot p01-about
+key R
+wait 0.6
+shot p02-training
+tap 238 120
+wait 0.4
+shot p03-moves-none
+key R
+wait 0.6
+shot p04-record
+key R
+wait 0.6
+shot p05-family
+tap 264 219
+wait 0.8
+# The Journal (the tray's fifth): its goals, one tracked with a tap; this dragon; the places.
+tap 238 221
+wait 0.8
+shot j01-goals
+tap 160 74
+wait 0.6
+shot j02-tracked
+tap 121 44
+wait 0.6
+shot j03-dragon
+tap 198 44
+wait 0.6
+tap 56 69
+wait 0.6
+shot j04-place-tracked
+tap 44 44
+wait 0.6
+shot j05-goals-place
+key B
+wait 0.5
+# The settings (START, Settings): 3D and voices off, the tips shown again, then back on.
+key START
+wait 0.4
+tap 160 174
+wait 0.5
+shot s01-settings
+tap 86 128
+wait 0.3
+tap 234 128
+wait 0.3
+tap 86 162
+wait 0.5
+shot s02-settings-changed
+tap 86 128
+wait 0.3
+tap 234 128
+wait 0.3
+key START
+wait 0.5
+quit

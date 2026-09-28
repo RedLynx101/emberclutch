@@ -382,4 +382,82 @@ inline constexpr const char* kDexNew = "New in the Dragondex: %s";
 inline constexpr const char* kDexRare = "A rare colouring for the Dragondex: %s!";
 inline constexpr const char* kDexComplete = "Every %s colouring found! +150 Gleam and a banner";
 
+// ---- 1.0, the interface (workstream U): the needs, the profile's training and record, the
+// Journal's tracked goal, the settings, the Market's and the Wanderings' top screens.
+inline constexpr const char* kLove = "Love";
+inline constexpr const char* kTired = "Tired";
+// Settings
+inline constexpr const char* kStereo3d = "3D";
+inline constexpr const char* kVoices = "Voices";
+inline constexpr const char* kOn = "On";
+inline constexpr const char* kOff = "Off";
+inline constexpr const char* kToggleIs = "%s: %s";
+inline constexpr const char* kTipsAgain = "Show tips again";
+inline constexpr const char* kTipsReset = "The tips will show again as you play.";
+inline constexpr const char* kClockNote = "Time follows your 3DS clock: your dragon grows while you're away.";
+// The profile: About, Training, Record, Family
+inline constexpr const char* kTabTraining = "Training";
+inline constexpr const char* kTabRecord = "Record";
+inline constexpr const char* kLevel = "Level %d";
+inline constexpr const char* kXpToNext = "%lu / %lu to the next";
+inline constexpr const char* kXpTop = "The highest level!";
+inline constexpr const char* kStatNames[5] = {"Wing", "Wit", "Might", "Breath", "Stamina"};
+inline constexpr const char* kMoves = "Moves";
+inline constexpr const char* kNoMove = "-";
+inline constexpr const char* kNoMovesYet = "No moves learned yet: battles teach them.";
+inline constexpr const char* kPickMove = "Swap in which move?";
+inline constexpr const char* kMoveSwapped = "%s learned it by heart.";
+inline constexpr const char* kPower = "Pow %d";
+inline constexpr const char* kStatusMove = "Status";
+inline constexpr const char* kWears = "Wears";
+inline constexpr const char* kWearNothing = "Nothing yet";
+inline constexpr const char* kDye = "Dye: %s";
+inline constexpr const char* kDyeNatural = "Its own colours";
+inline constexpr const char* kDressUp = "Dress up";
+inline constexpr const char* kWardrobeSoon = "The wardrobe is at Moonpetal Glade.";
+inline constexpr const char* kTitles = "Titles";
+inline constexpr const char* kNoTitles = "No titles yet";
+inline constexpr const char* kBattleWins = "Battles won";
+inline constexpr const char* kShowWins = "Shows won";
+inline constexpr const char* kWildWins = "Wild dragons";
+inline constexpr const char* kCupsWon = "Cups";
+inline constexpr const char* kRibbons = "Ribbons";
+inline constexpr const char* kHollowDeepest = "Hollow floor";
+inline constexpr const char* kCupNames[4] = {"Ember", "Flame", "Blaze", "Starfire"};
+inline constexpr const char* kChallengeShort[3] = {"Fruit Catch", "Sky Rings", "Lantern Trial"};
+inline constexpr const char* kFullProfile = "Full profile";
+// The Journal's tracked goal
+inline constexpr const char* kTrack = "Track";
+inline constexpr const char* kTracking = "Tracking";
+inline constexpr const char* kNowTracking = "Now tracking: %s";
+inline constexpr const char* kTrackHint = "Tap a goal to track it: the map shows the way.";
+inline constexpr const char* kTrackPlaceHint = "Tap a place to track it on the map.";
+inline constexpr const char* kGoalBattle = "The battle league";
+inline constexpr const char* kGoalShow = "The pageant";
+inline constexpr const char* kGoalHollow = "Frostspire Hollow";
+inline constexpr const char* kGoalBattleStep = "%s league: beat its challengers";
+inline constexpr const char* kGoalShowStep = "%s league: win its shows at the glade";
+inline constexpr const char* kGoalHollowStep = "Deepest floor so far: %d";
+inline constexpr const char* kGoalHollowNew = "Wild dragons wait, floor after floor";
+inline constexpr const char* kGoalPlaceStep = "Head for %s";
+// The Market's top screen
+inline constexpr const char* kHoardCount = "%d trinkets in the hoard";
+inline constexpr const char* kStallFoodCap = "Fresh food for the pouch";
+inline constexpr const char* kPouchHolds = "%d in your pouch";
+inline constexpr const char* kTradeCap = "Maple buys trinkets for Gleam";
+inline constexpr const char* kEggRarityPrice = "%s  -  %lu Gleam";
+inline constexpr const char* kGoodsCap = "New things on the stall each day";
+// The Wanderings' top screen
+inline constexpr const char* kTrailSign = "Trails";
+inline constexpr const char* kReadyToGo = "%s is ready to go!";
+inline constexpr const char* kTrailStart = "Just setting off";
+inline constexpr const char* kTrailPond = "Past the lily pond";
+inline constexpr const char* kTrailCopse = "Through the old copse";
+inline constexpr const char* kTrailRidge = "Up on the ridge";
+inline constexpr const char* kTrailFar = "Far along the long trail";
+inline constexpr const char* kStepsOut = "%lu steps";
+inline constexpr const char* kFindsHint = "It sniffs for treasure every %d steps.";
+inline constexpr const char* kBackWith = "%s is back with treasure!";
+inline constexpr const char* kBackEmpty = "%s is back, happy and muddy.";
+
 }  // namespace ec::str

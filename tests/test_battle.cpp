@@ -11,6 +11,11 @@
 
 #include "check.hpp"
 #include "core/battle.hpp"
+#include "core/care.hpp"
+#include "core/clock.hpp"
+#include "core/hollow.hpp"
+#include "core/league.hpp"
+#include "core/place_layout.hpp"
 #include "core/save.hpp"
 #include "core/trainer.hpp"
 
@@ -429,6 +434,218 @@ TEST(battle_experience) {
           std::strcmp(moveInfo(g.learned[0]).name, "Water Jet") == 0);
 }
 
+namespace {
+SaveData& freshSave() {
+    static SaveData s;
+    s = SaveData{};
+    Rng rng(3);
+    s.dragons[0] = grownOf(findKind("pouncer"), 10, 0, 1);
+    std::snprintf(s.dragons[0].name, sizeof(s.dragons[0].name), "Kindle");
+    s.dragonCount = 1;
+    return s;
+}
+}  // namespace
+
+TEST(league_challengers) {
+    static constexpr int kLow[kLeagues] = {3, 10, 18, 28}, kHigh[kLeagues] = {8, 16, 26, 38};
+    std::set<std::string> names;
+    std::set<int> outfits;
+    for (int league = 0; league < kLeagues; ++league) {
+        std::set<int> places;
+        for (int slot = 0; slot < league::kSlots; ++slot) {
+            const int id = league::idOf(league, slot);
+            CHECK(league::leagueOf(id) == league && league::slotOf(id) == slot);
+            const league::Challenger& c = league::challenger(id);
+            names.insert(c.name);
+            CHECK(c.hello[0] && c.hello[1] && c.again && c.beaten && c.victory && c.dragonName && c.title);
+            CHECK(findKind(c.kind) >= 0 && c.variant < kKindVariants && c.skill <= 3 && c.look.hair < 6 && c.look.body < 2);
+            outfits.insert(c.look.outfit.r * 65536 + c.look.outfit.g * 256 + c.look.outfit.b);
+            const Dragon d = league::dragonOf(id);
+            CHECK(d.stage == Stage::Adult && trainer::levelOf(d) == c.level && std::strcmp(d.name, c.dragonName) == 0);
+            CHECK(d.id >= 0xB0000000u);  // apart from the save's
+            if (league::isChampion(id)) {
+                CHECK(c.place == kPlaceCaldera && c.level > kHigh[league]);  // a little stronger
+            } else {
+                CHECK(c.level >= kLow[league] && c.level <= kHigh[league]);
+                CHECK(places.insert(c.place).second);  // four places a league
+                const Vec2 at = league::spotOf(id);
+                CHECK(std::hypot(at.x, at.y) < placeLayout(c.place).flat);  // on its place's flat ground
+                for (const Solid& w : placeLayout(c.place).solids)       // clear of its walls
+                    CHECK(std::hypot(at.x - w.at.x, at.y - w.at.y) > w.radius + 1.5f);
+            }
+            Rgb pal[kPalCount];
+            league::palette(c.look, pal);
+            CHECK(pal[kPalBase].r == c.look.skin.r && pal[kPalAccent].g == c.look.outfit.g && pal[kPalHorn].b == c.look.hairColour.b);
+        }
+    }
+    CHECK(static_cast<int>(names.size()) == league::kChallengers);
+    CHECK(outfits.size() >= 18);  // every one dressed their own way
+    CHECK(league::boardCount() == 2 && league::board(0).place == kPlaceArena && league::board(1).place == kPlaceCaldera);
+    const Vec2 ring = league::ringCentre(), a = league::ringSide(0), b = league::ringSide(1);
+    CHECK(std::hypot(a.x - b.x, a.y - b.y) > 9.0f && std::hypot(ring.x, ring.y) < 10.0f);
+}
+
+TEST(league_progress_and_rewards) {
+    SaveData& s = freshSave();
+    const s32 day = 20000;
+    CHECK(league::currentLeague(s) == 0 && league::nextChallenger(s) == league::idOf(0, 0));
+    CHECK(league::standing(s, league::idOf(0, 2)) && !league::standing(s, league::idOf(1, 0)));
+    CHECK(!league::championOpen(s, 0));
+    // A loss: a little experience, no Gleam, nothing beaten.
+    const u32 gleam = s.gleam;
+    league::Reward r = league::record(s, 0, league::idOf(0, 0), Outcome::Lost, day);
+    CHECK(r.growth.xp > 0 && r.gleam == 0 && !league::beaten(s, league::idOf(0, 0)) && s.gleam == gleam);
+    CHECK(s.progress.counts[kCountBattles] == 1);
+    // Giving up: nothing at all.
+    r = league::record(s, 0, league::idOf(0, 0), Outcome::GaveUp, day);
+    CHECK(r.growth.xp == 0 && s.progress.counts[kCountBattles] == 1);
+    // A first win pays well; a rematch the same day nothing; the next day a little.
+    r = league::record(s, 0, league::idOf(0, 0), Outcome::Won, day);
+    CHECK(r.firstWin && r.gleam > 0 && league::beaten(s, league::idOf(0, 0)) && s.dragons[0].battleWins == 1);
+    CHECK(league::nextChallenger(s) == league::idOf(0, 1));
+    r = league::record(s, 0, league::idOf(0, 0), Outcome::Won, day);
+    CHECK(!r.firstWin && r.gleam == 0 && r.paidBefore);
+    r = league::record(s, 0, league::idOf(0, 0), Outcome::Won, day + 1);
+    CHECK(!r.firstWin && r.gleam > 0 && !r.paidBefore);
+    // The Journal's tracked challenger comes first.
+    trainer::track(s, Tracked::BattleBoard, league::idOf(0, 3));
+    CHECK(league::nextChallenger(s) == league::idOf(0, 3));
+    // The four beaten: the champion opens.
+    for (int slot = 1; slot < league::kPerLeague; ++slot) {
+        r = league::record(s, 0, league::idOf(0, slot), Outcome::Won, day);
+        CHECK(r.championOpened == (slot == league::kPerLeague - 1));
+    }
+    CHECK(league::championOpen(s, 0) && league::nextChallenger(s) == league::idOf(0, league::kChampion));
+    // The final: the title, the league, a prize, and the next league about the valley.
+    const u16 pouchBefore = s.pouch[static_cast<int>(Food::EmberCandy)];
+    r = league::record(s, 0, league::idOf(0, league::kChampion), Outcome::Won, day);
+    CHECK(r.leagueWon && r.title && r.firstWin && r.gleam >= 150);
+    CHECK(s.progress.battleLeague == 1 && s.dragons[0].battleTitle == 1);
+    CHECK(std::strcmp(trainer::battleTitleName(s.dragons[0].battleTitle), "Ember Victor") == 0);
+    CHECK(s.pouch[static_cast<int>(Food::EmberCandy)] == pouchBefore + r.prizeCount && r.prizeTrinket != 0xFF);
+    CHECK(league::currentLeague(s) == 1 && league::standing(s, league::idOf(1, 0)) && !league::standing(s, league::idOf(0, 0)));
+    CHECK(league::beaten(s, league::idOf(0, league::kChampion)) && !league::beaten(s, league::idOf(1, 0)));
+    // Another dragon winning the same final later earns its own title (not the league again).
+    s.dragons[1] = grownOf(findKind("puffback"), 12, 0, 2);
+    s.dragonCount = 2;
+    r = league::record(s, 1, league::idOf(0, league::kChampion), Outcome::Won, day + 2);
+    CHECK(!r.leagueWon && r.title && s.dragons[1].battleTitle == 1 && s.progress.battleLeague == 1);
+    // All four won: the Starfire league stays for rematches.
+    s.progress.battleLeague = kLeagues;
+    CHECK(league::currentLeague(s) == kLeagues - 1);
+}
+
+TEST(league_balance) {
+    // A keeper's dragon at the challenger's level (a few trained points a league), choosing well,
+    // beats most challengers more often than not; a champion is a step up.
+    Rng rng(123);
+    for (int league = 0; league < kLeagues; ++league) {
+        for (int slot = 0; slot < league::kSlots; ++slot) {
+            const int id = league::idOf(league, slot);
+            const league::Challenger& c = league::challenger(id);
+            const Dragon foe = league::dragonOf(id);
+            int wins = 0, winsLower = 0;
+            constexpr int kRuns = 300;
+            for (int i = 0; i < kRuns; ++i) {
+                const int k = static_cast<int>(rng.below(static_cast<u32>(kindCount())));
+                const Dragon mine = grownOf(k, c.level, league * 2, 40000 + id * 1000 + i);
+                const Dragon lower = grownOf(k, c.level > 3 ? c.level - 3 : 1, league * 2, 40000 + id * 1000 + i);
+                wins += fight(mine, foe, 3, c.skill, rng) == 0;
+                winsLower += fight(lower, foe, 3, c.skill, rng) == 0;
+            }
+            const float r = static_cast<float>(wins) / kRuns, lr = static_cast<float>(winsLower) / kRuns;
+            std::printf("  %-13s %-10s L%-2d: at its level %.2f, three below %.2f\n", c.name, c.dragonName, c.level, r, lr);
+            if (league::isChampion(id)) CHECK(r > 0.3f && r < 0.8f);
+            else CHECK(r > 0.4f && r < 0.95f);
+            CHECK(lr < r);
+        }
+    }
+}
+
+TEST(hollow_floors) {
+    for (int f = 2; f <= hollow::kFloors; ++f) CHECK(hollow::wildLevel(f) >= hollow::wildLevel(f - 1) || hollow::guardian(f - 1));
+    CHECK(hollow::wildLevel(1) == 3 && hollow::wildLevel(10) >= 14 && hollow::wildLevel(30) >= 38);
+    CHECK(hollow::guardian(5) && hollow::guardian(30) && !hollow::guardian(7) && !hollow::guardian(0));
+    CHECK(hollow::skillAt(1) == 0 && hollow::skillAt(30) == 3);
+    // The same wild one all day; others on other days.
+    const Dragon a = hollow::wildOf(7, 20000), b = hollow::wildOf(7, 20000);
+    CHECK(a.kind == b.kind && a.variant == b.variant && a.xp == b.xp && a.stage == Stage::Adult);
+    int differ = 0;
+    for (int day = 0; day < 20; ++day) differ += hollow::wildOf(7, 20000 + day).kind != a.kind;
+    CHECK(differ > 5);
+    // Deeper: rarer kinds and the rare colouring likelier.
+    int rareTop = 0, rareDeep = 0, commonTop = 0, commonDeep = 0;
+    for (int day = 0; day < 600; ++day) {
+        const Dragon t = hollow::wildOf(2, day), d = hollow::wildOf(28, day);
+        rareTop += t.variant == kindInfo(t.kind).rareVariant;
+        rareDeep += d.variant == kindInfo(d.kind).rareVariant;
+        commonTop += kindInfo(t.kind).rarity == Rarity::Common;
+        commonDeep += kindInfo(d.kind).rarity == Rarity::Common;
+    }
+    std::printf("  rare colourings: floor 2 %d, floor 28 %d of 600; commons %d, %d\n", rareTop, rareDeep, commonTop, commonDeep);
+    CHECK(rareDeep > rareTop * 3 && commonTop > commonDeep * 2);
+    // Checkpoints: the top, and past what it has cleared.
+    Dragon d = grownOf(findKind("flurrytail"), 10, 0, 5);
+    int cps[hollow::kCheckpoints];
+    CHECK(hollow::checkpoints(d, cps) == 1 && cps[0] == 1);
+    d.frostDeepest = 5;
+    CHECK(hollow::checkpoints(d, cps) == 2 && cps[1] == 6);
+    d.frostDeepest = 29;
+    CHECK(hollow::checkpoints(d, cps) == 6 && cps[5] == 26);
+    // The cold deeper down.
+    const Rgb c{200, 220, 240}, deep = hollow::chill(c, 30), top = hollow::chill(c, 1);
+    CHECK(top.r == c.r && deep.r < c.r && deep.g < c.g && hollow::depth(30) == 1.0f);
+}
+
+TEST(hollow_rewards) {
+    SaveData& s = freshSave();
+    Rng rng(8);
+    const s32 day = 21000;
+    const Dragon w1 = hollow::wildOf(1, day);
+    const u32 gleam = s.gleam;
+    hollow::Reward r = hollow::record(s, 0, 1, w1, Outcome::Won, day, rng);
+    CHECK(r.growth.xp > 0 && r.gleam > 0 && r.newDeepest && s.progress.hollowDeepest == 1 && s.dragons[0].frostDeepest == 1);
+    CHECK(s.gleam == gleam + r.gleam && s.dragons[0].wildWins == 1 && s.progress.counts[kCountWild] == 1);
+    // More than a challenger of the same level would give.
+    CHECK(r.growth.xp > battleXp(10, trainer::levelOf(w1), Outcome::Won));
+    // A guardian: its bonus and a stat point once a day, and the first time a prize.
+    const Dragon g = hollow::wildOf(5, day);
+    const int trainedBefore = s.dragons[0].trained[0] + s.dragons[0].trained[1] + s.dragons[0].trained[2] +
+                              s.dragons[0].trained[3] + s.dragons[0].trained[4];
+    r = hollow::record(s, 0, 5, g, Outcome::Won, day, rng);
+    CHECK(r.trained >= 0 && r.prizeFood != 0xFF && r.gleam >= 10 && s.progress.hollowDeepest == 5);
+    const int trainedAfter = s.dragons[0].trained[0] + s.dragons[0].trained[1] + s.dragons[0].trained[2] +
+                             s.dragons[0].trained[3] + s.dragons[0].trained[4];
+    CHECK(trainedAfter == trainedBefore + 1);
+    const hollow::Reward again = hollow::record(s, 0, 5, g, Outcome::Won, day, rng);
+    CHECK(again.trained < 0 && again.prizeFood == 0xFF && again.gleam < r.gleam && !again.newDeepest);
+    // A loss: a little experience, nothing else.
+    const hollow::Reward lost = hollow::record(s, 0, 9, hollow::wildOf(9, day), Outcome::Lost, day, rng);
+    CHECK(lost.gleam == 0 && lost.growth.xp > 0 && s.dragons[0].frostDeepest == 5);
+}
+
+TEST(hollow_balance) {
+    // A dragon a level above the floor's wild one (a few trained points) mostly wins; the guardians
+    // are a step up; far below, it doesn't.
+    Rng rng(321);
+    for (int floor : {1, 4, 5, 8, 12, 15, 18, 23, 25, 27, 30}) {
+        int wins = 0, weak = 0;
+        constexpr int kRuns = 300;
+        for (int i = 0; i < kRuns; ++i) {
+            const Dragon wild = hollow::wildOf(floor, i);
+            const int k = static_cast<int>(rng.below(static_cast<u32>(kindCount())));
+            const int level = hollow::wildLevel(floor) - (hollow::guardian(floor) ? 2 : 0) + 1;
+            wins += fight(grownOf(k, level, floor / 4, 60000 + i), wild, 3, hollow::skillAt(floor), rng) == 0;
+            weak += fight(grownOf(k, level > 6 ? level - 6 : 1, floor / 4, 60000 + i), wild, 3, hollow::skillAt(floor), rng) == 0;
+        }
+        std::printf("  floor %2d (L%d%s): %.2f; six levels lower %.2f\n", floor, hollow::wildLevel(floor),
+                    hollow::guardian(floor) ? ", guardian" : "", wins / 300.0f, weak / 300.0f);
+        if (hollow::guardian(floor)) CHECK(wins > 300 * 0.2f && wins < 300 * 0.7f);
+        else CHECK(wins > 300 * 0.45f && wins < 300 * 0.95f);  // (deep down, rarer kinds)
+        CHECK(weak < wins);
+    }
+}
+
 void runBattleTests() {
     RUN(battle_elements_wheel);
     RUN(battle_moves_table);
@@ -439,4 +656,10 @@ void runBattleTests() {
     RUN(battle_balance_levels);
     RUN(battle_balance_kinds_and_moves);
     RUN(battle_experience);
+    RUN(league_challengers);
+    RUN(league_progress_and_rewards);
+    RUN(league_balance);
+    RUN(hollow_floors);
+    RUN(hollow_rewards);
+    RUN(hollow_balance);
 }

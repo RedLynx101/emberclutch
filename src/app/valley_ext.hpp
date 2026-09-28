@@ -21,6 +21,10 @@ struct Folk {
     float reach = 2.6f;        // metres: how near to stand (and turned toward them) for the prompt
     u8 voice = 0;              // for startSpeech
     float pitch = 1.0f;
+    // Someone who walks about (the roaming trainers): drawn from here, kept current every frame
+    // by the feature with its own clip (the scene neither moves nor animates them); null: `look`.
+    const r3d::PersonView* live = nullptr;
+    const char* clip = nullptr;  // their clip while standing about (null: idle)
 };
 constexpr int kMaxFolk = 24;   // all features together, per frame
 
@@ -56,6 +60,12 @@ struct Feature {
     void (*view)(App& app, const Stage& stage, r3d::ValleyView& view);
     void (*drawTop)(App& app, const Stage& stage);                      // 2D over the picture
     void (*drawBottom)(App& app, const Input& in, const Stage& stage);  // the whole bottom screen
+    // (Optional, workstream D) Whoever has the valley: every frame, people who walk about (their
+    // places and clips; the stage as lent, read only); while nobody has it, their dragons into the
+    // view's free `others` slots, and 2D over the picture (a greeting's bubble).
+    void (*tick)(App& app, const Stage& stage) = nullptr;
+    void (*ambient)(App& app, const Stage& stage, r3d::ValleyView& view) = nullptr;
+    void (*drawOver)(App& app, const Stage& stage) = nullptr;
 };
 
 int featureCount();

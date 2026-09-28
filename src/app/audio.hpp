@@ -33,6 +33,7 @@ enum class Sfx : u8 {
     HopOn, HopOff, Nuzzle, Shutter, Equip, LevelUp, Unlock, Notice,
     BattleStart, Swipe, Hit, HitBig, Whiff, Faint, StatUp, StatDown, Victory, Defeat,
     Pose, Twirl, Ribbon, Cast, Plop, Bite, Reel, ShellPick, IceCrack, StepSand, StepSnow, Burst, Brake,
+    Greet, Clap, Snore,  // the roaming trainers' hello, clapping, a villager dozing (workstream D)
     Count
 };
 // True once a sound's own file is loaded (not a stand-in).

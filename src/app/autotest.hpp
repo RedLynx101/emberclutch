@@ -32,6 +32,8 @@
 //                               <slot>, talk <league> <slot>, hollow <floor>, keeper, board, level <n>, league <won> [beaten
 //                               bits], energy <n>, breathe on|off, auto on|off (autoplay on
 //                               also plays battles)
+//   roamer <what> ...           roaming trainers (app/roamers_feature.hpp roamerCommand): list, near <n>,
+//                               talk <n>, duel <n>, watch <n> [s], level <n> (0: fair); they walk 8:00-20:00
 //   quit                        leave (writes shots/done.txt)
 // The interface (1.0, workstream U):
 //   open <market|wander|sanctuary|vault|den|valley>   straight into that scene

@@ -641,6 +641,11 @@ void drawLeagueBoards(App& app, const Valley& v, s64 now) {
     r3d::drawChallengeProps(app, props, n, horizon, now);
 }
 
+bool stageBattle(const Valley& v, Vec3 them, Vec3 you, float youHeading, Vec2 middle, float sizeYou, float sizeFoe, bool small,
+                 bview::Setup& out) {
+    return placeBattle(v, them, you, youHeading, middle, sizeYou, sizeFoe, small, out);  // (the roaming trainers', workstream D)
+}
+
 const char* battleMusic(const App& app) {
     (void)app;
     return bview::running() ? "cup-day" : nullptr;

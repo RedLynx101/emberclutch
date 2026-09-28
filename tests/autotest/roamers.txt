@@ -1,0 +1,109 @@
+# Roaming trainers (workstream D): today's trainers out on the valley's paths with their dragons
+# at their heels (the camera beside two of them as they walk), one walking up to you, waving
+# hello (a bubble) and stopping; A: their lines and "Duel?"; a friendly duel played through to its
+# card and their parting words (a win at a fair level), then a loss (their dragon made strong).
+# The overlay is on: its TRI is the top screen's triangles (a roamer near: one more dragon).
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+# Grown up (Next stage x3), then out into the valley at 10:00 (they walk 8:00 to 20:00).
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 2
+hour 10
+valley
+wait 5
+# Day 20000's five (whatever today is): Elspeth (a Frost flurrytail), Juno, Marlo (the traveller's
+# body), Dex and Tilly (the child's).
+roamer day 20000
+wait 1
+battle level 8
+roamer list
+shot r00-list
+# Walking the paths with their dragons.
+roamer watch 2 7
+wait 2.5
+shot r01-walk
+wait 3
+shot r02-walk-on
+wait 2
+roamer watch 4 6
+wait 3
+shot r03-another
+wait 3.5
+# Up ahead of one on their way: they walk up, wave hello and stop for you.
+roamer near 0
+wait 1.2
+shot r04-coming
+wait 2
+shot r05-hello
+wait 3
+shot r06-stopped
+# A: their lines, then "Duel?" (their dragon made a little weaker for the script: a win).
+roamer level 3
+roamer talk 0
+wait 2.5
+shot r07-lines
+key A
+wait 2.5
+key A
+wait 1
+shot r08-ask
+key A
+wait 1.2
+shot r09-intro
+wait 3
+shot r10-choose
+key A
+wait 0.7
+shot r11-move
+autoplay on
+wait 6
+shot r12-turns
+wait 5
+shot r13-later
+wait 5
+shot r14-end
+wait 3
+shot r15-card
+wait 5
+shot r16-words
+key A
+wait 1.5
+shot r17-after
+# A loss: Juno's dragon made much stronger for the script, played through.
+roamer level 30
+roamer duel 1
+wait 4
+shot r18-second
+wait 10
+shot r19-second-turns
+wait 6
+shot r20-second-end
+wait 3
+shot r21-second-card
+wait 5
+shot r22-their-words
+key A
+wait 1.5
+roamer level 0
+autoplay off
+shot r23-done
+quit

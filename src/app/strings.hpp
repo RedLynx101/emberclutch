@@ -117,6 +117,12 @@ inline constexpr const char* kHomeX = "Home";
 // Run 19 (D89): the valley's Journal on X, fast travel asked first, home at the den's door, photos.
 inline constexpr const char* kTravelAsk = "Travel to %s?";
 inline constexpr const char* kFindFood = "Found a %s! Into the pouch.";
+inline constexpr const char* kFeedOut = "Feed";
+inline constexpr const char* kTreatPick = "Something from the pouch:";
+inline constexpr const char* kTreatNone = "The pouch is empty.";
+inline constexpr const char* kTreatAte = "%s ate it up!";
+inline constexpr const char* kTreatRefused = "%s turns its nose up at that.";
+inline constexpr const char* kTreatFull = "%s is full.";
 inline constexpr const char* kTravelGo = "Go";
 inline constexpr const char* kTravelStay = "Stay";
 inline constexpr const char* kPromptHome = "A: go home";

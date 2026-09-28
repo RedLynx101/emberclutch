@@ -247,7 +247,9 @@ C3D_Tex g_cleanSkin;       // 8x8 white: stands in when a form's skin texture is
 bool g_texOk = false;
 DVLB_s* g_staticDvlb = nullptr;
 shaderProgram_s g_staticProgram;
-int g_locSProjection = -1, g_locSModelView = -1, g_locSBlend = -1, g_locSTint = -1;
+int g_locSProjection = -1, g_locSModelView = -1, g_locSBlend = -1, g_locSTint = -1, g_locSDetailU = -1, g_locSDetailV = -1;
+C3D_Tex g_groundTex;  // the valley ground's detail (run 19), made at start, mipmapped (no shimmer far off)
+bool g_groundTexOk = false;
 C3D_AttrInfo g_staticAttr;
 C3D_LightEnv g_lightEnv;
 C3D_Light g_light;
@@ -432,6 +434,74 @@ std::size_t tiledIndex(int x, int y, int width) {
     int m = 0;
     for (int b = 0; b < 3; ++b) m |= (((x >> b) & 1) << (2 * b)) | (((y >> b) & 1) << (2 * b + 1));
     return std::size_t(tile) * 64 + m;
+}
+
+// The valley ground's detail texture (run 19): 128 x 128 greys round the middle (the combiner
+// doubles it: grey 128 leaves the ground's colour as it is), soft blotches, short strokes of
+// grass leaning one way, a fine grain; every mip level made by averaging, so far off it fades
+// to plain grey instead of sparkling.
+bool makeGroundTexture() {
+    constexpr int kSize = 128;
+    if (!C3D_TexInitMipmap(&g_groundTex, kSize, kSize, GPU_L8)) return false;
+    static float img[kSize * kSize];
+    auto hash = [](int x, int y, int seed) {
+        u32 h = static_cast<u32>(x) * 374761393u + static_cast<u32>(y) * 668265263u + static_cast<u32>(seed) * 2147483647u;
+        h = (h ^ (h >> 13)) * 1274126177u;
+        return ((h ^ (h >> 16)) & 0xFFFF) / 65535.0f;
+    };
+    auto smoothNoise = [&](float x, float y, int cell, int seed) {  // tileable value noise
+        const int n = kSize / cell;
+        const float fx = x / cell, fy = y / cell;
+        const int x0 = static_cast<int>(fx), y0 = static_cast<int>(fy);
+        const float tx = fx - x0, ty = fy - y0, sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+        auto at = [&](int i, int j) { return hash((i % n + n) % n, (j % n + n) % n, seed); };
+        const float a = at(x0, y0) + (at(x0 + 1, y0) - at(x0, y0)) * sx;
+        const float b = at(x0, y0 + 1) + (at(x0 + 1, y0 + 1) - at(x0, y0 + 1)) * sx;
+        return a + (b - a) * sy;
+    };
+    for (int y = 0; y < kSize; ++y)
+        for (int x = 0; x < kSize; ++x) {
+            float v = 0.5f;
+            v += 0.10f * (smoothNoise(x, y, 32, 1) - 0.5f) * 2;  // soft blotches
+            v += 0.06f * (smoothNoise(x, y, 8, 2) - 0.5f) * 2;
+            v += 0.04f * (hash(x, y, 3) - 0.5f) * 2;             // the grain
+            img[y * kSize + x] = v;
+        }
+    for (int k = 0; k < 900; ++k) {  // strokes of grass: short, leaning, lighter or darker
+        const float x0 = hash(k, 0, 7) * kSize, y0 = hash(k, 1, 7) * kSize, len = 3 + hash(k, 2, 7) * 5;
+        const float shade = hash(k, 3, 7) < 0.5f ? -0.09f : 0.08f;
+        for (int t = 0; t < static_cast<int>(len); ++t) {
+            const int px = (static_cast<int>(x0 + t * 0.35f) % kSize + kSize) % kSize;
+            const int py = (static_cast<int>(y0 + t) % kSize + kSize) % kSize;
+            img[py * kSize + px] += shade * (1.0f - t / len);
+        }
+    }
+    int size = kSize;
+    static float half[kSize * kSize];
+    for (int level = 0; level <= g_groundTex.maxLevel; ++level) {
+        u32 bytes = 0;
+        u8* out = static_cast<u8*>(C3D_Tex2DGetImagePtr(&g_groundTex, level, &bytes));
+        for (int y = 0; y < size; ++y)
+            for (int x = 0; x < size; ++x) {
+                const float v = img[y * size + x];
+                out[tiledIndex(x, y, size)] = static_cast<u8>(std::fmax(0.0f, std::fmin(1.0f, v)) * 255.0f + 0.5f);
+            }
+        if (size <= 8) break;
+        const int next = size / 2;  // the next level: each texel the average of four, pulled toward grey
+        for (int y = 0; y < next; ++y)
+            for (int x = 0; x < next; ++x) {
+                const float avg = (img[(2 * y) * size + 2 * x] + img[(2 * y) * size + 2 * x + 1] + img[(2 * y + 1) * size + 2 * x] +
+                                   img[(2 * y + 1) * size + 2 * x + 1]) * 0.25f;
+                half[y * next + x] = 0.5f + (avg - 0.5f) * 0.8f;
+            }
+        std::memcpy(img, half, sizeof(float) * next * next);
+        size = next;
+    }
+    C3D_TexFlush(&g_groundTex);
+    C3D_TexSetFilter(&g_groundTex, GPU_LINEAR, GPU_LINEAR);
+    C3D_TexSetFilterMipmap(&g_groundTex, GPU_LINEAR);
+    C3D_TexSetWrap(&g_groundTex, GPU_REPEAT, GPU_REPEAT);
+    return true;
 }
 
 // The dirt ramp and the clean stand-in skin (rgba8: no pattern in R, G, B; detail 1 in A).
@@ -1086,6 +1156,7 @@ bool init() {
     AttrInfo_AddLoader(&g_attr, 5, GPU_UNSIGNED_BYTE, 4);  // dust level (the dragon's own buffer)
     g_dustFixed = AttrInfo_AddFixed(&g_attrFixed, 5);
     g_texOk = makeTextures();
+    g_groundTexOk = makeGroundTexture();
 
     g_staticDvlb = DVLB_ParseFile(reinterpret_cast<u32*>(const_cast<u8*>(static_shbin)), static_shbin_size);
     shaderProgramInit(&g_staticProgram);
@@ -1094,6 +1165,8 @@ bool init() {
     g_locSModelView = shaderInstanceGetUniformLocation(g_staticProgram.vertexShader, "modelView");
     g_locSBlend = shaderInstanceGetUniformLocation(g_staticProgram.vertexShader, "blend");
     g_locSTint = shaderInstanceGetUniformLocation(g_staticProgram.vertexShader, "tint");
+    g_locSDetailU = shaderInstanceGetUniformLocation(g_staticProgram.vertexShader, "detailU");
+    g_locSDetailV = shaderInstanceGetUniformLocation(g_staticProgram.vertexShader, "detailV");
     AttrInfo_Init(&g_staticAttr);
     AttrInfo_AddLoader(&g_staticAttr, 0, GPU_FLOAT, 3);          // position
     AttrInfo_AddLoader(&g_staticAttr, 1, GPU_UNSIGNED_BYTE, 4);  // colour, lighting set A
@@ -2562,6 +2635,32 @@ void bindValleyStatic(const C3D_Mtx& projection, const C3D_Mtx& view, Rgb tint) 
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSModelView, &view);  // the valley is modelled in world space
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSBlend, 0, 0, 0, 0);
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, tint.r / 65025.0f, tint.g / 65025.0f, tint.b / 65025.0f, 1.0f / 255.0f);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, 0, 0, 0, 0);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, 0, 0, 0);
+}
+
+// The ground's detail texture on (run 19): the colour times the texture, doubled (its grey
+// middle leaves the colour be), the texture 8 m a repeat laid over the land from above (a
+// little of the height in it, so slopes and tree trunks take it too).
+void groundDetail(bool on) {
+    C3D_TexEnv* env = C3D_GetTexEnv(0);
+    C3D_TexEnvInit(env);
+    if (!on || !g_groundTexOk) {
+        C3D_TexEnvSrc(env, C3D_Both, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
+        C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
+        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, 0, 0, 0, 0);
+        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, 0, 0, 0);
+        return;
+    }
+    C3D_TexBind(0, &g_groundTex);
+    C3D_TexEnvSrc(env, C3D_RGB, GPU_PRIMARY_COLOR, GPU_TEXTURE0, GPU_PRIMARY_COLOR);
+    C3D_TexEnvFunc(env, C3D_RGB, GPU_MODULATE);
+    C3D_TexEnvScale(env, C3D_RGB, GPU_TEVSCALE_2);
+    C3D_TexEnvSrc(env, C3D_Alpha, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
+    C3D_TexEnvFunc(env, C3D_Alpha, GPU_REPLACE);
+    constexpr float k = 1.0f / 8.0f;
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, k, 0, 0.45f * k, 0);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, k, 0.7f * k, 0);
 }
 
 // True if a box can't be seen: every corner is beyond the same side of the view.
@@ -2994,6 +3093,151 @@ struct GlintGpu {
 GlintGpu g_glint[2];
 int g_glintFlip = 0;
 
+// Fireflies and falling leaves (run 19): a few quads round the camera, rebuilt each frame into one
+// of two buffers (the GPU may still be drawing last frame's).
+constexpr int kFireflies = 14, kLeaves = 14, kLifeQuads = kFireflies + kLeaves;
+struct LifeGpu {
+    Vec3* pos = nullptr;
+    u8* col = nullptr;
+    u16* idx = nullptr;
+};
+LifeGpu g_life[2];
+int g_lifeFlip = 0;
+
+float lifeHash(int a, int b) {
+    u32 h = static_cast<u32>(a) * 374761393u + static_cast<u32>(b) * 668265263u;
+    h = (h ^ (h >> 13)) * 1274126177u;
+    return ((h ^ (h >> 16)) & 0xFFFF) / 65535.0f;
+}
+
+// Is there a tree within `r` metres of (x, y)? (leaves only fall where trees stand)
+bool treeNear(const Valley& v, float x, float y, float r) {
+    const int t = v.tiles();
+    const int tx = static_cast<int>((x - v.x0) / v.tileSize()), ty = static_cast<int>((y - v.y0) / v.tileSize());
+    if (tx < 0 || ty < 0 || tx >= t || ty >= t) return false;
+    for (int k : v.tileTrees[std::size_t(ty) * t + tx]) {
+        const ValleyTree& tr = v.trees[std::size_t(k)];
+        if ((tr.kind == kPropTree || tr.kind == kPropFruit) && std::hypot(tr.x - x, tr.y - y) < r) return true;
+    }
+    return false;
+}
+
+void drawValleyLife(App& app, const Valley& v, const ValleyView& view, const C3D_Mtx& viewM, s64 now) {
+    const DayBlend day = dayBlend(now);
+    const float dark = day.weight(kLightNight) + 0.6f * day.weight(kLightEvening), light = 1.0f - dark;
+    g_lifeFlip ^= 1;
+    LifeGpu& g = g_life[g_lifeFlip];
+    if (!g.pos) {
+        g.pos = static_cast<Vec3*>(linearAlloc(kLifeQuads * 4 * sizeof(Vec3)));
+        g.col = static_cast<u8*>(linearAlloc(kLifeQuads * 4 * 4));
+        g.idx = static_cast<u16*>(linearAlloc(kLifeQuads * 6 * sizeof(u16)));
+        if (!g.pos || !g.col || !g.idx) {
+            if (g.pos) linearFree(g.pos);
+            if (g.col) linearFree(g.col);
+            if (g.idx) linearFree(g.idx);
+            g = LifeGpu{};
+            return;
+        }
+        for (int q = 0; q < kLifeQuads; ++q) {
+            u16* i = g.idx + q * 6;
+            const u16 b = static_cast<u16>(q * 4);
+            i[0] = b, i[1] = static_cast<u16>(b + 1), i[2] = static_cast<u16>(b + 2);
+            i[3] = b, i[4] = static_cast<u16>(b + 2), i[5] = static_cast<u16>(b + 3);
+        }
+        GSPGPU_FlushDataCache(g.idx, kLifeQuads * 6 * sizeof(u16));
+    }
+    // Round what the camera looks at, near the ground there.
+    const Vec3 focus = view.target;
+    const Vec3 toEye = normalize(view.eye - focus);
+    const Vec3 right = normalize(cross(Vec3{0, 0, 1}, toEye)), up = cross(toEye, right);
+    const float t = app.t;
+    int fireflies = 0, leaves = 0;
+    if (dark > 0.25f) {  // fireflies: a soft yellow-green glow drifting low over the grass, pulsing
+        for (int k = 0; k < kFireflies; ++k) {
+            const float cycle = 11.0f, phase = lifeHash(k, 1) * cycle;
+            const int round = static_cast<int>((t + phase) / cycle);
+            const float a = lifeHash(k, round * 3 + 2) * 6.2831853f, r = 3.0f + lifeHash(k, round * 3 + 5) * 16.0f;
+            float x = focus.x + std::cos(a) * r + 1.2f * std::sin(t * 0.7f + k);
+            float y = focus.y + std::sin(a) * r + 1.2f * std::cos(t * 0.6f + k * 1.7f);
+            const float ground = v.heightAt(x, y);
+            if (ground < v.water + 0.3f) continue;
+            const float z = ground + 0.6f + 0.9f * lifeHash(k, 9) + 0.35f * std::sin(t * 1.3f + k * 2.1f);
+            const float within = std::fmod(t + phase, cycle) / cycle;  // fades in and out over its round
+            const float pulse = (0.55f + 0.45f * std::sin(t * 3.1f + k * 1.3f)) * std::sin(within * 3.14159f) *
+                                std::fmin(1.0f, (dark - 0.25f) * 2.0f);
+            const float size = 0.09f;
+            const Vec3 c{x, y, z};
+            Vec3* p = g.pos + fireflies * 4;
+            p[0] = c - right * size;
+            p[1] = c - up * size;
+            p[2] = c + right * size;
+            p[3] = c + up * size;
+            u8* col = g.col + fireflies * 16;
+            for (int e = 0; e < 4; ++e) {
+                col[e * 4] = static_cast<u8>(220 * pulse), col[e * 4 + 1] = static_cast<u8>(255 * pulse);
+                col[e * 4 + 2] = static_cast<u8>(120 * pulse), col[e * 4 + 3] = 255;
+            }
+            ++fireflies;
+        }
+    }
+    if (light > 0.3f) {  // leaves: spinning down from the trees' crowns, swaying as they fall
+        for (int k = 0; k < kLeaves; ++k) {
+            const float cycle = 7.0f, phase = lifeHash(k, 11) * cycle;
+            const int round = static_cast<int>((t + phase) / cycle);
+            const float a = lifeHash(k, round * 5 + 13) * 6.2831853f, r = 2.0f + lifeHash(k, round * 5 + 17) * 18.0f;
+            const float bx = focus.x + std::cos(a) * r, by = focus.y + std::sin(a) * r;
+            if (!treeNear(v, bx, by, 5.0f)) continue;
+            const float fall = std::fmod(t + phase, cycle) / cycle;
+            const float ground = v.heightAt(bx, by);
+            const float z = ground + 7.0f * (1.0f - fall) + 0.1f;
+            const float sway = std::sin(fall * 9.0f + k) * 0.9f;
+            const Vec3 c{bx + sway, by + 0.4f * std::cos(fall * 7.0f + k), z};
+            const float spin = t * 3.0f + k, size = 0.13f;
+            const Vec3 d1{std::cos(spin) * size, std::sin(spin) * size, 0.05f * std::sin(spin * 1.3f)};
+            const Vec3 d2{-std::sin(spin) * size * 0.6f, std::cos(spin) * size * 0.6f, size * 0.5f * std::cos(spin)};
+            Vec3* p = g.pos + (fireflies + leaves) * 4;
+            p[0] = c - d1;
+            p[1] = c - d2;
+            p[2] = c + d1;
+            p[3] = c + d2;
+            static const u8 kLeaf[4][3] = {{214, 150, 60}, {236, 190, 80}, {150, 180, 70}, {200, 96, 60}};
+            const u8* lc = kLeaf[k % 4];
+            const float lit = 0.65f + 0.35f * light;
+            u8* col = g.col + (fireflies + leaves) * 16;
+            for (int e = 0; e < 4; ++e) {
+                col[e * 4] = static_cast<u8>(lc[0] * lit), col[e * 4 + 1] = static_cast<u8>(lc[1] * lit);
+                col[e * 4 + 2] = static_cast<u8>(lc[2] * lit), col[e * 4 + 3] = 255;
+            }
+            ++leaves;
+        }
+    }
+    const int quads = fireflies + leaves;
+    if (!quads) return;
+    GSPGPU_FlushDataCache(g.pos, quads * 4 * sizeof(Vec3));
+    GSPGPU_FlushDataCache(g.col, quads * 16);
+    C3D_BufInfo* buf = C3D_GetBufInfo();
+    BufInfo_Init(buf);
+    BufInfo_Add(buf, g.pos, sizeof(Vec3), 1, 0x0);
+    BufInfo_Add(buf, g.col, 4, 1, 0x1);
+    BufInfo_Add(buf, g.col, 4, 1, 0x2);
+    C3D_CullFace(GPU_CULL_NONE);
+    if (leaves) {  // (after the fireflies in the buffer: drawn solid)
+        C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+        C3D_DrawElements(GPU_TRIANGLES, leaves * 6, C3D_UNSIGNED_SHORT, g.idx + fireflies * 6);
+    }
+    if (fireflies) {  // glowing: added, no depth written
+        C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_COLOR);
+        C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_ONE, GPU_ONE, GPU_ZERO, GPU_ONE);
+        C3D_DrawElements(GPU_TRIANGLES, fireflies * 6, C3D_UNSIGNED_SHORT, g.idx);
+        C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA,
+                       GPU_ONE_MINUS_SRC_ALPHA);
+    }
+    C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+    app.stats.tris += quads * 2;
+    app.stats.draws += 2;
+    (void)viewM;
+}
+
 void drawGlints(App& app, const ValleyView& view, const C3D_Mtx& viewM) {
     if (view.glintCount <= 0) return;
     constexpr int kPer = 13;  // a star (a middle, 8 rim points: 8 triangles) and its halo (4 corners: 4 triangles)
@@ -3343,6 +3587,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
                 drawnLod[std::size_t(ty) * t + tx] = static_cast<s8>(g->lod);
             }
         }
+    groundDetail(true);
     for (const Pick& p : picks) {
         const int tx = p.tile % t, ty = p.tile / t;
         bool skirts = false;
@@ -3357,6 +3602,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         g_valleyStats.ground += (skirts ? p.g->count : p.g->ground) / 3;
     }
     for (const Pick& p : picks) drawnLod[std::size_t(p.tile)] = -1;  // (clean for the next frame)
+    groundDetail(false);
     mark();
     // The places, near enough to have been built.
     const DayBlend blend = dayBlend(now);
@@ -3501,6 +3747,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     drawPlaces(app, v, view, viewM, clip, blend, true);
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, 1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f);
     drawGlints(app, view, viewM);
+    drawValleyLife(app, v, view, viewM, now);  // fireflies and falling leaves (run 19)
     mark();
     // The water and the waterfall: see-through, over everything, writing no depth.
     // (rebuilt round the camera as it moves on: past the ground's edge the haze has the water)

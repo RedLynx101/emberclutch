@@ -23,6 +23,7 @@
 #include "app/ui_draw.hpp"
 #include "app/valley_ext.hpp"
 #include "core/campaign.hpp"
+#include "core/care.hpp"
 #include "core/clock.hpp"
 #include "core/daylight.hpp"
 #include "core/dragondex.hpp"
@@ -35,6 +36,7 @@
 #include "core/people.hpp"
 #include "core/place_layout.hpp"
 #include "core/rig.hpp"
+#include "core/trainer.hpp"
 #include "core/valley.hpp"
 #include "core/villagers.hpp"
 #include "core/walker.hpp"
@@ -109,6 +111,10 @@ struct ValleyScene {
     int actionExtra = -1;
     vext::Stage stage;
     int travelAsk = -1;  // a pin tapped: its place, until Go or Stay (run 19: travel asks first)
+    // Walking together (run 19): the metres not yet counted; the pouch open to feed it; its meal.
+    float walkCarry = 0;
+    bool treatOpen = false;
+    float eatFor = 0;  // seconds of its Eat clip left
     // Hopping on or off its back (run 19): seconds in (< 0: not hopping), which way, from and to.
     float hopT = -1;
     bool hopOn = true;
@@ -336,8 +342,11 @@ void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swi
     ClipId want = ClipId::Idle;
     float natural = 0, fastest = 1.6f;
     const bool staged = vext::activeFeature(app) >= 0 && s.stage.palClip != ClipId::Count;  // a feature's clip
+    if (s.eatFor > 0) s.eatFor -= app.dt;
     if (staged) {
         want = s.stage.palClip;
+    } else if (s.eatFor > 0 && speed < 0.3f) {  // a treat from the pouch
+        want = ClipId::Eat;
     } else if (flying) {
         want = diving ? ClipId::FlyDive : s.flight.sinceFlap < 0.8f ? ClipId::FlyFlap : ClipId::FlyGlide;
     } else if (swimming) {
@@ -967,6 +976,13 @@ void update(App& app, const Input& in) {
             }
             partnerSpeed = s.pal.speed;
             swimming = va.islandAt(s.pal.pos.x, s.pal.pos.y, s.pal.pos.z) < 0 && va.heightAt(s.pal.pos.x, s.pal.pos.y) < va.water - 0.4f;
+            // Out walking together: fonder and livelier, a little hungrier (run 19; core/trainer).
+            if (s.you.speed > 0.3f && !s.pal.lost()) {
+                Dragon& real = app.game.dragons[s.partner];
+                trainer::walkTogether(real, s.you.speed * app.dt, s.walkCarry);
+                s.shown.needs = real.needs;
+                s.shown.bond = real.bond;
+            }
         }
         // Your footsteps: the dragons' own step, lighter and higher (run 19), a little brighter on stone.
         if (s.you.speed > 0.4f && (s.stepFor -= app.dt * s.you.speed) <= 0) {
@@ -1429,7 +1445,7 @@ void drawBottom(App& app, const Input& touch) {
                        : s.mode == Mode::FreeCam ? str::kHelpFreeCam : str::kHelpFoot;
     text(app, help, x, 120, 0.34f, withAlpha(theme::kShell, 0.8f), C2D_AlignLeft, 132);
     // Buttons: the free camera, calling your partner, home.
-    if (button(app, {x, 164, 62, 30}, s.mode == Mode::FreeCam ? str::kBack : str::kLook, in)) {
+    if (button(app, {x, 164, 41, 30}, s.mode == Mode::FreeCam ? str::kBack : str::kLook, in)) {
         if (s.mode == Mode::FreeCam) {
             s.mode = s.before;
         } else {
@@ -1442,9 +1458,53 @@ void drawBottom(App& app, const Input& touch) {
         }
         audio::playSfx(audio::Sfx::Tap);
     }
-    if (s.partner >= 0 && s.mode == Mode::OnFoot && button(app, {x + 66, 164, 62, 30}, str::kCall, in)) {
+    if (s.partner >= 0 && s.mode == Mode::OnFoot && button(app, {x + 43, 164, 41, 30}, str::kCall, in)) {
         s.pal.call(s.you, va);
         audio::playSfx(audio::Sfx::Chirp, 1.1f);
+    }
+    if (s.partner >= 0 && s.mode == Mode::OnFoot && s.shown.stage != Stage::Egg &&
+        button(app, {x + 86, 164, 42, 30}, str::kFeedOut, in)) {  // feeding it out here (run 19)
+        s.treatOpen = !s.treatOpen;
+        audio::playSfx(audio::Sfx::Tap);
+    }
+    if (s.treatOpen && s.partner >= 0 && s.mode == Mode::OnFoot) {  // the pouch, over the map
+        panel({kMapX, kMapY + 96, kMapSize, 76}, withAlpha(theme::kDenPlum, 0.94f));
+        text(app, str::kTreatPick, kMapX + 6, kMapY + 99, 0.36f, theme::kClutchGold, C2D_AlignLeft, kMapSize - 12);
+        int shown = 0;
+        for (int f = 0; f < static_cast<int>(Food::Count); ++f) {
+            if (app.game.pouch[f] == 0) continue;
+            const float fx = kMapX + 4 + (shown % 5) * 33, fy = kMapY + 114 + (shown / 5) * 28;
+            if (fy > kMapY + 150) break;
+            const Rect r{fx, fy, 31, 26};
+            panel(r, withAlpha(theme::kShell, 0.12f));
+            care::drawFood(static_cast<Food>(f), fx + 15, fy + 12, 0.5f);
+            char count[8];
+            std::snprintf(count, sizeof(count), "%u", static_cast<unsigned>(app.game.pouch[f]));
+            text(app, count, fx + 29, fy + 15, 0.3f, theme::kShell, C2D_AlignRight, 20);
+            if (in.tapped && r.contains(in.tx, in.ty)) {
+                Dragon& real = app.game.dragons[s.partner];
+                const Food food = static_cast<Food>(f);
+                const Taste taste = tasteOf(real, food);
+                if (taste == Taste::Disliked) {
+                    audio::playSfx(audio::Sfx::Grumble);
+                    showToastf(app, str::kTreatRefused, real.name);
+                } else if (real.needs.belly > 96) {
+                    showToastf(app, str::kTreatFull, real.name);
+                } else {
+                    --app.game.pouch[f];
+                    feed(real, foodInfo(food).belly, taste == Taste::Favorite);
+                    s.shown.needs = real.needs;
+                    s.shown.bond = real.bond;
+                    s.eatFor = 1.6f;
+                    s.treatOpen = false;
+                    audio::playSfx(audio::Sfx::Munch);
+                    showToastf(app, str::kTreatAte, real.name);
+                    saveNow(app);
+                }
+            }
+            ++shown;
+        }
+        if (shown == 0) text(app, str::kTreatNone, kMapX + 6, kMapY + 124, 0.4f, theme::kShell, C2D_AlignLeft, kMapSize - 12);
     }
     if (button(app, {x, 200, 62, 32}, str::kHomeX, in)) {
         audio::playSfx(audio::Sfx::Back);

@@ -431,6 +431,7 @@ void update(App& app, const Input& in) {
         return;
     }
     measureSpeeds(s);
+    holdTips(c.phase == Phase::Play);  // (the race's or the catch's own top screen: the tips wait)
     s.propCount = 0;
     s.otherCount = 0;
     if (talking(app)) {

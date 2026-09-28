@@ -84,6 +84,7 @@ struct Reward {
     u8 prizeFood = 0xFF;          // a final's prize: a food (core/care Food) and how many,
     u8 prizeCount = 0;
     u8 prizeTrinket = 0xFF;       // and a trinket for the hoard (core/wanderings Trinket)
+    int dye = 0;                  // ...and a prize dye you don't have yet (0: none)
 };
 Reward record(SaveData& s, int dragonIndex, int id, battle::Outcome o, s32 today);
 

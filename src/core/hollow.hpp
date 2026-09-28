@@ -37,6 +37,7 @@ struct Reward {
     u8 prizeFood = 0xFF;      // a guardian's first prize: a food (core/care Food) and how many,
     u8 prizeCount = 0;
     u8 prizeTrinket = 0xFF;   // and a trinket (core/wanderings Trinket)
+    int accessory = -1;       // ...and one of the Hollow's things to wear you don't have yet (-1: none)
 };
 Reward record(SaveData& s, int dragonIndex, int floor, const Dragon& wild, battle::Outcome o, s32 today, Rng& rng);
 

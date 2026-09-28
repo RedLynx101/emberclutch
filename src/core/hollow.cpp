@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "core/battle_spots.hpp"
+#include "core/accessories.hpp"
 #include "core/care.hpp"
 #include "core/kinds.hpp"
 #include "core/trainer.hpp"
@@ -123,6 +124,8 @@ Reward record(SaveData& s, int dragonIndex, int floor, const Dragon& wild, battl
             pouch = static_cast<u16>(pouch + r.prizeCount > 999 ? 999 : pouch + r.prizeCount);
             u16& hoard = s.hoard[static_cast<int>(kTrinkets[band])];
             if (hoard < 0xFFFF) ++hoard;
+            r.accessory = acc::unownedFrom(s, WearSource::Hollow, static_cast<u32>(floor * 13 + today));
+            if (r.accessory >= 0) trainer::giveAccessory(s, r.accessory);
         }
     } else if (floor >= 3 && rng.chance(1, 8) && trainer::train(d, best)) {
         r.trained = best;

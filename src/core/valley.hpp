@@ -115,6 +115,10 @@ void buildValleyHorizon(const Valley& v, ValleyMesh& out);
 void buildValleyWater(const Valley& v, ValleyMesh& out, Vec2 centre, float radius);
 // The detail level for a tile this far from the camera (metres).
 int valleyLodFor(float distance);
+// How earthy a colour is, for the ground's painted texture (0: grass or leaves, the strokes; 255:
+// a path, sand, rock or bark, the speckle and grain): green leading red means growing things. A
+// tile's vertices carry it in their alpha.
+u8 surfaceWeight(u8 r, u8 g, u8 b);
 // The look lab (2026-09-28): how the ground is built. 0 smooth (a vertex a sample, shared), 1
 // faceted low-poly (a coarser grid, each triangle its own colour lit by its own face).
 void setValleyGroundStyle(int style);

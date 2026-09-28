@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "core/accessories.hpp"
 #include "core/battle_spots.hpp"
 #include "core/care.hpp"
 #include "core/kinds.hpp"
@@ -322,6 +323,8 @@ Reward record(SaveData& s, int dragonIndex, int id, battle::Outcome o, s32 today
             pouch = static_cast<u16>(pouch + r.prizeCount > 999 ? 999 : pouch + r.prizeCount);
             u16& hoard = s.hoard[static_cast<int>(kTrinkets[league])];
             if (hoard < 0xFFFF) ++hoard;
+            r.dye = acc::prizeDye(s, static_cast<u32>(today * 5 + league));
+            if (r.dye > 0) trainer::giveDye(s, r.dye);
         }
     } else if (r.firstWin) {
         s.progress.battleBeaten[league] = static_cast<u8>(s.progress.battleBeaten[league] | (1u << slotOf(id)));

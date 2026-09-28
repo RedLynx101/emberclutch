@@ -155,6 +155,7 @@ int main() {
         const SceneFns& scene = sceneFns(app.scene);
         if (scene.update && !app.devMenu && !paused) {
             perf::Scope timed(perf::Update);
+            holdTips(false);  // (a scene whose top screen is busy holds them again as it updates)
             scene.update(app, in);
         }
         {

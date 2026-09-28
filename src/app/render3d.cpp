@@ -443,14 +443,16 @@ std::size_t tiledIndex(int x, int y, int width) {
     return std::size_t(tile) * 64 + m;
 }
 
-// The valley ground's detail texture (run 19): 128 x 128 greys round the middle (the combiner
-// doubles it: grey 128 leaves the ground's colour as it is), soft blotches, short strokes of
-// grass leaning one way, a fine grain; every mip level made by averaging, so far off it fades
-// to plain grey instead of sparkling.
+// The valley ground's painted texture (run 19; two channels since the look lab, 2026-09-28):
+// 128 x 128 greys round the middle (the combiner doubles it: grey 128 leaves the colour as it
+// is). Its luminance is the grass: soft blotches, short strokes leaning one way, a fine grain.
+// Its alpha is the earth and stone: speckles of grit and pebbles with a lit edge, a coarser
+// grain, faint cracks. Every mip level made by averaging, so far off it fades to plain grey
+// instead of sparkling.
 bool makeGroundTexture() {
     constexpr int kSize = 128;
-    if (!C3D_TexInitMipmap(&g_groundTex, kSize, kSize, GPU_L8)) return false;
-    static float img[kSize * kSize];
+    if (!C3D_TexInitMipmap(&g_groundTex, kSize, kSize, GPU_LA8)) return false;
+    static float img[kSize * kSize], earth[kSize * kSize];
     auto hash = [](int x, int y, int seed) {
         u32 h = static_cast<u32>(x) * 374761393u + static_cast<u32>(y) * 668265263u + static_cast<u32>(seed) * 2147483647u;
         h = (h ^ (h >> 13)) * 1274126177u;
@@ -474,34 +476,74 @@ bool makeGroundTexture() {
             v += 0.04f * (hash(x, y, 3) - 0.5f) * 2;             // the grain
             img[y * kSize + x] = v;
         }
-    for (int k = 0; k < 900; ++k) {  // strokes of grass: short, leaning, lighter or darker
+    for (int k = 0; k < 90; ++k) {  // broad brush dabs: soft, long, leaning the grass's way
+        const float cx = hash(k, 0, 5) * kSize, cy = hash(k, 1, 5) * kSize, shade = hash(k, 2, 5) < 0.5f ? -0.05f : 0.05f;
+        for (int dy = -8; dy <= 8; ++dy)
+            for (int dx = -4; dx <= 4; ++dx) {
+                const float u = (dx - dy * 0.35f) / 3.5f, w = dy / 8.0f, f = 1.0f - (u * u + w * w);
+                if (f <= 0) continue;
+                img[((static_cast<int>(cy) + dy + kSize) % kSize) * kSize + (static_cast<int>(cx) + dx + kSize) % kSize] += shade * f;
+            }
+    }
+    for (int k = 0; k < 1100; ++k) {  // strokes of grass: short, leaning, lighter or darker
         const float x0 = hash(k, 0, 7) * kSize, y0 = hash(k, 1, 7) * kSize, len = 3 + hash(k, 2, 7) * 5;
-        const float shade = hash(k, 3, 7) < 0.5f ? -0.09f : 0.08f;
+        const float shade = hash(k, 3, 7) < 0.5f ? -0.12f : 0.1f;
         for (int t = 0; t < static_cast<int>(len); ++t) {
             const int px = (static_cast<int>(x0 + t * 0.35f) % kSize + kSize) % kSize;
             const int py = (static_cast<int>(y0 + t) % kSize + kSize) % kSize;
             img[py * kSize + px] += shade * (1.0f - t / len);
         }
     }
+    for (int y = 0; y < kSize; ++y)  // the earth: blotches, a coarse grain
+        for (int x = 0; x < kSize; ++x) {
+            float v = 0.5f;
+            v += 0.09f * (smoothNoise(x, y, 16, 11) - 0.5f) * 2;
+            v += 0.07f * (hash(x, y, 12) - 0.5f) * 2;
+            v += 0.05f * (hash(x / 2, y / 2, 13) - 0.5f) * 2;
+            earth[y * kSize + x] = v;
+        }
+    auto dab = [&](float cx, float cy, float r, float shade) {  // a pebble: dark or light, its top edge lit
+        for (int dy = -3; dy <= 3; ++dy)
+            for (int dx = -3; dx <= 3; ++dx) {
+                const float d = std::sqrt(static_cast<float>(dx * dx + dy * dy));
+                if (d > r) continue;
+                const int px = (static_cast<int>(cx) + dx + kSize) % kSize, py = (static_cast<int>(cy) + dy + kSize) % kSize;
+                earth[py * kSize + px] += shade * (1.0f - 0.5f * d / r) + (dy < 0 && d > r - 1.1f ? 0.06f : 0.0f);
+            }
+    };
+    for (int k = 0; k < 520; ++k)
+        dab(hash(k, 0, 17) * kSize, hash(k, 1, 17) * kSize, 0.8f + hash(k, 2, 17) * 1.8f, hash(k, 3, 17) < 0.6f ? -0.16f : 0.13f);
+    for (int k = 0; k < 14; ++k) {  // faint cracks, wandering
+        float x = hash(k, 0, 19) * kSize, y = hash(k, 1, 19) * kSize, a = hash(k, 2, 19) * 6.283f;
+        for (int t = 0; t < 22; ++t) {
+            earth[((static_cast<int>(y) % kSize + kSize) % kSize) * kSize + (static_cast<int>(x) % kSize + kSize) % kSize] -= 0.08f;
+            a += (hash(k, t, 23) - 0.5f) * 0.9f;
+            x += std::cos(a);
+            y += std::sin(a);
+        }
+    }
     int size = kSize;
-    static float half[kSize * kSize];
+    static float half[kSize * kSize], halfEarth[kSize * kSize];
+    auto byte = [](float v) { return static_cast<u8>(std::fmax(0.0f, std::fmin(1.0f, v)) * 255.0f + 0.5f); };
     for (int level = 0; level <= g_groundTex.maxLevel; ++level) {
         u32 bytes = 0;
         u8* out = static_cast<u8*>(C3D_Tex2DGetImagePtr(&g_groundTex, level, &bytes));
         for (int y = 0; y < size; ++y)
             for (int x = 0; x < size; ++x) {
-                const float v = img[y * size + x];
-                out[tiledIndex(x, y, size)] = static_cast<u8>(std::fmax(0.0f, std::fmin(1.0f, v)) * 255.0f + 0.5f);
+                const u32 at = tiledIndex(x, y, size) * 2;  // (LA8: the alpha byte first, then the luminance)
+                out[at] = byte(earth[y * size + x]);
+                out[at + 1] = byte(img[y * size + x]);
             }
         if (size <= 8) break;
         const int next = size / 2;  // the next level: each texel the average of four, pulled toward grey
         for (int y = 0; y < next; ++y)
             for (int x = 0; x < next; ++x) {
-                const float avg = (img[(2 * y) * size + 2 * x] + img[(2 * y) * size + 2 * x + 1] + img[(2 * y + 1) * size + 2 * x] +
-                                   img[(2 * y + 1) * size + 2 * x + 1]) * 0.25f;
-                half[y * next + x] = 0.5f + (avg - 0.5f) * 0.8f;
+                const int i = (2 * y) * size + 2 * x;
+                half[y * next + x] = 0.5f + ((img[i] + img[i + 1] + img[i + size] + img[i + size + 1]) * 0.25f - 0.5f) * 0.85f;
+                halfEarth[y * next + x] = 0.5f + ((earth[i] + earth[i + 1] + earth[i + size] + earth[i + size + 1]) * 0.25f - 0.5f) * 0.85f;
             }
         std::memcpy(img, half, sizeof(float) * next * next);
+        std::memcpy(earth, halfEarth, sizeof(float) * next * next);
         size = next;
     }
     C3D_TexFlush(&g_groundTex);
@@ -2685,25 +2727,43 @@ void bindValleyStatic(const C3D_Mtx& projection, const C3D_Mtx& view, Rgb tint) 
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, 0, 0, 0);
 }
 
-// The ground's detail texture on (run 19): the colour times the texture, doubled (its grey
-// middle leaves the colour be), the texture 8 m a repeat laid over the land from above (a
-// little of the height in it, so slopes and tree trunks take it too).
+// The ground's painted texture on (run 19; two channels since the look lab): the grass's strokes
+// and the earth's speckle mixed by the vertex's alpha (core surfaceWeight), then the colour
+// times it, doubled (its grey middle leaves the colour be); the output's alpha 1 (the vertex's
+// is the mix, not see-through). The texture 8 m a repeat laid over the land from above (a
+// little of the height in it, so slopes and tree trunks take it too). Off: the colour alone.
 void groundDetail(bool on) {
     C3D_TexEnv* env = C3D_GetTexEnv(0);
     C3D_TexEnvInit(env);
+    C3D_TexEnvInit(C3D_GetTexEnv(1));  // (a pass-through unless the texture's on)
     if (!on || !g_groundTexOk || g_groundLook == 1) {
-        C3D_TexEnvSrc(env, C3D_Both, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
-        C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
+        C3D_TexEnvSrc(env, C3D_RGB, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
+        C3D_TexEnvFunc(env, C3D_RGB, GPU_REPLACE);
+        if (on) {  // (the faceted look's tiles: their alpha is the texture's mix, not see-through)
+            C3D_TexEnvSrc(env, C3D_Alpha, GPU_CONSTANT, GPU_CONSTANT, GPU_CONSTANT);
+            C3D_TexEnvColor(env, 0xFFFFFFFF);
+        } else {
+            C3D_TexEnvSrc(env, C3D_Alpha, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
+        }
+        C3D_TexEnvFunc(env, C3D_Alpha, GPU_REPLACE);
         C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, 0, 0, 0, 0);
         C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, 0, 0, 0);
         return;
     }
     C3D_TexBind(0, &g_groundTex);
-    C3D_TexEnvSrc(env, C3D_RGB, GPU_PRIMARY_COLOR, GPU_TEXTURE0, GPU_PRIMARY_COLOR);
-    C3D_TexEnvFunc(env, C3D_RGB, GPU_MODULATE);
-    C3D_TexEnvScale(env, C3D_RGB, GPU_TEVSCALE_2);
-    C3D_TexEnvSrc(env, C3D_Alpha, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
+    // The mix: earth (the texture's alpha) x w + grass (its luminance) x (1 - w), w the vertex's alpha.
+    C3D_TexEnvSrc(env, C3D_RGB, GPU_TEXTURE0, GPU_TEXTURE0, GPU_PRIMARY_COLOR);
+    C3D_TexEnvOpRgb(env, GPU_TEVOP_RGB_SRC_ALPHA, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_ALPHA);
+    C3D_TexEnvFunc(env, C3D_RGB, GPU_INTERPOLATE);
+    C3D_TexEnvSrc(env, C3D_Alpha, GPU_CONSTANT, GPU_CONSTANT, GPU_CONSTANT);
+    C3D_TexEnvColor(env, 0xFFFFFFFF);
     C3D_TexEnvFunc(env, C3D_Alpha, GPU_REPLACE);
+    C3D_TexEnv* times = C3D_GetTexEnv(1);  // then the colour times it, doubled
+    C3D_TexEnvSrc(times, C3D_RGB, GPU_PREVIOUS, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
+    C3D_TexEnvFunc(times, C3D_RGB, GPU_MODULATE);
+    C3D_TexEnvScale(times, C3D_RGB, GPU_TEVSCALE_2);
+    C3D_TexEnvSrc(times, C3D_Alpha, GPU_PREVIOUS, GPU_PREVIOUS, GPU_PREVIOUS);
+    C3D_TexEnvFunc(times, C3D_Alpha, GPU_REPLACE);
     constexpr float k = 1.0f / 8.0f;
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, k, 0, 0.45f * k, 0);
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, k, 0.7f * k, 0);

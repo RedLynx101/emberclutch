@@ -42,6 +42,7 @@ struct FindReward {
     s8 trinket = -1;
     s8 food = -1;  // a treat into the pouch (core/care Food)
     int egg = -1;  // its SaveData index (in a free nest or the Cold Vault), -1: none
+    int accessory = -1;  // a thing to wear, tucked in with a treasure (the 3rd, 7th and 12th found)
 };
 // Takes it: what it held goes to the save (an egg's kind by rarity), and it's marked found.
 FindReward takeFind(SaveData& s, int i, s64 now, Rng& rng);

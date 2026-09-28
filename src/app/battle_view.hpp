@@ -11,6 +11,7 @@
 #include "app/render3d.hpp"
 #include "app/valley_ext.hpp"
 #include "core/battle.hpp"
+#include "core/walker.hpp"
 
 namespace ec::bview {
 
@@ -34,6 +35,7 @@ struct Setup {
     Vec3 palAt, foeAt, foeFrom;
     float foeScale = 1.0f;       // a guardian a little bigger
     float camSide = 1.0f;        // the camera over your right shoulder (1) or your left (-1)
+    float camReach = 1.0f;       // how far back and aside it stands (less in a ringed bowl: the Hollow)
     bool trainer = false;        // a challenger behind it
     r3d::PersonView trainerLook; // (its anim is the battle's own)
     // The battle over: the feature records it and fills in the card; then, the card closed.
@@ -69,5 +71,8 @@ bool goodGround(const Valley& v, Vec3 from, Vec2 at);
 // The camera's place for a battle staged so (you, your dragon, theirs; the larger's size), for
 // the features to check it's clear before they settle on a side.
 void cameraFor(const Setup& setup, Vec3 you, Vec3 pal, Vec3 foe, float size, Vec3& eye, Vec3& target);
+// A clear view: the eye well away from the places' solids (a spire, a wall, a tent), the nearer
+// part of its line to the target past them, and the whole line above the ground (a bowl's rim).
+bool viewClear(const Valley& v, const std::vector<Solid>& solids, Vec3 eye, Vec3 target);
 
 }  // namespace ec::bview

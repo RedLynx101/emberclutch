@@ -18,7 +18,9 @@
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
+#include "app/tips_ui.hpp"
 #include "app/ui_draw.hpp"
+#include "core/accessories.hpp"
 #include "core/battle_spots.hpp"
 #include "core/care.hpp"
 #include "core/challenge_mesh.hpp"
@@ -155,7 +157,7 @@ bool placeBattle(const Valley& v, Vec3 chAt, Vec3 you, float heading, Vec2 middl
                 c.camSide = sideSign;
                 Vec3 eye, target;
                 bview::cameraFor(c, c.youAt, c.palAt, c.foeAt, std::fmax(sizeYou, sizeFoe), eye, target);
-                camOk = clear(solids, {eye.x, eye.y}, 2.0f) && v.heightAt(eye.x, eye.y) < eye.z - 1.5f;
+                camOk = bview::viewClear(v, solids, eye, target);
                 if (camOk) break;
             }
             if (!camOk) c.camSide = 1.0f;
@@ -212,7 +214,7 @@ void placeFinal(const Valley& v, float sizeYou, float sizeFoe, bool small, bview
         out.camSide = sideSign;
         Vec3 eye, target;
         bview::cameraFor(out, out.youAt, out.palAt, out.foeAt, std::fmax(sizeYou, sizeFoe), eye, target);
-        if (clear(solids, {eye.x, eye.y}, 2.0f) && v.heightAt(eye.x, eye.y) < eye.z - 1.5f) return;
+        if (bview::viewClear(v, solids, eye, target)) return;
     }
     out.camSide = 1.0f;
 }
@@ -285,6 +287,7 @@ void finishBattle(App& app, battle::Outcome o, bview::Results& out) {
     if (r.prizeFood != 0xFF)
         out.add(str::kBattlePrize, r.prizeCount, foodInfo(static_cast<Food>(r.prizeFood)).name,
                 trinketName(static_cast<Trinket>(r.prizeTrinket)));
+    if (r.dye > 0) out.add(str::kShowDyePrize, dyeInfo(r.dye).name);
     if (r.championOpened) {
         out.add("%s", str::kBattleChampionOpen);
         audio::playSfx(audio::Sfx::Unlock);
@@ -372,6 +375,7 @@ void act(App& app, const vext::Folk& who, vext::Stage& st) {
     }
     if (league::beaten(app.game, id)) say(app, id, c.again);
     else say(app, id, c.hello[0], c.hello[1]);
+    showTip(app, tips::kTipBattle);  // (before the first battle, while the top screen is free)
     s.mode = Mode::Ask;
     s.id = id;
     s.t = 0;

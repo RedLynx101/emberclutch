@@ -7,7 +7,9 @@
 #include <vector>
 
 #include "check.hpp"
+#include "core/accessories.hpp"
 #include "core/campaign.hpp"
+#include "core/trainer.hpp"
 #include "core/items.hpp"
 #include "core/market.hpp"
 #include "core/anim.hpp"
@@ -247,7 +249,7 @@ TEST(finds_and_the_fog) {
     s.dragonCount = 1;
     s.nextId = 2;
     Rng rng(5);
-    int eggs = 0, air = 0;
+    int eggs = 0, air = 0, wear = 0;
     for (int i = 0; i < kFindSpots; ++i) {
         const FindSpot& f = findSpot(i);
         CHECK(f.gleam > 0 || f.trinket >= 0 || f.egg);  // every spot holds something
@@ -261,13 +263,17 @@ TEST(finds_and_the_fog) {
         const FindReward r = takeFind(s, i, 0, rng);
         CHECK(findDone(s, i) && findNear(s, v, at, true) != i);
         CHECK(r.gleam == 0 || s.gleam == gleam + r.gleam);
+        if (r.accessory >= 0) {  // (the 3rd, 7th and 12th treasures: the found things to wear)
+            ++wear;
+            CHECK(trainer::ownsAccessory(s, r.accessory) && accessoryInfo(r.accessory).source == WearSource::Find);
+        }
         if (r.egg >= 0) {
             ++eggs;
             CHECK(s.dragons[r.egg].stage == Stage::Egg && s.dragons[r.egg].origin == Origin::Wild);
         }
         CHECK(takeFind(s, i, 0, rng).gleam == 0);  // once
     }
-    CHECK(eggs == 2 && air == 10);
+    CHECK(eggs == 2 && air == 10 && wear == 3);
     // The fog: clearing round a spot, then saved and read back.
     CHECK(explore(s, v, {0, 0}, 150) && !explore(s, v, {0, 0}, 150));
     const float cell = v.size() / kFogCells;

@@ -464,6 +464,14 @@ void buildValleyTile(const Valley& v, int tx, int ty, int lod, ValleyMesh& out) 
     skirt(quads, 0, 0, 1, true);        // east edge, south to north: faces east
     skirt(0, quads, 1, 0, false);       // north edge: faces north
     skirt(0, 0, 0, 1, false);           // west edge: faces west
+    for (std::size_t i = 0; i + 3 < out.color.size(); i += 4)  // the painted texture's mix, by colour
+        out.color[i + 3] = surfaceWeight(out.color[i], out.color[i + 1], out.color[i + 2]);
+}
+
+u8 surfaceWeight(u8 r, u8 g, u8 b) {
+    (void)b;
+    const float lead = (static_cast<float>(g) - r) / (g > 0 ? g : 1);  // (the light's brightness cancels out)
+    return static_cast<u8>(clampf((0.12f - lead) / 0.22f, 0.0f, 1.0f) * 255.0f + 0.5f);
 }
 
 void buildValleyExtras(const Valley& v, ValleyMesh& out) {

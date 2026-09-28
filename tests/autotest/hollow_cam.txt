@@ -1,0 +1,81 @@
+# 1.0 battles (D90, workstream B): the Ember league's first challenger at Market Village (her
+# lines and "Battle?"), a battle played through (the moves, a lunge, a breath, the bars, the
+# card), the league's board by the arena's gate, then a guardian floor of Frostspire Hollow.
+# The overlay is on: its TRI is the top screen's triangles (a battle view should stay near 9,000).
+# Then Oren at the trailhead and the Ember champion at the caldera, played by themselves.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+# Grown up (Next stage x3), then out into the valley.
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 2
+skip 9
+valley
+wait 5
+# Noah (2026-09-28): a wall across the screen in the Hollow's battles (the camera beside an ice
+# spire). Tove's gate, then floors 1, 5 and 12 at every turn, with grown and young partners.
+travel 17
+wait 3
+battle level 12
+battle keeper
+wait 3
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 1
+shot h00-gate
+key B
+wait 1
+autoplay on
+battle hollow 1
+wait 2.5
+shot h01-floor1
+wait 2
+shot h02-floor1-turn
+wait 2
+shot h03-floor1-turn2
+wait 16
+battle hollow 5
+wait 2.5
+shot h04-floor5
+wait 1.5
+shot h05-floor5-lunge
+wait 1.5
+shot h06-floor5-turn
+wait 2
+shot h07-floor5-turn2
+wait 16
+battle hollow 12
+wait 2.5
+shot h08-floor12
+wait 2
+shot h09-floor12-turn
+wait 3
+shot h10-floor12-turn2
+wait 12
+shot h11-floor12-end
+quit

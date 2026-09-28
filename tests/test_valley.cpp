@@ -112,6 +112,14 @@ TEST(valley_tiles_join_and_fit_the_budget) {
         CHECK(a.pos[low].z < a.pos[top].z - 2.0f);
     }
     CHECK(valleyLodFor(10) == 0 && valleyLodFor(100) == 1 && valleyLodFor(150) == 2 && valleyLodFor(400) == 3);
+    // The painted texture's mix: grass and leaves the strokes, paths, rock and bark the speckle,
+    // whatever the light (a shaded path is still a path); every tile vertex carries it.
+    CHECK(surfaceWeight(126, 178, 84) == 0 && surfaceWeight(42, 73, 36) == 0 && surfaceWeight(64, 128, 58) == 0);
+    CHECK(surfaceWeight(214, 184, 132) == 255 && surfaceWeight(107, 92, 66) == 255 && surfaceWeight(118, 84, 58) == 255);
+    CHECK(surfaceWeight(150, 134, 142) > 200 && surfaceWeight(240, 244, 252) > 60 && surfaceWeight(240, 244, 252) < 190);
+    bool mixed = false;
+    for (std::size_t i = 3; i < a.color.size(); i += 4) mixed |= a.color[i] != 255;
+    CHECK(mixed);
     ValleyMesh extras, water;
     buildValleyExtras(v, extras);
     buildValleyWater(v, water, {0, 0}, 360.0f);

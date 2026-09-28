@@ -2,8 +2,10 @@
 
 #include <cmath>
 
+#include "core/accessories.hpp"
 #include "core/care.hpp"
 #include "core/den_roster.hpp"
+#include "core/trainer.hpp"
 #include "core/genetics.hpp"
 #include "core/kinds.hpp"
 #include "core/wanderings.hpp"
@@ -135,6 +137,12 @@ FindReward takeFind(SaveData& s, int i, s64 now, Rng& rng) {
     if (i < 0 || i >= kFindSpots || findDone(s, i)) return r;
     const FindSpot& f = kSpots[i];
     s.world.finds |= 1u << i;
+    int treasures = 0;  // (found so far, this one too)
+    for (int k = 0; k < kFindSpots; ++k) treasures += (s.world.finds >> k) & 1u;
+    if (treasures == 3 || treasures == 7 || treasures == 12) {
+        r.accessory = acc::unownedFrom(s, WearSource::Find, static_cast<u32>(i * 7 + treasures));
+        if (r.accessory >= 0) trainer::giveAccessory(s, r.accessory);
+    }
     if (f.gleam) {
         s.gleam += f.gleam;
         r.gleam = f.gleam;

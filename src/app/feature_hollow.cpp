@@ -16,6 +16,7 @@
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
+#include "core/accessories.hpp"
 #include "core/care.hpp"
 #include "core/clock.hpp"
 #include "core/hollow.hpp"
@@ -106,7 +107,8 @@ bool startFloor(App& app, vext::Stage& st, int floor) {
     setup.foeScale = hollow::guardian(s.floor) ? 1.15f : 1.0f;
     const Dragon& mine = app.game.dragons[st.partner];
     const float sizeYou = bview::dragonSize(mine), sizeFoe = bview::dragonSize(s.wild) * setup.foeScale;
-    const Vec2 arena = hollow::arenaSpot();
+    Vec2 arena = hollow::arenaSpot();
+    arena.x += 1.5f;  // (a step from Tove's camp: over your right shoulder the camera clears her tent)
     // Your dragon toward the mouth, the wild one toward the door, a clear gap more apart than
     // their reaches (the biggest kinds too); you behind yours.
     const bool small = mine.stage != Stage::Adult;
@@ -115,11 +117,21 @@ bool startFloor(App& app, vext::Stage& st, int floor) {
     setup.youAt = at3(v, {arena.x, arena.y + palY + 1.2f + 1.3f * sizeYou});
     setup.palAt = small ? at3(v, {arena.x + 1.3f, arena.y + palY + 1.0f}) : at3(v, {arena.x, arena.y + palY});
     setup.foeAt = at3(v, {arena.x, arena.y - foeY});
-    // The camera on the bowl's far side from Tove, unless the rim rises in its way there.
-    setup.camSide = -1.0f;
-    Vec3 eye, target;
-    bview::cameraFor(setup, setup.youAt, setup.palAt, setup.foeAt, std::fmax(sizeYou, sizeFoe), eye, target);
-    if (v.heightAt(eye.x, eye.y) > eye.z - 1.5f) setup.camSide = 1.0f;
+    // The camera over whichever shoulder has a clear view (the spires ring the bowl, Tove's camp
+    // by the corridor); the right if both do (your dragon to the left, clear of its bars).
+    const std::vector<Solid> solids = worldSolids(v);
+    setup.camReach = 0.74f;  // (nearer: the spires ring the bowl at 13 m, the eye stays ~3 m inside them)
+    setup.camSide = 1.0f;
+    for (float sideSign : {1.0f, -1.0f}) {
+        bview::Setup c = setup;
+        c.camSide = sideSign;
+        Vec3 eye, target;
+        bview::cameraFor(c, c.youAt, c.palAt, c.foeAt, std::fmax(sizeYou, sizeFoe), eye, target);
+        if (bview::viewClear(v, solids, eye, target)) {
+            setup.camSide = sideSign;
+            break;
+        }
+    }
     setup.foeFrom = at3(v, hollow::wildDoor());
     setup.finish = finishFloor;
     setup.done = floorDone;
@@ -165,6 +177,7 @@ void finishFloor(App& app, battle::Outcome o, bview::Results& out) {
     if (r.prizeFood != 0xFF)
         out.add(str::kBattlePrize, r.prizeCount, foodInfo(static_cast<Food>(r.prizeFood)).name,
                 trinketName(static_cast<Trinket>(r.prizeTrinket)));
+    if (r.accessory >= 0) out.add(str::kShowPrize, accessoryInfo(r.accessory).name);
     if (o == battle::Outcome::Won && s.floor == hollow::kFloors) out.add("%s", str::kHollowBottom);
     saveNow(app);
 }
@@ -262,6 +275,18 @@ void update(App& app, const Input& in, vext::Stage& st) {
     }
     switch (s.mode) {
         case Mode::Gate:
+            if (st.valley && st.valley->place(kPlaceHollow)) {  // you and Tove side on, your dragon beyond you
+                const r3d::PersonView tove = keeperLook(*st.valley);
+                Vec3 fwd{tove.at.x - st.you.x, tove.at.y - st.you.y, 0};
+                const float len = std::hypot(fwd.x, fwd.y);
+                fwd = len > 0.01f ? fwd * (1.0f / len) : Vec3{0, 1, 0};
+                Vec3 side{fwd.y, -fwd.x, 0};
+                if ((st.pal.x - st.you.x) * side.x + (st.pal.y - st.you.y) * side.y > 0) side = side * -1.0f;
+                const Vec3 mid = lerp(st.you, tove.at, 0.5f);
+                st.camSet = true;
+                st.eye = mid + side * 4.6f - fwd * 0.8f + Vec3{0, 0, 1.9f};
+                st.target = mid + Vec3{0, 0, 1.1f};
+            }
             if (in.down & KEY_B) {
                 s.mode = Mode::None;
                 audio::playSfx(audio::Sfx::Back);

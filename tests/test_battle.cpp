@@ -17,6 +17,7 @@
 #include "core/league.hpp"
 #include "core/place_layout.hpp"
 #include "core/save.hpp"
+#include "core/accessories.hpp"
 #include "core/trainer.hpp"
 
 using namespace ec;
@@ -521,6 +522,7 @@ TEST(league_progress_and_rewards) {
     const u16 pouchBefore = s.pouch[static_cast<int>(Food::EmberCandy)];
     r = league::record(s, 0, league::idOf(0, league::kChampion), Outcome::Won, day);
     CHECK(r.leagueWon && r.title && r.firstWin && r.gleam >= 150);
+    CHECK(r.dye > 0 && trainer::ownsDye(s, r.dye) && dyeInfo(r.dye).source == WearSource::Prize);  // and a prize dye
     CHECK(s.progress.battleLeague == 1 && s.dragons[0].battleTitle == 1);
     CHECK(std::strcmp(trainer::battleTitleName(s.dragons[0].battleTitle), "Ember Victor") == 0);
     CHECK(s.pouch[static_cast<int>(Food::EmberCandy)] == pouchBefore + r.prizeCount && r.prizeTrinket != 0xFF);
@@ -627,11 +629,12 @@ TEST(hollow_rewards) {
                               s.dragons[0].trained[3] + s.dragons[0].trained[4];
     r = hollow::record(s, 0, 5, g, Outcome::Won, day, rng);
     CHECK(r.trained >= 0 && r.prizeFood != 0xFF && r.gleam >= 10 && s.progress.hollowDeepest == 5);
+    CHECK(r.accessory >= 0 && trainer::ownsAccessory(s, r.accessory) && accessoryInfo(r.accessory).source == WearSource::Hollow);
     const int trainedAfter = s.dragons[0].trained[0] + s.dragons[0].trained[1] + s.dragons[0].trained[2] +
                              s.dragons[0].trained[3] + s.dragons[0].trained[4];
     CHECK(trainedAfter == trainedBefore + 1);
     const hollow::Reward again = hollow::record(s, 0, 5, g, Outcome::Won, day, rng);
-    CHECK(again.trained < 0 && again.prizeFood == 0xFF && again.gleam < r.gleam && !again.newDeepest);
+    CHECK(again.trained < 0 && again.prizeFood == 0xFF && again.gleam < r.gleam && !again.newDeepest && again.accessory < 0);
     // A loss: a little experience, nothing else.
     const hollow::Reward lost = hollow::record(s, 0, 9, hollow::wildOf(9, day), Outcome::Lost, day, rng);
     CHECK(lost.gleam == 0 && lost.growth.xp > 0 && s.dragons[0].frostDeepest == 5);

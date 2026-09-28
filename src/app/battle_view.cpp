@@ -14,6 +14,7 @@
 #include "core/challenges.hpp"
 #include "core/kinds.hpp"
 #include "core/people.hpp"
+#include "core/place_layout.hpp"
 #include "core/rig.hpp"
 #include "core/trainer.hpp"
 #include "core/valley.hpp"
@@ -83,6 +84,8 @@ struct State {
     float shake = 0;
     Vec3 eye, target;
     bool camSnap = true;
+    std::vector<Solid> solids;  // the places' solids near the battle, for the camera (gathered on its first frame)
+    const Valley* solidsOf = nullptr;
     float fade = 0;
     bool foeShown = false;
     int foeOther = 0;  // the foe's place in the view's other dragons (its head: r3d::otherHead)
@@ -373,8 +376,14 @@ void frame(App& app, State& s, const Valley* v) {
         target = target + (s.side[w].home - mid) * 0.3f;
         eye = eye + (s.side[w].home - eye) * 0.12f;
     }
-    if (v) {  // (a slope in its way, a bowl's rim: nearer the dragons, then above the ground)
-        for (int k = 0; k < 5 && v->heightAt(eye.x, eye.y) > eye.z - 1.4f; ++k) eye = eye + (target - eye) * 0.12f;
+    if (v) {  // (a spire, a wall, a slope or a bowl's rim in its way: nearer the dragons, then above the ground)
+        if (s.solidsOf != v) {
+            s.solids.clear();
+            for (const Solid& w : worldSolids(*v))
+                if (std::hypot(w.at.x - mid.x, w.at.y - mid.y) < 36.0f) s.solids.push_back(w);
+            s.solidsOf = v;
+        }
+        for (int k = 0; k < 8 && !viewClear(*v, s.solids, eye, target); ++k) eye = eye + (target - eye) * 0.12f;
         eye.z = std::fmax(eye.z, v->heightAt(eye.x, eye.y) + 1.4f);
     }
     if (s.camSnap) {
@@ -596,8 +605,26 @@ void cameraFor(const Setup& setup, Vec3 you, Vec3 pal, Vec3 foe, float size, Vec
     const Vec3 side{a.y * setup.camSide, -a.x * setup.camSide, 0};
     const float big = clampf(size, 0.6f, 1.6f);
     const float k = 0.8f + 0.3f * big;
-    eye = you - a * (4.8f * k) + side * (5.4f * k) + Vec3{0, 0, 3.4f + 1.0f * big};
+    const float r = setup.camReach;
+    eye = you - a * (4.8f * k * r) + side * (5.4f * k * r) + Vec3{0, 0, (3.4f + 1.0f * big) * (0.8f + 0.2f * r)};
     target = lerp(pal, foe, 0.5f) + Vec3{0, 0, 0.8f + 0.5f * big};
+}
+
+bool viewClear(const Valley& v, const std::vector<Solid>& solids, Vec3 eye, Vec3 target) {
+    if (v.heightAt(eye.x, eye.y) > eye.z - 1.4f) return false;
+    const Vec2 a{eye.x, eye.y}, d{target.x - eye.x, target.y - eye.y};
+    const float len2 = d.x * d.x + d.y * d.y;
+    for (const Solid& w : solids) {
+        // (the nearer 65% of the line: past that it's among the dragons, where nothing stands)
+        const float t = len2 > 1e-4f ? clampf(((w.at.x - a.x) * d.x + (w.at.y - a.y) * d.y) / len2, 0.0f, 0.65f) : 0.0f;
+        const float gap = std::hypot(a.x + d.x * t - w.at.x, a.y + d.y * t - w.at.y);
+        if (gap < w.radius + (t < 0.01f ? 1.2f : 0.4f)) return false;
+    }
+    for (int k = 1; k < 8; ++k) {  // the line above the ground all the way (a rim between)
+        const Vec3 p = lerp(eye, target, k / 8.0f);
+        if (v.heightAt(p.x, p.y) > p.z - 0.6f) return false;
+    }
+    return true;
 }
 
 float dragonSize(const Dragon& d) {

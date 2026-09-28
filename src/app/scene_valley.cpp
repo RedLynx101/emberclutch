@@ -16,6 +16,8 @@
 #include "app/care_ui.hpp"
 #include "app/cove.hpp"  // Driftwood Cove (workstream C)
 #include "app/battle_feature.hpp"  // 1.0 battles (workstream B)
+#include "app/battle_view.hpp"
+#include "app/glade_show.hpp"
 #include "app/dialogue.hpp"
 #include "app/photo.hpp"
 #include "app/render3d.hpp"
@@ -26,6 +28,7 @@
 #include "app/tracking_ui.hpp"
 #include "app/ui_draw.hpp"
 #include "app/valley_ext.hpp"
+#include "core/accessories.hpp"
 #include "core/campaign.hpp"
 #include "core/care.hpp"
 #include "core/clock.hpp"
@@ -173,7 +176,6 @@ void keepPlace(App& app) {
 void leaveTo(App& app, SceneId scene) {
     keepPlace(app);
     app.care.page = CarePage::None;  // (the valley's Journal closed)
-    holdTips(false);
     vs().travelAsk = -1;
     r3d::releaseValley();
     app.game.world.inValley = 0;
@@ -422,6 +424,7 @@ void lookRound(App& app, ValleyScene& s) {
             std::snprintf(app.toastText, sizeof(app.toastText), str::kFindGleam, static_cast<unsigned>(r.gleam));
             showToast(app, app.toastText);  // (the toast keeps its text's pointer)
         }
+        if (r.accessory >= 0) queueToastf(app, str::kShowPrize, accessoryInfo(r.accessory).name);  // (after the find's own)
         saveNow(app);
     }
     // The map's fog lifts round you (further seen from the air).
@@ -856,7 +859,7 @@ void update(App& app, const Input& in) {
         const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(villagerInfo(static_cast<Villager>(k)).place));
         s.folk[k].heading = (p ? p->heading : 0.0f) + villagerInfo(static_cast<Villager>(k)).facing;
     }
-    holdTips(vext::activeFeature(app) >= 0);  // (a battle's or a show's own top screen: the tips wait)
+    holdTips(bview::running() || glade::showOn());  // (a battle's or a show's own top screen: the tips wait)
     gatherExtras(app, s);
     animatePeople(app, s);
     animateWanderer(app, s);

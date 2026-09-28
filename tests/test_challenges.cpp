@@ -546,6 +546,9 @@ TEST(challenge_meshes) {
     sound(boardMesh(), 140);
     for (int c = 0; c < kChallenges; ++c) sound(trophyMesh(static_cast<Challenge>(c)), 140);
     sound(rosetteMesh(), 30);
+    for (int k = 0; k < kShellKinds; ++k) sound(shellMesh(k), 120);  // Driftwood Cove's
+    sound(bobberMesh(), 110);
+    sound(fishMesh(), 170);
     // Everything won, on the den's shelves: one draw, light enough for a full den.
     const u8 all[kChallenges] = {kStarfire, kStarfire, kStarfire};
     sound(shelfMesh(all, 0x0FFF), 600);
@@ -560,6 +563,8 @@ TEST(challenge_meshes) {
     std::printf("  triangles: ring %d, lantern %d, fruit %d, basket %d, board %d, trophy %d, rosette %d\n", ringMesh().triangles(),
                 crystalLanternMesh().triangles(), fruitMesh(Fruit::Apple).triangles(), basketMesh().triangles(),
                 boardMesh().triangles(), trophyMesh(Challenge::SkyRings).triangles(), rosetteMesh().triangles());
+    std::printf("  the cove: shells %d %d %d %d, bobber %d, fish %d\n", shellMesh(0).triangles(), shellMesh(1).triangles(),
+                shellMesh(2).triangles(), shellMesh(3).triangles(), bobberMesh().triangles(), fishMesh().triangles());
     for (int c = 0; c < kChallenges; ++c) {
         const DecorPlace p = trophySpot(static_cast<Challenge>(c));
         CHECK(std::hypot(p.at.x, p.at.y) > 8.6f && std::hypot(p.at.x, p.at.y) < 9.5f && p.at.z > 1.5f && p.at.z < 2.8f);

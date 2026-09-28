@@ -39,6 +39,17 @@ PropMesh rosetteMesh();
 PropMesh shelfMesh(const u8 cups[kChallenges], u16 ribbons);
 void shelfPalette(Rgb out[kPalCount], float glow[kPalCount]);
 
+// Driftwood Cove (1.0, workstream C): a shell on the sand, resting on z = 0, about 0.2 m across
+// (kind 0 a spiral, 1 a scallop, 2 a cowrie, 3 a pearl in an open half-shell): the shell (slot
+// 0), its lip or stripes (1), the pearl (2, glowing a little).
+constexpr int kShellKinds = 4;
+PropMesh shellMesh(int kind);
+// The bobber, 0.18 m across, floating on z = 0: red above (slot 0), white below (1), a stem (2).
+PropMesh bobberMesh();
+// A fish, 1 m long along +Y (its head) at scale 1, its middle at the origin: back (slot 0),
+// belly (1), fins and tail (2), eyes (3).
+PropMesh fishMesh();
+
 PropLook ringLook(int cup, bool next);
 PropLook crystalLook(int k, float lit);
 PropLook fruitLook(challenge::Fruit f);
@@ -46,6 +57,9 @@ PropLook basketLook();
 PropLook boardLook();
 PropLook trophyLook(Challenge c, int cup);
 PropLook rosetteLook(Challenge c, int cup);
+PropLook shellLook(int kind, int tint);  // tint: which of a few sandy colourings
+PropLook bobberLook();
+PropLook fishLook(bool big);
 
 // Where the trophies stand and the ribbons hang in the den: on and along its two shelves
 // (tools/blender/den_model.py shelves(); den space, adult units). `slot`: a trophy per challenge;

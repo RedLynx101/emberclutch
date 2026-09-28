@@ -3464,6 +3464,7 @@ namespace {
 
 GpuMesh g_ringMesh, g_crystalMesh, g_fruitMeshes[static_cast<int>(challenge::Fruit::Count)], g_basketMesh, g_boardMesh,
     g_trophyMeshes[kChallenges];
+GpuMesh g_shellMeshes[kShellKinds], g_bobberMesh, g_fishMesh;  // Driftwood Cove (workstream C)
 // The den's shelf: rebuilt when what's been won changes.
 GpuMesh g_shelfMesh;
 u8 g_shelfCups[kChallenges] = {};
@@ -3502,6 +3503,20 @@ GpuMesh* challengeMesh(PropKind kind, int variant) {
             if (!g->vbo) m = trophyMesh(static_cast<Challenge>(c));
             break;
         }
+        case PropKind::Shell: {  // Driftwood Cove (workstream C): shells, the bobber, a fish
+            const int k = variant < kShellKinds ? variant : 0;
+            g = &g_shellMeshes[k];
+            if (!g->vbo) m = shellMesh(k);
+            break;
+        }
+        case PropKind::Bobber:
+            g = &g_bobberMesh;
+            if (!g->vbo) m = bobberMesh();
+            break;
+        case PropKind::Fish:
+            g = &g_fishMesh;
+            if (!g->vbo) m = fishMesh();
+            break;
     }
     if (g && !g->vbo && (m.idx.empty() || !uploadProp(*g, m))) return nullptr;
     return g;

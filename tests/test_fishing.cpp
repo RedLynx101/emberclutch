@@ -4,6 +4,7 @@
 // never reeling lets it slip away), the day's shells, and your partner's nibble.
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <vector>
 
 #include "check.hpp"
@@ -85,6 +86,7 @@ TEST(fishing_what_bites) {
     CHECK(catchInfo(Catch::RiverFish).food == Food::RiverFish && catchInfo(Catch::BigFish).foodCount == 2);
     CHECK(catchInfo(Catch::RiverFish).fish && catchInfo(Catch::BigFish).fish && !catchInfo(Catch::Pearl).fish);
     CHECK(catchInfo(Catch::Pearl).gleam > catchInfo(Catch::Shell).gleam * 5);
+    CHECK(std::strchr(shellName(20000, 0), '!') == nullptr);  // (the toast adds its own)
     // The bite: a few seconds' wait (quicker at dusk), nibbles well before it and apart, a moment to strike.
     float dayWait = 0, duskWait = 0;
     for (int i = 0; i < 400; ++i) {
@@ -132,9 +134,12 @@ TEST(fishing_the_reel) {
     r.start(1.0f, 3);
     for (int i = 0; i < 300 && r.step == Reel::Step::Reeling; ++i) r.update(1.0f, dt);
     CHECK(r.step == Reel::Step::Snapped);
-    r.start(1.0f, 3);
-    for (int i = 0; i < 600 && r.step == Reel::Step::Reeling; ++i) r.update(0.0f, dt);
-    CHECK(r.step == Reel::Step::Escaped);
+    for (u32 seed = 1; seed <= 10; ++seed) {  // (whatever the fish does, it's gone within the idle limit and a little)
+        r.start(1.55f, seed);
+        float t = 0;
+        for (; t < 10 && r.step == Reel::Step::Reeling; t += dt) r.update(0.0f, dt);
+        CHECK(r.step == Reel::Step::Escaped && t < kIdleLimit + 0.2f);
+    }
     // In the band it comes in faster than out of it.
     Reel a, b;
     a.start(1.0f, 5);
@@ -156,7 +161,8 @@ TEST(fishing_shells_and_nibbles) {
             if (bits & (1u << k)) {
                 ++n;
                 pearls += shellAt(day, k) == Catch::Pearl;
-                CHECK(shellGleam(day, k) >= 5 && shellName(day, k)[0] != 0);
+                CHECK(shellGleam(day, k) >= 5 && shellName(day, k)[0] != 0 && shellKind(day, k) >= 0 && shellKind(day, k) < 4);
+                CHECK((shellKind(day, k) == 3) == (shellAt(day, k) == Catch::Pearl));
                 CHECK((shellAt(day, k) == Catch::Pearl) == (shellGleam(day, k) == catchInfo(Catch::Pearl).gleam));
             }
         CHECK(n >= 3 && n <= 5 && bits < (1u << kShellSpots));

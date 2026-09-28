@@ -25,7 +25,7 @@ $shots = Join-Path $sd "shots"
 $runs = Join-Path $root "build\autotest"
 $out = Join-Path $runs ([IO.Path]::GetFileNameWithoutExtension($scriptPath))
 $backup = Join-Path $runs "save-backup"
-$saves = "save.a", "save.b"
+$saves = "save.a", "save.b", "cove.bin"  # (cove.bin: Driftwood Cove's day, kept beside the save: workstream C)
 
 if (-not $NoBuild) { & (Join-Path $PSScriptRoot "build.ps1") }
 # One run at a time on this PC: the emulator and its SD card are shared (runs from other

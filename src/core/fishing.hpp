@@ -70,11 +70,12 @@ constexpr float kNibbleTime = 0.25f;    // a nibble's twitch
 constexpr float kBandLow = 0.3f, kBandHigh = 0.8f;
 constexpr float kSlackLimit = 1.6f;  // seconds under kSlack before it slips away
 constexpr float kSlack = 0.12f;
+constexpr float kIdleLimit = 5.0f;   // seconds without reeling at all before it wanders off the hook
 struct Reel {
     enum class Step : u8 { Reeling, Caught, Snapped, Escaped };
     float tension = 0.35f, progress = 0.15f;
     float strength = 1;
-    float slackFor = 0;
+    float slackFor = 0, idleFor = 0;
     float runFor = 0, runIn = 2;  // the fish running: seconds left; seconds to its next run
     Rng rng{1};
     Step step = Step::Reeling;
@@ -92,6 +93,7 @@ constexpr int kFishPerDay = 8;  // bites a day before the fish rest till tomorro
 u8 shellsToday(s32 day);
 Catch shellAt(s32 day, int spot);
 const char* shellName(s32 day, int spot);  // "a spiral shell"
+int shellKind(s32 day, int spot);          // its look (core/challenge_mesh shellMesh: 0 spiral, 1 scallop, 2 cowrie, 3 pearl)
 u32 shellGleam(s32 day, int spot);
 
 // ------------------------------------------------------------------------------ your partner

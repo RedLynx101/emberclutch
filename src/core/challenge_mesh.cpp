@@ -420,6 +420,111 @@ void shelfPalette(Rgb out[kPalCount], float glow[kPalCount]) {
     glow[kShelfSign + static_cast<int>(Challenge::LanternTrial)] = 0.8f;  // the lantern trophy's flame
 }
 
+// ------------------------------------------------------------------------------ Driftwood Cove
+namespace {
+
+// A scallop's fan: striped (the two slots in turn), domed, its hinge toward -Y.
+void scallop(Shaper& b, Vec3 at, float size, u8 slotA, u8 slotB) {
+    constexpr int kRibs = 9;
+    const Vec3 middle = at + Vec3{0, -0.01f, 0.03f} * size;
+    Vec3 ring[kRibs + 1];
+    for (int k = 0; k <= kRibs; ++k) {  // an arc from the right round the far side to the left (counter-clockwise from above)
+        const float a = -0.15f * kPi + 1.3f * kPi * k / kRibs;
+        ring[k] = at + Vec3{std::cos(a) * 0.1f, std::sin(a) * 0.09f + 0.01f, 0.004f} * size;
+    }
+    for (int k = 0; k < kRibs; ++k) {
+        b.slot = k % 2 ? slotB : slotA;
+        const Vec3 n = normalize(cross(ring[k] - middle, ring[k + 1] - middle));
+        b.tri(b.vert(middle, n), b.vert(ring[k], n), b.vert(ring[k + 1], n));
+    }
+    b.slot = slotA;  // the hinge's little ears
+    const Vec3 h = at + Vec3{0, -0.075f, 0.01f} * size;
+    b.quad(h + Vec3{-0.04f, -0.02f, 0} * size, h + Vec3{0.04f, -0.02f, 0} * size, h + Vec3{0.03f, 0.02f, 0.012f} * size,
+           h + Vec3{-0.03f, 0.02f, 0.012f} * size, {0, 0, 1});
+}
+
+}  // namespace
+
+PropMesh shellMesh(int kind) {
+    PropMesh m;
+    Shaper b{m};
+    switch (kind) {
+        case 0: {  // a spiral: a cone lying on the sand, its open mouth ringed with its lip
+            b.slot = 0;
+            const Vec3 mouth{0, -0.07f, 0.05f}, tip{0.01f, 0.1f, 0.025f};
+            b.frustum(mouth, tip, 0.05f, 0.006f, 7, false, true);
+            b.slot = 1;
+            b.torus(mouth, tip - mouth, 0.05f, 0.012f, 7, 3, [](float) { return static_cast<u8>(1); });
+            b.slot = 0;
+            b.ellipsoid(mouth + Vec3{0, 0.05f, 0.012f}, {0.045f, 0.04f, 0.04f}, 6, 3);  // the round of its body
+            break;
+        }
+        case 2:  // a cowrie: a glossy dome, its underside's lip showing
+            b.ellipsoid({0, 0, 0.028f}, {0.055f, 0.08f, 0.03f}, 8, 4, [](Vec3 s) { return static_cast<u8>(s.z > 0.2f ? 0 : 1); });
+            break;
+        case 3:  // a pearl in an open half-shell
+            scallop(b, {0, 0, 0}, 1.1f, 1, 1);
+            b.slot = 2;
+            b.emit = 255;
+            b.ellipsoid({0, 0.005f, 0.05f}, {0.028f, 0.028f, 0.028f}, 7, 4);
+            b.emit = 0;
+            break;
+        default: scallop(b, {0, 0, 0}, 1.0f, 0, 1); break;  // a scallop
+    }
+    return m;
+}
+
+PropMesh bobberMesh() {
+    PropMesh m;
+    Shaper b{m};
+    b.ellipsoid({0, 0, 0.02f}, {0.09f, 0.09f, 0.09f}, 8, 6, [](Vec3 s) { return static_cast<u8>(s.z > 0.1f ? 0 : 1); });
+    b.slot = 2;
+    b.frustum({0, 0, 0.1f}, {0, 0, 0.21f}, 0.012f, 0.008f, 4, false, true);
+    return m;
+}
+
+PropMesh fishMesh() {
+    PropMesh m;
+    Shaper b{m};
+    // A body flattened side to side, its belly pale.
+    b.ellipsoid({0, 0, 0}, {0.085f, 0.48f, 0.15f}, 8, 6, [](Vec3 s) { return static_cast<u8>(s.z < -0.25f ? 1 : 0); });
+    // The tail and the fin on its back (both sides), the eyes.
+    b.slot = 2;
+    auto fin = [&](Vec3 a, Vec3 c, Vec3 d) {
+        for (int side = 0; side < 2; ++side) {
+            const Vec3 n{side ? -1.0f : 1.0f, 0, 0};
+            const u16 i0 = b.vert(a, n), i1 = b.vert(c, n), i2 = b.vert(d, n);
+            if (side) b.tri(i0, i2, i1);
+            else b.tri(i0, i1, i2);
+        }
+    };
+    fin({0, -0.42f, 0}, {0, -0.74f, -0.2f}, {0, -0.74f, 0.2f});
+    fin({0, -0.66f, 0}, {0, -0.78f, -0.1f}, {0, -0.78f, 0.1f});
+    fin({0, 0.12f, 0.13f}, {0, -0.22f, 0.12f}, {0, -0.08f, 0.27f});
+    fin({0, 0.05f, -0.13f}, {0, -0.1f, -0.22f}, {0, -0.14f, -0.12f});
+    b.slot = 3;
+    for (float sx : {-1.0f, 1.0f}) b.ellipsoid({sx * 0.062f, 0.33f, 0.04f}, {0.018f, 0.026f, 0.026f}, 5, 3);
+    return m;
+}
+
+PropLook shellLook(int kind, int tint) {
+    static constexpr Rgb kSand[3] = {{240, 214, 178}, {246, 196, 170}, {236, 222, 206}};
+    const Rgb base = kSand[(tint % 3 + 3) % 3];
+    switch (kind) {
+        case 0: return look(base, {244, 160, 140}, {0, 0, 0}, {0, 0, 0});
+        case 2: return look({226, 186, 140}, {176, 112, 76}, {0, 0, 0}, {0, 0, 0}, 0.0f);
+        case 3: return look({214, 196, 188}, {236, 216, 204}, {252, 248, 255}, {0, 0, 0}, 0.35f);
+        default: return look({244, 174, 142}, base, {0, 0, 0}, {0, 0, 0});
+    }
+}
+
+PropLook bobberLook() { return look({214, 60, 56}, {250, 246, 240}, {70, 60, 60}, {0, 0, 0}); }
+
+PropLook fishLook(bool big) {
+    return big ? look({78, 142, 118}, {240, 232, 196}, {236, 146, 92}, {30, 24, 30})
+               : look({72, 150, 196}, {244, 238, 220}, {244, 140, 110}, {30, 24, 30});
+}
+
 PropLook ringLook(int cup, bool next) {
     const Rgb band = next ? Rgb{250, 204, 90} : mix(challenge::cupColour(cup), Rgb{250, 250, 255}, 0.5f);
     const Rgb glow = next ? Rgb{255, 240, 180} : Rgb{200, 230, 255};

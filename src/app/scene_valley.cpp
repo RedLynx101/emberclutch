@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "app/audio.hpp"
+#include "app/cove.hpp"  // Driftwood Cove (workstream C)
 #include "app/dialogue.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
@@ -1128,6 +1129,7 @@ void drawTop(App& app) {
     }
     if (r3d::ready()) r3d::drawValley(app, view, now);
     if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
+    if (r3d::ready()) cove::drawCoveThings(app, s.valley, now);  // Driftwood Cove's shells, bobber and catch (workstream C)
     if (feat >= 0) {
         if (vext::feature(feat).drawTop) vext::feature(feat).drawTop(app, s.stage);
         return;

@@ -209,6 +209,50 @@ inline constexpr const char* kRaceLine = "%s  %s  %.1f s";
 inline constexpr const char* kBreeze = "Breeze";
 inline constexpr const char* kCalm = "Calm";
 
+// Driftwood Cove (workstream C, D90): Tam the fisher, fishing off the shore, shells on the beach.
+inline constexpr const char* kFisherName = "Tam";
+inline constexpr const char* kFisherTitle = "The fisher";
+inline constexpr const char* kPromptFish = "A: fish here";
+inline constexpr const char* kPromptShell = "A: pick up the shell";
+inline constexpr const char* kFisherHello[] = {
+    "Ahoy there! Name's Tam. The fish are biting nicely at the cove today.",
+    "Here, take my spare rod. Stand at the water's edge and press A to cast.",
+    "When the bobber dips right under, strike with A, quick! Little twitches are only nibbles: wait for the dip.",
+    "Then reel it in gently. Keep the line taut, but not too taut, or it'll snap!",
+    "And save a nibble for {D}. Dragons love a bite of fresh fish!"};
+inline constexpr const char* kFisherTips[] = {
+    "Dawn and dusk are the best times. The big ones come up to feed.",
+    "When a fish runs, ease off the reel. Let it tire itself out.",
+    "Shells wash up along the beach every morning. Keep an eye out for pearls!",
+    "River fish are the pick of the lake. Hardly a dragon in the valley says no to one."};
+inline constexpr const char* kFisherBiting = "Plenty still biting today. Off you go!";
+inline constexpr const char* kFisherRested = "That's the lake fished out for today. The fish will be back tomorrow!";
+inline constexpr const char* kFisherCount = "That's %d fish you've landed now. A proper angler!";
+inline constexpr const char* kNoRod = "Talk to Tam first: he'll lend you a rod.";
+inline constexpr const char* kCoveTitle = "Driftwood Cove";
+inline constexpr const char* kCastHint = "A: cast your line";
+inline constexpr const char* kPutAway = "B: put the rod away";
+inline constexpr const char* kWatchBobber = "Watch the bobber... A when it dips right under!";
+inline constexpr const char* kReelIn = "A: reel in";
+inline constexpr const char* kStrikeNow = "Now! Press A!";
+inline constexpr const char* kTooSoon = "Too soon! It was only a nibble, and it swam off.";
+inline constexpr const char* kTooSlow = "Too slow... it got away.";
+inline constexpr const char* kNothingYet = "Nothing yet. Cast again!";
+inline constexpr const char* kReelHint = "Hold A, or crank the reel round with the stylus.\nKeep the line in the green!";
+inline constexpr const char* kSnapped = "Snap! The line broke.";
+inline constexpr const char* kEscaped = "It slipped off the hook...";
+inline constexpr const char* kLandedCatch = "You caught %s!";
+inline constexpr const char* kIntoPouch = "Into your pouch: %s";
+inline constexpr const char* kPouchFull = "Your pouch is full of those: Tam gives you %lu Gleam instead.";
+inline constexpr const char* kCatchWorth = "+%lu Gleam";
+inline constexpr const char* kNibbleOf = "%s has a nibble!";
+inline constexpr const char* kFishLeft = "The fish are biting: %d more today";
+inline constexpr const char* kFishResting = "The fish are resting till tomorrow.";
+inline constexpr const char* kFishCaught = "Fish caught: %d    Shells: %d";
+inline constexpr const char* kShellFound = "You found %s!";
+inline constexpr const char* kTension = "Tension";
+inline constexpr const char* kTheFish = "The fish";
+
 // Egg care and hatching (WP7)
 inline constexpr const char* kTurn = "Turn";
 inline constexpr const char* kListen = "Listen";

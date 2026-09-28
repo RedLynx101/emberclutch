@@ -33,8 +33,8 @@ CoveSpots coveSpots(const Valley& v) {
     s.fishSpot = {0.0f, shore - 1.3f};
     s.castTo = {0.6f, shore + 9.5f};
     s.partner = {-1.8f, shore - 1.9f};
-    s.fisher = {3.6f, shore - 3.0f};
-    s.fisherFacing = -0.5f;  // looking out over the water, turned a little toward your spot
+    s.fisher = {-5.2f, shore - 3.4f};  // beyond your partner, on your left
+    s.fisherFacing = 0.55f;             // looking out over the water, turned a little toward your spot
     static constexpr float kShellX[kShellSpots] = {-18.0f, -10.5f, -5.0f, 9.0f, 16.0f};
     for (int k = 0; k < kShellSpots; ++k) s.shells[k] = {kShellX[k], shoreAt(kShellX[k]) - 0.9f};  // on the wet sand
     return s;
@@ -117,7 +117,8 @@ Reel::Step Reel::update(float reel, float dt) {
         step = Step::Caught;
     } else {
         slackFor = tension < kSlack ? slackFor + dt : 0.0f;
-        if (slackFor > kSlackLimit) step = Step::Escaped;
+        idleFor = reel < 0.05f ? idleFor + dt : 0.0f;
+        if (slackFor > kSlackLimit || idleFor > kIdleLimit) step = Step::Escaped;
     }
     return step;
 }
@@ -147,12 +148,24 @@ Catch shellAt(s32 day, int spot) {
     return rng.below(100) < 4 ? Catch::Pearl : Catch::Shell;  // a pearl now and then
 }
 
-const char* shellName(s32 day, int spot) {
-    if (shellAt(day, spot) == Catch::Pearl) return "a pearl!";
-    static const char* const kNames[] = {"a spiral shell", "a scallop shell", "a pink cowrie", "a sand dollar"};
+namespace {
+int shellPick(s32 day, int spot) {  // which of the four shells
     Rng rng = shellRng(day, spot);
     rng.next();
-    return kNames[rng.below(4)];
+    return static_cast<int>(rng.below(4));
+}
+}  // namespace
+
+const char* shellName(s32 day, int spot) {
+    if (shellAt(day, spot) == Catch::Pearl) return "a pearl";
+    static const char* const kNames[] = {"a spiral shell", "a scallop shell", "a pink cowrie", "a sand dollar"};
+    return kNames[shellPick(day, spot)];
+}
+
+int shellKind(s32 day, int spot) {
+    if (shellAt(day, spot) == Catch::Pearl) return 3;
+    static constexpr int kKinds[4] = {0, 1, 2, 1};  // (a sand dollar lies flat, like a scallop)
+    return kKinds[shellPick(day, spot)];
 }
 
 u32 shellGleam(s32 day, int spot) {

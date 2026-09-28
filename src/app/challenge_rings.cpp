@@ -40,7 +40,8 @@ struct Rival {
     Dragon look;
     DenActor actor;
     ClipId clip = ClipId::Count;
-    float total = -1;  // its time, misses and all, once it's through the last ring (or reckoned)
+    float total = -1;    // its time, misses and all, once it's through the last ring (or reckoned)
+    bool hidden = false; // far off while the valley's busy (the budget): not drawn this frame
 };
 
 struct Run {
@@ -505,9 +506,16 @@ void scene(App& app, Set& s) {
             s.props[s.propCount - 1].scale *= 1.0f + (0.6f - r.flash) * 0.8f;
         }
     }
-    // The rivals, on the light model (a pack in view stays in budget; no rebuilding as they pass).
+    // The rivals, on the light model (no rebuilding as they pass). Low over the valley the ground
+    // alone takes most of the budget: then a rival far off (small by then) isn't drawn, with a
+    // margin so none flickers at the edge.
+    const r3d::ValleyStats busy = r3d::valleyStats();
+    const bool crowded = busy.ground + busy.places > 5000;
     for (int k = 0; k < r.rivalCount && s.otherCount < r3d::kMaxOthers; ++k) {
-        const Rival& v = r.rivals[k];
+        Rival& v = r.rivals[k];
+        const float d = length(v.racer.flight.pos - s.eye);
+        v.hidden = crowded && d > (v.hidden ? 42.0f : 50.0f);
+        if (v.hidden) continue;
         r3d::ValleyDragon& o = s.others[s.otherCount++];
         o.dragon = &v.look;
         o.actor = &v.actor;
@@ -555,7 +563,7 @@ void hud(App& app, Set& s) {
         const Rival& v = r.rivals[k];
         const Vec3 at = v.racer.flight.pos + Vec3{0, 0, 3.4f};
         float x, y, ppu;
-        if (length(at - s.eye) > 70.0f || !r3d::project(at, x, y, ppu) || x < 10 || x > kTopW - 10 || y < 10 || y > kScreenH - 30)
+        if (v.hidden || length(at - s.eye) > 70.0f || !r3d::project(at, x, y, ppu) || x < 10 || x > kTopW - 10 || y < 10 || y > kScreenH - 30)
             continue;
         const float w = textWidth(app, v.look.name, 0.4f) + 10;
         panel({x - w / 2, y - 8, w, 15}, withAlpha(rivalColour(k), 0.75f));

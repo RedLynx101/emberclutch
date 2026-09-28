@@ -38,17 +38,17 @@ wait 0.8
 shot p03-cinder-family
 tap 264 219
 wait 0.8
-# The Sanctuary, where the grandparents live: a profile from its grid.
-key X
-wait 0.8
-tap 62 96
-wait 0.4
-tap 62 96
-wait 2.5
+# The Sanctuary, where the grandparents live: a profile from its grid (the old map is the valley
+# now: straight in).
+open sanctuary
+wait 1.5
 tap 64 217
 wait 0.8
 shot p04-sanctuary-about
 tap 275 50
 wait 0.6
 shot p05-sanctuary-family
+key L
+wait 0.6
+shot p06-sanctuary-record
 quit

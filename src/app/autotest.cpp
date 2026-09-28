@@ -288,10 +288,12 @@ Input next(App& app) {
                 done = true;
                 break;
             case Op::Quit: app.quit = true; done = true; break;
-            case Op::Open:  // U: market, wander, den, valley
+            case Op::Open:  // U: market, wander, sanctuary, vault, den, valley
                 if (c.text.rfind("market", 0) == 0) app.scene = SceneId::Market;
                 else if (c.text.rfind("wander", 0) == 0) app.scene = SceneId::Wanderings;
                 else if (c.text.rfind("valley", 0) == 0) openValley(app);
+                else if (c.text.rfind("sanctuary", 0) == 0) app.scene = SceneId::Sanctuary;
+                else if (c.text.rfind("vault", 0) == 0) app.scene = SceneId::Vault;
                 else app.scene = SceneId::Den;
                 done = true;
                 break;

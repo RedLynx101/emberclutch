@@ -29,7 +29,7 @@
 //   cups <fruit> <rings> <lantern>   the highest cup won in each (their ribbons too)
 //   quit                        leave (writes shots/done.txt)
 // The interface (1.0, workstream U):
-//   open <market|wander|den|valley>   straight into that scene
+//   open <market|wander|sanctuary|vault|den|valley>   straight into that scene
 //   xp <n>                      experience for the dragon cared for
 //   record                      a well-travelled record for it (titles, wins, cups, ribbons, training)
 //   needs <belly> <clean> <play> <love> <energy>   its needs set

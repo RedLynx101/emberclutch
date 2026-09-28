@@ -41,6 +41,9 @@ struct Glade {
     bool previewing = false;
     bool heard[3] = {};        // the host's hello and the keepers' (this visit to the game)
     bool toWardrobe = false;   // Dress up: the wardrobe opens after this frame
+    bool hostHello = false;    // a script's `pg host`: the board with the host's hello first
+    float boardIdle = 0;       // seconds the board has been open and nobody talking (A enters after a moment,
+                               // so reading the host's lines on with A never starts a show by mistake)
 };
 
 Glade& gs() {
@@ -101,7 +104,7 @@ void stallSpots(const Valley& v, int stall, Vec3& keeper, float& keeperHeading, 
     const ValleyPlaceInfo* p = gladePlace(v);
     const Vec3 s = L.stalls[stall];
     keeper = gladePoint(v, {s.x, s.y});
-    keeperHeading = (p ? p->heading : 0.0f) + s.z + 3.14159265f;
+    keeperHeading = (p ? p->heading : 0.0f) - s.z;  // (local (sin f, cos f) is the world's heading h - f)
     customer = keeper + Vec3{std::sin(keeperHeading), -std::cos(keeperHeading), 0} * 2.4f;
     customer.z = v.heightAt(customer.x, customer.y);
 }
@@ -138,7 +141,7 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
     const Vec3 stage = gladePoint(v, {L.stage.x, L.stage.y});
     const Vec3 table = gladePoint(v, L.judges);
     const Vec3 toStage = normalize(Vec3{stage.x - table.x, stage.y - table.y, 0}), along{-toStage.y, toStage.x, 0};
-    for (int k = 0; k < 3 && showOn(); ++k) {  // at the table for a show, looking at the stage (not to be spoken to)
+    for (int k = 0; k < 3 && showJudgesSeen(); ++k) {  // at the table for a show, looking at the stage (not to be spoken to)
         Vec3 at = table + along * ((k - 1) * 1.1f) - toStage * 0.5f;
         at.z = v.heightAt(at.x, at.y);
         add(kJudge0 + k, at, headingTo(at, stage), str::kJudgeNames[k], "", 0.0f);
@@ -155,6 +158,7 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
 void openBoard(App& app) {
     Glade& g = gs();
     g.mode = Mode::Board;
+    g.boardIdle = 0;
     g.league = pageant::boardLeague(app.game);
     g.slot = 0;
     for (int k = kShowSlots - 1; k >= 0; --k)
@@ -217,6 +221,8 @@ void update(App& app, const Input& in, vext::Stage& stage) {
         const Mode want = g.pending;
         g.pending = Mode::None;
         if (want == Mode::Board) {
+            if (g.hostHello) say(app, kHost, str::kHostHello, 3);  // (a script's walk up to the host)
+            g.hostHello = false;
             openBoard(app);
         } else if (want == Mode::Stall) {
             const int pick = g.pick;  // (a script's thing to try on)
@@ -235,6 +241,7 @@ void update(App& app, const Input& in, vext::Stage& stage) {
     const Layout& L = gladeLayout();
     switch (g.mode) {
         case Mode::Board: {
+            g.boardIdle += app.dt;
             if (in.down & KEY_B) {
                 g.mode = Mode::None;
                 audio::playSfx(audio::Sfx::Back);
@@ -243,13 +250,13 @@ void update(App& app, const Input& in, vext::Stage& stage) {
             // Before the board with the host, your partner behind you; the camera takes in the
             // stage beyond.
             const Vec3 board = gladePoint(v, L.board);
-            const Vec3 you = gladePoint(v, {L.board.x + 0.6f, L.board.y + 1.8f});
-            const Vec3 pal = gladePoint(v, {L.board.x - 1.6f, L.board.y + 3.8f});
+            const Vec3 you = gladePoint(v, {L.board.x + 0.4f, L.board.y + 1.8f});
+            const Vec3 pal = gladePoint(v, {L.board.x - 2.6f, L.board.y + 2.8f});
             faceTo(stage, you, pal, board);
             stage.youClip = "idle";
-            stage.camSet = true;
-            stage.eye = gladePoint(v, {L.board.x + 7.5f, L.board.y + 8.0f}, 3.6f);
-            stage.target = gladePoint(v, {L.board.x + 1.5f, L.board.y - 3.0f}, 1.2f);
+            stage.camSet = true;  // behind you, over your shoulder to the board and the stage beyond
+            stage.eye = gladePoint(v, {L.board.x + 2.8f, L.board.y + 9.5f}, 5.2f);
+            stage.target = gladePoint(v, {L.board.x + 0.6f, L.board.y - 2.5f}, 1.0f);
             break;
         }
         case Mode::Stall: {
@@ -269,12 +276,12 @@ void update(App& app, const Input& in, vext::Stage& stage) {
             Vec3 pal = customer + out * (1.0f + size) + side * (1.2f + size);
             pal.z = v.heightAt(pal.x, pal.y);
             stage.camSet = true;
-            stage.eye = pal + out * (3.0f + 2.6f * size) - side * (1.4f + 1.2f * size) + Vec3{0, 0, 1.4f + 1.1f * size};
-            stage.target = pal + Vec3{0, 0, 0.9f * size + 0.2f} - side * 0.6f;
+            stage.eye = pal + out * (4.0f + 4.0f * size) - side * (1.6f + 1.6f * size) + Vec3{0, 0, 2.5f + 2.2f * size};
+            stage.target = pal + Vec3{0, 0, 1.15f * size} - side * 0.4f;
             stage.you = customer;
             stage.youHeading = headingTo(customer, keeper);
             stage.pal = pal;
-            stage.palHeading = headingTo(pal, stage.eye);
+            stage.palHeading = headingTo(pal, stage.eye) + 0.8f;  // three-quarters on: its head, side and back
             stage.youClip = "idle";
             break;
         }
@@ -374,7 +381,8 @@ void boardBottom(App& app, const Input& in, const vext::Stage& stage) {
         }
     }
     const Dragon* d = stage.partner >= 0 && stage.partner < app.game.dragonCount ? &app.game.dragons[stage.partner] : nullptr;
-    const bool enter = button(app, {8, 178, 150, 30}, str::kBoardEnter, in, theme::kClutchGold) || (in.down & KEY_A);
+    const bool enter = button(app, {8, 178, 150, 30}, str::kBoardEnter, in, theme::kClutchGold) ||
+                       ((in.down & KEY_A) && g.boardIdle > 0.5f);
     if (enter) {
         if (!d) {
             showToast(app, str::kBoardAlone);
@@ -591,8 +599,9 @@ void pageantCommand(App& app, const char* text) {
         wardrobeTurn(a[0]);
     } else if (w == "tab") {
         wardrobeTab(static_cast<int>(a[0]));
-    } else if (w == "board") {
+    } else if (w == "board" || w == "host") {
         g.pending = Mode::Board;
+        g.hostHello = w == "host";
     } else if (w == "stall") {
         g.stall = a[0] > 0 ? 1 : 0;
         g.pending = Mode::Stall;

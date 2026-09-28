@@ -186,13 +186,17 @@ void wantCamera(const App& app, const Valley& v, Vec3& eye, Vec3& target) {
         const float size = kindSize(d) * (d.stage == Stage::Adult ? 1.0f : d.stage == Stage::Hatchling ? 0.45f : 0.7f);
         const float r = 1.2f + 2.6f * size;  // how much to frame, metres
         const Vec2 at = L.rivals[spot];
-        eye = gladePoint(v, {at.x + 0.35f * r, at.y + 2.4f * r}, L.stage.z + 0.9f * r);
-        target = gladePoint(v, at, L.stage.z + 0.45f * r);
-    } else if (s.phase == Phase::Judges) {
-        eye = gladePoint(v, {L.judges.x + 3.2f, L.judges.y + 5.0f}, 2.4f);
-        target = gladePoint(v, L.judges, 1.3f);
+        // (looking down a good way: the far valley out of the picture keeps the view in budget)
+        eye = gladePoint(v, {at.x + 0.35f * r, at.y + 2.3f * r}, L.stage.z + 1.6f * r);
+        target = gladePoint(v, at, L.stage.z + 0.4f * r);
+    } else if (s.phase == Phase::Judges) {  // from the stage's side of their table: their faces
+        const Vec2 toStage{L.stage.x - L.judges.x, L.stage.y - L.judges.y};
+        const float len = std::sqrt(toStage.x * toStage.x + toStage.y * toStage.y);
+        const Vec2 d{toStage.x / len, toStage.y / len};
+        eye = gladePoint(v, {L.judges.x + d.x * 5.0f - d.y * 1.5f, L.judges.y + d.y * 5.0f + d.x * 1.5f}, 4.2f);
+        target = gladePoint(v, L.judges, 1.2f);
     } else {
-        eye = gladePoint(v, {L.stage.x, L.stage.y + 17.0f}, L.stage.z + 5.2f);
+        eye = gladePoint(v, {L.stage.x, L.stage.y + 15.0f}, L.stage.z + 8.5f);
         target = gladePoint(v, {L.stage.x, L.stage.y}, L.stage.z + 1.3f);
     }
 }
@@ -308,6 +312,10 @@ void finish(App& app) {
 
 void setShowAutoplay(bool on) { g_autoplay = on; }
 bool showOn() { return g_on; }
+bool showJudgesSeen() {
+    const Phase p = sh().phase;
+    return g_on && (p == Phase::Intro || p == Phase::Judges || p == Phase::Results || p == Phase::Done);
+}
 
 bool showHostSpot(const Valley& v, Vec3& at, float& heading) {
     if (!g_on) return false;

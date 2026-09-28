@@ -16,7 +16,10 @@ void showDrawTop(App& app, const vext::Stage& stage);
 void showDrawBottom(App& app, const Input& in, const vext::Stage& stage);
 // Where the host stands while a show is on (world), for the glade's people; false: no show.
 bool showHostSpot(const Valley& v, Vec3& at, float& heading);
-bool showOn();  // a show is running (the judges are at their table)
+bool showOn();  // a show is running
+// The judges are at their table while the camera may see them (the welcome, their own shot, the
+// results): three people less in the close views keeps them in budget.
+bool showJudgesSeen();
 // Scripted runs: the Performance plays itself.
 void setShowAutoplay(bool on);
 

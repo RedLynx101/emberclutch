@@ -1,6 +1,7 @@
 #include "app/valley_ext.hpp"
 
 #include "app/cove.hpp"  // Driftwood Cove (workstream C)
+#include "app/glade.hpp"  // the pageant
 
 namespace ec::vext {
 namespace {
@@ -9,6 +10,7 @@ namespace {
 const Feature kFeatures[] = {
     {"none", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},  // (keeps the table non-empty)
     {"cove", cove::folk, cove::act, cove::active, cove::update, nullptr, cove::drawTop, cove::drawBottom},  // Driftwood Cove (workstream C)
+    glade::kFeature,  // the pageant at Moonpetal Glade (app/glade.cpp)
 };
 
 }  // namespace

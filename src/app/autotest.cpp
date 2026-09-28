@@ -13,6 +13,7 @@
 
 #include "app/audio.hpp"
 #include "app/cove.hpp"  // Driftwood Cove (workstream C)
+#include "app/glade.hpp"  // the pageant
 #include "app/scenes.hpp"
 #include "core/campaign.hpp"
 #include "core/trainer.hpp"
@@ -31,7 +32,8 @@ enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Nam
                      Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Valley, Hour, Quit,
                      Sound,  // (sounds, 1.0: bed, sfx, sfxcheck)
                      Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard, Wear,  // (U: Open .. Wear)
-                     Energy, Cove };  // (workstream C)
+                     Energy, Cove,  // (workstream C)
+                     Pageant };  // the pageant's own commands (app/glade.hpp pageantCommand)
 
 struct Cmd {
     Op op = Op::Wait;
@@ -141,6 +143,7 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "gleam") { c.op = Op::Gleam; nums(1); }
     else if (w == "hoard") { c.op = Op::Hoard; nums(1); }
     else if (w == "wear") { c.op = Op::Wear; nums(5); }
+    else if (w == "pg") { c.op = Op::Pageant; c.text = rest; }  // the pageant: pg give / wear / show ...
     else return false;
     return true;
 }
@@ -381,6 +384,7 @@ Input next(App& app) {
                 for (int k = 0; k < kTrinkets; ++k) app.game.hoard[k] = static_cast<u16>(c.a[0]);
                 done = true;
                 break;
+            case Op::Pageant: pageantCommand(app, c.text.c_str()); done = true; break;
         }
         if (!done) {
             ran = true;

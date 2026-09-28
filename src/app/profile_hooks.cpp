@@ -3,6 +3,9 @@
 // Training and About pages show real moves and clothes with no other change.
 #include "app/profile_hooks.hpp"
 
+#include "app/wardrobe.hpp"
+#include "core/accessories.hpp"
+
 namespace ec::hooks {
 
 bool moveView(u8 move, MoveView& out) {
@@ -34,28 +37,16 @@ bool equipMove(Dragon& d, int slot, u8 move) {
 }
 
 const char* accessoryName(u8 accessory) {
-    // P: core/accessories' name for it.
-    (void)accessory;
-    return "";
+    return accessory < accessoryCount() ? accessoryInfo(accessory).name : "";  // (the pageant's)
 }
 
-const char* dyeName(u8 dye) {
-    // P: core/accessories' dye name (0: "natural").
-    (void)dye;
-    return "";
-}
+const char* dyeName(u8 dye) { return dye < dyeCount() ? dyeInfo(dye).name : ""; }
 
-Rgb dyeColour(u8 dye) {
-    // P: the dye's colour (core/accessories).
-    (void)dye;
-    return {250, 226, 196};
-}
+Rgb dyeColour(u8 dye) { return dye < dyeCount() ? dyeInfo(dye).main : Rgb{250, 226, 196}; }
 
 bool openWardrobe(App& app, int dragonIndex) {
-    // P: open scene_wardrobe for this dragon, back to the den after.
-    (void)app;
-    (void)dragonIndex;
-    return false;
+    ec::openWardrobe(app, dragonIndex, app.scene);  // (the wardrobe, back to where you were)
+    return true;
 }
 
 }  // namespace ec::hooks

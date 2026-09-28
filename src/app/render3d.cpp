@@ -32,6 +32,9 @@
 #include "core/place_layout.hpp"
 #include "core/static_mesh.hpp"
 #include "core/valley.hpp"
+#include "core/accessories.hpp"  // the pageant: what dragons wear, their dyes (app/render_wear.inc)
+#include "core/wear_fit.hpp"
+#include "core/wear_mesh.hpp"
 #include "dragon_shbin.h"
 #include "static_shbin.h"
 
@@ -373,6 +376,7 @@ constexpr float kStereoDepth = 0.07f;
 // This eye's shift in pixels at depth d (a multiple of the view's focus) is A / d + B
 // (setEye measures A and B); the last top view's focus, for project().
 float g_shiftA = 0, g_shiftB = 0, g_viewFocus = 1;
+u32 g_lastRim = 0xFF28405A;  // the rim colour lightDragon last set (the pageant: accessories keep it)
 
 // Toon ramp on L.N (signed): plum shadow, a mid band, full light.
 float toonRamp(float x, float) { return x < 0.12f ? 0.0f : (x < 0.45f ? 0.62f : 1.0f); }
@@ -1027,6 +1031,7 @@ void lightDragon(const DragonLight& light, const float local[3]) {
     const u32 rim = 0xFF000000u | (u32(toByte(light.rim[2])) << 16) | (u32(toByte(light.rim[1])) << 8) |
                     toByte(light.rim[0]);  // ABGR
     C3D_TexEnvColor(C3D_GetTexEnv(5), rim);
+    g_lastRim = rim;
 }
 
 // The room's floor light near `at` for the time of day (0..1 per channel).
@@ -1330,6 +1335,8 @@ void drawRoom(App& app, const C3D_Mtx& projection, const C3D_Mtx& view, const Da
                        GPU_ONE_MINUS_SRC_ALPHA);
 }
 
+void drawWorn(App& app, const Posed& p);  // the pageant: what it wears (app/render_wear.inc)
+
 void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model) {
     perf::Scope timed(perf::Submit);
     C3D_Mtx modelView;
@@ -1342,6 +1349,7 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
     const Genome shown = (d.genome.rareFlags & kRareIridescent) ? shimmer(d.genome, app.t + d.id * 0.37f) : d.genome;
     if (isKind(look)) {
         kindPalette(kindOfSlot(look), p.cache->variant, d.id, pal);
+        applyDye(d.dye, pal);  // the pageant: its dye (0: its own colours)
     } else {
         dragonPalette(shown, pal);
         lookPalette(look, shown, pal);
@@ -1373,6 +1381,7 @@ void submit(App& app, const Posed& p, const C3D_Mtx& view, const C3D_Mtx& model)
     if (wings)
         drawMesh(app, p.form->wings[wings->variant], p.skin, dustValue(d, kRegionWings));
     if (blob) C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locBlob, 0, 0, 0, 1);
+    drawWorn(app, p);  // the pageant: what it wears
 }
 
 // An egg's palette with each slot's glow in the alpha (`boost` scales the pulse), on the
@@ -1538,6 +1547,7 @@ void modelView(const C3D_Mtx& view, const C3D_Mtx& model) {
     Mtx_Multiply(&modelView, &view, &model);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &modelView);
 }
+
 
 // The top screen's projection, per eye when the 3D slider is up (WP11e): zero parallax a
 // little in front of the point it frames (`focus` away), so the dragons stand just behind
@@ -1791,6 +1801,8 @@ void drawParticles(App& app, const Particles& fx, bool foreground) {
         ++app.stats.particles;
     }
 }
+
+#include "app/render_wear.inc"  // the pageant: accessories on the dragons (drawWorn), the wardrobe's view
 
 }  // namespace
 
@@ -3735,7 +3747,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     another(view.skyDragon, view.skyActor, view.skyAt, view.skyHeading, 380.0f, -0.35f, 1.8f);  // a legend: larger
     for (int i = 0; i < view.otherCount && i < kMaxOthers; ++i) {  // challengers, wild ones, rivals (1.0)
         const ValleyDragon& o = view.others[i];
-        another(o.dragon, o.actor, o.at, o.heading, 220.0f, -o.roll, o.scale, o.pitch, o.lod);
+        another(o.dragon, o.actor, o.at, o.heading, 220.0f, -o.roll, o.scale, o.pitch, o.lite ? 1 : o.lod);
     }
     mark();
     // The people about (you on foot, the villagers), near enough to see.

@@ -41,7 +41,9 @@ struct Input {
 };
 
 enum class SceneId : u8 {
-    Title, PickStarter, Den, Map, Sanctuary, Vault, NestingStone, Wanderings, Market, Valley, Creator, Challenge, Count
+    Title, PickStarter, Den, Map, Sanctuary, Vault, NestingStone, Wanderings, Market, Valley, Creator, Challenge,
+    Wardrobe,  // the pageant: dressing a dragon (app/wardrobe.hpp)
+    Count
 };
 
 // Per-frame counters the renderer fills in; the debug overlay checks them against the

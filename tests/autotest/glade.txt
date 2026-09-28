@@ -1,0 +1,64 @@
+# The pageant at Moonpetal Glade (workstream P, D90): the host and judges, the board, both stalls
+# (a thing tried on), then an Ember show played through with the Performance on autoplay.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+pg grown
+pg give
+pg wear 2 11 16 24
+pg bond 600
+pg clean
+key X
+wait 4
+travel 15
+wait 5
+shot p01-glade
+pg board
+wait 2
+shot p02-board
+key B
+wait 0.5
+pg stall 0 1
+wait 2
+shot p03-stall
+key B
+wait 0.3
+pg stall 1 5
+wait 2
+shot p04-dyes
+key B
+wait 0.3
+pg autoplay on
+pg show 1 0
+wait 2.5
+shot p05-intro
+wait 2
+shot p06-look
+wait 5
+shot p07-look-cards
+wait 9
+shot p08-poise
+wait 9
+shot p09-judges
+wait 5
+shot p10-perform
+wait 4
+shot p11-perform-late
+wait 6
+shot p12-rivals
+wait 9
+shot p13-results
+wait 6
+shot p14-after
+quit

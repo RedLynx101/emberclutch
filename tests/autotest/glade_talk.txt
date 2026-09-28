@@ -1,0 +1,88 @@
+# The pageant at Moonpetal Glade, by hand (workstream P, D90): the host's hello and the board, Dress
+# up (the wardrobe and back out to the glade), then a Flame show with its host's words (A reads
+# them on); the Performance unplayed (every cue missed).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+pg grown
+pg give
+pg bond 400
+key X
+wait 4
+travel 15
+wait 5
+pg host
+wait 3
+shot t01-hello
+key A
+wait 3
+key A
+wait 3
+key A
+wait 1
+shot t02-board
+tap 237 193
+wait 2.5
+shot t03-wardrobe
+tap 158 62
+wait 1.5
+shot t04-dressed-head
+tap 118 18
+wait 0.5
+tap 158 62
+wait 1.5
+shot t05-dressed-neck
+tap 264 220
+wait 5
+shot t06-back-at-glade
+pg show 2 1
+wait 3
+shot t07-welcome
+key A
+wait 3.5
+shot t08-rivals
+key A
+wait 3
+shot t09-look-called
+key A
+wait 5
+shot t10-look-cards
+wait 4.5
+wait 3
+key A
+wait 5
+shot t11-poise
+wait 5
+shot t12-judges
+wait 2
+key A
+wait 4
+shot t13-perform
+wait 10
+shot t14-perform-cards
+wait 2
+wait 2.5
+key A
+wait 4
+shot t15-rivals
+wait 5
+shot t16-results
+key A
+wait 3
+key A
+wait 3
+key A
+wait 2
+shot t17-results-read
+quit

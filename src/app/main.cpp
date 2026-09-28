@@ -23,6 +23,7 @@
 #include "app/dragondex_ui.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
+#include "app/wardrobe.hpp"  // the pageant
 #include "core/campaign.hpp"
 #include "core/clock.hpp"
 #include "core/dragon.hpp"
@@ -61,6 +62,7 @@ const char* musicFor(const App& app) {
     if (app.scene == SceneId::Market) return "market-bustle";
     if (app.scene == SceneId::Valley) return isNight(nowLocal(app)) ? "valley-night" : "valley-day";  // batch 3
     if (app.scene == SceneId::Challenge) return challengeMusic(app);  // Beta WP8: cup day
+    if (app.scene == SceneId::Wardrobe) return wardrobeMusic(app);    // the pageant: the music it was opened to
     if (app.scene != SceneId::Den || !hasDragon(app)) return "title-theme";
     const Dragon& d = activeDragon(app);
     return (d.stage == Stage::Egg || isNight(nowLocal(app))) ? "nestsong" : "den-hearth";

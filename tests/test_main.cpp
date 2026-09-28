@@ -1051,6 +1051,7 @@ int main() {
     runPlaceTests();
     runInterfaceTests();
     runFishingTests();  // Driftwood Cove (workstream C)
+    runPageantTests();  // the pageant, accessories and dyes
     std::printf("\n%d checks, %d failures\n", g_checks, g_failures);
     return g_failures == 0 ? 0 : 1;
 }

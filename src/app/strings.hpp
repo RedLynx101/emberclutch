@@ -535,5 +535,84 @@ inline constexpr const char* kStepsOut = "%lu steps";
 inline constexpr const char* kFindsHint = "It sniffs for treasure every %d steps.";
 inline constexpr const char* kBackWith = "%s is back with treasure!";
 inline constexpr const char* kBackEmpty = "%s is back, happy and muddy.";
+// ---- The pageant, accessories and dyes (1.0, D90: Moonpetal Glade, app/glade*.cpp, app/scene_wardrobe.cpp)
+inline constexpr const char* kWardrobe = "Wardrobe";
+inline constexpr const char* kSlotHead = "Head";
+inline constexpr const char* kSlotNeck = "Neck";
+inline constexpr const char* kSlotBack = "Back";
+inline constexpr const char* kSlotTail = "Tail";
+inline constexpr const char* kWardrobeDye = "Dye";
+inline constexpr const char* kWardrobeNone = "None";
+inline constexpr const char* kWardrobeNatural = "Natural";
+inline constexpr const char* kWardrobeEmpty = "Nothing for its %s yet: the stalls at Moonpetal Glade sell pretty things.";
+inline constexpr const char* kWardrobeEgg = "An egg has nothing to wear yet.";
+inline constexpr const char* kWardrobeHelp = "Tap to try on. L/R: slots. Pad: turn.";
+inline constexpr const char* kWardrobeDyed = "Dyed %s.";
+// The glade's people (the prompt's %s is their name)
+inline constexpr const char* kHostName = "Celestine";
+inline constexpr const char* kHostTitle = "The pageant's host";
+inline constexpr const char* kMilliner = "Linnet";
+inline constexpr const char* kMillinerTitle = "Accessories";
+inline constexpr const char* kDyer = "Madder";
+inline constexpr const char* kDyerTitle = "Dyes";
+inline constexpr const char* kJudgeNames[3] = {"Plume", "Wick", "Tansy"};
+inline constexpr const char* kPromptPageant = "The pageant: talk to %s";
+inline constexpr const char* kPromptStall = "Browse %s's stall";
+inline constexpr const char* kHostHello[3] = {
+    "Welcome to Moonpetal Glade, {P}! I'm Celestine, and this is where dragons shine.",
+    "Every show has a theme. Dress {D} to suit it: the judges score Look, Poise and Performance.",
+    "Win all four shows of a league for its title. The themes change every day!",
+};
+inline constexpr const char* kHostAgain = "Which show will you and {D} enter tonight?";
+inline constexpr const char* kMillinerHello = "Hats, bows, capes and charms! Tap one to see it on {D}.";
+inline constexpr const char* kDyerHello = "A dip in my dyes and {D} will be the talk of the glade.";
+// The board
+inline constexpr const char* kBoardTitle = "The Pageant";
+inline constexpr const char* kBoardLeague = "%s League";
+inline constexpr const char* kBoardShowsWon = "%d of 4 shows won";
+inline constexpr const char* kBoardLeagueWon = "League won!";
+inline constexpr const char* kBoardEnter = "Enter";
+inline constexpr const char* kBoardWon = "Won";
+inline constexpr const char* kBoardPaid = "Today's prize won";
+inline constexpr const char* kBoardLocked = "Win the %s League first.";
+inline constexpr const char* kBoardTired = "%s is too tired for a show. A good sleep first!";
+inline constexpr const char* kBoardAlone = "Bring a dragon along to show!";
+inline constexpr const char* kBoardFavours = "Favours %s dragons; %s things.";
+inline constexpr const char* kBoardYourLook = "Look %d  Poise %d";
+// The show
+inline constexpr const char* kShowWelcome = "Welcome, one and all, to the %s!";
+inline constexpr const char* kShowRivals = "Tonight: %.15s and %.15s, %.15s and %.15s, and {P} with {D}!";
+inline constexpr const char* kShowLookLine = "First, the Look! How do they suit the %s?";
+inline constexpr const char* kShowPoiseLine = "Now, Poise: how they carry themselves.";
+inline constexpr const char* kShowPerfLine = "And the Performance! {P}, cue {D}'s tricks in time with the music.";
+inline constexpr const char* kShowRound = "%s";
+inline constexpr const char* kShowCueHelp = "Press each cue as it reaches the ring!";
+inline constexpr const char* kShowTap = "Tap!";
+inline constexpr const char* kShowPerfect = "Perfect!";
+inline constexpr const char* kShowGood = "Good";
+inline constexpr const char* kShowMiss = "Miss";
+inline constexpr const char* kShowRivalsPerform = "The rivals perform...";
+inline constexpr const char* kShowResults = "The results";
+inline constexpr const char* kShowPlaces[4] = {"1st", "2nd", "3rd", "4th"};
+inline constexpr const char* kShowWinner = "%s wins the %s!";
+inline constexpr const char* kShowPlaced = "%s came %s. Well shown!";
+inline constexpr const char* kShowRibbon = "A ribbon for the %s!";
+inline constexpr const char* kShowGleam = "+%lu Gleam";
+inline constexpr const char* kShowPrize = "A prize: the %s!";
+inline constexpr const char* kShowDyePrize = "And a dye: %s!";
+inline constexpr const char* kShowTitle = "%s is now the %s!";
+inline constexpr const char* kShowPaidAlready = "(Today's prize for this show is already won.)";
+inline constexpr const char* kShowContinue = "Continue";
+inline constexpr const char* kShowPoints = "%.1f";
+inline constexpr const char* kShowTotal = "Total";
+// The stalls
+inline constexpr const char* kStallAccessories = "Linnet's Finery";
+inline constexpr const char* kStallDyes = "Madder's Dyes";
+inline constexpr const char* kStallOwned = "Yours";
+inline constexpr const char* kStallBoughtThing = "Bought! Put it on in the wardrobe.";
+inline constexpr const char* kStallBoughtDye = "Bought! Dye in the wardrobe.";
+inline constexpr const char* kStallPrize = "Won at the shows";
+inline constexpr const char* kGladeStallTomorrow = "New things tomorrow.";
+inline constexpr const char* kStallStyles = "Styles: %s";
 
 }  // namespace ec::str

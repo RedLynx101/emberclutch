@@ -41,9 +41,11 @@ bool has(Sfx s);
 // Looping beds under the music (the den's hearth and night outside, an egg's hum). Each
 // fades toward the level last set; set it every frame it's wanted, or it fades out.
 // The valley's: the wind high up, the meadow by day, the night, the lake, and the wings
-// fluttering in a glide.
+// fluttering in a glide. 1.0's (sounds, made by tools/audio/make_synth_sfx.py): the new
+// places' (the cove's waves, the caldera's rumble and embers, the glade's night chimes, the
+// Hollow's cold wind and drips) and a rushing wind raised with speed.
 enum class Bed : u8 { Hearth, Night, EggHum, Market, WindHigh, Meadow, ValleyNight, Lake, WingFlutter, Stream, Waterfall,
-                      Village, Count };
+                      Village, Cove, Caldera, Glade, Hollow, Rush, Count };
 void setBed(Bed b, float level);  // 0..1
 
 // The villagers' voices (D75: letter by letter, in the way of a cozy life-sim): a voice's 26

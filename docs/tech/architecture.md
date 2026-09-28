@@ -277,7 +277,9 @@ generated WAVs --tools/audio/process_sfx.py (ffmpeg; sfx_manifest.json)--> romfs
 ## 6. Audio
 
 - **ndsp** (proven in 3D-Claw and asteria-ds). Channels 0–1 for music (loop, stinger),
-  2–9 for sound effects (a free channel first, else the oldest), 10–12 for looping beds.
+  2–9 for sound effects (a free channel first, else the oldest), 10–23 a pool the looping beds
+  share: a bed takes a free channel as it starts and gives it back when it falls silent (1.0 has
+  seventeen beds for fourteen channels; only a handful are heard at once).
 - **Music:** Ogg Vorbis via Tremor (the `3ds-libvorbisidec` package, installed
   2026-09-23) decoded on a worker thread, with sample-accurate loops from the
   `LOOPSTART`/`LOOPLENGTH` tags.
@@ -285,7 +287,10 @@ generated WAVs --tools/audio/process_sfx.py (ffmpeg; sfx_manifest.json)--> romfs
   preloaded into linear memory (~3 MB); a sound's takes play in turn. Made by
   `tools/audio/process_sfx.py` from the generated sources: EQ for the small speakers,
   silence trimmed, levelled per kind (voices, body, egg, care, interface), a soft limiter
-  on sharp sounds.
+  on sharp sounds. 1.0's sounds that needn't be specific (riding, photos, battles, the pageant,
+  fishing, the Hollow, Sky Rings' burst and brake) and the new places' beds are synthesised by
+  `tools/audio/make_synth_sfx.py` (pure Python; `--list` says how each should sound), finished
+  and levelled the same way; its beds loop seamlessly by construction.
 - **Beds:** the hearth, the night outside and an egg's hum are seamless loops; the den
   sets their levels every frame (the night bed follows the daylight blend, the hum the
   egg's warmth), they ease in and out, and a bed's channel runs only while it is heard.

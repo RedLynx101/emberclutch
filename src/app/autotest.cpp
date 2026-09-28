@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "app/audio.hpp"
 #include "app/scenes.hpp"
 #include "core/campaign.hpp"
 #include "core/clock.hpp"
@@ -25,7 +26,8 @@ constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
 enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
-                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Quit };
+                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Quit,
+                     Sound };  // (sounds, 1.0: bed, sfx, sfxcheck)
 
 struct Cmd {
     Op op = Op::Wait;
@@ -45,6 +47,7 @@ std::string g_names;  // queued names, '\n'-separated
 std::string g_pending, g_armed;
 std::string g_later;       // shotin: a shot partway into the next command
 float g_laterAt = -1;
+float g_bedHold[static_cast<int>(audio::Bed::Count)] = {};  // sounds (1.0): beds held every frame by `bed`
 u8* g_fbTop = nullptr;
 u8* g_fbBottom = nullptr;
 
@@ -116,6 +119,9 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "autoplay") { c.op = Op::Autoplay; c.a[0] = std::strcmp(rest, "on") == 0; }
     else if (w == "cups") { c.op = Op::Cups; nums(3); }
     else if (w == "quit") { c.op = Op::Quit; }
+    // Sounds (1.0): `bed <index> <level>` holds a bed at a level every frame (0 lets it go),
+    // `sfx <index>` plays a sound effect, `sfxcheck` logs the effects with no file of their own.
+    else if (w == "bed" || w == "sfx" || w == "sfxcheck") { c.op = Op::Sound; c.text = w; nums(2); }
     else return false;
     return true;
 }
@@ -275,6 +281,21 @@ Input next(App& app) {
                 done = true;
                 break;
             case Op::Quit: app.quit = true; done = true; break;
+            case Op::Sound: {  // (sounds, 1.0)
+                const int i = static_cast<int>(c.a[0]);
+                if (c.text == "bed" && i >= 0 && i < static_cast<int>(audio::Bed::Count)) g_bedHold[i] = c.a[1];
+                if (c.text == "sfx" && i >= 0 && i < static_cast<int>(audio::Sfx::Count))
+                    audio::playSfx(static_cast<audio::Sfx>(i));
+                if (c.text == "sfxcheck") {
+                    std::string missing;
+                    for (int k = 0; k < static_cast<int>(audio::Sfx::Count); ++k)
+                        if (!audio::has(static_cast<audio::Sfx>(k))) missing += " " + std::to_string(k);
+                    log("sfxcheck: audio %s; with no file of their own (a stand-in plays):%s", audio::ok() ? "ok" : "off",
+                        missing.empty() ? " none" : missing.c_str());
+                }
+                done = true;
+                break;
+            }
         }
         if (!done) {
             ran = true;
@@ -294,6 +315,8 @@ Input next(App& app) {
         g_time += app.dt;
         ++g_frame;
     }
+    for (int b = 0; b < static_cast<int>(audio::Bed::Count); ++b)  // (sounds, 1.0)
+        if (g_bedHold[b] > 0) audio::setBed(static_cast<audio::Bed>(b), g_bedHold[b]);
     in.touching = touching;
     in.tapped = touching && !g_wasTouching;
     in.released = !touching && g_wasTouching;

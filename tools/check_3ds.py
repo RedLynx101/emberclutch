@@ -1,6 +1,6 @@
 """Checks the files we put on the 3DS before they go (Noah, 2026-09-24: "create some checks to
 validate any new files we make before putting them on the 3ds so we know they will be seen as
-valid"). Every CIA, .3dsx, banner (.bnr), SMDH, CGFX, glTF and WAV we build can be checked;
+valid"). Every CIA, .3dsx, banner (.bnr), SMDH, CGFX, glTF, WAV and Ogg we build can be checked;
 tools/deploy_ftp.ps1 and tools/banner_lab.ps1 refuse to upload anything that fails.
 
   py -3.12 tools/check_3ds.py <file> [<file> ...] [--quiet] [--sound-out <dir>]
@@ -26,12 +26,17 @@ What it checks, and why (each rule is one we met on the 3DS, or one the formats 
 - CGFX: under 512 KB, the COMMON model; its dictionaries listed.
 - glTF (a banner's source): no skins or bone weights (a skinned banner freezes the HOME Menu on
   hardware, gbatemp thread 683412).
-- WAV: what bannertool is given (the same sound rules).
+- WAV: what bannertool is given (the same sound rules). A WAV inside romfs is one of the game's
+  own sounds instead (romfs/sfx, romfs/voice): what audio.cpp's loadWav reads (16-bit PCM, the
+  fmt chunk before the data), 22,050 Hz mono like the set, headroom under full scale, a clean
+  end, and for a loop (amb-*, egg-hum, wing-flutter) a seam that doesn't jump.
+- Ogg (romfs/music): an Ogg Vorbis stream, its channels, rate, length and loop tags.
 - 3DSX: the header, its segment sizes add up, the SMDH and RomFS it carries.
 """
 from __future__ import annotations
 
 import hashlib
+import math
 import os
 import struct
 import sys
@@ -208,6 +213,96 @@ def check_wav(r: Report, path: str) -> None:
             check_sound(r, "WAV", fmt, w.getnchannels(), w.getframerate(), w.getnframes() / w.getframerate())
     except wave.Error as e:
         r.fail(f"WAV: not a PCM WAV ({e}); bannertool reads plain PCM only (a float WAV screeches)")
+
+
+# The game's own sounds (romfs/sfx, romfs/voice) follow other rules than the banner's: what
+# src/app/audio.cpp's loadWav reads (RIFF, "fmt " before "data", 16-bit PCM), in the set's format
+# (tools/audio/process_sfx.py and make_synth_sfx.py write 22,050 Hz mono), levelled with room
+# under full scale, ending cleanly (a sound cut off mid-wave clicks), and loops
+# whose end runs smoothly into their start. One-shots are preloaded into linear memory at
+# boot, so a long one is worth a second look.
+GAME_RATE = 22050
+GAME_ONESHOT_SECONDS = 3.0
+GAME_LOOPS = ("egg-hum", "wing-flutter")  # the beds not named amb-*
+
+
+def check_game_wav(r: Report, path: str) -> None:
+    b = open(path, "rb").read()
+    if not r.check(len(b) > 12 and b[:4] == b"RIFF" and b[8:12] == b"WAVE", "WAV: RIFF/WAVE", repr(b[:12])):
+        return
+    fmt, data, p = None, None, 12
+    while p + 8 <= len(b):
+        cid, size = b[p:p + 4], struct.unpack_from("<I", b, p + 4)[0]
+        if cid == b"fmt " and fmt is None:
+            fmt = struct.unpack_from("<HHIIHH", b, p + 8)
+        elif cid == b"data":
+            data = (p + 8, size)
+            break  # loadWav stops at the data too
+        p += 8 + size + (size & 1)
+    if not r.check(fmt is not None and data is not None, "WAV: a fmt chunk before the data",
+                   "loadWav would read the samples with the default format"):
+        return
+    tag, channels, rate, _, _, bits = fmt
+    at, size = data
+    r.check(tag == 1 and bits == 16, f"WAV: format {tag}, {bits}-bit", "the game reads 16-bit PCM only")
+    r.check(channels == 1, f"WAV: {channels} channel{'s' if channels != 1 else ''}",
+            "the set is mono (stereo plays, but costs twice the memory)")
+    if rate != GAME_RATE:
+        r.warn(f"WAV: {rate} Hz (the set is {GAME_RATE} Hz; the game plays any rate)")
+    if not r.check(at + size <= len(b) and size % (2 * channels) == 0 and size > 0,
+                   f"WAV: {size} bytes of samples inside the file", "the data runs past the end or is ragged"):
+        return
+    if tag != 1 or bits != 16:
+        return
+    x = struct.unpack_from(f"<{size // 2}h", b, at)[::channels]
+    seconds = len(x) / rate
+    peak = max(abs(v) for v in x)
+    peak_db = 20 * math.log10(max(peak, 1) / 32768)
+    r.check(-40.0 < peak_db <= -0.5, f"WAV: peak {peak_db:.1f} dBFS",
+            "silent" if peak_db <= -40.0 else "no headroom (the set peaks at -1 dBFS)")
+    name = os.path.splitext(os.path.basename(path))[0]
+    loop = name.startswith("amb-") or name in GAME_LOOPS
+    steps = sorted(abs(x[i] - x[i - 1]) for i in range(1, len(x)))
+    typical = steps[int(0.999 * (len(steps) - 1))] if steps else 0
+    if loop:
+        seam = abs(x[0] - x[-1])
+        r.ok(f"WAV: a loop of {seconds:.2f} s")
+        if seam > max(typical, 64):
+            r.warn(f"WAV: the loop's seam jumps {seam} (99.9% of its steps are under {typical}): a click each time round")
+        else:
+            r.ok(f"WAV: seamless (the wrap steps {seam}; 99.9% of its steps are under {typical})")
+    else:
+        if seconds > GAME_ONESHOT_SECONDS:
+            r.warn(f"WAV: {seconds:.2f} s (one-shots are preloaded at boot; most are under a second)")
+        else:
+            r.ok(f"WAV: {seconds:.2f} s")
+        if abs(x[-1]) > 64:  # (a start is masked by the sound's own attack; an end isn't)
+            r.warn(f"WAV: ends mid-sound (last sample {x[-1]}): it may click as it stops")
+
+
+def check_ogg(r: Report, path: str) -> None:
+    """Music and stingers (romfs/music): Ogg Vorbis as Tremor reads it; the channels, the rate,
+    the length, and a loop's LOOPSTART tag (tools/audio/make_loop.py)."""
+    b = open(path, "rb").read()
+    if not r.check(b[:4] == b"OggS", "Ogg: OggS page", repr(b[:4])):
+        return
+    segs = b[26]
+    body = 27 + segs
+    ident = b[body:body + 30]
+    if not r.check(ident[:7] == b"\x01vorbis", "Ogg: a Vorbis stream", repr(ident[:7])):
+        return
+    version, channels, rate = struct.unpack_from("<IBI", ident, 7)
+    r.check(version == 0 and channels in (1, 2), f"Ogg: Vorbis {version}, {channels} channel(s)")
+    if rate != 32000:
+        r.warn(f"Ogg: {rate} Hz (the music is 32000 Hz)")
+    else:
+        r.ok(f"Ogg: {rate} Hz")
+    last = b.rfind(b"OggS")
+    granule = struct.unpack_from("<q", b, last + 6)[0]
+    seconds = granule / rate if rate else 0
+    r.check(0.3 < seconds < 600, f"Ogg: {seconds:.2f} s")
+    tags = b"LOOPSTART=" in b[:4096]
+    r.ok(f"Ogg: {'a loop (LOOPSTART)' if tags else 'no loop tags (a stinger, or plays once)'}")
 
 
 # ------------------------------------------------------------------------------ CGFX
@@ -469,7 +564,14 @@ def check(path: str, quiet: bool, sound_out: str | None) -> Report:
     label = os.path.splitext(os.path.basename(path))[0]
     ext = os.path.splitext(path)[1].lower()
     if ext == ".wav":
-        check_wav(r, path)
+        # the game's own sounds live in romfs; any other WAV is taken for the banner's
+        if "romfs" in os.path.normpath(os.path.abspath(path)).split(os.sep):
+            check_game_wav(r, path)
+        else:
+            check_wav(r, path)
+        return r
+    if ext == ".ogg":
+        check_ogg(r, path)
         return r
     if ext == ".gltf":
         check_gltf(r, path)

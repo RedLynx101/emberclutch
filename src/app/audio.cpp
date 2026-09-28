@@ -12,6 +12,11 @@ namespace ec::audio {
 namespace {
 
 constexpr int kMusicCh = 0, kStingerCh = 1, kSfxFirst = 2, kSfxCount = 8, kBedFirst = kSfxFirst + kSfxCount;
+// ndsp's 24 channels. The beds share the ones after the effects' (sounds, 1.0): a bed takes a
+// free one as it starts and gives it back when it falls silent, so there can be more beds than
+// channels left (seventeen for fourteen), as only a handful are ever heard at once.
+constexpr int kChannels = 24, kBedChannels = kChannels - kBedFirst;
+static_assert(kBedChannels > 0, "channels left for the beds");
 constexpr int kMaxTakes = 4;
 constexpr int kBufFrames = 4096;  // per streaming buffer (~128 ms at 32 kHz)
 // Preloaded sounds are queued as slices of at most this many frames, one wave buffer
@@ -95,14 +100,22 @@ struct Tone {
 constexpr Tone kTones[] = {{Sfx::Step, 0.3f, 650.0f}, {Sfx::DragonStep, 0.55f, 0.0f}};
 const char* const kBedFiles[] = {"amb-hearth", "amb-night", "egg-hum", "amb-market", "amb-wind-high", "amb-meadow",
                                  "amb-valley-night", "amb-lake", "wing-flutter", "amb-stream", "amb-waterfall",
-                                 "amb-village"};
-const float kBedGain[] = {0.55f, 0.5f, 0.6f, 0.45f, 0.5f, 0.42f, 0.45f, 0.45f, 0.35f};  // under the music and the voices
+                                 "amb-village",
+                                 // 1.0 (sounds): the new places' and the rush of speed
+                                 "amb-cove", "amb-caldera", "amb-glade-night", "amb-hollow", "amb-rush"};
+// Under the music and the voices. (The stream's, the falls' and the village's were missing
+// until 1.0, so those three read past the table's end.)
+const float kBedGain[] = {0.55f, 0.5f, 0.6f, 0.45f, 0.5f, 0.42f, 0.45f, 0.45f, 0.35f, 0.45f, 0.45f,
+                          0.42f, 0.45f, 0.45f, 0.4f, 0.45f, 0.5f};
 // The den's beds stay loaded (they come and go all the time there); the Market's and the
 // valley's load when a scene first wants them and go again a few seconds after they fall
 // silent: preloaded, the valley's five took 1.6 MB of the den's linear memory (run 15's build).
-const bool kBedResident[] = {true, true, true, false, false, false, false, false, false, false, false, false};
+const bool kBedResident[] = {true, true, true, false, false, false, false, false, false, false, false, false,
+                             false, false, false, false, false};
 constexpr float kBedUnloadAfter = 3.0f;  // seconds silent
 static_assert(sizeof(kBedFiles) / sizeof(kBedFiles[0]) == static_cast<int>(Bed::Count), "one file per Bed");
+static_assert(sizeof(kBedGain) / sizeof(kBedGain[0]) == static_cast<int>(Bed::Count), "one gain per Bed");
+static_assert(sizeof(kBedResident) / sizeof(kBedResident[0]) == static_cast<int>(Bed::Count), "one flag per Bed");
 
 struct Stream {
     OggVorbis_File vf;
@@ -155,6 +168,8 @@ u32 g_bedNext[static_cast<int>(Bed::Count)] = {};  // the frame the next slice s
 float g_bedLevel[static_cast<int>(Bed::Count)] = {}, g_bedWant[static_cast<int>(Bed::Count)] = {};
 bool g_bedOn[static_cast<int>(Bed::Count)] = {};
 float g_bedIdle[static_cast<int>(Bed::Count)] = {};  // seconds a loaded, non-resident bed has been silent
+int g_bedCh[static_cast<int>(Bed::Count)] = {};      // its channel while on
+bool g_bedChBusy[kBedChannels] = {};                 // the bed channels taken
 
 // Queues frames [0, frames) of interleaved PCM16 on `ch` as consecutive slices, one wave
 // buffer each (see kSliceFrames): as many as fit in `count` buffers, each at least
@@ -420,7 +435,7 @@ void shutdown() {
     threadJoin(g_thread, U64_MAX);
     threadFree(g_thread);
     closeStream();
-    for (int ch = 0; ch < kBedFirst + static_cast<int>(Bed::Count); ++ch) ndspChnWaveBufClear(ch);
+    for (int ch = 0; ch < kChannels; ++ch) ndspChnWaveBufClear(ch);
     for (auto* d : g_stream.data) if (d) linearFree(d);
     for (auto& takes : g_clips)
         for (auto& c : takes) if (c.data) linearFree(c.data);
@@ -585,7 +600,7 @@ void update(float dt) {
     g_duck += (duckTarget - g_duck) * (dt * 4.0f > 1.0f ? 1.0f : dt * 4.0f);
     setMix(kMusicCh, g_gain * g_duck * g_musicVol);
     // Beds ease toward their wanted level (about a second), then the wish lapses: a scene
-    // keeps a bed going by asking again every frame. A bed's channel runs only while it is
+    // keeps a bed going by asking again every frame. A bed holds a channel only while it is
     // wanted or still fading out.
     const float k = dt * 1.5f > 1.0f ? 1.0f : dt * 1.5f;
     for (int b = 0; b < static_cast<int>(Bed::Count); ++b) {
@@ -593,9 +608,18 @@ void update(float dt) {
         g_bedWant[b] = 0.0f;
         g_bedLevel[b] += (want - g_bedLevel[b]) * k;
         const Clip& c = g_beds[b];
-        const int ch = kBedFirst + b;
         if (!c.data) continue;
         if (!g_bedOn[b] && want > 0.0f) {
+            int slot = -1;
+            for (int j = 0; j < kBedChannels && slot < 0; ++j)
+                if (!g_bedChBusy[j]) slot = j;
+            if (slot < 0) {  // every bed channel taken: it waits (silent) for one to come free
+                g_bedLevel[b] = 0.0f;
+                continue;
+            }
+            g_bedChBusy[slot] = true;
+            g_bedCh[b] = kBedFirst + slot;
+            const int ch = g_bedCh[b];
             setupChannel(ch, c.stereo ? 2 : 1, c.rate);
             ndspChnSetInterp(ch, NDSP_INTERP_LINEAR);
             setMix(ch, 0.0f);
@@ -614,6 +638,7 @@ void update(float dt) {
         }
         // The loop plays as a ring of slices: each finished one takes the next stretch of
         // the bed (wrapping to its start) and goes back in the queue.
+        const int ch = g_bedCh[b];
         const int channels = c.stereo ? 2 : 1;
         for (ndspWaveBuf& w : g_bedBufs[b]) {
             if (w.status != NDSP_WBUF_FREE && w.status != NDSP_WBUF_DONE) continue;
@@ -627,6 +652,7 @@ void update(float dt) {
         }
         if (want <= 0.0f && g_bedLevel[b] < 0.002f) {
             ndspChnWaveBufClear(ch);
+            g_bedChBusy[ch - kBedFirst] = false;  // the channel goes back to the pool
             g_bedOn[b] = false;
             g_bedLevel[b] = 0.0f;
             g_bedIdle[b] = 0.0f;

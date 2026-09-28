@@ -13,6 +13,7 @@
 #include "app/tips_ui.hpp"
 #include "app/tracking_ui.hpp"
 #include "app/ui_draw.hpp"
+#include "app/wildlife.hpp"  // the Journal's valley critters (workstream L)
 #include "core/campaign.hpp"
 #include "core/guide.hpp"
 #include "core/finds.hpp"
@@ -158,8 +159,9 @@ void drawJournal(App& app, const Input& in, Dragon& d, s64 now) {
                            str::kDex};
     for (int t = 0; t < 4; ++t) {
         const Rect r{8.0f + t * 77.0f, 32, 73, 24};
-        panel(r, withAlpha(c.journalTab == t ? theme::kClutchGold : theme::kShell, c.journalTab == t ? 0.6f : 0.16f));
-        textCentered(app, tabs[t], r.x + r.w / 2, r.y + 12, 0.42f, c.journalTab == t ? theme::kDenPlum : theme::kShell, 70);
+        const bool on = c.journalTab == t || (t == 2 && c.journalTab == 4);  // (4: the places' critters page)
+        panel(r, withAlpha(on ? theme::kClutchGold : theme::kShell, on ? 0.6f : 0.16f));
+        textCentered(app, tabs[t], r.x + r.w / 2, r.y + 12, 0.42f, on ? theme::kDenPlum : theme::kShell, 70);
         if (in.tapped && r.contains(in.tx, in.ty)) {
             audio::playSfx(audio::Sfx::Tap);
             if (t == 3) {  // the Dragondex is its own book
@@ -183,6 +185,8 @@ void drawJournal(App& app, const Input& in, Dragon& d, s64 now) {
             c.profileTab = kTabTraining;
             return;
         }
+    } else if (c.journalTab == 4) {  // the valley's critters (workstream L)
+        wildlife::drawJournal(app, in);
     } else {  // places found (a tap tracks one) and finds
         int shown = 0;
         for (int p = 0; p < world::placeCount(); ++p) {  // three columns: all eighteen fit
@@ -215,6 +219,10 @@ void drawJournal(App& app, const Input& in, Dragon& d, s64 now) {
         for (int i = 0; i < kFindSpots; ++i) finds += findDone(s, i);
         std::snprintf(line, sizeof(line), str::kFindsFound, finds, kFindSpots);  // the finds (WP7)
         text(app, line, 170, 184, 0.4f, withAlpha(theme::kClutchGold, 0.85f), C2D_AlignLeft, 140);
+        if (button(app, {6, 202, 110, 34}, str::kCrittersButton, in)) {  // the valley's critters (workstream L)
+            c.journalTab = 4;
+            audio::playSfx(audio::Sfx::Tap);
+        }
     }
     back(app, in);
 }

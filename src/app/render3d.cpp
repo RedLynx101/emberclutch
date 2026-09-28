@@ -3344,6 +3344,8 @@ void drawValleyLife(App& app, const Valley& v, const ValleyView& view, const C3D
     (void)viewM;
 }
 
+#include "app/render_critters.inc"  // the valley's critters (workstream L): drawCritters
+
 void drawGlints(App& app, const ValleyView& view, const C3D_Mtx& viewM) {
     if (view.glintCount <= 0) return;
     constexpr int kPer = 13;  // a star (a middle, 8 rim points: 8 triangles) and its halo (4 corners: 4 triangles)
@@ -3876,6 +3878,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, 1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f);
     drawGlints(app, view, viewM);
     drawValleyLife(app, v, view, viewM, now);  // fireflies and falling leaves (run 19)
+    drawCritters(app, view, projection, viewM);  // the valley's critters (workstream L)
     mark();
     // The water and the waterfall: see-through, over everything, writing no depth.
     // (rebuilt round the camera as it moves on: past the ground's edge the haze has the water)

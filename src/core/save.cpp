@@ -388,6 +388,12 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
         w.u8v(p.coveFish);
         w.u8v(p.coveShells);
         w.u8v(p.coveRod);
+        w.u8v(p.critterSeen);  // (the critters, workstream L)
+        w.u8v(p.critterFriends);
+        w.s32v(p.critterDay);
+        w.u8v(p.critterToday);
+        w.u8v(p.critterPaid);
+        for (u8 k : p.critterCounts) w.u8v(k);
         w.patchU16(sizeAt, static_cast<u16>(w.pos() - from));
     }
     w.patchU16(at, static_cast<u16>(w.pos() - start));
@@ -592,6 +598,14 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
             p.coveFish = r.u8v();
             p.coveShells = r.u8v();
             p.coveRod = r.u8v() ? 1 : 0;
+        }
+        if (has(kProgressCritterBytes)) {  // the critters (workstream L; older blocks: none met yet)
+            p.critterSeen = r.u8v();
+            p.critterFriends = r.u8v();
+            p.critterDay = r.s32v();
+            p.critterToday = r.u8v();
+            p.critterPaid = r.u8v();
+            for (u8& k : p.critterCounts) k = r.u8v();
         }
         r.seek(from + n);
     }

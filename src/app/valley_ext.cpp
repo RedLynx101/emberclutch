@@ -3,6 +3,7 @@
 #include "app/cove.hpp"  // Driftwood Cove (workstream C)
 #include "app/glade.hpp"  // the pageant
 #include "app/battle_feature.hpp"  // 1.0 battles (workstream B)
+#include "app/wildlife.hpp"  // the valley's critters (workstream L)
 
 namespace ec::vext {
 namespace {
@@ -14,6 +15,7 @@ const Feature kFeatures[] = {
     glade::kFeature,  // the pageant at Moonpetal Glade (app/glade.cpp)
     kLeagueFeature,  // 1.0 battles: the league's challengers, champions and boards (workstream B)
     kHollowFeature,  // 1.0 battles: Frostspire Hollow's keeper and floors (workstream B)
+    wildlife::kFeature,  // the valley's critters: your partner's part in a moment (workstream L)
 };
 
 }  // namespace

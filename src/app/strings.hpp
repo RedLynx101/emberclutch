@@ -138,6 +138,39 @@ inline constexpr const char* kRename = "Rename";
 inline constexpr const char* kPersonality = "Personality";
 inline constexpr const char* kRenamed = "A fine new name.";
 
+// The valley's critters (workstream L, core/critters Kind order): what A does near one, the toast
+// when it's befriended (%s: your partner), and the Journal's page.
+inline constexpr const char* kCritterPrompt[7] = {"A: whistle to the birds", "A: play chase", "A: play chase", "A: hold still",
+                                                  "A: croak back", "A: call the ducks", "A: sit quietly"};
+inline constexpr const char* kCritterName[7] = {"Songbirds", "Rabbits", "Snow hares", "Butterflies", "Frogs", "Ducks", "Foxes"};
+inline constexpr const char* kCritterNote[7] = {
+    "Peck about the meadows in little flocks. Walk softly, then whistle.",
+    "Nibble at the woods' edge. Quick to bolt, and quicker to play.",
+    "White as the snow round Frostspire Hollow. Champions at hide-and-seek.",
+    "Dance over the flowers by day. Hold still and one may land.",
+    "Sing at the water's edge, louder at night. Croak back!",
+    "Paddle about in a little line. Call, and over they come.",
+    "Out at dusk by the woods. Shy, but curious about dragons."};
+inline constexpr const char* kCritterFriend[7] = {"A songbird hopped over to say hello!", "%s chased a rabbit. It got away, giggling!",
+                                                  "%s chased a snow hare round the snow!", "A butterfly landed on %s!",
+                                                  "The frog croaked back at you!", "The ducks paddled over to say hi!",
+                                                  "The fox booped noses with %s!"};
+inline constexpr const char* kCritterFriendAlone = "A butterfly landed on your head!";
+inline constexpr const char* kCritterSpotted = "New in the Journal: %s";
+inline constexpr const char* kCritterFirst = "A new critter friend: %s! +%d Gleam";
+inline constexpr const char* kCritterDaily = "A critter friend today: +%d Gleam";
+inline constexpr const char* kCrittersTitle = "Valley critters";
+inline constexpr const char* kCrittersButton = "Critters";
+inline constexpr const char* kCrittersCount = "Friends %d of %d";
+inline constexpr const char* kCrittersUnseen = "???";
+inline constexpr const char* kCrittersUnseenNote = "Not spotted yet. Keep exploring the valley, by day and by night.";
+inline constexpr const char* kCrittersSeen = "Spotted";
+inline constexpr const char* kCrittersFriends = "Friends x%d";
+inline constexpr const char* kCrittersToday = "Today: %d made friends";
+inline constexpr const char* kCrittersTreats = "Treats left: %d";
+inline constexpr const char* kCrittersPlaces = "< Places";
+inline constexpr const char* kCrittersTap = "Tap one for its note.";
+
 // The challenges (Beta WP8-WP11: Sky Rings, the Lantern Trial, Fruit Catch)
 inline constexpr const char* kPromptBoard = "A: the challenges";
 inline constexpr const char* kChallenges = "Challenges";

@@ -51,7 +51,10 @@ const char* const kSfxFiles[] = {
     // 1.0
     "hop-on", "hop-off", "nuzzle", "shutter", "equip", "level-up", "unlock", "notice", "battle-start", "swipe", "hit",
     "hit-big", "whiff", "faint", "stat-up", "stat-down", "victory", "defeat", "pose", "twirl", "ribbon", "cast", "plop",
-    "bite", "reel", "shell-pick", "ice-crack", "step-sand", "step-snow", "burst", "brake"};
+    "bite", "reel", "shell-pick", "ice-crack", "step-sand", "step-snow", "burst", "brake",
+    // the valley's critters (workstream L)
+    "bird-chirp", "bird-flutter", "rabbit-hop", "frog-croak", "duck-quack", "fox-yip", "butterfly-land", "whistle-call",
+    "critter-friend", "leaf-rustle"};
 static_assert(sizeof(kSfxFiles) / sizeof(kSfxFiles[0]) == static_cast<int>(Sfx::Count), "one file per Sfx");
 // Stand-ins (D35) for sound brief 2, in Sfx order from BallRoll: what plays until the sound's
 // own file arrives, and how it's retuned. They match what these moments played before.
@@ -87,6 +90,10 @@ constexpr StandIn kStandIns[] = {
     {Sfx::Confirm, 1.1f, 1.0f},  {Sfx::Flap, 1.8f, 0.5f},    {Sfx::Splash, 1.6f, 0.5f},  {Sfx::Splash, 1.2f, 0.8f},
     {Sfx::BallRoll, 1.4f, 0.6f}, {Sfx::BowlClink, 1.3f, 0.7f}, {Sfx::EggCrack, 0.7f, 0.9f}, {Sfx::Step, 0.9f, 0.6f},
     {Sfx::Step, 0.8f, 0.6f},     {Sfx::DiveWhoosh, 1.2f, 0.8f}, {Sfx::Flap, 0.6f, 0.7f},
+    // the valley's critters (workstream L; their synths are in: these only if one goes missing)
+    {Sfx::Chirp, 1.8f, 0.4f},    {Sfx::Flap, 1.6f, 0.6f},    {Sfx::Thump, 1.6f, 0.4f},   {Sfx::Rumble, 1.8f, 0.4f},
+    {Sfx::Squeak, 0.8f, 0.5f},   {Sfx::Squeak, 1.2f, 0.5f},  {Sfx::Sparkle, 1.5f, 0.5f}, {Sfx::WhistleStart, 1.2f, 0.5f},
+    {Sfx::Confirm, 1.2f, 0.8f},  {Sfx::Brush, 1.0f, 0.6f},
 };
 static_assert(sizeof(kStandIns) / sizeof(kStandIns[0]) == static_cast<int>(Sfx::Count) - kFirstBrief2,
               "a stand-in for every brief 2 sound");

@@ -1,0 +1,92 @@
+# 1.0's sounds (workstream S, tools/audio/make_synth_sfx.py): the game boots with the new effects
+# loaded (sfxcheck logs any effect that still falls back on a stand-in, in the emulator's
+# shots/log.txt), the five new beds held all at once over the den's own three (each loads when
+# first wanted and takes a channel from the pool), let go again (they unload after 3 s of
+# silence: LIN on the overlay comes back), and the 31 new effects played in turn.
+# Beds: 12 cove, 13 caldera, 14 glade, 15 hollow, 16 rush. Effects 81 (hop-on) .. 111 (brake).
+overlay on
+wait 3
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 3
+sfxcheck
+shot s01-den-egg
+bed 12 1
+bed 13 1
+bed 14 1
+bed 15 1
+bed 16 1
+wait 3
+shot s02-new-beds-held
+bed 12 0
+bed 13 0
+bed 14 0
+bed 15 0
+bed 16 0
+wait 5
+shot s03-beds-let-go
+sfx 81
+wait 0.5
+sfx 82
+wait 0.5
+sfx 83
+wait 0.5
+sfx 84
+wait 0.5
+sfx 85
+wait 0.5
+sfx 86
+wait 1.0
+sfx 87
+wait 0.7
+sfx 88
+wait 0.5
+sfx 89
+wait 1.0
+sfx 90
+wait 0.3
+sfx 91
+wait 0.3
+sfx 92
+wait 0.5
+sfx 93
+wait 0.3
+sfx 94
+wait 1.0
+sfx 95
+wait 0.5
+sfx 96
+wait 0.5
+sfx 97
+wait 1.3
+sfx 98
+wait 1.4
+sfx 99
+wait 0.7
+sfx 100
+wait 0.8
+sfx 101
+wait 1.0
+sfx 102
+wait 0.5
+sfx 103
+wait 0.3
+sfx 104
+wait 0.3
+sfx 105
+wait 0.4
+sfx 106
+wait 0.4
+sfx 107
+wait 0.4
+sfx 108
+wait 0.3
+sfx 109
+wait 0.3
+sfx 110
+wait 0.6
+sfx 111
+wait 0.6
+shot s04-after-the-effects

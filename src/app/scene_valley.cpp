@@ -1016,6 +1016,13 @@ void update(App& app, const Input& in) {
     };
     audio::setBed(audio::Bed::Waterfall, near(kPlaceGrotto, 120.0f) * nearGround);
     audio::setBed(audio::Bed::Village, near(kPlaceMarket, 110.0f) * nearGround * (1.0f - night * 0.7f));
+    // 1.0's places: the cove's waves, the caldera's rumble, the glade's chimes (more at night), the
+    // Hollow's cold wind; the rush of air flying fast.
+    audio::setBed(audio::Bed::Cove, std::fmin(1.0f, 1.5f * near(kPlaceCove, 90.0f)) * nearGround);
+    audio::setBed(audio::Bed::Caldera, std::fmin(1.0f, 1.5f * near(kPlaceCaldera, 100.0f)) * nearGround);
+    audio::setBed(audio::Bed::Glade, std::fmin(1.0f, 1.5f * near(kPlaceGlade, 80.0f)) * nearGround * (0.4f + 0.6f * night));
+    audio::setBed(audio::Bed::Hollow, std::fmin(1.0f, 1.5f * near(kPlaceHollow, 60.0f)) * nearGround);
+    if (flying) audio::setBed(audio::Bed::Rush, clampf((partnerSpeed - 16.0f) / 14.0f, 0.0f, 1.0f));
     int wet = 0;
     for (int k = 0; k < 5; ++k) {
         const float a = k * 1.2566f, r = k ? 25.0f : 0.0f;

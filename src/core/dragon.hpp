@@ -149,7 +149,7 @@ void pet(Dragon& d, float amount);    // a stroke of the hand: Love up, a bond p
 void brushed(Dragon& d, float amount); // a stroke of the brush: Love up a little more (D83, D89)
 void addBond(Dragon& d, int amount);  // nothing while upset; tracks the high-water mark
 void bathe(Dragon& d);  // the bath: every region clean, Clean full (the only way, D83)
-void play(Dragon& d, float amount);
+void play(Dragon& d, float amount);  // a game: Play up, Energy spent (half as fun when tired)
 void warmEgg(Dragon& d, float amount);
 // Turning the egg. Returns true when the turn counts (up to kMaxEggTurns, kEggTurnGap apart).
 bool turnEgg(Dragon& d, s64 now);

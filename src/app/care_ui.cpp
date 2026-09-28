@@ -353,6 +353,10 @@ void releaseBall(App& app, Dragon& d) {
     const float dragged = std::hypot(z.x - c.stroke.start.x, z.y - c.stroke.start.y);
     const DenLayout den;
     const Vec3 from{den.player.x, den.player.y + 0.3f, 1.0f};
+    if (d.needs.energy < 5 && (speed > kFlickSpeed || dragged > 30)) {  // worn out: no chasing now (D89)
+        showToastf(app, str::kTooTired, d.name);
+        return;
+    }
     if (speed > kFlickSpeed && vy < 0) {  // flicked up and away: into the den
         const float s = std::fmin(speed, 900.0f);
         app.ball.launch(from, {vx * 0.006f, -vy * 0.011f + 1.2f, 1.5f + s * 0.0035f});

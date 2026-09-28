@@ -118,6 +118,7 @@ inline constexpr const char* kHomeX = "Home";
 inline constexpr const char* kTravelAsk = "Travel to %s?";
 inline constexpr const char* kFindFood = "Found a %s! Into the pouch.";
 inline constexpr const char* kFeedOut = "Feed";
+inline constexpr const char* kTooTired = "%s is too tired to play. Let it rest.";
 inline constexpr const char* kTreatPick = "Something from the pouch:";
 inline constexpr const char* kTreatNone = "The pouch is empty.";
 inline constexpr const char* kTreatAte = "%s ate it up!";

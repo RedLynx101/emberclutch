@@ -251,8 +251,11 @@ void bathe(Dragon& d) {
 }
 
 void play(Dragon& d, float amount) {
-    d.needs.play = clamp100(d.needs.play + amount);
-    d.needs.energy = clamp100(d.needs.energy - amount * 0.1f);
+    // Games spend Energy (D89: a bar of its own, back with sleep): a fetch or a tug about 2, so a
+    // good long game tires it; a tired dragon enjoys it less.
+    const bool tired = d.needs.energy < 10;
+    d.needs.play = clamp100(d.needs.play + amount * (tired ? 0.5f : 1.0f));
+    d.needs.energy = clamp100(d.needs.energy - amount * 0.3f);
     addBond(d, 1);
 }
 

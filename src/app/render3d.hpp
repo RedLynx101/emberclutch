@@ -204,6 +204,7 @@ struct ValleyDragon {
     Vec3 at;
     float heading = 0, pitch = 0, roll = 0;
     float scale = 1;
+    s8 lod = -1;  // the challenges (workstream C): 1 keeps a racer on the light model near or far (-1: by distance)
 };
 constexpr int kMaxOthers = 4;
 
@@ -240,6 +241,9 @@ struct ValleyView {
     int peopleCount = 0;
     ValleyDragon others[kMaxOthers];     // other dragons about (1.0)
     int otherCount = 0;
+    // The challenges (workstream C): the 3D's zero-parallax distance (0: the flown dragon's). Fruit
+    // Catch keeps it on you, so you don't split into two when your dragon runs far off (run 19).
+    float focus = 0;
 };
 void drawValley(App& app, const ValleyView& view, s64 now);
 void releaseValley();  // leaving the valley: its GPU memory back
@@ -254,7 +258,7 @@ const C2D_Image* valleyMap(const Valley& v);
 // ---- The challenges (Beta WP8-WP11, app/scene_challenge.cpp): their things (core/challenge_mesh),
 // drawn after drawValley with its camera, fog and depth. (The den's shelf of trophies and ribbons
 // is drawn with the den's things, from the save.)
-enum class PropKind : u8 { Ring, Crystal, Fruit, Basket, Board, Trophy };
+enum class PropKind : u8 { Ring, Crystal, Fruit, Basket, Board, Trophy, Shell, Bobber, Fish };  // (Shell ..: Driftwood Cove, workstream C)
 struct ChallengeProp {
     PropKind kind = PropKind::Ring;
     u8 variant = 0;            // the fruit's kind, the trophy's challenge

@@ -25,7 +25,7 @@ $shots = Join-Path $sd "shots"
 $runs = Join-Path $root "build\autotest"
 $out = Join-Path $runs ([IO.Path]::GetFileNameWithoutExtension($scriptPath))
 $backup = Join-Path $runs "save-backup"
-$saves = "save.a", "save.b"
+$saves = "save.a", "save.b", "cove.bin"  # (cove.bin: Driftwood Cove's day, kept beside the save: workstream C)
 
 if (-not $NoBuild) { & (Join-Path $PSScriptRoot "build.ps1") }
 # One run at a time on this PC: the emulator and its SD card are shared (runs from other
@@ -94,6 +94,9 @@ if (Test-Path $shots) {
         $img.Dispose()
         $count++
     }
+    # The game's log beside them (each picture's triangles and the like: autotest::log).
+    $gameLog = Join-Path $shots "log.txt"
+    if (Test-Path $gameLog) { Copy-Item $gameLog $out }
 }
 # Contact sheets: four steps per sheet, each its top screen over its bottom screen, labelled.
 $names = @(Get-ChildItem $out -Filter *_top.png | ForEach-Object { $_.BaseName -replace "_top$", "" } | Sort-Object)

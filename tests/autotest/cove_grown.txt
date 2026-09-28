@@ -1,0 +1,49 @@
+# Driftwood Cove with a grown partner (workstream C): it sits further off on your left and the
+# camera stands back for it; fishing by itself for a while (the catch held up, its nibble).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+valley
+wait 4
+travel 16
+wait 3
+cove 1
+autoplay on
+wait 1
+shot g00-ready
+wait 4
+shot g01-wait
+wait 4
+shot g02-later
+wait 4
+shot g03-later2
+wait 4
+shot g04-later3
+wait 4
+shot g05-later4
+wait 4
+shot g06-later5
+wait 4
+shot g07-later6
+quit

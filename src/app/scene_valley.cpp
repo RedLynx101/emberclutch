@@ -14,6 +14,7 @@
 #include "app/audio.hpp"
 #include "app/autotest.hpp"
 #include "app/care_ui.hpp"
+#include "app/cove.hpp"  // Driftwood Cove (workstream C)
 #include "app/dialogue.hpp"
 #include "app/photo.hpp"
 #include "app/render3d.hpp"
@@ -1258,6 +1259,7 @@ void drawTop(App& app) {
         autotest::log("you (%.1f %.1f %.1f) partner (%.1f %.1f %.1f) mode %d", s.you.pos.x, s.you.pos.y, s.you.pos.z, s.pal.pos.x,
                       s.pal.pos.y, s.pal.pos.z, static_cast<int>(s.mode));
     if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
+    if (r3d::ready()) cove::drawCoveThings(app, s.valley, now);  // Driftwood Cove's shells, bobber and catch (workstream C)
     if (feat >= 0) {
         if (vext::feature(feat).drawTop) vext::feature(feat).drawTop(app, s.stage);
         return;

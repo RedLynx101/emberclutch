@@ -58,9 +58,13 @@ struct Set {
     char popup[48] = {};  // a line over the top screen ("+185 Leaping catch!")
     float popupT = 0;
     u32 popupColour = 0;
-    // This frame's things (the challenge adds them each frame).
+    // This frame's things (the challenge adds them each frame): props, and other dragons (the
+    // Sky Rings rivals); the 3D's zero-parallax distance (0: your partner's).
     r3d::ChallengeProp props[kMaxProps];
     int propCount = 0;
+    r3d::ValleyDragon others[r3d::kMaxOthers];
+    int otherCount = 0;
+    float focus = 0;
     // The run.
     float t = 0;          // seconds since it began
     bool finished = false;
@@ -68,6 +72,7 @@ struct Set {
     int score = 0;        // Sky Rings: tenths of a second (0: not finished)
     challenge::Outcome outcome = challenge::Outcome::TryAgain;
     char detail[64] = {}; // a line for the results ("2 missed", "5 of 6 rounds")
+    char detail2[64] = {};  // a second line (Sky Rings: who won, the rivals' times)
 };
 
 Set& get();

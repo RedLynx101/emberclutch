@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "app/audio.hpp"
+#include "app/cove.hpp"  // Driftwood Cove (workstream C)
 #include "app/scenes.hpp"
 #include "core/campaign.hpp"
 #include "core/trainer.hpp"
@@ -29,7 +30,8 @@ constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
                      Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Valley, Hour, Quit,
                      Sound,  // (sounds, 1.0: bed, sfx, sfxcheck)
-                     Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard, Wear };  // (U: Open .. Wear)
+                     Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard, Wear,  // (U: Open .. Wear)
+                     Energy, Cove };  // (workstream C)
 
 struct Cmd {
     Op op = Op::Wait;
@@ -122,6 +124,8 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "autoplay") { c.op = Op::Autoplay; c.a[0] = std::strcmp(rest, "on") == 0; }
     else if (w == "cups") { c.op = Op::Cups; nums(3); }
     else if (w == "valley") { c.op = Op::Valley; }  // out into the valley at the den's door (X did it before run 19)
+    else if (w == "energy") { c.op = Op::Energy; nums(1); }  // energy <0..100>: every dragon's (the challenges, workstream C)
+    else if (w == "cove") { c.op = Op::Cove; nums(1); }      // cove <0 talk to Tam, 1 fish, 2 a shell> (workstream C)
     else if (w == "quit") { c.op = Op::Quit; }
     // Sounds (1.0): `bed <index> <level>` holds a bed at a level every frame (0 lets it go),
     // `sfx <index>` plays a sound effect, `sfxcheck` logs the effects with no file of their own.
@@ -293,13 +297,22 @@ Input next(App& app) {
                 openChallengeCup(app, static_cast<int>(c.a[0]), static_cast<int>(c.a[1]));
                 done = true;
                 break;
-            case Op::Autoplay: setChallengeAutoplay(c.a[0] != 0); done = true; break;
+            case Op::Autoplay:
+                setChallengeAutoplay(c.a[0] != 0);
+                cove::setAutoplay(c.a[0] != 0);  // (Driftwood Cove fishes by itself too)
+                done = true;
+                break;
             case Op::Cups:  // each challenge's highest cup won (its ribbons with it)
                 app.game.world.ribbons = 0;
                 for (int k = 0; k < kChallenges; ++k) {
                     app.game.world.cups[k] = static_cast<u8>(std::clamp(static_cast<int>(c.a[k]), 0, kCups));
                     for (int cup = 0; cup < app.game.world.cups[k]; ++cup) app.game.world.ribbons |= static_cast<u16>(1u << (k * kCups + cup));
                 }
+                done = true;
+                break;
+            case Op::Cove: cove::autotest(app, static_cast<int>(c.a[0])); done = true; break;
+            case Op::Energy:
+                for (int i = 0; i < app.game.dragonCount; ++i) app.game.dragons[i].needs.energy = std::clamp(c.a[0], 0.0f, 100.0f);
                 done = true;
                 break;
             case Op::Quit: app.quit = true; done = true; break;

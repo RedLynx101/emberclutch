@@ -1,0 +1,69 @@
+# 1.0 (D89): Fruit Catch's Flame cup with a grown dragon, played by itself: a breeze each throw
+# (its arrow on the bottom screen), the catch far down the meadow; and the 3D focused on you (run
+# 19: you split in two when the dragon was far): the right eye's picture (dev menu page 2, Stereo
+# preview) while the dragon is far off, beside the flat one. Then the results.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+valley
+wait 4
+travel 10
+wait 3
+energy 100
+cups 1 0 0
+autoplay on
+challenge 0 2
+wait 2.3
+shot w00-ready
+wait 1.1
+shot w01-thrown
+wait 0.9
+shot w02-far-flat
+key SELECT
+wait 0.3
+key R
+wait 0.3
+tap 82 206
+wait 0.3
+key SELECT
+wait 0.1
+shot w03-far-right-eye
+wait 1.2
+shot w04-catch-right-eye
+wait 3.5
+shot w05-next-right-eye
+key SELECT
+wait 0.3
+tap 82 206
+wait 0.3
+key SELECT
+wait 6
+shot w06-later
+wait 14
+shot w07-later2
+wait 16
+shot w08-results
+wait 2
+shot w09-results2
+quit

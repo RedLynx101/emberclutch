@@ -1,8 +1,12 @@
-// Fruit Catch (Beta WP11): at Honeyroot Orchard, with Maple (it's her quest). You flick a fruit
-// from the basket on the bottom screen up and away down the meadow; your dragon watches it go,
-// runs, and leaps high, snaps it up or dives for it at the last moment (a juvenile or a hatchling
-// hops and tumbles: the hop version, softer throws); then it trots back and eats it. Points for
-// the distance and the style, golden pears double; eight throws. A miss: it eats it anyway.
+// Fruit Catch (Beta WP11; 1.0, D89): at Honeyroot Orchard, with Maple (it's her quest). You flick a
+// fruit from the basket on the bottom screen up and away down the meadow; your dragon watches it
+// go, runs, and leaps high, snaps it up or dives for it at the last moment (a juvenile or a
+// hatchling hops and tumbles: the hop version, softer throws); then it trots back and eats it.
+// Points for the distance and the style, golden pears double; eight throws. A miss: it eats it
+// anyway. Its Wing sets how fast it runs, its Wit how far it reaches; from the Flame cup a breeze
+// (a new one each throw, its arrow on the bottom screen) carries the fruit, so the higher cups want
+// reading the wind. The 3D is focused on you (not on your dragon far down the meadow, which split
+// you in two in run 19).
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -33,6 +37,7 @@ struct Play {
     challenge::CatchPlan plan;
     challenge::Catcher catcher;
     challenge::Fruit fruit = challenge::Fruit::Apple;
+    Vec3 wind;                 // this throw's breeze (core/challenges windFor)
     Vec3 home;                 // where the dragon waits, beside you
     float homeHeading = 0;
     Vec3 hand;                 // where a throw leaves your hand
@@ -64,6 +69,7 @@ void nextThrow(Set& s, Play& p) {
     p.step = Step::Ready;
     p.t = 0;
     p.fruit = challenge::fruitFor(p.throwIndex, p.seed);
+    p.wind = challenge::windFor(s.cup, p.throwIndex, p.seed);
     p.fruitShown = p.inMouth = false;
     s.dragonAt = p.home;
     s.dragonHeading = p.homeHeading;
@@ -78,6 +84,7 @@ void throwIt(App& app, Set& s, Play& p, float fx, float fy) {
         audio::playSfx(audio::Sfx::Bounce, 1.3f, 0.3f);  // too soft: it drops back in the basket
         return;
     }
+    t.wind = p.wind;
     p.toss = t;
     p.plan = challenge::planCatch(t, p.catcher, p.groundZ);
     p.step = Step::Flying;
@@ -333,6 +340,10 @@ void update(App& app, Set& s, const Input& in) {
 
 void scene(App& app, Set& s) {
     Play& p = play();
+    // Zero parallax at you, a step behind the camera: the 3D used to focus on your dragon, so when
+    // it ran 20-40 m down the meadow the eyes' separation grew with it and you, close in front,
+    // stood far out of the screen, split in two (run 19).
+    s.focus = length(s.youAt + Vec3{0, 0, 1.0f} - s.eye);
     const Vec3 fwd = forwardOf(s.youHeading), right{-fwd.y, fwd.x, 0};
     r3d::ChallengeProp basket;  // the basket at your feet
     basket.kind = r3d::PropKind::Basket;
@@ -409,6 +420,24 @@ void bottom(App& app, Set& s, const Input& in) {
         const bool gone = i < p.throwIndex || (i == p.throwIndex && p.step != Step::Ready);
         C2D_DrawCircleSolid(x, 48, 0, 8, withAlpha(fromRgb(challenge::fruitColour(f)), gone ? 0.2f : 1.0f));
         if (f == challenge::Fruit::Golden && !gone) C2D_DrawCircleSolid(x - 2, 45, 0, 2.5f, theme::kShell);
+    }
+    // The breeze: an arrow as the meadow lies before you (up the screen: down the meadow), longer
+    // the stronger it blows.
+    {
+        const float strength = length(p.wind);
+        const Vec2 at{286, 36};
+        C2D_DrawCircleSolid(at.x, at.y, 0, 17, withAlpha(theme::kShell, 0.12f));
+        if (strength > 0.01f) {
+            const float h = s.youHeading;
+            const Vec3 fwd = forwardOf(h), right{-std::cos(h), -std::sin(h), 0};  // (your right, facing down the meadow)
+            const float fx = (p.wind.x * right.x + p.wind.y * right.y) / strength, fy = -(p.wind.x * fwd.x + p.wind.y * fwd.y) / strength;
+            const float len = 6 + 9 * clampf(strength / 1.4f, 0.0f, 1.0f);
+            const u32 c = theme::kSkyTeal;
+            C2D_DrawLine(at.x - fx * len, at.y - fy * len, c, at.x + fx * len, at.y + fy * len, c, 3, 0);
+            C2D_DrawTriangle(at.x + fx * (len + 6), at.y + fy * (len + 6), c, at.x + fx * len - fy * 5, at.y + fy * len + fx * 5, c,
+                             at.x + fx * len + fy * 5, at.y + fy * len - fx * 5, c, 0);
+        }
+        textCentered(app, strength > 0.01f ? str::kBreeze : str::kCalm, at.x, at.y + 24, 0.36f, withAlpha(theme::kShell, 0.75f), 60);
     }
     // The score against the goal.
     const Rect bar{40, 66, 240, 10};

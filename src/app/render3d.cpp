@@ -3491,7 +3491,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     g_valleyStats = {};
     perf::Scope timed(perf::Room);
     C3D_Mtx projection, viewM, clip;
-    const float focus = std::fmax(4.0f, length(view.at - view.eye));
+    const float focus = std::fmax(4.0f, view.focus > 0 ? view.focus : length(view.at - view.eye));  // (focus: the challenges)
     topProjection(projection, kValleyNear, kValleyFar, focus);
     lookAt(viewM, view.eye, view.target);
     g_denView = viewM;  // project() works in the valley too
@@ -3709,14 +3709,14 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     mark();
     // A dragon out on the Wanderings, if it's near (D69), and the star dragon in the sky.
     auto another = [&](const Dragon* d, const DenActor* actor, Vec3 at, float heading, float reach, float bank, float grow,
-                       float pitch = 0.0f) {
+                       float pitch = 0.0f, int forceLod = -1) {
         if (!d) return;
         const float box = 5.0f * grow * kindSize(*d);  // (its wings' reach, by its size)
         if (std::hypot(at.x - view.eye.x, at.y - view.eye.y) > reach ||
             outsideView(clip, at - Vec3{box, box, box * 0.5f}, at + Vec3{box, box, box * 1.2f}))
             return;
         static Posed posed;
-        const int lod = length(at - view.eye) > 30.0f ? 1 : 0;
+        const int lod = forceLod >= 0 ? forceLod : length(at - view.eye) > 30.0f ? 1 : 0;
         if (!pose(app, *d, actor, now, lod, posed)) return;
         bindDragons(projection);
         const float plain[3] = {1, 1, 1};
@@ -3735,7 +3735,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     another(view.skyDragon, view.skyActor, view.skyAt, view.skyHeading, 380.0f, -0.35f, 1.8f);  // a legend: larger
     for (int i = 0; i < view.otherCount && i < kMaxOthers; ++i) {  // challengers, wild ones, rivals (1.0)
         const ValleyDragon& o = view.others[i];
-        another(o.dragon, o.actor, o.at, o.heading, 220.0f, -o.roll, o.scale, o.pitch);
+        another(o.dragon, o.actor, o.at, o.heading, 220.0f, -o.roll, o.scale, o.pitch, o.lod);
     }
     mark();
     // The people about (you on foot, the villagers), near enough to see.
@@ -3837,6 +3837,7 @@ namespace {
 
 GpuMesh g_ringMesh, g_crystalMesh, g_fruitMeshes[static_cast<int>(challenge::Fruit::Count)], g_basketMesh, g_boardMesh,
     g_trophyMeshes[kChallenges];
+GpuMesh g_shellMeshes[kShellKinds], g_bobberMesh, g_fishMesh;  // Driftwood Cove (workstream C)
 // The den's shelf: rebuilt when what's been won changes.
 GpuMesh g_shelfMesh;
 u8 g_shelfCups[kChallenges] = {};
@@ -3875,6 +3876,20 @@ GpuMesh* challengeMesh(PropKind kind, int variant) {
             if (!g->vbo) m = trophyMesh(static_cast<Challenge>(c));
             break;
         }
+        case PropKind::Shell: {  // Driftwood Cove (workstream C): shells, the bobber, a fish
+            const int k = variant < kShellKinds ? variant : 0;
+            g = &g_shellMeshes[k];
+            if (!g->vbo) m = shellMesh(k);
+            break;
+        }
+        case PropKind::Bobber:
+            g = &g_bobberMesh;
+            if (!g->vbo) m = bobberMesh();
+            break;
+        case PropKind::Fish:
+            g = &g_fishMesh;
+            if (!g->vbo) m = fishMesh();
+            break;
     }
     if (g && !g->vbo && (m.idx.empty() || !uploadProp(*g, m))) return nullptr;
     return g;

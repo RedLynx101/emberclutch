@@ -354,7 +354,7 @@ void releaseBall(App& app, Dragon& d) {
     const DenLayout den;
     const Vec3 from{den.player.x, den.player.y + 0.3f, 1.0f};
     if (d.needs.energy < 5 && (speed > kFlickSpeed || dragged > 30)) {  // worn out: no chasing now (D89)
-        showToastf(app, str::kTooTired, d.name);
+        showToastf(app, str::kTooTiredToPlay, d.name);
         return;
     }
     if (speed > kFlickSpeed && vy < 0) {  // flicked up and away: into the den

@@ -1,10 +1,12 @@
-// The challenges (Beta WP8-WP11, D73 6A, D74): the scene at the arena (Wren's) and at Honeyroot
-// Orchard (Maple's). A notice board by each opens it: the picker on the bottom screen (the three
-// challenges, their four cups and what each needs, your bests) and the place on the top; then the
-// challenge itself (challenge_rings.cpp, ridden over the valley; challenge_lanterns.cpp in the
-// arena; challenge_fruit.cpp down the orchard); then the results: the score, the cup, a ribbon and
-// the trophy for the den, Gleam, the host's word and a stinger. The valley's landscape is borrowed
-// (scene_valley's) and drawn round it all; leaving goes back out on foot.
+// The challenges (Beta WP8-WP11, D73 6A, D74; 1.0, D89): the scene at the arena (Wren's) and at
+// Honeyroot Orchard (Maple's). A notice board by each opens it: the picker on the bottom screen
+// (the three challenges, their four cups and what each needs, today's prize, your bests) and the
+// place on the top; then the challenge itself (challenge_rings.cpp, a race over the valley;
+// challenge_lanterns.cpp in the arena; challenge_fruit.cpp down the orchard), if your partner has
+// the energy for it; then the results: the score, the cup, a ribbon and the trophy for the den
+// (its first win), Gleam and experience (once a day per cup), the partner's own record, what the
+// next cup needs, the host's word and a stinger. The valley's landscape is borrowed (scene_valley's)
+// and drawn round it all; leaving goes back out on foot.
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -25,6 +27,7 @@
 #include "core/people.hpp"
 #include "core/place_layout.hpp"
 #include "core/rig.hpp"
+#include "core/trainer.hpp"
 #include "core/world.hpp"
 
 namespace ec {
@@ -138,6 +141,11 @@ void backToPicker(App& app) {
 void startCup(App& app) {
     Scene& c = sc();
     Set& s = stage::get();
+    if (s.partner >= 0 && s.partner < app.game.dragonCount) {  // a cup's worth of energy (D89)
+        Dragon& d = app.game.dragons[s.partner];
+        trainer::spendEnergy(d, trainer::kEnergyChallenge);
+        s.shown.needs.energy = d.needs.energy;
+    }
     s.pick = static_cast<Challenge>(c.pick);
     s.cup = c.cup;
     s.place = challenge::placeOf(s.pick);
@@ -145,7 +153,7 @@ void startCup(App& app) {
     s.finished = s.quit = false;
     s.score = 0;
     s.t = 0;
-    s.detail[0] = 0;
+    s.detail[0] = s.detail2[0] = 0;
     s.fx.clear();
     s.breath.clear();
     s.popupT = 0;
@@ -172,6 +180,19 @@ void startCup(App& app) {
     }
 }
 
+// A run starts if the cup's open to this partner (the energy and all), else a word why.
+bool tryStartCup(App& app) {
+    Scene& c = sc();
+    const challenge::Entry e = challenge::entry(app.game, partnerOf(app), static_cast<Challenge>(c.pick), c.cup);
+    if (e == challenge::Entry::Open) {
+        startCup(app);
+        return true;
+    }
+    audio::playSfx(audio::Sfx::Error);
+    if (e == challenge::Entry::Tired) stage::popup(stage::get(), str::kTooTired, theme::kRose);
+    return false;
+}
+
 // The run is over: record it, tell the campaign, a stinger, the host's word.
 void showResults(App& app) {
     Scene& c = sc();
@@ -179,7 +200,21 @@ void showResults(App& app) {
     c.phase = Phase::Results;
     c.resultsT = 0;
     const Challenge ch = s.pick;
-    c.reward = challenge::record(app.game, ch, s.cup, s.outcome, s.score);
+    Dragon* partner = s.partner >= 0 && s.partner < app.game.dragonCount ? &app.game.dragons[s.partner] : nullptr;
+    c.reward = challenge::record(app.game, ch, s.cup, s.outcome, s.score, dayIndex(nowLocal(app)), partner);
+    if (partner) {  // (the one drawn keeps up with its record)
+        s.shown.xp = partner->xp;
+        s.shown.cupsWon = partner->cupsWon;
+    }
+    // Its trophy up on the den's shelf (a cup's first win), a level gained.
+    if (c.reward.firstWin) queueToastf(app, str::kTrophyUp, challenge::cupName(s.cup));
+    if (c.reward.levels > 0 && partner) {
+        char line[64];
+        std::snprintf(line, sizeof(line), str::kLevelUpTo, partner->name, trainer::levelOf(*partner));
+        if (c.reward.firstWin) queueToastf(app, "%s", line);
+        else showToastf(app, "%s", line);
+        audio::playSfx(audio::Sfx::LevelUp);
+    }
     const char* stinger = "results-try-again";
     if (s.outcome == challenge::Outcome::Won) stinger = c.reward.firstWin ? "cup-won" : "results-first";
     else if (s.outcome == challenge::Outcome::Placed) stinger = "results-placed";
@@ -323,6 +358,8 @@ void drawStage(App& app, Set& s) {
         view.shadow = 0.5f * lit * clampf(1.0f - high / 60.0f, 0.0f, 1.0f);
         view.shadowRadius = 1.9f * stage::dragonSize(s) * (1.0f - 0.45f * clampf(high / 60.0f, 0.0f, 1.0f));
     }
+    for (int i = 0; i < s.otherCount && view.otherCount < r3d::kMaxOthers; ++i) view.others[view.otherCount++] = s.others[i];
+    view.focus = s.focus;
     view.eye = s.eye;
     view.target = s.target;
     r3d::drawValley(app, view, now);
@@ -394,6 +431,7 @@ void update(App& app, const Input& in) {
     }
     measureSpeeds(s);
     s.propCount = 0;
+    s.otherCount = 0;
     if (talking(app)) {
         updateTalk(app, in);
     } else if (c.phase == Phase::Picker) {
@@ -408,13 +446,7 @@ void update(App& app, const Input& in) {
         if (in.down & (KEY_L | KEY_R)) audio::playSfx(audio::Sfx::Tap);
         if (in.down & KEY_DLEFT) c.cup = c.cup > challenge::kEmber ? c.cup - 1 : c.cup;
         if (in.down & KEY_DRIGHT) c.cup = c.cup < challenge::kStarfire ? c.cup + 1 : c.cup;
-        if (in.down & KEY_A) {
-            if (challenge::entry(app.game, partnerOf(app), static_cast<Challenge>(c.pick), c.cup) == challenge::Entry::Open) {
-                startCup(app);
-                return;
-            }
-            audio::playSfx(audio::Sfx::Error);
-        }
+        if ((in.down & KEY_A) && tryStartCup(app)) return;
         if (in.down & KEY_B) {
             audio::playSfx(audio::Sfx::Back);
             openValleyAt(app, s.place);
@@ -439,7 +471,7 @@ void update(App& app, const Input& in) {
         if (!s.riding && stage::dragonClipDone(s)) stage::playDragon(s, ClipId::Idle, 0.3f);
         if (stage::personClipDone(s.you)) stage::playPerson(s.you, "idle", 1.0f, 0.3f);
         if (c.autoplay && c.resultsT > 6.0f) backToPicker(app);
-        if (c.resultsT > 1.0f && (in.down & KEY_A)) startCup(app);
+        if (c.resultsT > 1.0f && (in.down & KEY_A)) tryStartCup(app);
         if (c.resultsT > 1.0f && (in.down & KEY_B)) backToPicker(app);
     }
     // The world goes on round it: the meadow (and at the arena the crowd's murmur, the village bed),
@@ -482,6 +514,8 @@ void drawTop(App& app) {
     Scene& c = sc();
     Set& s = stage::get();
     s.propCount = 0;
+    s.otherCount = 0;
+    s.focus = 0;
     if (c.phase == Phase::Picker) {
         addBoards(s);
     } else {
@@ -546,9 +580,16 @@ void drawTop(App& app) {
         textCentered(app, won ? line : s.outcome == challenge::Outcome::Placed ? str::kCupPlaced : str::kCupTryAgain, 200,
                      card.y + 18, 0.66f, withAlpha(theme::kDenPlum, k), 270, Face::Title);
         textCentered(app, s.detail, 200, card.y + 42, 0.5f, withAlpha(theme::kDenPlum, k), 270);
-        std::snprintf(line, sizeof(line), str::kGleamPrize, static_cast<unsigned long>(c.reward.gleam));
-        const char* extra = c.reward.firstWin ? str::kNewRibbon : c.reward.best ? str::kNewBest : "";
-        textCentered(app, line, 200, card.y + 62, 0.48f, withAlpha(theme::rgba(196, 140, 40), k), 270);
+        if (c.reward.paidToday) std::snprintf(line, sizeof(line), "%s", str::kPaidToday);
+        else if (c.reward.gleam) std::snprintf(line, sizeof(line), str::kGleamXp, static_cast<unsigned long>(c.reward.gleam),
+                                               static_cast<unsigned long>(c.reward.xp));
+        else std::snprintf(line, sizeof(line), str::kXpOnly, static_cast<unsigned long>(c.reward.xp));
+        char extra[64] = {};
+        if (c.reward.firstWin) std::snprintf(extra, sizeof(extra), "%s", str::kNewRibbon);
+        else if (c.reward.dragonFirst && partnerOf(app))
+            std::snprintf(extra, sizeof(extra), str::kDragonFirstCup, partnerOf(app)->name, challenge::cupName(s.cup));
+        else if (c.reward.best) std::snprintf(extra, sizeof(extra), "%s", str::kNewBest);
+        textCentered(app, line, 200, card.y + 62, c.reward.paidToday ? 0.42f : 0.48f, withAlpha(theme::rgba(196, 140, 40), k), 270);
         textCentered(app, extra, 200, card.y + 81, 0.44f, withAlpha(theme::kRose, k), 270);
     }
 }
@@ -580,11 +621,22 @@ void pickerBottom(App& app, const Input& in) {
         }
     }
     const Challenge ch = static_cast<Challenge>(c.pick);
-    text(app, challenge::blurb(ch), 160, 94, 0.4f, withAlpha(theme::kShell, 0.85f), C2D_AlignCenter, 304);
+    text(app, challenge::blurb(ch), 160, 93, 0.4f, withAlpha(theme::kShell, 0.85f), C2D_AlignCenter, 304);
+    // Today's prize for the cup picked: its first win's, the day's, or won already (D89).
+    {
+        const s32 today = dayIndex(nowLocal(app));
+        if (!challenge::ribbon(app.game, ch, c.cup))
+            std::snprintf(line, sizeof(line), str::kPrizeFirst, static_cast<unsigned long>(challenge::firstPrize(c.cup)));
+        else if (!trainer::claimedToday(app.game, challenge::claimBit(ch, c.cup), today))
+            std::snprintf(line, sizeof(line), str::kPrizeToday, static_cast<unsigned long>(challenge::dayPrize(c.cup)));
+        else
+            std::snprintf(line, sizeof(line), "%s", str::kPrizeTaken);
+        text(app, line, 160, 106, 0.38f, theme::kClutchGold, C2D_AlignCenter, 304);
+    }
     // The four cups.
     const Dragon* partner = partnerOf(app);
     for (int cup = challenge::kEmber; cup <= challenge::kStarfire; ++cup) {
-        const float x = 44.0f + (cup - 1) * 77.0f, y = 138;
+        const float x = 44.0f + (cup - 1) * 77.0f, y = 144;
         const bool on = c.cup == cup;
         const bool open = challenge::entry(app.game, partner, ch, cup) == challenge::Entry::Open;
         const bool won = challenge::ribbon(app.game, ch, cup);
@@ -605,11 +657,10 @@ void pickerBottom(App& app, const Input& in) {
         const char* nm = challenge::cupName(cup);
         char shortName[16];
         std::snprintf(shortName, sizeof(shortName), "%.*s", static_cast<int>(std::strcspn(nm, " ")), nm);
-        textCentered(app, shortName, x, y + 34, 0.4f, on ? theme::kClutchGold : theme::kShell, 76);
+        textCentered(app, shortName, x, y + 32, 0.4f, on ? theme::kClutchGold : theme::kShell, 76);
         if (in.released && std::hypot(in.rx - x, in.ry - y) < 26) {
             if (on && open) {
-                startCup(app);
-                return;
+                if (tryStartCup(app)) return;
             }
             c.cup = cup;
             audio::playSfx(audio::Sfx::Tap);
@@ -620,30 +671,27 @@ void pickerBottom(App& app, const Input& in) {
     const int best = challenge::best(app.game, ch, c.cup);
     if (e != challenge::Entry::Open) {
         std::snprintf(line, sizeof(line), "%s", challenge::entryText(e));
-    } else if (ch == Challenge::SkyRings) {
-        if (best) std::snprintf(line, sizeof(line), str::kBestTime, best / 10.0f);
-        else std::snprintf(line, sizeof(line), "%s", str::kNoBest);
     } else {
-        const int goal = ch == Challenge::FruitCatch
-                             ? challenge::fruitSetup(c.cup, partner && challenge::young(*partner)).goal
-                             : 0;
-        char b[24] = {}, g[24] = {};
-        if (best) std::snprintf(b, sizeof(b), str::kBestPoints, best);
-        else std::snprintf(b, sizeof(b), "%s", str::kNoBest);
-        if (goal) std::snprintf(g, sizeof(g), str::kGoalPoints, goal);
-        std::snprintf(line, sizeof(line), goal ? "%s    %s" : "%s%s", b, g);
+        // Your best, and what the cup asks: rivals to beat, points, lanterns and rounds.
+        const challenge::CupNeeds n = challenge::cupNeeds(ch, c.cup, partner && challenge::young(*partner));
+        char b[24] = {}, g[32] = {};
+        if (!best) std::snprintf(b, sizeof(b), "%s", str::kNoBest);
+        else if (ch == Challenge::SkyRings) std::snprintf(b, sizeof(b), str::kBestTime, best / 10.0f);
+        else std::snprintf(b, sizeof(b), str::kBestPoints, best);
+        if (ch == Challenge::SkyRings) std::snprintf(g, sizeof(g), str::kBeatRivals, n.rivals);
+        else if (ch == Challenge::FruitCatch) std::snprintf(g, sizeof(g), str::kGoalPoints, n.goal);
+        else std::snprintf(g, sizeof(g), str::kTrialNeeds, n.lanterns, n.rounds);
+        std::snprintf(line, sizeof(line), "%s    %s", b, g);
     }
-    textCentered(app, line, 160, 192, 0.42f, e == challenge::Entry::Open ? theme::kShell : theme::kRose, 300);
+    textCentered(app, line, 160, 193, 0.42f, e == challenge::Entry::Open ? theme::kShell : theme::kRose, 300);
     if (button(app, {8, 204, 92, 32}, str::kLeave, in)) {
         audio::playSfx(audio::Sfx::Back);
         openValleyAt(app, s.place);
         return;
     }
     const bool open = e == challenge::Entry::Open;
-    if (button(app, {108, 204, 204, 32}, str::kStartCup, in, open ? theme::kClutchGold : withAlpha(theme::kAsh, 0.6f))) {
-        if (open) startCup(app);
-        else audio::playSfx(audio::Sfx::Error);
-    }
+    if (button(app, {108, 204, 204, 32}, str::kStartCup, in, open ? theme::kClutchGold : withAlpha(theme::kAsh, 0.6f)))
+        tryStartCup(app);
 }
 
 void resultsBottom(App& app, const Input& in) {
@@ -660,19 +708,39 @@ void resultsBottom(App& app, const Input& in) {
     text(app, c.hostLine, 22, 64, 0.42f, theme::kShell, C2D_AlignLeft, 280);
     // The run, and your best.
     const int best = challenge::best(app.game, ch, s.cup);
-    text(app, s.detail, 160, 104, 0.48f, theme::kShell, C2D_AlignCenter, 300);
+    text(app, s.detail, 160, 98, 0.48f, theme::kShell, C2D_AlignCenter, 300);
+    if (s.detail2[0]) text(app, s.detail2, 160, 114, 0.42f, withAlpha(theme::kShell, 0.8f), C2D_AlignCenter, 300);
     if (ch == Challenge::SkyRings) std::snprintf(line, sizeof(line), str::kBestTime, best / 10.0f);
     else std::snprintf(line, sizeof(line), str::kBestPoints, best);
-    if (best) text(app, line, 160, 124, 0.44f, withAlpha(theme::kShell, 0.75f), C2D_AlignCenter, 300);
+    if (best) text(app, line, 160, s.detail2[0] ? 129 : 118, 0.42f, withAlpha(theme::kShell, 0.7f), C2D_AlignCenter, 300);
     // What's on the shelf for it now: a ribbon per cup won.
     for (int cup = challenge::kEmber; cup <= challenge::kStarfire; ++cup) {
         const float x = 106.0f + (cup - 1) * 36.0f;
         const bool won = challenge::ribbon(app.game, ch, cup);
-        C2D_DrawCircleSolid(x, 160, 0, 12, won ? fromRgb(challenge::cupColour(cup)) : withAlpha(theme::kShell, 0.15f));
-        if (won) star(x, 160, 6, theme::kShell);
+        C2D_DrawCircleSolid(x, 158, 0, 11, won ? fromRgb(challenge::cupColour(cup)) : withAlpha(theme::kShell, 0.15f));
+        if (won) star(x, 158, 6, theme::kShell);
+    }
+    // After a win: what the next cup asks (trophies that mean something, D89).
+    if (s.outcome == challenge::Outcome::Won) {
+        const Dragon* partner = partnerOf(app);
+        char next[80] = {};
+        const char* who = "";
+        if (s.cup >= challenge::kStarfire) {
+            std::snprintf(next, sizeof(next), "%s", str::kAllCupsWon);
+        } else {
+            const int cup = s.cup + 1;
+            const challenge::CupNeeds n = challenge::cupNeeds(ch, cup, partner && challenge::young(*partner));
+            if (ch == Challenge::SkyRings) std::snprintf(next, sizeof(next), str::kNextRivals, challenge::cupName(cup), n.rivals);
+            else if (ch == Challenge::FruitCatch) std::snprintf(next, sizeof(next), str::kNextGoal, challenge::cupName(cup), n.goal);
+            else std::snprintf(next, sizeof(next), str::kNextTrial, challenge::cupName(cup), n.lanterns, n.rounds, n.hearts);
+            if (partner && n.grown && partner->stage != Stage::Adult) who = str::kNextGrown;
+            else if (partner && n.juvenile && partner->stage == Stage::Hatchling) who = str::kNextJuvenile;
+        }
+        text(app, next, 160, 172, 0.4f, theme::kClutchGold, C2D_AlignCenter, 304);
+        if (who[0]) text(app, who, 160, 184, 0.36f, withAlpha(theme::kShell, 0.7f), C2D_AlignCenter, 304);
     }
     if (c.resultsT > 1.0f) {
-        if (button(app, {8, 196, 146, 38}, str::kAgain, in)) startCup(app);
+        if (button(app, {8, 196, 146, 38}, str::kAgain, in)) tryStartCup(app);
         else if (button(app, {166, 196, 146, 38}, str::kDone, in, theme::kClutchGold)) backToPicker(app);
     }
 }

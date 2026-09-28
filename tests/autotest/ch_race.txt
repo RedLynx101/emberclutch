@@ -1,0 +1,76 @@
+# 1.0 (D89): Sky Rings as a race. The Ember cup against two rivals, flown by the expert autopilot
+# (bursting along the straights, braking into turns): the countdown with the rivals beside you,
+# the race (their name tags, the standings, the Stamina meter, the burst's speed lines), the
+# results with the prize and what the Flame cup needs; the picker again (today's prize won) and a
+# tired dragon turned away; then the Starfire cup's field at the start and a little way in. The
+# log has each picture's triangles (three rivals in view).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+valley
+wait 4
+travel 6
+wait 3
+energy 100
+challenge 1 0
+wait 3
+shot r00-picker
+autoplay on
+key A
+wait 2
+shot r01-countdown
+wait 3
+shot r02-go
+wait 5
+shot r03-race
+wait 8
+shot r04-race2
+wait 10
+shot r05-race3
+wait 12
+shot r06-race4
+wait 12
+shot r07-race5
+wait 14
+shot r08-results
+wait 2
+shot r09-results2
+wait 5
+shot r10-picker-after
+energy 5
+key A
+wait 0.4
+shot r11-tired
+energy 100
+cups 0 3 0
+challenge 1 4
+wait 5.5
+shot r12-starfire-start
+wait 5
+shot r13-starfire-pack
+wait 8
+shot r14-starfire-later
+key X
+wait 1
+quit

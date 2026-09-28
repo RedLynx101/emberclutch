@@ -460,6 +460,27 @@ void playMusic(const char* slug) {
 
 const char* currentMusic() { return g_current; }
 
+bool hasMusic(const char* slug) {
+    struct Seen {
+        char slug[24];
+        bool there;
+    };
+    static Seen seen[16];
+    static int count = 0;
+    for (int i = 0; i < count; ++i)
+        if (std::strcmp(seen[i].slug, slug) == 0) return seen[i].there;
+    char path[64];
+    std::snprintf(path, sizeof(path), "romfs:/music/%s.ogg", slug);
+    FILE* f = std::fopen(path, "rb");
+    const bool there = f != nullptr;
+    if (f) std::fclose(f);
+    if (count < 16) {
+        std::snprintf(seen[count].slug, sizeof(seen[count].slug), "%s", slug);
+        seen[count++].there = there;
+    }
+    return there;
+}
+
 void playStinger(const char* slug) {
     if (!g_ok || !slug) return;
     LightLock_Lock(&g_lock);

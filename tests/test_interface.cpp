@@ -9,6 +9,7 @@
 #include "check.hpp"
 #include "core/campaign.hpp"
 #include "core/guide.hpp"
+#include "core/league.hpp"
 #include "core/place_layout.hpp"
 #include "core/save.hpp"
 #include "core/tips.hpp"
@@ -148,6 +149,13 @@ TEST(guide_targets_in_the_valley) {
     // A place tracked from the Journal's places: its door once found.
     t = guide::target(s, v, {Tracked::Place, kPlaceTrailhead}, den);
     CHECK(t.valid && !t.area && t.place == kPlaceTrailhead);
+    // The league's board: the challenger to battle next, where they stand (the one tracked, else
+    // the first not beaten).
+    const int next = league::nextChallenger(s);
+    t = guide::target(s, v, {Tracked::BattleBoard, 0}, den);
+    CHECK(t.valid && t.place == league::challenger(next).place);
+    const Vec2 stands = placeToWorld(*v.place(league::challenger(next).place), league::spotOf(next));
+    CHECK(std::hypot(t.at.x - stands.x, t.at.y - stands.y) < 0.5f);
     CHECK(!guide::target(s, v, {}, den).valid);
     // Every quest's every step points somewhere sensible (or nowhere, for growing up).
     for (int q = 0; q < campaign::questCount(); ++q)

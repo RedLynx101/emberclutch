@@ -47,6 +47,8 @@ void openChallenges(App& app, int place);
 // A talk just ended that was Wren's hello or her "pick a challenge": the picker follows it.
 bool wrenOpensChallenges(const App& app);
 const char* challengeMusic(const App& app);
+// The valley's music near a 1.0 place with its own (Suno batch 4, as each file arrives); null: the valley's.
+const char* valleyPlaceMusic(const App& app);
 // Scripted runs (autotest): straight into a cup; the challenges play themselves while on.
 void openChallengeCup(App& app, int challenge, int cup);
 void setChallengeAutoplay(bool on);

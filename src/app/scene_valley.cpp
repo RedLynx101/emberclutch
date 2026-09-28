@@ -52,6 +52,7 @@
 
 namespace ec {
 namespace {
+const char* g_placeMusic = nullptr;  // a 1.0 place's own music near it (set with the beds each frame)
 
 enum class Mode : u8 { OnFoot, Riding, FreeCam };
 
@@ -1097,6 +1098,13 @@ void update(App& app, const Input& in) {
         return p ? clampf(1.0f - std::hypot(at.x - p->at.x, at.y - p->at.y) / radius, 0.0f, 1.0f) : 0.0f;
     };
     audio::setBed(audio::Bed::Waterfall, near(kPlaceGrotto, 120.0f) * nearGround);
+    // The places' own music once it's in (Suno batch 4), on the ground or low over them.
+    g_placeMusic = nullptr;
+    if (nearGround > 0.5f) {
+        if (near(kPlaceHollow, 70.0f) > 0 && audio::hasMusic("hollow-deep")) g_placeMusic = "hollow-deep";
+        else if (near(kPlaceCove, 90.0f) > 0 && night < 0.5f && audio::hasMusic("cove-day")) g_placeMusic = "cove-day";
+        else if (near(kPlaceGlade, 80.0f) > 0 && audio::hasMusic("glade-moon")) g_placeMusic = "glade-moon";
+    }
     audio::setBed(audio::Bed::Village, near(kPlaceMarket, 110.0f) * nearGround * (1.0f - night * 0.7f));
     // 1.0's places: the cove's waves, the caldera's rumble, the glade's chimes (more at night), the
     // Hollow's cold wind; the rush of air flying fast.
@@ -1617,6 +1625,11 @@ void valleySky(s64 now, Rgb& top, Rgb& horizon, Rgb& tint) {
     top = s.top;
     horizon = s.horizon;
     tint = s.tint;
+}
+
+const char* valleyPlaceMusic(const App& app) {
+    (void)app;
+    return g_placeMusic;
 }
 
 }  // namespace ec

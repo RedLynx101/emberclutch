@@ -643,7 +643,10 @@ void drawLeagueBoards(App& app, const Valley& v, s64 now) {
 
 const char* battleMusic(const App& app) {
     (void)app;
-    return bview::running() ? "cup-day" : nullptr;
+    if (!bview::running()) return nullptr;
+    const League& s = lg();
+    if (s.mode == Mode::Battle && s.id >= 0 && league::isChampion(s.id) && audio::hasMusic("battle-final")) return "battle-final";
+    return audio::hasMusic("battle-duel") ? "battle-duel" : "cup-day";  // (Suno batch 4 as it arrives)
 }
 
 void battleCommand(App& app, const char* args) {

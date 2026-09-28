@@ -63,6 +63,8 @@ bool ok();
 // Fade to `slug` (romfs:/music/<slug>.ogg). Same track again = no-op. nullptr = silence.
 void playMusic(const char* slug);
 const char* currentMusic();
+// True if romfs has the track (looked for once per slug): new music takes over as it arrives.
+bool hasMusic(const char* slug);
 
 // A one-shot music cue (e.g. the hatching stinger) that ducks the loop, then resumes it.
 void playStinger(const char* slug);

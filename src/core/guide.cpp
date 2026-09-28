@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "core/campaign.hpp"
+#include "core/league.hpp"
 #include "core/place_layout.hpp"
 #include "core/save.hpp"
 #include "core/valley.hpp"
@@ -155,9 +156,12 @@ int trackables(const SaveData& s, Goal* out, int cap) {
 Target target(const SaveData& s, const Valley& v, const Goal& g, Vec2 from) {
     switch (g.kind) {
         case Tracked::Quest: return questTarget(s, v, g.id, from);
-        // The leagues' boards and the Hollow's mouth (workstreams B and P may point these at the
-        // next challenger or the day's show once they stand about the valley).
-        case Tracked::BattleBoard: return spot(v, kPlaceArena, {0, 12});
+        // The league: the challenger to battle next (the one tracked from the board, else the first
+        // not yet beaten, then the champion at the caldera); the shows' glade; the Hollow's mouth.
+        case Tracked::BattleBoard: {
+            const int id = league::nextChallenger(s);
+            return spot(v, league::challenger(id).place, league::spotOf(id));
+        }
         case Tracked::ShowBoard: return placeTarget(s, v, kPlaceGlade);
         case Tracked::Hollow: return placeTarget(s, v, kPlaceHollow);
         case Tracked::Place: return placeTarget(s, v, g.id);

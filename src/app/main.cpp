@@ -62,6 +62,7 @@ Input readInput() {
 const char* musicFor(const App& app) {
     if (app.scene == SceneId::Market) return "market-bustle";
     if (app.scene == SceneId::Valley && battleMusic(app)) return battleMusic(app);  // 1.0 battles (workstream B)
+    if (app.scene == SceneId::Valley && valleyPlaceMusic(app)) return valleyPlaceMusic(app);  // Suno batch 4, as it arrives
     if (app.scene == SceneId::Valley) return isNight(nowLocal(app)) ? "valley-night" : "valley-day";  // batch 3
     if (app.scene == SceneId::Challenge) return challengeMusic(app);  // Beta WP8: cup day
     if (app.scene == SceneId::Wardrobe) return wardrobeMusic(app);    // the pageant: the music it was opened to

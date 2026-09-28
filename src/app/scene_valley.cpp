@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "app/audio.hpp"
+#include "app/battle_feature.hpp"  // 1.0 battles (workstream B)
 #include "app/dialogue.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
@@ -1128,6 +1129,7 @@ void drawTop(App& app) {
     }
     if (r3d::ready()) r3d::drawValley(app, view, now);
     if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
+    if (r3d::ready()) drawLeagueBoards(app, s.valley, now);  // 1.0 battles: the league's boards (workstream B)
     if (feat >= 0) {
         if (vext::feature(feat).drawTop) vext::feature(feat).drawTop(app, s.stage);
         return;

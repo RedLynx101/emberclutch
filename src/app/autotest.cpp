@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "app/battle_feature.hpp"  // 1.0 battles (workstream B)
 #include "app/scenes.hpp"
 #include "core/campaign.hpp"
 #include "core/clock.hpp"
@@ -25,7 +26,8 @@ constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
 enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
-                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Quit };
+                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Quit,
+                     Battle /* 1.0 battles (workstream B) */ };
 
 struct Cmd {
     Op op = Op::Wait;
@@ -116,6 +118,7 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "autoplay") { c.op = Op::Autoplay; c.a[0] = std::strcmp(rest, "on") == 0; }
     else if (w == "cups") { c.op = Op::Cups; nums(3); }
     else if (w == "quit") { c.op = Op::Quit; }
+    else if (w == "battle") { c.op = Op::Battle; c.text = rest; }  // 1.0 battles (workstream B)
     else return false;
     return true;
 }
@@ -265,7 +268,12 @@ Input next(App& app) {
                 openChallengeCup(app, static_cast<int>(c.a[0]), static_cast<int>(c.a[1]));
                 done = true;
                 break;
-            case Op::Autoplay: setChallengeAutoplay(c.a[0] != 0); done = true; break;
+            case Op::Autoplay:
+                setChallengeAutoplay(c.a[0] != 0);
+                battleCommand(app, c.a[0] != 0 ? "auto on" : "auto off");  // 1.0 battles (workstream B)
+                done = true;
+                break;
+            case Op::Battle: battleCommand(app, c.text.c_str()); done = true; break;  // 1.0 battles (workstream B)
             case Op::Cups:  // each challenge's highest cup won (its ribbons with it)
                 app.game.world.ribbons = 0;
                 for (int k = 0; k < kChallenges; ++k) {

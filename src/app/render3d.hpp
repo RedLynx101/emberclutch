@@ -201,6 +201,7 @@ struct ValleyDragon {
     Vec3 at;
     float heading = 0, pitch = 0, roll = 0;
     float scale = 1;
+    float lodFar = 30.0f;  // metres from the camera past which its lighter model draws (1.0 battles, workstream B)
 };
 constexpr int kMaxOthers = 4;
 

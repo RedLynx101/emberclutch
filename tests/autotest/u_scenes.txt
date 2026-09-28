@@ -1,0 +1,72 @@
+# 1.0 interface (U): the Market's and the Wanderings' top screens in the storybook look. Each of
+# the Market's pages lights its stall (food, the day's goods, Maple's trade, the egg of the day),
+# by day and by night; the Wanderings: the one picked by the signpost, out along the trail as the
+# steps add up (smaller and further), and home with its finds on a picnic blanket.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+# Grown (dev: breed-ready), some Gleam and trinkets; no tips over these pictures.
+key SELECT
+wait 0.3
+tap 238 206
+wait 0.3
+key SELECT
+wait 0.5
+tips seen
+gleam 640
+hoard 2
+open market
+wait 2
+shot m01-food
+key R
+wait 0.6
+shot m02-goods
+tap 121 100
+wait 0.6
+shot m03-goods-picked
+key R
+wait 0.6
+shot m04-trade
+key R
+wait 1.2
+shot m05-egg
+skip 12
+wait 1
+shot m06-night-egg
+key L
+wait 0.5
+shot m07-night-trade
+key L
+key L
+wait 0.5
+shot m08-night-food
+skip 12
+open wander
+wait 2
+shot w01-pick
+tap 91 217
+wait 1.5
+shot w02-out
+wander 1800
+wait 1
+shot w03-pond
+wander 2400
+wait 1
+shot w04-ridge
+wander 3000
+wait 1
+shot w05-far
+tap 91 217
+wait 1.5
+shot w06-finds
+quit

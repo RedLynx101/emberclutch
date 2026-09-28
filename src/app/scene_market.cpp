@@ -7,8 +7,10 @@
 #include "app/care_ui.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
+#include "app/storybook.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
+#include "app/tips_ui.hpp"
 #include "app/ui_draw.hpp"
 #include "core/clock.hpp"
 #include "core/egg.hpp"
@@ -20,7 +22,6 @@
 namespace ec {
 namespace {
 
-u32 col(u8 r, u8 g, u8 b, float a = 1.0f) { return withAlpha(theme::rgba(r, g, b), a); }
 
 enum Tab : u8 { kFood, kGoods, kSell, kEgg, kTabs };
 
@@ -42,42 +43,188 @@ void update(App& app, const Input& in) {
     }
 }
 
+// ------------------------------------------------------------------ the top screen (1.0, D89)
+// The market square as a storybook picture (workstream U): the sky and its light by the time of
+// day, cottages and trees behind, bunting overhead, and four stalls in a row, one for each page
+// below (food, the day's goods, Maple's trade in trinkets, the egg of the day), each showing
+// what it has; the page you're on lights its stall. A parchment card says what's in front of you.
+constexpr float kStallW = 88, kStallY = 146;  // a stall's width; its counter's top
+float stallX(int tab) { return 12.0f + tab * 96.0f; }
+
+void stall(App& app, const paint::Light& l, int tab, bool on) {
+    namespace pal = theme::paint;
+    const float x = stallX(tab), w = kStallW, cx = x + w / 2;
+    if (on) glow(cx, 128, 56, theme::kClutchGold, 0.45f + 0.1f * std::sin(app.t * 2.0f));
+    // Posts, then the counter: a front board with the stall's name, a lighter plank on top.
+    C2D_DrawRectSolid(x + 3, 104, 0, 5, 86, paint::lit(l, pal::kWoodDark));
+    C2D_DrawRectSolid(x + w - 8, 104, 0, 5, 86, paint::lit(l, pal::kWoodDark));
+    C2D_DrawRectSolid(x, kStallY + 4, 0, w, 40, paint::lit(l, pal::kWood));
+    C2D_DrawRectSolid(x - 3, kStallY, 0, w + 6, 6, paint::lit(l, pal::kWoodLight));
+    for (int k = 1; k < 3; ++k)  // the boards of its front
+        C2D_DrawRectSolid(x, kStallY + 4 + k * 13, 0, w, 1.2f, paint::lit(l, pal::kWoodDark, 0.5f));
+    static const char* const kNames[4] = {str::kStallFood, str::kStallGoods, str::kStallTrade, str::kStallEgg};
+    const Rect plaque{x + 8, kStallY + 13, w - 16, 18};
+    panel(plaque, on ? theme::kClutchGold : paint::lit(l, pal::kAwningCream));
+    textCentered(app, kNames[tab], cx, plaque.y + plaque.h / 2, 0.42f, theme::kDenPlum, plaque.w - 6);
+    // The awning: stripes in the stall's colour and cream, scalloped at its edge.
+    const Rgb stripe = pal::kAwning[tab];
+    constexpr int kStripes = 6;
+    const float tw = (w - 8) / kStripes, bw = (w + 10) / kStripes;  // a stripe's width at the top and the edge
+    for (int s = 0; s < kStripes; ++s) {
+        const u32 c = paint::lit(l, s % 2 ? pal::kAwningCream : stripe);
+        const float tl = x + 4 + s * tw, tr = tl + tw, bl = x - 5 + s * bw, br = bl + bw;
+        C2D_DrawTriangle(tl, 84, c, tr, 84, c, br, 104, c, 0);
+        C2D_DrawTriangle(tl, 84, c, br, 104, c, bl, 104, c, 0);
+        C2D_DrawCircleSolid(bl + bw * 0.5f, 104, 0, bw * 0.5f, c);
+    }
+    C2D_DrawRectSolid(x + 4, 82, 0, w - 8, 3, paint::lit(l, pal::kWoodDark));
+    // A lantern at its corner: bright on the stall you're at.
+    if (on || l.night + l.evening > 0.3f) paint::lantern(l, x + w - 6, 118, on ? 7.0f : 5.5f, app.t + tab);
+}
+
+// What each stall has out on its counter.
+void stallWares(App& app, const paint::Light& l, int tab, const Item* today, s32 day) {
+    namespace pal = theme::paint;
+    const float x = stallX(tab), cx = x + kStallW / 2, top = kStallY;
+    switch (tab) {
+        case kFood:  // two baskets of the day's foods
+            for (int k = 0; k < 2; ++k) {
+                const float bx = cx - 21 + k * 42;
+                care::drawFood(static_cast<Food>((day + k * 3) % static_cast<int>(Food::Count)), bx - 5, top - 16, 0.34f);
+                care::drawFood(static_cast<Food>((day + k * 3 + 1) % static_cast<int>(Food::Count)), bx + 6, top - 13, 0.34f);
+                C2D_DrawRectSolid(bx - 17, top - 10, 0, 34, 10, paint::lit(l, pal::kStraw));  // the basket's front
+                C2D_DrawRectSolid(bx - 17, top - 7, 0, 34, 1.2f, paint::lit(l, pal::kWood, 0.6f));
+            }
+            break;
+        case kGoods:  // the day's four things (a spot sold today stays bare); the one picked held up
+            for (int k = 0; k < kStallSpots; ++k) {
+                if (today[k] == Item::Count) continue;
+                const bool picked = app.marketTab == kGoods && app.goodsPick == k;
+                if (picked) continue;
+                care::drawItem(today[k], x + 12 + k * 21, top - 9, 0.3f);
+            }
+            if (app.marketTab == kGoods && app.goodsPick < kStallSpots && today[app.goodsPick] != Item::Count) {
+                const float bob = 3 * std::sin(app.t * 1.6f);
+                C2D_DrawEllipseSolid(cx - 16, top - 5, 0, 32, 6, withAlpha(theme::kDenPlum, 0.25f));
+                care::drawItem(today[app.goodsPick], cx, top - 30 + bob, 0.7f);
+            }
+            break;
+        case kSell: {  // Maple's scale, and the trinkets she'd buy from your hoard
+            const u32 brass = paint::lit(l, pal::kCoin), dark = paint::lit(l, pal::kWoodDark);
+            C2D_DrawRectSolid(cx - 1.5f, top - 34, 0, 3, 34, dark);
+            C2D_DrawRectSolid(cx - 26, top - 34, 0, 52, 3, brass);
+            C2D_DrawEllipseSolid(cx - 34, top - 18, 0, 20, 6, brass);
+            C2D_DrawEllipseSolid(cx + 14, top - 18, 0, 20, 6, brass);
+            C2D_DrawLine(cx - 24, top - 32, dark, cx - 30, top - 16, dark, 1, 0);
+            C2D_DrawLine(cx - 24, top - 32, dark, cx - 18, top - 16, dark, 1, 0);
+            C2D_DrawLine(cx + 24, top - 32, dark, cx + 18, top - 16, dark, 1, 0);
+            C2D_DrawLine(cx + 24, top - 32, dark, cx + 30, top - 16, dark, 1, 0);
+            int shown = 0;
+            for (int k = 0; k < kTrinkets && shown < 2; ++k)
+                if (app.game.hoard[k] > 0) paint::trinket(static_cast<Trinket>(k), shown++ ? cx + 24 : cx - 24, top - 21, 10);
+            paint::coinPile(cx + 26, top - 2, 9, 4);
+            break;
+        }
+        default: {  // the egg of the day on a straw nest (the 3D egg is drawn over it on its page)
+            C2D_DrawEllipseSolid(cx - 22, top - 9, 0, 44, 13, paint::lit(l, pal::kStraw));
+            if (app.marketTab != kEgg || !r3d::ready()) {
+                const DailyEgg e = dailyEgg(app.game, day);
+                if (app.game.eggBoughtDay != day) {
+                    const KindInfo& k = kindInfo(e.kind);
+                    egg(cx, top - 20, 20, 26, k.variants[e.variant % kKindVariants].egg[0], elementGlow(k.elements[0]), 0.6f);
+                }
+            }
+            break;
+        }
+    }
+}
+
 void drawTop(App& app) {
-    // The market square: sky, stalls with striped awnings, bunting.
-    verticalGradient(0, 0, kTopW, kScreenH, col(140, 190, 236), col(250, 226, 186));
-    C2D_DrawRectSolid(0, 190, 0, kTopW, 50, col(214, 190, 150));
-    for (int i = 0; i < 4; ++i) {
-        const float x = 20.0f + i * 96;
-        C2D_DrawRectSolid(x, 132, 0, 76, 60, col(200, 168, 128));
-        C2D_DrawRectSolid(x + 4, 150, 0, 68, 18, col(170, 130, 90));
-        for (int s = 0; s < 5; ++s)
-            C2D_DrawRectSolid(x - 4 + s * 17, 112, 0, 9, 22, s % 2 ? col(250, 240, 220) : col(214, 86, 70));
+    namespace pal = theme::paint;
+    const s64 now = nowLocal(app);
+    const s32 day = dayIndex(now);
+    const paint::Light l = paint::lightFor(now);
+    paint::sky(l, app.t, 150);
+    paint::clouds(l, app.t, 60, 3.0f);
+    // Behind the square: hills, the village's cottages and trees.
+    paint::hill(l, 90, 112, 300, 60, pal::kHillFar, 2.6f);
+    paint::hill(l, 320, 104, 320, 70, pal::kHillFar, 2.6f);
+    paint::tree(l, 18, 150, 44, 0, 1.6f);
+    paint::cottage(l, 40, 150, 46, 34, pal::kRoof, app.t, 1.6f);
+    paint::tree(l, 112, 146, 36, 1, 1.6f);
+    paint::cottage(l, 150, 148, 40, 30, pal::kRoofBlue, app.t, 1.6f);
+    paint::cottage(l, 238, 150, 50, 36, pal::kRoof, app.t, 1.6f);
+    paint::tree(l, 306, 148, 42, 2, 1.6f);
+    paint::cottage(l, 330, 150, 44, 32, pal::kRoofBlue, app.t, 1.6f);
+    // The square's cobbles.
+    verticalGradient(0, 150, kTopW, 90, paint::lit(l, pal::kCobbleDark), paint::lit(l, pal::kCobble));
+    for (int i = 0; i < 22; ++i) {
+        const float cx = std::fmod(i * 73.0f + 19, 410.0f) - 5, cy = 196 + std::fmod(i * 37.0f, 42.0f);
+        C2D_DrawEllipseSolid(cx - 9, cy - 3, 0, 18, 6, paint::lit(l, pal::kCobbleLight, 0.55f));
     }
-    for (int i = 0; i < 21; ++i)
-        C2D_DrawTriangle(i * 20.0f - 4, 70, col(245, 196, 81), i * 20.0f + 12, 70, col(245, 196, 81), i * 20.0f + 4, 84,
-                         i % 2 ? col(63, 167, 168) : col(232, 102, 43), 0);
+    // The stalls, their wares, the bunting over it all.
     Item today[kStallSpots];
-    stallToday(app.game, dayIndex(nowLocal(app)), today);
-    if (app.marketTab == kGoods && app.goodsPick < kStallSpots && today[app.goodsPick] != Item::Count) {  // on the stall
-        const Item it = today[app.goodsPick];
-        const ItemInfo& info = itemInfo(it);
-        C2D_DrawEllipseSolid(160, 150, 0, 80, 14, col(120, 84, 56, 0.35f));
-        care::drawItem(it, 200, 118 + 3 * std::sin(app.t * 1.6f), 1.2f);
-        panel({30, 160, 340, 40}, col(250, 240, 220, 0.88f));
-        textCentered(app, info.name, 200, 170, 0.6f, theme::kDenPlum, 320, Face::Title);
-        textCentered(app, info.blurb, 200, 189, 0.42f, theme::kDenPlum, 330);
+    stallToday(app.game, day, today);
+    for (int tab = 0; tab < kTabs; ++tab) {
+        stall(app, l, tab, app.marketTab == tab);
+        stallWares(app, l, tab, today, day);
     }
-    if (app.marketTab == kEgg && r3d::ready()) {  // the egg of the day, on the middle stall
+    if (app.marketTab == kEgg && r3d::ready() && app.game.eggBoughtDay != day) {  // the egg of the day, rocking on its nest
         static EggMotion rock;
         rock.update(app.dt, 0.0f, app.rng);
         if (rock.rock < 0.02f) rock.knock(0.04f, 0);
-        r3d::drawShowcase(app, todaysEgg(app), &rock, nowLocal(app), 0.3f * std::sin(app.t * 0.6f));
+        r3d::frameShowcase(4.2f, stallX(kEgg) + kStallW / 2 - kTopW / 2, 4);
+        r3d::drawShowcase(app, todaysEgg(app), &rock, now, 0.3f * std::sin(app.t * 0.6f));
     }
-    textCentered(app, str::kMarket, 200, 28, 1.0f, theme::kDenPlum, 380, Face::Title);
-    char gleam[32];
-    std::snprintf(gleam, sizeof(gleam), "%lu", static_cast<unsigned long>(app.game.gleam));
-    C2D_DrawCircleSolid(372, 16, 0, 7, theme::kClutchGold);
-    text(app, gleam, 362, 9, 0.5f, theme::kDenPlum, C2D_AlignRight);
+    paint::bunting(l, -10, 410, 44, 18, app.t);
+    paint::hangingSign(app, str::kMarket, 200, 6, 170);
+    // Your Gleam, on a little dark pill so it reads against any sky.
+    char line[80];
+    std::snprintf(line, sizeof(line), "%lu", static_cast<unsigned long>(app.game.gleam));
+    const float gw = textWidth(app, line, 0.5f) + 30;
+    panel({392 - gw, 8, gw, 20}, withAlpha(theme::kDenPlum, 0.8f));
+    C2D_DrawCircleSolid(392 - gw + 11, 18, 0, 6, theme::kClutchGold);
+    C2D_DrawCircleSolid(392 - gw + 11, 18, 0, 3, withAlpha(theme::kEmber, 0.6f));
+    text(app, line, 386, 10, 0.5f, theme::kShell, C2D_AlignRight);
+    // What's in front of you.
+    char sub[96];
+    sub[0] = 0;
+    switch (app.marketTab) {
+        case kFood: {
+            int pouch = 0;
+            for (int f = 0; f < static_cast<int>(Food::Count); ++f) pouch += pouchCount(app.game, static_cast<Food>(f));
+            std::snprintf(sub, sizeof(sub), str::kPouchHolds, pouch);
+            paint::caption(app, str::kStallFoodCap, sub, 198);
+            break;
+        }
+        case kGoods:
+            if (app.goodsPick < kStallSpots && today[app.goodsPick] != Item::Count) {
+                const ItemInfo& info = itemInfo(today[app.goodsPick]);
+                paint::caption(app, info.name, info.blurb, 198);
+            } else {
+                paint::caption(app, str::kGoodsCap, str::kStallTomorrow, 198);
+            }
+            break;
+        case kSell: {
+            int hoard = 0;
+            for (int k = 0; k < kTrinkets; ++k) hoard += app.game.hoard[k];
+            std::snprintf(sub, sizeof(sub), str::kHoardCount, hoard);
+            paint::caption(app, str::kTradeCap, sub, 198);
+            break;
+        }
+        default: {
+            const DailyEgg e = dailyEgg(app.game, day);
+            if (app.game.eggBoughtDay == day) {
+                paint::caption(app, str::kEggTomorrowMarket, nullptr, 206);
+                break;
+            }
+            std::snprintf(line, sizeof(line), str::kTodaysEgg, e.sex == Sex::Female ? "female" : "male", kindInfo(e.kind).title);
+            std::snprintf(sub, sizeof(sub), str::kEggRarityPrice, rarityName(kindInfo(e.kind).rarity),
+                          static_cast<unsigned long>(e.price));
+            paint::caption(app, line, sub, 198);
+            break;
+        }
+    }
 }
 
 void foodTab(App& app, const Input& in) {
@@ -162,7 +309,7 @@ void sellTab(App& app, const Input& in) {
         const Rect r{8.0f + (k % 2) * 154.0f, 58.0f + (k / 2) * 42.0f, 150, 38};
         const int have = app.game.hoard[k];
         panel(r, withAlpha(theme::kShell, have ? 0.2f : 0.08f));
-        C2D_DrawCircleSolid(r.x + 14, r.y + r.h / 2, 0, 6, have ? theme::kSkyTeal : withAlpha(theme::kSkyTeal, 0.3f));
+        paint::trinket(t, r.x + 14, r.y + r.h / 2, have ? 13.0f : 10.0f);  // (U: its little picture)
         char line[48];
         std::snprintf(line, sizeof(line), "%s x%d", trinketName(t), have);
         text(app, line, r.x + 26, r.y + 4, 0.42f, withAlpha(theme::kShell, have ? 1.0f : 0.5f), C2D_AlignLeft, r.w - 30);
@@ -204,6 +351,7 @@ void eggTab(App& app, const Input& in) {
 
 void drawBottom(App& app, const Input& in) {
     verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
+    showTip(app, tips::kTipMarket);  // U: the tutorial
     // Tabs along the top (L / R too).
     static const char* const kTabNames[kTabs] = {str::kTabFood, str::kTabGoods, str::kTabSell, str::kTabEgg};
     for (int k = 0; k < kTabs; ++k) {

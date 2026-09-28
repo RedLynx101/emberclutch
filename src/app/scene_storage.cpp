@@ -144,7 +144,7 @@ void drawBottom(App& app, const Input& in) {
                       vault(app) ? kVaultEggs : static_cast<int>(kMaxDragons));
     if (n == 0) app.storeProfile = false;
     if (app.storeProfile) {  // the picked one's profile (WP8): about it, its family
-        const Dragon& d = app.game.dragons[list[app.storePick]];
+        Dragon& d = app.game.dragons[list[app.storePick]];
         char title[40];
         if (d.stage == Stage::Egg) std::snprintf(title, sizeof(title), "%s %s", kindTitle(d), str::kEggSuffix);
         else std::snprintf(title, sizeof(title), "%s", d.name);

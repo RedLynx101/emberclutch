@@ -10,8 +10,11 @@
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "app/theme.hpp"
+#include "app/tips_ui.hpp"
+#include "app/tracking_ui.hpp"
 #include "app/ui_draw.hpp"
 #include "core/campaign.hpp"
+#include "core/guide.hpp"
 #include "core/finds.hpp"
 #include "core/items.hpp"
 #include "core/kinds.hpp"
@@ -84,8 +87,69 @@ void drawOuting(App& app, const Input& in, Dragon& d) {
 }
 
 // ------------------------------------------------------------------------------ Journal
+// The goals (1.0, D89): what can be tracked (the begun quests, the leagues' boards, the Hollow),
+// the one tracked now flagged in gold; a tap on a row tracks it (again: back to the quest in
+// hand). The quests done follow, in teal. Five rows a page.
+void journalGoals(App& app, const Input& in) {
+    SaveData& s = app.game;
+    constexpr int kRows = 5;
+    struct Row {
+        guide::Goal goal;
+        bool done;
+    };
+    Row rows[campaign::kQuests + 4];
+    int n = 0;
+    guide::Goal open[campaign::kQuests + 4];
+    const int tracks = guide::trackables(s, open, campaign::kQuests + 4);
+    for (int k = 0; k < tracks; ++k) rows[n++] = {open[k], false};
+    for (int q = 0; q < campaign::questCount(); ++q)
+        if (campaign::view(s, q).done) rows[n++] = {{Tracked::Quest, q}, true};
+    if (n == 0) {
+        text(app, str::kNoQuests, 160, 110, 0.45f, withAlpha(theme::kShell, 0.75f), C2D_AlignCenter, 290);
+        return;
+    }
+    static int page = 0;
+    const int pages = (n + kRows - 1) / kRows;
+    if (page >= pages) page = pages - 1;
+    const guide::Goal now = guide::current(s);
+    char title[64], step[96];
+    for (int k = 0; k < kRows && page * kRows + k < n; ++k) {
+        const Row& row = rows[page * kRows + k];
+        const Rect r{8, 62.0f + k * 27, 304, 25};
+        const bool on = !row.done && row.goal == now;
+        panel(r, row.done ? withAlpha(theme::kSkyTeal, 0.25f)
+                          : withAlpha(on ? theme::kClutchGold : theme::kShell, on ? 0.28f : 0.12f));
+        goalWords(s, row.goal, title, sizeof(title), step, sizeof(step));
+        text(app, title, r.x + 7, r.y + 1, 0.42f, row.done ? withAlpha(theme::kShell, 0.65f) : theme::kClutchGold,
+             C2D_AlignLeft, 220);
+        text(app, step, r.x + 7, r.y + 13, 0.34f, withAlpha(theme::kShell, row.done ? 0.6f : 0.88f), C2D_AlignLeft, 232);
+        if (row.done) continue;
+        // The flag: gold on the one tracked (its word under it), faint on the others.
+        trackFlag(r.x + r.w - 58, r.y + 19, 13, app.t, on);
+        text(app, on ? str::kTracking : str::kTrack, r.x + r.w - 6, r.y + 7, 0.32f,
+             on ? theme::kClutchGold : withAlpha(theme::kShell, 0.5f), C2D_AlignRight, 40);
+        if (in.released && r.contains(in.rx, in.ry)) {
+            const bool was = guide::picked(s, row.goal);
+            guide::toggle(s, row.goal);
+            audio::playSfx(was ? audio::Sfx::Back : audio::Sfx::Confirm);
+            if (!was) showToastf(app, str::kNowTracking, title);
+            saveNow(app);
+        }
+    }
+    if (pages > 1) {  // more than a page: < 1/2 >
+        if (button(app, {6, 202, 34, 34}, "<", in)) page = (page + pages - 1) % pages;
+        char at[32];
+        std::snprintf(at, sizeof(at), "%d/%d", page + 1, pages);
+        textCentered(app, at, 62, 219, 0.4f, theme::kShell);
+        if (button(app, {84, 202, 34, 34}, ">", in)) page = (page + 1) % pages;
+    } else {
+        text(app, str::kTrackHint, 10, 206, 0.34f, withAlpha(theme::kShell, 0.6f), C2D_AlignLeft, 196);
+    }
+}
+
 void drawJournal(App& app, const Input& in, Dragon& d, s64 now) {
     header(app, str::kJournal);
+    showTip(app, tips::kTipJournal);
     CareState& c = app.care;
     const char* tabs[4] = {str::kJournalQuests, d.stage == Stage::Egg ? str::kJournalEgg : d.name, str::kJournalPlaces,
                            str::kDex};
@@ -102,34 +166,43 @@ void drawJournal(App& app, const Input& in, Dragon& d, s64 now) {
             c.journalTab = static_cast<u8>(t);
         }
     }
-    const SaveData& s = app.game;
+    SaveData& s = app.game;
     char line[96];
-    if (c.journalTab == 0) {  // quests (the Lantern Festival, WP14)
-        int shown = 0;
-        for (int q = 0; q < campaign::questCount(); ++q) {
-            const campaign::QuestView v = campaign::view(s, q);
-            if (!v.started) continue;
-            const float y = 64 + shown * 32;
-            if (y > 180) break;
-            panel({10, y, 300, 29}, withAlpha(v.done ? theme::kSkyTeal : theme::kShell, v.done ? 0.3f : 0.12f));
-            text(app, v.title, 16, y + 2, 0.45f, v.done ? withAlpha(theme::kShell, 0.7f) : theme::kClutchGold, C2D_AlignLeft, 200);
-            text(app, v.done ? str::kQuestDone : v.step, 16, y + 15, 0.36f, withAlpha(theme::kShell, 0.85f), C2D_AlignLeft, 290);
-            ++shown;
-        }
-        if (shown == 0) text(app, str::kNoQuests, 160, 110, 0.45f, withAlpha(theme::kShell, 0.75f), C2D_AlignCenter, 290);
-    } else if (c.journalTab == 1) {  // what you know of this one: the profile's About page
+    if (c.journalTab == 0) {  // goals: the quests (the Lantern Festival, WP14) and 1.0's boards, tracked with a tap
+        journalGoals(app, in);
+    } else if (c.journalTab == 1) {  // what you know of this one: the profile's About page, and the rest of it
         profileAbout(app, d, now);
-    } else {  // places found and finds
+        // The rest of its profile (the den's card: its training, record, family). The Journal is
+        // drawn in the valley too (X there): the card is the den's, so only from the den.
+        if (app.scene == SceneId::Den && d.stage != Stage::Egg && button(app, {6, 202, 110, 34}, str::kFullProfile, in)) {
+            c.page = CarePage::None;
+            c.profileOpen = true;
+            c.profileTab = kTabTraining;
+            return;
+        }
+    } else {  // places found (a tap tracks one) and finds
         int shown = 0;
-        for (int p = 0; p < world::placeCount(); ++p) {
+        for (int p = 0; p < world::placeCount(); ++p) {  // three columns: all eighteen fit
             if (!world::placeFound(s, p)) continue;
-            const float y = 64 + (shown / 2) * 22;
-            if (y > 178) break;
-            const float x = 14 + (shown % 2) * 150;
-            C2D_DrawCircleSolid(x + 5, y + 8, 0.5f, 4, fromRgb(world::placeInfo(p).pin));
-            text(app, world::placeInfo(p).name, x + 14, y + 1, 0.42f, theme::kShell, C2D_AlignLeft, 136);
+            const float y = 62 + (shown / 3) * 18;
+            if (y > 160) break;
+            const float x = 6 + (shown % 3) * 103;
+            const guide::Goal g{Tracked::Place, p};
+            const bool on = guide::picked(s, g);
+            const Rect r{x, y - 1, 101, 17};
+            if (on) panel(r, withAlpha(theme::kClutchGold, 0.3f));
+            C2D_DrawCircleSolid(x + 7, y + 7, 0.5f, 3.5f, fromRgb(world::placeInfo(p).pin));
+            text(app, world::placeInfo(p).name, x + 14, y, 0.36f, theme::kShell, C2D_AlignLeft, on ? 74 : 85);
+            if (on) trackFlag(x + 92, y + 14, 11, app.t, true);
+            if (in.released && r.contains(in.rx, in.ry)) {
+                guide::toggle(s, g);
+                audio::playSfx(on ? audio::Sfx::Back : audio::Sfx::Confirm);
+                if (!on) showToastf(app, str::kNowTracking, world::placeInfo(p).name);
+                saveNow(app);
+            }
             ++shown;
         }
+        text(app, str::kTrackPlaceHint, 14, 170, 0.34f, withAlpha(theme::kShell, 0.55f), C2D_AlignLeft, 290);
         std::snprintf(line, sizeof(line), str::kPlacesFound, shown, world::placeCount());
         text(app, line, 14, 184, 0.4f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, 150);
         int finds = 0;

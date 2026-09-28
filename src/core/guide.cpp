@@ -17,9 +17,9 @@ namespace {
 constexpr Vec2 kArenaBoard{-5.0f, 20.5f};
 constexpr Vec2 kOrchardBoard{-3.5f, 11.0f};
 constexpr Vec2 kStray{-46.0f, 58.0f};
-constexpr float kStrayArea = 24.0f;    // metres: the flowers she hides in
-constexpr float kHeightsArea = 45.0f;  // the cold heights' edges, to glide from
-constexpr float kPlaceAreaMin = 28.0f; // a place not found yet: at least this wide a search
+constexpr float kStrayArea = 40.0f;    // metres: the flowers she hides in
+constexpr float kHeightsArea = 60.0f;  // the cold heights' edges, to glide from
+constexpr float kPlaceAreaMin = 60.0f; // a place not found yet: at least this wide a search (a map's 10 px)
 
 Target spot(const Valley& v, int place, Vec2 local) {
     Target t;
@@ -48,7 +48,7 @@ Target villager(const Valley& v, Villager who) {
 Target placeTarget(const SaveData& s, const Valley& v, int place) {
     const PlaceLayout& l = placeLayout(place);
     if (world::placeFound(s, place)) return spot(v, place, l.hasDoor ? l.door : Vec2{0, 0});
-    const float r = std::fmax(kPlaceAreaMin, world::placeInfo(place).findRadius * 2.0f);
+    const float r = std::fmin(75.0f, std::fmax(kPlaceAreaMin, world::placeInfo(place).findRadius * 2.5f));
     const float a = 2.39996f * static_cast<float>(place + 1);  // the golden angle: a different way for each
     return area(v, place, {std::cos(a) * r * 0.45f, std::sin(a) * r * 0.45f}, r);
 }

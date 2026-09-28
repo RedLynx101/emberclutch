@@ -13,6 +13,7 @@
 
 #include "app/scenes.hpp"
 #include "core/campaign.hpp"
+#include "core/trainer.hpp"
 #include "core/clock.hpp"
 #include "core/valley.hpp"
 #include "core/wanderings.hpp"
@@ -25,7 +26,8 @@ constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
 enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
-                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Quit };
+                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Quit,
+                     Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard };  // (U: Open .. Hoard)
 
 struct Cmd {
     Op op = Op::Wait;
@@ -116,6 +118,16 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "autoplay") { c.op = Op::Autoplay; c.a[0] = std::strcmp(rest, "on") == 0; }
     else if (w == "cups") { c.op = Op::Cups; nums(3); }
     else if (w == "quit") { c.op = Op::Quit; }
+    // U (1.0 interface): straight into a scene, a dragon's experience and record, its needs, the
+    // tracked goal, the tips, Gleam and the hoard.
+    else if (w == "open") { c.op = Op::Open; c.text = rest; }
+    else if (w == "xp") { c.op = Op::Xp; nums(1); }
+    else if (w == "record") { c.op = Op::Record; }
+    else if (w == "needs") { c.op = Op::Needs; nums(5); }
+    else if (w == "track") { c.op = Op::Track; nums(2); }
+    else if (w == "tips") { c.op = Op::Tips; c.a[0] = std::strcmp(rest, "reset") == 0; }
+    else if (w == "gleam") { c.op = Op::Gleam; nums(1); }
+    else if (w == "hoard") { c.op = Op::Hoard; nums(1); }
     else return false;
     return true;
 }
@@ -275,6 +287,47 @@ Input next(App& app) {
                 done = true;
                 break;
             case Op::Quit: app.quit = true; done = true; break;
+            case Op::Open:  // U: market, wander, den, valley
+                if (c.text.rfind("market", 0) == 0) app.scene = SceneId::Market;
+                else if (c.text.rfind("wander", 0) == 0) app.scene = SceneId::Wanderings;
+                else if (c.text.rfind("valley", 0) == 0) openValley(app);
+                else app.scene = SceneId::Den;
+                done = true;
+                break;
+            case Op::Xp: trainer::gainXp(activeDragon(app), static_cast<u32>(c.a[0])); done = true; break;
+            case Op::Record: {  // U: a well-travelled dragon's record, for the profile's pages
+                Dragon& d = activeDragon(app);
+                d.battleTitle = 3;
+                d.showTitle = 2;
+                d.battleWins = 14;
+                d.showWins = 6;
+                d.wildWins = 23;
+                d.frostDeepest = 12;
+                d.ribbons = 0xB5;
+                for (int k = 0; k < kDragonStats; ++k) d.trained[k] = static_cast<u8>(2 + k * 4);
+                for (int ch = 0; ch < kChallenges; ++ch)
+                    for (int cup = 1; cup <= 3 - ch; ++cup) trainer::recordCup(d, ch, cup);
+                trainer::gainXp(d, 1650);
+                done = true;
+                break;
+            }
+            case Op::Needs: {
+                Needs& n = activeDragon(app).needs;
+                n.belly = c.a[0];
+                n.clean = c.a[1];
+                n.play = c.a[2];
+                n.love = c.a[3];
+                n.energy = c.a[4];
+                done = true;
+                break;
+            }
+            case Op::Track: trainer::track(app.game, static_cast<Tracked>(static_cast<int>(c.a[0])), static_cast<int>(c.a[1])); done = true; break;
+            case Op::Tips: app.game.progress.tips = c.a[0] != 0 ? 0u : 0xFFFFFFFFu; done = true; break;
+            case Op::Gleam: app.game.gleam = static_cast<u32>(c.a[0]); done = true; break;
+            case Op::Hoard:
+                for (int k = 0; k < kTrinkets; ++k) app.game.hoard[k] = static_cast<u16>(c.a[0]);
+                done = true;
+                break;
         }
         if (!done) {
             ran = true;

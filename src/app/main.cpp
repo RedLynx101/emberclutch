@@ -19,6 +19,7 @@
 #include "app/scenes.hpp"
 #include "app/screenshot.hpp"
 #include "app/system_menu.hpp"
+#include "app/tips_ui.hpp"  // U: the tutorial's tip card
 #include "app/dragondex_ui.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
@@ -170,7 +171,11 @@ int main() {
         // The right eye is drawn with no time passing, so nothing moves on twice.
         const u32 topClear = app.topClear ? app.topClear : theme::kDenPlum;
         app.topClear = 0;  // a scene's prepare sets it again
-        const float slider = osGet3DSliderState();
+        // U (settings): the 3D can be turned off; then the top screen is drawn once, flat.
+        static bool stereoWas = true;
+        const bool stereoOn = app.game.settings.stereo3d != 0;
+        if (stereoOn != stereoWas) gfxSet3D(stereoWas = stereoOn);
+        const float slider = stereoOn ? osGet3DSliderState() : 0.0f;
         for (int eye = 0; eye < (slider > 0.0f ? 2 : 1); ++eye) {
             C3D_RenderTarget* target = eye ? app.topRight : app.top;
             const float dt = app.dt;
@@ -187,6 +192,7 @@ int main() {
             }
             if (!app.photo.snap) {  // the photo's picture has nothing over it
                 drawToast(app);
+                drawTipCard(app);  // U: the tutorial's tip card
                 drawSaveIcon(app);
                 if (!app.photo.active) debugDrawOverlay(app);
             }

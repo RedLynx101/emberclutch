@@ -10,7 +10,7 @@ namespace ec::critters {
 namespace {
 
 constexpr float kPi = 3.14159265f, kTau = 6.2831853f;
-constexpr float kCellChance = 0.3f;  // a cell's chance of holding a group (where the ground suits one)
+constexpr float kCellChance = 0.4f;  // a cell's chance of holding a group (where the ground suits one)
 constexpr u32 kSoarCell = 0xFFFFFFFFu;  // the soaring pair's (never a spawn cell)
 
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
@@ -143,7 +143,7 @@ int spawnGroup(Life& life, const Valley& v, Kind k, Vec3 spot, int size, u32 cel
         Vec3 at = spot;
         const float spread = k == Kind::Songbird ? 2.2f : k == Kind::Butterfly ? 1.6f : k == Kind::Frog ? 1.8f : 2.5f;
         if (k == Kind::Duck) {  // the ducklings in a line behind their mother
-            at = spot - forwardOf(c->heading = face) * (0.6f * i);
+            at = spot - forwardOf(c->heading = face) * (0.2f + 0.55f * i);
         } else if (i > 0) {
             const float a = rnd(c->rng) * kTau, d = rnd(c->rng, 0.5f, spread);
             at = {spot.x + std::cos(a) * d, spot.y + std::sin(a) * d, 0};
@@ -557,6 +557,11 @@ void stepRabbit(Life& life, const Valley& v, Critter& c, const Around& a, float 
 
 void stepButterfly(Life& life, const Valley& v, Critter& c, const Around& a, float dt) {
     const float ground = std::fmax(v.heightAt(c.pos.x, c.pos.y), v.water);
+    if (a.day < 0.3f && c.state == State::Idle && !inMoment(life, c) && flat(c.pos, a.you) > 12.0f) {  // off to bed at dusk
+        c.state = State::Gone;
+        c.t = 0;
+        return;
+    }
     switch (c.state) {
         case State::Idle: {
             // Fluttering over its flowers in loose loops, now and then settling on one.
@@ -603,7 +608,7 @@ void stepButterfly(Life& life, const Valley& v, Critter& c, const Around& a, flo
                 emit(life, Ev::Shimmer, c.kind, c.pos);
                 break;
             }
-            const float s = std::fmin(1.5f, d * 2.0f + 0.2f);
+            const float s = std::fmin(2.4f, d * 2.5f + 0.4f);
             c.pos = c.pos + to * (std::fmin(d, s * dt) / d);
             if (d > 0.3f) c.pos.z += 0.25f * dt * std::sin(life.clock * 10.0f + c.anim);
             if (std::hypot(to.x, to.y) > 0.02f) c.heading = turn(c.heading, std::atan2(to.x, -to.y), 6.0f * dt);
@@ -702,7 +707,7 @@ void stepDuck(Life& life, const Valley& v, Critter& c, const Around& a, float dt
             paddle(c.home, 0.4f, 1.5f);
             return;
         }
-        const Vec3 want = lead->pos - forwardOf(lead->heading) * (c.slot == 1 ? 0.62f : 0.45f);
+        const Vec3 want = lead->pos - forwardOf(lead->heading) * (c.slot == 1 ? 0.78f : 0.52f);
         const bool hurry = lead->state == State::Flee || lead->state == State::Come;
         paddle(want, hurry ? 3.0f : 1.4f, 4.0f);
         c.state = lead->state == State::Visit ? State::Visit : State::Idle;
@@ -895,10 +900,13 @@ void runMoment(Life& life, const Valley& v, const Around& a, float dt) {
         case Act::Still: {
             // Your dragon sits still; the butterfly lands on its head, stays a while, and its
             // tickle makes it sneeze.
-            const float lift = a.palHeadSet ? 0.07f + 0.09f * std::fmax(0.3f, a.palHead.z - m.pal.z) : 0.0f;
-            const Vec3 perch = a.hasPal ? (a.palHeadSet ? a.palHead + Vec3{0, 0, lift} : m.pal + Vec3{0, 0, 1.0f})
+            // (on top of its head: the head bone is at the skull's base, the head a good size above it)
+            const float headH = std::fmax(0.3f, a.palHead.z - m.pal.z);
+            const Vec3 lift = forwardOf(m.palHeading) * (0.08f * headH) + Vec3{0, 0, 0.1f + 0.38f * headH};
+            const Vec3 perch = a.hasPal ? (a.palHeadSet ? a.palHead + lift : m.pal + Vec3{0, 0, 1.0f})
                                         : a.you + Vec3{0, 0, 1.55f};
             c.goal = perch;
+            if (c.state == State::Perch) c.heading = turn(c.heading, m.palHeading, 4.0f * dt);  // (facing the way it faces)
             if (m.mark < 0) {
                 m.move = PalMove::Sit;
                 if (c.state == State::Perch) {
@@ -1166,7 +1174,8 @@ void update(Life& life, const Valley& v, const Around& a, float dt) {
             case Kind::Fox: stepFox(life, v, c, a, dt); break;
             case Kind::Count: break;
         }
-        if (!(life.seen & (1u << static_cast<int>(c.kind))) && c.state != State::Gone && flat(c.pos, a.you) < 16.0f) {
+        if (!(life.seen & (1u << static_cast<int>(c.kind))) && c.state != State::Gone && c.state != State::Soar &&
+            flat(c.pos, a.you) < 16.0f) {  // (seen close: not a speck high overhead)
             life.seen = static_cast<u8>(life.seen | (1u << static_cast<int>(c.kind)));
             emit(life, Ev::Seen, c.kind, c.pos);
         }
@@ -1176,39 +1185,40 @@ void update(Life& life, const Valley& v, const Around& a, float dt) {
 }
 
 int spawnNear(Life& life, const Valley& v, Kind kind, Vec3 you, float heading, float within) {
-    // Ahead of you first, then round about: the nearest spot the kind suits (and, for the
-    // butterflies and ducks, where they'd be: flowers, open water by a shore).
-    for (float r = 5.0f; r <= within; r += 1.5f)
-        for (int k = 0; k < 16; ++k) {
-            const float a = heading + (k % 2 ? 1.0f : -1.0f) * (k / 2) * (kTau / 16);
-            const float x = you.x + std::sin(a) * r, y = you.y - std::cos(a) * r;
-            if (!v.inside(x, y)) continue;
-            const Ground g = groundAt(v, x, y);
-            bool ok = false;
-            switch (kind) {
-                case Kind::Songbird: ok = g.grass && !g.steep && !g.water; break;
-                case Kind::Rabbit:
-                case Kind::Fox: ok = (g.grass || g.earth) && !g.steep && !g.water; break;
-                case Kind::SnowHare: ok = (g.snow || g.grass) && !g.steep && !g.water; break;
-                case Kind::Butterfly: ok = !g.water && !g.steep; break;
-                case Kind::Frog: ok = g.shore && !g.steep; break;
-                case Kind::Duck: ok = g.deep; break;
-                case Kind::Count: break;
-            }
-            if (!ok) continue;
-            const int size = kind == Kind::Songbird ? 4 : kind == Kind::Duck ? 4 : kind == Kind::Butterfly ? 2 : 1;
-            const u32 key = 0xFFFF0000u | (static_cast<u32>(life.clock * 60) * 8 + static_cast<u32>(kind)) % 0xFFF0u;  // (its own cell: not a grid one)
-            const Vec3 spot{x, y, surfaceFor(v, kind, x, y)};
-            const int i = spawnGroup(life, v, kind, spot, size, key, hash3(life.seed, key, static_cast<u32>(kind)));
-            if (i >= 0) {
+    auto fits = [&](float x, float y) {
+        if (!v.inside(x, y)) return false;
+        const Ground g = groundAt(v, x, y);
+        switch (kind) {
+            case Kind::Songbird: return g.grass && !g.steep && !g.water;
+            case Kind::Rabbit:
+            case Kind::Fox: return (g.grass || g.earth) && !g.steep && !g.water;
+            case Kind::SnowHare: return (g.snow || g.grass) && !g.steep && !g.water;
+            case Kind::Butterfly: return !g.water && !g.steep;
+            case Kind::Frog: return g.shore && !g.steep;
+            case Kind::Duck: return g.deep;
+            case Kind::Count: break;
+        }
+        return false;
+    };
+    // Ahead of you first (within 70 degrees either side, nearest first), then round about: the
+    // nearest spot the kind suits.
+    for (int pass = 0; pass < 2; ++pass)
+        for (float r = 6.0f; r <= within; r += 1.5f)
+            for (int k = pass == 0 ? 0 : 7; k < (pass == 0 ? 7 : 16); ++k) {
+                const float a = heading + (k % 2 ? 1.0f : -1.0f) * ((k + 1) / 2) * (kTau / 16);
+                const float x = you.x + std::sin(a) * r, y = you.y - std::cos(a) * r;
+                if (!fits(x, y)) continue;
+                const int size = kind == Kind::Songbird || kind == Kind::Duck ? 4 : kind == Kind::Butterfly ? 2 : 1;
+                const u32 key = 0xFFFF0000u | (static_cast<u32>(life.clock * 60) * 8 + static_cast<u32>(kind)) % 0xFFF0u;  // (not a grid cell)
+                const int i = spawnGroup(life, v, kind, {x, y, surfaceFor(v, kind, x, y)}, size, key,
+                                         hash3(life.seed, key, static_cast<u32>(kind)));
                 for (Critter& c : life.c)
-                    if (c.alive && c.cell == key) {
+                    if (i >= 0 && c.alive && c.cell == key) {
                         c.born = 1.0f;  // (already grown in)
                         if (kind != Kind::Frog && kind != Kind::Duck) c.heading = heading + kPi;  // facing you
                     }
+                return i;
             }
-            return i;
-        }
     return -1;
 }
 
@@ -1507,7 +1517,7 @@ void buildSongbird(Out& o, const Critter& c, float clock) {
     const int v = c.variant % 4;
     const bool flying = c.state == State::Flee || c.state == State::Soar;
     Frame f;
-    f.set(c.pos + Vec3{0, 0, flying ? 0.0f : c.air}, c.heading, 1.35f * growIn(c));
+    f.set(c.pos + Vec3{0, 0, flying ? 0.0f : c.air}, c.heading, 2.5f * growIn(c));
     float pitch = 0;
     if (c.state == State::Idle) {
         const float peck = std::sin(clock * 7.0f + c.anim);
@@ -1546,11 +1556,11 @@ void buildRabbit(Out& o, const Critter& c, float clock) {
     static const Rgb3 kFur[3] = {{156, 122, 92}, {146, 140, 136}, {190, 144, 96}};
     static const Rgb3 kLight[3] = {{228, 212, 192}, {222, 218, 212}, {240, 222, 196}};
     const bool hare = c.kind == Kind::SnowHare;
-    const Rgb3 fur = hare ? Rgb3{232, 236, 246} : kFur[c.variant % 3];
+    const Rgb3 fur = hare ? Rgb3{206, 212, 230} : kFur[c.variant % 3];  // (a hare: blue-grey enough to read on the snow)
     const Rgb3 light = hare ? Rgb3{250, 251, 255} : kLight[c.variant % 3];
-    const Rgb3 ear = hare ? Rgb3{214, 220, 234} : dim(fur, 0.9f);
+    const Rgb3 ear = hare ? Rgb3{122, 124, 142} : dim(fur, 0.9f);
     Frame f;
-    f.set(c.pos + Vec3{0, 0, c.air}, c.heading, 1.25f * growIn(c));
+    f.set(c.pos + Vec3{0, 0, c.air}, c.heading, 1.8f * growIn(c));
     const bool running = c.state == State::Flee || c.state == State::Chased;
     float pitch = 0;
     if (c.state == State::Idle) {
@@ -1579,10 +1589,10 @@ void buildButterfly(Out& o, const Critter& c, float clock) {
     static const Rgb3 kLower[4] = {{222, 108, 50}, {80, 128, 212}, {236, 190, 76}, {214, 108, 150}};
     const int v = c.variant % 4;
     Frame f;
-    f.set(c.pos, c.heading, 1.4f * growIn(c));
+    f.set(c.pos, c.heading, 2.4f * growIn(c));
     f.tip(c.state == State::Perch || c.state == State::Move ? 0.0f : 0.25f, {0, 0, 0});
     const bool resting = c.state == State::Perch || c.state == State::Move;
-    const float flap = resting ? 1.2f + 0.28f * std::sin(clock * 1.7f + c.anim) : 0.15f + 1.25f * std::fabs(std::sin(clock * 15.0f + c.anim));
+    const float flap = resting ? 0.75f + 0.45f * std::sin(clock * 1.4f + c.anim) : 0.15f + 1.25f * std::fabs(std::sin(clock * 15.0f + c.anim));
     const Vec3 mid = f({0, 0, 0});
     const Rgb3 body{60, 48, 56};
     o.tri(f({0, 0.035f, 0.004f}), f({-0.01f, 0, 0.004f}), f({0, -0.045f, 0.004f}), body, mid, true);
@@ -1599,7 +1609,7 @@ void buildFrog(Out& o, const Critter& c, float clock) {
     static const Rgb3 kBelly[3] = {{220, 228, 150}, {210, 226, 170}, {232, 232, 160}};
     const Rgb3 skin = kSkin[c.variant % 3], belly = kBelly[c.variant % 3], leg = dim(skin, 0.78f);
     Frame f;
-    f.set(c.pos + Vec3{0, 0, c.air}, c.heading, 1.5f * growIn(c));
+    f.set(c.pos + Vec3{0, 0, c.air}, c.heading, 2.3f * growIn(c));
     const bool leaping = c.state == State::Leap;
     f.tip(leaping ? 0.45f : 0.12f, {0, -0.08f, 0});
     const float p = c.puff > 0 ? std::sin(kPi * clampf(c.puff, 0.0f, 1.0f)) : 0.0f;  // the throat swelling
@@ -1621,7 +1631,7 @@ void buildDuck(Out& o, const Critter& c, float clock) {
     const Rgb3 beak = baby ? Rgb3{240, 150, 60} : Rgb3{244, 160, 50};
     Frame f;
     const float bob = 0.015f * std::sin(clock * 2.5f + c.anim);
-    f.set(c.pos + Vec3{0, 0, bob - 0.03f}, c.heading, (baby ? 0.62f : 1.2f) * growIn(c));
+    f.set(c.pos + Vec3{0, 0, bob - 0.03f}, c.heading, (baby ? 0.85f : 1.7f) * growIn(c));
     f.tip(c.state == State::Visit ? 0.1f * std::sin(clock * 6.0f) : 0.05f * std::sin(clock * 1.9f + c.anim), {0, 0, 0});
     diamond(o, f, {0, 0.2f, 0.13f}, {0, -0.22f, 0.15f}, {-0.13f, 0, 0.11f}, {0.13f, 0, 0.11f}, {0, -0.03f, 0.22f}, {0, 0, -0.02f},
             top, under, top, under);
@@ -1639,7 +1649,7 @@ void buildDuck(Out& o, const Critter& c, float clock) {
 void buildFox(Out& o, const Critter& c, float clock) {
     const Rgb3 fur{228, 122, 52}, white{244, 232, 214}, dark{92, 60, 48}, ear{170, 80, 40};
     Frame f;
-    f.set(c.pos, c.heading, 1.0f * growIn(c));
+    f.set(c.pos, c.heading, 1.35f * growIn(c));
     const float sit = c.puff;
     const float sniff = c.state == State::Visit ? 1.0f : 0.0f;
     f.tip(0.5f * sit - 0.22f * sniff, {0, -0.22f, 0.2f});
@@ -1691,11 +1701,11 @@ void buildRing(Out& o, const Critter& c) {
 
 float reachOf(const Critter& c) {
     switch (c.kind) {
-        case Kind::Songbird: return c.state == State::Soar || c.state == State::Flee ? 90.0f : 32.0f;
+        case Kind::Songbird: return c.state == State::Soar || c.state == State::Flee ? 90.0f : 40.0f;
         case Kind::Rabbit:
-        case Kind::SnowHare: return 38.0f;
-        case Kind::Butterfly: return 22.0f;
-        case Kind::Frog: return 26.0f;
+        case Kind::SnowHare: return 44.0f;
+        case Kind::Butterfly: return 28.0f;
+        case Kind::Frog: return 32.0f;
         case Kind::Duck:
         case Kind::Fox: return 44.0f;
         case Kind::Count: break;

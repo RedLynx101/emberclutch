@@ -422,7 +422,7 @@ TEST(critters_butterfly_lands) {
             if (life.c[o.who].state == State::Perch) {
                 if (landedAt < 0) landedAt = f / 30.0f;
                 onFor += 1.0f / 30;
-                CHECK(length(life.c[o.who].pos - head) < 0.5f);
+                CHECK(length(life.c[o.who].pos - head) < 0.8f);  // (on top of it)
             }
         }
         std::printf("  butterfly (%s): landed at %.1f s, stayed %.1f s, sneeze %d\n", a.hasPal ? "on the dragon" : "on you", landedAt, onFor,

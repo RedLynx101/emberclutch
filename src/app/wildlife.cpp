@@ -32,7 +32,7 @@ struct State {
     float builtAt = -1;        // app.t the mesh was built for (the second eye's picture reuses it)
     float ambientFor = 0;      // to the next chirp, croak or quack allowed (they never pile up)
     int partner = -1;
-    float youHeading = 0;
+    float camYaw = 0;          // the way the camera looks (the autotest's spawns go in front of it)
     PalMove move = PalMove::Free;
     float moveT = 0;           // seconds into the partner's current part
     float cheerFor = 0;        // you cheering (a chase that ended with everyone happy)
@@ -169,7 +169,7 @@ void tick(App& app, const Valley& v, const Here& h) {
     s.valley = &v;
     s.lastTick = app.t;
     s.partner = h.partner;
-    s.youHeading = h.youHeading;
+    if (s.builtAt < 0) s.camYaw = h.youHeading;  // (till the first picture)
     critters::Around& a = s.around;
     a = critters::Around{};
     a.you = h.you;
@@ -233,6 +233,8 @@ void fillView(App& app, r3d::ValleyView& view) {
         critters::buildMesh(s.life, view.eye, view.target, s.mesh);
         s.builtAt = app.t;
     }
+    const Vec3 look = view.target - view.eye;
+    if (std::hypot(look.x, look.y) > 0.01f) s.camYaw = std::atan2(look.x, -look.y);
     view.critterPos = s.mesh.pos;
     view.critterCol = s.mesh.col;
     view.critterVerts = s.mesh.verts;
@@ -247,7 +249,8 @@ bool active(const App& app) {
 void update(App& app, const Input& in, vext::Stage& stage) {
     State& s = st();
     critters::Moment& m = s.life.moment;
-    if (in.down & KEY_B) {  // (let it be)
+    // B lets it be; a trip (you somewhere else at once: a map pin, an autotest's goto) ends it too.
+    if ((in.down & KEY_B) || std::hypot(stage.you.x - s.around.you.x, stage.you.y - s.around.you.y) > 5.0f) {
         critters::endMoment(s.life);
         return;
     }
@@ -274,9 +277,9 @@ void update(App& app, const Input& in, vext::Stage& stage) {
         const float h = std::fmax(0.4f, head.z - m.pal.z);
         const Vec3 fwd{std::sin(m.palHeading), -std::cos(m.palHeading), 0}, right{-std::cos(m.palHeading), -std::sin(m.palHeading), 0};
         stage.camSet = true;
-        stage.eye = head + fwd * (0.9f + 1.2f * h) + right * (0.7f + 0.7f * h) + Vec3{0, 0, 0.2f + 0.25f * h};
+        stage.eye = head + fwd * (1.0f + 1.3f * h) + right * (0.7f + 0.7f * h) + Vec3{0, 0, 0.35f + 0.4f * h};
         stage.eye.z = std::fmax(stage.eye.z, s.valley->heightAt(stage.eye.x, stage.eye.y) + 0.5f);
-        stage.target = head + Vec3{0, 0, 0.1f * h};
+        stage.target = head + Vec3{0, 0, 0.28f * h};
     }
     // The meadow carries on under it (the scene's beds wait while a feature has the valley).
     audio::setBed(audio::Bed::Meadow, s.around.day + 0.5f * s.around.dusk);
@@ -354,7 +357,7 @@ void command(App& app, const char* text) {
         return;
     }
     if (std::strcmp(word, "spawn") == 0 && arg >= 0 && arg < critters::kKinds) {
-        const int i = critters::spawnNear(s.life, *s.valley, static_cast<Kind>(arg), s.around.you, s.youHeading, 30.0f);
+        const int i = critters::spawnNear(s.life, *s.valley, static_cast<Kind>(arg), s.around.you, s.camYaw, 30.0f);
         autotest::log("critters spawn %d: critter %d at (%.1f %.1f)", arg, i, i >= 0 ? s.life.c[i].pos.x : 0.0f,
                       i >= 0 ? s.life.c[i].pos.y : 0.0f);
         return;

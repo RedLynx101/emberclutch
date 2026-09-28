@@ -1,6 +1,8 @@
 # The valley's critters (workstream L): each kind out in the valley (by day; the fox at dusk, the
 # frogs' chorus at night), each A moment as it happens, a flock scattering, the Journal's page,
 # and the overlay's TRI with the critter pass's own cost in the log ("critters: N triangles").
+# `critters spawn` puts one (a group) a little ahead of you in the camera's view; `critters act`
+# presses A on the nearest of a kind, whichever way you face.
 overlay on
 wait 2.5
 name Noah
@@ -19,7 +21,7 @@ valley
 hour 11
 wait 4
 shot c00-den-door
-# A meadow by the Sanctuary, as it is (no spawning): the natural count and cost.
+# A meadow by the Sanctuary, as it is (nothing spawned): the natural count and cost.
 goto -470 -350
 wait 3
 shot c01-meadow
@@ -35,15 +37,15 @@ shot c03-whistle
 wait 0.8
 shot c04-bird-visit
 wait 3
+critters clear
 critters spawn 0
 wait 1.2
+shotin 0.35 c05-scatter
 keyhold UP+B 1.6
-shotin 0.9 c05-scatter
-wait 0.5
 shot c06-flown
-# Rabbits: A and your dragon creeps, pounces, gives chase; the rabbit always escapes.
-goto -540 -520
-wait 2
+# Rabbits: A and your dragon creeps up, pounces, gives chase; the rabbit always escapes.
+goto -505 -385
+wait 2.5
 critters clear
 critters spawn 1
 wait 1.5
@@ -57,24 +59,22 @@ wait 0.9
 shot c10-chase
 wait 1.8
 shot c11-happy
-wait 2
-# Butterflies: A and one lands on your dragon's head (up close), then its tickle: a sneeze.
-goto -505 -385
-wait 2
+wait 3
+# Butterflies: A and one lands on your dragon's head (up close); its tickle ends in a sneeze.
 critters clear
 critters spawn 3
 wait 1.5
 shot c12-butterflies
 critters act 3
-wait 3.4
+wait 2.4
 shot c13-landed
 wait 2.4
 shot c14-perched
 wait 1.9
 shot c15-sneeze
-wait 2
+wait 3
 # Frogs and ducks at the lake's shore.
-goto 354 -200
+goto 300 -194
 wait 3
 shot c16-lake
 critters log
@@ -106,12 +106,12 @@ critters spawn 2
 wait 1.5
 shot c24-hare
 critters act 2
-wait 2.2
+wait 1.5
 shot c25-hare-chase
-wait 2
-# The fox at dusk, by the woods: it trots up and boops noses with your dragon.
+wait 3.5
+# The fox at dusk: it trots up and boops noses with your dragon.
 hour 19.5
-goto -550 -470
+goto -470 -350
 wait 3
 shot c26-dusk
 critters clear
@@ -119,9 +119,9 @@ critters spawn 6
 wait 1.5
 shot c27-fox
 critters act 6
-wait 3
+wait 2.5
 shot c28-fox-comes
-wait 1
+wait 1.2
 shot c29-boop
 wait 3
 # Night at the lake: the frogs sing among the fireflies.
@@ -129,6 +129,7 @@ hour 22.5
 goto 354 -200
 wait 3
 shot c30-night-lake
+critters log
 # The Market's view (its triangle budget with the critter pass).
 hour 11
 travel 1

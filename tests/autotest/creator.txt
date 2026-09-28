@@ -1,4 +1,4 @@
-# Beta WP12: your look (the creator): each row changed with the D-pad, the circle pad turning you,
+# Beta WP12: your look (the creator): each row changed with the D-pad, R turning you (run 19),
 # Done (a cheer), back to the den.
 overlay off
 wait 2.5
@@ -48,7 +48,7 @@ key DOWN
 key RIGHT
 wait 1
 shot c02-changed
-pad 1 0 1.2
+keyhold R 1.2
 shot c03-turned
 wait 2
 key DOWN

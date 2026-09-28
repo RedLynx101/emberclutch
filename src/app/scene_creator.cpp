@@ -1,7 +1,7 @@
 // Your look (Beta WP12, D74): the creator after a new game's name (then the egg), and from the
-// menu's settings any time. You stand on the top screen in the light, turning slowly (the circle
-// pad turns you); the bottom screen has a row per choice: clothes, hair, hair colour, skin,
-// outfit, eyes. Each change gets a little nod, Done a cheer.
+// menu's settings any time. You stand on the top screen in the light (L and R turn you round);
+// the bottom screen has a row per choice: clothes, hair, hair colour, skin, outfit, eyes (up and
+// down pick one, left and right change it). Each change gets a little nod, Done a cheer.
 #include <cmath>
 #include <cstdio>
 
@@ -73,8 +73,9 @@ void update(App& app, const Input& in) {
         if ((in.down & KEY_A) && s.row == kLookParts) finish(app);
         if (in.down & (KEY_B | KEY_START)) finish(app);
     }
-    // The circle pad turns you; let go and you ease back to a three-quarter view.
-    if (std::fabs(in.padX) > 0.2f) s.spin += in.padX * 2.4f * app.dt;
+    // L and R turn you (run 19: the pad chooses); let go and you ease back to a three-quarter view.
+    const float turn = (in.held & KEY_R ? 1.0f : 0.0f) - (in.held & KEY_L ? 1.0f : 0.0f);
+    if (turn != 0) s.spin += turn * 2.4f * app.dt;
     else s.spin += (0.35f - std::remainder(s.spin, 6.2831853f)) * std::fmin(1.0f, app.dt * 1.5f);
     if (lib) {
         s.anim.update(*lib, app.dt, nullptr, 0);
@@ -132,8 +133,9 @@ void drawBottom(App& app, const Input& in) {
             C2D_DrawCircleSolid(170, y + 12, 0.5f, 5.0f, theme::rgba(c.r, c.g, c.b));
         }
     }
-    if (button(app, {90, 190, 140, 38}, str::kDone, in, s.row == kLookParts ? theme::kClutchGold : 0)) finish(app);
-    text(app, str::kLookHelp, 160, 178, 0.34f, withAlpha(theme::kShell, 0.7f), C2D_AlignCenter, 300);
+    // The controls at the bottom left, big enough to read; Done at the bottom right (run 19).
+    text(app, str::kLookHelp, 18, 186, 0.42f, withAlpha(theme::kShell, 0.85f), C2D_AlignLeft, 170);
+    if (button(app, {196, 190, 108, 40}, str::kDone, in, s.row == kLookParts ? theme::kClutchGold : 0)) finish(app);
 }
 
 }  // namespace

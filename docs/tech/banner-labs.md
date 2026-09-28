@@ -96,7 +96,8 @@ Every round needs fresh IDs and product codes: `banner_lab.ps1 -FirstId` no long
 | lab 8 (run 12) | X-Z | 0xEC141-0xEC143 | CTR-P-L141-L143 |
 | lab A (runs 16-17) | A | **0xEC111** (lab P's) | CTR-P-L111 (lab P's) |
 | Beta | B-E | 0xEC151-0xEC154 | CTR-P-L151-L154 |
-| next free | | 0xEC161 | |
+| 1.0 (run 20) | F-K, A2 | 0xEC161-0xEC167 | CTR-P-L161-L167 |
+| next free | | 0xEC171 | |
 
 Lab A reused lab P's title ID and product code. It most likely didn't matter (the game's own
 title froze on the Blazeplume banner in run 15, and a HOME Menu holding P's banner would have
@@ -131,3 +132,28 @@ Paste as a step of the Beta run list (the CIAs go to `cias/lab/` with the build)
 | **E** only | the materials or paint | split the count (14 against 16), the colours and the skin texture |
 | more than one | each is a cause on its own | fix each |
 | none | two of these only together, or the pivots, or lab A's reused ID | re-run lab A under a fresh ID, with pairs (names + geometry, geometry + tail) |
+
+## The 1.0 round: pairs (run 20)
+Every Beta lab held (run 19: B, C, D and E each alone didn't freeze), so this round grafts lab A's
+parts two at a time, and lab A itself comes back under a fresh title ID (the first time it took lab
+P's). Whichever freezes narrows it to two parts; if only A2 freezes, it takes three or all four; if
+A2 holds, the old freeze was lab A sharing lab P's ID and the kit's banners can be tried again.
+
+| Lab | X plus lab A's | Title ID |
+|---|---|---|
+| **F** | names + geometry | 0xEC161 |
+| **G** | names + tail | 0xEC162 |
+| **H** | names + paint | 0xEC163 |
+| **I** | geometry + tail | 0xEC164 |
+| **J** | geometry + paint | 0xEC165 |
+| **K** | tail + paint | 0xEC166 |
+| **A2** | lab A again (its glTF as tested, `assets/banner3d/lab-a/`) | 0xEC167 |
+
+```
+py -3.12 tools/banner_graft.py names,geometry --out build/banner_labs/F   (G names,tail; H names,paint; I geometry,tail; J geometry,paint; K tail,paint)
+py -3.12 tools/banner_cgfx.py build/banner_labs/F/banner.gltf build/banner_labs/F/banner.cgfx --turn "body*:1,egg:1"   (and the rest)
+py -3.12 tools/banner_cgfx.py assets/banner3d/lab-a/banner.gltf build/banner_labs/L/banner.cgfx --turn "body*:1,egg:1"
+toolsanner_lab.ps1 -Variants "F=buildanner_labs\Fanner.cgfx;assetsudioanner.wav", ..., "A2=buildanner_labs\Lanner.cgfx;assetsudioanner.wav" -FirstId 0xEC161
+```
+All seven CIAs (`build/lab/banner-lab-f.cia` ... `-a2.cia`) pass `check_3ds.py`.
+

@@ -26,7 +26,7 @@ constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
 enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
-                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Valley, Quit,
+                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Valley, Hour, Quit,
                      Sound };  // (sounds, 1.0: bed, sfx, sfxcheck)
 
 struct Cmd {
@@ -106,6 +106,7 @@ bool parse(const char* line, Cmd& c) {
     }
     else if (w == "name") { c.op = Op::Name; c.text = rest; }
     else if (w == "skip") { c.op = Op::Skip; nums(1); }
+    else if (w == "hour") { c.op = Op::Hour; nums(1); }  // (the places: daylight whatever the PC's clock)
     else if (w == "overlay") { c.op = Op::Overlay; c.a[0] = std::strcmp(rest, "on") == 0; }
     else if (w == "splash") { c.op = Op::Splash; }
     else if (w == "travel") { c.op = Op::Travel; nums(1); }
@@ -232,6 +233,12 @@ Input next(App& app) {
             case Op::ShotIn: g_later = c.text; g_laterAt = c.a[0]; done = true; break;
             case Op::Name: g_names += c.text + "\n"; done = true; break;
             case Op::Skip: app.game.devOffset += static_cast<s64>(c.a[0] * kHour); done = true; break;
+            case Op::Hour: {  // skip ahead to that hour of the day (the places' shots)
+                const s64 into = nowLocal(app) % kDay, want = static_cast<s64>(c.a[0] * kHour);
+                app.game.devOffset += ((want - into) % kDay + kDay) % kDay;
+                done = true;
+                break;
+            }
             case Op::Overlay: app.overlay = c.a[0] != 0; done = true; break;
             case Op::Splash: app.splash = kSplashSeconds; done = true; break;
             case Op::Travel: app.autoTravel = static_cast<int>(c.a[0]); done = true; break;

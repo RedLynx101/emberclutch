@@ -30,9 +30,27 @@ struct PlaceLayout {
 
 const PlaceLayout& placeLayout(int place);
 
+// A place's named spots (1.0, places.json "anchors"): the caldera's "ring", "sides" and "board";
+// the glade's "stage", "rivals", "judges", "stalls" and "board"; the cove's "fish_spot", "jetty",
+// "fisher" and "shells"; the hollow's "arena", "wild_door" and "keeper" (docs/tech/places.md).
+// Each is one or more points in the place's frame (x, y); the third value is a height in the
+// frame (above the anchor, as the model is drawn: the ring's and stage's tops, the jetty's deck;
+// place them with placeFrameToWorld), or for the glade's "stalls" the way the stall faces
+// (radians, 0 the place's front, counter-clockwise: its heading in the valley is the place's
+// heading plus it), or 0 for a spot on the ground (place it with placeToWorld3).
+struct PlaceAnchor {
+    const float (*points)[3] = nullptr;
+    int count = 0;
+    explicit operator bool() const { return count > 0; }
+    Vec3 at(int i = 0) const;  // its i-th point (clamped into range; (0, 0, 0) if it has none)
+};
+PlaceAnchor placeAnchor(int place, const char* name);  // (none: count 0)
+
 // A point in a place's frame, in the valley (x, y), and a height above the ground there.
 Vec2 placeToWorld(const ValleyPlaceInfo& p, Vec2 local);
 Vec3 placeToWorld3(const Valley& v, const ValleyPlaceInfo& p, Vec3 local);
+// A point in a place's frame, its z a height in the frame (above the place's anchor), in the valley.
+Vec3 placeFrameToWorld(const ValleyPlaceInfo& p, Vec3 local);
 // Every place's walls in the valley, for walking round.
 std::vector<Solid> worldSolids(const Valley& v);
 // The faces the walking camera keeps in front of: the den's arch in its cliff.

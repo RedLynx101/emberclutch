@@ -258,8 +258,8 @@ PropMesh basketMesh() {
 PropMesh boardMesh() {
     PropMesh m;
     Shaper b{m};
-    b.slot = 0;  // two posts, the board between them
-    for (float x : {-0.95f, 0.95f}) b.frustum({x, 0, 0}, {x, 0, kBoardHeight}, 0.07f, 0.06f, 4, false, true, kPi / 4);
+    b.slot = 0;  // two posts at the board's ends (run 19: not over its face and posters)
+    for (float x : {-1.05f, 1.05f}) b.frustum({x, 0, 0}, {x, 0, kBoardHeight}, 0.07f, 0.06f, 4, false, true, kPi / 4);
     const float x0 = -1.0f, x1 = 1.0f, z0 = 1.0f, z1 = 2.1f, y0 = -0.04f, y1 = 0.04f;
     b.quad({x1, y1, z0}, {x0, y1, z0}, {x0, y1, z1}, {x1, y1, z1}, {0, 1, 0});   // front (+Y)
     b.quad({x0, y0, z0}, {x1, y0, z0}, {x1, y0, z1}, {x0, y0, z1}, {0, -1, 0});  // back

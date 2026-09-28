@@ -1,6 +1,6 @@
 """The places' layout (doors, lanterns, walls, the Market's egg stand and goods, the mill's
-sails) from tools/valley/places.json (written by tools/blender/valley_places.py) into
-src/core/places_data.inc, for core/place_layout.
+sails, 1.0's named anchors) from tools/valley/places.json (written by
+tools/blender/valley_places.py) into src/core/places_data.inc, for core/place_layout.
 
   python tools/valley/gen_places.py
 """
@@ -14,6 +14,17 @@ ORDER = ["den", "market", "stone", "sanctuary", "vault", "trailhead", "arena", "
 
 def f(v):
     return f"{v:.3f}f"
+
+
+def anchor_points(value):
+    """A named anchor's points: one point ([x, y] or [x, y, z]) or a list of them; each as
+    (x, y, third), the third 0 when it isn't given."""
+    pts = [value] if isinstance(value[0], (int, float)) else value
+    out = []
+    for q in pts:
+        assert 2 <= len(q) <= 3, q
+        out.append((q[0], q[1], q[2] if len(q) == 3 else 0.0))
+    return out
 
 
 def main():
@@ -53,9 +64,25 @@ def main():
     out.append("const float kMillHub[3] = {%s};" % ", ".join(f(v) for v in mill["hub"]))
     out.append("const float kMillAxis[3] = {%s};" % ", ".join(f(v) for v in mill["hub_axis"]))
     out.append("")
+    # Named anchors (1.0): where things happen at a place, by name, in its frame.
+    points, anchors = [], []
+    for k, pid in enumerate(ORDER):
+        for name, value in places[pid].get("anchors", {}).items():
+            pts = anchor_points(value)
+            anchors.append('    {%d, "%s", %d, %d},  // %s' % (k, name, len(points), len(pts), pid))
+            points += pts
+    out += ["struct AnchorRow {",
+            "    int place;",
+            "    const char* name;",
+            "    int first, count;",
+            "};",
+            "",
+            "const float kAnchorPoints[][3] = {"]
+    out += ["    {%s, %s, %s}," % (f(x), f(y), f(z)) for x, y, z in points] or ["    {0.0f, 0.0f, 0.0f},"]
+    out += ["};", "", "const AnchorRow kAnchorRows[] = {"] + (anchors or ['    {-1, "", 0, 0},']) + ["};", ""]
     path = os.path.join(ROOT, "src", "core", "places_data.inc")
     open(path, "w", encoding="utf-8", newline="\n").write("\n".join(out))
-    print(f"[places] {path}: {len(ORDER)} places, {len(solids)} walls")
+    print(f"[places] {path}: {len(ORDER)} places, {len(solids)} walls, {len(anchors)} anchors ({len(points)} points)")
 
 
 if __name__ == "__main__":

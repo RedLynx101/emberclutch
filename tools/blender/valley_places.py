@@ -6,9 +6,14 @@
 
 Writes one static mesh per place, <out>/<id>.esm (.esm v1, the den room's format: see
 den_model.py write_esm and src/core/static_mesh.cpp), and tools/valley/places.json (the data
-the game needs to stand each place in the valley). With --preview, renders each place from a
-three-quarter view above (day, evening and night side by side: <preview>/<id>.png) and a contact
-sheet of all fourteen (<preview>/contact_sheet.png). Pass absolute paths.
+the game needs to stand each place in the valley; 1.0's places add named "anchors", turned into
+src/core/places_data.inc by tools/valley/gen_places.py). With --preview, renders each place from
+a three-quarter view above (day, evening and night side by side: <preview>/<id>.png) and a
+contact sheet of all eighteen (<preview>/contact_sheet.png). Pass absolute paths.
+
+It reads the landscape (romfs/valley/skyreach.evl) for each place's anchor and the ground the
+game draws there (Place.gz): the arena's floor and 1.0's four places (the caldera, the glade, the
+cove, the hollow) sit on it, so rebuild them when the landscape changes. See docs/tech/places.md.
 
 Each place is in its own frame: metres, Z up, the origin on the ground at its anchor, +Y its
 front (the way it faces). Parts (file order): `solid` (opaque; back faces culled, so thin
@@ -52,11 +57,13 @@ PREVIEW = arg("--preview")
 DRAFT = "--draft" in argv  # iterate: report the budget, don't stop on it
 JSON_OUT = arg("--json", os.path.join(ROOT, "tools", "valley", "places.json"))
 
-# ValleyPlace order (src/core/valley.hpp).
+# ValleyPlace order (src/core/valley.hpp); 1.0 (D90) adds the caldera, the glade, the cove and
+# the hollow.
 PLACE_IDS = ("den", "market", "stone", "sanctuary", "vault", "trailhead", "arena", "lake",
-             "keeper", "isles", "orchard", "mill", "grotto", "ruins")
+             "keeper", "isles", "orchard", "mill", "grotto", "ruins", "caldera", "glade", "cove", "hollow")
 BUDGET = {"market": 2500}  # triangles, every part counted; the others 1,500
 DEFAULT_BUDGET = 1500
+EVL = os.path.join(ROOT, "romfs", "valley", "skyreach.evl")  # the landscape (tools/valley/make_valley.py)
 
 # ------------------------------------------------------------------------------ lighting
 SETS = ("day", "evening", "night")
@@ -69,6 +76,9 @@ BOUNCE = {"day": (0.46, 0.42, 0.32), "evening": (0.40, 0.28, 0.24), "night": (0.
 GLOW = {"day": 0.0, "evening": 0.55, "night": 1.0}        # windows and lamps
 LIT = {"day": 0.70, "evening": 0.88, "night": 1.0}        # a lit festival lantern
 CRYSTAL = {"day": 0.40, "evening": 0.70, "night": 1.0}    # the grotto's crystals (a dark cave)
+LAVA = {"day": 0.62, "evening": 0.85, "night": 1.0}       # the caldera's lava and braziers (always alight)
+MOONPETAL = {"day": 0.22, "evening": 0.62, "night": 1.0}  # the glade's flowers: soft by day, bright at night
+FROST = {"day": 0.30, "evening": 0.62, "night": 1.0}      # the hollow's cold glow (a shaded bowl)
 LAMP_LIGHT = {"day": 0.0, "evening": 0.45, "night": 1.0}  # windows' and lamps' light on things near
 BACKDROP = {"day": (0.66, 0.82, 0.95), "evening": (0.96, 0.70, 0.56), "night": (0.10, 0.12, 0.26)}
 WARM = (1.0, 0.70, 0.36)       # window and lamp light
@@ -433,15 +443,89 @@ def ribbon(part, path, width, col, M=I4, normal_hint=(0, 1, 0), jit=0.03, vflags
     grid(part, [right, left], col, M, smooth=True, jit=jit, vflags=vflags)
 
 
+def hug_ring(pl, r0, r1, segs, z, col):
+    """A flat band round the origin from r0 to r1, facing up, z above the landscape's ground."""
+    rows = []
+    for rr in (r1, r0):
+        row = []
+        for k in range(segs):
+            x, y = math.cos(2 * math.pi * k / segs) * rr, math.sin(2 * math.pi * k / segs) * rr
+            row.append(Vector((x, y, pl.gz(x, y) + z)))
+        rows.append(row)
+    grid(pl.s, rows, col, I4, closed=True, smooth=False, jit=0.03)
+
+
 def world(M, p):
     q = M @ V(p)
     return [round(q.x, 3), round(q.y, 3), round(q.z, 3)]
+
+
+# ------------------------------------------------------------------------------ the landscape
+class Landscape:
+    """The valley's ground as the game has it (romfs/valley/skyreach.evl, written by
+    tools/valley/make_valley.py): heights on a 4 m grid, each quad drawn as two triangles cut
+    from its south-west corner to its north-east (core/valley buildValleyTile), its colours and
+    the places' anchors. A model can then sit on the real ground (the arena's floor, the cove's
+    jetty and shells) and the previews show the ground the game draws."""
+
+    def __init__(self, path):
+        data = open(path, "rb").read()
+        assert data[:4] == b"EVL2", path
+        n = struct.unpack_from("<H", data, 6)[0]
+        self.n = n
+        self.spacing, self.x0, self.y0, hmin, hmax, self.water, _ = struct.unpack_from("<7f", data, 8)
+        off = 36
+        k = (hmax - hmin) / 65535.0
+        self.h = [hmin + v * k for v in struct.unpack_from(f"<{n * n}H", data, off)]
+        off += 2 * n * n
+        self.rgb = data[off:off + 3 * n * n]
+        off += 3 * n * n
+        off += 2 + struct.unpack_from("<H", data, off)[0] * 12  # props
+        off += 2 + struct.unpack_from("<H", data, off)[0] * 16  # islands
+        count = struct.unpack_from("<H", data, off)[0]
+        off += 2
+        self.anchors = {}
+        for _ in range(count):
+            pid, x, y, z, hd = struct.unpack_from("<Bffff", data, off)
+            off += 17
+            self.anchors[pid] = (x, y, z, hd)
+
+    def _cell(self, x, y):
+        n = self.n
+        fx = min(max((x - self.x0) / self.spacing, 0.0), n - 1.001)
+        fy = min(max((y - self.y0) / self.spacing, 0.0), n - 1.001)
+        i, j = int(fx), int(fy)
+        return i, j, fx - i, fy - j
+
+    def height(self, x, y):
+        """The drawn ground at (x, y): its triangle's plane (as the game's tiles, full detail)."""
+        i, j, u, w = self._cell(x, y)
+        n, h = self.n, self.h
+        h00, h10, h01, h11 = h[j * n + i], h[j * n + i + 1], h[(j + 1) * n + i], h[(j + 1) * n + i + 1]
+        if u >= w:
+            return h00 + u * (h10 - h00) + w * (h11 - h10)
+        return h00 + w * (h01 - h00) + u * (h11 - h01)
+
+    def colour(self, x, y):
+        i, j, u, w = self._cell(x, y)
+        n, c = self.n, self.rgb
+        out = []
+        for k in range(3):
+            a = c[(j * n + i) * 3 + k] * (1 - u) + c[(j * n + i + 1) * 3 + k] * u
+            b = c[((j + 1) * n + i) * 3 + k] * (1 - u) + c[((j + 1) * n + i + 1) * 3 + k] * u
+            out.append((a * (1 - w) + b * w) / 255.0)
+        return tuple(out)
+
+
+LAND = Landscape(EVL) if os.path.exists(EVL) else None
 
 
 # ------------------------------------------------------------------------------ the place
 class Place:
     def __init__(self, pid, title):
         self.id, self.title = pid, title
+        # Its anchor in the valley (x, y, z, heading), from the landscape's file (None without it).
+        self.anchor = LAND.anchors.get(PLACE_IDS.index(pid)) if LAND and pid in PLACE_IDS else None
         self.parts = {}
         self.lamps = []            # (pos, rgb, range, strength): warm light in the evening and night
         self.flat = 10.0
@@ -457,6 +541,7 @@ class Place:
         self.preview_extra = None  # preview only: fn(place) builds stand-ins (not exported)
         self.marks, self.last_mark = [], 0
         self.ao_reach, self.ao_strength = AO_REACH, AO_STRENGTH  # a cave: longer reach, darker
+        self.ao_ground = []        # occluders for ambient occlusion only (the landscape's walls round it)
 
     def part(self, name):
         if name not in self.parts:
@@ -477,6 +562,23 @@ class Place:
 
     def lamp(self, M, p, rng=4.5, strength=0.55, rgb=WARM, table=None):
         self.lamps.append((M @ V(p), rgb, rng, strength, table or LAMP_LIGHT))
+
+    def world_xy(self, x, y):
+        """A point in its frame, in the valley (forward = (sin h, -cos h), as core/place_layout)."""
+        ax, ay, _, hd = self.anchor
+        fx, fy = math.sin(hd), -math.cos(hd)
+        return ax + fy * x + fx * y, ay - fx * x + fy * y
+
+    def gz(self, x, y):
+        """The landscape's ground under (x, y) of its frame, from its anchor's height (0 without
+        the landscape's file): things set on it sit on the ground the game draws."""
+        if not self.anchor:
+            return 0.0
+        return LAND.height(*self.world_xy(x, y)) - self.anchor[2]
+
+    def water_z(self):
+        """The valley's water level in its frame."""
+        return LAND.water - self.anchor[2] if self.anchor else None
 
     def triangles(self):
         return sum(len(p.T) for p in self.parts.values())
@@ -935,8 +1037,8 @@ def stall(pl, M, cols, kind, w=2.8, d=1.5):
         blob(s, 0.3, 0.3, 0.1, 7, 3, CLOTH_RED, M @ T(0, 0.1, ch + 0.4), jit=0.02)
         torus_nest(pl, M @ T(0, 0.1, ch + 0.45), 0.2, 0.06, 7, 3, STRAW)
         spots.append(world(M, (0, 0.1, ch + 0.5)))
-        for sx in (-1, 1):  # a sign on each post: a little painted egg
-            B = M @ T(sx * (w / 2 + 0.09), d / 2 + 0.02, 1.9) @ Matrix.Rotation(sx * math.pi / 2, 4, "Z")
+        for sx in (-1, 1):  # a sign on the front of each post: a little painted egg (it faced into the post)
+            B = M @ T(sx * w / 2, d / 2 + 0.105, 1.9)
             egg = [(math.cos(2 * math.pi * k / 7) * 0.13 * (1 - 0.15 * math.sin(2 * math.pi * k / 7)),
                     math.sin(2 * math.pi * k / 7) * 0.18) for k in range(7)]
             face(s, [(x, 0.0, z) for x, z in egg], (0, 1, 0), (0.98, 0.86, 0.52), B)
@@ -957,41 +1059,38 @@ def stall(pl, M, cols, kind, w=2.8, d=1.5):
 
 
 def torus_nest(pl, M, major, minor, segs, sides, col, part=None):
+    """A ring (straw, iron, a pool's rim) round local Z, facing out. (Run 19: it was built inside
+    out, flipped, so the Nesting Stone's straw ring showed only its far inside.)"""
     rows = []
     for j in range(sides + 1):
         b = 2 * math.pi * j / sides
         rows.append([Vector((math.cos(2 * math.pi * i / segs) * (major + math.cos(b) * minor),
                              math.sin(2 * math.pi * i / segs) * (major + math.cos(b) * minor),
                              math.sin(b) * minor * 0.8)) for i in range(segs)])
-    grid(part or pl.s, rows, col, M, closed=True, smooth=True, flip=True, jit=0.1)
+    grid(part or pl.s, rows, col, M, closed=True, smooth=True, jit=0.1)
 
 
-def ground_patch(pl, M, r, segs, col, rings=None, z=0.05, skirt=0.25):
+def ground_patch(pl, M, r, segs, col, rings=None, z=0.05, skirt=0.25, hug=False):
     """A flat patch of paving or trodden earth, a hand's width proud of the ground, with a sloped
-    edge down into it so it never shows a gap."""
+    edge down into it so it never shows a gap. hug: it follows the landscape's ground (pl.gz)
+    instead of lying flat at the anchor's height (the ground there isn't quite level)."""
     s = pl.s
     radii = sorted(rings or [r], reverse=True)
-    rows = [[Vector((math.cos(2 * math.pi * k / segs) * (r + skirt), math.sin(2 * math.pi * k / segs) * (r + skirt),
-                     -0.12)) for k in range(segs)]]
-    rows += [[Vector((math.cos(2 * math.pi * k / segs) * rr, math.sin(2 * math.pi * k / segs) * rr, z))
-              for k in range(segs)] for rr in radii]
-    rows.append([Vector((0, 0, z))] * segs)
-    grid(s, rows, col, M, closed=True, smooth=False, jit=0.06, flip=False)
 
-
-def path_strip(pl, M, pts, width, col, z=0.05):
-    """A flat path along points (on the ground), with sloped edges."""
-    s = pl.s
-    P = [V(p[0], p[1], 0) for p in pts]
-    L, Rr, L2, R2 = [], [], [], []
-    for i, p in enumerate(P):
-        t = (P[min(i + 1, len(P) - 1)] - P[max(i - 1, 0)]).normalized()
-        side = Vector((-t.y, t.x, 0))
-        L.append(p + side * width / 2 + Vector((0, 0, z)))
-        Rr.append(p - side * width / 2 + Vector((0, 0, z)))
-        L2.append(p + side * (width / 2 + 0.25) - Vector((0, 0, 0.12)))
-        R2.append(p - side * (width / 2 + 0.25) - Vector((0, 0, 0.12)))
-    grid(s, [L2, L, Rr, R2][::-1], col, M, smooth=False, jit=0.06, flip=False)
+    def ring(rr, zz):
+        out = []
+        for k in range(segs):
+            p = M @ Vector((math.cos(2 * math.pi * k / segs) * rr, math.sin(2 * math.pi * k / segs) * rr, zz))
+            if hug:
+                p.z += pl.gz(p.x, p.y)
+            out.append(p)
+        return out
+    rows = [ring(r + skirt, -0.12)] + [ring(rr, z) for rr in radii]
+    centre = M @ Vector((0, 0, z))
+    if hug:
+        centre.z += pl.gz(centre.x, centre.y)
+    rows.append([centre] * segs)
+    grid(s, rows, col, I4, closed=True, smooth=False, jit=0.06, flip=False)
 
 
 # ---------------------------------------------------------------------- Market Village
@@ -1001,7 +1100,7 @@ def build_market(pl):
     s = pl.s
     ground_patch(pl, M, 9.0, 16, lambda p, n: tuple(c * (0.95 + 0.05 * math.sin(p.to_2d().length * 2.2))
                                                     for c in COBBLE), rings=[9.0, 4.6])
-    path_strip(pl, M, [(0, 8.6), (0.4, 13.0), (-0.3, 18.0)], 3.0, COBBLE)
+    # (No cobbled road out of the square: the landscape's path to the lake runs there, run 19.)
     pl.mark("paving")
     well(pl, M)
     pl.mark("well")
@@ -1161,11 +1260,13 @@ def lamp_post(pl, M, x, y, h=2.2, post=DARKWOOD, cage=IRON, rz=0.0, rng=5.0, str
     pl.solid(W, 0, 0, 0.3)
 
 
-def crystal(pl, M, x, y, z, length, r, tilt=0.0, yaw=0.0, col=(0.62, 0.96, 0.76), glow=(0.30, 1.0, 0.55)):
+def crystal(pl, M, x, y, z, length, r, tilt=0.0, yaw=0.0, col=(0.62, 0.96, 0.76), glow=(0.30, 1.0, 0.55),
+            table=CRYSTAL):
     W = M @ T(x, y, z, rz=yaw) @ Matrix.Rotation(tilt, 4, "X")
     lathe(pl.s, [(r, -0.2), (r * 1.15, length * 0.72), (0, length)], 4, col, W, sharp=[1], smooth=False, jit=0.04)
-    lathe(pl.g, [(r * 1.28, -0.2), (r * 1.4, length * 0.72), (0, length * 1.08)], 4, Emit(glow, CRYSTAL), W,
-          sharp=[1], smooth=False, jit=0)
+    if glow:
+        lathe(pl.g, [(r * 1.28, -0.2), (r * 1.4, length * 0.72), (0, length * 1.08)], 4, Emit(glow, table), W,
+              sharp=[1], smooth=False, jit=0)
 
 
 def icicle(pl, p, length, r=0.13):
@@ -1223,6 +1324,15 @@ def preview_mesh(name, part, mat, emissive=None):
     return mesh_object(name, part.P, part.T, mat), sets
 
 
+def sign_posts(pl, M, half_w, h, col=WOOD):
+    """A sign's two posts, one beside each end of its board (half_w: the board's half width), so
+    neither stands over its face (run 19: one post up the middle showed over the den's heart)."""
+    for sx in (-1, 1):
+        x = sx * (half_w + 0.07)
+        box(pl.s, (x - 0.07, -0.07, -0.2), (x + 0.07, 0.07, h), col, M, skip=("-z",))
+        puff(pl.s, (x, 0, h), 0.09, tuple(c * 0.85 for c in col), M, segs=4, h=0.1)
+
+
 # ---------------------------------------------------------------------- Your den
 def den_terrain(x, y):
     notch = 1.0 - smooth01(4.6, 6.0, abs(x))  # the landscape leaves the cave mouth open
@@ -1274,7 +1384,7 @@ def build_den(pl):
               seed=i)
     pl.mark("stones")
     W = T(-2.4, 4.3, 0, rz=0.35)
-    box(s, (-0.07, -0.07, 0), (0.07, 0.07, 1.25), WOOD, W, skip=("-z",))
+    sign_posts(pl, W, 0.55, 1.62)  # (beside the board, not over the heart: run 19)
     box(s, (-0.55, -0.05, 0.85), (0.55, 0.05, 1.45), LIGHTWOOD, W, skip=())
     hrt = heart_outline(0.46)
     face(s, [(x, 0.056, 1.15 + z) for x, z in hrt], (0, 1, 0), (0.92, 0.34, 0.42), W)
@@ -1437,7 +1547,12 @@ def build_sanctuary(pl):
     for x, y, sd in ((13.2, 1.0, 1), (-11.6, 3.6, 2)):
         bush(pl, M, x, y, 1.1, seed=sd)
         pl.solid(M, x, y, 1.2)
-    path_strip(pl, M, [(-7.6, 3.6), (-4.8, 5.2), (0.0, 6.0), (5.6, 5.4)], 1.8, EARTH)
+    # Stepping stones from the hut's door and the paddock's gate to the landscape's path (which
+    # crosses the front: no modelled road doubling it, run 19).
+    for i, (x, y, r) in enumerate(((-7.0, 4.6, 0.5), (-5.9, 5.3, 0.46), (-4.7, 5.8, 0.5), (5.6, 4.6, 0.5),
+                                   (4.3, 5.4, 0.46), (3.0, 6.0, 0.5))):
+        lathe(s, [(r, -0.08), (r * 0.88, 0.12), (0, 0.15)], 5, (0.78, 0.74, 0.68), T(x, y, pl.gz(x, y), rz=i),
+              lump=0.08, seed=i)
     pl.mark("props")
     festival_lantern(pl, M, -2.6, 3.4, rz=math.radians(-20))
     pl.flat = 16.0
@@ -1492,7 +1607,7 @@ def build_vault(pl):
         pl.solid(M, x, y, r * 1.1)
     pl.mark("snow")
     Sg = T(-3.4, 3.6, 0, rz=0.3)
-    box(s, (-0.07, -0.07, 0), (0.07, 0.07, 1.3), WOOD, Sg, skip=("-z",))
+    sign_posts(pl, Sg, 0.45, 1.55)
     box(s, (-0.45, -0.05, 0.85), (0.45, 0.05, 1.45), LIGHTWOOD, Sg, skip=())
     dome(s, 0.5, 0.14, 5, SNOW, Sg @ T(0, 0, 1.45) @ T(0, 0, 0, s=(1.0, 0.2, 1.0)), rings=1)
     for sy in (1, -1):
@@ -1515,8 +1630,7 @@ def build_vault(pl):
 def build_trailhead(pl):
     M = I4
     s = pl.s
-    path_strip(pl, M, [(0, 13), (0.6, 7), (0, 0), (-0.8, -6), (0.4, -13)], 2.6, EARTH)
-    pl.mark("path")
+    # (No modelled road through the gate: the landscape's path arrives here, run 19.)
     for sx in (-1, 1):  # the gate: log posts, a beam, braces
         lathe(s, [(0.36, -0.2), (0.3, 5.3), (0.0, 5.42)], 7, WOOD, T(sx * 3.3, 0, 0), sharp=[1], lump=0.05)
         sweep(s, [(sx * 3.25, 0, 3.6), (sx * 2.35, 0, 4.72)], 0.1, 4, DARKWOOD, M, smooth=False)
@@ -1540,7 +1654,8 @@ def build_trailhead(pl):
     P = T(3.8, 3.8, 0)
     box(s, (-0.09, -0.09, 0), (0.09, 0.09, 2.5), WOOD, P, skip=("-z",))
     puff(s, (0, 0, 2.5), 0.14, CLOTH_RED, P, segs=4, h=0.18)
-    arrow = [(-0.2, -0.13), (0.72, -0.13), (0.72, -0.24), (1.02, 0.0), (0.72, 0.24), (0.72, 0.13), (-0.2, 0.13)]
+    # (The arms fixed to the post's side, their faces clear of it: run 19.)
+    arrow = [(0.13, -0.13), (0.8, -0.13), (0.8, -0.24), (1.1, 0.0), (0.8, 0.24), (0.8, 0.13), (0.13, 0.13)]
     for z, rz, c in ((2.2, math.radians(95), CLOTH_RED), (1.82, math.radians(-150), CLOTH_TEAL),
                      (1.44, math.radians(10), CLOTH_YELLOW)):
         prism(s, [(x, zz) for x, zz in arrow], 0.08, c, P @ T(0, 0, z, rz=rz) @ T(0, -0.04, 0), back=True)
@@ -1593,8 +1708,8 @@ def build_trailhead(pl):
     pl.solid(F, 0, 0, 0.9)
     pl.mark("camp")
     N = T(3.8, -1.8, 0, rz=math.radians(-100))
-    for sx in (-0.8, 0.8):
-        box(s, (sx - 0.07, -0.07, 0), (sx + 0.07, 0.07, 1.9), WOOD, N, skip=("-z",))
+    for sx in (-1.02, 1.02):  # (at its ends, clear of the notices)
+        box(s, (sx - 0.07, -0.07, -0.2), (sx + 0.07, 0.07, 1.9), WOOD, N, skip=("-z",))
     box(s, (-0.95, -0.05, 0.9), (0.95, 0.05, 1.75), LIGHTWOOD, N, skip=())
     box(s, (-1.1, -0.25, 1.9), (1.1, 0.25, 2.0), (0.62, 0.40, 0.28), N, skip=())
     for x, z, c in ((-0.5, 1.4, CLOTH_CREAM), (0.1, 1.2, (0.96, 0.90, 0.70)), (0.55, 1.45, CLOTH_PINK)):
@@ -1627,17 +1742,20 @@ def build_arena(pl):
     M = I4
     s = pl.s
     R0 = 15.0
-    ground_patch(pl, M, R0, 20, SAND, rings=[R0, 8.0])
-    lathe(s, [(9.4, 0.08), (8.6, 0.08)], 20, CLOTH_CREAM, M, smooth=False)
-    face(s, [(x * 2.6, y * 2.6, 0.08) for x, y in star_outline(1.0, 0.45, 5)], (0, 0, 1), (0.92, 0.46, 0.34), M)
-    face(s, [(math.cos(2 * math.pi * k / 10) * 0.9, math.sin(2 * math.pi * k / 10) * 0.9, 0.09) for k in range(10)],
-         (0, 0, 1), GOLD, M)
+    # The sand floor follows the landscape's ground (a few hands off level across it): flat at
+    # the anchor's height, the ground covered its front (run 19, "partly under the ground").
+    ground_patch(pl, M, R0, 20, SAND, rings=[R0, 11.6, 8.0, 4.4], z=0.08, hug=True)
+    hug_ring(pl, 8.6, 9.4, 20, 0.11, CLOTH_CREAM)
+    z0 = pl.gz(0, 0)
+    face(s, [(x * 2.6, y * 2.6, z0 + 0.12) for x, y in star_outline(1.0, 0.45, 5)], (0, 0, 1), (0.92, 0.46, 0.34), M)
+    face(s, [(math.cos(2 * math.pi * k / 10) * 0.9, math.sin(2 * math.pi * k / 10) * 0.9, z0 + 0.13)
+          for k in range(10)], (0, 0, 1), GOLD, M)
     pl.mark("floor")
     deg = math.radians
-    wall = [(15.7, -0.1), (15.7, 0.95), (15.2, 0.95), (15.2, -0.1)]
+    wall = [(15.7, -0.55), (15.7, 0.95), (15.2, 0.95), (15.2, -0.55)]  # (their feet below the ground's dips)
     for a0, a1 in ((deg(103), deg(248)), (deg(292), deg(437))):
         lathe(s, wall, 12, STONE_WARM, M, sharp=[1, 2], smooth=True, arc=(a0, a1), caps=True, lump=0.02)
-    stands = [(18.2, -0.1), (18.2, 1.75), (17.0, 1.75), (17.0, 1.02), (15.72, 1.02)]
+    stands = [(18.2, -0.55), (18.2, 1.75), (17.0, 1.75), (17.0, 1.02), (15.72, 1.02)]
 
     def seat(p, n):
         return LIGHTWOOD if n.z > 0.5 else (WOOD if n.x * p.x + n.y * p.y < 0 else DARKWOOD)
@@ -1652,7 +1770,7 @@ def build_arena(pl):
     for k, a in enumerate((deg(125), deg(150), deg(175), deg(200), deg(225), deg(-45), deg(-20), deg(5), deg(30),
                            deg(55))):
         x, y = math.cos(a) * 18.5, math.sin(a) * 18.5
-        cylinder(s, 0.09, 5.6, 5, WOOD, T(x, y, 0), smooth=False)
+        cylinder(s, 0.09, 6.0, 5, WOOD, T(x, y, -0.4), smooth=False)
         puff(s, (x, y, 5.6), 0.16, GOLD, M, segs=4, h=0.24)
         out = Vector((math.cos(a), math.sin(a), 0))
         tip = Vector((x, y, 0)) + out * 1.5
@@ -1662,7 +1780,7 @@ def build_arena(pl):
     # the entrance arch (dragon-sized) with an emblem and banners
     E = T(0, 15.45, 0)
     for sx in (-1, 1):
-        box(s, (sx * 4.0 - 0.65, -0.65, 0), (sx * 4.0 + 0.65, 0.65, 6.0), STONE_WARM, E, skip=("-z",))
+        box(s, (sx * 4.0 - 0.65, -0.65, -0.4), (sx * 4.0 + 0.65, 0.65, 6.0), STONE_WARM, E, skip=("-z",))
         box(s, (sx * 4.0 - 0.8, -0.8, 6.0), (sx * 4.0 + 0.8, 0.8, 6.45), STONE, E, skip=("-z",))
         puff(s, (sx * 4.0, 0, 6.45), 0.3, GOLD, E, segs=4, h=0.45)
         pl.solid(E, sx * 4.0, 0, 1.1)
@@ -1679,7 +1797,7 @@ def build_arena(pl):
     pl.mark("arch")
     # the festival stage at the back, with the great lantern
     S = T(0, -17.0, 0)
-    box(s, (-4.0, -2.2, 0), (4.0, 2.2, 1.0), WOOD, S, skip=("-z",))
+    box(s, (-4.0, -2.2, -0.35), (4.0, 2.2, 1.0), WOOD, S, skip=("-z",))
     face(s, [(-4.0, 2.21, 0.8), (4.0, 2.21, 0.8), (4.0, 2.21, 0.95), (-4.0, 2.21, 0.95)], (0, 1, 0), CLOTH_RED, S)
     box(s, (-1.3, 2.2, 0), (1.3, 2.8, 0.34), LIGHTWOOD, S, skip=("-z",))
     box(s, (-1.3, 2.2, 0.34), (1.3, 2.5, 0.67), LIGHTWOOD, S, skip=("-z",))
@@ -1696,6 +1814,7 @@ def build_arena(pl):
     festival_lantern(pl, S @ T(0, -0.7, 1.0), 0, 0, rz=math.pi / 2, scale=2.0)
     pl.door = [0.0, 15.4]
     pl.flat = 21.0
+    pl.terrain = "land"
     pl.terrain_size = 50
     pl.view = dict(radius=21.0, target=(0, -1.0, 1.5), azimuth=18.0, elevation=42.0)
 
@@ -2173,7 +2292,7 @@ def build_mill(pl):
     for k, (x, y) in enumerate(((-11.4, 0.6), (-10.9, 0.1))):
         blob(s, 0.36, 0.3, 0.42, 6, 3, (0.94, 0.90, 0.80), T(x, y, 0.36, rz=k), jit=0.05)
     pl.solid(M, -11.2, 0.4, 0.7)
-    path_strip(pl, M, [(-9.0, 0.0), (-10.6, 0.3), (-12.8, 0.4)], 2.0, EARTH)
+    # (No modelled road to its door: the landscape's path runs beside it, run 19.)
     reeds(pl, T(0, 0, MILL_WATER + 0.1), 5.5, 4.2, 5, 1.3, seed=1)
     reeds(pl, T(0, 0, MILL_WATER + 0.1), -5.5, -4.6, 5, 1.3, seed=2)
     for x, y, sd in ((-8.2, 3.2, 1), (8.4, 3.0, 2), (-15.8, 0.6, 3), (8.0, -3.4, 4)):
@@ -2395,6 +2514,737 @@ def build_ruins(pl):
     pl.view = dict(radius=11.0, target=(0.3, -0.8, 2.4), azimuth=24.0, elevation=36.0)
 
 
+# ------------------------------------------------------------------------------ 1.0 (D90): shared
+BASALT = (0.34, 0.30, 0.33)
+BASALT_LIGHT = (0.50, 0.44, 0.45)
+ASH_STONE = (0.66, 0.60, 0.56)
+LAVA_CRUST = (0.34, 0.12, 0.08)
+LAVA_GLOW = (1.0, 0.44, 0.12)
+EMBER = (1.0, 0.62, 0.22)
+BRAZIER_LIGHT = {"day": 0.2, "evening": 0.7, "night": 1.0}  # braziers' and lava's light on the stone near them
+
+
+def on_ground(pl, x, y, rz=0.0, s=None, sink=0.0):
+    """A frame at (x, y) standing on the landscape's ground (sunk `sink` into it)."""
+    return T(x, y, pl.gz(x, y) - sink, rz=rz, s=s)
+
+
+def land_ao(pl, radius, step=4.0):
+    """The landscape round the place (its bowl's walls, its beach) as occluders for ambient
+    occlusion only, in place of the flat ground plane; quads in its frame."""
+    n = int(radius / step)
+    pts = {(i, j): (i * step, j * step, pl.gz(i * step, j * step)) for j in range(-n, n + 1) for i in range(-n, n + 1)}
+    pl.ground = []
+    pl.ao_ground = [(pts[i, j], pts[i + 1, j], pts[i + 1, j + 1], pts[i, j + 1]) for j in range(-n, n) for i in range(-n, n)]
+
+
+def pebble(pl, M, x, y, r, col=STONE, h=None, seed=0.0, segs=5, part=None):
+    """A low round stone, its foot in the ground (3 x segs triangles)."""
+    hh = h or r * 0.55
+    lathe(part or pl.s, [(r, -0.12), (r * 0.8, hh * 0.75), (0, hh)], segs, col, M @ T(x, y, 0, rz=seed), lump=0.12,
+          seed=seed)
+
+
+def bead(part, M, p, r, col, h=None, segs=4):
+    """A little double pyramid round p (a float, a paper lantern), facing out."""
+    hh = r * 1.2 if h is None else h
+    lathe(part, [(0.0, -hh), (r, 0.0), (0.0, hh)], segs, col, M @ T(*p), smooth=False, jit=0.03)
+
+
+def flame(pl, M, h=0.9, r=0.3, table=GLOW, rgb=EMBER):
+    """A fire's flames (glow part): two crossed tongues fading to their tips over a glowing bed."""
+    base = M @ Vector((0, 0, 0))
+    fire = Emit(rgb, table, fade=lambda p, c=base, hh=h: max(0.0, 1 - (p.z - c.z) / hh))
+    for a in (0.0, math.pi / 2):
+        face(pl.g, [(-r, 0, 0.0), (r, 0, 0.0), (0, 0, h)], (0, 1, 0), fire, M @ T(0, 0, 0, rz=a))
+    disc(pl.g, r * 1.5, 6, Emit((1.0, 0.45, 0.15), table, fade=lambda p: 0.8), M @ T(0, 0, 0.04), jit=0)
+
+
+def flame_outline(h=1.0):
+    """A flame's outline in XZ (the battle league's emblem), counter-clockwise from its foot."""
+    pts = [(0.0, 0.0), (0.34, 0.1), (0.44, 0.4), (0.3, 0.72), (0.16, 0.56), (0.02, 1.0), (-0.18, 0.64),
+           (-0.34, 0.76), (-0.44, 0.38), (-0.3, 0.1)]
+    return [(x * h, z * h) for x, z in pts]
+
+
+def crescent_outline(r=0.4):
+    """A crescent moon in XZ (the pageant's emblem), counter-clockwise."""
+    outer = [(math.cos(a) * r, math.sin(a) * r) for a in (math.radians(d) for d in range(60, 330, 30))]
+    inner = [(0.3 * r + math.cos(a) * r * 0.78, 0.12 * r + math.sin(a) * r * 0.78)
+             for a in (math.radians(d) for d in range(300, 60, -30))]
+    return outer + inner
+
+
+def board_sign(pl, M, w, h_top, col, emblem, emblem_col, paper=CLOTH_CREAM, post=DARKWOOD):
+    """A notice board for a league (its sign): two posts at its ends, the board, a paper panel and
+    an emblem on top, facing +Y. The feature that owns it stands an invisible spot there."""
+    s = pl.s
+    sign_posts(pl, M, w / 2, h_top + 0.25, post)
+    box(s, (-w / 2, -0.07, h_top - 1.2), (w / 2, 0.07, h_top), col, M, skip=())
+    face(s, [(-w / 2 + 0.12, 0.075, h_top - 1.08), (w / 2 - 0.12, 0.075, h_top - 1.08), (w / 2 - 0.12, 0.075, h_top - 0.12),
+             (-w / 2 + 0.12, 0.075, h_top - 0.12)], (0, 1, 0), paper, M)
+    for k in range(4):  # the four leagues' marks, Ember to Starfire
+        c = ((0.96, 0.56, 0.26), (0.92, 0.36, 0.26), (0.80, 0.26, 0.40), (0.98, 0.84, 0.36))[k]
+        x = -w / 2 + 0.36 + (w - 0.72) * k / 3
+        face(s, [(x - 0.1, 0.08, h_top - 0.95), (x + 0.1, 0.08, h_top - 0.95), (x + 0.1, 0.08, h_top - 0.75),
+                 (x - 0.1, 0.08, h_top - 0.75)], (0, 1, 0), c, M)
+    prism(s, emblem, 0.1, emblem_col, M @ T(0, -0.05, h_top - 0.05), back=True, sides=False)
+    pl.solid(M, 0, 0, w * 0.55)
+
+
+# ---------------------------------------------------------------------- Emberpeak Caldera
+def lava_crack(pl, pts, width=0.55):
+    """A crack across the crater's floor with lava in it: a dark crust strip and a glowing seam
+    over it (both a hand above the floor; tapered at the ends)."""
+    P = [Vector((x, y, 0.0)) for x, y in pts]
+    for part, w, z, col in ((pl.s, width, 0.05, LAVA_CRUST), (pl.g, width * 0.5, 0.08, Emit(LAVA_GLOW, LAVA))):
+        L, R = [], []
+        for i, p in enumerate(P):
+            t = (P[min(i + 1, len(P) - 1)] - P[max(i - 1, 0)]).normalized()
+            side = Vector((-t.y, t.x, 0)) * (w / 2) * (0.3 if i in (0, len(P) - 1) else 1.0)
+            L.append(p + side + Vector((0, 0, z)))
+            R.append(p - side + Vector((0, 0, z)))
+        grid(part, [R, L], col, I4, smooth=False, jit=0.04)
+
+
+def lava_pool(pl, x, y, r, segs=8, seed=0.0):
+    """A pool of lava in a basalt rim, glowing hottest in its middle, lighting the stone near it."""
+    W = T(x, y, 0, rz=seed)
+    lathe(pl.s, [(r + 0.6, -0.25), (r + 0.4, 0.22), (r, 0.1)], segs, BASALT, W, lump=0.14, seed=seed)
+    disc(pl.s, r * 1.02, segs, LAVA_CRUST, W, z=0.06)
+    c = W @ Vector((0, 0, 0))
+    disc(pl.g, r, segs, Emit(LAVA_GLOW, LAVA, fade=lambda p, c=c, r=r: 0.55 + 0.45 * max(0.0, 1 - (p - c).length / r)),
+         W, z=0.09, rings=[r, r * 0.5], jit=0)
+    pl.lamp(W, (0, 0, 0.9), r * 2.5 + 2.5, 0.8, rgb=EMBER, table=BRAZIER_LIGHT)
+    pl.solid(W, 0, 0, r + 0.5)
+
+
+@place("caldera", "Emberpeak Caldera")
+def build_caldera(pl):
+    """The battle league's grand stage on the crater's flat floor (radius ~30 m; the inner walls
+    rise steeply behind it to the rim; the way in is the rim's gap at +Y, the path ending ~29 m
+    out). The ring in the middle, the champion's dais behind it, terraces for a crowd against the
+    far wall, basalt pillars with braziers, lava in cracks and pools at the sides."""
+    M = I4
+    s = pl.s
+    deg = math.radians
+    # The battle ring: a round stone floor a low step up, a dark inlay round it, the league's flame.
+    RR, RH = 7.0, 0.25
+    lathe(s, [(RR + 0.35, -0.3), (RR + 0.35, RH - 0.1), (RR + 0.1, RH), (0, RH)], 16,
+          lambda p, n: STONE_WARM if n.z > 0.7 else (0.64, 0.56, 0.50), M, sharp=[1, 2], jit=0.06)
+    lathe(s, [(5.7, RH + 0.006), (5.3, RH + 0.006)], 16, (0.66, 0.30, 0.24), M, smooth=False, jit=0.03)
+    face(s, [(x, z - 0.8, RH + 0.01) for x, z in flame_outline(1.6)], (0, 0, 1), GOLD, M)
+    for sx in (-1, 1):  # where the two trainers stand, just off the ring's ends
+        lathe(s, [(1.0, -0.2), (1.0, 0.04), (0.0, 0.06)], 7, BASALT_LIGHT, T(sx * 8.9, 0, 0), sharp=[1], smooth=False)
+    pl.extra["anchors"] = {"ring": [0.0, 0.0, RH], "sides": [[-8.9, 0.0], [8.9, 0.0]]}
+    pl.mark("ring")
+    # Basalt pillars at the ring's corners, a brazier on each (always alight).
+    for k, a in enumerate((deg(40), deg(140), deg(220), deg(320))):
+        W = T(math.cos(a) * 10.6, math.sin(a) * 10.6, 0, rz=0.4 * k)
+        lathe(s, [(0.95, -0.3), (0.84, 3.9), (1.05, 4.1), (1.05, 4.3)], 6,
+              lambda p, n: BASALT_LIGHT if n.z > 0.6 else BASALT, W, sharp=[1, 2], smooth=False, jit=0.08)
+        lathe(s, [(0.4, 4.3), (0.95, 4.75), (0.82, 4.82), (0.0, 4.6)], 6, IRON, W, sharp=[1, 2], smooth=False)
+        flame(pl, W @ T(0, 0, 4.62), h=1.3, r=0.42, table=LAVA)
+        pl.lamp(W, (0, 0, 5.2), 8.5, 0.9, rgb=EMBER, table=BRAZIER_LIGHT)
+        pl.solid(W, 0, 0, 1.2)
+    pl.mark("pillars")
+    # Terraces for the crowd against the far wall (stepping up into it).
+    steps = [(21.0, -0.4), (21.0, 0.45), (23.0, 0.45), (23.0, 0.9), (25.0, 0.9), (25.0, 1.35), (27.0, 1.35),
+             (27.0, 1.8), (29.5, 1.8), (29.5, -0.4)]
+
+    def terrace(p, n):  # warm stone seats over dark basalt risers (they read as steps against the wall)
+        return (0.80, 0.68, 0.56) if n.z > 0.5 else (BASALT_LIGHT if n.x * p.x + n.y * p.y < 0 else BASALT)
+    lathe(s, steps, 10, terrace, M, sharp=list(range(1, 9)), arc=(deg(222), deg(318)), caps=True, jit=0.07)
+    for k in range(13):
+        a = deg(224) + (deg(316) - deg(224)) * k / 12
+        pl.solid(M, math.cos(a) * 22.6, math.sin(a) * 22.6, 1.7)
+    for k, a in enumerate((deg(240), deg(270), deg(300))):  # pennants on the top tier
+        x, y = math.cos(a) * 28.2, math.sin(a) * 28.2
+        cylinder(s, 0.07, 3.4, 4, DARKWOOD, T(x, y, 1.7), smooth=False)
+        puff(s, (x, y, 5.1), 0.13, GOLD, M, segs=4, h=0.2)
+        tang = Vector((-math.sin(a), math.cos(a), 0))
+        tip = Vector((x, y, 0)) + tang * 1.4
+        face(s, [(x, y, 5.0), (x, y, 4.1), (tip.x, tip.y, 4.55)], Vector((math.cos(a), math.sin(a), 0)),
+             (CLOTH_RED, (0.98, 0.62, 0.22), CLOTH_YELLOW)[k], M, double=True)
+    pl.mark("terraces")
+    # The champion's dais behind the ring: stepped stone, a throne with the league's flame.
+    D = T(0, -14.0, 0)
+    lathe(s, [(3.4, -0.3), (3.4, 0.3), (2.6, 0.3), (2.6, 0.62), (1.8, 0.62), (1.8, 0.94), (0, 0.94)], 8,
+          lambda p, n: ASH_STONE if n.z > 0.5 else BASALT_LIGHT, D, sharp=[1, 2, 3, 4, 5], smooth=False,
+          a0=math.pi / 8)
+    box(s, (-0.6, -0.45, 0.94), (0.6, 0.35, 1.38), (0.62, 0.30, 0.26), D, skip=("-z",))
+    box(s, (-0.66, -0.62, 0.94), (0.66, -0.42, 2.7), BASALT_LIGHT, D, skip=("-z",))
+    for sx in (-1, 1):
+        box(s, (sx * 0.62 - 0.12, -0.45, 1.38), (sx * 0.62 + 0.12, 0.3, 1.72), BASALT_LIGHT, D, skip=("-z",))
+    prism(s, flame_outline(0.9), 0.08, GOLD, D @ T(0, -0.41, 1.72), back=False, sides=False)
+    pl.solid(D, 0, 0, 3.5)
+    pl.mark("dais")
+    # The banner arch at the way in, the league's flame on top.
+    E = T(0, 25.5, 0)
+    for sx in (-1, 1):
+        box(s, (sx * 4.8 - 0.55, -0.55, -0.4), (sx * 4.8 + 0.55, 0.55, 5.2), BASALT, E, skip=("-z",))
+        box(s, (sx * 4.8 - 0.7, -0.7, 5.2), (sx * 4.8 + 0.7, 0.7, 5.6), BASALT_LIGHT, E, skip=("-z",))
+        pl.solid(E, sx * 4.8, 0, 0.95)
+    sweep(s, [(-4.8 + 9.6 * k / 6, 0, 5.45 + 1.5 * math.sin(math.pi * k / 6)) for k in range(7)], 0.36, 5, DARKWOOD,
+          E, caps=True)
+    prism(s, flame_outline(1.3), 0.14, GOLD, E @ T(0, -0.07, 6.85), back=True, sides=False)
+    for sx, c in ((-2.5, CLOTH_RED), (2.5, (0.98, 0.62, 0.22))):
+        face(s, [(sx - 0.62, 0.02, 6.15), (sx + 0.62, 0.02, 6.15), (sx + 0.62, 0.02, 4.0), (sx, 0.02, 3.5),
+                 (sx - 0.62, 0.02, 4.0)], (0, 1, 0), c, E, double=True)
+    pl.mark("arch")
+    # The league's board beside the way in, turned to the path.
+    B = T(-7.2, 20.8, 0, rz=-0.5)
+    board_sign(pl, B, 2.2, 2.35, DARKWOOD, flame_outline(0.6), GOLD, post=BASALT)
+    pl.extra["anchors"]["board"] = world(B, (0, 0, 0))[:2]
+    pl.mark("board")
+    # Lava at the sides (never on the ring or the way in), boulders by the walls.
+    for pts in (((-13.5, 6.0), (-15.2, 8.2), (-14.6, 10.6), (-16.8, 12.8), (-18.6, 12.2)),
+                ((-12.8, -7.0), (-15.0, -8.4), (-17.6, -7.6), (-19.4, -9.8)),
+                ((13.0, 9.4), (15.2, 8.2), (17.4, 9.8), (19.8, 9.0), (21.4, 11.2)),
+                ((14.0, -9.6), (15.8, -12.0), (18.4, -12.6)),
+                ((-8.6, 15.8), (-11.0, 17.6), (-11.6, 20.2))):
+        lava_crack(pl, pts)
+    lava_pool(pl, -19.6, 3.2, 2.1, seed=0.4)
+    lava_pool(pl, 20.2, -2.6, 1.6, seed=1.3)
+    pl.mark("lava")
+    for k, (x, y, r) in enumerate(((-24.0, -10.0, 1.4), (24.6, 6.4, 1.2), (-22.6, 14.6, 1.0), (21.0, 16.6, 1.1),
+                                   (8.6, 22.8, 0.8))):
+        rock(pl, M, x, y, r, BASALT, (1.2, 1.0, 0.8), seed=k + 2, segs=6, rings=3, moss=ASH_STONE)
+        pl.solid(M, x, y, r * 1.1)
+    pl.mark("rocks")
+    pl.flat = 30.0
+    land_ao(pl, 56.0)
+    pl.terrain = "land"
+    pl.terrain_size = 58
+    pl.view = dict(radius=30.0, target=(0, -3.0, 1.5), azimuth=20.0, elevation=42.0)
+
+
+# ---------------------------------------------------------------------- Moonpetal Glade
+PETALS = ((0.70, 0.84, 1.0), (0.80, 0.70, 1.0), (1.0, 0.74, 0.88))          # soft blue, violet, pink
+PETAL_GLOW = ((0.24, 0.50, 1.0), (0.50, 0.28, 1.0), (1.0, 0.32, 0.66))      # (added over them: keep them coloured)
+LEAF_NIGHT = (0.26, 0.50, 0.42)
+WILLOW = (0.44, 0.64, 0.46)
+
+
+def moonpetals(pl, M, heads=3, seed=0, r=0.5):
+    """A clump of moonpetals: pale flowers on stems over a star of leaves, glowing softly by day
+    and brightly at night."""
+    s = pl.s
+    leaf = []
+    for k in range(8):
+        a = seed * 0.9 + math.pi * k / 4
+        rr = r * (1.0 if k % 2 == 0 else 0.34)
+        leaf.append((math.cos(a) * rr, math.sin(a) * rr, 0.05))
+    face(s, leaf, (0, 0, 1), LEAF_NIGHT, M, jit=0.08)
+    for k in range(heads):
+        a = seed * 1.7 + k * 2.1
+        c = (seed + k) % 3
+        hx, hy, hz = math.cos(a) * r * 0.42, math.sin(a) * r * 0.42, 0.34 + 0.12 * (k % 2)
+        face(s, [(hx - 0.025, hy, 0.05), (hx + 0.025, hy, 0.05), (hx, hy, hz)], (math.cos(a), math.sin(a), 0),
+             LEAF_NIGHT, M, double=True)
+        puff(s, (hx, hy, hz - 0.04), 0.13, PETALS[c], M, segs=4, h=0.1)
+        puff(pl.g, (hx, hy, hz - 0.09), 0.34, Emit(PETAL_GLOW[c], MOONPETAL), M, segs=4, h=0.26)
+    pl.lamp(M, (0, 0, 0.5), 2.8, 0.35, rgb=PETAL_GLOW[seed % 3], table=MOONPETAL)
+
+
+def paper_lantern(pl, p, r=0.16, col=CLOTH_CREAM, glow=(1.0, 0.72, 0.40)):
+    """A little paper lantern hanging at p: two pyramids (solid) in a glowing shell."""
+    bead(pl.s, I4, p, r, col)
+    bead(pl.g, I4, p, r * 1.35, Emit(glow, GLOW), h=r * 1.9)
+    pl.lamp(I4, p, 3.0, 0.35)
+
+
+def lantern_string(pl, a, b, sag, count):
+    a, b = V(a), V(b)
+
+    def at(t):
+        return a.lerp(b, t) - Vector((0, 0, sag * 4 * t * (1 - t)))
+    ribbon(pl.s, [at(t / 3) for t in range(4)], 0.04, DARKWOOD, I4, normal_hint=(0, 0, 1))
+    for k in range(count):
+        paper_lantern(pl, at((k + 0.5) / count) - Vector((0, 0, 0.22)))
+
+
+def willow(pl, M, h=6.0, r=2.8, seed=0.0):
+    """A simple weeping willow: a leaning trunk, a soft canopy, fronds hanging from its rim."""
+    s = pl.s
+    cylinder(s, 0.3, h * 0.58, 5, (0.46, 0.36, 0.28), M @ T(0, 0, -0.3), r_top=0.2, top=False)
+    blob(s, r, r * 0.92, h * 0.26, 7, 4, WILLOW, M @ T(0, 0, h * 0.64), lump=0.16, seed=seed, zcut=-h * 0.1)
+    for k in range(9):
+        a = seed + k * 2 * math.pi / 9
+        d = Vector((math.cos(a), math.sin(a), 0))
+        top = d * r * 0.86 + Vector((0, 0, h * 0.6))
+        mid = d * r * 1.0 + Vector((0, 0, h * 0.34))
+        bot = d * r * 1.04 + Vector((0, 0, h * (0.06 + 0.05 * (k % 3))))
+        ribbon(s, [M @ top, M @ mid, M @ bot], 0.62, (0.36, 0.56, 0.38), I4, normal_hint=tuple(d))
+    pl.solid(M, 0, 0, 0.6)
+
+
+def glade_stall(pl, M, cols, goods):
+    """A small stall for the pageant's wares: a counter, four posts, a striped awning."""
+    s = pl.s
+    w, d, ch = 2.6, 1.2, 0.95
+    box(s, (-w / 2, -d / 2, -0.2), (w / 2, d / 2, ch), WOOD, M, skip=("-z",))
+    box(s, (-w / 2 - 0.06, -d / 2 - 0.04, ch), (w / 2 + 0.06, d / 2 + 0.08, ch + 0.07), LIGHTWOOD, M, skip=("-z",))
+    for sx in (-1, 1):
+        for y, top in ((d / 2 + 0.02, 2.3), (-d / 2 - 0.2, 2.7)):
+            box(s, (sx * w / 2 - 0.07, y - 0.07, -0.2), (sx * w / 2 + 0.07, y + 0.07, top), TIMBER, M, skip=("-z", "+z"))
+    awning(pl, M, w + 0.4, d + 0.8, 2.8, 2.28, 4, cols, sag=0.14, valance=0.24)
+    goods(M @ T(0, 0.1, ch + 0.07))
+    pl.solid(M, -w / 4, 0, d * 0.7)
+    pl.solid(M, w / 4, 0, d * 0.7)
+
+
+def accessory_goods(pl, M):
+    s = pl.s
+    # a little pointed hat, a bow, a flower crown, a scarf over the edge
+    lathe(s, [(0.2, 0.0), (0.07, 0.28), (0.0, 0.36)], 5, CLOTH_LILAC, M @ T(-0.8, 0, 0.02), smooth=False)
+    disc(s, 0.28, 5, CLOTH_LILAC, M @ T(-0.8, 0, 0.02), jit=0.02)
+    for sx in (-1, 1):
+        face(s, [(0.0, 0.0, 0.12), (sx * 0.2, 0.0, 0.24), (sx * 0.2, 0.0, 0.02)], (0, 1, 0), CLOTH_PINK,
+             M @ T(-0.15, 0.1, 0.0), double=True)
+    for k in range(3):  # a flower crown's blooms
+        a = 2 * math.pi * k / 3
+        puff(s, (0.45 + math.cos(a) * 0.17, math.sin(a) * 0.17, 0.02), 0.09, PETALS[k], M, segs=4, h=0.07)
+    ribbon(s, [(0.95, 0.2, 0.01), (1.0, 0.45, 0.0), (1.02, 0.62, -0.35)], 0.22, CLOTH_TEAL, M, normal_hint=(1, 0, 0.3))
+
+
+def dye_goods(pl, M):
+    s = pl.s
+    for k, c in enumerate(((0.90, 0.34, 0.40), (0.40, 0.56, 0.92), (0.98, 0.80, 0.30), (0.52, 0.78, 0.44))):
+        x = -0.9 + 0.6 * k
+        cylinder(s, 0.16, 0.26, 5, lambda p, n, c=c: c if n.z > 0.5 else (0.78, 0.66, 0.54), M @ T(x, -0.05, 0),
+                 r_top=0.18, smooth=False)
+
+
+@place("glade", "Moonpetal Glade")
+def build_glade(pl):
+    """The pageant's hall: a night garden in the west woods (flat radius ~30 m; the path arrives
+    at +Y, ~28 m out). A round wooden stage under a flowered arch at the back, benches before it,
+    the judges' table at its side, the accessory and dye stalls by the way in, strings of paper
+    lanterns, a willow, moonpetals glowing everywhere (softly by day, brightly at night)."""
+    M = I4
+    s = pl.s
+    SC = Vector((0.0, -8.0, 0.0))
+    SR, SH = 4.6, 0.55
+    St = on_ground(pl, SC.x, SC.y)
+    zs = pl.gz(SC.x, SC.y)
+
+    def stage_col(p, n):
+        return LIGHTWOOD if n.z > 0.7 else WOOD
+    lathe(s, [(SR, -0.35), (SR, SH - 0.08), (SR - 0.12, SH), (0, SH)], 14, stage_col, St, sharp=[1, 2], jit=0.05)
+    for k in (-3, -1.5, 0, 1.5, 3):  # boards across its top
+        half = math.sqrt(SR * SR - k * k) - 0.3
+        face(s, [(k - 0.03, -half, SH + 0.004), (k + 0.03, -half, SH + 0.004), (k + 0.03, half, SH + 0.004),
+                 (k - 0.03, half, SH + 0.004)], (0, 0, 1), (0.60, 0.42, 0.26), St, jit=0.0)
+    for y0, y1, top in ((SR - 0.3, SR + 0.62, 0.19), (SR - 0.4, SR + 0.2, 0.37)):  # steps up at its front
+        box(s, (-1.3, y0, -0.3), (1.3, y1, top), LIGHTWOOD, St, skip=("-z",))
+    pl.solid(St, 0, 0, SR - 0.3)
+    anchors = {"stage": [SC.x, SC.y, round(zs + SH, 3)],
+               "rivals": [[round(SC.x + x, 2), round(SC.y + y, 2)] for x, y in ((-3.0, 0.6), (-1.0, 1.2), (1.0, 1.2),
+                                                                                  (3.0, 0.6))]}
+    pl.mark("stage")
+    # The flowered arch at the stage's back.
+    A = St @ T(0, -SR + 1.1, SH)
+    for sx in (-1, 1):
+        box(s, (sx * 2.6 - 0.1, -0.1, 0), (sx * 2.6 + 0.1, 0.1, 2.9), LIGHTWOOD, A, skip=("-z", "+z"))
+    arc = [Vector((-2.6 + 5.2 * k / 6, 0, 2.9 + 1.3 * math.sin(math.pi * k / 6))) for k in range(7)]
+    sweep(s, arc, 0.13, 4, LIGHTWOOD, A, twist=math.pi / 4)
+    for k in range(7):
+        t = (k + 0.5) / 7
+        p = Vector((-2.6 + 5.2 * t, 0.12 * (1 if k % 2 else -1), 2.9 + 1.3 * math.sin(math.pi * t) + 0.12))
+        c = k % 3
+        puff(s, p, 0.2, PETALS[c], A, segs=4, h=0.14)
+        puff(pl.g, p - Vector((0, 0, 0.05)), 0.42, Emit(PETAL_GLOW[c], MOONPETAL), A, segs=4, h=0.3)
+    pl.lamp(A, (0, 0.8, 3.4), 6.0, 0.45, rgb=(0.62, 0.62, 1.0), table=MOONPETAL)
+    for sx in (-1, 1):  # vines up the posts
+        ribbon(s, [(sx * 2.6, 0.12, 0.1), (sx * 2.5, 0.13, 1.4), (sx * 2.7, 0.12, 2.8)], 0.2, LEAF_NIGHT, A,
+               normal_hint=(0, 1, 0))
+    pl.mark("arch")
+    # Benches for the audience, an aisle down the middle.
+    for y in (-0.6, 1.8, 4.2):
+        for sx in (-1, 1):
+            Bn = on_ground(pl, sx * 2.7, y)
+            box(s, (-1.2, -0.22, 0.38), (1.2, 0.22, 0.48), WOOD, Bn, skip=("-z",))
+            box(s, (-0.9, -0.14, -0.2), (0.9, 0.14, 0.38), DARKWOOD, Bn, skip=("-z", "+z"))
+            pl.solid(Bn, -0.6, 0, 0.6)
+            pl.solid(Bn, 0.6, 0, 0.6)
+    pl.mark("benches")
+    # The judges' table beside the stage, turned to it; three stools behind it.
+    jx, jy = 7.4, -2.8
+    J = on_ground(pl, jx, jy, rz=math.atan2(-(SC.x - jx), SC.y - jy))  # its front (+Y) to the stage
+    box(s, (-1.3, -0.4, 0.74), (1.3, 0.4, 0.84), LIGHTWOOD, J, skip=())
+    face(s, [(1.28, 0.42, 0.2), (-1.28, 0.42, 0.2), (-1.28, 0.42, 0.8), (1.28, 0.42, 0.8)], (0, 1, 0),
+         (0.52, 0.40, 0.76), J, jit=0.02)
+    for lx in (-1.15, 1.15):
+        box(s, (lx - 0.06, -0.3, -0.2), (lx + 0.06, 0.3, 0.74), DARKWOOD, J, skip=("-z", "+z"))
+    for lx in (-0.8, 0.0, 0.8):
+        cylinder(s, 0.22, 0.46, 4, WOOD, J @ T(lx, -0.85, -0.1), smooth=False, a0=math.pi / 4)
+    moonpetals(pl, J @ T(0.0, 0.0, 0.8), heads=2, seed=4, r=0.22)
+    anchors["judges"] = world(J, (0, 0, 0))[:2]
+    pl.solid(J, 0, -0.3, 1.4)
+    pl.mark("judges")
+    # The accessory and dye stalls by the way in, facing each other across the approach.
+    stalls = []
+    for x, rz, cols, goods in ((-9.6, -math.pi / 2, (CLOTH_LILAC, CLOTH_CREAM), accessory_goods),
+                               (9.6, math.pi / 2, (CLOTH_TEAL, CLOTH_CREAM), dye_goods)):
+        W = on_ground(pl, x, 8.0, rz=rz)
+        glade_stall(pl, W, cols, lambda G, goods=goods: goods(pl, G))
+        front = world(W, (0, 1.2, 0))
+        stalls.append([front[0], front[1], round(rz, 3)])
+    anchors["stalls"] = stalls
+    pl.mark("stalls")
+    # Paper lanterns strung over the benches and on to the arch.
+    posts = [(-6.4, 1.0), (6.4, 1.0)]
+    for x, y in posts:
+        P = on_ground(pl, x, y)
+        box(s, (-0.09, -0.09, -0.2), (0.09, 0.09, 4.1), DARKWOOD, P, skip=("-z",))
+        puff(s, (0, 0, 4.1), 0.12, GOLD, P, segs=4, h=0.16)
+        pl.solid(P, 0, 0, 0.3)
+    za, zb = pl.gz(*posts[0]) + 3.95, pl.gz(*posts[1]) + 3.95
+    lantern_string(pl, (posts[0][0], posts[0][1], za), (posts[1][0], posts[1][1], zb), 0.7, 4)
+    arch_top = A @ Vector((2.6, 0, 2.9))
+    lantern_string(pl, (posts[1][0], posts[1][1], zb), tuple(arch_top), 0.6, 3)
+    pl.mark("lanterns")
+    willow(pl, on_ground(pl, -12.5, -7.0, sink=0.1), seed=0.7)
+    pl.mark("willow")
+    # Moonpetals: round the stage, along the approach, under the willow.
+    for k, (x, y, h) in enumerate(((-5.4, -6.2, 3), (5.2, -5.6, 3), (-4.4, -11.6, 2), (4.6, -11.2, 2), (-2.2, 11.8, 3),
+                                   (2.4, 14.6, 2), (-11.0, -3.2, 3), (11.6, 1.6, 2), (-7.0, 12.6, 2), (12.0, -8.4, 3))):
+        moonpetals(pl, on_ground(pl, x, y, rz=k * 0.7), heads=h, seed=k)
+    pl.mark("moonpetals")
+    # Stepping stones in from where the path ends.
+    for i, (x, y, r) in enumerate(((0.4, 25.2, 0.6), (-0.3, 22.0, 0.55), (0.3, 18.8, 0.6), (-0.3, 15.6, 0.55),
+                                   (0.2, 12.4, 0.6))):
+        pebble(pl, on_ground(pl, x, y), 0, 0, r, (0.74, 0.74, 0.76), h=0.14, seed=i, segs=4)
+    pl.mark("stones")
+    Bd = on_ground(pl, 4.4, 18.2, rz=0.64)
+    board_sign(pl, Bd, 2.0, 2.2, (0.52, 0.38, 0.62), crescent_outline(0.4), (0.98, 0.90, 0.62))
+    anchors["board"] = world(Bd, (0, 0, 0))[:2]
+    pl.extra["anchors"] = anchors
+    pl.mark("board")
+    pl.flat = 30.0
+    land_ao(pl, 40.0)
+    pl.terrain = "land"
+    pl.terrain_size = 34
+    pl.view = dict(radius=18.0, target=(0, -1.0, 1.2), azimuth=24.0, elevation=38.0)
+
+
+# ---------------------------------------------------------------------- Driftwood Cove
+DRIFTWOOD = (0.76, 0.70, 0.62)
+SHACK = (0.62, 0.50, 0.38)
+NET = (0.72, 0.64, 0.48)
+
+
+def driftwood(pl, M, length, r, seed=0.0):
+    """A bleached log lying on the sand along local X, a broken branch off it."""
+    s = pl.s
+    sweep(s, [(-length / 2, 0, r * 0.8), (0, 0.08, r * 0.95), (length / 2, 0, r * 0.7)], r, 5, DRIFTWOOD, M,
+          radii=[r * 0.9, r, r * 0.75], caps=True, twist=seed)
+    sweep(s, [(length * 0.15, 0, r * 1.2), (length * 0.28, 0.3, r * 2.4)], r * 0.35, 4, DRIFTWOOD, M, smooth=False)
+    pl.solid(M, -length / 4, 0, r + 0.3)
+    pl.solid(M, length / 4, 0, r + 0.3)
+
+
+def rowboat(pl, B):
+    """A little rowboat (as Mirror Lake's), its bow toward local +Y."""
+    s = pl.s
+    st = [(-1.9, 0.06, 0.62), (-1.2, 0.5, 0.5), (0.0, 0.74, 0.45), (1.2, 0.58, 0.5), (1.9, 0.14, 0.64)]
+    outer, inner = [], []
+    for y, hw, zt in st:
+        prof = [(-hw, zt), (-hw * 0.8, 0.16), (0, -0.04), (hw * 0.8, 0.16), (hw, zt)]
+        outer.append([Vector((x, y, z)) for x, z in prof])
+        inner.append([Vector((x * 0.86, y * 0.95, z + 0.07)) for x, z in prof])
+    grid(s, outer, (0.86, 0.40, 0.34), B, smooth=True, flip=True)
+    grid(s, inner, (0.56, 0.40, 0.26), B, smooth=True)
+    for side in (0, 4):
+        for i in range(len(st) - 1):
+            face(s, [outer[i][side], outer[i + 1][side], inner[i + 1][side], inner[i][side]], (0, 0, 1),
+                 (0.94, 0.90, 0.80), B)
+    box(s, (-0.5, -0.14, 0.3), (0.5, 0.14, 0.38), LIGHTWOOD, B, skip=("-z",))
+    O = B @ T(0.25, -0.2, 0.42, rz=0.12)
+    box(s, (-0.03, -1.3, -0.03), (0.03, 0.9, 0.03), WOOD, O, skip=())
+    face(s, [(-0.12, -1.3, 0), (0.12, -1.3, 0), (0.1, -1.9, 0), (-0.1, -1.9, 0)], (0, 0, 1), WOOD, O, double=True)
+    pl.solid(B, 0, -0.9, 0.9)
+    pl.solid(B, 0, 0.9, 0.9)
+
+
+@place("cove", "Driftwood Cove")
+def build_cove(pl):
+    """A sandy cove on Mirror Lake's south shore, facing the water (+Y; the water's edge ~43 m out,
+    a low dune at ~30 m; the path arrives from the back left). The fisher's shack with its nets, a
+    long jetty out over the water (you fish from its end), a rowboat drawn up on the sand, driftwood,
+    a campfire, tide pools at the water's edge."""
+    M = I4
+    s = pl.s
+    wz = pl.water_z()  # (-1.45 below the anchor)
+    # The fisher's shack, its door to the water; nets on a rack beside it.
+    Sh = on_ground(pl, -8.4, 17.2, rz=0.12, sink=0.05)
+    w, d, hf, hb = 3.6, 3.0, 2.6, 2.1
+    for pts, n in (([(-w / 2, d / 2, -0.3), (w / 2, d / 2, -0.3), (w / 2, d / 2, hf), (-w / 2, d / 2, hf)], (0, 1, 0)),
+                   ([(w / 2, -d / 2, -0.3), (-w / 2, -d / 2, -0.3), (-w / 2, -d / 2, hb), (w / 2, -d / 2, hb)], (0, -1, 0)),
+                   ([(w / 2, d / 2, -0.3), (w / 2, -d / 2, -0.3), (w / 2, -d / 2, hb), (w / 2, d / 2, hf)], (1, 0, 0)),
+                   ([(-w / 2, -d / 2, -0.3), (-w / 2, d / 2, -0.3), (-w / 2, d / 2, hf), (-w / 2, -d / 2, hb)], (-1, 0, 0))):
+        face(s, pts, n, wall_col(SHACK, 0.0, hf), Sh, jit=0.08)
+    for x in (-w / 2 + 0.1, w / 2 - 0.1):  # corner boards
+        face(s, [(x - 0.1, d / 2 + 0.02, -0.1), (x + 0.1, d / 2 + 0.02, -0.1), (x + 0.1, d / 2 + 0.02, hf),
+                 (x - 0.1, d / 2 + 0.02, hf)], (0, 1, 0), DRIFTWOOD, Sh)
+    rn = Vector((0, -(hf - hb), d)).normalized()  # the lean-to roof, over-hanging, high at the front
+    ov, th = 0.45, 0.14
+    y0, y1 = -d / 2 - ov, d / 2 + ov
+    z0, z1 = hb - ov * (hf - hb) / d, hf + ov * (hf - hb) / d
+    xs = (-w / 2 - 0.3, w / 2 + 0.3)
+    face(s, [(xs[0], y0, z0 + th), (xs[1], y0, z0 + th), (xs[1], y1, z1 + th), (xs[0], y1, z1 + th)], rn,
+         (0.46, 0.58, 0.62), Sh, jit=0.05)
+    face(s, [(xs[0], y0, z0), (xs[0], y1, z1), (xs[1], y1, z1), (xs[1], y0, z0)], (0, 0, -1), (0.40, 0.34, 0.28), Sh)
+    face(s, [(xs[0], y1, z1), (xs[0], y1, z1 + th), (xs[1], y1, z1 + th), (xs[1], y1, z1)], (0, 1, 0),
+         (0.36, 0.46, 0.50), Sh)
+    for sx in (-1, 1):
+        x = xs[0] if sx < 0 else xs[1]
+        face(s, [(x, y0, z0), (x, y1, z1), (x, y1, z1 + th), (x, y0, z0 + th)], (sx, 0, 0), (0.36, 0.46, 0.50), Sh)
+    front = Sh @ T(0, d / 2, 0)
+    door(pl, front, -0.55, 0.0, w=0.95, h=1.85, col=DOOR_TEAL, frame=DRIFTWOOD, round_top=False)
+    window_square(pl, Sh @ T(0, -d / 2, 0, rz=math.pi), 0.2, 1.3, w=0.7, h=0.5, frame=DRIFTWOOD, shutters=DOOR_TEAL)
+    window_square(pl, front, 0.95, 1.55, w=0.62, h=0.56, frame=DRIFTWOOD)
+    for k, c in enumerate((CLOTH_RED, CLOTH_CREAM, CLOTH_RED)):  # floats hung by the door
+        bead(s, front, (-1.35, 0.12, 1.9 - 0.32 * k), 0.12, c, h=0.13)
+    pl.solid(Sh, 0, 0, 2.3)
+    R = on_ground(pl, -12.7, 19.2, rz=1.2)  # the net rack
+    for sx in (-1.2, 1.2):
+        box(s, (sx - 0.07, -0.07, -0.25), (sx + 0.07, 0.07, 1.9), DRIFTWOOD, R, skip=("-z",))
+    sweep(s, [(-1.4, 0, 1.85), (1.4, 0, 1.85)], 0.05, 4, DARKWOOD, R, smooth=False)
+    rows = [[Vector((-1.15 + 2.3 * k / 3, 0.04 * (k % 2), z - 0.18 * math.sin(math.pi * k / 3) * (1.85 - z) / 1.2))
+             for k in range(4)] for z in (1.82, 1.2, 0.62)]
+    grid(s, rows, NET, R, smooth=True, flip=True, jit=0.06)
+    grid(s, rows, tuple(c * 0.9 for c in NET), R, smooth=True, jit=0.06)
+    for k in range(3):
+        puff(s, (-0.8 + 0.8 * k, 0.05, 0.66), 0.09, (CLOTH_RED, CLOTH_CREAM, CLOTH_YELLOW)[k], R, segs=4, h=0.1)
+    pl.solid(R, 0, 0, 1.3)
+    for k, tilt in enumerate((0.25, 0.4)):  # rods leaning on the shack's side
+        Rd = Sh @ T(w / 2 + 0.06 + 2.9 * math.sin(tilt), 0.6 + 0.35 * k, -0.1) @ Matrix.Rotation(-tilt, 4, "Y")
+        box(s, (-0.025, -0.025, 0), (0.025, 0.025, 2.9), DARKWOOD, Rd, skip=("-z", "+z"))
+    crate(pl, M @ T(0, 0, pl.gz(-5.8, 15.9)), -5.8, 15.9, 0.7, 0.3, fill=(0.56, 0.72, 0.80))
+    barrel(pl, M @ T(0, 0, pl.gz(-6.0, 17.1) - 0.05), -6.0, 17.1, 0.34, 0.8)
+    lamp_post(pl, on_ground(pl, -5.4, 19.9), 0, 0, h=2.0, rng=5.0)
+    pl.extra["anchors"] = {"fisher": world(Sh, (0.3, d / 2 + 1.9, 0))[:2]}
+    pl.mark("shack")
+    # The jetty: from beyond the dune, sloping down, then level out over the water.
+    J0, JB, J1 = 33.5, 41.0, 53.0
+    zf, ze = pl.gz(0, J0) + 0.3, wz + 0.9
+
+    def deck(y):
+        return zf + (ze - zf) * min(1.0, max(0.0, (y - J0) / (JB - J0)))
+    hw = 0.95
+    n = int(round(J1 - J0))
+    for i in range(n):
+        ya, yb = J0 + (J1 - J0) * i / n, J0 + (J1 - J0) * (i + 1) / n - 0.04
+        za, zb = deck(ya), deck(yb)
+        face(s, [(-hw, ya, za), (hw, ya, za), (hw, yb, zb), (-hw, yb, zb)], (0, -(zb - za), yb - ya),
+             LIGHTWOOD if i % 2 else tuple(c * 0.9 for c in LIGHTWOOD), M, jit=0.04)
+    for sx in (-1, 1):
+        for ya, yb in ((J0, JB), (JB, J1)):
+            za, zb = deck(ya), deck(yb)
+            pts = [(sx * hw, ya, za - 0.2), (sx * hw, yb, zb - 0.2), (sx * hw, yb, zb), (sx * hw, ya, za)]
+            face(s, pts if sx > 0 else pts[::-1], (sx, 0, 0), WOOD, M)
+    for ya, yb in ((J0, JB), (JB, J1)):
+        za, zb = deck(ya), deck(yb)
+        face(s, [(-hw, ya, za - 0.2), (-hw, yb, zb - 0.2), (hw, yb, zb - 0.2), (hw, ya, za - 0.2)], (0, 0, -1),
+             DARKWOOD, M)
+    face(s, [(-hw, J1, ze - 0.2), (hw, J1, ze - 0.2), (hw, J1, ze), (-hw, J1, ze)], (0, 1, 0), WOOD, M)
+    for y in (37.5, 43.0, 48.0, 52.7):
+        for sx in (-1, 1):
+            zb = pl.gz(sx * hw, y) - 0.5
+            cylinder(s, 0.12, deck(y) - zb + 0.12, 5, DARKWOOD, T(sx * (hw + 0.02), y, zb), top=True, smooth=False)
+    lamp_post(pl, M @ T(0, 0, ze), -hw + 0.1, J1 - 0.4, h=1.4, rng=4.5)
+    cylinder(s, 0.14, 0.34, 5, (0.62, 0.62, 0.66), T(hw - 0.25, J1 - 0.5, ze), r_top=0.18, top=True, smooth=False)
+    for k in range(7):  # keep walkers off its foot (they'd pass under it): the fishing takes you out
+        pl.solid(M, 0, J0 + 0.5 + 1.8 * k, 1.1)
+    pl.extra["anchors"]["fish_spot"] = [0.2, round(J1 - 0.9, 2), round(ze, 3)]
+    pl.extra["anchors"]["jetty"] = [0.0, round(J0 - 1.1, 2)]
+    pl.mark("jetty")
+    bx, by, brz = 8.4, 28.4, 0.5
+    bow, stern = (bx - math.sin(brz) * 1.9, by + math.cos(brz) * 1.9), (bx + math.sin(brz) * 1.9, by - math.cos(brz) * 1.9)
+    pitch = math.atan2(pl.gz(*bow) - pl.gz(*stern), 3.8)
+    rowboat(pl, on_ground(pl, bx, by, rz=brz, sink=-0.02) @ Matrix.Rotation(pitch, 4, "X"))
+    pl.mark("boat")
+    for x, y, rz, length, r in ((6.0, 15.6, 0.9, 3.0, 0.26), (1.0, 16.2, -0.4, 3.2, 0.26), (-13.8, 1.6, 1.1, 3.8, 0.3),
+                                (13.4, 22.4, -0.5, 2.8, 0.24)):
+        driftwood(pl, on_ground(pl, x, y, rz=rz, sink=0.08), length, r, seed=x)
+    pl.mark("driftwood")
+    F = on_ground(pl, 3.4, 13.6)  # the campfire, the logs round it for seats
+    for k in range(6):
+        a = 2 * math.pi * k / 6
+        puff(s, (math.cos(a) * 0.62, math.sin(a) * 0.62, -0.02), 0.22, (0.62, 0.60, 0.58), F, segs=5, h=0.2)
+    for k in range(3):
+        box(s, (-0.5, -0.07, 0.02), (0.5, 0.07, 0.16), (0.40, 0.26, 0.16), F @ T(0, 0, 0, rz=k * math.pi / 3),
+            skip=("-z",))
+    face(s, [(math.cos(2 * math.pi * k / 6) * 0.42, math.sin(2 * math.pi * k / 6) * 0.42, 0.04) for k in range(6)],
+         (0, 0, 1), (0.22, 0.16, 0.14), F)
+    flame(pl, F @ T(0, 0, 0.1), h=0.9, r=0.3, table=LAVA)  # (alight by day too)
+    pl.lamp(F, (0, 0, 0.6), 5.5, 0.9)
+    pl.solid(F, 0, 0, 0.9)
+    pl.mark("campfire")
+    # Tide pools at the water's edge, a starfish in one.
+    for k, (x, y, r) in enumerate(((-12.6, 40.2, 1.1), (13.4, 39.0, 0.9))):
+        P = on_ground(pl, x, y)
+        face(s, [(math.cos(2 * math.pi * j / 7) * r, math.sin(2 * math.pi * j / 7) * r, 0.1) for j in range(7)],
+             (0, 0, 1), (0.30, 0.56, 0.62), P, jit=0.04)
+        for j in range(4):
+            a = 2 * math.pi * j / 4 + k
+            pebble(pl, P, math.cos(a) * (r + 0.1), math.sin(a) * (r + 0.1), 0.34 + 0.06 * (j % 2), (0.62, 0.64, 0.66),
+                   seed=j + k)
+        if k == 0:
+            face(s, [(x2 * 0.6, z2 * 0.6, 0.12) for x2, z2 in star_outline(0.3, 0.12, 5)], (0, 0, 1),
+                 (0.96, 0.52, 0.40), P)
+        pl.solid(P, 0, 0, r + 0.3)
+    pl.mark("tide pools")
+    for k, (x, y) in enumerate(((-4.6, 22.6), (-3.8, 23.2), (8.6, 11.6), (-11.2, 21.8))):  # a few shells for show
+        puff(s, (x, y, pl.gz(x, y) - 0.01), 0.1, ((0.98, 0.86, 0.80), (0.96, 0.74, 0.70))[k % 2], M, segs=4, h=0.07)
+    for k, (x, y) in enumerate(((-5.2, 27.4), (3.8, 27.0), (-17.0, 26.0), (16.4, 27.6), (-11.0, 29.2), (11.8, 30.4))):
+        reeds(pl, T(0, 0, pl.gz(x, y) - 0.05), x, y, 4, 0.9, seed=k)  # dune grass
+    for k, (x, y, r) in enumerate(((10.6, 3.6, 0.9), (-6.2, 5.2, 0.7), (14.8, 12.6, 1.1))):  # rocks on the sand
+        rock(pl, T(0, 0, pl.gz(x, y)), x, y, r, (0.70, 0.66, 0.62), (1.2, 1.0, 0.7), seed=k + 5, segs=6, rings=3)
+        pl.solid(M, x, y, r * 1.1)
+    Sg = on_ground(pl, -14.2, -8.2, rz=2.36)  # a sign where the path comes in: a fish
+    sign_posts(pl, Sg, 0.55, 1.55, DRIFTWOOD)
+    box(s, (-0.55, -0.05, 0.85), (0.55, 0.05, 1.4), (0.40, 0.58, 0.64), Sg, skip=())
+    fish = [(-0.34, 0.0), (-0.1, 0.13), (0.14, 0.1), (0.3, 0.0), (0.14, -0.1), (-0.1, -0.13)]
+    for sy in (1, -1):
+        face(s, [(x, sy * 0.056, 1.12 + z) for x, z in fish], (0, sy, 0), (0.98, 0.84, 0.52), Sg)
+        face(s, [(0.28, sy * 0.056, 1.12), (0.42, sy * 0.056, 1.24), (0.42, sy * 0.056, 1.0)], (0, sy, 0),
+             (0.98, 0.84, 0.52), Sg)
+    pl.solid(Sg, 0, 0, 0.7)
+    pl.extra["anchors"]["shells"] = [[-16.5, 40.0], [-7.0, 41.0], [5.6, 40.2], [9.6, 39.6], [18.4, 38.2]]
+    pl.mark("props")
+    pl.flat = 18.0
+    land_ao(pl, 56.0)
+    pl.terrain = "land"
+    pl.terrain_size = 56
+    pl.water = wz
+    pl.view = dict(radius=22.0, target=(0, 22.0, 0.0), azimuth=200.0, elevation=34.0)
+
+
+# ---------------------------------------------------------------------- Frostspire Hollow
+SPIRE_ICE = (0.72, 0.88, 0.99)
+SPIRE_DEEP = (0.50, 0.70, 0.94)
+FROST_GLOW = (0.45, 0.72, 1.0)
+
+
+def ice_spire(pl, M, h, r, seed=0.0, glow=False):
+    """A tall spire of ice, deep blue at its foot, paler up high; now and then a cold glow."""
+    def col(p, n, z0=(M @ Vector((0, 0, 0))).z):
+        return mixc(SPIRE_DEEP, SPIRE_ICE, smooth01(0.0, h, p.z - z0))
+    lathe(pl.s, [(r, -0.6), (r * 0.8, h * 0.52), (r * 0.32, h * 0.88), (0, h)], 5, col, M, smooth=False, lump=0.1,
+          seed=seed, jit=0.04)
+    if glow:
+        lathe(pl.g, [(r * 1.12, h * 0.1), (r * 0.9, h * 0.52), (0, h * 0.9)], 5, Emit(FROST_GLOW, FROST, fade=lambda p,
+              z0=(M @ Vector((0, 0, 0))).z: 0.5 * (1 - smooth01(0.0, h, p.z - z0))), M, smooth=False, jit=0)
+
+
+@place("hollow", "Frostspire Hollow")
+def build_hollow(pl):
+    """The training ground: a bowl in the cold heights (flat radius ~15 m, the rim rising steeply
+    from 13-19 m out to ~16 m up; the corridor out through the rim at +Y, east). Ice spires ring
+    the bowl, a cave door in the back wall (-Y) glows blue where wild dragons come out, the
+    keeper's camp by the corridor, frost crystals, snow drifts."""
+    M = I4
+    s = pl.s
+    deg = math.radians
+    # The cave door: a rock arch standing out of the back wall, its short mouth dark and glowing.
+    D = T(0, -10.4, 0)
+    lip, rim = cave_facade(pl, D, 4.6, 4.8, 2.2, 2.2, moss_top(ROCK_COOL, SNOW, 0.45, 0.72),
+                           deep=(0.04, 0.07, 0.16), n=11, seed=6.0, depth=1.6, back=(4.5, 1.0), lump=0.45,
+                           smooth=False)
+    gc = D @ Vector((0, -1.52, 1.9))
+    disc(pl.g, 2.1, 8, Emit(FROST_GLOW, FROST, fade=lambda p, c=gc: 0.8 * max(0.0, 1 - (p - c).length / 2.1)),
+         D @ T(0, -1.52, 1.9) @ Matrix.Rotation(-math.pi / 2, 4, "X"), jit=0)
+    pl.lamp(D, (0, 0.6, 1.6), 6.0, 0.7, rgb=(0.5, 0.75, 1.0), table=FROST)
+    for k, length in ((2, 0.6), (3, 1.0), (4, 0.7), (5, 1.2), (6, 0.8), (7, 1.1), (8, 0.6)):
+        icicle(pl, lip[k] + Vector((0, 0.3, -0.05)), length)
+    pl.solid(D, -3.4, -0.6, 1.8)
+    pl.solid(D, 3.4, -0.6, 1.8)
+    pl.solid(D, 0.0, -2.6, 3.0)
+    anchors = {"arena": [0.0, -1.0, 0.0], "wild_door": [0.0, -8.2]}
+    pl.mark("door")
+    # Ice spires round the bowl (clear of the corridor and the door), two taller at the corridor.
+    for k, (ang, r, h) in enumerate(((10, 13.4, 9.0), (34, 13.0, 7.0), (54, 13.2, 10.5), (70, 13.2, 11.5),
+                                     (110, 13.2, 11.0), (126, 13.2, 8.0), (148, 13.4, 9.5), (172, 13.0, 7.5),
+                                     (198, 13.4, 10.0), (220, 13.2, 8.5), (238, 12.8, 6.5), (302, 12.8, 7.0),
+                                     (320, 13.0, 9.5), (342, 13.4, 8.0))):
+        a = deg(ang)
+        x, y = math.cos(a) * r, math.sin(a) * r
+        W = on_ground(pl, x, y, rz=k * 1.3, sink=0.2) @ Matrix.Rotation(-0.08, 4, "X") @ Matrix.Rotation(
+            0.06 * (1 if k % 2 else -1), 4, "Y")
+        ice_spire(pl, W, h, 0.85 + 0.1 * (k % 3), seed=k, glow=k in (3, 4, 8, 12))
+        if k % 2 == 0:
+            ice_spire(pl, W @ T(0.9, 0.5, 0), h * 0.45, 0.4, seed=k + 20)
+        pl.solid(M, x, y, 1.2)
+    pl.mark("spires")
+    # Frost crystals in clusters at the bowl's edge.
+    for k, (x, y, n) in enumerate(((-9.6, -5.6, 3), (9.8, -4.2, 3), (10.2, 5.0, 2), (-10.4, 2.4, 2), (8.6, -7.8, 2))):
+        z = pl.gz(x, y)
+        for j in range(n):
+            crystal(pl, M, x + 0.45 * (j - 1), y + 0.3 * ((j * 7) % 3 - 1), z, 1.1 + 0.4 * ((j + k) % 3), 0.2,
+                    tilt=0.35 + 0.12 * j, yaw=j * 2.1 + k, col=(0.66, 0.86, 1.0), glow=FROST_GLOW if j == 0 else None,
+                    table=FROST)
+        pl.solid(M, x, y, 0.9)
+    pl.mark("crystals")
+    # The keeper's camp by the corridor: a tent, a brazier, a tally board of floors, crates.
+    Tn = on_ground(pl, -7.0, 7.0, rz=-0.7)
+    tw, td, th = 1.6, 1.7, 2.1
+    for sx in (-1, 1):
+        pts = [(sx * tw, -td, 0), (sx * tw, td, 0), (0, td, th), (0, -td, th)]
+        face(s, pts, (sx * th, 0, tw), (0.40, 0.52, 0.78), Tn)
+        face(s, pts, (-sx * th, 0, -tw), (0.30, 0.38, 0.56), Tn)
+    face(s, [(-tw, -td, 0), (tw, -td, 0), (0, -td, th)], (0, -1, 0), (0.40, 0.52, 0.78), Tn, double=True)
+    for sx in (-1, 1):
+        face(s, [(0, td, th), (sx * tw, td, 0), (sx * tw * 1.2, td + 0.5, 0.45)], (0, 1, 0), (0.86, 0.80, 0.66), Tn,
+             double=True)
+    face(s, [(-tw * 0.9, -td, 0.03), (tw * 0.9, -td, 0.03), (tw * 0.9, td, 0.03), (-tw * 0.9, td, 0.03)], (0, 0, 1),
+         (0.36, 0.30, 0.34), Tn)
+    box(s, (-0.05, td - 0.05, 0), (0.05, td + 0.05, 2.6), DARKWOOD, Tn, skip=("-z",))
+    face(s, [(0, td, 2.55), (0, td, 2.2), (0, td + 0.8, 2.38)], (1, 0, 0), (0.60, 0.80, 1.0), Tn, double=True)
+    pl.solid(Tn, 0, 0, 1.9)
+    Br = on_ground(pl, -4.4, 4.6)
+    for k in range(3):
+        a = 2 * math.pi * k / 3
+        leg = Br @ T(math.cos(a) * 0.36, math.sin(a) * 0.36, -0.1, rz=a) @ Matrix.Rotation(0.22, 4, "Y")
+        box(s, (-0.04, -0.04, 0), (0.04, 0.04, 1.0), IRON, leg, skip=("-z", "+z"))
+    lathe(s, [(0.2, 0.86), (0.52, 1.12), (0.46, 1.16), (0.0, 1.0)], 6, IRON, Br, sharp=[1, 2], smooth=False)
+    flame(pl, Br @ T(0, 0, 1.06), h=0.8, r=0.26, table=LAVA)  # (alight by day too)
+    pl.lamp(Br, (0, 0, 1.6), 6.0, 0.9)
+    pl.solid(Br, 0, 0, 0.7)
+    Tb = on_ground(pl, -9.6, 3.2, rz=-1.1)
+    sign_posts(pl, Tb, 0.6, 1.7, DARKWOOD)
+    box(s, (-0.6, -0.05, 0.75), (0.6, 0.05, 1.55), (0.28, 0.30, 0.34), Tb, skip=())
+    for k in range(5):  # the floors' tally, chalked
+        x = -0.4 + 0.2 * k
+        face(s, [(x - 0.02, 0.055, 0.95), (x + 0.02, 0.055, 0.95), (x + 0.02, 0.055, 1.35), (x - 0.02, 0.055, 1.35)],
+             (0, 1, 0), (0.92, 0.94, 0.98), Tb, jit=0)
+    face(s, [(-0.5, 0.055, 1.12), (0.5, 0.055, 1.2), (0.5, 0.055, 1.24), (-0.5, 0.055, 1.16)], (0, 1, 0),
+         (0.92, 0.94, 0.98), Tb, jit=0)
+    pl.solid(Tb, 0, 0, 0.7)
+    crate(pl, M @ T(0, 0, pl.gz(-9.6, 5.3)), -9.6, 5.3, 0.7, 0.4)
+    crate(pl, M @ T(0, 0, pl.gz(-9.6, 5.3) + 0.52), -9.55, 5.3, 0.5, 0.9)
+    anchors["keeper"] = [-4.6, 6.4]
+    pl.mark("camp")
+    # Snow drifted against the wall's foot, a few frosted rocks.
+    for k, (x, y, r, h) in enumerate(((-11.6, -7.8, 2.2, 0.8), (11.4, -8.4, 2.4, 0.9), (-12.4, 3.8, 1.8, 0.7),
+                                      (12.2, 2.2, 2.0, 0.8), (7.6, 10.4, 1.6, 0.6))):
+        dome(s, r, h * 1.4, 8, SNOW, on_ground(pl, x, y, sink=0.2), rings=2, lump=0.22, seed=k)
+    for k, (x, y, r) in enumerate(((-8.9, -8.9, 0.9), (10.9, 7.2, 1.0), (-11.2, -1.0, 0.8))):
+        rock(pl, T(0, 0, pl.gz(x, y)), x, y, r, ROCK_COOL, (1.1, 1.0, 0.8), seed=k + 3, segs=6, rings=3, moss=SNOW)
+        pl.solid(M, x, y, r * 1.1)
+    # A ring of frost on the floor where the training bouts are fought.
+    lathe(s, [(6.6, 0.045), (6.2, 0.045)], 16, (0.86, 0.94, 1.0), T(0, -1.0, 0), smooth=False, jit=0.03)
+    pl.extra["anchors"] = anchors
+    pl.mark("props")
+    pl.flat = 15.0
+    land_ao(pl, 36.0)
+    pl.terrain = "land"
+    pl.terrain_size = 30
+    pl.view = dict(radius=17.0, target=(0, -2.5, 3.0), azimuth=12.0, elevation=40.0)
+
+
 # ------------------------------------------------------------------------------ bake
 def fib_hemisphere(n):
     out = []
@@ -2423,6 +3273,13 @@ def bake(pl):
         verts += [tuple(p) for p in q]
         polys.append(tuple(range(base, base + len(q))))
     bvh = BVHTree.FromPolygons(verts, polys, all_triangles=False, epsilon=0.0)
+    ao_bvh = bvh
+    if pl.ao_ground:  # (the landscape shades its corners, but casts no sun shadow: nor does the game's ground)
+        for q in pl.ao_ground:
+            base = len(verts)
+            verts += [tuple(p) for p in q]
+            polys.append(tuple(range(base, base + len(q))))
+        ao_bvh = BVHTree.FromPolygons(verts, polys, all_triangles=False, epsilon=0.0)
     suns = {}
     for s in SETS:
         d = Vector(SUN[s][0]).normalized()
@@ -2448,7 +3305,7 @@ def bake(pl):
                 occ = 0.0
                 for d in AO_DIRS:
                     w = bx * d.x + by * d.y + n * d.z
-                    hit = bvh.ray_cast(o, w, pl.ao_reach)
+                    hit = ao_bvh.ray_cast(o, w, pl.ao_reach)
                     if hit[0] is not None:
                         occ += (1.0 - hit[3] / pl.ao_reach) ** 0.7
                 ao = 1.0 - pl.ao_strength * occ / len(AO_DIRS)
@@ -2634,6 +3491,11 @@ def stand_in_ground(pl):
     """Preview only: the landscape round the place, lit per set (no shadows: the game's ground
     gets none from the places either)."""
     fn = pl.terrain or default_terrain
+    if fn == "land":  # the landscape's own ground and colours (its light baked in: roughly undone)
+        def fn(x, y):
+            if not pl.anchor:
+                return 0.0, GRASS
+            return pl.gz(x, y), tuple(min(1.0, c * 0.95) for c in LAND.colour(*pl.world_xy(x, y)))
     size = pl.terrain_size
     n = 48
     verts, tris, alb, nrm = [], [], [], []
@@ -2862,8 +3724,9 @@ def main():
                         "circles to walk round. Market: egg_stand = [x, y, z] where the egg of the day stands, "
                         "goods_spots = four [x, y, z] on the goods stall's counter. Mill: hub = [x, y, z] the sails "
                         "turn round, about hub_axis; river = its axis and half width (keep it cut through the flat "
-                        "ground). Lake and mill: water_z = the water's level. See docs/tech/places.md. Written by "
-                        "tools/blender/valley_places.py.",
+                        "ground). Lake and mill: water_z = the water's level. 1.0's places: anchors = named spots, "
+                        "each [x, y] or [x, y, z] or a list of them (a third value: a height in the frame, or the "
+                        "glade's stalls' facing). See docs/tech/places.md. Written by tools/blender/valley_places.py.",
                "places": ordered}
         os.makedirs(os.path.dirname(JSON_OUT), exist_ok=True)
         with open(JSON_OUT, "w", newline="\n") as f:

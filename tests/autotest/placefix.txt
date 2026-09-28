@@ -1,0 +1,63 @@
+# 1.0 (v1-work A2, run 19's notes D89): the places' fixes up close by day: the den's heart sign
+# and the Vault's star sign (posts beside or behind their faces), the Trailhead (no modelled road
+# over the landscape's path; its fingerpost and notice board), the Nesting Stone's straw ring
+# (faces out), the arena's floor on the ground, and the Market, Sanctuary and mill without
+# modelled roads doubling the landscape's paths; the challenges' board (posts at its ends) and
+# the egg stall's signs (on its posts' fronts, they faced into the posts).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+hour 11
+key X
+wait 5
+view 0 0.6 8.2 1.7 -2.4 4.3 1.1
+wait 4
+shot f01-den-sign
+view 4 -0.8 7.4 1.7 -3.4 3.6 1.1
+wait 4
+shot f02-vault-sign
+view 5 9 17 8 0 0 0
+wait 4
+shot f03-trailhead
+view 5 7.2 6.8 2.2 3.8 3.8 1.7
+wait 3
+shot f04-trailhead-post
+view 5 7.8 -2.6 1.7 3.8 -1.8 1.3
+wait 3
+shot f05-trailhead-board
+view 2 6.5 6.5 4.2 0 0 1.1
+wait 4
+shot f06-stone-ring
+view 6 0 25 3.5 0 2 0
+wait 4
+shot f07-arena-floor
+view 6 -19 15 2.6 -2 6 0
+wait 3
+shot f08-arena-side
+view 1 0 26 9 0 10 0
+wait 4
+shot f09-market-front
+view 3 2 16 7 -1 4 0
+wait 4
+shot f10-sanctuary
+view 11 -4 12 7 -11 0 0
+wait 4
+shot f11-mill
+view 6 -3.0 24.6 1.8 -5 20.5 1.5
+wait 3
+shot f12-arena-board
+view 1 -1.6 1.8 1.9 -4.0 4.9 1.7
+wait 3
+shot f13-market-egg-stall
+quit

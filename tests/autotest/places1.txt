@@ -1,0 +1,73 @@
+# 1.0 (v1-work A): the four new places' models by day and by night: Emberpeak Caldera (the ring,
+# the pillars' braziers, the terraces, the dais, the banner arch, the lava), Moonpetal Glade (the
+# stage and its arch, benches, the judges' table, the stalls, lanterns, the willow, moonpetals),
+# Driftwood Cove (the shack, the jetty, the boat, the campfire, tide pools) and Frostspire Hollow
+# (the ice spires, the cave door's glow, the keeper's camp).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+hour 11
+key X
+wait 5
+view 14 0 27 3.0 0 0 0.5
+wait 5
+shot a01-caldera-way-in
+view 14 22 40 22 0 -4 0
+wait 3
+shot a02-caldera-above
+view 14 15 6 4 -4 -20 1.5
+wait 3
+shot a03-caldera-terraces
+view 15 0 26 2.2 0 -4 1.0
+wait 5
+shot a04-glade-way-in
+view 15 16 22 12 0 -3 0
+wait 3
+shot a05-glade-above
+view 15 3 2 2.0 0 -9 1.2
+wait 3
+shot a06-glade-stage
+view 16 0 -6 2.4 0 20 0.5
+wait 5
+shot a07-cove-arrive
+view 16 -8 26 3 0 48 -0.5
+wait 3
+shot a08-cove-jetty
+view 16 18 58 12 -2 18 0
+wait 3
+shot a09-cove-above
+view 17 0 18 2.6 0 -8 2.0
+wait 5
+shot a10-hollow-corridor
+view 17 10 20 20 0 -2 0
+wait 3
+shot a11-hollow-above
+view 17 0 4 2.2 -7 6 1.0
+wait 3
+shot a12-hollow-camp
+hour 22
+wait 1
+view 14 0 27 3.0 0 0 0.5
+wait 5
+shot a13-caldera-night
+view 15 0 26 2.2 0 -4 1.0
+wait 5
+shot a14-glade-night
+view 16 -8 26 3 0 48 -0.5
+wait 5
+shot a15-cove-night
+view 17 0 18 2.6 0 -8 2.0
+wait 5
+shot a16-hollow-night
+quit

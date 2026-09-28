@@ -1,6 +1,7 @@
 #include "core/place_layout.hpp"
 
 #include <cmath>
+#include <cstring>
 
 namespace ec {
 namespace {
@@ -35,6 +36,7 @@ std::vector<PlaceLayout> build() {
     t[kPlaceMill].arrive = {13.0f, 6.0f};
     t[kPlaceGrotto].arrive = {0.0f, -11.0f};
     t[kPlaceLake].arrive = {4.0f, 9.0f};
+    t[kPlaceCove].arrive = {0.0f, -2.0f};  // (behind its anchor: looking at it is looking out to the water)
     return t;
 }
 
@@ -43,6 +45,18 @@ std::vector<PlaceLayout> build() {
 const PlaceLayout& placeLayout(int place) {
     static const std::vector<PlaceLayout> kTable = build();
     return kTable[place >= 0 && place < kPlaceCount ? place : 0];
+}
+
+Vec3 PlaceAnchor::at(int i) const {
+    if (count <= 0) return {0, 0, 0};
+    const float* q = points[i < 0 ? 0 : (i >= count ? count - 1 : i)];
+    return {q[0], q[1], q[2]};
+}
+
+PlaceAnchor placeAnchor(int place, const char* name) {
+    for (const AnchorRow& r : kAnchorRows)
+        if (r.place == place && std::strcmp(r.name, name) == 0) return {kAnchorPoints + r.first, r.count};
+    return {};
 }
 
 Vec2 placeToWorld(const ValleyPlaceInfo& p, Vec2 local) {
@@ -54,6 +68,11 @@ Vec2 placeToWorld(const ValleyPlaceInfo& p, Vec2 local) {
 Vec3 placeToWorld3(const Valley& v, const ValleyPlaceInfo& p, Vec3 local) {
     const Vec2 w = placeToWorld(p, {local.x, local.y});
     return {w.x, w.y, v.heightAt(w.x, w.y) + local.z};
+}
+
+Vec3 placeFrameToWorld(const ValleyPlaceInfo& p, Vec3 local) {
+    const Vec2 w = placeToWorld(p, {local.x, local.y});
+    return {w.x, w.y, p.at.z + local.z};
 }
 
 std::vector<CameraWall> cameraWalls(const Valley& v) {

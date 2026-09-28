@@ -33,3 +33,4 @@ void runKindTests();      // tests/test_kinds.cpp
 void runWorldTests();     // tests/test_world.cpp
 void runChallengeTests(); // tests/test_challenges.cpp
 void runTrainerTests();   // tests/test_trainer.cpp
+void runInterfaceTests(); // tests/test_interface.cpp (1.0 interface: the tracked goal, the tips)

@@ -35,4 +35,13 @@ News update(SaveData& s);
 // The quest to show first (the earliest begun and not done), or -1.
 int currentQuest(const SaveData& s);
 
+// What a step asks for (1.0 interface: the Journal's tracked quest points the map at it, core/guide).
+enum class Need : u8 { Flag, Place, Lantern, Cup, GrownPartner, AllLanterns };
+struct StepNeed {
+    Need need = Need::Flag;
+    u32 arg = 0;  // the flag, the place, or the challenge
+};
+// The step a begun quest is on now (a done or unbegun quest: its first step's).
+StepNeed stepNeed(const SaveData& s, int quest);
+
 }  // namespace ec::campaign

@@ -308,6 +308,19 @@ void finish(App& app) {
     for (int k = 0; k < kEntrants; ++k) pose(app, s.order[k], k == 0 ? ClipId::Hop : ClipId::Idle, 2.0f);
 }
 
+// Sparkles round a point (world): `count` little gold stars circling it, `radius` metres out.
+void sparkles(const App& app, Vec3 at, int count, float radius) {
+    float x, y, ppu;
+    if (!r3d::project(at, x, y, ppu)) return;
+    for (int k = 0; k < count; ++k) {
+        const float a = app.t * 1.3f + k * 0.9f, r = (1.0f + 0.4f * std::sin(app.t * 2 + k)) * ppu * radius;
+        const float sx = x + std::cos(a) * r, sy = y + std::sin(a) * r * 0.7f;
+        const float size = 3 + 2 * std::sin(app.t * 5 + k);
+        C2D_DrawRectSolid(sx - size, sy - 0.5f, 0, size * 2, 1.2f, theme::kClutchGold);
+        C2D_DrawRectSolid(sx - 0.5f, sy - size, 0, 1.2f, size * 2, theme::kClutchGold);
+    }
+}
+
 }  // namespace
 
 void setShowAutoplay(bool on) { g_autoplay = on; }
@@ -554,6 +567,11 @@ void showDrawTop(App& app, const vext::Stage& stage) {
             }
         }
     }
+    if (turns && s.t >= kCardsAt && s.t < kCardsAt + 1.0f && e >= 0) {  // the cards go up: a shimmer, more for more
+        const int r = round >= 0 ? round : kRoundPerformance;
+        const float avg = (s.cards[e][r][0] + s.cards[e][r][1] + s.cards[e][r][2]) / 3.0f;
+        sparkles(app, spotAt(v, s.spot[e]) + Vec3{0, 0, 1.2f}, 2 + static_cast<int>(avg * 0.6f), 1.0f);
+    }
     if (s.phase == Phase::Perform && s.feedback && s.feedbackT > 0)  // how that cue went
         textCentered(app, s.feedback, 200, 140 - 20 * (0.8f - s.feedbackT), 0.8f,
                      withAlpha(s.feedback == str::kShowMiss ? theme::kAsh : theme::kClutchGold, clampf(s.feedbackT * 2, 0, 1)), 200);
@@ -567,16 +585,7 @@ void showDrawTop(App& app, const vext::Stage& stage) {
             std::snprintf(line, sizeof(line), str::kShowPoints, s.total[who]);
             text(app, line, 294, 155 + k * 19, 0.45f, who == 0 ? theme::kClutchGold : theme::kShell, C2D_AlignRight);
         }
-        const Vec3 win = spotAt(v, s.spot[s.order[0]]) + Vec3{0, 0, 1.4f};
-        float x, y, ppu;
-        if (r3d::project(win, x, y, ppu))
-            for (int k = 0; k < 7; ++k) {
-                const float a = app.t * 1.3f + k * 0.9f, r = (1.0f + 0.4f * std::sin(app.t * 2 + k)) * ppu * 1.2f;
-                const float sx = x + std::cos(a) * r, sy = y + std::sin(a) * r * 0.7f;
-                const float size = 3 + 2 * std::sin(app.t * 5 + k);
-                C2D_DrawRectSolid(sx - size, sy - 0.5f, 0, size * 2, 1.2f, theme::kClutchGold);
-                C2D_DrawRectSolid(sx - 0.5f, sy - size, 0, 1.2f, size * 2, theme::kClutchGold);
-            }
+        sparkles(app, spotAt(v, s.spot[s.order[0]]) + Vec3{0, 0, 1.4f}, 7, 1.2f);
     }
 }
 

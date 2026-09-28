@@ -198,9 +198,9 @@ bool active(const App& app) {
 // Out to the wardrobe with your partner (back at the glade after).
 void dressUp(App& app, const vext::Stage& stage) {
     Glade& g = gs();
+    g.toWardrobe = false;
     if (stage.partner < 0) return;
     g.mode = Mode::None;
-    g.toWardrobe = false;
     r3d::releaseValley();
     app.game.world.inValley = 0;
     openWardrobe(app, stage.partner, SceneId::Valley);

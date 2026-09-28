@@ -1,0 +1,32 @@
+# The pageant's accessories in the den (workstream P): the hatchling dressed and dyed in the den
+# (top) and up close (bottom), then grown, then the wardrobe opened from the den and closed.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+pg give
+pg wear 5 12 18 25
+pg dye 1
+wait 2
+shot d01-den-hatchling
+pg grown
+pg wear 0 8 20 26
+wait 3
+shot d02-den-grown
+pg wardrobe
+wait 2
+shot d03-wardrobe-from-den
+key B
+wait 2
+shot d04-back-in-den
+quit

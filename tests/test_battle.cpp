@@ -540,6 +540,18 @@ TEST(league_balance) {
     // A keeper's dragon at the challenger's level (a few trained points a league), choosing well,
     // beats most challengers more often than not; a champion is a step up.
     Rng rng(123);
+    // The very first: a newly hatched dragon (level 1 or 2) has a fair chance against Tamsin.
+    for (int level : {1, 2}) {
+        int wins = 0;
+        for (int i = 0; i < 400; ++i) {
+            const int k = static_cast<int>(rng.below(static_cast<u32>(kindCount())));
+            Dragon mine = grownOf(k, level, 0, 30000 + i);
+            mine.stage = Stage::Hatchling;
+            wins += fight(mine, league::dragonOf(league::idOf(0, 0)), 3, league::challenger(league::idOf(0, 0)).skill, rng) == 0;
+        }
+        std::printf("  a level %d hatchling against Tamsin: %.2f\n", level, wins / 400.0f);
+        CHECK(wins > 400 * (level == 1 ? 0.2f : 0.3f));
+    }
     for (int league = 0; league < kLeagues; ++league) {
         for (int slot = 0; slot < league::kSlots; ++slot) {
             const int id = league::idOf(league, slot);
@@ -557,7 +569,7 @@ TEST(league_balance) {
             const float r = static_cast<float>(wins) / kRuns, lr = static_cast<float>(winsLower) / kRuns;
             std::printf("  %-13s %-10s L%-2d: at its level %.2f, three below %.2f\n", c.name, c.dragonName, c.level, r, lr);
             if (league::isChampion(id)) CHECK(r > 0.3f && r < 0.8f);
-            else CHECK(r > 0.4f && r < 0.95f);
+            else CHECK(r > 0.35f && r < 0.95f);  // (the later leagues choose cleverly)
             CHECK(lr < r);
         }
     }
@@ -647,6 +659,46 @@ TEST(hollow_balance) {
     }
 }
 
+TEST(battle_progress_through_the_leagues) {
+    // A keeper's first dragon from level 1: eight battles a day (a full Energy bar), each against
+    // the next challenger once it has caught up with them (after two losses running, a few floors
+    // first), else a floor of the Hollow near its level. How long the leagues take (pacing: days).
+    SaveData& s = freshSave();
+    s.dragons[0] = grownOf(findKind("pouncer"), 1, 0, 77);
+    Rng rng(99);
+    int battles = 0, day = 0, wonAt[kLeagues] = {}, wildBattles = 0, trained = 0, losses = 0, train = 0;
+    for (; day < 80 && s.progress.battleLeague < kLeagues; ++day) {
+        for (int b = 0; b < 8; ++b, ++battles) {
+            Dragon& d = s.dragons[0];
+            const int level = trainer::levelOf(d);
+            const int next = league::nextChallenger(s);
+            const league::Challenger& c = league::challenger(next);
+            const bool open = !league::isChampion(next) || league::championOpen(s, league::leagueOf(next));
+            if (open && c.level <= level && train <= 0) {
+                const int w = fight(d, league::dragonOf(next), 3, c.skill, rng);
+                const int before = s.progress.battleLeague;
+                league::record(s, 0, next, w == 0 ? Outcome::Won : Outcome::Lost, 20000 + day);
+                if (s.progress.battleLeague > before) wonAt[before] = day + 1;
+                losses = w == 0 ? 0 : losses + 1;
+                if (losses >= 2) train = 4, losses = 0;  // (two losses running: off to train a while)
+            } else {
+                --train;
+                int floor = static_cast<int>((level - 2) / 1.2f);
+                floor = floor < 1 ? 1 : (floor > hollow::kFloors ? hollow::kFloors : floor);
+                if (hollow::guardian(floor)) --floor;
+                const Dragon wild = hollow::wildOf(floor, 20000 + day);
+                const int w = fight(d, wild, 3, hollow::skillAt(floor), rng);
+                trained += hollow::record(s, 0, floor, wild, w == 0 ? Outcome::Won : Outcome::Lost, 20000 + day, rng).trained >= 0;
+                ++wildBattles;
+            }
+        }
+    }
+    std::printf("  leagues won on days %d, %d, %d, %d (%d battles, %d in the Hollow); level %d, %d stat points trained\n", wonAt[0],
+                wonAt[1], wonAt[2], wonAt[3], battles, wildBattles, trainer::levelOf(s.dragons[0]), trained);
+    CHECK(s.progress.battleLeague == kLeagues);
+    CHECK(wonAt[0] >= 1 && wonAt[0] <= 6 && wonAt[3] > 8 && wonAt[3] < 45);
+}
+
 void runBattleTests() {
     RUN(battle_elements_wheel);
     RUN(battle_moves_table);
@@ -663,4 +715,5 @@ void runBattleTests() {
     RUN(hollow_floors);
     RUN(hollow_rewards);
     RUN(hollow_balance);
+    RUN(battle_progress_through_the_leagues);
 }

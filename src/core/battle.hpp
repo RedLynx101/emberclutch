@@ -146,7 +146,7 @@ int chooseMove(const Battle& b, int side, int skill, Rng& rng);
 // ---------------------------------------------------------------------------- after
 // The experience a battle is worth to a dragon of `level` against one of `foeLevel`: more
 // against stronger ones, little against much weaker; `factor` 1 for a challenger, more for a
-// champion or a wild one; a loss a quarter of it; giving up nothing.
+// champion or a wild one; a loss a third of it; giving up nothing.
 enum class Outcome : u8 { Won, Lost, GaveUp };
 u32 battleXp(int level, int foeLevel, Outcome o, float factor = 1.0f);
 // Experience given (trainer::gainXp) and what came of it: the levels gained and the moves learned.

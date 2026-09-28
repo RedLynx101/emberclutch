@@ -136,6 +136,7 @@ void finishFloor(App& app, battle::Outcome o, bview::Results& out) {
     if (r.growth.xp) out.add(str::kBattleXp, d.name, static_cast<unsigned long>(r.growth.xp));
     if (r.growth.levelAfter > r.growth.levelBefore) {
         out.add(str::kBattleLevelUp, d.name, r.growth.levelAfter);
+        queueToastf(app, "%s", out.lines[out.count - 1]);  // (a toast too, as it grows)
         out.levelUp = true;
     }
     u8 four[kMoveSlots];

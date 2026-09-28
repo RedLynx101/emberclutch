@@ -622,10 +622,10 @@ int chooseMove(const Battle& b, int side, int skill, Rng& rng) {
 // ---------------------------------------------------------------------------- after
 u32 battleXp(int level, int foeLevel, Outcome o, float factor) {
     if (o == Outcome::GaveUp) return 0;
-    const float base = 12.0f + 9.0f * foeLevel;
+    const float base = 20.0f + 10.0f * foeLevel;
     const float k = clampf(1.0f + 0.12f * (foeLevel - level), 0.25f, 1.8f);
     float xp = base * k * factor;
-    if (o == Outcome::Lost) xp *= 0.25f;
+    if (o == Outcome::Lost) xp *= 0.33f;  // (a loss still teaches something)
     return static_cast<u32>(xp + 0.5f);
 }
 

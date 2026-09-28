@@ -157,7 +157,7 @@ const Challenger kTable[kChallengers] = {
      "The stars are out. Moonpetal is glowing. Another?",
      "Your star is brighter tonight. Well done, {P}.",
      "Moonpetal shines on! The stars will wait for you.",
-     "Moonpetal", "puffback", 3, 28, 6, 3},
+     "Moonpetal", "puffback", 3, 28, 5, 3},
     {"Bastian", "Starfire league", kPlaceOrchard, {8.0f, 5.0f}, kTowardMiddle,
      {0, 0, {206, 150, 112}, kSilver, {120, 90, 60}, {200, 160, 80}, {70, 50, 40}, kBrownEyes}, 0, 1.2f,
      {"I planted this orchard sixty years ago. Old Smoky helped, mostly by napping.",

@@ -346,6 +346,13 @@ CLIP_PAGES = [  # (clip, view): the gaits from the side, gestures from the front
      ("nod", "side")],
     [("cheer", "front"), ("crouch_pet", "side"), ("sit", "side"), ("surprised", "three_quarter"),
      ("pick_up", "side"), ("look_around", "front")],
+    # settings (workstream D)
+    [("clap", "three_quarter"), ("sit_clap", "side"), ("sit_ground", "side"), ("doze", "side"),
+     ("doze_stand", "side"), ("stretch", "front")],
+    [("fist_pump", "three_quarter"), ("point", "side"), ("worried", "front"), ("slump", "side"), ("bow", "side"),
+     ("fish", "side")],
+    [("cast", "side"), ("scatter", "three_quarter"), ("write", "three_quarter"), ("tidy", "three_quarter"),
+     ("fly_toy", "front"), ("clap", "front")],
 ]
 
 
@@ -495,8 +502,10 @@ def main():
         for body in [i for i in ids if i in people.PLAYERS]:
             sheet_hair(cam, body)
     if "clips" in sheets:
+        pages = arg("--clip-pages")  # (1-based page numbers, e.g. 3,4,5: just those)
+        chosen = [CLIP_PAGES[int(k) - 1] for k in pages.split(",")] if pages else None
         for pid in ids:
-            sheet_clips(cam, pid, hair=2)
+            sheet_clips(cam, pid, pages=chosen, hair=2)
     if "ride" in sheets:
         sheet_ride(cam)
     if "looks" in sheets:

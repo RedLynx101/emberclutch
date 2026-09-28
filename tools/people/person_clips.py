@@ -288,6 +288,153 @@ pick_up.pose(0.95, {"leg_up*": (22, 0, 2), "leg_lo*": (-36, 0, 0), "foot*": (12,
 pick_up.pose(1.2, HOLD).pose(1.4, HOLD)
 
 
+# ------------------------------------------------------------------------------ settings (workstream D)
+# The valley's people at their doings: audiences clapping, a trainer cheering their dragon on in a
+# duel (pointing it forward, a fist pump, hands to the face when it's hit, a slump when it loses, a
+# polite bow), villagers at work by the hour (Maple tidying her stall, Bram scattering feed from his
+# bucket, Wren writing on her clipboard, Pip flying his toy dragon about), fishing at the cove,
+# sitting down on the ground at a viewpoint, a stretch, dozing at night.
+GROUND = -0.21  # the root sat down on the ground: legs flat on it (the standard body; the game
+                # scales root tracks by a body's hips)
+
+CLAP_APART = {"arm_up*": (50, 0, 6), "arm_lo*": (88, 0, 4), "hand*": (0, 0, 0)}
+CLAP_TOGETHER = {"arm_up*": (52, 0, -20), "arm_lo*": (90, 0, -44), "hand*": (0, 0, -6)}
+clap = clip("clap", 0.8, loop=True)
+for _t, _p in ((0.0, CLAP_APART), (0.2, CLAP_TOGETHER), (0.4, CLAP_APART), (0.6, CLAP_TOGETHER)):
+    clap.pose(_t, merge(_p, {"spine": (2, 0, 0), "head": (4, 0, 0)}))
+clap.wave(lambda t: {"spine": (1.5 * sin01(t, 0.4), 0, 0), "head": (-2.0 * sin01(t, 0.4, 0.1), 0, 0)})
+clap.event(0.2, "thump").event(0.6, "thump")
+
+sit_clap = clip("sit_clap", 0.8, loop=True)
+_SIT_LEGS = {k: v for k, v in SIT.items() if k.startswith(("leg", "foot"))}
+for _t, _p in ((0.0, CLAP_APART), (0.2, CLAP_TOGETHER), (0.4, CLAP_APART), (0.6, CLAP_TOGETHER)):
+    sit_clap.pose(_t, merge(_SIT_LEGS, _p, {"spine": (4, 0, 0), "head": (6, 0, 0)}))
+sit_clap.wave(lambda t: {"leg_lo_R": (5 * sin01(t, 0.8), 0, 0), "leg_lo_L": (-5 * sin01(t, 0.8), 0, 0)})
+
+# On the ground, legs out in front, hands resting on the thighs, leaning back a touch.
+SIT_GROUND = {"leg_up*": (84, 0, 6), "leg_lo*": (-12, 0, 0), "foot*": (18, 0, 0),
+              "spine": (6, 0, 0), "chest": (2, 0, 0), "head": (-2, 0, 0),
+              "arm_up*": (28, 0, 10), "arm_lo*": (34, 0, 0), "hand*": (-8, 0, 0)}
+sit_ground = clip("sit_ground", 4.0, loop=True).pose(0.0, SIT_GROUND).wave(breathe(0.9, 4.0))
+sit_ground.wave(lambda t: {"foot_R": (6 * max(0.0, sin01(t, 4.0)), 0, 0), "foot_L": (6 * max(0.0, sin01(t, 4.0, 0.5)), 0, 0),
+                           "head": (0, 6 * sin01(t, 4.0, 0.2), 1.5 * sin01(t, 4.0))})
+sit_ground.root(0.0, 0.0, GROUND)
+
+# Dozing where they sit: chin on the chest, slow deep breaths, a bob as it nods further and
+# catches itself.
+DOZE = merge(SIT_GROUND, {"spine": (-4, 0, 0), "chest": (-4, 0, 0), "neck": (-4, 0, 0), "head": (-12, 0, 5),
+                          "arm_up*": (-2, 0, -4), "arm_lo*": (6, 0, 0)})
+doze = clip("doze", 5.0, loop=True)
+doze.pose(0.0, DOZE).pose(2.6, merge(DOZE, {"head": (-6, 0, 2)})).pose(3.2, merge(DOZE, {"head": (-3, 0, 0)}))
+doze.pose(3.6, merge(DOZE, {"head": (3, 0, -1)})).pose(4.3, DOZE)
+doze.wave(breathe(1.6, 5.0))
+doze.root(0.0, 0.0, GROUND)
+
+# Dozing on their feet (a night at the stall): head drooped, a slow sway, a nod and a catch.
+DOZE_STAND = merge(STAND, {"spine": (-3, 0, 0), "chest": (-2, 0, 0), "neck": (-4, 0, 0), "head": (-12, 0, 4),
+                           "arm_up*": (4, 0, 0), "arm_lo*": (6, 0, 0)})
+doze_stand = clip("doze_stand", 5.0, loop=True)
+doze_stand.pose(0.0, DOZE_STAND).pose(2.8, merge(DOZE_STAND, {"head": (-19, 0, 5), "neck": (-6, 0, 0)}))
+doze_stand.pose(3.3, merge(DOZE_STAND, {"head": (-4, 0, 0), "spine": (0, 0, 0)})).pose(4.2, DOZE_STAND)
+doze_stand.wave(breathe(1.4, 5.0))
+doze_stand.wave(lambda t: {"hips": (0, 0, 1.6 * sin01(t, 5.0)), "chest": (0, 0, -1.0 * sin01(t, 5.0))})
+
+# A good stretch: arms up in a V, leaning back up on the toes, a yawn, and down again.
+STRETCH_UP = merge(ARMS_UP, {"arm_up*": (12, 0, 118), "arm_lo*": (0, 0, 16), "spine": (10, 0, 0), "chest": (6, 0, 0),
+                             "head": (14, 0, 0), "foot*": (-14, 0, 0), "leg_up*": (-3, 0, 0)})
+stretch = clip("stretch", 2.4).pose(0.0, STAND)
+stretch.pose(0.5, STRETCH_UP).pose(1.3, merge(STRETCH_UP, {"head": (20, 0, 0), "spine": (12, 0, 0)}))
+stretch.pose(1.7, merge(STAND, {"arm_up*": (4, 0, 30), "arm_lo*": (20, 0, 0), "head": (4, 0, 0)}))
+stretch.pose(2.4, STAND)
+stretch.root(0.0).root(0.5, 0.0, 0.03).root(1.3, 0.0, 0.03).root(1.7).root(2.4)
+
+# A trainer's fist pump for their dragon: the free hand up, pumped twice, a bounce in the knees.
+PUMP_UP = {"arm_up_R": (26, 0, 62), "arm_lo_R": (20, 0, 76), "hand_R": (-10, 0, 0), "arm_up_L": (10, 0, -8),
+           "arm_lo_L": (30, 0, 0), "spine": (4, 0, 0), "head": (6, 0, 0)}
+PUMP_DOWN = merge(PUMP_UP, {"arm_up_R": (-6, 0, -26), "arm_lo_R": (0, 0, -30), "leg_up*": (14, 0, 0),
+                            "leg_lo*": (-26, 0, 0), "foot*": (12, 0, 0), "spine": (-4, 0, 0)})
+fist_pump = clip("fist_pump", 1.2).pose(0.0, STAND)
+fist_pump.pose(0.2, PUMP_UP).pose(0.38, PUMP_DOWN).pose(0.56, PUMP_UP).pose(0.74, PUMP_DOWN).pose(0.92, PUMP_UP)
+fist_pump.pose(1.2, STAND)
+fist_pump.root(0.0).root(0.38, 0.0, -0.03).root(0.56).root(0.74, 0.0, -0.03).root(0.92).root(1.2)
+
+# Sending their dragon in: a step, the free arm thrown forward, pointing at the foe.
+POINT = {"arm_up_R": (88, 0, 6), "arm_lo_R": (6, 0, 0), "hand_R": (6, 0, 0), "arm_up_L": (-10, 0, -10),
+         "arm_lo_L": (24, 0, 0), "spine": (-8, 0, 0), "chest": (0, 6, 0), "head": (6, -4, 0),
+         "leg_up_R": (22, 0, 0), "leg_lo_R": (-10, 0, 0), "leg_up_L": (-12, 0, 0), "leg_lo_L": (-4, 0, 0)}
+point = clip("point", 1.2).pose(0.0, STAND)
+point.pose(0.18, merge(POINT, {"arm_up_R": (40, 0, 30), "arm_lo_R": (60, 0, 0)})).pose(0.34, POINT)
+point.pose(0.8, POINT).pose(1.2, STAND)
+
+# Hands to the cheeks as their dragon takes a hit: a lean back, a wince to either side.
+FACE = {"arm_up*": (34, 0, 30), "arm_lo*": (140, 0, 24), "hand*": (-8, 0, 0), "spine": (6, 0, 0), "head": (6, 0, 0),
+        "neck": (2, 0, 0)}
+worried = clip("worried", 1.4).pose(0.0, STAND)
+worried.pose(0.2, FACE).pose(0.5, merge(FACE, {"head": (4, 12, 4)})).pose(0.8, merge(FACE, {"head": (4, -12, -4)}))
+worried.pose(1.05, FACE).pose(1.4, STAND)
+worried.root(0.0).root(0.2, 0.02, 0.0).root(1.05, 0.02, 0.0).root(1.4)
+
+# A loss: shoulders down, head hung, a sigh (it ends there; the scene eases them back).
+SLUMP = merge(STAND, {"spine": (-8, 0, 0), "chest": (-4, 0, 0), "neck": (-4, 0, 0), "head": (-12, 0, 0),
+                      "arm_up*": (6, 0, -4), "arm_lo*": (4, 0, 0), "leg_up*": (6, 0, 0), "leg_lo*": (-10, 0, 0),
+                      "foot*": (4, 0, 0)})
+slump = clip("slump", 1.8).pose(0.0, STAND)
+slump.pose(0.3, merge(STAND, {"spine": (4, 0, 0), "chest": (4, 0, 0), "head": (8, 0, 0)}))  # a breath in
+slump.pose(0.9, SLUMP).pose(1.8, merge(SLUMP, {"head": (-15, 0, 2)}))
+
+# A polite bow to the other trainer.
+BOW = merge(STAND, {"spine": (-26, 0, 0), "chest": (-10, 0, 0), "head": (-2, 0, 0), "arm_up*": (-10, 0, 0),
+                    "arm_lo*": (4, 0, 0), "leg_up*": (4, 0, 0)})
+bow = clip("bow", 1.4).pose(0.0, STAND).pose(0.4, BOW).pose(0.85, BOW).pose(1.4, STAND)
+
+# Fishing: the rod held out in both hands (the cove draws it from the hands), a gentle jig.
+FISH = {"arm_up_R": (44, 0, -8), "arm_lo_R": (46, 0, -10), "hand_R": (-10, 0, 0), "arm_up_L": (40, 0, 16),
+        "arm_lo_L": (54, 0, 12), "spine": (-2, 0, 0), "chest": (0, -6, 0), "head": (-6, 0, 0),
+        "leg_up_R": (8, 0, 0), "leg_lo_R": (-8, 0, 0)}
+fish = clip("fish", 3.0, loop=True).pose(0.0, FISH).wave(breathe(0.7, 3.0))
+fish.wave(lambda t: {"arm_lo_R": (5 * max(0.0, sin01(t, 1.5)) ** 3, 0, 0), "arm_lo_L": (5 * max(0.0, sin01(t, 1.5)) ** 3, 0, 0)})
+
+cast = clip("cast", 1.2).pose(0.0, FISH)
+cast.pose(0.35, {"arm_up_R": (-8, 0, 58), "arm_lo_R": (0, 0, 70), "hand_R": (0, 0, 10), "arm_up_L": (16, 0, 20),
+                 "arm_lo_L": (70, 0, 10), "spine": (6, 0, 0), "chest": (0, 14, 0), "head": (4, 6, 0),
+                 "leg_up_L": (10, 0, 0), "leg_lo_L": (-12, 0, 0)})
+cast.pose(0.55, merge(FISH, {"arm_up_R": (84, 0, 0), "arm_lo_R": (10, 0, 0), "spine": (-10, 0, 0), "chest": (0, -10, 0),
+                             "leg_up_R": (20, 0, 0), "leg_lo_R": (-12, 0, 0)}))
+cast.pose(0.9, merge(FISH, {"arm_up_R": (54, 0, -6), "spine": (-4, 0, 0)})).pose(1.2, FISH)
+
+# Bram scattering feed from the bucket in his other hand: a dip, then a fling out in an arc.
+DIP = {"arm_up_R": (18, 0, -26), "arm_lo_R": (44, 0, -24), "hand_R": (-20, 0, 0), "arm_up_L": (12, 0, -10),
+       "arm_lo_L": (40, 0, 0), "spine": (-8, 0, 0), "chest": (0, -12, 0), "head": (-10, -10, 0)}
+FLING = {"arm_up_R": (64, 0, 34), "arm_lo_R": (14, 0, 6), "hand_R": (10, 0, 0), "arm_up_L": (10, 0, -10),
+         "arm_lo_L": (40, 0, 0), "spine": (-2, 0, 0), "chest": (0, 12, 0), "head": (2, 12, 0)}
+scatter = clip("scatter", 2.2, loop=True)
+scatter.pose(0.0, DIP).pose(0.5, DIP).pose(0.9, FLING).pose(1.3, merge(FLING, {"arm_up_R": (52, 0, 48)}))
+scatter.pose(1.8, merge(DIP, {"arm_up_R": (30, 0, 0), "arm_lo_R": (30, 0, -10)}))
+
+# Wren writing on the clipboard held up in her other hand, looking up now and then.
+BOARD = {"arm_up_L": (44, 0, 14), "arm_lo_L": (74, 0, 16), "arm_up_R": (40, 0, -18), "arm_lo_R": (82, 0, -34),
+         "hand_R": (-14, 0, 0), "head": (-18, 0, 0), "neck": (-4, 0, 0), "spine": (-2, 0, 0)}
+write = clip("write", 3.0, loop=True)
+write.pose(0.0, BOARD).pose(1.6, BOARD).pose(1.9, merge(BOARD, {"head": (2, 10, 0), "neck": (0, 0, 0)}))
+write.pose(2.5, merge(BOARD, {"head": (0, 8, 0), "neck": (0, 0, 0)})).pose(2.8, BOARD)
+write.wave(lambda t: {"arm_lo_R": (0, 0, 4 * sin01(t, 0.3)), "hand_R": (3 * sin01(t, 0.15), 0, 0)} if t < 1.6 else {})
+
+# Maple tidying her stall: both hands busy at the counter, in turn, a little lean in.
+TIDY = {"arm_up*": (44, 0, -4), "arm_lo*": (50, 0, -8), "hand*": (-12, 0, 0), "spine": (-8, 0, 0), "head": (-12, 0, 0)}
+tidy = clip("tidy", 2.4, loop=True).pose(0.0, TIDY)
+tidy.wave(lambda t: {"arm_up_R": (8 * sin01(t, 1.2), 0, 6 * sin01(t, 1.2, 0.25)),
+                     "arm_up_L": (8 * sin01(t, 1.2, 0.5), 0, -6 * sin01(t, 1.2, 0.75)),
+                     "chest": (0, 5 * sin01(t, 2.4), 0), "head": (0, 6 * sin01(t, 2.4, 0.1), 0)})
+
+# Pip flying his toy dragon about: the toy hand swooping up and round, a bounce, eyes on it.
+fly_toy = clip("fly_toy", 2.0, loop=True)
+for _t, _u in ((0.0, 0.0), (0.5, 1.0), (1.0, 0.3), (1.5, 1.0)):
+    fly_toy.pose(_t, {"arm_up_L": (110 + 40 * _u, 0, -10 - 30 * _u), "arm_lo_L": (20 - 20 * _u, 0, 0),
+                      "arm_up_R": (10, 0, 16 + 10 * _u), "arm_lo_R": (30, 0, 0),
+                      "head": (8 + 10 * _u, -14 + 8 * _u, 0), "chest": (0, -8 + 6 * _u, 0), "spine": (4, 0, 0)})
+fly_toy.root(0.0).root(0.25, 0.0, 0.04).root(0.5).root(0.75, 0.0, 0.04).root(1.0).root(1.25, 0.0, 0.04).root(1.5).root(1.75, 0.0, 0.04)
+
+
 def by_name(name):
     for c in CLIPS:
         if c.name == name:
@@ -315,6 +462,26 @@ PURPOSE = {
     "sit_loop": "sitting (loop, feet swinging)",
     "surprised": "a startled jump back, hands up (use eyes variant 1)",
     "pick_up": "squatting to pick something up with hand_R, ending holding it up at the chest",
+    # settings (workstream D)
+    "clap": "clapping at chest height, a little bob (loop; thump marker on each clap)",
+    "sit_clap": "sat on a bench clapping, feet swinging (loop; seat as sit)",
+    "sit_ground": "sat on the ground, legs out, hands on the thighs (loop; root down 0.21 m)",
+    "doze": "dozing sat on the ground, chin down, a nod and a catch (loop; root down 0.21 m)",
+    "doze_stand": "dozing on their feet, head drooped, a slow sway (loop)",
+    "stretch": "arms up in a V, up on the toes, a yawn",
+    "fist_pump": "the free hand pumped twice, knees bouncing (cheering a dragon on)",
+    "point": "a step and the free arm thrown forward, pointing (sending a dragon in)",
+    "worried": "hands to the cheeks, a lean back, a wince each way",
+    "slump": "a breath in, then shoulders down and head hung (ends slumped)",
+    "bow": "a polite bow",
+    "fish": "holding a rod out in both hands, a gentle jig (loop)",
+    "cast": "the rod back over the shoulder, whipped forward, ends as fish",
+    "scatter": "a dip into the bucket in hand_L, a fling of feed out in an arc (loop)",
+    "write": "writing on the clipboard held up in hand_L, looking up now and then (loop)",
+    "tidy": "both hands busy at a counter in turn, leaning in (loop)",
+    "fly_toy": "the toy in hand_L swooped up and round, bouncing, eyes on it (loop; root bob)",
 }
 REQUIRED = ["idle", "look_around", "walk", "run", "wave", "talk", "nod", "cheer", "crouch_pet", "mount", "ride",
-            "ride_lean_left", "ride_lean_right", "dismount", "sit", "surprised", "pick_up"]
+            "ride_lean_left", "ride_lean_right", "dismount", "sit", "surprised", "pick_up",
+            "clap", "sit_clap", "sit_ground", "doze", "doze_stand", "stretch", "fist_pump", "point", "worried", "slump",
+            "bow", "fish", "cast", "scatter", "write", "tidy", "fly_toy"]

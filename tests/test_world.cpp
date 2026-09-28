@@ -197,6 +197,30 @@ TEST(the_people) {
     CHECK(!clips.empty() && loadAnims(clips.data(), clips.size(), lib));
     for (const char* name : {"idle", "walk", "run", "wave", "talk", "nod", "cheer", "crouch_pet", "ride", "sit_loop"})
         CHECK(lib.find(name) >= 0);
+    // The settings' clips (workstream D): the ones held a while loop, the gestures play once and
+    // finish; sitting and dozing on the ground carry the root down (legs flat on it), the rest
+    // stand where they are (or bob a little).
+    for (const char* name : {"clap", "sit_clap", "sit_ground", "doze", "doze_stand", "fish", "scatter", "write", "tidy", "fly_toy"}) {
+        const int c = lib.find(name);
+        CHECK(c >= 0 && lib.clips[static_cast<std::size_t>(c)].loop);
+    }
+    for (const char* name : {"stretch", "fist_pump", "point", "worried", "slump", "bow", "cast"}) {
+        const int c = lib.find(name);
+        CHECK(c >= 0 && !lib.clips[static_cast<std::size_t>(c)].loop);
+        if (c < 0) continue;
+        Animator a;
+        a.play(c, 0.0f);
+        a.update(lib, 3.0f, nullptr, 0);
+        CHECK(a.finished(lib));  // (a scene waiting for one to end moves on)
+    }
+    for (const char* name : {"sit_ground", "doze", "clap", "fish", "bow"}) {
+        const int c = lib.find(name);
+        if (c < 0) continue;
+        const bool ground = std::strcmp(name, "sit_ground") == 0 || std::strcmp(name, "doze") == 0;
+        const AnimClip& clip = lib.clips[static_cast<std::size_t>(c)];
+        const float up = clip.root.empty() ? 0.0f : clip.root[1];
+        CHECK(ground ? (up < -0.18f && up > -0.25f) : std::fabs(up) < 0.05f);
+    }
     for (int k = 0; k < kPeople; ++k) {
         const Person who = static_cast<Person>(k);
         std::string path = personFile(who);

@@ -388,6 +388,9 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
         w.u8v(p.coveFish);
         w.u8v(p.coveShells);
         w.u8v(p.coveRod);
+        w.s32v(p.roamDay);  // (the roaming trainers', after the cove's)
+        w.u8v(p.roamPaid);
+        w.u16v(p.duelsWon);
         w.patchU16(sizeAt, static_cast<u16>(w.pos() - from));
     }
     w.patchU16(at, static_cast<u16>(w.pos() - start));
@@ -592,6 +595,11 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
             p.coveFish = r.u8v();
             p.coveShells = r.u8v();
             p.coveRod = r.u8v() ? 1 : 0;
+        }
+        if (has(kProgressRoamBytes)) {  // the roaming trainers' (older progress blocks: none yet)
+            p.roamDay = r.s32v();
+            p.roamPaid = r.u8v();
+            p.duelsWon = r.u16v();
         }
         r.seek(from + n);
     }

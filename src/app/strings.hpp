@@ -137,7 +137,7 @@ inline constexpr const char* kBestPoints = "Best %d";
 inline constexpr const char* kGoalPoints = "Goal %d";
 inline constexpr const char* kNoBest = "Not run yet";
 inline constexpr const char* kCupWon = "%s won!";
-inline constexpr const char* kCupPlaced = "So close! A prize for placing.";
+inline constexpr const char* kCupPlaced = "So close! Nearly there.";
 inline constexpr const char* kCupTryAgain = "Not this time. Try again!";
 inline constexpr const char* kNewRibbon = "A new ribbon and trophy for your den!";
 inline constexpr const char* kNewBest = "A new best!";
@@ -164,11 +164,11 @@ inline constexpr const char* kThrowOf = "Throw %d of %d";
 inline constexpr const char* kPoints = "%d points";
 inline constexpr const char* kGoldenNext = "A golden pear: double points!";
 inline constexpr const char* kAteItAnyway = "Missed... but it eats it anyway.";
-inline constexpr const char* kHelpRings = "Pad: steer  A: flap\nB: dive  L/R: bank\nThrough every ring!";
+inline constexpr const char* kHelpRings = "Pad: steer  A: flap\nB: dive\nR: burst  L: brake";
 inline constexpr const char* kHelpPicker = "L/R: challenge\nLeft/Right: cup\nA: start  B: leave";
 // The hosts: Wren at the arena, Maple at the orchard ({D} your dragon, {P} you).
-inline constexpr const char* kHostRings[] = {"Sky Rings! Fly through every ring in order. A missed ring costs three seconds.",
-                                              "Beat the clock and the cup is yours. Your best run flies along as a little wisp!"};
+inline constexpr const char* kHostRings[] = {"Sky Rings! Race the other dragons through every ring in order. A missed ring costs three seconds.",
+                                              "R bursts ahead while {D}'s Stamina lasts, L brakes into the tight turns. First to the last ring wins!"};
 inline constexpr const char* kHostLanterns[] = {"The Lantern Trial! The crystal lanterns will light up in a pattern.",
                                                  "Then tap them in the same order, and {D} will breathe each one alight."};
 inline constexpr const char* kHostFruit[] = {"Fruit Catch! Flick a fruit down the meadow and {D} will run for it.",
@@ -177,6 +177,37 @@ inline constexpr const char* kHostWon[] = {"Wonderful! What a pair you two are."
                                             "Now that's how it's done!"};
 inline constexpr const char* kHostPlaced[] = {"So close! Next time, I'm sure of it.", "Nearly! Have another go."};
 inline constexpr const char* kHostTry[] = {"Don't worry, everyone starts somewhere.", "A little practice, and you'll get it!"};
+
+// The challenges, 1.0 (workstream C, D89): the day's prizes, energy, the record, Sky Rings' race
+// (rivals, the burst and brake, Stamina), Fruit Catch's breeze, what the next cup needs.
+inline constexpr const char* kTooTired = "Too tired! Let it rest first.";
+inline constexpr const char* kPrizeFirst = "First win: %lu Gleam and a trophy";
+inline constexpr const char* kPrizeToday = "Today's prize: %lu Gleam";
+inline constexpr const char* kPrizeTaken = "Today's prize won. Come back tomorrow!";
+inline constexpr const char* kGleamXp = "+%lu Gleam    +%lu xp";
+inline constexpr const char* kXpOnly = "+%lu xp";
+inline constexpr const char* kPaidToday = "Today's prize for this cup is yours already.";
+inline constexpr const char* kDragonFirstCup = "%s's first %s!";
+inline constexpr const char* kTrophyUp = "The %s trophy is on your den's shelf!";
+inline constexpr const char* kLevelUpTo = "%s reached level %d!";
+inline constexpr const char* kNextRivals = "Next: the %s. Beat %d faster rivals!";
+inline constexpr const char* kNextGoal = "Next: the %s. %d points to win.";
+inline constexpr const char* kNextTrial = "Next: the %s. %d lanterns, %d rounds, %d hearts.";
+inline constexpr const char* kNextGrown = "(For a grown dragon.)";
+inline constexpr const char* kNextJuvenile = "(For a juvenile dragon or older.)";
+inline constexpr const char* kAllCupsWon = "Every cup won! The Starfire trophy is yours.";
+inline constexpr const char* kBeatRivals = "Beat %d rivals";
+inline constexpr const char* kTrialNeeds = "%d lanterns, %d rounds";
+inline constexpr const char* kStamina = "Stamina";
+inline constexpr const char* kPlaceNth[] = {"1st", "2nd", "3rd", "4th"};
+inline constexpr const char* kRaceYou = "You";
+inline constexpr const char* kRaceDone = "%s place!  %.1f s";
+inline constexpr const char* kRaceMissed = "%s place!  %.1f s (%d missed)";
+inline constexpr const char* kRaceWinner = "%s won in %.1f s";
+inline constexpr const char* kRaceBeatAll = "Ahead of %s by %.1f s";
+inline constexpr const char* kRaceLine = "%s  %s  %.1f s";
+inline constexpr const char* kBreeze = "Breeze";
+inline constexpr const char* kCalm = "Calm";
 
 // Egg care and hatching (WP7)
 inline constexpr const char* kTurn = "Turn";

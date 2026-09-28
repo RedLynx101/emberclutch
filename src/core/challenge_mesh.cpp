@@ -392,8 +392,10 @@ PropMesh shelfMesh(const u8 cups[kChallenges], u16 ribbons) {
     auto at = [&](const DecorPlace& p) { b.place = fromQuatScale(quatAxisAngle({0, 0, 1}, p.yaw), {p.scale, p.scale, p.scale}, p.at); };
     for (int c = 0; c < kChallenges; ++c) {
         if (cups[c] < challenge::kEmber) continue;
-        at(trophySpot(static_cast<Challenge>(c)));
         const int cup = cups[c] > challenge::kStarfire ? static_cast<int>(challenge::kStarfire) : static_cast<int>(cups[c]);
+        DecorPlace spot = trophySpot(static_cast<Challenge>(c));
+        spot.scale *= 0.85f + 0.1f * cup;  // a grander trophy cup by cup (D89: trophies that mean something)
+        at(spot);
         trophy(b, static_cast<Challenge>(c), static_cast<u8>(kShelfCup + cup - 1), kShelfBase, static_cast<u8>(kShelfSign + c));
     }
     int slot = 0;

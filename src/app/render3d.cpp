@@ -3189,7 +3189,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     g_valleyStats = {};
     perf::Scope timed(perf::Room);
     C3D_Mtx projection, viewM, clip;
-    const float focus = std::fmax(4.0f, length(view.at - view.eye));
+    const float focus = std::fmax(4.0f, view.focus > 0 ? view.focus : length(view.at - view.eye));  // (focus: the challenges)
     topProjection(projection, kValleyNear, kValleyFar, focus);
     lookAt(viewM, view.eye, view.target);
     g_denView = viewM;  // project() works in the valley too
@@ -3346,12 +3346,12 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     }
     // A dragon out on the Wanderings, if it's near (D69), and the star dragon in the sky.
     auto another = [&](const Dragon* d, const DenActor* actor, Vec3 at, float heading, float reach, float bank, float grow,
-                       float pitch = 0.0f) {
+                       float pitch = 0.0f, int forceLod = -1) {
         if (!d || std::hypot(at.x - view.eye.x, at.y - view.eye.y) > reach ||
             outsideView(clip, at - Vec3{5, 5, 2}, at + Vec3{5, 5, 6}))
             return;
         static Posed posed;
-        const int lod = length(at - view.eye) > 30.0f ? 1 : 0;
+        const int lod = forceLod >= 0 ? forceLod : length(at - view.eye) > 30.0f ? 1 : 0;
         if (!pose(app, *d, actor, now, lod, posed)) return;
         bindDragons(projection);
         const float plain[3] = {1, 1, 1};
@@ -3370,7 +3370,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     another(view.skyDragon, view.skyActor, view.skyAt, view.skyHeading, 380.0f, -0.35f, 1.8f);  // a legend: larger
     for (int i = 0; i < view.otherCount && i < kMaxOthers; ++i) {  // challengers, wild ones, rivals (1.0)
         const ValleyDragon& o = view.others[i];
-        another(o.dragon, o.actor, o.at, o.heading, 220.0f, -o.roll, o.scale, o.pitch);
+        another(o.dragon, o.actor, o.at, o.heading, 220.0f, -o.roll, o.scale, o.pitch, o.lod);
     }
     // The people about (you on foot, the villagers), near enough to see.
     if (view.peopleCount > 0) {

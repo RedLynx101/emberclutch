@@ -6,6 +6,7 @@
 
 #include "core/place_layout.hpp"
 #include "core/rng.hpp"
+#include "core/trainer.hpp"
 #include "core/valley.hpp"
 
 namespace ec::challenge {
@@ -14,6 +15,10 @@ namespace {
 constexpr float kPi = 3.14159265f;
 
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
+float approach(float v, float target, float rate, float dt) {
+    const float k = rate * dt > 1 ? 1 : rate * dt;
+    return v + (target - v) * k;
+}
 float wrap(float a) {
     while (a > kPi) a -= 2 * kPi;
     while (a < -kPi) a += 2 * kPi;
@@ -21,9 +26,19 @@ float wrap(float a) {
 }
 int ci(Challenge c) { return static_cast<int>(c); }
 bool validCup(int cup) { return cup >= kEmber && cup <= kStarfire; }
-float statOf(const Dragon& d, int k) { return d.stats[k] ? d.stats[k] : 5.0f; }  // 1..10 (unset: average)
+float unit(Rng& r) { return r.next() * (1.0f / 4294967296.0f); }
 
 }  // namespace
+
+// ------------------------------------------------------------------------------ the stats
+float statLevel(const Dragon& d, int stat) {
+    if (stat < 0 || stat >= kDragonStats) return 5.0f;
+    if (d.stats[stat] == 0 && d.trained[stat] == 0) return 5.0f;  // (unset: an average dragon)
+    const float points = static_cast<float>(trainer::statPoints(d, stat));
+    return points <= 10.0f ? points : 10.0f + (points - 10.0f) * 0.25f;
+}
+
+float statEdge(float level) { return clampf((level - 5.0f) / 5.0f, -0.8f, 1.4f); }
 
 // ------------------------------------------------------------------------------ the cups
 const char* name(Challenge c) {
@@ -36,7 +51,7 @@ const char* name(Challenge c) {
 
 const char* blurb(Challenge c) {
     switch (c) {
-        case Challenge::SkyRings: return "Fly the ring course on your grown partner. Beat the clock!";
+        case Challenge::SkyRings: return "Race rival dragons round the ring course on your grown partner!";
         case Challenge::LanternTrial: return "Watch the crystal lanterns, then light them in order.";
         default: return "Flick fruit down the orchard: your dragon leaps to catch it.";
     }
@@ -72,6 +87,7 @@ Entry entry(const SaveData& s, const Dragon* partner, Challenge c, int cup) {
     if (!partner || partner->stage == Stage::Egg) return Entry::NoPartner;
     if ((c == Challenge::SkyRings || cup == kStarfire) && partner->stage != Stage::Adult) return Entry::NotGrown;
     if (cup == kBlaze && partner->stage == Stage::Hatchling) return Entry::TooYoung;
+    if (!trainer::canSpend(*partner, trainer::kEnergyChallenge)) return Entry::Tired;
     return Entry::Open;
 }
 
@@ -81,9 +97,49 @@ const char* entryText(Entry e) {
         case Entry::WinBefore: return "Win the cup before this one first.";
         case Entry::TooYoung: return "For a juvenile dragon or older.";
         case Entry::NotGrown: return "For a grown dragon.";
+        case Entry::Tired: return "Too tired for a cup. A good sleep brings its energy back.";
         default: return "";
     }
 }
+
+CupNeeds cupNeeds(Challenge c, int cup, bool youngPartner) {
+    CupNeeds n;
+    if (!validCup(cup)) return n;
+    n.grown = c == Challenge::SkyRings || cup == kStarfire;
+    n.juvenile = !n.grown && cup == kBlaze;
+    switch (c) {
+        case Challenge::SkyRings: n.rivals = rivalCount(cup); break;
+        case Challenge::LanternTrial: {
+            const TrialSetup t = trialSetup(cup);
+            n.lanterns = t.lanterns;
+            n.rounds = t.rounds;
+            n.hearts = t.hearts;
+            break;
+        }
+        default: n.goal = fruitSetup(cup, youngPartner && !n.grown).goal; break;
+    }
+    return n;
+}
+
+// The prizes, Ember to Starfire (D89: a hard cup is worth a trip across the valley).
+u32 firstPrize(int cup) {
+    static constexpr u32 k[kCups] = {80, 140, 220, 350};
+    return validCup(cup) ? k[cup - 1] : 0;
+}
+u32 dayPrize(int cup) {
+    static constexpr u32 k[kCups] = {30, 45, 65, 90};
+    return validCup(cup) ? k[cup - 1] : 0;
+}
+u32 placedPrize(int cup) {
+    static constexpr u32 k[kCups] = {10, 15, 20, 30};
+    return validCup(cup) ? k[cup - 1] : 0;
+}
+u32 winXp(int cup) {
+    static constexpr u32 k[kCups] = {20, 35, 55, 80};
+    return validCup(cup) ? k[cup - 1] : 0;
+}
+
+int claimBit(Challenge c, int cup) { return kClaimCup + ci(c) * kCups + cup - 1; }
 
 bool lowerIsBetter(Challenge c) { return c == Challenge::SkyRings; }
 
@@ -99,23 +155,33 @@ int ribbonCount(const SaveData& s) {
     return n;
 }
 
-Reward record(SaveData& s, Challenge c, int cup, Outcome o, int score) {
+Reward record(SaveData& s, Challenge c, int cup, Outcome o, int score, s32 today, Dragon* partner) {
     Reward r;
     r.outcome = o;
     if (!validCup(cup)) return r;
-    // Gleam: a cup's first win pays well, winning again less, placing a little, trying a thank-you.
-    static constexpr u32 kFirst[kCups] = {60, 100, 160, 250}, kAgain[kCups] = {20, 30, 45, 60},
-                         kPlaced[kCups] = {10, 15, 20, 30};
     const int k = cup - 1;
     if (o == Outcome::Won) {
+        // The first win ever pays its first prize (it can only happen once); after that the day's
+        // prize, once a day per cup. Either way today's is taken.
         r.firstWin = !ribbon(s, c, cup);
-        r.gleam = r.firstWin ? kFirst[k] : kAgain[k];
+        const bool fresh = trainer::claimToday(s, claimBit(c, cup), today);
+        r.gleam = r.firstWin ? firstPrize(cup) : fresh ? dayPrize(cup) : 0;
+        r.paidToday = !r.firstWin && !fresh;
+        r.xp = r.firstWin || fresh ? winXp(cup) : kRunXp;
         s.world.ribbons |= static_cast<u16>(1u << (ci(c) * kCups + k));
         if (s.world.cups[ci(c)] < cup) s.world.cups[ci(c)] = static_cast<u8>(cup);
+        trainer::count(s, kCountCups);
+        if (partner) {
+            r.dragonFirst = !trainer::wonCup(*partner, ci(c), cup);
+            trainer::recordCup(*partner, ci(c), cup);
+        }
     } else {
-        r.gleam = o == Outcome::Placed ? kPlaced[k] : 5;
+        // Placing: a small prize while the day's is still to be won (it doesn't take it).
+        if (o == Outcome::Placed && !trainer::claimedToday(s, claimBit(c, cup), today)) r.gleam = placedPrize(cup);
+        r.xp = kRunXp;
     }
     s.gleam += r.gleam;
+    if (partner && partner->stage != Stage::Egg && r.xp) r.levels = trainer::gainXp(*partner, r.xp);
     if (score > 0) {  // (an unfinished Sky Rings run comes as 0: no time worth keeping)
         const u16 kept = static_cast<u16>(score > 65535 ? 65535 : score);
         u16& b = s.world.best[ci(c)][k];
@@ -166,20 +232,96 @@ Vec3 catmull(Vec3 p0, Vec3 p1, Vec3 p2, Vec3 p3, float t) {
 
 }  // namespace
 
-FlightTuning courseTuning(int wing, int stamina) {
-    FlightTuning t;
-    const float w = clampf((wing - 5) / 5.0f, -0.8f, 1.0f), s = clampf((stamina - 5) / 5.0f, -0.8f, 1.0f);
-    t.glideSpeed *= 1.0f + 0.12f * w;
-    t.flapSpeed *= 1.0f + 0.12f * w;
-    t.diveSpeed *= 1.0f + 0.1f * w;
-    t.turnRate *= 1.0f + 0.2f * w;
-    t.flapCost *= 0.45f * (1.0f - 0.3f * s);
+// ------------------------------------------------------------------------------ the race's flight
+RaceTuning raceTuning(float wing, float stamina) {
+    RaceTuning t;
+    const float w = statEdge(wing);
+    t.cruise *= 1.0f + 0.1f * w;
+    t.top *= 1.0f + 0.1f * w;
+    t.diveTop *= 1.0f + 0.08f * w;
+    t.slow *= 1.0f + 0.05f * w;
+    t.turnRate *= 1.0f + 0.12f * w;
+    // The meter: 3.5 s of burst for an average dragon, about 5 at Stamina 10, never under 2.
+    t.meter = std::fmax(2.0f, 2.0f + 0.3f * stamina);
     return t;
 }
 
-void ringLift(Flight& f, const FlightTuning& t) {
-    f.stamina = std::fmin(1.0f, f.stamina + 0.22f);
-    f.speed = std::fmin(t.flapSpeed + 5.0f, f.speed + 1.5f);
+RaceTuning raceTuning(const Dragon& d) { return raceTuning(statLevel(d, kStatWing), statLevel(d, kStatStamina)); }
+
+bool bursting(const Flight& f, const RaceInput& in) { return in.burst && !in.brake && f.stamina > 0.0f; }
+
+void raceStep(Flight& f, const RaceInput& in, const Valley& v, float dt, const RaceTuning& t) {
+    f.flapped = f.splashed = f.skimming = f.landed = f.tookOff = false;
+    f.grounded = f.swimming = false;
+    f.sinceFlap += dt;
+    // Turning: a fast dragon turns wider, a slow (or braking) one tighter; the body leans into it.
+    const float steer = clampf(in.steer, -1.0f, 1.0f);
+    const float agility = clampf(t.cruise / std::fmax(f.speed, 4.0f), 0.55f, 1.5f) * (in.brake ? 1.3f : 1.0f);
+    const float turn = steer * t.turnRate * agility;
+    f.heading = wrap(f.heading - turn * dt);  // (right on the screen: heading goes down, as in core/flight)
+    f.roll = approach(f.roll, clampf(steer * agility * 0.55f, -0.9f, 0.9f), 4, dt);
+    // Speed carries: it eases back toward cruising only slowly from above (quicker from below);
+    // a burst pushes toward top speed while the meter lasts, a dive toward its own, the brake down.
+    const bool burst = bursting(f, in);
+    float target = t.cruise, rate = f.speed > t.cruise ? 0.3f : 0.5f;
+    if (burst) {
+        target = t.top;
+        rate = 1.4f;
+        f.stamina = std::fmax(0.0f, f.stamina - dt / t.meter);
+    }
+    if (in.dive && !in.brake) {
+        target = std::fmax(target, t.diveTop);
+        rate = std::fmax(rate, 0.9f);
+    }
+    if (in.brake) {
+        target = t.slow;
+        rate = 2.2f;
+    }
+    f.speed = approach(f.speed, target, rate, dt);
+    f.speed -= std::fabs(turn) * t.turnDrag * f.speed * dt;                               // hard turns bleed it
+    f.speed -= 2.5f * clampf(f.climb / std::fmax(f.speed, 4.0f), -1.0f, 1.0f) * dt;  // climbing costs it, diving gives it
+    f.speed = clampf(f.speed, 4.0f, t.diveTop + 4.0f);
+    // Height: wingbeats lift (and cost a little of the meter), gliding sinks slowly, the pad
+    // noses up or down, B dives.
+    float targetClimb = -t.sinkRate - in.pitch * 2.5f;
+    if (in.dive) targetClimb = -f.speed * 0.55f;
+    if (in.flap && !in.dive && (f.flapIn -= dt) <= 0) {
+        f.flapIn = t.flapEvery;
+        const float power = f.stamina > 0.02f ? 1.0f : 0.4f;  // (worn out: weak wingbeats)
+        f.climb += t.flapLift * power;
+        f.stamina = std::fmax(0.0f, f.stamina - t.flapCost / t.meter);
+        f.sinceFlap = 0;
+        f.flapped = true;
+    }
+    if (!in.flap) f.flapIn = 0;  // the next press beats at once
+    if (!in.burst && f.sinceFlap > 0.4f) f.stamina = std::fmin(1.0f, f.stamina + t.regen / t.meter * dt);  // (easing off)
+    f.climb = approach(f.climb, targetClimb, in.dive ? 2.0f : 1.4f, dt);
+    f.pitch = approach(f.pitch, clampf(-f.climb / std::fmax(4.0f, f.speed) * 1.2f, -0.9f, 0.6f), 5, dt);
+    // Move, kept inside the valley (turned back gently at its edges).
+    f.pos = f.pos + f.forward() * (f.speed * dt) + Vec3{0, 0, f.climb * dt};
+    const float margin = 30.0f, lo = v.x0 + margin, hiX = v.x0 + v.size() - margin, loY = v.y0 + margin,
+                hiY = v.y0 + v.size() - margin;
+    if (f.pos.x < lo || f.pos.x > hiX || f.pos.y < loY || f.pos.y > hiY) {
+        f.pos.x = clampf(f.pos.x, lo, hiX);
+        f.pos.y = clampf(f.pos.y, loY, hiY);
+        const float home = std::atan2(v.x0 + v.size() * 0.5f - f.pos.x, -(v.y0 + v.size() * 0.5f - f.pos.y));
+        f.heading = wrap(f.heading + clampf(wrap(home - f.heading), -2.0f * dt, 2.0f * dt));
+    }
+    // The ground or the lake under it: it skims along (rubbing costs speed), never lands.
+    const float bed = v.heightAt(f.pos.x, f.pos.y);
+    const bool overWater = bed < v.water - 0.4f;
+    const float floor = (overWater ? v.water : bed) + t.clearance;
+    if (f.pos.z <= floor) {
+        f.pos.z = floor;
+        f.climb = std::fmax(f.climb, 0.5f);
+        f.speed *= 1.0f - 0.8f * dt;
+        f.skimming = overWater;
+    }
+}
+
+void ringLift(Flight& f, const RaceTuning& t) {
+    f.stamina = std::fmin(1.0f, f.stamina + 0.1f);
+    if (f.speed < t.top) f.speed = std::fmin(t.top, f.speed + 1.0f);
 }
 
 bool makeCourse(const Valley& v, int cup, Course& out) {
@@ -259,7 +401,7 @@ bool makeCourse(const Valley& v, int cup, Course& out) {
     out.cup = cup;
     out.toIsles = d.toIsles;
     int missed = 0;
-    const float t = pilotTime(v, out, courseTuning(5, 5), &missed);
+    const float t = pilotTime(v, out, raceTuning(5, 5), steadyPilot(), &missed);
     out.par = (t > 0 ? t : out.length / 12.0f) * d.slack;
     return true;
 }
@@ -291,46 +433,202 @@ RingRun::Event RingRun::step(const Course& c, Vec3 from, Vec3 to, float dt) {
     return e;
 }
 
-Outcome ringsOutcome(const Course& c, const RingRun& r) {
-    if (!r.finished) return Outcome::TryAgain;
-    if (r.total() <= c.par) return Outcome::Won;
-    return r.total() <= c.par * kPlacedSlack ? Outcome::Placed : Outcome::TryAgain;
+float RingRun::progress(const Course& c, Vec3 at) const {
+    const int n = static_cast<int>(c.rings.size());
+    if (finished || next >= n) return static_cast<float>(n);
+    const Vec3 prev = next == 0 ? c.start : c.rings[next - 1].at;
+    const float span = std::fmax(1.0f, length(c.rings[next].at - prev));
+    return next + clampf(1.0f - length(c.rings[next].at - at) / span, 0.0f, 1.0f);
 }
 
-FlightInput pilot(const Flight& f, const Course& c, int next) {
-    FlightInput in;
-    if (next < 0 || next >= static_cast<int>(c.rings.size())) return in;
+// ------------------------------------------------------------------------------ the pilots
+PilotSkill steadyPilot() {
+    PilotSkill k;
+    k.line = 0.4f;
+    return k;
+}
+
+PilotSkill expertPilot() {
+    PilotSkill k;
+    k.burst = 1.0f;
+    k.brakes = true;
+    k.line = 0.55f;
+    return k;
+}
+
+RaceInput Pilot::fly(const Flight& f, const Course& c, int next, const RaceTuning& tune, float dt) {
+    RaceInput in;
+    const int n = static_cast<int>(c.rings.size());
+    if (next < 0 || next >= n) return in;
+    t += dt;
     const Ring& r = c.rings[next];
-    const Vec3 d = r.at - f.pos;
-    const float horiz = std::sqrt(d.x * d.x + d.y * d.y);
-    const float err = wrap(std::atan2(d.x, -d.y) - f.heading);
-    in.steer = clampf(-err * 2.5f, -1, 1);
-    if (std::fabs(err) > 0.3f) in.bank = in.steer > 0 ? 1.0f : -1.0f;
+    // Across the ring's face, level: a blunder goes wide that way (decided once a ring).
+    Vec3 across = cross(r.normal, Vec3{0, 0, 1});
+    across = length(across) > 1e-3f ? normalize(across) : Vec3{1, 0, 0};
+    if (decidedFor != next) {
+        decidedFor = next;
+        wide = skill.blunder > 0 && unit(rng) < skill.blunder;
+        side = unit(rng) < 0.5f ? -1.0f : 1.0f;
+        pushes = skill.burst >= 1.0f || unit(rng) < skill.burst;  // (a timid one bursts on some straights, not all)
+    }
+    Vec3 aim = r.at;
+    if (wide) {
+        aim = aim + across * (side * r.radius * 1.9f);
+    } else if (next + 1 < n) {  // the racing line: inside the ring, toward the one after
+        Vec3 on = c.rings[next + 1].at - r.at;
+        on = on - r.normal * dot(on, r.normal);
+        if (length(on) > 1e-3f) aim = aim + normalize(on) * (r.radius * skill.line);
+    }
+    const Vec3 d = aim - f.pos;
+    const float horiz = std::sqrt(d.x * d.x + d.y * d.y), dist = length(d);
+    const float err = wrap(std::atan2(d.x, -d.y) - f.heading) + skill.wobble * std::sin(t * 0.9f + phase);
+    in.steer = clampf(-err * 2.5f * skill.aim, -1, 1);
     const float slope = d.z / std::fmax(horiz, 1.0f);
-    in.flap = d.z > 0.5f && (slope > 0.02f || f.speed < 10.0f) && f.stamina > 0.04f;
+    in.flap = d.z > 0.5f && (slope > 0.02f || f.speed < tune.cruise * 0.7f) && f.stamina > 0.04f;
     in.dive = d.z < -8.0f && slope < -0.35f;
     in.pitch = clampf(-d.z / 10.0f, -1, 1);
+    // The bend to come at the ring: from the way in to the way on to the next one.
+    float bend = 0;
+    if (next + 1 < n) {
+        const Vec3 on = c.rings[next + 1].at - r.at;
+        bend = std::fabs(wrap(std::atan2(on.x, -on.y) - std::atan2(r.at.x - f.pos.x, -(r.at.y - f.pos.y))));
+    }
+    // Bursts along the straights (lined up, the ring far off or the bend after it gentle), keeping
+    // some of the meter for wingbeats; a canny one brakes into a hard turn.
+    if (skill.burst > 0 && pushes) {
+        const float reserve = 0.15f + 0.3f * (1.0f - skill.burst);
+        const bool straight = std::fabs(err) < 0.18f && ((dist > 45.0f && bend < 0.9f) || bend < 0.35f);
+        in.burst = straight && f.stamina > reserve && std::fabs(slope) < 0.5f;
+    }
+    if (skill.brakes) {
+        const bool beside = std::fabs(err) > 1.0f && horiz < 40.0f;  // the ring off to the side or behind
+        const bool bendAhead = bend > 0.8f && dist < 22.0f && f.speed > tune.cruise * 1.05f;
+        in.brake = beside || bendAhead;
+        if (in.brake) in.burst = false;
+    }
     return in;
 }
 
-float pilotTime(const Valley& v, const Course& c, const FlightTuning& t, int* missed, Ghost* ghost) {
-    Flight f;
-    f.pos = c.start;
-    f.heading = c.heading;
-    f.grounded = false;
-    f.speed = t.flapSpeed;
-    f.sinceFlap = 0;
-    RingRun run;
+// ------------------------------------------------------------------------------ racers
+void Racer::start(const Course& c, Vec3 at, float heading) {
+    flight = Flight{};
+    flight.pos = at;
+    flight.heading = heading;
+    flight.grounded = false;
+    flight.speed = tune.cruise;
+    flight.sinceFlap = 0;
+    flight.stamina = 1;
+    run = RingRun{};
+    last = RaceInput{};
+    pilot.t = 0;
+    pilot.decidedFor = -1;
+    (void)c;
+}
+
+RingRun::Event Racer::step(const Valley& v, const Course& c, float dt) {
+    if (run.finished) {  // past the last ring: it eases to a hover, wings beating, level
+        flight.speed *= 1.0f - std::fmin(1.0f, 1.8f * dt);
+        flight.pos = flight.pos + flight.forward() * (flight.speed * dt);
+        flight.pitch *= 1.0f - std::fmin(1.0f, 4.0f * dt);
+        flight.roll *= 1.0f - std::fmin(1.0f, 4.0f * dt);
+        flight.climb = 0;
+        flight.sinceFlap = 0;
+        last = RaceInput{};
+        return RingRun::kNothing;
+    }
+    last = pilot.fly(flight, c, run.next, tune, dt);
+    const Vec3 from = flight.pos;
+    raceStep(flight, last, v, dt, tune);
+    const RingRun::Event e = run.step(c, from, flight.pos, dt);
+    if (e == RingRun::kPassed) ringLift(flight, tune);
+    return e;
+}
+
+float finishRace(Racer r, const Valley& v, const Course& c, float limit) {
+    const float dt = 1.0f / 30.0f;
+    while (!r.run.finished && r.run.time < limit) r.step(v, c, dt);
+    return r.run.finished ? r.run.total() : -1.0f;
+}
+
+float pilotTime(const Valley& v, const Course& c, const RaceTuning& t, const PilotSkill& skill, int* missed, Ghost* ghost,
+                u32 seed) {
+    Racer r;
+    r.tune = t;
+    r.pilot.skill = skill;
+    r.pilot.rng = Rng(seed);
+    r.start(c, c.start, c.heading);
     const float dt = 1.0f / 30.0f, limit = std::fmax(240.0f, c.length / 3.0f);
     if (ghost) ghost->clear();
-    while (!run.finished && run.time < limit) {
-        const Vec3 from = f.pos;
-        f.update(pilot(f, c, run.next), v, dt, t);
-        if (run.step(c, from, f.pos, dt) == RingRun::kPassed) ringLift(f, t);
-        if (ghost) ghost->record(run.time, f.pos, f.heading);
+    while (!r.run.finished && r.run.time < limit) {
+        r.step(v, c, dt);
+        if (ghost) ghost->record(r.run.time, r.flight.pos, r.flight.heading);
     }
-    if (missed) *missed = run.missed;
-    return run.finished ? run.total() : -1.0f;
+    if (missed) *missed = r.run.missed;
+    return r.run.finished ? r.run.total() : -1.0f;
+}
+
+// ------------------------------------------------------------------------------ the rivals
+int rivalCount(int cup) { return cup <= kEmber ? 2 : kMaxRivals; }
+
+RivalInfo rivalFor(int cup, int k) {
+    // Each cup's field, slowest first: the Ember cup's two wander and never burst; the Flame cup's
+    // burst a little; the Blaze cup's burst well and brake into the turns; the Starfire cup's are
+    // strong, steady fliers who burst at every chance (D89: Starfire should need real skill).
+    struct Row {
+        const char* name;
+        float wing, stamina, aim, wobble, burst;
+        bool brakes;
+        float blunder, line;
+    };
+    static const Row kRows[kCups][kMaxRivals] = {
+        {{"Puddle", 3.5f, 4.0f, 0.8f, 0.12f, 0.0f, false, 0.10f, 0.3f},
+         {"Sprig", 4.5f, 4.5f, 0.85f, 0.10f, 0.0f, false, 0.08f, 0.3f},
+         {"", 0, 0, 0, 0, 0, false, 0, 0}},
+        {{"Breeze", 4.5f, 5.0f, 0.9f, 0.08f, 0.0f, false, 0.07f, 0.4f},
+         {"Tumble", 5.0f, 5.0f, 0.9f, 0.07f, 0.15f, false, 0.06f, 0.4f},
+         {"Cinderwisp", 5.5f, 5.5f, 0.95f, 0.06f, 0.25f, false, 0.06f, 0.45f}},
+        {{"Gale", 5.5f, 6.0f, 1.0f, 0.05f, 0.5f, true, 0.05f, 0.5f},
+         {"Flicker", 6.0f, 6.0f, 1.0f, 0.05f, 0.6f, true, 0.04f, 0.5f},
+         {"Swoop", 6.0f, 6.5f, 1.0f, 0.04f, 0.7f, true, 0.04f, 0.5f}},
+        {{"Starling", 6.0f, 7.0f, 1.0f, 0.03f, 1.0f, true, 0.03f, 0.55f},
+         {"Tempest", 6.5f, 7.0f, 1.0f, 0.03f, 1.0f, true, 0.03f, 0.55f},
+         {"Aurora", 7.0f, 7.5f, 1.0f, 0.02f, 1.0f, true, 0.02f, 0.55f}},
+    };
+    const Row& r = kRows[validCup(cup) ? cup - 1 : 0][k >= 0 && k < kMaxRivals ? k : 0];
+    RivalInfo info;
+    info.name = r.name;
+    info.wing = r.wing;
+    info.stamina = r.stamina;
+    info.skill.aim = r.aim;
+    info.skill.wobble = r.wobble;
+    info.skill.burst = r.burst;
+    info.skill.brakes = r.brakes;
+    info.skill.blunder = r.blunder;
+    info.skill.line = r.line;
+    return info;
+}
+
+Vec2 rivalStart(int k) {
+    static constexpr Vec2 kAt[kMaxRivals] = {{7.0f, -1.5f}, {-7.0f, -1.5f}, {13.0f, -4.0f}};
+    return kAt[k >= 0 && k < kMaxRivals ? k : 0];
+}
+
+Vec3 rivalStartAt(const Course& c, int k) {
+    const Vec3 fwd{std::sin(c.heading), -std::cos(c.heading), 0}, right{fwd.y, -fwd.x, 0};  // (heading 0 faces -Y: its right is -X)
+    const Vec2 at = rivalStart(k);
+    return c.start + right * at.x + fwd * at.y;
+}
+
+int racePlace(float yours, const float* rivals, int n) {
+    int place = 1;
+    for (int k = 0; k < n; ++k)
+        if (rivals[k] >= 0 && rivals[k] < yours) ++place;
+    return place;
+}
+
+Outcome raceOutcome(bool finished, int place) {
+    if (!finished) return Outcome::TryAgain;
+    return place == 1 ? Outcome::Won : place == 2 ? Outcome::Placed : Outcome::TryAgain;
 }
 
 // ------------------------------------------------------------------------------ ghosts
@@ -470,7 +768,7 @@ Outcome trialOutcome(const Trial& t) {
 
 // ------------------------------------------------------------------------------ Fruit Catch
 FruitSetup fruitSetup(int cup, bool young) {
-    static constexpr int kGrown[kCups] = {600, 1100, 1600, 2100}, kYoung[kCups] = {450, 800, 1200, 1500};
+    static constexpr int kGrown[kCups] = {1100, 1600, 2050, 2400}, kYoung[kCups] = {800, 1150, 1500, 1750};
     const int k = validCup(cup) ? cup - 1 : 0;
     const int goal = young ? kYoung[k] : kGrown[k];
     return {8, goal, goal * 7 / 10};
@@ -507,7 +805,17 @@ bool tossFrom(float flickX, float flickY, Vec3 hand, float heading, bool youngOn
     return true;
 }
 
-Vec3 fruitAt(const Toss& t, float time) { return t.from + t.vel * time + Vec3{0, 0, -0.5f * kGravity * time * time}; }
+Vec3 fruitAt(const Toss& t, float time) {
+    return t.from + t.vel * time + (t.wind + Vec3{0, 0, -kGravity}) * (0.5f * time * time);
+}
+
+Vec3 windFor(int cup, int throwIndex, u32 seed) {
+    static constexpr float kStrength[kCups] = {0.0f, 0.6f, 1.0f, 1.4f};  // m/s^2 at its strongest
+    if (!validCup(cup) || kStrength[cup - 1] <= 0) return {};
+    Rng rng((static_cast<u64>(seed) << 8) ^ (0x9E3779B9u * static_cast<u32>(throwIndex + 1)));
+    const float a = unit(rng) * 2 * kPi, k = kStrength[cup - 1] * (0.45f + 0.55f * unit(rng));
+    return {std::sin(a) * k, std::cos(a) * k, 0};
+}
 
 float landTime(const Toss& t, float groundZ) {
     const float h = std::fmax(0.0f, t.from.z - groundZ), vz = t.vel.z;
@@ -518,17 +826,20 @@ Catcher catcherFor(const Dragon& d, Vec3 at, float runSpeed, float size) {
     Catcher c;
     c.at = at;
     c.young = young(d);
-    const float might = statOf(d, 2), stamina = statOf(d, 4);
+    // Wing: its running; Wit: its reach (how soon it reads the throw, its leap, its dive), D89.
+    const float wing = statEdge(statLevel(d, kStatWing)), wit = statEdge(statLevel(d, kStatWit));
+    c.react = clampf(0.25f - 0.06f * wit, 0.16f, 0.32f);
     if (c.young) {  // the hop version: short hops, and a tumble at the end
-        c.run = clampf(runSpeed * 1.8f, 3.8f, 6.5f) + 0.15f * (stamina - 5);
+        c.run = clampf(runSpeed * 1.8f, 3.8f, 6.5f) * (1.0f + 0.1f * wing);
         c.reach = std::fmax(0.35f, 0.55f * size);
-        c.leap = 0.55f + 0.03f * (might - 5);
-        c.dive = 0.7f;
+        c.leap = 0.55f * (1.0f + 0.15f * wit);
+        c.dive = 0.7f * (1.0f + 0.25f * wit);
     } else {
-        c.run = clampf(runSpeed * 1.5f, 8.5f, 12.0f) + 0.3f * (stamina - 5);  // (a slow gallop plays quicker: every kind can win)
+        // (a slow gallop plays quicker: every kind can win)
+        c.run = clampf(runSpeed * 1.5f, 8.5f, 12.0f) * (1.0f + 0.1f * wing);
         c.reach = 1.45f * size;
-        c.leap = 1.7f + 0.1f * (might - 5);
-        c.dive = 1.8f;
+        c.leap = 1.7f * (1.0f + 0.15f * wit);
+        c.dive = 1.8f * (1.0f + 0.25f * wit);
     }
     return c;
 }
@@ -551,13 +862,13 @@ CatchPlan planCatch(const Toss& t, const Catcher& c, float groundZ) {
     const float mouth = c.young ? 0.3f : 0.7f;  // its mouth reaches this far ahead of where it stands
     auto need = [&](Vec3 at, float extra) {
         const float d = std::hypot(at.x - c.at.x, at.y - c.at.y) - mouth - extra;
-        return kCatchReact + std::fmax(0.0f, d) / c.run;
+        return c.react + std::fmax(0.0f, d) / c.run;
     };
     auto done = [&](Style s, float tt, float extra) {
         p.style = s;
         p.t = tt;
         p.at = fruitAt(t, tt);
-        p.leaveAt = kCatchReact;
+        p.leaveAt = c.react;
         p.arriveAt = std::fmin(tt, need(p.at, extra));
         p.jump = std::fmax(0.0f, p.at.z - groundZ - c.reach);
         p.distance = std::hypot(p.at.x - t.from.x, p.at.y - t.from.y);

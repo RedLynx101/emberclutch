@@ -33,3 +33,4 @@ void runKindTests();      // tests/test_kinds.cpp
 void runWorldTests();     // tests/test_world.cpp
 void runChallengeTests(); // tests/test_challenges.cpp
 void runTrainerTests();   // tests/test_trainer.cpp
+void runFishingTests();   // tests/test_fishing.cpp (Driftwood Cove, workstream C)

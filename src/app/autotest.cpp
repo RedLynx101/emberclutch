@@ -25,7 +25,7 @@ constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
 enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
-                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Quit };
+                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Energy, Quit };
 
 struct Cmd {
     Op op = Op::Wait;
@@ -115,6 +115,7 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "challenge") { c.op = Op::Challenge; nums(2); }
     else if (w == "autoplay") { c.op = Op::Autoplay; c.a[0] = std::strcmp(rest, "on") == 0; }
     else if (w == "cups") { c.op = Op::Cups; nums(3); }
+    else if (w == "energy") { c.op = Op::Energy; nums(1); }  // energy <0..100>: every dragon's (the challenges, workstream C)
     else if (w == "quit") { c.op = Op::Quit; }
     else return false;
     return true;
@@ -272,6 +273,10 @@ Input next(App& app) {
                     app.game.world.cups[k] = static_cast<u8>(std::clamp(static_cast<int>(c.a[k]), 0, kCups));
                     for (int cup = 0; cup < app.game.world.cups[k]; ++cup) app.game.world.ribbons |= static_cast<u16>(1u << (k * kCups + cup));
                 }
+                done = true;
+                break;
+            case Op::Energy:
+                for (int i = 0; i < app.game.dragonCount; ++i) app.game.dragons[i].needs.energy = std::clamp(c.a[0], 0.0f, 100.0f);
                 done = true;
                 break;
             case Op::Quit: app.quit = true; done = true; break;

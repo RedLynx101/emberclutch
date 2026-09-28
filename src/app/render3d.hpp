@@ -201,6 +201,7 @@ struct ValleyDragon {
     Vec3 at;
     float heading = 0, pitch = 0, roll = 0;
     float scale = 1;
+    s8 lod = -1;  // the challenges (workstream C): 1 keeps a racer on the light model near or far (-1: by distance)
 };
 constexpr int kMaxOthers = 4;
 
@@ -237,6 +238,9 @@ struct ValleyView {
     int peopleCount = 0;
     ValleyDragon others[kMaxOthers];     // other dragons about (1.0)
     int otherCount = 0;
+    // The challenges (workstream C): the 3D's zero-parallax distance (0: the flown dragon's). Fruit
+    // Catch keeps it on you, so you don't split into two when your dragon runs far off (run 19).
+    float focus = 0;
 };
 void drawValley(App& app, const ValleyView& view, s64 now);
 void releaseValley();  // leaving the valley: its GPU memory back

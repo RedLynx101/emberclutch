@@ -94,6 +94,9 @@ if (Test-Path $shots) {
         $img.Dispose()
         $count++
     }
+    # The game's log beside them (each picture's triangles and the like: autotest::log).
+    $gameLog = Join-Path $shots "log.txt"
+    if (Test-Path $gameLog) { Copy-Item $gameLog $out }
 }
 # Contact sheets: four steps per sheet, each its top screen over its bottom screen, labelled.
 $names = @(Get-ChildItem $out -Filter *_top.png | ForEach-Object { $_.BaseName -replace "_top$", "" } | Sort-Object)

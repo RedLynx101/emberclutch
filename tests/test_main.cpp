@@ -1048,6 +1048,7 @@ int main() {
     runWorldTests();
     runChallengeTests();
     runTrainerTests();
+    runFishingTests();  // Driftwood Cove (workstream C)
     std::printf("\n%d checks, %d failures\n", g_checks, g_failures);
     return g_failures == 0 ? 0 : 1;
 }

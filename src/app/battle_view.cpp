@@ -814,16 +814,9 @@ void view(App& app, const vext::Stage& stage, r3d::ValleyView& view) {
     view.you = s.youAt;
     view.youHeading = s.youHeading;
     view.youSpeed = 0;
-    // Only the people near the battle (one at most besides you and the challenger): the rest of
-    // the village away, for the top screen's budget.
-    const Vec3 mid = (s.side[0].home + s.side[1].home) * 0.5f;
-    int keep = view.peopleCount > 0 ? 1 : 0, others = 0;
-    for (int i = 1; i < view.peopleCount; ++i)
-        if (others < 1 && std::hypot(view.people[i].at.x - mid.x, view.people[i].at.y - mid.y) < 14.0f) {
-            view.people[keep++] = view.people[i];
-            ++others;
-        }
-    view.peopleCount = keep;
+    // Only you and the challenger: the rest of the valley's people away while it's on (the top
+    // screen's budget: two dragons and two people close up).
+    view.peopleCount = view.peopleCount > 0 ? 1 : 0;
     if (s.setup.trainer) {
         const int slot = view.peopleCount < r3d::kMaxPeopleShown ? view.peopleCount++ : r3d::kMaxPeopleShown - 1;
         r3d::PersonView& p = view.people[slot];

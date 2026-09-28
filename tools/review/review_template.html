@@ -1,0 +1,284 @@
+<title>Emberclutch Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Nunito:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  :root {
+    --bg: #f6efe4;
+    --panel: #fffaf2;
+    --panel-2: #f9f1e6;
+    --ink: #33243d;
+    --muted: #6d5b73;
+    --line: #e2d4c3;
+    --gold: #b98322;
+    --gold-soft: #f3dfb4;
+    --ember: #cf5a2a;
+    --pass: #3f8a3a;
+    --pass-soft: #dcefd4;
+    --fail: #b8452f;
+    --fail-soft: #f6d9cf;
+    --noah: #6a55b8;
+    --noah-soft: #e3dcf6;
+    --shadow: 0 1px 2px rgba(51, 36, 61, 0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #1d1522; --panel: #281d2f; --panel-2: #22192a; --ink: #f3e8da; --muted: #b9a7bd; --line: #3d2f45;
+      --gold: #e9b54a; --gold-soft: #4a3920; --ember: #f08050;
+      --pass: #8cc36b; --pass-soft: #253a20; --fail: #f0896e; --fail-soft: #43241c; --noah: #b3a2f0; --noah-soft: #2f2750;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #1d1522; --panel: #281d2f; --panel-2: #22192a; --ink: #f3e8da; --muted: #b9a7bd; --line: #3d2f45;
+    --gold: #e9b54a; --gold-soft: #4a3920; --ember: #f08050;
+    --pass: #8cc36b; --pass-soft: #253a20; --fail: #f0896e; --fail-soft: #43241c; --noah: #b3a2f0; --noah-soft: #2f2750;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.55 "Nunito", "Segoe UI", system-ui, sans-serif;
+         padding-inline: 16px; padding-block: 24px 72px; }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 30px; }
+  h1 { font-family: "Cinzel Decorative", Georgia, serif; font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0; text-wrap: balance; }
+  h2 { font-family: "Cinzel Decorative", Georgia, serif; font-size: 22px; margin: 0; text-wrap: balance; }
+  h3 { font-size: 17px; margin: 0; font-weight: 800; }
+  p { margin: 0; max-width: 70ch; }
+  .muted { color: var(--muted); }
+  .kicker { color: var(--gold); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; font-size: 12px; }
+  header { display: grid; gap: 10px; }
+  nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--bg); padding-block: 8px;
+        display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid var(--line); }
+  nav a { color: var(--ink); text-decoration: none; font-weight: 700; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+  nav a:hover, nav a:focus-visible { border-color: var(--gold); outline: none; }
+  nav .tally { margin-left: auto; align-self: center; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+  section { display: grid; gap: 14px; scroll-margin-top: 64px; }
+  .section-head { display: grid; gap: 6px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); padding: 16px; display: grid; gap: 12px; }
+  .card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+  .slug { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-size: 14px; color: var(--ember); }
+  .chip { font-size: 12px; font-weight: 800; padding: 2px 9px; border-radius: 999px; background: var(--gold-soft); color: var(--ink); }
+  .prompt { background: var(--panel-2); border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; }
+  .prompt-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .prompt-top .label { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .prompt code { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-size: 13px; white-space: pre-wrap; word-break: break-word; }
+  button { font: inherit; cursor: pointer; }
+  .copy { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+  .copy:focus-visible, .mark button:focus-visible, .status button:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .takes { display: grid; gap: 8px; }
+  .take { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 8px 12px; align-items: center; padding: 8px 10px; border-radius: 8px; background: var(--panel-2); }
+  .take[data-mark="pass"] { background: var(--pass-soft); }
+  .take[data-mark="regen-claude"] { background: var(--fail-soft); }
+  .take[data-mark="regen-noah"] { background: var(--noah-soft); }
+  .take-name { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .take-name small { display: block; font-weight: 600; color: var(--muted); }
+  .take-body { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  audio { height: 34px; max-width: 100%; flex: 1 1 220px; }
+  .mark, .status { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+  .mark button, .status button { font-size: 13px; font-weight: 700; padding: 5px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+  .mark button[aria-pressed="true"][data-v="pass"] { background: var(--pass); border-color: var(--pass); color: var(--panel); }
+  .mark button[aria-pressed="true"][data-v="regen-claude"] { background: var(--fail); border-color: var(--fail); color: var(--panel); }
+  .mark button[aria-pressed="true"][data-v="regen-noah"] { background: var(--noah); border-color: var(--noah); color: var(--panel); }
+  .status button[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: var(--panel); }
+  .ref { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .ref audio { flex: 0 1 260px; height: 30px; }
+  textarea { font: inherit; font-size: 14px; width: 100%; box-sizing: border-box; min-height: 40px; padding: 8px 10px; border-radius: 8px;
+             border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); resize: vertical; }
+  textarea:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .saved { font-size: 12px; color: var(--muted); min-height: 1em; }
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; }
+  .facts { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; font-size: 14px; }
+  .facts dt { color: var(--muted); font-weight: 700; }
+  .facts dd { margin: 0; }
+  .note-box { border-left: 3px solid var(--gold); padding: 8px 12px; background: var(--panel); border-radius: 0 8px 8px 0; }
+  @media (max-width: 520px) { .take { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="kicker">Emberclutch · the long run (Beta + 1.0)</div>
+    <h1>The long run: review</h1>
+    <p class="muted">Everything that needs your ears, hands or say-so, in one place. Marks save as you click and I read them from here.
+      This first part holds the new sounds and the music to make; the rest of the review (what to try on the 3DS in run 20, the banner labs)
+      is added here when the build is ready.</p>
+  </header>
+
+  <nav aria-label="Sections">
+    <a href="#sounds">Sounds</a>
+    <a href="#music">Music</a>
+    <span class="tally" id="tally"></span>
+  </nav>
+
+  <!--SECTIONS-->
+
+  <section id="sounds">
+    <div class="section-head">
+      <div class="kicker">ElevenLabs sound effects</div>
+      <h2>Sounds to hear</h2>
+      <p class="muted">Each take is the game's own file (trimmed, levelled and filtered for the 3DS's small speakers). Mark every take.
+        If a sound should be redone, say which way: I regenerate it, or you take its prompt and make it yourself (drop your file in
+        <code>assets/audio/sfx/source/</code> as <code>&lt;slug&gt;-1.wav</code> and tell me). The stand-in it replaces is there to compare.</p>
+      <div class="legend">
+        <span><i class="dot" style="background: var(--pass)"></i>Pass: keep this take</span>
+        <span><i class="dot" style="background: var(--fail)"></i>Fail, Claude regens</span>
+        <span><i class="dot" style="background: var(--noah)"></i>Fail, I'll regen from the prompt</span>
+      </div>
+    </div>
+    <div id="sound-list" class="grid-2"></div>
+  </section>
+
+  <section id="music">
+    <div class="section-head">
+      <div class="kicker">Suno · batch 4</div>
+      <h2>Music to make</h2>
+      <p class="muted">Suno v5.5, Custom Mode, Instrumental on, Weirdness about 30%, Style Influence about 75%. Exclude Styles:
+        <code>vocals, singing, lyrics, spoken word, rap, electric guitar, dubstep, trap drums, EDM drop</code>.
+        Download WAV into <code>assets/audio/music/source/</code> named by the slug, 2 to 4 takes each; I cut the loops.
+        Each track takes over in the game as soon as its file is in.</p>
+    </div>
+    <div id="music-list" class="grid-2"></div>
+  </section>
+</div>
+
+<script>
+const DATA = /*DATA*/null;
+let db = null;
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const state = { sounds: {}, music: {} };
+const LS = "emberclutch-review";
+try { Object.assign(state, JSON.parse(localStorage.getItem(LS) || "{}")); } catch (_) {}
+function keepLocal() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (_) {} }
+
+function copyButton(text) {
+  const b = document.createElement("button");
+  b.className = "copy"; b.type = "button"; b.textContent = "Copy";
+  b.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(text); b.textContent = "Copied"; }
+    catch (_) {
+      const code = b.closest(".prompt").querySelector("code");
+      const r = document.createRange(); r.selectNodeContents(code);
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      b.textContent = "Selected: press Ctrl+C";
+    }
+    setTimeout(() => (b.textContent = "Copy"), 1800);
+  });
+  return b;
+}
+
+async function save(kind, slug, el) {
+  keepLocal();
+  tally();
+  const out = el.querySelector(".saved");
+  if (!db) { out.textContent = "Saved on this device only; the shared store isn't reachable here."; return; }
+  try {
+    await db.doc(`${kind}/${slug}`).set({ ...state[kind][slug], at: new Date().toISOString() });
+    out.textContent = "Saved.";
+  } catch (err) {
+    out.textContent = "Couldn't save (" + (err && err.code ? err.code : "error") + "). Your marks stay on this device; try again.";
+  }
+}
+
+function soundCard(s) {
+  const st = (state.sounds[s.slug] ||= { takes: {}, note: "" });
+  const el = document.createElement("article");
+  el.className = "card";
+  el.innerHTML = `
+    <div class="card-head"><span class="slug">${esc(s.slug)}</span>${s.loop ? '<span class="chip">loop</span>' : ""}</div>
+    <p>${esc(s.where)}</p>
+    <div class="prompt"><div class="prompt-top"><span class="label">Prompt · ${esc(s.duration)} s asked</span></div><code>${esc(s.prompt)}</code></div>
+    <div class="takes"></div>
+    ${s.synth ? `<div class="ref">Stand-in it replaces <audio controls preload="none" src="${esc(s.synth)}"></audio></div>` : ""}
+    <label class="muted" for="note-${esc(s.slug)}" style="font-size:13px;font-weight:700">Note (optional)</label>
+    <textarea id="note-${esc(s.slug)}" placeholder="What to change, or which take is best"></textarea>
+    <div class="saved" aria-live="polite"></div>`;
+  el.querySelector(".prompt-top").appendChild(copyButton(s.prompt));
+  const list = el.querySelector(".takes");
+  s.files.forEach((f, i) => {
+    const n = String(i + 1);
+    const row = document.createElement("div");
+    row.className = "take";
+    row.dataset.mark = st.takes[n] || "";
+    row.innerHTML = `<div class="take-name">Take ${n}<small>${s.lens[i].toFixed(2)} s</small></div>
+      <div class="take-body"><audio controls preload="none" src="${esc(f)}"></audio>
+      <div class="mark" role="group" aria-label="Take ${n}">
+        <button type="button" data-v="pass">Pass</button>
+        <button type="button" data-v="regen-claude">Fail: you regen</button>
+        <button type="button" data-v="regen-noah">Fail: I'll regen</button></div></div>`;
+    row.querySelectorAll(".mark button").forEach((b) => {
+      b.setAttribute("aria-pressed", String(st.takes[n] === b.dataset.v));
+      b.addEventListener("click", () => {
+        st.takes[n] = st.takes[n] === b.dataset.v ? "" : b.dataset.v;
+        row.dataset.mark = st.takes[n];
+        row.querySelectorAll(".mark button").forEach((x) => x.setAttribute("aria-pressed", String(st.takes[n] === x.dataset.v)));
+        save("sounds", s.slug, el);
+      });
+    });
+    list.appendChild(row);
+  });
+  const ta = el.querySelector("textarea");
+  ta.value = st.note || "";
+  ta.addEventListener("change", () => { st.note = ta.value; save("sounds", s.slug, el); });
+  return el;
+}
+
+function musicCard(m) {
+  const st = (state.music[m.slug] ||= { status: "", note: "" });
+  const el = document.createElement("article");
+  el.className = "card";
+  el.innerHTML = `
+    <div class="card-head"><h3>${esc(m.title)}</h3><span class="slug">${esc(m.slug)}</span><span class="chip">${esc(m.priority)}</span></div>
+    <dl class="facts"><dt>Kind</dt><dd>${esc(m.kind)}</dd><dt>Plays</dt><dd>${esc(m.plays)}</dd><dt>Mood</dt><dd>${esc(m.mood)}</dd></dl>
+    <div class="prompt"><div class="prompt-top"><span class="label">Style</span></div><code>${esc(m.style)}</code></div>
+    <div class="status" role="group" aria-label="${esc(m.slug)}">
+      <button type="button" data-v="todo">To make</button><button type="button" data-v="made">Made, files in</button><button type="button" data-v="skip">Skip it</button></div>
+    <label class="muted" for="mnote-${esc(m.slug)}" style="font-size:13px;font-weight:700">Note (optional)</label>
+    <textarea id="mnote-${esc(m.slug)}" placeholder="Which takes, anything to know"></textarea>
+    <div class="saved" aria-live="polite"></div>`;
+  el.querySelector(".prompt-top").appendChild(copyButton(m.style));
+  el.querySelectorAll(".status button").forEach((b) => {
+    b.setAttribute("aria-pressed", String(st.status === b.dataset.v));
+    b.addEventListener("click", () => {
+      st.status = st.status === b.dataset.v ? "" : b.dataset.v;
+      el.querySelectorAll(".status button").forEach((x) => x.setAttribute("aria-pressed", String(st.status === x.dataset.v)));
+      save("music", m.slug, el);
+    });
+  });
+  const ta = el.querySelector("textarea");
+  ta.value = st.note || "";
+  ta.addEventListener("change", () => { st.note = ta.value; save("music", m.slug, el); });
+  return el;
+}
+
+function tally() {
+  let takes = 0, marked = 0;
+  for (const s of DATA.sounds) { takes += s.files.length; const t = (state.sounds[s.slug] || {}).takes || {};
+    marked += s.files.filter((_, i) => t[String(i + 1)]).length; }
+  const made = DATA.music.filter((m) => ["made", "skip"].includes((state.music[m.slug] || {}).status)).length;
+  document.getElementById("tally").textContent = `${marked} of ${takes} takes marked · ${made} of ${DATA.music.length} tracks done`;
+}
+
+function render() {
+  const sl = document.getElementById("sound-list"); sl.replaceChildren(...DATA.sounds.map(soundCard));
+  const ml = document.getElementById("music-list"); ml.replaceChildren(...DATA.music.map(musicCard));
+  tally();
+}
+render();
+
+(async () => {
+  try {
+    db = window.claude ? await window.claude.use("db") : null;
+    if (!db) return;
+    let changed = false;
+    for (const [kind, list] of [["sounds", DATA.sounds], ["music", DATA.music]]) {
+      for (const it of list) {
+        const snap = await db.doc(`${kind}/${it.slug}`).get();
+        if (snap && snap.exists) { const d = snap.data(); delete d.at; state[kind][it.slug] = { ...state[kind][it.slug], ...d }; changed = true; }
+      }
+    }
+    if (changed) { keepLocal(); render(); }
+  } catch (_) { db = null; }
+})();
+</script>

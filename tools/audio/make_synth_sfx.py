@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import cmath
+import json
 import math
 import random
 import struct
@@ -1032,6 +1033,13 @@ def main() -> None:
     unknown = [s for s in wanted if s not in makers]
     if unknown:
         sys.exit(f"error: unknown slug(s) {unknown}")
+    # Sounds generated since (tools/audio/eleven_sfx.py, recorded in the manifest) keep their files
+    # unless named: the synth is their fallback, not their replacement.
+    manifest = json.loads((Path(__file__).with_name("sfx_manifest.json")).read_text(encoding="utf-8"))
+    generated = {s for s, e in manifest.items() if isinstance(e, dict) and any(t.startswith("eleven:") for t in e.get("takes", []))}
+    if not args.slugs and generated & set(wanted):
+        print(f"[synth] keeping the generated {', '.join(sorted(generated & set(wanted)))} (name one to make its synth)")
+        wanted = [s for s in wanted if s not in generated]
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     for slug in wanted:
         lines = make_effect(slug) if slug in EFFECTS else make_bed(slug) if slug in BEDS else make_jingle(slug)

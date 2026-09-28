@@ -27,7 +27,7 @@ constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
 enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
                      Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Quit,
-                     Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard };  // (U: Open .. Hoard)
+                     Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard, Wear };  // (U: Open .. Wear)
 
 struct Cmd {
     Op op = Op::Wait;
@@ -128,6 +128,7 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "tips") { c.op = Op::Tips; c.a[0] = std::strcmp(rest, "reset") == 0; }
     else if (w == "gleam") { c.op = Op::Gleam; nums(1); }
     else if (w == "hoard") { c.op = Op::Hoard; nums(1); }
+    else if (w == "wear") { c.op = Op::Wear; nums(5); }
     else return false;
     return true;
 }
@@ -324,6 +325,13 @@ Input next(App& app) {
             case Op::Track: trainer::track(app.game, static_cast<Tracked>(static_cast<int>(c.a[0])), static_cast<int>(c.a[1])); done = true; break;
             case Op::Tips: app.game.progress.tips = c.a[0] != 0 ? 0u : 0xFFFFFFFFu; done = true; break;
             case Op::Gleam: app.game.gleam = static_cast<u32>(c.a[0]); done = true; break;
+            case Op::Wear: {  // what the dragon cared for wears (core/accessories ids, 255 none) and its dye
+                Dragon& d = activeDragon(app);
+                for (int k = 0; k < kWearSlots; ++k) d.wear[k] = static_cast<u8>(c.a[k]);
+                d.dye = static_cast<u8>(c.a[4]);
+                done = true;
+                break;
+            }
             case Op::Hoard:
                 for (int k = 0; k < kTrinkets; ++k) app.game.hoard[k] = static_cast<u16>(c.a[0]);
                 done = true;

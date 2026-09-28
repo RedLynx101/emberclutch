@@ -823,6 +823,7 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
     showTip(app, tips::kTipCare);  // the tutorial (U): caring, the first time; Love and Energy low
     if (d.needs.love < 35) showTip(app, tips::kTipLove);
     if (d.needs.energy < 25) showTip(app, tips::kTipEnergy);
+    if (trainer::levelOf(d) > 1) showTip(app, tips::kTipLevelUp);  // (a first level gained somewhere)
     const float level = heartglowLevel(d, app.t);
     glow(298, 16, 14, fromRgb(kindGlow(d)), level);
     heart(298, 16, 11, fromRgb(kindGlow(d), static_cast<u8>(120 + 135 * level)));

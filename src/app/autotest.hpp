@@ -37,6 +37,7 @@
 //   tips <reset|seen>           every tip due again, or none left to show
 //   gleam <n>                   your Gleam set
 //   hoard <n>                   n of each trinket in the hoard
+//   wear <head> <neck> <back> <tail> <dye>   what it wears (core/accessories ids, 255: none), its dye
 #pragma once
 
 #include <cstddef>

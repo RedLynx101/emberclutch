@@ -132,7 +132,10 @@ void journalGoals(App& app, const Input& in) {
             const bool was = guide::picked(s, row.goal);
             guide::toggle(s, row.goal);
             audio::playSfx(was ? audio::Sfx::Back : audio::Sfx::Confirm);
-            if (!was) showToastf(app, str::kNowTracking, title);
+            if (!was) {
+                showToastf(app, str::kNowTracking, title);
+                showTip(app, tips::kTipTracked);
+            }
             saveNow(app);
         }
     }
@@ -197,7 +200,10 @@ void drawJournal(App& app, const Input& in, Dragon& d, s64 now) {
             if (in.released && r.contains(in.rx, in.ry)) {
                 guide::toggle(s, g);
                 audio::playSfx(on ? audio::Sfx::Back : audio::Sfx::Confirm);
-                if (!on) showToastf(app, str::kNowTracking, world::placeInfo(p).name);
+                if (!on) {
+                    showToastf(app, str::kNowTracking, world::placeInfo(p).name);
+                    showTip(app, tips::kTipTracked);
+                }
                 saveNow(app);
             }
             ++shown;

@@ -244,7 +244,7 @@ void drawTop(App& app) {
         const float zoom = 2.6f + 6.0f * t;
         if (r3d::ready()) {
             r3d::frameShowcase(zoom, p.x - kTopW / 2, p.y - 118.0f / zoom - kScreenH / 2);
-            r3d::drawShowcase(app, d, &none, now, -1.25f, ClipId::Walk);
+            r3d::drawShowcase(app, d, &none, now, 1.25f, ClipId::Walk);
         }
         std::snprintf(line, sizeof(line), str::kOutWandering, d.name);
         std::snprintf(sub, sizeof(sub), str::kStepsOut, static_cast<unsigned long>(steps));

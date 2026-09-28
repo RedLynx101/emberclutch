@@ -131,6 +131,28 @@ struct Body {
     }
 };
 
+// The top of the kind's back plates or moss (its spike parts, either colouring, grown) straight
+// down at (x, y); -1e9 where there are none.
+float spikesTop(const ModelData& m, float x, float y) {
+    float top = -1e9f;
+    for (const MeshData& p : m.meshes) {
+        if (p.kind != kMeshPart || p.group != kGroupSpikes || p.keyCount == 0) continue;
+        const std::size_t key = std::size_t(p.keyCount - 1) * p.vertexCount;  // (the grown key)
+        for (std::size_t i = 0; i + 2 < p.indices.size(); i += 3) {
+            const Vec3 a = p.pos[key + p.indices[i]], b = p.pos[key + p.indices[i + 1]], c = p.pos[key + p.indices[i + 2]];
+            // Is (x, y) inside the triangle seen from above? Then the height there.
+            const float d = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
+            if (std::fabs(d) < 1e-9f) continue;
+            const float l1 = ((b.y - c.y) * (x - c.x) + (c.x - b.x) * (y - c.y)) / d;
+            const float l2 = ((c.y - a.y) * (x - c.x) + (a.x - c.x) * (y - c.y)) / d;
+            const float l3 = 1.0f - l1 - l2;
+            if (l1 < 0 || l2 < 0 || l3 < 0) continue;
+            top = std::fmax(top, l1 * a.z + l2 * b.z + l3 * c.z);
+        }
+    }
+    return top;
+}
+
 // The girth round an axis at c: the skin's reach out along +-ex and +-ey from it (a missing side
 // takes the other's), as half-widths and the middle's offset.
 struct Girth {
@@ -239,10 +261,19 @@ bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out) {
             }
             if (!back) continue;
             const float down = body.surface({kOffMid, ym, zmid}, {0, 0, -1}, nearWing);
-            const float hi = zmid + up, lo = down > 0 ? zmid - down : zmid - up;
+            float hi = zmid + up;
+            const float lo = down > 0 ? zmid - down : zmid - up;
             // (from the side a flank may belong to a leg's bone: anything but the wings counts)
-            const float w = halfWidth(Vec3{0, ym, lo + (hi - lo) * 0.6f}, nearWing);
+            float w = halfWidth(Vec3{0, ym, lo + (hi - lo) * 0.6f}, nearWing);
             if (w <= 1e-3f) continue;
+            // A back covered in plates or moss (off the middle too, not just a ridge of spikes): the
+            // saddle sits on that, a little wider.
+            const float side = std::fmax(spikesTop(m, -0.5f * w, ym), spikesTop(m, 0.5f * w, ym));
+            const float mid = std::fmax(spikesTop(m, kOffMid, ym), side);
+            if (side > hi - 0.3f * w && mid > hi) {
+                w += 0.8f * (mid - hi);
+                hi = mid;
+            }
             int seg = hips;  // the spine bone whose length holds ym (hips -> belly -> chest ...)
             for (int b = s.parent[chest]; b >= 0; b = s.parent[b]) {
                 int child = chest;
@@ -300,6 +331,12 @@ bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out) {
             out.ok[k] = true;
         }
     }
+
+    // A grown dragon's head is small beside its body (a hatchling's is big): a hat a third larger
+    // than the skull, so it reads from across the den (grown about the skull's top, where it sits).
+    if (grown && out.ok[0])
+        for (int r = 0; r < 3; ++r)
+            for (int c = 0; c < 3; ++c) out.frame[0].m[r][c] *= 1.35f;
 
     // The plan's nudges.
     for (int k = 0; k < kWearSlots; ++k) {

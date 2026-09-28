@@ -1,11 +1,14 @@
 #include "app/valley_ext.hpp"
 
+#include "app/glade.hpp"  // the pageant
+
 namespace ec::vext {
 namespace {
 
 // Each 1.0 feature adds one line here (its functions live in its own files).
 const Feature kFeatures[] = {
     {"none", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},  // (keeps the table non-empty)
+    glade::kFeature,  // the pageant at Moonpetal Glade (app/glade.cpp)
 };
 
 }  // namespace

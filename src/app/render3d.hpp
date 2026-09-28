@@ -77,6 +77,9 @@ bool pickCloseUp(Vec2 touch, TouchHit& out);
 // top screen over whatever 2D the scene drew first, turned `spin` radians toward the viewer's
 // left, standing a little below centre: the Sanctuary, the Cold Vault, the Market's egg.
 void drawShowcase(App& app, const Dragon& d, const EggMotion* egg, s64 now, float spin, ClipId clip = ClipId::Idle);
+// The wardrobe (the pageant): as drawShowcase, framed on wear slot `slot` (core/accessories
+// WearSlot) as `zoom` goes 0 -> 1 (0: the whole dragon); defined in app/render_wear.inc.
+void drawDressing(App& app, const Dragon& d, s64 now, float spin, int slot, float zoom, ClipId clip = ClipId::Idle);
 // Two dragons on the top screen, animated by their actors (standing where their behaviors
 // put them), framed together: the Nesting Stone's pair.
 void drawPair(App& app, const Dragon& a, const DenActor& actorA, const Dragon& b, const DenActor& actorB, s64 now);
@@ -201,6 +204,7 @@ struct ValleyDragon {
     Vec3 at;
     float heading = 0, pitch = 0, roll = 0;
     float scale = 1;
+    bool lite = false;  // the lighter model however near (the pageant: a stage of several)
 };
 constexpr int kMaxOthers = 4;
 

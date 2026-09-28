@@ -215,7 +215,7 @@ TEST(accessory_meshes_are_cheap_and_face_out) {
             if (length(g) < 1e-7f) continue;  // (a pole's sliver)
             wrong += dot(g, m.nrm[a] + m.nrm[b] + m.nrm[c]) < 0;
         }
-        for (const Vec3& p : m.pos) CHECK(std::fabs(p.x) < 4 && std::fabs(p.y) < 4.5f && std::fabs(p.z) < 3);
+        for (const Vec3& p : m.pos) CHECK(std::fabs(p.x) < 4 && std::fabs(p.y) < 4.5f && std::fabs(p.z) < 4);
         for (std::size_t v = 0; v < m.pos.size(); ++v) CHECK(m.paint[v * 4] < 4);
         if (wrong) std::printf("  shape %d: %d of %d triangles face in\n", s, wrong, m.triangles());
         CHECK(wrong == 0);
@@ -415,11 +415,12 @@ TEST(pageant_rivals_judges_and_placings) {
             CHECK(std::fabs(c - score / 10) <= 1.01f || c == 1 || c == 10);
         }
     }
-    const float totals[kEntrants] = {60, 72, 60, 50}, perf[kEntrants] = {20, 5, 25, 9};
+    static_assert(kEntrants == 3, "these placings are for three");
+    const float totals[kEntrants] = {60, 72, 60}, perf[kEntrants] = {20, 5, 25};
     int order[kEntrants];
     pageant::placings(totals, perf, order);
-    CHECK(order[0] == 1 && order[1] == 2 && order[2] == 0 && order[3] == 3);
-    const float tied[kEntrants] = {60, 60, 60, 60}, same[kEntrants] = {5, 5, 5, 5};
+    CHECK(order[0] == 1 && order[1] == 2 && order[2] == 0);
+    const float tied[kEntrants] = {60, 60, 60}, same[kEntrants] = {5, 5, 5};
     pageant::placings(tied, same, order);
     CHECK(order[0] == 0);  // a full tie: yours
 }

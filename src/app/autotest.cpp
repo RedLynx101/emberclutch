@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "app/glade.hpp"  // the pageant
 #include "app/scenes.hpp"
 #include "core/campaign.hpp"
 #include "core/clock.hpp"
@@ -25,7 +26,8 @@ constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
 enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
-                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Quit };
+                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Quit,
+                     Pageant };  // the pageant's own commands (app/glade.hpp pageantCommand)
 
 struct Cmd {
     Op op = Op::Wait;
@@ -116,6 +118,7 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "autoplay") { c.op = Op::Autoplay; c.a[0] = std::strcmp(rest, "on") == 0; }
     else if (w == "cups") { c.op = Op::Cups; nums(3); }
     else if (w == "quit") { c.op = Op::Quit; }
+    else if (w == "pg") { c.op = Op::Pageant; c.text = rest; }  // the pageant: pg give / wear / show ...
     else return false;
     return true;
 }
@@ -275,6 +278,7 @@ Input next(App& app) {
                 done = true;
                 break;
             case Op::Quit: app.quit = true; done = true; break;
+            case Op::Pageant: pageantCommand(app, c.text.c_str()); done = true; break;
         }
         if (!done) {
             ran = true;

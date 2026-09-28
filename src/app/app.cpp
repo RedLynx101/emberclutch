@@ -5,6 +5,7 @@
 
 #include "app/audio.hpp"
 #include "app/scenes.hpp"
+#include "app/wardrobe.hpp"  // the pageant
 #include "core/breeding.hpp"
 #include "core/den_roster.hpp"
 #include "core/genetics.hpp"
@@ -237,6 +238,7 @@ const SceneFns& sceneFns(SceneId id) {
         case SceneId::Valley: return kValleyScene;
         case SceneId::Creator: return kCreatorScene;
         case SceneId::Challenge: return kChallengeScene;
+        case SceneId::Wardrobe: return kWardrobeScene;  // the pageant
         default: return kTitleScene;
     }
 }

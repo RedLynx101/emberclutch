@@ -45,7 +45,7 @@ constexpr int kDragonNameCount = sizeof(kDragonNames) / sizeof(kDragonNames[0]);
 constexpr float kMannerPoise[] = {0.7f, 0.3f, 0.6f, 1.0f, 0.4f, 0.6f, 0.9f, 0.5f, 0.4f, 0.5f};
 
 // A league's rivals' middle, the rewards (Gleam) by league and place.
-constexpr float kRivalStrength[kLeagues] = {36, 50, 64, 77};
+constexpr float kRivalStrength[kLeagues] = {38, 52, 66, 79};
 constexpr u32 kFirstWin[kLeagues] = {50, 90, 140, 220}, kWinAgain[kLeagues] = {20, 30, 45, 60};
 constexpr u32 kPlaced[3][kLeagues] = {{12, 18, 25, 35}, {6, 10, 14, 20}, {3, 5, 7, 10}};
 constexpr u32 kLeagueBonus[kLeagues] = {100, 200, 350, 500};

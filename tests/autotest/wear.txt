@@ -1,0 +1,234 @@
+# The pageant's accessories on every kind (workstream P, D90): the wardrobe's dragon, grown in one
+# outfit (flower crown, silver bell, riding saddle, tail bow) and as a hatchling in another (top hat,
+# frilled ruff, royal cape, star charm): its head close up, then the whole of it from the side.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+pg give
+pg grown
+pg wear 2 11 16 24
+pg wardrobe
+wait 2
+pg spin 0.9
+pg kind 0 0
+pg tab 0
+wait 1.8
+shot g01a-pouncer-head
+pg tab 4
+wait 1.3
+shot g01b-pouncer
+pg kind 1 0
+pg tab 0
+wait 1.8
+shot g02a-puffback-head
+pg tab 4
+wait 1.3
+shot g02b-puffback
+pg kind 2 0
+pg tab 0
+wait 1.8
+shot g03a-curlstone-head
+pg tab 4
+wait 1.3
+shot g03b-curlstone
+pg kind 3 0
+pg tab 0
+wait 1.8
+shot g04a-crestwing-head
+pg tab 4
+wait 1.3
+shot g04b-crestwing
+pg kind 4 0
+pg tab 0
+wait 1.8
+shot g05a-ribbontail-head
+pg tab 4
+wait 1.3
+shot g05b-ribbontail
+pg kind 5 0
+pg tab 0
+wait 1.8
+shot g06a-flurrytail-head
+pg tab 4
+wait 1.3
+shot g06b-flurrytail
+pg kind 6 0
+pg tab 0
+wait 1.8
+shot g07a-glimmermoth-head
+pg tab 4
+wait 1.3
+shot g07b-glimmermoth
+pg kind 7 0
+pg tab 0
+wait 1.8
+shot g08a-duskwing-head
+pg tab 4
+wait 1.3
+shot g08b-duskwing
+pg kind 8 0
+pg tab 0
+wait 1.8
+shot g09a-blazeplume-head
+pg tab 4
+wait 1.3
+shot g09b-blazeplume
+pg kind 9 0
+pg tab 0
+wait 1.8
+shot g10a-kindlemoss-head
+pg tab 4
+wait 1.3
+shot g10b-kindlemoss
+pg kind 10 0
+pg tab 0
+wait 1.8
+shot g11a-cindershell-head
+pg tab 4
+wait 1.3
+shot g11b-cindershell
+pg kind 11 0
+pg tab 0
+wait 1.8
+shot g12a-bloomstone-head
+pg tab 4
+wait 1.3
+shot g12b-bloomstone
+pg kind 12 0
+pg tab 0
+wait 1.8
+shot g13a-lilyfin-head
+pg tab 4
+wait 1.3
+shot g13b-lilyfin
+pg kind 13 0
+pg tab 0
+wait 1.8
+shot g14a-frostcurl-head
+pg tab 4
+wait 1.3
+shot g14b-frostcurl
+pg hatchling
+pg wear 1 13 17 27
+wait 1
+pg kind 0 1
+pg tab 0
+wait 1.8
+shot h01a-pouncer-head
+pg tab 4
+wait 1.3
+shot h01b-pouncer
+pg kind 1 1
+pg tab 0
+wait 1.8
+shot h02a-puffback-head
+pg tab 4
+wait 1.3
+shot h02b-puffback
+pg kind 2 1
+pg tab 0
+wait 1.8
+shot h03a-curlstone-head
+pg tab 4
+wait 1.3
+shot h03b-curlstone
+pg kind 3 1
+pg tab 0
+wait 1.8
+shot h04a-crestwing-head
+pg tab 4
+wait 1.3
+shot h04b-crestwing
+pg kind 4 1
+pg tab 0
+wait 1.8
+shot h05a-ribbontail-head
+pg tab 4
+wait 1.3
+shot h05b-ribbontail
+pg kind 5 1
+pg tab 0
+wait 1.8
+shot h06a-flurrytail-head
+pg tab 4
+wait 1.3
+shot h06b-flurrytail
+pg kind 6 1
+pg tab 0
+wait 1.8
+shot h07a-glimmermoth-head
+pg tab 4
+wait 1.3
+shot h07b-glimmermoth
+pg kind 7 1
+pg tab 0
+wait 1.8
+shot h08a-duskwing-head
+pg tab 4
+wait 1.3
+shot h08b-duskwing
+pg kind 8 1
+pg tab 0
+wait 1.8
+shot h09a-blazeplume-head
+pg tab 4
+wait 1.3
+shot h09b-blazeplume
+pg kind 9 1
+pg tab 0
+wait 1.8
+shot h10a-kindlemoss-head
+pg tab 4
+wait 1.3
+shot h10b-kindlemoss
+pg kind 10 1
+pg tab 0
+wait 1.8
+shot h11a-cindershell-head
+pg tab 4
+wait 1.3
+shot h11b-cindershell
+pg kind 11 1
+pg tab 0
+wait 1.8
+shot h12a-bloomstone-head
+pg tab 4
+wait 1.3
+shot h12b-bloomstone
+pg kind 12 1
+pg tab 0
+wait 1.8
+shot h13a-lilyfin-head
+pg tab 4
+wait 1.3
+shot h13b-lilyfin
+pg kind 13 1
+pg tab 0
+wait 1.8
+shot h14a-frostcurl-head
+pg tab 4
+wait 1.3
+shot h14b-frostcurl
+pg grown
+pg kind 0 0
+pg dye 4
+pg tab 3
+pg spin 1.6
+wait 1.8
+shot x01-pouncer-tail
+pg tab 1
+pg spin 0.4
+wait 1.8
+shot x02-pouncer-neck
+quit

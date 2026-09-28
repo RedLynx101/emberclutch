@@ -304,25 +304,25 @@ void topHat(Builder& b) {
 void flowerCrown(Builder& b) {
     const Frame f = frameAt({0, -0.02f, -0.08f}, {0, -0.12f, 1}, {0, 1, 0});
     b.slot = 0;
-    b.torus(f, 0.62f, 0.07f, 10, 3);
+    b.torus(f, 0.64f, 0.11f, 10, 3);
     for (int k = 0; k < 5; ++k) {
         const float a = -kPi / 2 + (k - 2) * 0.7f;  // round the front and sides
-        const Vec3 at = f.at(std::cos(a) * 0.64f, std::sin(a) * 0.64f, 0.06f);
-        b.flower(at, normalize(f.dir(std::cos(a), std::sin(a), 0.9f)), 0.17f, 5, k % 2 ? 1 : 2, 3);
+        const Vec3 at = f.at(std::cos(a) * 0.66f, std::sin(a) * 0.66f, 0.09f);
+        b.flower(at, normalize(f.dir(std::cos(a), std::sin(a), 0.9f)), 0.25f, 5, k % 2 ? 1 : 2, 3);
     }
 }
 
 void tiara(Builder& b) {
     const Frame f;
     b.slot = 0;
-    b.band(f, 0.62f, 0.6f, -0.12f, 0.02f, 6, kPi * 1.1f, kPi * 1.9f);
+    b.band(f, 0.62f, 0.6f, -0.14f, 0.06f, 6, kPi * 1.1f, kPi * 1.9f);
     for (int k = 0; k < 5; ++k) {
         const float a = kPi * 1.1f + kPi * 0.8f * (k + 0.5f) / 5.0f;
         const Vec3 radial{std::cos(a), std::sin(a), 0}, side{-std::sin(a), std::cos(a), 0};
-        const float h = k == 2 ? 0.36f : (k % 2 ? 0.22f : 0.16f);
+        const float h = k == 2 ? 0.46f : (k % 2 ? 0.3f : 0.22f);
         const Vec3 base = radial * 0.61f + Vec3{0, 0, 0.0f};
         b.slot = 0;
-        b.triangle(base - side * 0.09f, base + side * 0.09f, base + Vec3{0, 0, h} + radial * 0.02f, true);
+        b.triangle(base - side * 0.11f + Vec3{0, 0, 0.04f}, base + side * 0.11f + Vec3{0, 0, 0.04f}, base + Vec3{0, 0, h} + radial * 0.02f, true);
         b.slot = 3;
         b.emit = 255;
         const Vec3 gem = radial * 0.635f + Vec3{0, 0, -0.04f};
@@ -357,10 +357,10 @@ void crown(Builder& b) {
 void circlet(Builder& b) {
     const Frame f = frameAt({0, 0.06f, -0.2f}, {0, -0.25f, 1}, {0, 1, 0});  // lower at the brow
     b.slot = 0;
-    b.torus(f, 0.66f, 0.045f, 10, 3);
+    b.torus(f, 0.66f, 0.07f, 10, 3);
     b.slot = 3;
     b.emit = 255;
-    b.star(f.at(0, -0.69f, 0.02f), normalize(f.dir(0, -1, 0.2f)), f.z, 0.17f, 5, false);
+    b.star(f.at(0, -0.72f, 0.03f), normalize(f.dir(0, -1, 0.2f)), f.z, 0.26f, 5, false);
     b.emit = 0;
 }
 
@@ -381,7 +381,7 @@ void featherCrest(Builder& b) {
         const float a = (k - 2) * 0.32f;  // fanned across
         const Vec3 tip = base + Vec3{std::sin(a) * 0.5f, 0.35f, 0.9f - 0.12f * std::fabs(k - 2.0f)};
         b.slot = static_cast<u8>(k % 2);
-        b.leaf(base, tip, normalize(Vec3{std::cos(a), 0, -std::sin(a) * 0.3f}), 0.2f, {0, 0.05f, 0});
+        b.leaf(base, tip, normalize(Vec3{std::cos(a), 0, -std::sin(a) * 0.3f}), 0.26f, {0, 0.05f, 0});
     }
     b.slot = 2;
     b.ellipsoid(base + Vec3{0, -0.02f, 0.02f}, {0.12f, 0, 0}, {0, 0.1f, 0}, {0, 0, 0.09f}, 5, 3);
@@ -396,7 +396,7 @@ void neckBand(Builder& b, float r, float h, int segs = 10) {
 void neckBow(Builder& b) {
     b.slot = 0;
     neckBand(b, 1.05f, 0.07f);
-    b.bow({0, -1.12f, 0}, {0, -1, 0}, {0, 0, 1}, 0.55f, 0, 0);
+    b.bow({0, -1.14f, 0}, {0, -1, 0}, {0, 0, 1}, 0.85f, 0, 0);
 }
 
 void scarf(Builder& b) {
@@ -438,7 +438,7 @@ void collar(Builder& b) {
 void bellCollar(Builder& b) {
     b.slot = 0;
     neckBand(b, 1.05f, 0.07f);
-    b.bell({0, -1.1f, -0.06f}, normalize(Vec3{0, -0.3f, -1}), 0.34f, 2, 3);
+    b.bell({0, -1.1f, -0.06f}, normalize(Vec3{0, -0.3f, -1}), 0.5f, 2, 3);
 }
 
 void pendant(Builder& b) {
@@ -446,10 +446,10 @@ void pendant(Builder& b) {
     neckBand(b, 1.04f, 0.025f);
     const Frame f = frameAt({0, -1.08f, -0.14f}, {0, -0.25f, 1}, {0, 1, 0});
     b.band(f, 0.035f, 0.035f, -0.12f, 0.1f, 4);  // the link
-    b.band(f, 0.13f, 0.16f, -0.16f, -0.24f, 7);   // the setting
+    b.band(f, 0.17f, 0.21f, -0.16f, -0.26f, 7);   // the setting
     b.slot = 3;
     b.emit = 255;
-    b.ellipsoid(f.at(0, -0.04f, -0.36f), f.x * 0.15f, f.y * 0.08f, f.z * 0.2f, 6, 4);
+    b.ellipsoid(f.at(0, -0.05f, -0.44f), f.x * 0.2f, f.y * 0.1f, f.z * 0.27f, 6, 4);
     b.emit = 0;
 }
 
@@ -485,7 +485,7 @@ void lei(Builder& b) {
     for (int k = 0; k < 8; ++k) {
         const float a = 2 * kPi * (k + 0.5f) / 8;
         const Vec3 radial{std::cos(a), std::sin(a), 0};
-        b.flower(radial * 1.1f, normalize(radial + Vec3{0, 0, 0.35f}), 0.26f, 4, static_cast<u8>(k % 2), 3);
+        b.flower(radial * 1.1f, normalize(radial + Vec3{0, 0, 0.35f}), 0.32f, 4, static_cast<u8>(k % 2), 3);
     }
 }
 
@@ -578,7 +578,7 @@ void tailBand(Builder& b, float r, float h, int segs = 8) { b.band(kTailRing, r,
 void tailBow(Builder& b) {
     b.slot = 0;
     tailBand(b, 1.1f, 0.18f);
-    b.bow({0, 0, 1.2f}, {0, 0, 1}, {0, -1, 0.2f}, 1.05f, 0, 1);
+    b.bow({0, 0, 1.25f}, {0, 0, 1}, {0, -1, 0.2f}, 1.5f, 0, 1);
 }
 
 void tailRibbons(Builder& b) {
@@ -592,7 +592,7 @@ void tailRibbons(Builder& b) {
         for (int s = 1; s <= 3; ++s) {  // trailing toward the tip, drooping, a little wave
             const float t = s / 3.0f;
             const Vec3 next = radial * (1.1f + 0.3f * t) + Vec3{0.25f * std::sin(t * 5.0f + k), 3.2f * t, -1.4f * t * t};
-            b.quad(prev - side * 0.18f, prev + side * 0.18f, next + side * 0.16f, next - side * 0.16f, true);
+            b.quad(prev - side * 0.3f, prev + side * 0.3f, next + side * 0.26f, next - side * 0.26f, true);
             prev = next;
         }
     }
@@ -600,40 +600,40 @@ void tailRibbons(Builder& b) {
 
 void tailRing(Builder& b) {
     b.slot = 0;
-    b.torus(kTailRing, 1.12f, 0.22f, 10, 4);
+    b.torus(kTailRing, 1.15f, 0.3f, 10, 4);
 }
 
 void hanging(Builder& b) {  // a band and a short chain down to what hangs from it
     b.slot = 0;
     tailBand(b, 1.06f, 0.12f);
     b.slot = 2;
-    b.quad({-0.06f, 0, -1.02f}, {0.06f, 0, -1.02f}, {0.06f, 0.05f, -1.6f}, {-0.06f, 0.05f, -1.6f}, true);
+    b.quad({-0.08f, 0, -1.02f}, {0.08f, 0, -1.02f}, {0.08f, 0.05f, -1.75f}, {-0.08f, 0.05f, -1.75f}, true);
 }
 
 void starCharm(Builder& b) {
     hanging(b);
     b.slot = 3;
     b.emit = 255;
-    b.star({0, 0.06f, -2.0f}, {1, 0, 0}, {0, 0, 1}, 0.5f, 5, true);
+    b.star({0, 0.06f, -2.4f}, {1, 0, 0}, {0, 0, 1}, 0.72f, 5, true);
     b.emit = 0;
 }
 
 void tailBell(Builder& b) {
     b.slot = 0;
     tailBand(b, 1.06f, 0.14f);
-    b.bell({0, 0, -1.05f}, {0, 0, -1}, 0.75f, 2, 3);
+    b.bell({0, 0, -1.05f}, {0, 0, -1}, 1.0f, 2, 3);
 }
 
 void snowCharm(Builder& b) {
     hanging(b);
     b.slot = 3;
     b.emit = 255;
-    const Vec3 c{0, 0.06f, -2.05f};
+    const Vec3 c{0, 0.06f, -2.45f};
     for (int k = 0; k < 6; ++k) {  // six arms (both faces), square to the tail's side
         const float a = kPi / 2 + k * kPi / 3;
         const Vec3 d{0, std::cos(a), std::sin(a)}, s{0, -std::sin(a), std::cos(a)};
-        b.quad(c - s * 0.06f, c + d * 0.55f - s * 0.06f, c + d * 0.55f + s * 0.06f, c + s * 0.06f, true);
-        b.triangle(c + d * 0.3f, c + d * 0.42f + s * 0.16f, c + d * 0.38f, true);
+        b.quad(c - s * 0.08f, c + d * 0.72f - s * 0.08f, c + d * 0.72f + s * 0.08f, c + s * 0.08f, true);
+        b.triangle(c + d * 0.4f, c + d * 0.55f + s * 0.2f, c + d * 0.5f, true);
     }
     b.emit = 0;
 }
@@ -644,7 +644,7 @@ void tailWreath(Builder& b) {
     for (int k = 0; k < 6; ++k) {
         const float a = 2 * kPi * k / 6;
         const Vec3 radial{std::sin(a), 0, std::cos(a)};
-        b.flower(radial * 1.14f, radial, 0.4f, 4, k % 2 ? 1 : 2, 3);
+        b.flower(radial * 1.16f, radial, 0.5f, 4, k % 2 ? 1 : 2, 3);
     }
 }
 

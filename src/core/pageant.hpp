@@ -20,7 +20,7 @@ struct SaveData;
 
 constexpr int kThemes = 8;
 constexpr int kShowSlots = 4;  // shows a league (Progress::showWon's bits)
-constexpr int kEntrants = 4;   // you and three rivals
+constexpr int kEntrants = 3;   // you and two rivals (four dragons on a stage cost more than a view's budget)
 constexpr int kRivals = kEntrants - 1;
 constexpr int kJudges = 3;
 constexpr int kRounds = 3;

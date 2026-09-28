@@ -87,9 +87,8 @@ struct Reward {
 };
 Reward record(SaveData& s, int dragonIndex, int id, battle::Outcome o, s32 today);
 
-// ---- Where things are. The caldera's ring and its two sides, where the champion waits, and
-// the boards (in their places' frames). Until the caldera's model (workstream A) gives its
-// anchors, spots near its anchor on the crater's flat floor.
+// ---- Where things are (their places' frames): the caldera's ring and its two sides (the
+// champion waits on the far one), and the boards. From core/battle_spots (the places' anchors).
 Vec2 ringCentre();
 Vec2 ringSide(int side);  // 0: you, 1: the champion
 struct BoardSpot {

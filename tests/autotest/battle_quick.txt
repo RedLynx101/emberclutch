@@ -1,0 +1,38 @@
+# 1.0 battles (workstream B), quick: straight into Tamsin's battle at the Market, a shot as it
+# begins and one mid-turn (autoplay), the overlay off (as a player sees it).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 2
+skip 9
+key X
+wait 5
+battle level 6
+battle start 0 0
+wait 4
+shot q01-tamsin
+autoplay on
+wait 2.2
+shot q02-turn
+wait 1.2
+shot q03-turn2
+quit

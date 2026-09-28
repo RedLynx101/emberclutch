@@ -45,8 +45,8 @@ Reward record(SaveData& s, int dragonIndex, int floor, const Dragon& wild, battl
 float depth(int floor);
 Rgb chill(Rgb c, int floor);
 
-// ---- The bowl (its frame: +Y the way out east, the cave door at the back, -Y). Until the
-// Hollow's model (workstream A) gives its anchors, spots on its flat floor.
+// ---- The bowl (its frame: +Y the way out east, the cave door at the back, -Y), from
+// core/battle_spots (the place's anchors).
 Vec2 arenaSpot();  // the middle of the battle ground
 Vec2 wildDoor();   // where the wild ones come out
 Vec2 keeperSpot();

@@ -35,9 +35,11 @@ struct Hollow {
     int floor = 1;       // the floor being battled (or next)
     int partner = -1;    // your dragon (app.game.dragons)
     int pendingFloor = 0;  // a scripted run's floor, set up on the next update
+    bool pendingKeeper = false;  // ...or up to Tove and A
     float t = 0;
     Dragon wild;
     int picked = 0;      // the checkpoint picked at the gate
+    int nextKind = -1;   // the next floor's wild one's kind (read ahead while you choose)
 };
 
 Hollow& ho() {
@@ -108,7 +110,11 @@ bool startFloor(App& app, vext::Stage& st, int floor) {
     const bool small = mine.stage != Stage::Adult;
     setup.palAt = small ? at3(v, {arena.x + 1.3f, arena.y + 4.0f}) : at3(v, {arena.x, arena.y + 3.8f - 1.3f * sizeYou});
     setup.foeAt = at3(v, {arena.x, arena.y - 1.5f - 1.3f * sizeFoe});
-    setup.camSide = 1.0f;  // (the camera away from Tove)
+    // The camera on the bowl's far side from Tove, unless the rim rises in its way there.
+    setup.camSide = -1.0f;
+    Vec3 eye, target;
+    bview::cameraFor(setup, setup.youAt, setup.palAt, setup.foeAt, std::fmax(sizeYou, sizeFoe), eye, target);
+    if (v.heightAt(eye.x, eye.y) > eye.z - 1.5f) setup.camSide = 1.0f;
     setup.foeFrom = at3(v, hollow::wildDoor());
     setup.finish = finishFloor;
     setup.done = floorDone;
@@ -162,6 +168,7 @@ void floorDone(App& app, battle::Outcome o) {
     if (o == battle::Outcome::Won && s.floor < hollow::kFloors) {
         s.mode = Mode::Between;  // deeper, or leave
         s.t = 0;
+        s.nextKind = hollow::wildOf(s.floor + 1, dayIndex(nowLocal(app))).kind;
         return;
     }
     s.mode = Mode::None;
@@ -214,6 +221,7 @@ void act(App& app, const vext::Folk& who, vext::Stage& st) {
     }
     startSpeech(app, keeperSpeaker(), t);
     if (st.partner < 0) return;  // (out alone: just her words)
+    s.nextKind = hollow::wildOf(1, dayIndex(nowLocal(app))).kind;
     s.mode = Mode::Gate;
     s.picked = 0;
     s.t = 0;
@@ -221,12 +229,24 @@ void act(App& app, const vext::Folk& who, vext::Stage& st) {
 
 bool active(const App& app) {
     (void)app;
-    return ho().mode != Mode::None || ho().pendingFloor > 0;
+    return ho().mode != Mode::None || ho().pendingFloor > 0 || ho().pendingKeeper;
 }
 
 void update(App& app, const Input& in, vext::Stage& st) {
     Hollow& s = ho();
     s.t += app.dt;
+    if (s.pendingKeeper) {  // a scripted run: up to Tove, and A
+        s.pendingKeeper = false;
+        if (st.valley && st.valley->place(kPlaceHollow)) {
+            const r3d::PersonView tove = keeperLook(*st.valley);
+            const Vec3 fwd{std::sin(tove.heading), -std::cos(tove.heading), 0};
+            st.you = tove.at + fwd * 2.0f;
+            st.youHeading = std::atan2(tove.at.x - st.you.x, -(tove.at.y - st.you.y));
+            st.pal = st.you + Vec3{fwd.y, -fwd.x, 0} * 1.8f;
+            act(app, vext::Folk{}, st);
+        }
+        return;
+    }
     if (s.pendingFloor > 0) {  // a scripted run: straight in (Energy aside)
         const int floor = s.pendingFloor;
         s.pendingFloor = 0;
@@ -246,6 +266,7 @@ void update(App& app, const Input& in, vext::Stage& st) {
                 int cps[hollow::kCheckpoints];
                 const int n = hollow::checkpoints(app.game.dragons[st.partner], cps);
                 s.picked = (s.picked + (in.down & KEY_DRIGHT ? 1 : n - 1)) % n;
+                s.nextKind = hollow::wildOf(cps[s.picked], dayIndex(nowLocal(app))).kind;
                 audio::playSfx(audio::Sfx::Tap);
             }
             break;
@@ -254,6 +275,8 @@ void update(App& app, const Input& in, vext::Stage& st) {
             if (!bview::running() && s.mode == Mode::Battle) s.mode = Mode::None;
             break;
         case Mode::Between:
+            st.camSet = true;  // (held where the battle left it)
+            bview::lastCamera(st.eye, st.target);
             if (in.down & KEY_A) {
                 deeper(app, st, s.floor + 1);
             } else if (in.down & KEY_B) {
@@ -269,6 +292,7 @@ void update(App& app, const Input& in, vext::Stage& st) {
 void view(App& app, const vext::Stage& st, r3d::ValleyView& view) {
     Hollow& s = ho();
     if (s.mode == Mode::Battle) bview::view(app, st, view);
+    if ((s.mode == Mode::Gate || s.mode == Mode::Between) && s.nextKind >= 0) r3d::wantKind(s.nextKind);
     if (s.mode == Mode::Battle || s.mode == Mode::Between) {  // colder and darker, deeper down
         view.fog = hollow::chill(view.fog, s.floor);
         view.tint = hollow::chill(view.tint, s.floor);
@@ -313,6 +337,7 @@ void drawGate(App& app, const Input& in, const vext::Stage& st) {
         textCentered(app, line, x, y, 0.55f, theme::kDenPlum, 36);
         if (in.released && std::hypot(in.rx - x, in.ry - y) < 22) {
             s.picked = i;
+            s.nextKind = hollow::wildOf(cps[i], dayIndex(nowLocal(app))).kind;
             audio::playSfx(audio::Sfx::Tap);
         }
     }
@@ -366,6 +391,11 @@ void drawBottom(App& app, const Input& in, const vext::Stage& st) {
 }  // namespace
 
 const vext::Feature kHollowFeature{"hollow", folk, act, active, update, view, drawTop, drawBottom};
+
+void startHollowKeeper(App& app) {
+    (void)app;
+    ho().pendingKeeper = true;
+}
 
 void startHollowFloor(App& app, int floor) {
     (void)app;

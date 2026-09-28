@@ -314,6 +314,21 @@ int knownMoves(const Dragon& d, u8* out, int cap) {
     return movesLearned(d, 0, d.stage == Stage::Egg ? 0 : trainer::levelOf(d), out, cap);
 }
 
+int bestKnownMoves(const Dragon& d, u8* out, int cap) {
+    const int n = knownMoves(d, out, cap);
+    auto value = [](int move) {  // how hard it hits on average (the stat moves after, as learned)
+        const MoveInfo& m = kMoves[move];
+        return m.kind == M::Status ? -1.0f + m.level * 0.001f : m.power * m.accuracy / 100.0f;
+    };
+    for (int a = 1; a < n; ++a)  // (a handful: an insertion sort)
+        for (int b = a; b > 0 && value(out[b]) > value(out[b - 1]); --b) {
+            const u8 t = out[b];
+            out[b] = out[b - 1];
+            out[b - 1] = t;
+        }
+    return n;
+}
+
 int movesLearned(const Dragon& d, int fromLevel, int toLevel, u8* out, int cap) {
     int n = 0;
     for (int level = fromLevel + 1; level <= toLevel && level <= kMaxLevel; ++level)

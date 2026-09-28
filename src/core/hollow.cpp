@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "core/battle_spots.hpp"
 #include "core/care.hpp"
 #include "core/kinds.hpp"
 #include "core/trainer.hpp"
@@ -140,10 +141,13 @@ Rgb chill(Rgb c, int floor) {
     return {mix(c.r, cold.r), mix(c.g, cold.g), mix(c.b, cold.b)};
 }
 
-// The bowl: its flat floor round the anchor (+Y the way out, the cave door at the back).
-Vec2 arenaSpot() { return {0.0f, 0.0f}; }
-Vec2 wildDoor() { return {0.0f, -12.5f}; }
-Vec2 keeperSpot() { return {4.2f, 7.5f}; }
-float keeperFacing() { return 2.6f; }  // (toward the bowl's middle and the way in)
+// The bowl (core/battle_spots): +Y the way out, the cave door at the back.
+Vec2 arenaSpot() { return spots::kHollowArena; }
+Vec2 wildDoor() { return spots::kHollowWildDoor; }
+Vec2 keeperSpot() { return spots::kHollowKeeper; }
+float keeperFacing() {  // toward the bowl's middle
+    const Vec2 k = keeperSpot(), a = arenaSpot();
+    return std::atan2(k.x - a.x, a.y - k.y);  // (0 faces the place's front, +Y)
+}
 
 }  // namespace ec::hollow

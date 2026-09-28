@@ -21,11 +21,13 @@ void drawLeagueBoards(App& app, const Valley& v, s64 now);
 const char* battleMusic(const App& app);
 // Scripted runs (autotest's `battle ...` command): "start <league> <slot>" straight into a
 // challenger's battle, "talk <league> <slot>" up to them and A (their lines, then "Battle?"),
-// "hollow <floor>" into a floor of the Hollow, "board" the league's board at
+// "hollow <floor>" into a floor of the Hollow, "keeper" up to its keeper and A, "board" the league's board at
 // the arena, "level <n>" your partner's level, "league <won> [beaten bits]" the leagues'
 // progress, "auto on|off" battles playing themselves.
 void battleCommand(App& app, const char* args);
-// (feature_hollow.cpp, for the command) A floor of the Hollow at once, from wherever you are.
+// (feature_hollow.cpp, for the command) A floor of the Hollow at once, from wherever you are;
+// or up to its keeper and A.
 void startHollowFloor(App& app, int floor);
+void startHollowKeeper(App& app);
 
 }  // namespace ec

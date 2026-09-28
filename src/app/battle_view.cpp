@@ -360,7 +360,10 @@ void frame(App& app, State& s, const Valley* v) {
         target = target + (s.side[w].home - mid) * 0.3f;
         eye = eye + (s.side[w].home - eye) * 0.12f;
     }
-    if (v) eye.z = std::fmax(eye.z, v->heightAt(eye.x, eye.y) + 1.4f);
+    if (v) {  // (a slope in its way, a bowl's rim: nearer the dragons, then above the ground)
+        for (int k = 0; k < 5 && v->heightAt(eye.x, eye.y) > eye.z - 1.4f; ++k) eye = eye + (target - eye) * 0.12f;
+        eye.z = std::fmax(eye.z, v->heightAt(eye.x, eye.y) + 1.4f);
+    }
     if (s.camSnap) {
         s.eye = eye;
         s.target = target;
@@ -379,20 +382,25 @@ void stepSides(App& app, State& s, const Valley* v) {
         const Side& other = s.side[1 - k];
         if (!sd.dragon) continue;
         const Vec3 toward = normalize(Vec3{other.home.x - sd.home.x, other.home.y - sd.home.y, 0});
+        const float gap = std::fmax(0.1f, std::hypot(other.home.x - sd.home.x, other.home.y - sd.home.y));
         Vec3 at = sd.home;
+        float moved = 0;
         if (sd.lungeT >= 0) {  // out to the other (0.22 s), a beat there, then back (to 0.85 s)
             sd.lungeT += app.dt;
             const float t = sd.lungeT;
             const float out = t < 0.22f ? smooth(t / 0.22f) : t < 0.42f ? 1.0f : 1.0f - smooth((t - 0.42f) / 0.43f);
-            at = at + toward * (sd.lunge * out);
+            moved = sd.lunge * out;
             if (t > 0.85f) sd.lungeT = -1;
         }
         if (sd.knockT >= 0) {
             sd.knockT += app.dt;
-            at = at - toward * (0.35f * std::sin(clampf(sd.knockT / 0.3f, 0.0f, 1.0f) * kPi));
+            moved -= 0.35f * std::sin(clampf(sd.knockT / 0.3f, 0.0f, 1.0f) * kPi);
             if (sd.knockT > 0.3f) sd.knockT = -1;
         }
-        if (v) at.z = std::fmax(v->heightAt(at.x, at.y), v->water - 0.8f);
+        // (The battle's ground is where the feature stood them, a ring's top too: toward the other
+        // it runs from its own height to theirs.)
+        at = at + toward * moved;
+        at.z = sd.home.z + (other.home.z - sd.home.z) * clampf(moved / gap, 0.0f, 1.0f);
         sd.pos = at;
         sd.flash = std::fmax(0.0f, sd.flash - app.dt * 4.0f);
         if (s.phase != Phase::Enter || k == 0) {
@@ -573,8 +581,8 @@ void cameraFor(const Setup& setup, Vec3 you, Vec3 pal, Vec3 foe, float size, Vec
     const Vec3 side{a.y * setup.camSide, -a.x * setup.camSide, 0};
     const float big = clampf(size, 0.6f, 1.6f);
     const float k = 0.8f + 0.3f * big;
-    eye = you - a * (4.6f * k) + side * (2.8f * k) + Vec3{0, 0, 2.9f + 1.0f * big};
-    target = lerp(pal, foe, 0.6f) + Vec3{0, 0, 0.7f + 0.5f * big};
+    eye = you - a * (4.8f * k) + side * (5.4f * k) + Vec3{0, 0, 3.4f + 1.0f * big};
+    target = lerp(pal, foe, 0.5f) + Vec3{0, 0, 0.8f + 0.5f * big};
 }
 
 float dragonSize(const Dragon& d) {
@@ -620,6 +628,10 @@ void start(App& app, const Setup& setup) {
 }
 
 bool running() { return st().phase != Phase::Idle; }
+void lastCamera(Vec3& eye, Vec3& target) {
+    eye = st().eye;
+    target = st().target;
+}
 void stop() { st().phase = Phase::Idle; }
 void setAutoplay(bool on) { g_autoplay = on; }
 bool autoplay() { return g_autoplay; }
@@ -780,6 +792,16 @@ void view(App& app, const vext::Stage& stage, r3d::ValleyView& view) {
     view.you = s.youAt;
     view.youHeading = s.youHeading;
     view.youSpeed = 0;
+    // Only the people near the battle (one at most besides you and the challenger): the rest of
+    // the village away, for the top screen's budget.
+    const Vec3 mid = (s.side[0].home + s.side[1].home) * 0.5f;
+    int keep = view.peopleCount > 0 ? 1 : 0, others = 0;
+    for (int i = 1; i < view.peopleCount; ++i)
+        if (others < 1 && std::hypot(view.people[i].at.x - mid.x, view.people[i].at.y - mid.y) < 14.0f) {
+            view.people[keep++] = view.people[i];
+            ++others;
+        }
+    view.peopleCount = keep;
     if (s.setup.trainer) {
         const int slot = view.peopleCount < r3d::kMaxPeopleShown ? view.peopleCount++ : r3d::kMaxPeopleShown - 1;
         r3d::PersonView& p = view.people[slot];
@@ -787,6 +809,10 @@ void view(App& app, const vext::Stage& stage, r3d::ValleyView& view) {
         p.heading = headingTo(p.at, s.youAt);
         p.anim = &s.trainer.anim;
         p.blink = s.trainer.blink;
+        if (autotest::shooting())
+            autotest::log("battle people %d, trainer in slot %d at (%.1f %.1f %.1f) form %d; you (%.1f %.1f) eye (%.1f %.1f %.1f)",
+                          view.peopleCount, slot, p.at.x, p.at.y, p.at.z, p.form, s.youAt.x, s.youAt.y, view.eye.x, view.eye.y,
+                          view.eye.z);
     }
     (void)app;
 }

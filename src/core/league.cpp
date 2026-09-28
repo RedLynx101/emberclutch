@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "core/battle_spots.hpp"
 #include "core/care.hpp"
 #include "core/kinds.hpp"
 #include "core/trainer.hpp"
@@ -330,14 +331,13 @@ Reward record(SaveData& s, int dragonIndex, int id, battle::Outcome o, s32 today
 }
 
 // ---------------------------------------------------------------------------- where things are
-// The caldera: the crater's floor is flat for ~33 m round its anchor; the way in arrives from +Y.
-// The ring's middle a little toward the far wall, you on its near side, the champion the far.
-Vec2 ringCentre() { return {0.0f, -4.0f}; }
-Vec2 ringSide(int side) { return side == 0 ? Vec2{0.0f, 1.5f} : Vec2{0.0f, -9.5f}; }
+// The caldera (core/battle_spots): the ring, and its two sides where you and the champion stand.
+Vec2 ringCentre() { return spots::kCalderaRing; }
+Vec2 ringSide(int side) { return spots::kCalderaSides[side == 0 ? 0 : 1]; }
 
 int boardCount() { return 2; }
 BoardSpot board(int i) {
-    if (i == 1) return {kPlaceCaldera, {-7.0f, 9.0f}, 0.0f};  // by the way into the crater
+    if (i == 1) return {kPlaceCaldera, spots::kCalderaBoard, 0.0f};  // by the way into the crater
     return {kPlaceArena, {7.8f, 19.2f}, 0.0f};                // outside the arena's gate, across from the challenges'
 }
 

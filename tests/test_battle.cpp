@@ -483,6 +483,7 @@ TEST(league_challengers) {
     CHECK(league::boardCount() == 2 && league::board(0).place == kPlaceArena && league::board(1).place == kPlaceCaldera);
     const Vec2 ring = league::ringCentre(), a = league::ringSide(0), b = league::ringSide(1);
     CHECK(std::hypot(a.x - b.x, a.y - b.y) > 9.0f && std::hypot(ring.x, ring.y) < 10.0f);
+    CHECK(std::hypot(league::spotOf(league::idOf(2, league::kChampion)).x - b.x, league::spotOf(league::idOf(2, league::kChampion)).y - b.y) < 0.01f);
 }
 
 TEST(league_progress_and_rewards) {

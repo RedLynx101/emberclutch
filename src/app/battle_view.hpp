@@ -50,6 +50,8 @@ void update(App& app, const Input& in, vext::Stage& stage);
 void view(App& app, const vext::Stage& stage, r3d::ValleyView& view);
 void drawTop(App& app);
 void drawBottom(App& app, const Input& in);
+// The camera as the last battle left it (the Hollow holds it between floors).
+void lastCamera(Vec3& eye, Vec3& target);
 // Scripted runs: it plays itself (your moves chosen for you, the lines and the card moving on).
 void setAutoplay(bool on);
 bool autoplay();

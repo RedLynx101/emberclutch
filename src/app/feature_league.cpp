@@ -19,6 +19,7 @@
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
+#include "core/battle_spots.hpp"
 #include "core/care.hpp"
 #include "core/challenge_mesh.hpp"
 #include "core/clock.hpp"
@@ -93,16 +94,18 @@ void say(App& app, int id, const char* a, const char* b = nullptr) {
     startSpeech(app, speakerOf(id), t);
 }
 
-// ---- Staging a battle where you stand: the challenger stays at their spot; you step back along
-// the way you came to about eleven metres off, on good ground clear of walls (turning the line a
-// little if it isn't); your dragon before you, theirs before them.
+// ---- Staging a battle: the challenger stays at their spot; you stand about eleven metres off
+// on good ground clear of walls, your dragon before you, theirs before them. Of the ways round
+// them, the best: open ground away from their place's buildings, a camera with nothing in its
+// way, and near the way you came.
 const std::vector<Solid>& solidsFor(const Valley& v) {
     League& s = lg();
     if (s.solidsOf != &v) {
         s.solids = worldSolids(v);
         for (int k = 0; k < kVillagers; ++k) {
             const VillagerInfo& info = villagerInfo(static_cast<Villager>(k));
-            s.solids.push_back({{at3(v, info.place, info.at).x, at3(v, info.place, info.at).y}, 0.6f});
+            const Vec3 at = at3(v, info.place, info.at);
+            s.solids.push_back({{at.x, at.y}, 0.6f});
         }
         s.solidsOf = &v;
     }
@@ -115,41 +118,99 @@ bool clear(const std::vector<Solid>& solids, Vec2 at, float r) {
     return true;
 }
 
-bool placeBattle(const Valley& v, Vec3 chAt, Vec3 you, float heading, float sizeYou, float sizeFoe, bool small, bview::Setup& out) {
+// `middle`: their place's anchor (its buildings).
+bool placeBattle(const Valley& v, Vec3 chAt, Vec3 you, float heading, Vec2 middle, float sizeYou, float sizeFoe,
+                 bool small, bview::Setup& out) {
     const std::vector<Solid>& solids = solidsFor(v);
     Vec2 dir{you.x - chAt.x, you.y - chAt.y};
-    float d = std::hypot(dir.x, dir.y);
-    if (d < 0.5f) dir = {std::sin(heading), -std::cos(heading)}, d = 1;
-    dir = {dir.x / d, dir.y / d};
-    static constexpr float kTurns[] = {0.0f, 0.45f, -0.45f, 0.9f, -0.9f, 1.4f, -1.4f, 2.0f, -2.0f, kPi};
-    for (float dist : {11.0f, 9.5f, 8.0f})
-        for (float turn : kTurns) {
+    const float d = std::hypot(dir.x, dir.y);
+    dir = d < 0.5f ? Vec2{std::sin(heading), -std::cos(heading)} : Vec2{dir.x / d, dir.y / d};
+    float best = -1e9f;
+    bview::Setup pick = out;
+    for (float dist : {11.0f, 9.5f, 8.0f}) {
+        for (int i = 0; i < 12; ++i) {
+            const float turn = (i % 2 ? 1.0f : -1.0f) * static_cast<float>((i + 1) / 2) * (kPi / 6.0f);  // 0, 30, -30, 60 ...
             const Vec2 w{dir.x * std::cos(turn) - dir.y * std::sin(turn), dir.x * std::sin(turn) + dir.y * std::cos(turn)};
             const Vec2 side{w.y, -w.x};
-            const Vec2 youAt{chAt.x + w.x * dist, chAt.y + w.y * dist};
+            const float along = dist;
+            const Vec2 youAt{chAt.x + w.x * along, chAt.y + w.y * along};
             const float palOut = small ? 1.0f : 1.2f + 1.3f * sizeYou;
             const Vec2 palAt{youAt.x - w.x * palOut + (small ? side.x * 1.3f : 0), youAt.y - w.y * palOut + (small ? side.y * 1.3f : 0)};
             const float foeOut = 1.2f + 1.3f * sizeFoe;
             const Vec2 foeAt{chAt.x + w.x * foeOut, chAt.y + w.y * foeOut};
             if (!bview::goodGround(v, chAt, youAt) || !bview::goodGround(v, chAt, palAt) || !bview::goodGround(v, chAt, foeAt)) continue;
             if (!clear(solids, youAt, 0.6f) || !clear(solids, palAt, 0.9f * sizeYou) || !clear(solids, foeAt, 0.9f * sizeFoe)) continue;
-            out.youAt = {youAt.x, youAt.y, v.heightAt(youAt.x, youAt.y)};
-            out.palAt = {palAt.x, palAt.y, v.heightAt(palAt.x, palAt.y)};
-            out.foeAt = {foeAt.x, foeAt.y, v.heightAt(foeAt.x, foeAt.y)};
-            out.foeFrom = {chAt.x - side.x * 1.6f, chAt.y - side.y * 1.6f, 0};
-            out.foeFrom.z = v.heightAt(out.foeFrom.x, out.foeFrom.y);
-            // The camera over whichever shoulder is clear (else the right, and it rises above the ground).
-            out.camSide = 1.0f;
+            bview::Setup c = out;
+            c.youAt = {youAt.x, youAt.y, v.heightAt(youAt.x, youAt.y)};
+            c.palAt = {palAt.x, palAt.y, v.heightAt(palAt.x, palAt.y)};
+            c.foeAt = {foeAt.x, foeAt.y, v.heightAt(foeAt.x, foeAt.y)};
+            c.foeFrom = {chAt.x - side.x * 1.6f, chAt.y - side.y * 1.6f, 0};
+            c.foeFrom.z = v.heightAt(c.foeFrom.x, c.foeFrom.y);
+            // The camera over whichever shoulder is clear (of walls, above the ground).
+            bool camOk = false;
             for (float sideSign : {1.0f, -1.0f}) {
-                out.camSide = sideSign;
+                c.camSide = sideSign;
                 Vec3 eye, target;
-                bview::cameraFor(out, out.youAt, out.palAt, out.foeAt, std::fmax(sizeYou, sizeFoe), eye, target);
-                if (clear(solids, {eye.x, eye.y}, 1.2f) && v.heightAt(eye.x, eye.y) < eye.z - 1.2f) break;
-                out.camSide = 1.0f;
+                bview::cameraFor(c, c.youAt, c.palAt, c.foeAt, std::fmax(sizeYou, sizeFoe), eye, target);
+                camOk = clear(solids, {eye.x, eye.y}, 2.0f) && v.heightAt(eye.x, eye.y) < eye.z - 1.5f;
+                if (camOk) break;
             }
-            return true;
+            if (!camOk) c.camSide = 1.0f;
+            // Everyone where the camera sees them: you a step to its side of your dragon (a small
+            // one on its lead at your other side), the challenger a step aside from theirs, their
+            // dragon coming in from the other.
+            const Vec2 cs{-side.x * c.camSide, -side.y * c.camSide};  // (toward the camera: `side` is its left)
+            const Vec2 youSide{youAt.x + cs.x * 1.3f, youAt.y + cs.y * 1.3f};
+            if (bview::goodGround(v, chAt, youSide) && clear(solids, youSide, 0.6f))
+                c.youAt = {youSide.x, youSide.y, v.heightAt(youSide.x, youSide.y)};
+            if (small) {
+                const Vec2 lead{youAt.x - w.x * 1.0f - cs.x * 0.6f, youAt.y - w.y * 1.0f - cs.y * 0.6f};
+                if (bview::goodGround(v, chAt, lead)) c.palAt = {lead.x, lead.y, v.heightAt(lead.x, lead.y)};
+            }
+            const Vec2 aside{chAt.x + cs.x * 1.8f, chAt.y + cs.y * 1.8f};
+            if (bview::goodGround(v, chAt, aside) && clear(solids, aside, 0.5f))
+                c.trainerLook.at = {aside.x, aside.y, v.heightAt(aside.x, aside.y)};
+            c.foeFrom = {chAt.x - cs.x * 1.6f, chAt.y - cs.y * 1.6f, 0};
+            c.foeFrom.z = v.heightAt(c.foeFrom.x, c.foeFrom.y);
+            const Vec2 mid{(youAt.x + foeAt.x) * 0.5f, (youAt.y + foeAt.y) * 0.5f};
+            const float score = (camOk ? 20.0f : 0.0f) + 0.6f * std::hypot(mid.x - middle.x, mid.y - middle.y) + 3.0f * std::cos(turn) +
+                                0.4f * along;
+            if (score > best) {
+                best = score;
+                pick = c;
+            }
         }
-    return false;
+        if (best > -1e9f) break;  // (the longest line that works)
+    }
+    if (best <= -1e9f) return false;
+    out = pick;
+    return true;
+}
+
+// A final at the caldera: you and the champion at the ring's two sides, the dragons on the ring
+// (its top a low step up), the camera over whichever shoulder is clear.
+void placeFinal(const Valley& v, float sizeYou, float sizeFoe, bool small, bview::Setup& out) {
+    const std::vector<Solid>& solids = solidsFor(v);
+    const Vec3 you = at3(v, kPlaceCaldera, league::ringSide(0)), them = at3(v, kPlaceCaldera, league::ringSide(1));
+    Vec3 ring = at3(v, kPlaceCaldera, league::ringCentre());
+    ring.z += spots::kCalderaRingTop;
+    const Vec3 w = normalize(Vec3{you.x - them.x, you.y - them.y, 0});  // from the champion toward you
+    const Vec3 side{w.y, -w.x, 0};
+    out.youAt = you;
+    out.trainerLook.at = them;
+    out.palAt = small ? you - w * 1.0f + side * 1.2f : ring + w * (1.0f + 1.3f * sizeYou);
+    out.foeAt = ring - w * (1.0f + 1.3f * sizeFoe);
+    if (small) out.palAt.z = v.heightAt(out.palAt.x, out.palAt.y);
+    out.foeFrom = them + side * 1.6f;
+    out.foeFrom.z = v.heightAt(out.foeFrom.x, out.foeFrom.y);
+    out.camSide = 1.0f;
+    for (float sideSign : {1.0f, -1.0f}) {
+        out.camSide = sideSign;
+        Vec3 eye, target;
+        bview::cameraFor(out, out.youAt, out.palAt, out.foeAt, std::fmax(sizeYou, sizeFoe), eye, target);
+        if (clear(solids, {eye.x, eye.y}, 2.0f) && v.heightAt(eye.x, eye.y) < eye.z - 1.5f) return;
+    }
+    out.camSide = 1.0f;
 }
 
 void finishBattle(App& app, battle::Outcome o, bview::Results& out);
@@ -172,11 +233,12 @@ bool beginBattle(App& app, vext::Stage& st, int id) {
     const Dragon& mine = app.game.dragons[st.partner];
     const float sizeYou = bview::dragonSize(mine), sizeFoe = bview::dragonSize(setup.foe);
     const bool small = mine.stage != Stage::Adult;
-    if (league::isChampion(id)) {  // the final: on the caldera's ring, you on its near side
-        const Vec3 you = at3(v, kPlaceCaldera, league::ringSide(0)), them = at3(v, kPlaceCaldera, league::ringSide(1));
-        setup.trainerLook.at = them;
-        if (!placeBattle(v, them, you, 0, sizeYou, sizeFoe, small, setup)) return false;
-    } else if (!placeBattle(v, setup.trainerLook.at, st.you, st.youHeading, sizeYou, sizeFoe, small, setup)) {
+    const ValleyPlaceInfo* place = v.place(c.place);
+    const Vec2 middle = place ? Vec2{place->at.x, place->at.y} : Vec2{setup.trainerLook.at.x, setup.trainerLook.at.y};
+    if (league::isChampion(id)) {  // the final: on the caldera's ring
+        if (!v.place(kPlaceCaldera)) return false;
+        placeFinal(v, sizeYou, sizeFoe, small, setup);
+    } else if (!placeBattle(v, setup.trainerLook.at, st.you, st.youHeading, middle, sizeYou, sizeFoe, small, setup)) {
         return false;
     }
     setup.finish = finishBattle;
@@ -402,7 +464,12 @@ void update(App& app, const Input& in, vext::Stage& st) {
 }
 
 void view(App& app, const vext::Stage& st, r3d::ValleyView& view) {
-    if (lg().mode == Mode::Battle) bview::view(app, st, view);
+    League& s = lg();
+    if (s.mode == Mode::Battle) bview::view(app, st, view);
+    if (s.mode == Mode::Ask && s.id >= 0) {  // their dragon's kind read ahead while they talk
+        const int kind = findKind(league::challenger(s.id).kind);
+        if (kind >= 0) r3d::wantKind(kind);
+    }
 }
 
 void drawTop(App& app, const vext::Stage& st) {
@@ -578,6 +645,8 @@ void battleCommand(App& app, const char* args) {
         s.pendingTalk = league::idOf(a, b);
     } else if (std::strcmp(word, "hollow") == 0) {
         startHollowFloor(app, a);
+    } else if (std::strcmp(word, "keeper") == 0) {
+        startHollowKeeper(app);
     } else if (std::strcmp(word, "board") == 0) {
         s.pendingBoard = true;
     } else if (std::strcmp(word, "level") == 0) {

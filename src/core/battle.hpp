@@ -61,6 +61,9 @@ const char* moveName(int move);
 bool knows(const Dragon& d, int move);
 // Everything it knows now, in the order it learned them (at most cap).
 int knownMoves(const Dragon& d, u8* out, int cap);
+// The same, best first: its elements' breath and body moves by how hard they hit, then the stat
+// moves (the profile's list; app/profile_hooks' knownMoves).
+int bestKnownMoves(const Dragon& d, u8* out, int cap);
 // Those a dragon of its kind learns after `fromLevel` up to `toLevel` (a level-up's new moves).
 int movesLearned(const Dragon& d, int fromLevel, int toLevel, u8* out, int cap);
 // Its four: Dragon::moves as set, with empty slots (and any it doesn't know) filled with the

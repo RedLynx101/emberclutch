@@ -204,6 +204,8 @@ void ValleyMesh::clear() {
     pos.clear();
     color.clear();
     idx.clear();
+    skirtFrom = 0;
+    parts.clear();
 }
 
 bool loadValley(const u8* data, std::size_t size, Valley& out) {
@@ -341,7 +343,12 @@ void buildValleyTile(const Valley& v, int tx, int ty, int lod, ValleyMesh& out) 
             tri(out, p, q, s);  // counter-clockwise seen from above
             tri(out, p, s, r);
         }
-    // Skirts: each edge copied a little lower, facing out of the tile.
+    // Props, nearer levels only (simpler further off; the little ones only near).
+    if (lod < kTreeLods)
+        for (int k : v.tileTrees[std::size_t(ty) * t + tx]) prop(out, v, v.trees[std::size_t(k)], lod);
+    // Skirts last: each edge copied a little lower, facing out of the tile (the renderer draws
+    // them only where a neighbour is at another level).
+    out.skirtFrom = out.idx.size();
     const float drop = kSkirt * step;
     auto skirt = [&](int a0, int b0, int da, int db, bool reversed) {
         for (int k = 0; k < quads; ++k) {
@@ -364,15 +371,13 @@ void buildValleyTile(const Valley& v, int tx, int ty, int lod, ValleyMesh& out) 
     skirt(quads, 0, 0, 1, true);        // east edge, south to north: faces east
     skirt(0, quads, 1, 0, false);       // north edge: faces north
     skirt(0, 0, 0, 1, false);           // west edge: faces west
-    // Props, nearer levels only (simpler further off; the little ones only near).
-    if (lod < kTreeLods)
-        for (int k : v.tileTrees[std::size_t(ty) * t + tx]) prop(out, v, v.trees[std::size_t(k)], lod);
 }
 
 void buildValleyExtras(const Valley& v, ValleyMesh& out) {
     out.clear();
     constexpr int kSides = 9;
     for (const ValleyIsland& isl : v.islands) {
+        out.parts.push_back(static_cast<u32>(out.idx.size()));  // (each island its own range: culled apart)
         const Vec3 c = isl.at;
         const float r = isl.radius;
         const u8 grass[3] = {104, 156, 78};
@@ -426,6 +431,7 @@ void buildValleyExtras(const Valley& v, ValleyMesh& out) {
             blob(out, {base.x + h * 0.12f, base.y - h * 0.08f, base.z + h * 0.78f}, h * 0.24f, h * 0.18f, h * 0.1f, 5, a + 0.8f, leaf);
         }
     }
+    out.parts.push_back(static_cast<u32>(out.idx.size()));
     // (The places themselves are models: romfs/valley/places, drawn by render3d.)
 }
 

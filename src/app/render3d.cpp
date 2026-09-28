@@ -253,7 +253,10 @@ C3D_LightEnv g_lightEnv;
 C3D_Light g_light;
 C3D_LightLut g_lutToon[3], g_lutRim[2];  // per look: the classic ramp, V1's soft one, V3's hard one; the rims
 int g_litLook = -1;                        // the look whose ramps are bound
-constexpr int kCacheSlots = 4;
+// One per dragon and detail level (the den draws the one you care for at LOD1 on top and LOD0 in
+// the close-up below, the same frame). Never rebuilt in place: a rebuild takes fresh buffers and
+// retires the old (the flicker, run 19: a queued draw read a mesh half rewritten).
+constexpr int kCacheSlots = 12;
 
 // Lighting (architecture section 4): primary = plum-tinted ambient, secondary = toon ramp on
 // L.N (specular 0 through LUT D0), secondary alpha = rim (Fresnel LUT on N.V). The ambient
@@ -571,6 +574,7 @@ void refreshCache(Cache& c, const Dragon& d, const Growth& gr, int build, int lo
     if (same) return;
     const Form& f = g_forms[look][gr.form][lod];
     c.valid = false;
+    c.parts.release();  // (fresh buffers: a draw queued this frame or last may still read the old)
     if (isKind(look)) {
         const KindInfo& ki = kindInfo(kindOfSlot(look));
         if (!buildKindParts(f.model, variant == ki.rareVariant, ki.rareReplaces, slit, gr.t, build, g_parts)) return;
@@ -622,16 +626,16 @@ Cache* cacheFor(const Dragon& d, s64 now, int lod) {
     if (d.stage == Stage::Egg) return nullptr;
     Cache* slot = nullptr;
     for (Cache& c : g_caches)
-        if (c.valid && c.id == d.id) slot = &c;
-    if (!slot) {
-        slot = &g_caches[0];
+        if (c.valid && c.id == d.id && c.lod == lod) slot = &c;
+    if (!slot) {  // a free one, else the one unused longest; never one drawn this frame
         for (Cache& c : g_caches) {
             if (!c.valid) {
                 slot = &c;
                 break;
             }
-            if (c.lastUsed < slot->lastUsed) slot = &c;
+            if (c.lastUsed != g_frame && (!slot || c.lastUsed < slot->lastUsed)) slot = &c;
         }
+        if (!slot) return nullptr;  // (more dragons this frame than caches: this one waits)
     }
     refreshCache(*slot, d, growthFor(d.stage, stageProgress(d, now)), buildOf(d), lod, lookOf(d));
     slot->lastUsed = g_frame;
@@ -999,6 +1003,12 @@ void updateDust(Cache& c, const Form& f, const Dragon& d) {
     for (int r = 0; r < kRegionCount; ++r)
         changed |= std::fabs(d.dirt[r] - c.dustShown[r]) > 0.5f || std::fabs(d.mud[r] - c.mudShown[r]) > 0.5f;
     if (!changed) return;
+    {  // (a fresh buffer: the last one may still be read by a queued draw)
+        u8* fresh = static_cast<u8*>(linearAlloc(std::size_t(body->vertexCount) * 4));
+        if (!fresh) return;
+        retire(c.dust);
+        c.dust = fresh;
+    }
     for (int r = 0; r < kRegionCount; ++r) c.dustShown[r] = d.dirt[r], c.mudShown[r] = d.mud[r];
     for (int v = 0; v < body->vertexCount; ++v) {
         u8* o = c.dust + std::size_t(v) * 4;
@@ -2398,6 +2408,7 @@ struct ValleyGpu {
     u8* col = nullptr;
     u16* idx = nullptr;
     int count = 0;  // indices
+    int ground = 0; // ...of which the ground and its props (the rest: the skirts)
     u32 used = 0;   // the valley frame it was last drawn in
     void release() {
         retire(pos);
@@ -2406,14 +2417,30 @@ struct ValleyGpu {
         pos = nullptr;
         col = nullptr;
         idx = nullptr;
-        count = 0;
+        count = ground = 0;
         tx = ty = lod = -1;
     }
 };
-constexpr int kValleySlots = 64;       // tiles kept built
-constexpr int kValleyBuilds = 2;       // tiles built a frame at most (the rest show coarser, or wait)
+constexpr int kValleySlots = 112;      // tiles kept built
+constexpr int kValleyBuilds = 3;       // detailed tiles built a frame at most (the rest show coarser)
 constexpr float kValleyNear = 0.5f, kValleyFar = 400.0f;  // Beta's valley is 2.3 km: see further
 ValleyGpu g_vtiles[kValleySlots];
+std::vector<u8> g_tileLod;  // each tile's level last drawn (the hysteresis in tileLod)
+
+// A tile's level by distance, kept until the distance is 8 m past the line either way (the camera
+// swinging round you moved tiles back and forth across it: the ground and its trees popped).
+int tileLod(const Valley& v, int tx, int ty, float d) {
+    const int t = v.tiles();
+    if (g_tileLod.size() != std::size_t(t) * t) g_tileLod.assign(std::size_t(t) * t, 0xFF);
+    u8& last = g_tileLod[std::size_t(ty) * t + tx];
+    const int want = valleyLodFor(d);
+    if (last != 0xFF && want != last) {
+        const int nearer = valleyLodFor(d - 8.0f), further = valleyLodFor(d + 8.0f);
+        if (nearer == last || further == last) return last;  // within the band: stay
+    }
+    last = static_cast<u8>(want);
+    return want;
+}
 ValleyGpu g_vextras, g_vwater, g_vhorizon, g_vskirt;
 std::vector<u8> g_horizonBase;  // the ring's own colours (hazed toward the fog each frame)
 u8* g_horizonHaze[2] = {};
@@ -2455,18 +2482,20 @@ bool uploadValley(ValleyGpu& g, const ValleyMesh& m) {
     GSPGPU_FlushDataCache(g.col, n * 4);
     GSPGPU_FlushDataCache(g.idx, m.idx.size() * sizeof(u16));
     g.count = static_cast<int>(m.idx.size());
+    g.ground = m.skirtFrom > 0 && m.skirtFrom <= m.idx.size() ? static_cast<int>(m.skirtFrom) : g.count;
     return true;
 }
 
-void drawValleyGpu(App& app, const ValleyGpu& g) {
+void drawValleyGpu(App& app, const ValleyGpu& g, bool skirts = true) {
     if (!g.count) return;
+    const int count = skirts ? g.count : g.ground;
     C3D_BufInfo* buf = C3D_GetBufInfo();
     BufInfo_Init(buf);
     BufInfo_Add(buf, g.pos, sizeof(Vec3), 1, 0x0);
     BufInfo_Add(buf, g.col, 4, 1, 0x1);
     BufInfo_Add(buf, g.col, 4, 1, 0x2);  // one colour set: no blend between two
-    C3D_DrawElements(GPU_TRIANGLES, g.count, C3D_UNSIGNED_SHORT, g.idx);
-    app.stats.tris += g.count / 3;
+    C3D_DrawElements(GPU_TRIANGLES, count, C3D_UNSIGNED_SHORT, g.idx);
+    app.stats.tris += count / 3;
     app.stats.draws += 1;
 }
 
@@ -2559,13 +2588,15 @@ const ValleyGpu* valleyTile(const Valley& v, int tx, int ty, int lod, int& budge
             g.used = g_valleyFrame;
             return &g;
         }
-    if (budget <= 0) {
+    if (budget <= 0) {  // out of builds this frame: any level of it that's ready, else the coarsest now
         for (ValleyGpu& g : g_vtiles)
             if (g.tx == tx && g.ty == ty && g.count) {
                 g.used = g_valleyFrame;
                 return &g;
             }
-        return nullptr;
+        if (lod == kValleyLods - 1) return nullptr;
+        int none = 1;  // (the coarsest is cheap: built even past the budget, so there's never a hole)
+        return valleyTile(v, tx, ty, kValleyLods - 1, none);
     }
     ValleyGpu* slot = nullptr;
     for (ValleyGpu& g : g_vtiles) {
@@ -2734,8 +2765,9 @@ void drawPlaces(App& app, const Valley& v, const ValleyView& view, const C3D_Mtx
     for (const ValleyPlaceInfo& p : v.places) {
         if (p.id >= kPlaceCount || !g_places[p.id].ok) continue;
         const PlaceGpu& g = g_places[p.id];
-        const Vec3 lo{p.at.x - g.reach, p.at.y - g.reach, p.at.z + g.low};
-        const Vec3 hi{p.at.x + g.reach, p.at.y + g.reach, p.at.z + g.high};
+        const float r = g.reach * 1.415f;  // (turned by its heading, a corner reaches this far)
+        const Vec3 lo{p.at.x - r, p.at.y - r, p.at.z + g.low};
+        const Vec3 hi{p.at.x + r, p.at.y + r, p.at.z + g.high};
         // (Past 260 m the fog has them: not drawn.)
         if (outsideView(clip, lo, hi) || std::hypot(view.eye.x - p.at.x, view.eye.y - p.at.y) > 260.0f + g.reach)
             continue;
@@ -3270,12 +3302,32 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     bindValleyStatic(projection, viewM, view.tint);
     C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
     C3D_CullFace(GPU_CULL_BACK_CCW);
+    // Where the triangles go (the autotest's log line): the sky's ring, the ground, the places,
+    // the islands and shadow, your partner, the others, the people, the glows, the water.
+    u32 split[9] = {};
+    int splitAt = 0;
+    u32 splitFrom = app.stats.tris;
+    auto mark = [&]() {
+        if (splitAt < 9) split[splitAt++] = app.stats.tris - splitFrom;
+        splitFrom = app.stats.tris;
+    };
+    split[splitAt++] = app.stats.tris;  // (everything before: the horizon and its haze)
     // The ground round the camera: in view, at a level by distance.
     const int t = v.tiles();
     const float ts = v.tileSize(), reachM = kValleyFar * 0.85f;
     const int cx = static_cast<int>((view.eye.x - v.x0) / ts), cy = static_cast<int>((view.eye.y - v.y0) / ts);
     const int reach = static_cast<int>(reachM / ts) + 1;
     int budget = kValleyBuilds;
+    // First which tiles are in view and at what level they're ready; then each drawn, with its
+    // skirts only where a neighbour in view is at another level (there'd be a crack there).
+    struct Pick {
+        int tile;
+        const ValleyGpu* g;
+    };
+    static std::vector<Pick> picks;
+    static std::vector<s8> drawnLod;  // this frame's level per tile (-1: not drawn)
+    if (drawnLod.size() != std::size_t(t) * t) drawnLod.assign(std::size_t(t) * t, -1);
+    picks.clear();
     for (int ty = cy - reach; ty <= cy + reach; ++ty)
         for (int tx = cx - reach; tx <= cx + reach; ++tx) {
             if (tx < 0 || ty < 0 || tx >= t || ty >= t) continue;
@@ -3285,30 +3337,68 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
                             std::fmax(lo.z, std::fmin(view.eye.z, hi.z))};
             const float d = length(near - view.eye);
             if (d > reachM || outsideView(clip, lo, hi)) continue;
-            if (const ValleyGpu* g = valleyTile(v, tx, ty, valleyLodFor(d), budget)) {
-                drawValleyGpu(app, *g);
-                ++g_valleyStats.tiles;
-                g_valleyStats.ground += g->count / 3;
+            if (const ValleyGpu* g = valleyTile(v, tx, ty, tileLod(v, tx, ty, d), budget)) {
+                picks.push_back({ty * t + tx, g});
+                drawnLod[std::size_t(ty) * t + tx] = static_cast<s8>(g->lod);
             }
         }
+    for (const Pick& p : picks) {
+        const int tx = p.tile % t, ty = p.tile / t;
+        bool skirts = false;
+        const int around[4][2] = {{tx - 1, ty}, {tx + 1, ty}, {tx, ty - 1}, {tx, ty + 1}};
+        for (const auto& n : around)
+            if (n[0] >= 0 && n[1] >= 0 && n[0] < t && n[1] < t) {
+                const s8 l = drawnLod[std::size_t(n[1]) * t + n[0]];
+                skirts |= l >= 0 && l != p.g->lod;
+            }
+        drawValleyGpu(app, *p.g, skirts);
+        ++g_valleyStats.tiles;
+        g_valleyStats.ground += (skirts ? p.g->count : p.g->ground) / 3;
+    }
+    for (const Pick& p : picks) drawnLod[std::size_t(p.tile)] = -1;  // (clean for the next frame)
+    mark();
     // The places, near enough to have been built.
     const DayBlend blend = dayBlend(now);
     streamPlaces(v, view.eye);
     drawPlaces(app, v, view, viewM, clip, blend, false);
     bindValleyStatic(projection, viewM, view.tint);
     // The islands (built once), both faces drawn.
+    static std::vector<u32> islandParts;  // where each island's indices start
     if (!g_vextras.count) {
         ValleyMesh m;
         buildValleyExtras(v, m);
         uploadValley(g_vextras, m);
+        islandParts = m.parts;
     }
+    mark();
     C3D_CullFace(GPU_CULL_NONE);
-    drawValleyGpu(app, g_vextras);
+    if (g_vextras.count) {  // each island only when it's in view (they were a thousand triangles, always)
+        C3D_BufInfo* buf = C3D_GetBufInfo();
+        BufInfo_Init(buf);
+        BufInfo_Add(buf, g_vextras.pos, sizeof(Vec3), 1, 0x0);
+        BufInfo_Add(buf, g_vextras.col, 4, 1, 0x1);
+        BufInfo_Add(buf, g_vextras.col, 4, 1, 0x2);
+        for (std::size_t k = 0; k + 1 < islandParts.size() && k < v.islands.size(); ++k) {
+            const ValleyIsland& isl = v.islands[k];
+            const float r = isl.radius * 1.3f;
+            const Vec3 lo{isl.at.x - r, isl.at.y - r, isl.at.z - isl.radius * 1.9f}, hi{isl.at.x + r, isl.at.y + r, isl.at.z + 12.0f};
+            if (outsideView(clip, lo, hi) || std::hypot(isl.at.x - view.eye.x, isl.at.y - view.eye.y) > kValleyFar) continue;
+            const int count = static_cast<int>(islandParts[k + 1] - islandParts[k]);
+            C3D_DrawElements(GPU_TRIANGLES, count, C3D_UNSIGNED_SHORT, g_vextras.idx + islandParts[k]);
+            app.stats.tris += count / 3;
+            app.stats.draws += 1;
+        }
+    }
     drawValleyShadow(app, v, view);
+    mark();
     // The dragon.
     Vec3 collar, hand;
     bool collarSet = false, handSet = false;
-    const int partnerLod = length(view.at - view.eye) > 6.0f ? 1 : 0;  // the lighter model a little way off
+    static int partnerLod = 0;  // the lighter model a little way off (a band, so it doesn't flip at the line)
+    {
+        const float d = length(view.at - view.eye);
+        partnerLod = d > 7.0f ? 1 : d < 5.0f ? 0 : partnerLod;
+    }
     if (view.dragon && pose(app, *view.dragon, view.actor, now, partnerLod, g_posed)) {
         bindDragons(projection);
         const float plain[3] = {1, 1, 1};
@@ -3344,11 +3434,14 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
                           g_posed.cache && isKind(g_posed.cache->look) ? kindOfSlot(g_posed.cache->look) : -1,
                           seat.r[0].w, seat.r[1].w, seat.r[2].w, view.at.x, view.at.y, view.at.z);
     }
+    mark();
     // A dragon out on the Wanderings, if it's near (D69), and the star dragon in the sky.
     auto another = [&](const Dragon* d, const DenActor* actor, Vec3 at, float heading, float reach, float bank, float grow,
                        float pitch = 0.0f) {
-        if (!d || std::hypot(at.x - view.eye.x, at.y - view.eye.y) > reach ||
-            outsideView(clip, at - Vec3{5, 5, 2}, at + Vec3{5, 5, 6}))
+        if (!d) return;
+        const float box = 5.0f * grow * kindSize(*d);  // (its wings' reach, by its size)
+        if (std::hypot(at.x - view.eye.x, at.y - view.eye.y) > reach ||
+            outsideView(clip, at - Vec3{box, box, box * 0.5f}, at + Vec3{box, box, box * 1.2f}))
             return;
         static Posed posed;
         const int lod = length(at - view.eye) > 30.0f ? 1 : 0;
@@ -3372,6 +3465,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         const ValleyDragon& o = view.others[i];
         another(o.dragon, o.actor, o.at, o.heading, 220.0f, -o.roll, o.scale, o.pitch);
     }
+    mark();
     // The people about (you on foot, the villagers), near enough to see.
     if (view.peopleCount > 0) {
         bindDragons(projection);
@@ -3381,7 +3475,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
             const PersonView& p = view.people[i];
             if (p.seated) continue;
             const float d = std::hypot(p.at.x - view.eye.x, p.at.y - view.eye.y);
-            if ((i > 0 && d > 55.0f) || outsideView(clip, p.at - Vec3{0.8f, 0.8f, 0}, p.at + Vec3{0.8f, 0.8f, 1.8f})) continue;
+            if ((i > 0 && d > 85.0f) || outsideView(clip, p.at - Vec3{0.9f, 0.9f, 0}, p.at + Vec3{0.9f, 0.9f, 2.0f})) continue;
             drawPerson(app, p, viewM, nullptr, i == 0 ? &hand : nullptr);
             if (i == 0) handSet = true;
         }
@@ -3400,11 +3494,13 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         lightDragon(dragonLight(blend), plain);
         drawStall(app, v, view, viewM);
     }
+    mark();
     // The places' glows: windows and lamps at night, the festival's lit lanterns; the finds' glints.
     bindValleyStatic(projection, viewM, view.tint);
     drawPlaces(app, v, view, viewM, clip, blend, true);
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, 1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f, 1.0f / 255.0f);
     drawGlints(app, view, viewM);
+    mark();
     // The water and the waterfall: see-through, over everything, writing no depth.
     // (rebuilt round the camera as it moves on: past the ground's edge the haze has the water)
     static Vec2 waterAt{1e9f, 1e9f};
@@ -3422,6 +3518,10 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
     C3D_FogGasMode(GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
     end3D();
+    mark();
+    if (autotest::shooting())
+        autotest::log("valley split: sky %u ground %u places %u isles+shadow %u partner %u others %u people+stall %u glows %u water %u",
+                      split[0], split[1], split[2], split[3], split[4], split[5], split[6], split[7], split[8]);
     if (autotest::shooting())
         autotest::log("valley tris %u: ground %d (%d tiles, %d built) places %d, the rest %d; sky dragon %s (%.0f %.0f %.0f) eye (%.0f %.0f %.0f)",
                       app.stats.tris, g_valleyStats.ground, g_valleyStats.tiles, g_valleyStats.built, g_valleyStats.places,

@@ -78,6 +78,8 @@ struct ValleyMesh {
     std::vector<Vec3> pos;
     std::vector<u8> color;  // 4 per vertex
     std::vector<u16> idx;
+    std::size_t skirtFrom = 0;  // a tile's skirts are its last indices, from here (drawn only beside another level)
+    std::vector<u32> parts;     // the islands: where each one's indices start (and, last, the end)
     int triangles() const { return static_cast<int>(idx.size() / 3); }
     void clear();
 };

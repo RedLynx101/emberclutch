@@ -14,6 +14,7 @@
 //   shotin <s> <name>           a shot s seconds into the next command (mid-stroke, mid-hold)
 //   name <text>                 what the keyboard returns next (no keyboard is shown)
 //   skip <hours>                the dev clock skips ahead
+//   hour <h>                    the dev clock skips ahead to that hour of the day (daylight shots)
 //   overlay <on|off>            the dev budget overlay
 //   travel <place>              in the valley: go to a place (core/valley ValleyPlace)
 //   light                       every festival lantern lit

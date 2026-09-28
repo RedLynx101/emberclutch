@@ -223,8 +223,8 @@ inline constexpr const char* kCancel = "Cancel";
 inline constexpr const char* kSayHello = "Say hello to %s!";
 inline constexpr const char* kNoBed = "Ready to hatch, but all three beds are taken: send one to the Sanctuary (its profile).";
 inline constexpr const char* kBackToSanctuary = "Back to a full den: resting in the Sanctuary.";
-inline constexpr const char* kSwitchHint = "X: map     < > : switch";
-inline constexpr const char* kMapHint = "X: map";
+inline constexpr const char* kSwitchHint = "X: outing     < > : switch";
+inline constexpr const char* kMapHint = "X: outing";
 // The world map, the Sanctuary and the Cold Vault (Alpha 2)
 inline constexpr const char* kNotOpenYet = "Not open yet.";
 inline constexpr const char* kGo = "Go";

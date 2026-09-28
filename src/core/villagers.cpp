@@ -10,8 +10,8 @@
 namespace ec {
 namespace {
 
-// Voices (Noah, 2026-09-28): 0 is the alphabet made from his own voice, for the men; 1 his second
-// recording, for the women and the child (romfs/voice/v1, v2).
+// Voices (Noah, 2026-09-28): 0 is the alphabet made from his own voice, for the men; 1 the
+// recording he sent for the women and the child (romfs/voice/v1, v2).
 const VillagerInfo kVillagers_[kVillagers] = {
     {"keeper", "Old Rowan", "the valley's keeper", kPlaceKeeper, {2.5f, 6.0f}, 0.0f, 0, 1.2f},
     {"market", "Maple", "keeps the Market", kPlaceMarket, {3.0f, -2.0f}, 0.3f, 1, 1.45f},

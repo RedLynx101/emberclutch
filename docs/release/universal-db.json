@@ -1,0 +1,18 @@
+{
+  "github": "RedLynx101/emberclutch",
+  "title": "Emberclutch",
+  "author": "Noah Hicks",
+  "description": "Raise, train and ride dragons in a cozy valley",
+  "long_description": "A dragon life game for the 3DS: hatch an egg, care for your hatchling with the stylus and watch it grow over real days. Walk Skyreach Valley together, ride your grown dragon through the sky, battle in the league, shine in beauty shows, fish, breed and fill your Dragondex. Nothing ever dies: a neglected dragon only sulks until you make up.",
+  "license": "MIT (code), CC BY-SA 4.0 (art); music under its own terms",
+  "systems": ["3DS"],
+  "categories": ["game"],
+  "icon": "https://raw.githubusercontent.com/RedLynx101/emberclutch/main/assets/icon.png",
+  "image": "https://raw.githubusercontent.com/RedLynx101/emberclutch/main/docs/release/screenshots/valley.png",
+  "screenshots": [
+    "https://raw.githubusercontent.com/RedLynx101/emberclutch/main/docs/release/screenshots/den.png",
+    "https://raw.githubusercontent.com/RedLynx101/emberclutch/main/docs/release/screenshots/battle.png",
+    "https://raw.githubusercontent.com/RedLynx101/emberclutch/main/docs/release/screenshots/show.png",
+    "https://raw.githubusercontent.com/RedLynx101/emberclutch/main/docs/release/screenshots/flying.png"
+  ]
+}

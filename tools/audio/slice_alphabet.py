@@ -5,8 +5,8 @@ way of a cozy life-sim) into one short clip a letter: romfs/voice/v<N>/<letter>.
   python tools/audio/slice_alphabet.py
 
 Sources: assets/audio/voice/source/voice-alphabet.mp3 (v1: the first, made from Noah's voice; the
-men speak with it) and voice-alphabet-2.m4a (v2: the women's and the child's; Noah's second
-recording, 2026-09-28, in place of the first female voice), the 26 letters A to Z said one at a
+men speak with it) and voice-alphabet-2.m4a (v2: the women's and the child's; the recording Noah
+sent on 2026-09-28 in place of the first female voice), the 26 letters A to Z said one at a
 time (not in git: Noah's recordings). The loudness envelope is
 cut at the quiet between letters, the threshold swept until exactly 26 letters stand out (the
 first voice speaks fast, with little quiet between). Each letter is trimmed, faded, levelled and

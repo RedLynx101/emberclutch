@@ -1,119 +1,88 @@
 # Emberclutch
 
-*Raise, breed and fly with dragons — on your Nintendo 3DS.*
+*Raise, train and ride dragons in a cozy valley — a homebrew game for the Nintendo 3DS.*
 
-![Growth concept: egg to adult](docs/art/concept/growth-sheet.png)
+![Your dragon and you at the den's door in Skyreach Valley](docs/release/screenshots/valley.png)
 
-Emberclutch is an open-source homebrew dragon-raising life sim in the spirit of classic
-pocket pet games. Hatch an egg, care for a super-cute hatchling, watch it grow into a
-majestic adult over about two weeks of real time, train it, enter competitions, breed a
-den full of unique dragons, and ride them anywhere across Skyreach Valley.
+Emberclutch is a free, open-source dragon life game for the 3DS family (it runs on the
+original old 3DS). Hatch an egg, care for a tiny hatchling with the stylus, and watch it grow
+into a grown dragon over about two weeks of real days. Walk it through Skyreach Valley on its
+lead, ride it into the sky when it's grown, and train it into a champion of battles and
+beauty shows. Nothing ever dies: a neglected dragon only sulks until you make up.
 
-Built natively for the 3DS (C++17, libctru, citro3d, citro2d). **The old 3DS is the
-performance floor.**
+## What's in it
 
-> Status: **Foundations done; Alpha 1 (*a living pet*) next.** Design docs, concept art,
-> a portable simulation core with unit tests, processed music, and a themed 2D prototype
-> that runs in the Azahar emulator. See [STATUS](docs/STATUS.md) and the
-> [roadmap](docs/plan/roadmap.md).
+- **Hands-on care.** Feed, pet, brush and bathe your dragon on the touch screen. It has its
+  own needs (Belly, Clean, Play and Love, and Energy that sleep brings back), moods, a
+  personality and a heart-shaped glow that shows how it feels.
+- **Fourteen kinds of dragon** in four colourings each (one of them rare), with stats,
+  manners and traits. Breed pairs at the Nesting Stone for new kinds and surprises.
+- **Skyreach Valley**, an open world of eighteen places: the Market, the Sanctuary, a
+  windmill, an orchard, a grotto behind the falls, floating isles, and more. Walk it with
+  your partner, ride a grown dragon anywhere, find treasures and the day's little finds.
+- **The Lantern Festival**, a first story with the valley's villagers.
+- **Battles:** turn-based duels in the valley, four moves each, elements and stats, the
+  Ember to Starfire league and its finals at Emberpeak Caldera; wild dragons floor by floor
+  in Frostspire Hollow.
+- **Beauty shows** at Moonpetal Glade: themed pageants, accessories and dyes.
+- **Challenges:** Sky Rings races, Fruit Catch and the Lantern Trial, with cups and trophies.
+- **Fishing** at Driftwood Cove, the Wanderings (your dragon walks while you do), a den to
+  decorate, a Dragondex to fill, photos and a real-time day and night.
 
-## Highlights (planned)
-
-- **Heartglow** — every dragon has a heart-shaped ember light that shows its mood.
-- **Five life stages** — Egg → Hatchling → Juvenile → Adolescent → Adult. Growth depends
-  on real days *and* on care, and the dragon grows a little every day.
-- **21 breeds** from 6 elements (Ember, Tide, Gale, Grove, Frost, Lumen) plus Mendelian
-  hybrids, with inherited horns, frills, wings, tails, patterns, colors and rare traits.
-- **A whole den** — keep many dragons and eggs; store extras in the Sanctuary and the Cold
-  Vault.
-- **Forgiving** — nothing dies. Neglected dragons get upset until you make up.
-- **Competitions without riding** — Sky Rings, Fruit Catch, Command Trial, Shine Show,
-  Lantern Trial. **Ride anywhere** in free roam.
-- Touch, optional voice commands, pedometer Wanderings, local-wireless Sky Visits.
-
-## Docs
-
-| Doc | What's in it |
+| | |
 |---|---|
-| [Game design](docs/design/game-design.md) | Pillars, loops, stages, needs, mood, training, competitions, riding, den |
-| [Breeds & genetics](docs/design/breeds-and-genetics.md) | Elements, hybrid table, traits, inheritance rules |
-| [Theme & art direction](docs/design/theme-and-art-direction.md) | Palette, heartglow, shape language, UI, audio |
-| [Architecture](docs/tech/architecture.md) | Layers, rendering budget, asset pipeline, save format |
-| [Screens & flow](docs/design/screens-and-flow.md) | Every screen and how they connect |
-| **[Status](docs/STATUS.md)** | Live state and next actions |
-| [Roadmap](docs/plan/roadmap.md) · [Decisions](docs/plan/decisions.md) | Playable milestones and the decision log |
-| [Content & assets](docs/plan/content-and-assets.md) | Models, animations, scenes, effects, UI, audio, items |
-| [Alpha 1 plan](docs/plan/alpha-1.md) | Current work plan and definition of done |
-| [Suno music brief](docs/audio/suno-music-brief.md) | Prompts and settings for the soundtrack |
-| [Equine line](docs/future/equine-line.md) | Future horses, pegasi, unicorns and alicorns |
+| ![The den](docs/release/screenshots/den.png) | ![A battle](docs/release/screenshots/battle.png) |
+| ![A beauty show](docs/release/screenshots/show.png) | ![Riding over the valley](docs/release/screenshots/flying.png) |
 
-## Building
+## Install
 
-Requirements: [devkitPro](https://devkitpro.org/wiki/Getting_Started) with the `3ds-dev`
-group (MSYS2 on Windows). For the PC unit tests, a desktop g++ (MSYS2 `ucrt64`).
+You need a 3DS with custom firmware (for example [Luma3DS](https://3ds.hacks.guide/)).
 
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\build.ps1   # emberclutch.3dsx + .smdh
-powershell -ExecutionPolicy Bypass -File tools\test.ps1    # core unit tests on the PC
-```
+- **Universal Updater:** search for *Emberclutch* and install it.
+- **FBI (QR code):** open FBI, choose *Remote Install → Scan QR Code*, and scan the code on
+  the [latest release](https://github.com/RedLynx101/emberclutch/releases/latest).
+- **By hand:** download `emberclutch.cia` from the
+  [latest release](https://github.com/RedLynx101/emberclutch/releases/latest), copy it to the
+  SD card and install it with FBI. Or copy `emberclutch.3dsx` to `sdmc:/3ds/` and start it
+  from the Homebrew Launcher.
 
-Or from an MSYS2 shell: `source /etc/profile.d/devkit-env.sh && make`.
+Sound needs the 3DS's DSP firmware (`sdmc:/3ds/dspfirm.cdc`, made by
+[DSP1](https://github.com/zoogie/DSP1)); without it the game runs silently. Your save lives
+in `sdmc:/3ds/emberclutch/` (two copies, so an interrupted save never loses both).
 
-## Running in an emulator
+## Controls
 
-`tools\emu.ps1` builds and opens the game in [Azahar](https://azahar-emu.org/)
-(`winget install AzaharEmu.Azahar`). The mouse is the stylus; R = `W`, X = `Z`,
-A = `A`, START = `M`. Add `-ResetSave` to start fresh. The emulator is fine for checking
-logic and UI, but frame rate must be judged on a real old 3DS.
+| | |
+|---|---|
+| **Stylus** | Care for your dragon (pet, brush, feed, bathe, play), menus, the map |
+| **Circle pad** | Walk; in the den, look around |
+| **A** | What's near (talk, go in, light a lantern, ride); flap when flying |
+| **B** | Run; dive when flying |
+| **L / R** | Turn the view; bank when flying |
+| **X** | The Journal in the valley, the outing in the den |
+| **Y** | A screenshot of both screens (to `sdmc:/3ds/emberclutch/screenshots/`) |
+| **START** | The system menu: settings, the Dragondex, save and quit |
 
-## Running on a 3DS (over Wi-Fi)
+The first steps of the game show short tips as things come up; the settings can show them
+again.
 
-- **Quick test:** open the Homebrew Launcher, press **Y** (netloader), then run
-  `tools\run.ps1 [-Address <3ds-ip>]`.
-- **Install to the SD card:** start **ftpd** on the 3DS, then run
-  `tools\deploy_ftp.ps1 -FtpHost <3ds-ip>`. It uploads `emberclutch.3dsx` to
-  `sdmc:/3ds/emberclutch/`, to run from the Homebrew Launcher; with `-Cia` also every CIA in
-  `build/cia-test/` to `sdmc:/cias/`. Each file's size is checked on the 3DS.
-- **Install on the HOME Menu (CIA):** `tools\package_cia.ps1` builds `emberclutch.cia`
-  (icon, banner and sound included; makerom and bannertool are taken from the 3D-Claw
-  project next to this one, or PATH). Copy it to the SD card and install it with **FBI**
-  (Luma3DS). The animated 3D banner is the default (`-Banner2D` packs the flat one; build the
-  3D one with `tools\make_banner.ps1`, which needs pycgfx in `build\tools\pycgfx`).
-- **Checked before it goes:** `py -3.12 tools\check_3ds.py <files>` checks a CIA, .3dsx,
-  banner, SMDH, CGFX, glTF or WAV against what the 3DS accepts (hashes, the boot logo, the
-  banner's model and sound format, and more; see the script). The packing and upload scripts
-  run it and stop on a failure.
+## Build it yourself
 
-Controls: Continue or New game (your name, then pick an egg: tap twice), rub the egg warm,
-turn it and listen to it, watch it hatch and name it, then care for the hatchling with the
-tool tray. **START** opens the system menu (settings, save & quit); **SELECT** the dev menu
-in dev builds. **Y** saves a screenshot of both screens anywhere, to
-`sdmc:/3ds/emberclutch/screenshots/` with a line of numbers in its `log.txt`;
-`tools\pull_shots.ps1 -FtpHost <3ds-ip>` copies them off as PNGs. Dev shortcuts: **R+A**
-skips 1 hour, **R+X** skips 1 day.
+See [docs/DEVELOPING.md](docs/DEVELOPING.md): devkitPro with the `3ds-dev` group, then `make`.
+PC unit tests and scripted emulator runs are described there too.
 
-Unattended checks: `tools\autotest.ps1 tests\autotest\tour.txt -ResetSave` plays a scripted
-session in Azahar and saves screenshots of each step to `build/autotest/`.
+## Credits and licences
 
-## Layout
-
-```
-src/core/    portable simulation (no libctru) — genetics, needs, growth, time
-src/app/     3DS app (citro2d prototype for now)
-tests/       PC unit tests for src/core
-tools/       build, test, deploy, audio (make_loop.py), and later Blender/asset scripts
-docs/        design, tech, plans, concept art
-assets/      source assets (icon; music sources are git-ignored)
-romfs/       files packed into the app (processed music, models, textures)
-```
-
-## License
+Made by Noah Hicks, with Claude (Anthropic) writing much of the code and tools. See
+[CREDITS.md](CREDITS.md) for everything else that went into it and
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for the libraries' licences.
 
 - **Code:** [MIT](LICENSE)
 - **Original art and assets:** [CC BY-SA 4.0](assets/LICENSE-ART.md)
-- **Music:** separate terms, see [LICENSE-MUSIC](assets/audio/music/LICENSE-MUSIC.md)
-- **Concept images** in `docs/art/concept/` are AI-generated reference material and
-  are not shipped with the game.
+- **Music and generated sound effects:** their own terms, see
+  [LICENSE-MUSIC](assets/audio/music/LICENSE-MUSIC.md)
+- The concept images in `docs/art/concept/` are AI-generated reference material; they are
+  not part of the game and not offered under these licences.
 
 Emberclutch is a fan-made homebrew project. It is not affiliated with or endorsed by
 Nintendo. "Nintendo 3DS" is a trademark of Nintendo.

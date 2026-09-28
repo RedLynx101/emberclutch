@@ -51,6 +51,8 @@ Heartbeat heartbeatOf(const Dragon& d);
 // Incubation progress 0..1, and how many cracks show (0..3) in the last stretch.
 float eggProgress(const Dragon& d);
 int eggCracks(const Dragon& d);
+// The way an egg is turned about its upright (radians): its own, so its cracks open anywhere.
+float eggYaw(const Dragon& d);
 
 // The egg's colour for each palette slot and each slot's glow (the shader's emissive scale):
 // the shell tinted by its breed, speckles, cracks (invisible until they open, then

@@ -116,6 +116,7 @@ inline constexpr const char* kCall = "Call";
 inline constexpr const char* kHomeX = "Home";
 // Run 19 (D89): the valley's Journal on X, fast travel asked first, home at the den's door, photos.
 inline constexpr const char* kTravelAsk = "Travel to %s?";
+inline constexpr const char* kFindFood = "Found a %s! Into the pouch.";
 inline constexpr const char* kTravelGo = "Go";
 inline constexpr const char* kTravelStay = "Stay";
 inline constexpr const char* kPromptHome = "A: go home";

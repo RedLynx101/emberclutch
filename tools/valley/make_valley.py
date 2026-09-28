@@ -161,11 +161,11 @@ PATHS = [
     [(330, 120), (440, 80), (560, 40)],                                  # the orchard
     [(330, 120), (400, -40), (520, -200), (620, -300), (660, -330)],     # the arena
     [(330, 120), (430, 280), (520, 420), (575, 490), (600, 520)],        # up the hill to the Stone
-    [(330, 120), (320, 260), (280, 420), (190, 540), (250, 620), (210, 670), (230, 720)],  # up to the Vault
+    [(330, 120), (320, 260), (280, 420), (190, 540), (268, 582), (172, 622), (262, 656), (190, 690), (230, 720)],  # up to the Vault, winding up its shoulder
     [(-6, 60), (-140, -130), (-300, -330), (-420, -470)],                # the meadow
     [(-420, -470), (-260, -640), (-80, -790), (60, -880)],               # the trailhead
     [(330, 120), (320, -40), (300, -178)],                               # the lake's jetty
-    [(DEN[0] + 14, DEN[1]), (-575, 140), (CLIFF_X + 70, FALLS_Y + 52)],  # the keeper's lodge
+    [(DEN[0] + 14, DEN[1]), (-560, 110), (-522, 165), (-524, 205), (CLIFF_X + 70, FALLS_Y + 52)],  # the lodge, round the pool
     [(-300, -330), (-160, -520), (60, -600), (200, -562), (300, -522)],  # round the lake's south to the cove
     # 1.0: up the caldera's flank from the arena, through the gap in its rim
     [(660, -330), (727, -272), (787, -219), (840, -173), (CALDERA[0] - 22, CALDERA[1] - 19)],
@@ -196,7 +196,7 @@ def base_height(x, y):
     h = max(h, min(74.0, 14.0 + 64.0 * math.exp(-(d / 110.0) ** 2)))
     # The Vault's snowy shelf, cut into the heights.
     vx, vy = PLACES[P_VAULT][0], PLACES[P_VAULT][1]
-    w = 1.0 - smoothstep(26.0, 60.0, math.hypot(x - vx, y - vy))
+    w = 1.0 - smoothstep(26.0, 190.0, math.hypot(x - vx, y - vy))  # (a gentle shoulder: its trail climbs it, run 19)
     h = h + (152.0 - h) * w
     return h, h0
 
@@ -204,19 +204,81 @@ def base_height(x, y):
 PLACE_BASE = {}
 
 
-def height(x, y):
-    h, h0 = base_height(x, y)
-    # Flattened ground at the places (with a soft rim).
-    for pid, (px, py, fr, fh, _) in PLACES.items():
-        if fr <= 0:
+PATH_GRADE = 0.55      # the steepest a path climbs (about 29 degrees: the walker manages 44)
+PATH_CORE, PATH_EDGE = 3.5, 8.5  # graded fully within this of a path, blended out to this
+FORD = WATER - 0.25    # a path crossing a stream wades it here (the walker wades 0.6 m)
+_PROFILES = None
+
+
+def path_profiles():
+    """Each path's height along it, every 4 m: the land's, smoothed and held to PATH_GRADE."""
+    global _PROFILES
+    if _PROFILES is not None:
+        return _PROFILES
+    out = []
+    for path in PATHS:
+        pts, acc = [], [0.0]
+        for k in range(len(path) - 1):
+            (ax, ay), (bx, by) = path[k], path[k + 1]
+            seg = math.hypot(bx - ax, by - ay)
+            n = max(1, int(seg / 4.0))
+            for i in range(n):
+                t = i / n
+                pts.append((ax + (bx - ax) * t, ay + (by - ay) * t))
+        pts.append(path[-1])
+        for i in range(1, len(pts)):
+            acc.append(acc[-1] + math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]))
+        raw = [land(x, y) for x, y in pts]
+        sm = []
+        for i in range(len(raw)):  # a moving average over about 24 m either way
+            lo, hi = max(0, i - 6), min(len(raw), i + 7)
+            sm.append(sum(raw[lo:hi]) / (hi - lo))
+        for _ in range(3):  # held to the grade, forward and back, the ends kept where they meet their places
+            sm[0], sm[-1] = raw[0], raw[-1]
+            for i in range(1, len(sm)):
+                step = PATH_GRADE * (acc[i] - acc[i - 1])
+                sm[i] = min(max(sm[i], sm[i - 1] - step), sm[i - 1] + step)
+            sm[-1] = raw[-1]
+            for i in range(len(sm) - 2, -1, -1):
+                step = PATH_GRADE * (acc[i + 1] - acc[i])
+                sm[i] = min(max(sm[i], sm[i + 1] - step), sm[i + 1] + step)
+        xs = [q[0] for q in pts]
+        ys = [q[1] for q in pts]
+        out.append((pts, sm, (min(xs) - PATH_EDGE, max(xs) + PATH_EDGE, min(ys) - PATH_EDGE, max(ys) + PATH_EDGE)))
+    _PROFILES = out
+    return out
+
+
+def graded(x, y, h):
+    """The land pulled to the paths' graded profiles within their corridors."""
+    for path, (pts, prof, (x0, x1, y0, y1)) in zip(PATHS, path_profiles()):
+        if x < x0 or x > x1 or y < y0 or y > y1 or poly_near(x, y, path, PATH_EDGE) >= PATH_EDGE:
             continue
-        if fh is None:  # its own ground, flattened
-            if pid not in PLACE_BASE:
-                PLACE_BASE[pid] = base_height(px, py)[0]
-            fh = PLACE_BASE[pid]
-        w = 1.0 - smoothstep(fr * 0.7, fr * 1.25, math.hypot(x - px, y - py))
-        h = h + (fh + 1.0 * (fbm(x / 40.0, y / 40.0, 2, 9) - 0.5) - h) * w
-    h = den_notch(x, y, h, h0)
+        best, at = PATH_EDGE, None
+        for i in range(len(pts) - 1):
+            ax, ay = pts[i]
+            bx, by = pts[i + 1]
+            dx, dy = bx - ax, by - ay
+            L = dx * dx + dy * dy
+            t = 0.0 if L == 0 else max(0.0, min(1.0, ((x - ax) * dx + (y - ay) * dy) / L))
+            d = math.hypot(x - ax - dx * t, y - ay - dy * t)
+            if d < best:
+                best, at = d, prof[i] + (prof[i + 1] - prof[i]) * t
+        if at is not None:
+            w = 1.0 - smoothstep(PATH_CORE, PATH_EDGE, best)
+            h = h + (at - h) * w
+    return h
+
+
+def near_any_path(x, y, pad):
+    for path in PATHS:
+        if poly_near(x, y, path, pad) < pad:
+            return poly_near(x, y, path, pad)
+    return pad + 1.0
+
+
+def height(x, y):
+    h = graded(x, y, land(x, y))
     # The river, its outlet, the brook and the stream on the plateau, cut in.
     dr = min(poly_near(x, y, RIVER, 120.0), poly_near(x, y, OUTLET, 120.0))
     h -= 8.0 * math.exp(-(dr / 12.0) ** 2) + 4.0 * math.exp(-(dr / 60.0) ** 2)
@@ -224,6 +286,11 @@ def height(x, y):
     h -= 7.0 * math.exp(-(db / 6.0) ** 2)
     ds = poly_near(x, y, STREAM, 40.0)
     h -= 3.5 * math.exp(-(ds / 7.0) ** 2) * (1.0 if x < CLIFF_X + 4 else 0.0)
+    # Where a path crosses them: a shallow ford you wade (the mill's bridge keeps its channel below).
+    if h < FORD:
+        dp = near_any_path(x, y, PATH_EDGE)
+        if dp < PATH_EDGE:
+            h = h + (FORD - h) * (1.0 - smoothstep(PATH_CORE, PATH_EDGE, dp))
     # The falls' plunge pool.
     dpool = math.hypot(x - POOL[0], y - POOL[1])
     if dpool < POOL[2] * 1.6:
@@ -236,6 +303,23 @@ def height(x, y):
         h = h + (min(h, bowl) - h) * (1.0 - smoothstep(0.85, 1.3, e))
     h = mill_banks(x, y, h)
     h = grotto_notch(x, y, h)
+    return h
+
+
+def land(x, y):
+    """The land with its places shaped in, before the paths are graded and the water cut."""
+    h, h0 = base_height(x, y)
+    # Flattened ground at the places (with a soft rim).
+    for pid, (px, py, fr, fh, _) in PLACES.items():
+        if fr <= 0:
+            continue
+        if fh is None:  # its own ground, flattened
+            if pid not in PLACE_BASE:
+                PLACE_BASE[pid] = base_height(px, py)[0]
+            fh = PLACE_BASE[pid]
+        w = 1.0 - smoothstep(fr * 0.7, fr * 1.25, math.hypot(x - px, y - py))
+        h = h + (fh + 1.0 * (fbm(x / 40.0, y / 40.0, 2, 9) - 0.5) - h) * w
+    h = den_notch(x, y, h, h0)
     h = caldera(x, y, h)
     h = hollow(x, y, h)
     return h
@@ -361,6 +445,8 @@ def region_colour(x, y, h, slope):
         c = mix(c, rock, smoothstep(0.62, 0.85, slope))
     if h < WATER + 1.8:
         c = SAND if h > WATER - 0.4 else SHALLOW
+        if abs(h - FORD) < 0.12 and near_any_path(x, y, 5.0) < 5.0:
+            c = COBBLE  # a ford's stones under the shallow water
     # Paths, and the village's cobbles.
     for path in PATHS:
         dp = poly_near(x, y, path, 6.0)

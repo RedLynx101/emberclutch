@@ -88,6 +88,8 @@ float eggProgress(const Dragon& d) {
     return p < 0 ? 0 : (p > 1 ? 1 : p);
 }
 
+float eggYaw(const Dragon& d) { return static_cast<float>((d.id * 40503u + 17u) % 360u) * 0.0174533f; }
+
 int eggCracks(const Dragon& d) {
     const float p = eggProgress(d);
     return p >= 0.985f ? 3 : (p >= 0.93f ? 2 : (p >= 0.85f ? 1 : 0));
@@ -131,7 +133,12 @@ void eggPalette(const Dragon& d, float pulse, Rgb out[kPalCount], float glow[kPa
     const Rgb crackDim{static_cast<u8>(crack.r * 0.8f), static_cast<u8>(crack.g * 0.8f),
                        static_cast<u8>(crack.b * 0.8f)};
     const int open = eggCracks(d);
-    const u8 slots[kEggCracks] = {kPalPattern, kPalHorn, kPalMembrane};
+    // Which crack opens first, second and third is the egg's own (run 19: always the same ones);
+    // the renderer turns each egg its own way round too, so they open anywhere on the shell.
+    static const u8 kOrders[6][kEggCracks] = {{kPalPattern, kPalHorn, kPalMembrane}, {kPalPattern, kPalMembrane, kPalHorn},
+                                             {kPalHorn, kPalPattern, kPalMembrane}, {kPalHorn, kPalMembrane, kPalPattern},
+                                             {kPalMembrane, kPalPattern, kPalHorn}, {kPalMembrane, kPalHorn, kPalPattern}};
+    const u8* slots = kOrders[(d.id * 2654435761u >> 16) % 6];
     for (int k = 0; k < kEggCracks; ++k)
         if (k < open) {
             out[slots[k]] = crackDim;

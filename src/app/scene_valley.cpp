@@ -109,6 +109,10 @@ struct ValleyScene {
     int actionExtra = -1;
     vext::Stage stage;
     int travelAsk = -1;  // a pin tapped: its place, until Go or Stay (run 19: travel asks first)
+    // Hopping on or off its back (run 19): seconds in (< 0: not hopping), which way, from and to.
+    float hopT = -1;
+    bool hopOn = true;
+    Vec3 hopFrom, hopTo;
     // A dragon out on the Wanderings (D69): its place on the loop, its clip.
     DenActor wanderActor;
     ClipId wanderClip = ClipId::Count;
@@ -384,7 +388,8 @@ void lookRound(App& app, ValleyScene& s) {
             saveNow(app);
         }
     }
-    // A find within reach (WP7): taken, a chime and what it was.
+    // A find within reach (WP7): taken, a chime and what it was. (A new day scatters the day's finds.)
+    renewFinds(app.game, dayIndex(nowLocal(app)));
     const bool flying = s.mode == Mode::Riding && !s.flight.grounded;
     const int f = findNear(app.game, s.valley, flying ? s.flight.pos : at, flying);
     if (f >= 0) {
@@ -393,6 +398,8 @@ void lookRound(App& app, ValleyScene& s) {
         if (r.egg >= 0) {
             audio::playStinger("place-found");
             showToast(app, str::kFindEgg);
+        } else if (r.food >= 0) {
+            showToastf(app, str::kFindFood, foodInfo(static_cast<Food>(r.food)).name);
         } else if (r.trinket >= 0) {
             showToastf(app, str::kFindTrinket, trinketName(static_cast<Trinket>(r.trinket)));
         } else {
@@ -473,7 +480,9 @@ void animatePeople(App& app, ValleyScene& s) {
     const Person body = playerBody(app.game.world.look);
     ValleyScene::Figure& me = s.youFig;
     const bool riding = s.mode == Mode::Riding || (s.mode == Mode::FreeCam && s.before == Mode::Riding);
-    if (riding) {
+    if (s.hopT >= 0) {
+        // (the hop's own clip: mount or dismount)
+    } else if (riding) {
         const float roll = s.flight.roll;
         playClip(me, roll > 0.3f ? "ride_lean_left" : roll < -0.3f ? "ride_lean_right" : "ride", 1.0f, 0.3f);
     } else if (vext::activeFeature(app) >= 0 && s.stage.youClip) {
@@ -665,6 +674,21 @@ audio::Sfx breathSound(const Dragon& d) {
     return audio::Sfx::BreathLight;                              // Lumen, Stone, Shade
 }
 
+// Where you sit on your grown partner, near enough for the hop (the renderer seats you exactly).
+Vec3 seatOf(const ValleyScene& s, Vec3 feet, float heading) {
+    const float k = kindSize(s.shown);
+    return feet + Vec3{std::sin(heading), -std::cos(heading), 0} * (0.15f * k) + Vec3{0, 0, 1.3f * k};
+}
+
+constexpr float kHopSeconds = 0.55f;
+
+// You along the hop's arc: up and over onto its back, or down off it to its side.
+Vec3 hopAt(const ValleyScene& s) {
+    const float t = clampf(s.hopT / kHopSeconds, 0.0f, 1.0f), e = t * t * (3 - 2 * t);
+    const float lift = std::sin(3.14159265f * t) * (s.hopOn ? 0.9f : 0.6f);
+    return s.hopFrom + (s.hopTo - s.hopFrom) * e + Vec3{0, 0, lift};
+}
+
 // The stage lent to a 1.0 feature: you and your partner as they are; what it sets comes back.
 void lendStage(App& app, ValleyScene& s) {
     vext::Stage& g = s.stage;
@@ -722,6 +746,16 @@ void doAction(App& app, ValleyScene& s) {
             audio::playSfx(breathSound(s.shown));
             break;
         case Action::Ride:
+            if (s.hopT < 0) {  // first the hop up onto its back (the ride starts when it lands)
+                s.hopT = 0;
+                s.hopOn = true;
+                s.hopFrom = s.you.pos;
+                s.hopTo = seatOf(s, s.pal.pos, s.pal.heading);
+                s.you.heading = std::atan2(s.pal.pos.x - s.you.pos.x, -(s.pal.pos.y - s.you.pos.y));
+                playClip(s.youFig, "mount", 1.2f, 0.1f);
+                audio::playSfx(audio::Sfx::HopOn);
+                break;
+            }
             s.mode = Mode::Riding;
             s.flight = Flight{};
             s.flight.pos = s.pal.pos;
@@ -729,7 +763,6 @@ void doAction(App& app, ValleyScene& s) {
             s.flight.walkSpeed = s.natWalk;
             s.flight.runSpeed = clampf(3.0f * s.natRun, s.natWalk * 6.0f, 30.0f);
             s.cam = ChaseCamera{};
-            audio::playSfx(audio::Sfx::Mount);
             if (!(app.game.world.flags & kFlagRode)) {
                 app.game.world.flags |= kFlagRode;
                 campaign::update(app.game);
@@ -774,7 +807,12 @@ void getOff(App& app, ValleyScene& s) {
     s.pal.speed = 0;
     s.wcam = WalkCamera{};
     s.wcam.yaw = s.flight.heading;
-    audio::playSfx(audio::Sfx::Landing, 1.2f, 0.6f);
+    s.hopT = 0;  // down off its back, to its side
+    s.hopOn = false;
+    s.hopFrom = seatOf(s, s.flight.pos, s.flight.heading);
+    s.hopTo = s.you.pos;
+    playClip(s.youFig, "dismount", 1.1f, 0.1f);
+    audio::playSfx(audio::Sfx::HopOff);
     (void)app;
 }
 
@@ -869,6 +907,18 @@ void update(App& app, const Input& in) {
         s.pal.speed = 0;
         s.action = Action::None;
         if (s.stage.youClip) playClip(s.youFig, s.stage.youClip, 1.0f, 0.2f);
+        animatePartner(app, s, false, false, false, 0);
+        return;
+    }
+    if (s.hopT >= 0) {  // mid-hop: you in the air, your dragon holding still for you
+        s.hopT += app.dt;
+        if (s.hopT >= kHopSeconds) {
+            if (s.hopOn) {  // up: now you ride (Ride sees the hop done)
+                s.action = Action::Ride;
+                doAction(app, s);
+            }
+            s.hopT = -1;
+        }
         animatePartner(app, s, false, false, false, 0);
         return;
     }
@@ -1045,10 +1095,10 @@ void drawTop(App& app) {
     view.fog = sky.horizon;
     view.tint = sky.tint;
     view.lanternsLit = app.game.world.lanternsLit;
-    for (int i = 0; i < kFindSpots && view.glintCount < r3d::kMaxGlints; ++i) {  // the finds not yet taken, near
+    for (int i = 0; i < kAllFinds && view.glintCount < r3d::kMaxGlints; ++i) {  // the finds not yet taken, near
         if (findDone(app.game, i)) continue;
-        const Vec3 g = findAt(s.valley, i);
-        if (std::hypot(g.x - view.eye.x, g.y - view.eye.y) < (findSpot(i).fromAir ? 260.0f : 90.0f) ||
+        const Vec3 g = findAt(s.valley, app.game, i);
+        if (std::hypot(g.x - view.eye.x, g.y - view.eye.y) < (i < kFindSpots && findSpot(i).fromAir ? 260.0f : 90.0f) ||
             std::hypot(g.x - s.you.pos.x, g.y - s.you.pos.y) < 90.0f)
             view.glints[view.glintCount++] = g;
     }
@@ -1067,7 +1117,7 @@ void drawTop(App& app) {
     {
         r3d::PersonView& me = view.people[view.peopleCount++];
         me.form = static_cast<u8>(playerBody(app.game.world.look));
-        me.at = s.you.pos;
+        me.at = s.hopT >= 0 ? hopAt(s) : s.you.pos;
         me.heading = s.you.heading;
         me.anim = &s.youFig.anim;
         playerPalette(app.game.world.look, me.pal);

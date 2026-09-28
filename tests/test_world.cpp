@@ -278,6 +278,23 @@ TEST(finds_and_the_fog) {
     static SaveData back;
     CHECK(n > 0 && decodeSave(buf.data(), n, back, nullptr) == LoadResult::Ok);
     CHECK(back.world.finds == s.world.finds && explored(back, cx, cy) && !explored(back, 0, 0));
+    // The day's little finds (run 19): scattered on dry, gentle ground, taken once, back the next day
+    // in new spots; the treasures stay found.
+    CHECK(renewFinds(s, 500) && !renewFinds(s, 500));
+    const u32 treasures = s.world.finds & ((1u << kFindSpots) - 1);
+    Vec3 first[kDailyFinds];
+    for (int k = 0; k < kDailyFinds; ++k) {
+        const int i = kFindSpots + k;
+        first[k] = findAt(v, s, i);
+        CHECK(!findDone(s, i) && first[k].z - 0.6f > v.water + 0.5f);
+        CHECK(findNear(s, v, first[k], false) == i && findNear(s, v, first[k], true) != i);
+        const u32 gleam = s.gleam;
+        const FindReward r = takeFind(s, i, 0, rng);
+        CHECK(findDone(s, i) && (r.gleam > 0 || r.food >= 0 || r.trinket >= 0) && (r.gleam == 0 || s.gleam == gleam + r.gleam));
+    }
+    CHECK(renewFinds(s, 501));
+    CHECK((s.world.finds & ((1u << kFindSpots) - 1)) == treasures && !findDone(s, kFindSpots));
+    CHECK(length(findAt(v, s, kFindSpots) - first[0]) > 1.0f);  // somewhere new
 }
 
 void runWorldTests() {

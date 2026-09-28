@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "core/care.hpp"
 #include "core/den_roster.hpp"
 #include "core/genetics.hpp"
 #include "core/kinds.hpp"
@@ -49,13 +50,66 @@ Vec3 findAt(const Valley& v, int i) {
     return {f.at.x, f.at.y, std::fmax(v.heightAt(f.at.x, f.at.y), v.water) + 0.6f};
 }
 
-bool findDone(const SaveData& s, int i) { return i >= 0 && i < kFindSpots && ((s.world.finds >> i) & 1u); }
+namespace {
+
+// The day's finds' spots: open, dry, gentle ground within the valley's floor, away from the places'
+// middles, fixed by the day and the save's seed (cached: the same valley asks every frame).
+struct DailySpots {
+    const Valley* valley = nullptr;
+    s32 day = 0;
+    u32 seed = 0;
+    Vec3 at[kDailyFinds];
+};
+
+const DailySpots& dailySpots(const Valley& v, const SaveData& s) {
+    static DailySpots cache;
+    const s32 day = s.progress.findsDay;
+    if (cache.valley == &v && cache.day == day && cache.seed == s.progress.findsSeed) return cache;
+    cache.valley = &v;
+    cache.day = day;
+    cache.seed = s.progress.findsSeed;
+    Rng rng((static_cast<std::uint64_t>(static_cast<u32>(day)) << 32 | s.progress.findsSeed) * 0x9E3779B97F4A7C15ull + 7);
+    const float half = v.size() * 0.5f, cx = v.x0 + half, cy = v.y0 + half;
+    for (int k = 0; k < kDailyFinds; ++k) {
+        Vec3 pick{cx, cy, v.heightAt(cx, cy) + 0.6f};
+        for (int tries = 0; tries < 40; ++tries) {
+            const float a = rng.below(36000) * (6.2831853f / 36000.0f), r = half * 0.62f * std::sqrt(rng.below(10000) / 10000.0f);
+            const float x = cx + std::cos(a) * r, y = cy + std::sin(a) * r, h = v.heightAt(x, y);
+            if (h < v.water + 0.6f || v.normalAt(x, y).z < 0.9f) continue;
+            bool clear = true;
+            for (const ValleyPlaceInfo& p : v.places) clear &= std::hypot(x - p.at.x, y - p.at.y) > 22.0f;
+            if (!clear) continue;
+            pick = {x, y, h + 0.6f};
+            break;
+        }
+        cache.at[k] = pick;
+    }
+    return cache;
+}
+
+}  // namespace
+
+Vec3 findAt(const Valley& v, const SaveData& s, int i) {
+    if (i >= kFindSpots && i < kAllFinds) return dailySpots(v, s).at[i - kFindSpots];
+    return findAt(v, i);
+}
+
+bool renewFinds(SaveData& s, s32 today) {
+    if (s.progress.findsDay == today) return false;
+    s.progress.findsDay = today;
+    if (s.progress.findsSeed == 0) s.progress.findsSeed = s.nextId * 2654435761u + 12345u;  // (the save's own)
+    s.world.finds &= (1u << kFindSpots) - 1;  // the day's finds back; the treasures stay found
+    return true;
+}
+
+bool findDone(const SaveData& s, int i) { return i >= 0 && i < kAllFinds && ((s.world.finds >> i) & 1u); }
 
 int findNear(const SaveData& s, const Valley& v, Vec3 at, bool flying) {
     const float reach = flying ? 9.0f : 4.0f;
-    for (int i = 0; i < kFindSpots; ++i) {
+    for (int i = 0; i < kAllFinds; ++i) {
         if (findDone(s, i)) continue;
-        const Vec3 p = findAt(v, i);
+        if (i >= kFindSpots && flying) continue;  // (the day's little finds are for walking to)
+        const Vec3 p = findAt(v, s, i);
         if (length(p - at) < reach) return i;
     }
     return -1;
@@ -63,6 +117,21 @@ int findNear(const SaveData& s, const Valley& v, Vec3 at, bool flying) {
 
 FindReward takeFind(SaveData& s, int i, s64 now, Rng& rng) {
     FindReward r;
+    if (i >= kFindSpots && i < kAllFinds && !findDone(s, i)) {  // a day's little find
+        s.world.finds |= 1u << i;
+        const u32 roll = rng.below(100);
+        if (roll < 55) {
+            r.gleam = static_cast<u16>(8 + rng.below(18));
+            s.gleam += r.gleam;
+        } else if (roll < 85) {  // a treat: bread, a drumstick, candy or a cookie
+            r.food = static_cast<s8>(static_cast<int>(Food::HearthBread) + static_cast<int>(rng.below(4)));
+            if (s.pouch[r.food] < 999) ++s.pouch[r.food];
+        } else {
+            r.trinket = static_cast<s8>(rng.below(kTrinkets));
+            if (s.hoard[r.trinket] < 60000) ++s.hoard[r.trinket];
+        }
+        return r;
+    }
     if (i < 0 || i >= kFindSpots || findDone(s, i)) return r;
     const FindSpot& f = kSpots[i];
     s.world.finds |= 1u << i;

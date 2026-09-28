@@ -1324,6 +1324,7 @@ void submitEgg(App& app, const EggForm& egg, const Dragon& d, const EggMotion& m
     C3D_Mtx model, modelView;
     Mtx_Identity(&model);
     Mtx_Translate(&model, at.x, at.y, at.z - groundOffset(egg.model, skin), true);
+    Mtx_RotateZ(&model, eggYaw(d), true);  // (its own way round: its cracks anywhere on the shell, run 19)
     Mtx_Multiply(&modelView, &view, &model);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &modelView);
     eggColours(app, d, 1.0f + 1.4f * motion.glowBoost);  // the hatching turns its light up

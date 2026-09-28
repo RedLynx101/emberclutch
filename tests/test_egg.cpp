@@ -142,8 +142,22 @@ TEST(egg_cracks_open_on_schedule) {
     CHECK(glow[kPalPattern] > 0 && glow[kPalPattern] < 0.5f && glow[kPalMembrane] > 0);
     eggPalette(anEgg(0.5f, 60), 1.0f, pal, glow);
     eggPalette(anEgg(0.95f, 100), 1.0f, pal, glow);
-    CHECK(glow[kPalPattern] > 0 && glow[kPalHorn] > 0 && glow[kPalMembrane] == 0);
-    CHECK(pal[kPalPattern].r != pal[kPalBase].r || pal[kPalPattern].b != pal[kPalBase].b);
+    int opened = 0;  // two of the three cracks open (which two is the egg's own, run 19)
+    bool lit = false;
+    for (u8 slot : {kPalPattern, kPalHorn, kPalMembrane}) {
+        opened += glow[slot] > 0;
+        lit |= glow[slot] > 0 && (pal[slot].r != pal[kPalBase].r || pal[slot].b != pal[kPalBase].b);
+    }
+    CHECK(opened == 2 && lit);
+    int orders[3] = {};  // over many eggs, each crack is sometimes the first to open
+    for (u32 id = 1; id <= 60; ++id) {
+        Dragon e = anEgg(0.95f, 100);
+        e.id = id;
+        eggPalette(e, 1.0f, pal, glow);
+        orders[0] += glow[kPalPattern] > 0, orders[1] += glow[kPalHorn] > 0, orders[2] += glow[kPalMembrane] > 0;
+        CHECK(eggYaw(e) >= 0 && eggYaw(e) < 6.3f);
+    }
+    CHECK(orders[0] > 0 && orders[0] < 60 && orders[1] > 0 && orders[1] < 60 && orders[2] > 0 && orders[2] < 60);
     CHECK(glow[kPalGlow] > coolGlow);  // a warm egg glows brighter
     eggPalette(anEgg(0.5f, 0), 1.0f, pal, glow);
     CHECK(glow[kPalGlow] < coolGlow);

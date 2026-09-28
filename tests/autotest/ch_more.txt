@@ -1,0 +1,77 @@
+# 1.0 (workstream C): with a grown partner, fishing at Driftwood Cove (it sits beside you, the
+# catch and its nibble), then Fruit Catch's Ember cup played by itself (the goal, the results'
+# prize and what the Flame cup needs), then the Lantern Trial's Ember cup (its prize; Energy
+# spent: the third run's picker says it's too tired).
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+key X
+wait 4
+travel 16
+wait 3
+energy 100
+cove 1
+autoplay on
+wait 1.2
+shot m00-grown-ready
+wait 5
+shot m01-grown-wait
+wait 5
+shot m02-grown-reel
+wait 5
+shot m03-grown-later
+wait 5
+shot m04-grown-later2
+autoplay off
+wait 8
+key B
+wait 1
+autoplay on
+travel 10
+wait 3
+challenge 0 1
+wait 3
+shot m05-fruit-start
+wait 30
+shot m06-fruit-mid
+wait 28
+shot m07-fruit-results
+wait 2
+shot m08-fruit-results2
+wait 6
+energy 30
+challenge 2 1
+wait 3
+shot m09-lantern
+wait 30
+shot m10-lantern-mid
+wait 30
+shot m11-lantern-late
+wait 12
+shot m12-lantern-results
+wait 2
+shot m13-lantern-results2
+wait 5
+shot m14-picker-tired
+quit

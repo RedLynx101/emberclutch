@@ -31,8 +31,10 @@ CoveSpots coveSpots(const Valley& v) {
     };
     const float shore = shoreAt(0.0f);
     s.fishSpot = {0.0f, shore - 1.3f};
-    s.castTo = {0.6f, shore + 9.5f};
-    s.partner = {-1.8f, shore - 1.9f};
+    // The bobber and your partner follow your spot (with the anchors: fish_spot at the jetty's
+    // end, your partner beside you on its deck, the bobber out past it).
+    s.castTo = {s.fishSpot.x + 0.6f, s.fishSpot.y + 10.8f};
+    s.partner = {s.fishSpot.x - 1.8f, s.fishSpot.y - 0.6f};
     s.fisher = {-5.2f, shore - 3.4f};  // beyond your partner, on your left
     s.fisherFacing = 0.55f;             // looking out over the water, turned a little toward your spot
     static constexpr float kShellX[kShellSpots] = {-18.0f, -10.5f, -5.0f, 9.0f, 16.0f};
@@ -101,14 +103,14 @@ Reel::Step Reel::update(float reel, float dt) {
     if (runFor > 0) {
         runFor -= dt;
     } else if ((runIn -= dt) <= 0) {
-        runFor = (0.6f + 0.8f * unit(rng)) * strength;
-        runIn = 1.6f + 2.4f * unit(rng);
+        runFor = (0.5f + 0.7f * unit(rng)) * (0.7f + 0.3f * strength);
+        runIn = 1.8f + 2.4f * unit(rng);
     }
     const float pull = strength * (running() ? 0.85f : 0.22f);
     // Reeling tightens it; letting up gives line (the drag gives more the tighter it is).
-    tension += (reel * 0.6f + pull - (1.0f - reel) * (0.5f + 0.8f * tension)) * dt;
-    if (reel > 0) progress += reel * (inBand() ? 0.3f : 0.1f) / (0.6f + 0.4f * strength) * dt;
-    if (running()) progress -= 0.07f * strength * dt;
+    tension += (reel * 0.6f + pull - (1.0f - reel) * (0.5f + 1.0f * tension)) * dt;
+    if (reel > 0) progress += reel * (inBand() ? 0.36f : 0.12f) / (0.6f + 0.4f * strength) * dt;
+    if (running()) progress -= 0.05f * strength * dt;
     tension = clampf(tension, 0.0f, 1.0f);
     progress = clampf(progress, 0.0f, 1.0f);
     if (tension >= 1.0f) {

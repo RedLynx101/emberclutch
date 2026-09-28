@@ -106,7 +106,7 @@ TEST(fishing_what_bites) {
 TEST(fishing_the_reel) {
     const float dt = 1.0f / 30.0f;
     int landed = 0, landedBig = 0;
-    float slowest = 0;
+    float slowest = 0, total = 0, slowestBig = 0, totalBig = 0;
     for (u32 seed = 1; seed <= 20; ++seed) {
         Reel r;
         r.start(catchInfo(Catch::RiverFish).strength, seed);
@@ -117,6 +117,7 @@ TEST(fishing_the_reel) {
         }
         landed += r.step == Reel::Step::Caught;
         slowest = std::fmax(slowest, t);
+        total += t;
         Reel big;
         big.start(catchInfo(Catch::BigFish).strength, seed);
         t = 0;
@@ -125,10 +126,16 @@ TEST(fishing_the_reel) {
             t += dt;
         }
         landedBig += big.step == Reel::Step::Caught;
+        slowestBig = std::fmax(slowestBig, t);
+        totalBig += t;
     }
-    std::printf("  a careful reeler lands %d of 20 River Fish (the slowest in %.1f s) and %d of 20 big ones\n", landed, slowest, landedBig);
-    CHECK(landed == 20 && slowest < 25 && slowest > 3);
-    CHECK(landedBig >= 16);
+    std::printf("  a careful reeler lands %d of 20 River Fish (%.1f s on average, the slowest %.1f) and %d of 20 big ones "
+                "(%.1f s, %.1f)\n",
+                landed, total / 20, slowest, landedBig, totalBig / 20, slowestBig);
+    // A River Fish in well under ten seconds, a big one in about a quarter of a minute (D90: cozy,
+    // not a chore).
+    CHECK(landed == 20 && total / 20 < 10 && slowest < 16 && slowest > 3);
+    CHECK(landedBig >= 17 && totalBig / 20 < 18);
     // Flat out: it snaps. Never: it slips away. Letting the line go slack for a while: away too.
     Reel r;
     r.start(1.0f, 3);

@@ -27,6 +27,7 @@
 #include "core/challenge_mesh.hpp"
 #include "core/clock.hpp"
 #include "core/fishing.hpp"
+#include "core/kinds.hpp"
 #include "core/people.hpp"
 #include "core/place_layout.hpp"
 #include "core/trainer.hpp"
@@ -136,7 +137,7 @@ struct Spots {
     const Valley* of = nullptr;
     bool ok = false;
     fishing::CoveSpots local;
-    Vec3 fish, cast, partner, fisher, eye, target;
+    Vec3 fish, cast, partner, fisher;
     float facing = 0, fisherHeading = 0;
     Vec3 shells[fishing::kShellSpots];
 };
@@ -159,9 +160,6 @@ const Spots& spots(const Valley& v) {
     s.cast = {c.x, c.y, v.water};
     s.facing = p->heading;
     s.fisherHeading = p->heading + L.fisherFacing;
-    // Over your right shoulder, a little behind and up, looking out past you to the bobber.
-    s.eye = at({L.fishSpot.x + 2.8f, L.fishSpot.y - 6.0f}, 2.9f);  // (far enough that your partner draws light)
-    s.target = at({L.fishSpot.x - 0.4f, L.fishSpot.y + 5.0f}, 0.2f);
     for (int k = 0; k < fishing::kShellSpots; ++k) s.shells[k] = at(L.shells[k]);
     return s;
 }
@@ -222,6 +220,17 @@ Vec3 tipOf(const State& f, float t) {
 
 // Where the bobber hangs from the tip before a cast.
 Vec3 dangleOf(const State& f, float t) { return tipOf(f, t) - Vec3{0, 0, 0.55f} + forwardOf(f.facing) * (0.05f * std::sin(t * 2.0f)); }
+
+// Your partner's size as drawn (the kind's, smaller while young; 0: out alone), as the challenges'.
+float partnerSize(const vext::Stage& stage) {
+    if (!stage.shown) return 0.0f;
+    const Dragon& d = *stage.shown;
+    const float grown = d.stage == Stage::Adult ? 1.0f : d.stage == Stage::Adolescent ? 0.8f : d.stage == Stage::Juvenile ? 0.6f : 0.45f;
+    return kindSize(d) * grown;
+}
+
+// The ground or the lake's surface, whichever is higher (the camera stays above both).
+float surfaceAt(const Valley& v, float x, float y) { return std::fmax(v.heightAt(x, y), v.water); }
 
 int partnerIndex(const App& app) {
     const SaveData& g = app.game;
@@ -461,15 +470,22 @@ void update(App& app, const Input& in, vext::Stage& stage) {
     // You at the water's edge facing the lake, your partner sitting beside you, the camera over
     // your shoulder.
     f.you = s.fish;
-    f.pal = s.partner;
+    // Your partner sits on your left, a big one further off and a little ahead; the camera stands
+    // over your right shoulder, further back and higher for a big partner (and far enough that
+    // it draws on its light model), looking out past you to the bobber.
+    const float size = partnerSize(stage);
+    const Vec3 fwd = forwardOf(s.facing), right = rightOf(s.facing);
+    f.pal = s.partner - right * (1.4f * std::fmax(0.0f, size - 0.45f)) + fwd * (0.5f * size);
     f.facing = s.facing;
     stage.you = f.you;
     stage.youHeading = f.facing;
     stage.pal = f.pal;
     stage.palHeading = f.facing - 0.35f;  // (turned a little toward you)
     stage.camSet = true;
-    stage.eye = s.eye;
-    stage.target = s.target;
+    stage.eye = s.fish + right * (2.8f + 1.2f * size) - fwd * (5.2f + 3.5f * size);
+    stage.eye.z = surfaceAt(*stage.valley, stage.eye.x, stage.eye.y) + 2.6f + 1.3f * size;
+    stage.target = s.fish - right * (0.4f + 0.6f * size) + fwd * 5.0f;
+    stage.target.z = surfaceAt(*stage.valley, s.fish.x, s.fish.y) + 0.2f + 0.5f * size;
     stage.youClip = "idle";
     if (f.nibbleT >= 0) {  // a nibble of the catch
         f.nibbleT += dt;
@@ -585,7 +601,7 @@ void update(App& app, const Input& in, vext::Stage& stage) {
 
 void drawCoveThings(App& app, const Valley& v, s64 now) {
     const Spots& s = spots(v);
-    if (!s.ok || !r3d::ready()) return;
+    if (!s.ok || !r3d::ready() || !g_dayLoaded) return;  // (the day's file is read once you're near: folk())
     r3d::ChallengeProp props[fishing::kShellSpots + 2];
     int n = 0;
     // The day's shells on the wet sand (near enough to see).

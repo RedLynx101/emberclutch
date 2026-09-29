@@ -173,7 +173,8 @@ void gpu(const char* what) {
     mark("gpu: %s sent", what);
     write();
     C2D_Flush();
-    C3D_FrameEnd(0);    // (what's drawn so far goes to the GPU, and to the screen)
+    g_target->used = false;  // (half a picture isn't shown: run 21's flashes as a screen began)
+    C3D_FrameEnd(0);    // (what's drawn so far goes to the GPU)
     C3D_FrameBegin(0);  // waits for the GPU to finish all of it
     mark("gpu: %s drawn", what);
     C3D_FrameDrawOn(g_target);  // drawing goes on where it was

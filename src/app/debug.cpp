@@ -63,9 +63,14 @@ void debugDrawOverlay(App& app) {
         colours[1] = okOr(s.tris <= kBudgetTris && app.bottomTris <= kBudgetCloseTris && s.draws <= kBudgetDraws &&
                           s.maxBonesPerDraw <= kBudgetBones);
         // (No application memory: libctru gives the heap all of it at start, so it reads 0 on the 3DS.)
-        std::snprintf(lines[2], sizeof(lines[2]), "LIN %.1fMB  VRAM %.2fMB  romfs %s", linearSpaceFree() / 1048576.0f,
-                      vramSpaceFree() / 1048576.0f, app.romfsOk ? "ok" : "MISSING");
-        colours[2] = okOr(app.romfsOk);
+        const TwoDUse td = twoDLastFrame();  // citro2d's buffer (run 21)
+        const s32 flushed = gpuHeapFlushResult();  // (run 21: does the heap's cache flush hold on the 3DS?)
+        char flush[16] = "ok";
+        if (flushed) std::snprintf(flush, sizeof(flush), "ERR %08lX", static_cast<unsigned long>(flushed));
+        std::snprintf(lines[2], sizeof(lines[2]), "LIN %.1fMB  VRAM %.2fMB  %s  2D %d/%d%s  flush %s", linearSpaceFree() / 1048576.0f,
+                      vramSpaceFree() / 1048576.0f, app.romfsOk ? "romfs ok" : "romfs MISSING", td.used, kTwoDObjects,
+                      td.skipped ? " FULL" : "", flush);
+        colours[2] = okOr(app.romfsOk && td.skipped == 0 && td.used < kTwoDObjects * 9 / 10 && flushed == 0);
         const audio::DebugInfo ai = audio::debugInfo();
         std::snprintf(lines[3], sizeof(lines[3]), "AUDIO %s  %s  L%lu S%lu st%d g%.2f",
                       audio::ok() ? "ok" : "OFF (no DSP fw?)", audio::currentMusic()[0] ? audio::currentMusic() : "-",

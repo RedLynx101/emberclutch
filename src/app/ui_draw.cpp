@@ -1,5 +1,6 @@
 #include "app/ui_draw.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 
@@ -10,7 +11,87 @@
 #include "core/genetics.hpp"
 #include "core/kinds.hpp"
 
+// citro2d 1.7.0's context (its source/internal.h), mirrored to read how full its buffer is.
+struct C2DiVertexMirror {
+    float pos[3];
+    float texcoord[2];
+    float ptcoord[2];
+    u32 color;
+};
+struct C2DiContextMirror {
+    DVLB_s* shader;
+    shaderProgram_s program;
+    C3D_AttrInfo attrInfo;
+    C3D_BufInfo bufInfo;
+    C3D_ProcTex ptBlend;
+    C3D_ProcTex ptCircle;
+    C3D_ProcTexLut ptBlendLut;
+    C3D_ProcTexLut ptCircleLut;
+    u32 sceneW, sceneH;
+    C2DiVertexMirror* vtxBuf;
+    u16* idxBuf;
+    size_t vtxBufSize;
+    size_t vtxBufPos;
+    size_t idxBufSize;
+    size_t idxBufPos;
+    size_t idxBufLastPos;
+    u32 flags;
+};
+extern "C" C2DiContextMirror __C2Di_Context;
+extern "C" u32 __ctru_linear_heap;  // (libctru: where the linear heap starts)
+
 namespace ec {
+
+namespace {
+TwoDUse g_twoDLast;
+int g_twoDSkipped = 0;
+
+// Objects used this frame, or -1 if the context doesn't look like the one mirrored.
+int twoDUsed() {
+    const C2DiContextMirror& c = __C2Di_Context;
+    if (c.vtxBufSize != 4u * kTwoDObjects || c.idxBufSize != 6u * kTwoDObjects) return -1;
+    return static_cast<int>(std::max((c.vtxBufPos + 3) / 4, (c.idxBufPos + 5) / 6));
+}
+}  // namespace
+
+int twoDLeft() {
+    const int used = twoDUsed();
+    return used < 0 ? 1 << 20 : kTwoDObjects - used;
+}
+
+void twoDEndFrame() {
+    g_twoDLast = {twoDUsed(), g_twoDSkipped};
+    g_twoDSkipped = 0;
+}
+
+TwoDUse twoDLastFrame() { return g_twoDLast; }
+
+namespace {
+u32* g_cmdStart = nullptr;  // the frame's command buffer, where it began
+s32 g_heapFlush = 0;
+u64 g_heapFlushAt = 0;
+}  // namespace
+
+void gpuFrameBegun() { GPUCMD_GetBuffer(&g_cmdStart, nullptr, nullptr); }
+
+void gpuFrameFlush() {
+    u32* at = nullptr;
+    u32 offset = 0;
+    GPUCMD_GetBuffer(&at, nullptr, &offset);  // (splits move the start on: this is where the last one began)
+    if (g_cmdStart && at && at + offset > g_cmdStart)
+        GSPGPU_FlushDataCache(g_cmdStart, static_cast<u32>((at + offset - g_cmdStart) * sizeof(u32)));
+    const C2DiContextMirror& c = __C2Di_Context;
+    if (twoDUsed() > 0) {
+        if (c.vtxBufPos) GSPGPU_FlushDataCache(c.vtxBuf, static_cast<u32>(c.vtxBufPos * sizeof(C2DiVertexMirror)));
+        if (c.idxBufPos) GSPGPU_FlushDataCache(c.idxBuf, static_cast<u32>(c.idxBufPos * sizeof(u16)));
+    }
+    if (osGetTime() - g_heapFlushAt >= 1000) {  // (citro3d's own flush, once a second, its result kept)
+        g_heapFlush = GSPGPU_FlushDataCache(reinterpret_cast<void*>(__ctru_linear_heap), envGetLinearHeapSize());
+        g_heapFlushAt = osGetTime();
+    }
+}
+
+s32 gpuHeapFlushResult() { return g_heapFlush; }
 
 u32 withAlpha(u32 c, float a) {
     const u32 alpha = static_cast<u32>((a < 0 ? 0 : (a > 1 ? 1 : a)) * 255.0f);
@@ -114,11 +195,18 @@ void freeFonts() {
     for (CachedText& c : g_cache) c.used = false;
 }
 
+// citro2d draws text without asking for room (its shapes ask): a text that doesn't fit is left out.
+bool roomFor(const C2D_Text& t) {
+    if (static_cast<int>(t.end - t.begin) + 4 <= twoDLeft()) return true;
+    ++g_twoDSkipped;
+    return false;
+}
+
 void text(App& app, const char* s, float x, float y, float scale, u32 color, u32 flags, float maxWidth, Face face) {
     perf::Scope timed(perf::Text);
     C2D_Text t;
     const float k = prepare(app, t, s, scale, face, maxWidth);
-    C2D_DrawText(&t, C2D_WithColor | flags, x, y, 0.5f, k, k, color);
+    if (roomFor(t)) C2D_DrawText(&t, C2D_WithColor | flags, x, y, 0.5f, k, k, color);
 }
 
 void textCentered(App& app, const char* s, float cx, float cy, float scale, u32 color, float maxWidth, Face face) {
@@ -127,7 +215,7 @@ void textCentered(App& app, const char* s, float cx, float cy, float scale, u32 
     const float k = prepare(app, t, s, scale, face, maxWidth);
     float h = 0;
     C2D_TextGetDimensions(&t, k, k, nullptr, &h);
-    C2D_DrawText(&t, C2D_WithColor | C2D_AlignCenter, cx, cy - h * 0.46f, 0.5f, k, k, color);  // letters sit a touch high
+    if (roomFor(t)) C2D_DrawText(&t, C2D_WithColor | C2D_AlignCenter, cx, cy - h * 0.46f, 0.5f, k, k, color);  // letters sit a touch high
 }
 
 float textWidth(App& app, const char* s, float scale, Face face) {

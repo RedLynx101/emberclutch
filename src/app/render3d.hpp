@@ -41,6 +41,9 @@ const ShardShape* eggShards();
 // depth buffer stays clear for dragons and 2D overlays always land on top. Call after
 // C2D_Prepare().
 void prepare2D();
+// Everything citro2d takes for granted, whatever drew last (run 21: frames on the 3DS drew their
+// 2D shapes with another draw's settings): before each screen's 2D.
+void reset2D();
 
 // A dragon in the den and the actor animating it (nullptr: stands in its idle pose). An egg
 // sits in the egg nest, moved by its EggMotion (eggs without one are skipped).

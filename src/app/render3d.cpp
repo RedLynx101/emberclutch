@@ -166,6 +166,8 @@ struct Form {
     static constexpr int kMaxTail = 8;
     s8 tail[kMaxTail] = {};              // tail1, tail2 ... (the wind bends them in flight, D84)
     int tailCount = 0;
+    float seatTop = 0;                   // the top of the back at the rider's seat, rest space (riderFrame)
+    bool seatSet = false;
     bool ok = false;
 };
 
@@ -2634,6 +2636,12 @@ std::vector<u8> g_tileLod;  // each tile's level last drawn (the hysteresis in t
 // A tile's level by distance, kept until the distance is 8 m past the line either way (the camera
 // swinging round you moved tiles back and forth across it: the ground and its trees popped).
 float g_lodScale = 1.0f;   // the ground's detail distances, scaled (nearer while views run over budget)
+// The haze drawn in while a view runs over its triangle budget (run 21, Noah: "a fog in the
+// distance that pulls in"): 0 clear .. 1 thick. It eases in and out over a few seconds, and the
+// ground's detail, the places and the islands draw no further than it lets you see, so what
+// drops out has gone into the haze first instead of popping.
+float g_fogPull = 0;
+float g_reachScale = 1.0f;  // draw distances, by the haze
 int g_lastValleyTris = 0;  // the last valley view's triangles
 
 int tileLod(const Valley& v, int tx, int ty, float d) {
@@ -3041,7 +3049,7 @@ void drawPlaces(App& app, const Valley& v, const ValleyView& view, const C3D_Mtx
         const Vec3 lo{p.at.x - r, p.at.y - r, p.at.z + g.low};
         const Vec3 hi{p.at.x + r, p.at.y + r, p.at.z + g.high};
         // (Past 260 m the fog has them: not drawn.)
-        if (outsideView(clip, lo, hi) || std::hypot(view.eye.x - p.at.x, view.eye.y - p.at.y) > 260.0f + g.reach)
+        if (outsideView(clip, lo, hi) || std::hypot(view.eye.x - p.at.x, view.eye.y - p.at.y) > 260.0f * g_reachScale + g.reach)
             continue;
         const bool lit = (view.lanternsLit >> p.id) & 1u;
         const C3D_Mtx frame = placeFrame(p);
@@ -3226,7 +3234,9 @@ void drawLead(App& app, const Valley& v, Vec3 hand, Vec3 collar, Vec3 eye) {
     auto at = [&](float t) {
         t = std::fmin(1.0f, std::fmax(0.0f, t));
         Vec3 p = hand + (collar - hand) * t - Vec3{0, 0, sag * 4.0f * t * (1.0f - t)};
-        p.z = std::fmax(p.z, v.heightAt(p.x, p.y) + 0.05f);
+        // (12 cm clear, run 21: the drawn ground's triangles stand a little off the height samples
+        // between them, and the lead still dipped in at 5)
+        p.z = std::fmax(p.z, v.heightAt(p.x, p.y) + 0.12f);
         return p;
     };
     for (int k = 0; k <= kLeadSegments; ++k) {
@@ -3505,7 +3515,23 @@ bool riderFrame(const Posed& d, const ValleyView& view, const C3D_Mtx& dragonMod
     // The plan's seat: an offset (armature axes) from the bone's head at rest, carried by the
     // bone's pose as the skin is.
     const Vec3 head = inverseAffine(d.form->model.skel.invRest[bone]).translation();
-    const Vec3 seat = transformPoint(d.skin[bone], head + plan.seat * kind.formScale[d.cache->form]);
+    Vec3 rest = head + plan.seat * kind.formScale[d.cache->form];
+    // The seat down on the back itself (run 21: the rider floated over broad backs and narrow
+    // ones alike): the top of the body mesh round the plan's seat, found once per form.
+    Form& form = const_cast<Form&>(*d.form);
+    if (!form.seatSet && form.bodyData && form.bodyData->vertexCount) {
+        const MeshData& m = *form.bodyData;
+        float lo = 1e9f, hi = -1e9f;
+        for (int v = 0; v < m.vertexCount; ++v) lo = std::fmin(lo, m.pos[v].x), hi = std::fmax(hi, m.pos[v].x);
+        const float r = std::fmax(0.02f, (hi - lo) * 0.12f);
+        float top = -1e9f;
+        for (int v = 0; v < m.vertexCount; ++v)
+            if (std::fabs(m.pos[v].x - rest.x) < r && std::fabs(m.pos[v].y - rest.y) < r) top = std::fmax(top, m.pos[v].z);
+        form.seatTop = top > -1e8f ? top : rest.z;
+        form.seatSet = true;
+    }
+    if (form.seatSet) rest.z = form.seatTop;
+    const Vec3 seat = transformPoint(d.skin[bone], rest);
     const Vec3 w = apply(dragonModel, seat);
     const Vec3 s = personSeat(rider);
     Mtx_Identity(&out);
@@ -3513,7 +3539,7 @@ bool riderFrame(const Posed& d, const ValleyView& view, const C3D_Mtx& dragonMod
     Mtx_RotateZ(&out, view.heading, true);
     Mtx_RotateX(&out, view.pitch, true);
     Mtx_RotateY(&out, -view.roll, true);
-    Mtx_Translate(&out, -s.x, -s.y, -s.z + 0.07f, true);  // a little high: the legs clear a broad back
+    Mtx_Translate(&out, -s.x, -s.y, -s.z + 0.02f, true);  // (on the skin: a hair above it)
     return true;
 }
 
@@ -3653,11 +3679,17 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     ++g_valleyFrame;
     g_valleyStats = {};
     for (bool& set : g_otherHeadSet) set = false;  // (1.0 battles, workstream B)
-    // The ground's detail follows the budget: while a view runs over ~9,600 triangles (the Market, a
-    // battle there) its detail distances come nearer, a little a frame (to 72%), and go back out
-    // under 8,600 (the tiles' own band keeps them from flickering between levels).
-    if (g_lastValleyTris > 9600) g_lodScale = std::fmax(0.72f, g_lodScale - 0.01f);
-    else if (g_lastValleyTris < 8600) g_lodScale = std::fmin(1.0f, g_lodScale + 0.01f);
+    g_mouthSet[0] = false;  // (the partner's, set when it's drawn: a lantern's breath)
+    // The haze and the budget: over ~8,200 triangles (the Market, a battle there) it draws in, all
+    // the way by 11,200; a little quicker in than out. The ground's detail comes nearer with it
+    // (to 72%) and everything draws only as far as the haze lets you see.
+    {
+        const float want = std::fmin(1.0f, std::fmax(0.0f, (g_lastValleyTris - 8200.0f) / 3000.0f));
+        const float rate = (want > g_fogPull ? 0.35f : 0.18f) * app.dt;
+        g_fogPull += std::fmin(rate, std::fmax(-rate, want - g_fogPull));
+        g_lodScale = 1.0f - 0.28f * g_fogPull;
+        g_reachScale = 1.0f - 0.4f * g_fogPull;
+    }
     struct Count {
         App& app;
         int before;
@@ -3672,11 +3704,16 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     g_denViewSet = true;
     Mtx_Multiply(&clip, &projection, &viewM);
     static int fogFor = -1;
-    if (!g_fogOk || fogFor != g_groundLook) {  // fog: clear to ~200 m, a third by the ground's edge (340 m): the far haze takes over there
-        // (the faceted looks: lighter, so the facets and far woods read crisply)
-        FogLut_Exp(&g_fogLut, g_groundLook == 0 ? 1.0f / 450.0f : 1.0f / 700.0f, 4.0f, kValleyNear, kValleyFar);
+    static float fogDensity = 0;
+    // Fog: clear to ~200 m, a third by the ground's edge (340 m): the far haze takes over there
+    // (the faceted looks: lighter, so the facets and far woods read crisply). Thicker as the haze
+    // draws in (to 2.6 times): its table made again when it has moved on 3%.
+    const float density = (g_groundLook == 0 ? 1.0f / 450.0f : 1.0f / 700.0f) * (1.0f + 1.6f * g_fogPull);
+    if (!g_fogOk || fogFor != g_groundLook || std::fabs(density - fogDensity) > density * 0.03f) {
+        FogLut_Exp(&g_fogLut, density, 4.0f, kValleyNear, kValleyFar);
         g_fogOk = true;
         fogFor = g_groundLook;
+        fogDensity = density;
     }
     C2D_Flush();
     C3D_FogGasMode(GPU_FOG, GPU_PLAIN_DENSITY, false);
@@ -3767,7 +3804,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     trace::gpu("valley horizon");
     // The ground round the camera: in view, at a level by distance.
     const int t = v.tiles();
-    const float ts = v.tileSize(), reachM = kValleyFar * 0.85f;
+    const float ts = v.tileSize(), reachM = kValleyFar * 0.85f * g_reachScale;  // (the haze's reach)
     const int cx = static_cast<int>((view.eye.x - v.x0) / ts), cy = static_cast<int>((view.eye.y - v.y0) / ts);
     const int reach = static_cast<int>(reachM / ts) + 1;
     int budget = kValleyBuilds;
@@ -3837,7 +3874,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
             const ValleyIsland& isl = v.islands[k];
             const float r = isl.radius * 1.3f;
             const Vec3 lo{isl.at.x - r, isl.at.y - r, isl.at.z - isl.radius * 1.9f}, hi{isl.at.x + r, isl.at.y + r, isl.at.z + 12.0f};
-            if (outsideView(clip, lo, hi) || std::hypot(isl.at.x - view.eye.x, isl.at.y - view.eye.y) > kValleyFar) continue;
+            if (outsideView(clip, lo, hi) || std::hypot(isl.at.x - view.eye.x, isl.at.y - view.eye.y) > kValleyFar * g_reachScale) continue;
             const int count = static_cast<int>(islandParts[k + 1] - islandParts[k]);
             C3D_DrawElements(GPU_TRIANGLES, count, C3D_UNSIGNED_SHORT, g_vextras.idx + islandParts[k]);
             app.stats.tris += count / 3;
@@ -3878,6 +3915,9 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
             g_heads[0] = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
             g_headSet[0] = true;
         }
+        Vec3 mouth;  // (a lantern breathed alight starts here: run 21)
+        g_mouthSet[0] = mouthLocal(g_posed, mouth);
+        if (g_mouthSet[0]) g_mouths[0] = apply(model, mouth);
         if (g_posed.form->headBone >= 0 && g_posed.form->chestBone >= 0) {  // the lead's collar: low on the neck
             const Vec3 head = g_heads[0], chest = apply(model, g_posed.poseMat[g_posed.form->chestBone].translation());
             collar = chest + (head - chest) * 0.4f;
@@ -4151,6 +4191,15 @@ void drawChallengeProps(App& app, const ChallengeProp* props, int count, Rgb fog
         drawMesh(app, *g, identity);
     }
     C3D_FogGasMode(GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
+    end3D();
+}
+
+void reset2D() {
+    C2D_Flush();
+    C3D_FogGasMode(GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
+    C3D_AlphaTest(false, GPU_ALWAYS, 0);
+    C3D_StencilTest(false, GPU_ALWAYS, 0, 0xFF, 0);
+    C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
     end3D();
 }
 

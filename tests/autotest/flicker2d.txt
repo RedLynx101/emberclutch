@@ -1,0 +1,52 @@
+# Run 21 take 3: some frames drop every citro2d solid shape (the map's fog, the panels, the pins)
+# while text and images stay. Into the village by travel with the overlay on, then a burst of
+# shots while the view turns.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+valley
+hour 21
+wait 5
+travel 1
+wait 4
+shot f00
+keyhold L 0.4
+shot f01
+shot f02
+shot f03
+keyhold L 0.4
+shot f04
+shot f05
+shot f06
+keyhold L 0.4
+shot f07
+shot f08
+shot f09
+keyhold L 0.4
+shot f10
+shot f11
+shot f12
+keyhold R 1.2
+shot f13
+shot f14
+shot f15
+pad 0 1 1.5
+shot f16
+shot f17
+shot f18
+pad 0 1 1.5
+shot f19
+shot f20
+shot f21
+quit

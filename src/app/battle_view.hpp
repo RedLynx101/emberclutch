@@ -11,6 +11,7 @@
 #include "app/render3d.hpp"
 #include "app/valley_ext.hpp"
 #include "core/battle.hpp"
+#include "core/challenges.hpp"
 #include "core/walker.hpp"
 
 namespace ec::bview {
@@ -58,6 +59,8 @@ void lastCamera(Vec3& eye, Vec3& target);
 void setAutoplay(bool on);
 bool autoplay();
 void setBreathOnly(bool on);  // (scripted runs: both sides breathe every turn, to look at breath)
+// A breath's puffs over the top screen, projected from the last 3D view (a lantern lit, run 21).
+void drawBreath(const challenge::BreathFx& b);
 
 // Staging: a dragon's size (metres-ish; smaller while young), and whether a spot is good ground
 // to stand on (not under the water, not up a slope from `from`).

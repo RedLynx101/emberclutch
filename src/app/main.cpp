@@ -87,7 +87,7 @@ int main() {
     gfxInitDefault();
     const bool romfsMounted = R_SUCCEEDED(romfsInit());
     C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
-    C2D_Init(C2D_DEFAULT_MAX_OBJECTS * 2);
+    C2D_Init(kTwoDObjects);  // (run 21: the busy valley filled 8,192)
     C2D_Prepare();
     r3d::prepare2D();
 
@@ -189,6 +189,7 @@ int main() {
         trace::mark("f%lu frame begin (the GPU's last frame done?)", static_cast<unsigned long>(frame));
         trace::sync();
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+        gpuFrameBegun();
         trace::mark("f%lu frame begun", static_cast<unsigned long>(frame));
         r3d::frameBegun();  // the last frame is drawn: what it read can go now
         autotest::afterFrameBegin();  // last frame's picture is finished now
@@ -220,6 +221,7 @@ int main() {
                 if (paused) dimTopForMenu(app);
             }
             trace::gpu("top scene");
+            r3d::reset2D();
             trace::mark("f%lu top overlays", static_cast<unsigned long>(frame));
             if (!app.photo.snap) {  // the photo's picture has nothing over it
                 drawToast(app);
@@ -237,6 +239,7 @@ int main() {
         C2D_TargetClear(app.bottom, theme::kDenPlum);
         C2D_SceneBegin(app.bottom);
         trace::target(app.bottom);
+        r3d::reset2D();
         {
             perf::Scope timed(perf::Bottom);
             if (paused)
@@ -254,6 +257,8 @@ int main() {
         autotest::beforeFrameEnd();
         screenshot::beforeFrameEnd(app);
         trace::mark("f%lu frame end", static_cast<unsigned long>(frame));
+        twoDEndFrame();
+        gpuFrameFlush();
         C3D_FrameEnd(0);
         if (app.keyboard != KeyboardFor::None) runKeyboard(app);  // between frames: it takes both screens
         if (app.quit) break;

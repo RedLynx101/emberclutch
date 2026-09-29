@@ -18,6 +18,29 @@ u32 fromRgb(Rgb c, u8 a = 255);
 // romfs:/fonts (the system font stands in if they're missing). Each is scaled to the system
 // font's line height, so a text scale means the same size whichever font draws it.
 enum class Face : u8 { Ui, Title };
+
+// citro2d's buffer for a frame, both screens (run 21: a busy valley filled it; its shapes then
+// skip themselves, but its text doesn't check and wrote on past the end, over the GPU's other
+// data: the map's fog and the panels gone, things flickering out, a freeze). An object is a
+// glyph, a rectangle, a circle, a line or an image.
+constexpr int kTwoDObjects = 16383;  // the most whose four vertices each a 16-bit index reaches
+struct TwoDUse {
+    int used = 0;     // objects the last frame drew (-1: citro2d isn't the build mirrored)
+    int skipped = 0;  // texts left out for want of room
+};
+int twoDLeft();          // room left this frame, in objects (a large number if unknown)
+void twoDEndFrame();     // just before C3D_FrameEnd (the buffer empties then)
+TwoDUse twoDLastFrame();
+
+// The frame's GPU data out of the CPU's cache before the GPU reads it (run 21: on the 3DS some
+// busy valley frames drew with stale commands: the map's fog and the panels gone or black in
+// the same frames as things flickered out; the emulator has no cache). citro3d flushes the whole
+// linear heap as the frame ends; the command list and citro2d's buffers are flushed here too,
+// and the heap flush is tried once a second to see whether it holds on the hardware.
+void gpuFrameBegun();    // just after C3D_FrameBegin
+void gpuFrameFlush();    // just before C3D_FrameEnd
+s32 gpuHeapFlushResult();  // the last try's result (0: fine)
+
 void loadFonts();  // after C2D_Init and the first text buffer
 void freeFonts();
 

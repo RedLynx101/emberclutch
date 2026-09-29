@@ -483,9 +483,23 @@ void drawEffects(const State& s) {
             default: C2D_DrawCircleSolid(x, y, 0, sz * 0.5f, withAlpha(kPuff, a * 0.45f)); break;
         }
     }
-    const challenge::BreathLook& L = s.breath.look;
-    for (int i = 0; i < s.breath.count(); ++i) {
-        const challenge::Puff& p = s.breath[i];
+    drawBreath(s.breath);
+    // A hit's flash on the one hit, and the numbers rising.
+    for (int k = 0; k < 2; ++k) {
+        const Side& sd = s.side[k];
+        float x, y, ppu;
+        if (sd.flash > 0.01f && r3d::project(chestOf(sd), x, y, ppu))
+            C2D_DrawCircleSolid(x, y, 0, 1.3f * sizeOf(sd) * ppu, withAlpha(theme::kShell, 0.55f * sd.flash));
+    }
+}
+
+}  // namespace
+
+// A breath's puffs over the picture, by its element's look (the battles', a lantern lit: run 21).
+void drawBreath(const challenge::BreathFx& b) {
+    const challenge::BreathLook& L = b.look;
+    for (int i = 0; i < b.count(); ++i) {
+        const challenge::Puff& p = b[i];
         if (p.age < 0) continue;
         float x, y, ppu;
         if (!r3d::project(p.pos, x, y, ppu)) continue;
@@ -520,14 +534,9 @@ void drawEffects(const State& s) {
                 break;
         }
     }
-    // A hit's flash on the one hit, and the numbers rising.
-    for (int k = 0; k < 2; ++k) {
-        const Side& sd = s.side[k];
-        float x, y, ppu;
-        if (sd.flash > 0.01f && r3d::project(chestOf(sd), x, y, ppu))
-            C2D_DrawCircleSolid(x, y, 0, 1.3f * sizeOf(sd) * ppu, withAlpha(theme::kShell, 0.55f * sd.flash));
-    }
 }
+
+namespace {
 
 void hpBar(float x, float y, float w, float h, float frac) {
     frac = clampf(frac, 0.0f, 1.0f);

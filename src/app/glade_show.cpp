@@ -188,7 +188,28 @@ void wantCamera(const App& app, const Valley& v, Vec3& eye, Vec3& target) {
         const float r = 1.2f + 2.6f * size;  // how much to frame, metres
         const Vec2 at = L.rivals[spot];
         // (looking down a good way: the far valley out of the picture keeps the view in budget)
-        eye = gladePoint(v, {at.x + 0.35f * r, at.y + 2.3f * r}, L.stage.z + 1.6f * r);
+        // From the front, or turned round it to the side whose sightline passes furthest from the
+        // other three (from straight in front, the back spot's dragon hid behind the front one's).
+        const Vec2 ahead{0.35f * r, 2.3f * r};
+        float bestScore = -1e9f, bestTurn = 0;
+        for (float turn : {0.0f, 0.5f, -0.5f, 1.0f, -1.0f}) {
+            const Vec2 off{ahead.x * std::cos(turn) - ahead.y * std::sin(turn), ahead.x * std::sin(turn) + ahead.y * std::cos(turn)};
+            float clear = 1e9f;
+            for (int o = 0; o < kEntrants; ++o) {
+                if (o == spot) continue;
+                const Vec2 q = L.rivals[o];
+                const float t = std::fmax(0.0f, std::fmin(1.0f, ((q.x - at.x) * off.x + (q.y - at.y) * off.y) /
+                                                                   (off.x * off.x + off.y * off.y)));
+                clear = std::fmin(clear, std::hypot(at.x + off.x * t - q.x, at.y + off.y * t - q.y));
+            }
+            const float score = std::fmin(clear, 3.5f) - 0.6f * std::fabs(turn);  // (clear enough: the nearest to the front)
+            if (score > bestScore) {
+                bestScore = score;
+                bestTurn = turn;
+            }
+        }
+        const Vec2 off{ahead.x * std::cos(bestTurn) - ahead.y * std::sin(bestTurn), ahead.x * std::sin(bestTurn) + ahead.y * std::cos(bestTurn)};
+        eye = gladePoint(v, {at.x + off.x, at.y + off.y}, L.stage.z + 1.6f * r);
         target = gladePoint(v, at, L.stage.z + 0.4f * r);
     } else if (s.phase == Phase::Judges) {  // from the stage's side of their table: their faces
         const Vec2 toStage{L.stage.x - L.judges.x, L.stage.y - L.judges.y};
@@ -197,7 +218,7 @@ void wantCamera(const App& app, const Valley& v, Vec3& eye, Vec3& target) {
         eye = gladePoint(v, {L.judges.x + d.x * 5.0f - d.y * 1.5f, L.judges.y + d.y * 5.0f + d.x * 1.5f}, 4.2f);
         target = gladePoint(v, L.judges, 1.2f);
     } else {
-        eye = gladePoint(v, {L.stage.x, L.stage.y + 15.0f}, L.stage.z + 8.5f);
+        eye = gladePoint(v, {L.stage.x, L.stage.y + 19.0f}, L.stage.z + 10.0f);  // (the whole 7.2 m stage)
         target = gladePoint(v, {L.stage.x, L.stage.y}, L.stage.z + 1.3f);
     }
 }
@@ -334,7 +355,7 @@ bool showJudgesSeen() {
 bool showHostSpot(const Valley& v, Vec3& at, float& heading) {
     if (!g_on) return false;
     const Layout& L = gladeLayout();  // at the stage's front-left, turned half to the stage, half out
-    at = gladePoint(v, {L.stage.x - 6.4f, L.stage.y + 2.8f});
+    at = gladePoint(v, {L.stage.x - 8.6f, L.stage.y + 3.6f});
     heading = headingTo(at, gladePoint(v, {L.stage.x, L.stage.y + 5.0f}));
     return true;
 }
@@ -398,7 +419,7 @@ bool updateShow(App& app, const Input& in, vext::Stage& stage) {
     // You at the stage's front corner, your dragon on its spot, both facing out.
     stage.pal = spotAt(v, s.spot[0]);
     stage.palHeading = headingTo(stage.pal, audience(v));
-    stage.you = gladePoint(v, {L.stage.x + 6.2f, L.stage.y + 3.6f});
+    stage.you = gladePoint(v, {L.stage.x + 8.2f, L.stage.y + 4.4f});
     stage.youHeading = headingTo(stage.you, spotAt(v, s.spot[0]));
     // Its clip: a trick or a pose for a while, then back to idle.
     if (s.queued != ClipId::Count) {  // a frame of idle, so the same clip starts again next frame

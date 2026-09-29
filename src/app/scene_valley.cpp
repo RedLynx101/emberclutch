@@ -72,6 +72,7 @@ struct ValleyScene {
     Walker you;
     Follower pal;
     WalkCamera wcam;
+    bool featureCam = false;  // a 1.0 feature held the camera (when it lets go, ours starts behind you again)
     std::vector<Solid> solids;
     std::vector<CameraWall> camWalls;
     // The partner as drawn and animated.
@@ -925,12 +926,19 @@ void update(App& app, const Input& in) {
         lendStage(app, s);
         vext::feature(f).update(app, in, s.stage);
         takeStage(s);
+        s.featureCam |= s.stage.camSet;
         s.you.speed = 0;
         s.pal.speed = 0;
         s.action = Action::None;
         if (s.stage.youClip) playClip(s.youFig, s.stage.youClip, 1.0f, 0.2f);
         animatePartner(app, s, false, false, false, 0);
         return;
+    }
+    if (s.featureCam) {  // (a battle, a show, fishing over: the camera behind you, facing the way you face)
+        s.featureCam = false;
+        s.wcam = WalkCamera{};
+        s.wcam.yaw = s.you.heading;
+        s.wcam.update(s.you, 0, s.valley, 0.0f, &s.camWalls);
     }
     if (s.hopT >= 0) {  // mid-hop: you in the air, your dragon holding still for you
         s.hopT += app.dt;

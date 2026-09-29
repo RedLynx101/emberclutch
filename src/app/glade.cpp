@@ -538,12 +538,13 @@ const Layout& gladeLayout() {
     if (!made) {
         made = true;
         if (const PlaceAnchor a = placeAnchor(kPlaceGlade, "stage")) layout.stage = a.at(0);
-        // (The show's three stand wider apart than the model's four marks, left, middle and right
-        // round the stage's middle: grown dragons side by side clipped into each other.)
+        // (The show's three stand wider apart than the model's four marks, in a row across the
+        // stage's middle: grown dragons side by side clipped into each other, and one stood before
+        // the others loomed large in the close views of its neighbours.)
         const Vec2 mid{layout.stage.x, layout.stage.y};
-        layout.rivals[0] = {mid.x - 3.7f, mid.y - 0.2f};
-        layout.rivals[1] = {mid.x, mid.y + 1.1f};
-        layout.rivals[2] = {mid.x + 3.7f, mid.y - 0.2f};
+        layout.rivals[0] = {mid.x - 5.0f, mid.y - 0.2f};
+        layout.rivals[1] = {mid.x, mid.y - 0.2f};
+        layout.rivals[2] = {mid.x + 5.0f, mid.y - 0.2f};
         layout.rivals[3] = {mid.x, mid.y - 2.6f};
         if (const PlaceAnchor a = placeAnchor(kPlaceGlade, "judges")) layout.judges = {a.at(0).x, a.at(0).y};
         if (const PlaceAnchor a = placeAnchor(kPlaceGlade, "stalls"))

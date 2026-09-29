@@ -1,0 +1,144 @@
+# The whole game in one sitting (the long run's playthrough): a new keeper and a Pouncer, grown up,
+# out through the valley to every 1.0 thing in turn without a restart (the Market's challenger,
+# the Hollow, the cove, a show at the glade), then home to the profile's record. Looks for state
+# carried wrong between features (a camera, a tip, music, the stage lent and taken back).
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+shot t00-hatched
+# Grown up (Next stage x3), cared for a moment, then out.
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 2
+skip 9
+battle level 8
+battle energy 100
+shot t01-den-grown
+valley
+wait 4
+shot t02-valley
+key X
+wait 1
+shot t03-journal
+key X
+wait 0.5
+# The Market: Tamsin, a battle played by itself.
+travel 1
+wait 3
+battle talk 0 0
+wait 2.5
+key A
+wait 2.5
+key A
+wait 1
+shot t04-battle-ask
+battle auto on
+key A
+wait 3
+shot t05-battle
+wait 20
+shot t06-battle-end
+wait 6
+battle auto off
+# Frostspire Hollow: Tove, then a floor.
+travel 17
+wait 3
+battle keeper
+wait 3
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 1
+shot t07-hollow-gate
+key B
+wait 1
+battle auto on
+battle hollow 1
+wait 3
+shot t08-hollow-floor
+wait 18
+shot t09-hollow-after
+key B
+wait 1
+battle auto off
+# Driftwood Cove: Tam, then fishing.
+travel 16
+wait 3
+cove 0
+wait 1.5
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 1
+cove 1
+autoplay on
+wait 12
+shot t10-cove-fishing
+wait 10
+shot t11-cove-landed
+autoplay off
+key B
+wait 1
+# Moonpetal Glade: a stall, then a show.
+travel 15
+wait 4
+pg give
+pg stall 0 1
+wait 2
+shot t12-glade-stall
+key B
+wait 0.5
+pg autoplay on
+pg show 1 0
+wait 20
+shot t13-show
+wait 35
+shot t14-show-results
+wait 6
+# Home, and the profile's record.
+tap 215 215
+wait 4
+shot t15-home
+tap 298 16
+wait 1.5
+key R
+wait 0.5
+key R
+wait 0.8
+shot t16-record
+quit

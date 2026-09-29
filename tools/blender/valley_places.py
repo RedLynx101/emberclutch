@@ -2824,40 +2824,41 @@ def build_glade(pl):
     lanterns, a willow, moonpetals glowing everywhere (softly by day, brightly at night)."""
     M = I4
     s = pl.s
-    SC = Vector((0.0, -8.0, 0.0))
-    SR, SH = 4.6, 0.55
+    SC = Vector((0.0, -10.0, 0.0))
+    SR, SH = 7.2, 0.55  # (room for three grown dragons side by side: Noah, 2026-09-28)
     St = on_ground(pl, SC.x, SC.y)
     zs = pl.gz(SC.x, SC.y)
 
     def stage_col(p, n):
         return LIGHTWOOD if n.z > 0.7 else WOOD
     lathe(s, [(SR, -0.35), (SR, SH - 0.08), (SR - 0.12, SH), (0, SH)], 14, stage_col, St, sharp=[1, 2], jit=0.05)
-    for k in (-3, -1.5, 0, 1.5, 3):  # boards across its top
+    for k in (-4.5, -3, -1.5, 0, 1.5, 3, 4.5):  # boards across its top
         half = math.sqrt(SR * SR - k * k) - 0.3
         face(s, [(k - 0.03, -half, SH + 0.004), (k + 0.03, -half, SH + 0.004), (k + 0.03, half, SH + 0.004),
                  (k - 0.03, half, SH + 0.004)], (0, 0, 1), (0.60, 0.42, 0.26), St, jit=0.0)
     for y0, y1, top in ((SR - 0.3, SR + 0.62, 0.19), (SR - 0.4, SR + 0.2, 0.37)):  # steps up at its front
-        box(s, (-1.3, y0, -0.3), (1.3, y1, top), LIGHTWOOD, St, skip=("-z",))
+        box(s, (-1.8, y0, -0.3), (1.8, y1, top), LIGHTWOOD, St, skip=("-z",))
     pl.solid(St, 0, 0, SR - 0.3)
     anchors = {"stage": [SC.x, SC.y, round(zs + SH, 3)],
-               "rivals": [[round(SC.x + x, 2), round(SC.y + y, 2)] for x, y in ((-3.0, 0.6), (-1.0, 1.2), (1.0, 1.2),
-                                                                                  (3.0, 0.6))]}
+               "rivals": [[round(SC.x + x, 2), round(SC.y + y, 2)] for x, y in ((-5.0, 0.8), (-1.7, 1.4), (1.7, 1.4),
+                                                                                  (5.0, 0.8))]}
     pl.mark("stage")
     # The flowered arch at the stage's back.
-    A = St @ T(0, -SR + 1.1, SH)
+    A = St @ T(0, -SR + 1.3, SH)
+    AW, AH = 3.8, 3.5  # the arch's half-width and its posts' height
     for sx in (-1, 1):
-        box(s, (sx * 2.6 - 0.1, -0.1, 0), (sx * 2.6 + 0.1, 0.1, 2.9), LIGHTWOOD, A, skip=("-z", "+z"))
-    arc = [Vector((-2.6 + 5.2 * k / 6, 0, 2.9 + 1.3 * math.sin(math.pi * k / 6))) for k in range(7)]
-    sweep(s, arc, 0.13, 4, LIGHTWOOD, A, twist=math.pi / 4)
+        box(s, (sx * AW - 0.12, -0.12, 0), (sx * AW + 0.12, 0.12, AH), LIGHTWOOD, A, skip=("-z", "+z"))
+    arc = [Vector((-AW + 2 * AW * k / 8, 0, AH + 1.6 * math.sin(math.pi * k / 8))) for k in range(9)]
+    sweep(s, arc, 0.15, 4, LIGHTWOOD, A, twist=math.pi / 4)
     for k in range(7):
         t = (k + 0.5) / 7
-        p = Vector((-2.6 + 5.2 * t, 0.12 * (1 if k % 2 else -1), 2.9 + 1.3 * math.sin(math.pi * t) + 0.12))
+        p = Vector((-AW + 2 * AW * t, 0.12 * (1 if k % 2 else -1), AH + 1.6 * math.sin(math.pi * t) + 0.12))
         c = k % 3
         puff(s, p, 0.2, PETALS[c], A, segs=4, h=0.14)
         puff(pl.g, p - Vector((0, 0, 0.05)), 0.42, Emit(PETAL_GLOW[c], MOONPETAL), A, segs=4, h=0.3)
-    pl.lamp(A, (0, 0.8, 3.4), 6.0, 0.45, rgb=(0.62, 0.62, 1.0), table=MOONPETAL)
+    pl.lamp(A, (0, 0.8, 4.1), 7.5, 0.45, rgb=(0.62, 0.62, 1.0), table=MOONPETAL)
     for sx in (-1, 1):  # vines up the posts
-        ribbon(s, [(sx * 2.6, 0.12, 0.1), (sx * 2.5, 0.13, 1.4), (sx * 2.7, 0.12, 2.8)], 0.2, LEAF_NIGHT, A,
+        ribbon(s, [(sx * AW, 0.14, 0.1), (sx * (AW - 0.1), 0.15, 1.7), (sx * (AW + 0.1), 0.14, 3.4)], 0.2, LEAF_NIGHT, A,
                normal_hint=(0, 1, 0))
     pl.mark("arch")
     # Benches for the audience, an aisle down the middle.
@@ -2870,7 +2871,7 @@ def build_glade(pl):
             pl.solid(Bn, 0.6, 0, 0.6)
     pl.mark("benches")
     # The judges' table beside the stage, turned to it; three stools behind it.
-    jx, jy = 7.4, -2.8
+    jx, jy = 9.4, -3.4  # (past the bigger stage's rim, still turned to it)
     J = on_ground(pl, jx, jy, rz=math.atan2(-(SC.x - jx), SC.y - jy))  # its front (+Y) to the stage
     box(s, (-1.3, -0.4, 0.74), (1.3, 0.4, 0.84), LIGHTWOOD, J, skip=())
     face(s, [(1.28, 0.42, 0.2), (-1.28, 0.42, 0.2), (-1.28, 0.42, 0.8), (1.28, 0.42, 0.8)], (0, 1, 0),
@@ -2902,13 +2903,13 @@ def build_glade(pl):
         pl.solid(P, 0, 0, 0.3)
     za, zb = pl.gz(*posts[0]) + 3.95, pl.gz(*posts[1]) + 3.95
     lantern_string(pl, (posts[0][0], posts[0][1], za), (posts[1][0], posts[1][1], zb), 0.7, 4)
-    arch_top = A @ Vector((2.6, 0, 2.9))
+    arch_top = A @ Vector((AW, 0, AH))
     lantern_string(pl, (posts[1][0], posts[1][1], zb), tuple(arch_top), 0.6, 3)
     pl.mark("lanterns")
     willow(pl, on_ground(pl, -12.5, -7.0, sink=0.1), seed=0.7)
     pl.mark("willow")
     # Moonpetals: round the stage, along the approach, under the willow.
-    for k, (x, y, h) in enumerate(((-5.4, -6.2, 3), (5.2, -5.6, 3), (-4.4, -11.6, 2), (4.6, -11.2, 2), (-2.2, 11.8, 3),
+    for k, (x, y, h) in enumerate(((-7.6, -5.6, 3), (7.4, -5.2, 3), (-6.2, -16.0, 2), (6.4, -15.6, 2), (-2.2, 11.8, 3),
                                    (2.4, 14.6, 2), (-11.0, -3.2, 3), (11.6, 1.6, 2), (-7.0, 12.6, 2), (12.0, -8.4, 3))):
         moonpetals(pl, on_ground(pl, x, y, rz=k * 0.7), heads=h, seed=k)
     pl.mark("moonpetals")
@@ -2926,7 +2927,7 @@ def build_glade(pl):
     land_ao(pl, 40.0)
     pl.terrain = "land"
     pl.terrain_size = 34
-    pl.view = dict(radius=18.0, target=(0, -1.0, 1.2), azimuth=24.0, elevation=38.0)
+    pl.view = dict(radius=21.0, target=(0, -2.5, 1.2), azimuth=24.0, elevation=38.0)
 
 
 # ---------------------------------------------------------------------- Driftwood Cove

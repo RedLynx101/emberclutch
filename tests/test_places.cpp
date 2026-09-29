@@ -116,10 +116,10 @@ TEST(the_new_places_spots_are_where_they_belong) {
     const Vec3 stage = placeAnchor(kPlaceGlade, "stage").at(0);
     CHECK(stage.z > 0.3f && stage.z < 1.0f);
     const PlaceAnchor rivals = placeAnchor(kPlaceGlade, "rivals");
-    for (int i = 0; i < 4; ++i) CHECK(dist2d(rivals.at(i), stage) < 4.0f);
+    for (int i = 0; i < 4; ++i) CHECK(dist2d(rivals.at(i), stage) < 6.0f);  // (the 7.2 m stage: room for three grown dragons)
     for (int i = 0; i < 3; ++i) CHECK(dist2d(rivals.at(i), rivals.at(i + 1)) > 1.5f);
     const Vec3 judges = placeAnchor(kPlaceGlade, "judges").at(0);
-    CHECK(dist2d(judges, stage) > 5.0f && dist2d(judges, stage) < 12.0f);
+    CHECK(dist2d(judges, stage) > 8.0f && dist2d(judges, stage) < 14.0f);  // (past its rim)
     const PlaceAnchor stalls = placeAnchor(kPlaceGlade, "stalls");
     CHECK(stalls.at(0).x < 0 && stalls.at(1).x > 0);
     for (int i = 0; i < 2; ++i) {  // each faces the way in's middle (x = 0)

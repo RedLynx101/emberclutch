@@ -629,8 +629,13 @@ void update(App& app, const Input& in) {
     // The D-pad moves the care between the den's dragons and eggs; X opens the map.
     if (!app.hatch.active && (in.down & (KEY_DLEFT | KEY_DRIGHT))) cycleCare(app, (in.down & KEY_DRIGHT) ? 1 : -1);
     if (!app.hatch.active && (in.down & KEY_X) && !(in.held & KEY_R)) {  // X: the Outing panel (run 19), again to close
-        app.care.page = app.care.page == CarePage::Outing ? CarePage::None : CarePage::Outing;
-        audio::playSfx(app.care.page == CarePage::Outing ? audio::Sfx::MapOpen : audio::Sfx::Back);
+        if (activeDragon(app).stage == Stage::Egg) {  // (an egg's screen has no Outing panel: say why, run 21)
+            showToast(app, str::kEggStaysHome);
+            audio::playSfx(audio::Sfx::Tap);
+        } else {
+            app.care.page = app.care.page == CarePage::Outing ? CarePage::None : CarePage::Outing;
+            audio::playSfx(app.care.page == CarePage::Outing ? audio::Sfx::MapOpen : audio::Sfx::Back);
+        }
     }
     const DenRoster r = denRoster(app.game);
     Dragon& d = activeDragon(app);

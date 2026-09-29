@@ -978,6 +978,20 @@ TEST(the_dragondex) {
         const Dragon x = dexDragon(k, 3), y = dexDragon(k, 3);
         CHECK(x.kind == k && x.variant == 3 && x.stage == Stage::Adult && std::memcmp(x.stats, y.stats, sizeof(x.stats)) == 0);
     }
+    // Each entry as you know it (run 21): young while yours are young, grown once one is, or when
+    // none is yours.
+    s.dragonCount = 0;
+    CHECK(dexStage(s, pouncer, 3) == Stage::Adult);
+    s.dragons[0] = d;  // (a pouncer hatchling, colouring 3)
+    s.dragonCount = 1;
+    CHECK(dexStage(s, pouncer, 3) == Stage::Hatchling && dexStage(s, pouncer, 0) == Stage::Adult);
+    s.dragons[1] = d;
+    s.dragons[1].stage = Stage::Egg;
+    s.dragonCount = 2;
+    CHECK(dexStage(s, pouncer, 3) == Stage::Hatchling);  // (an egg adds nothing)
+    s.dragons[1].stage = Stage::Adult;
+    CHECK(dexStage(s, pouncer, 3) == Stage::Adult);
+    CHECK(dexDragon(pouncer, 3, Stage::Hatchling).stage == Stage::Hatchling && dexDragon(pouncer, 3, Stage::Egg).stage == Stage::Adult);
     // It saves.
     s.dragonCount = 0;
     std::vector<u8> buf(maxEncodedSize());

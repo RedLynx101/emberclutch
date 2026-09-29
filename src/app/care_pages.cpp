@@ -90,10 +90,10 @@ void drawOuting(App& app, const Input& in, Dragon& d) {
 // ------------------------------------------------------------------------------ Journal
 // The goals (1.0, D89): what can be tracked (the begun quests, the leagues' boards, the Hollow),
 // the one tracked now flagged in gold; a tap on a row tracks it (again: back to the quest in
-// hand). The quests done follow, in teal. Five rows a page.
+// hand). The quests done follow, in teal. Four rows a page (run 21: bigger words).
 void journalGoals(App& app, const Input& in) {
     SaveData& s = app.game;
-    constexpr int kRows = 5;
+    constexpr int kRows = 4;
     struct Row {
         guide::Goal goal;
         bool done;
@@ -116,18 +116,18 @@ void journalGoals(App& app, const Input& in) {
     char title[64], step[96];
     for (int k = 0; k < kRows && page * kRows + k < n; ++k) {
         const Row& row = rows[page * kRows + k];
-        const Rect r{8, 62.0f + k * 27, 304, 25};
+        const Rect r{8, 62.0f + k * 34, 304, 32};
         const bool on = !row.done && row.goal == now;
         panel(r, row.done ? withAlpha(theme::kSkyTeal, 0.25f)
                           : withAlpha(on ? theme::kClutchGold : theme::kShell, on ? 0.28f : 0.12f));
         goalWords(s, row.goal, title, sizeof(title), step, sizeof(step));
-        text(app, title, r.x + 7, r.y + 1, 0.42f, row.done ? withAlpha(theme::kShell, 0.65f) : theme::kClutchGold,
+        text(app, title, r.x + 7, r.y + 1, 0.46f, row.done ? withAlpha(theme::kShell, 0.65f) : theme::kClutchGold,
              C2D_AlignLeft, 220);
-        text(app, step, r.x + 7, r.y + 13, 0.34f, withAlpha(theme::kShell, row.done ? 0.6f : 0.88f), C2D_AlignLeft, 232);
+        text(app, step, r.x + 7, r.y + 16, 0.41f, withAlpha(theme::kShell, row.done ? 0.6f : 0.88f), C2D_AlignLeft, 236);
         if (row.done) continue;
         // The flag: gold on the one tracked (its word under it), faint on the others.
-        trackFlag(r.x + r.w - 58, r.y + 19, 13, app.t, on);
-        text(app, on ? str::kTracking : str::kTrack, r.x + r.w - 6, r.y + 7, 0.32f,
+        trackFlag(r.x + r.w - 58, r.y + 22, 13, app.t, on);
+        text(app, on ? str::kTracking : str::kTrack, r.x + r.w - 6, r.y + 9, 0.36f,
              on ? theme::kClutchGold : withAlpha(theme::kShell, 0.5f), C2D_AlignRight, 40);
         if (in.released && r.contains(in.rx, in.ry)) {
             const bool was = guide::picked(s, row.goal);
@@ -147,7 +147,7 @@ void journalGoals(App& app, const Input& in) {
         textCentered(app, at, 62, 219, 0.4f, theme::kShell);
         if (button(app, {84, 202, 34, 34}, ">", in)) page = (page + 1) % pages;
     } else {
-        text(app, str::kTrackHint, 10, 206, 0.34f, withAlpha(theme::kShell, 0.6f), C2D_AlignLeft, 196);
+        text(app, str::kTrackHint, 10, 201, 0.4f, withAlpha(theme::kShell, 0.7f), C2D_AlignLeft, 196);
     }
 }
 

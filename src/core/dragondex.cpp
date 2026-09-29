@@ -63,15 +63,24 @@ bool hangBanner(SaveData& s, int kind) {
 
 void takeDownBanner(SaveData& s) { s.bannerKind = 0xFF; }
 
-Dragon dexDragon(int kind, int variant) {
+Dragon dexDragon(int kind, int variant, Stage stage) {
     const u32 id = 0xFFFFFF00u + static_cast<u32>(kind * kKindVariants + variant);
     Dragon d = makeEgg(id, Genome{}, Sex::Male, 0);
     Rng rng(0xD1A6u + id * 977u);
     rollKind(d, kind, variant, rng);
-    d.stage = Stage::Adult;
+    d.stage = stage == Stage::Egg ? Stage::Adult : stage;
     d.incubationSeconds = kIncubationSeconds;
     d.needs = Needs{90, 90, 90, 90, 90};
     return d;
+}
+
+Stage dexStage(const SaveData& s, int kind, int variant) {
+    Stage oldest = Stage::Egg;
+    for (int i = 0; i < s.dragonCount; ++i) {
+        const Dragon& d = s.dragons[i];
+        if (d.kind == kind && d.variant == variant && d.stage > oldest) oldest = d.stage;
+    }
+    return oldest == Stage::Egg ? Stage::Adult : oldest;
 }
 
 void kindColours(int kind, Rgb& base, Rgb& accent, Rgb& glow) {

@@ -60,7 +60,7 @@ void drawDexTop(App& app) {
     char line[80];
     if (dexHas(s, kind, variant)) {
         static Dragon shown;
-        shown = dexDragon(kind, variant);
+        shown = dexDragon(kind, variant, dexStage(s, kind, variant));  // (as you know it: young, if yours are)
         C2D_DrawEllipseSolid(120 + r3d::eyeShift(), 190, 0, 160, 26, withAlpha(theme::rgba(0, 0, 0), 0.25f));
         if (r3d::ready()) r3d::drawShowcase(app, shown, nullptr, now, 0.6f * std::sin(app.t * 0.4f));
         std::snprintf(line, sizeof(line), "%s %s", k.variants[variant].name, k.title);

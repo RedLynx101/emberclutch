@@ -996,6 +996,10 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
             c.reported = false;
             c.stillTime = 0;
             c.onDragon = r3d::pickCloseUp(touch, h);
+            if (b.activity == Activity::Sleep) {  // care waits till it wakes (behavior): say so (run 21)
+                static int said = 0;
+                showToastf(app, str::kAsleep[said++ % 3], d.name);
+            }
         }
         const Vec2 before = c.stroke.last;
         kind = c.stroke.update(touch, app.dt);

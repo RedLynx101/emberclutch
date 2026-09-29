@@ -1,0 +1,40 @@
+# Noah's run 21 notes (2026-09-29): X with only an egg says why (a toast), the Dragondex shows a
+# kind you only have young as a hatchling, the Journal's goals in bigger words, and a sleeping
+# dragon says so when you reach for it.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key X
+wait 0.6
+shot n01-egg-x
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key START
+wait 0.5
+tap 160 136
+wait 1.2
+shot n02-dex-young
+key B
+wait 0.5
+key START
+wait 0.5
+tap 238 221
+wait 0.8
+shot n03-goals
+key B
+wait 0.5
+# Worn out: it goes to sleep before long; then a touch on it.
+needs 80 80 80 80 0
+wait 14
+tap 160 120
+wait 0.4
+shot n04-asleep
+quit

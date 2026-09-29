@@ -36,9 +36,13 @@ int bannerKind(const SaveData& s);
 bool hangBanner(SaveData& s, int kind);  // false unless the kind is complete
 void takeDownBanner(SaveData& s);
 
-// The dragon the book shows for an entry: a grown one of that kind in that colouring (the
-// same every time).
-Dragon dexDragon(int kind, int variant);
+// The dragon the book shows for an entry: one of that kind in that colouring (the same every
+// time), grown unless `stage` is younger (dexStage).
+Dragon dexDragon(int kind, int variant, Stage stage = Stage::Adult);
+// The stage the book shows an entry at, as you know it (run 21): while every one of yours of that
+// kind and colouring is young, the oldest of them; grown once one has grown, and grown when none
+// is yours (met in the wild or at a trainer's).
+Stage dexStage(const SaveData& s, int kind, int variant);
 // A kind's colours for its banner: its body, its accent, its element's glow.
 void kindColours(int kind, Rgb& base, Rgb& accent, Rgb& glow);
 

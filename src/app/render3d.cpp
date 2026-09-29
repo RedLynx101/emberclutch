@@ -39,6 +39,7 @@
 #include "core/wear_mesh.hpp"
 #include "dragon_shbin.h"
 #include "static_shbin.h"
+#include "ground_shbin.h"
 
 namespace ec::r3d {
 namespace {
@@ -252,7 +253,12 @@ C3D_Tex g_cleanSkin;       // 8x8 white: stands in when a form's skin texture is
 bool g_texOk = false;
 DVLB_s* g_staticDvlb = nullptr;
 shaderProgram_s g_staticProgram;
-int g_locSProjection = -1, g_locSModelView = -1, g_locSBlend = -1, g_locSTint = -1, g_locSDetailU = -1, g_locSDetailV = -1;
+int g_locSProjection = -1, g_locSModelView = -1, g_locSBlend = -1, g_locSTint = -1;
+// The valley ground's program: the static one plus a texture coordinate (D107: the den keeps to
+// the program without one), its shared uniforms in the same registers (checked at start).
+DVLB_s* g_groundDvlb = nullptr;
+shaderProgram_s g_groundProgram;
+int g_locSDetailU = -1, g_locSDetailV = -1;
 C3D_Tex g_groundTex;  // the valley ground's detail (run 19), made at start, mipmapped (no shimmer far off)
 bool g_groundTexOk = false;
 int g_groundLook = 0;  // the look lab: 0 smooth + texture, 1 faceted, 2 faceted + texture
@@ -1217,8 +1223,19 @@ bool init() {
     g_locSModelView = shaderInstanceGetUniformLocation(g_staticProgram.vertexShader, "modelView");
     g_locSBlend = shaderInstanceGetUniformLocation(g_staticProgram.vertexShader, "blend");
     g_locSTint = shaderInstanceGetUniformLocation(g_staticProgram.vertexShader, "tint");
-    g_locSDetailU = shaderInstanceGetUniformLocation(g_staticProgram.vertexShader, "detailU");
-    g_locSDetailV = shaderInstanceGetUniformLocation(g_staticProgram.vertexShader, "detailV");
+    g_groundDvlb = DVLB_ParseFile(reinterpret_cast<u32*>(const_cast<u8*>(ground_shbin)), ground_shbin_size);
+    shaderProgramInit(&g_groundProgram);
+    shaderProgramSetVsh(&g_groundProgram, &g_groundDvlb->DVLE[0]);
+    g_locSDetailU = shaderInstanceGetUniformLocation(g_groundProgram.vertexShader, "detailU");
+    g_locSDetailV = shaderInstanceGetUniformLocation(g_groundProgram.vertexShader, "detailV");
+    {  // the uniforms both programs read must sit in the same registers, or the ground goes plain
+        shaderInstance_s* gv = g_groundProgram.vertexShader;
+        const bool same = shaderInstanceGetUniformLocation(gv, "projection") == g_locSProjection &&
+                          shaderInstanceGetUniformLocation(gv, "modelView") == g_locSModelView &&
+                          shaderInstanceGetUniformLocation(gv, "blend") == g_locSBlend &&
+                          shaderInstanceGetUniformLocation(gv, "tint") == g_locSTint;
+        if (!same || g_locSDetailU < 0 || g_locSDetailV < 0) g_groundTexOk = false;
+    }
     AttrInfo_Init(&g_staticAttr);
     AttrInfo_AddLoader(&g_staticAttr, 0, GPU_FLOAT, 3);          // position
     AttrInfo_AddLoader(&g_staticAttr, 1, GPU_UNSIGNED_BYTE, 4);  // colour, lighting set A
@@ -1297,6 +1314,11 @@ void shutdown() {
         DVLB_Free(g_staticDvlb);
         g_staticDvlb = nullptr;
     }
+    if (g_groundDvlb) {
+        shaderProgramFree(&g_groundProgram);
+        DVLB_Free(g_groundDvlb);
+        g_groundDvlb = nullptr;
+    }
     if (g_dvlb) {
         shaderProgramFree(&g_program);
         DVLB_Free(g_dvlb);
@@ -1355,11 +1377,6 @@ void drawRoom(App& app, const C3D_Mtx& projection, const C3D_Mtx& view, const Da
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSProjection, &projection);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSModelView, &view);  // the room is modelled in den space
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSBlend, blend.t, 0, 0, 0);
-    // The shader's texture coordinate, unused here, from zeroed weights: never written, those
-    // registers hold whatever the GPU had (zeros in the emulator, anything on a 3DS; run 20's
-    // freeze on the den's first frame)
-    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, 0, 0, 0, 0);
-    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, 0, 0, 0);
     C3D_BufInfo* buf = C3D_GetBufInfo();
     BufInfo_Init(buf);
     BufInfo_Add(buf, g_room.pos, sizeof(float) * 3, 1, 0x0);
@@ -1942,11 +1959,13 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
     trace::mark("den: room");
     C2D_Flush();
     drawRoom(app, projection, view, blend, false);
+    trace::gpu("den room");
     trace::mark("den: particles");
     if (fx) {
         end3D();
         drawParticles(app, *fx, false);
         C2D_Flush();
+        trace::gpu("den particles");
     }
     trace::mark("den: dragons (%d)", count);
     bindDragons(projection);
@@ -1959,7 +1978,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
             lightDragon(light, local);
             trace::mark("den: egg %d (%s)", i, denEgg.ok ? "ok" : "no model");
             submitEgg(app, denEgg, *dragons[i].dragon, *dragons[i].egg, view, {at[i].x, at[i].y, kNestFloor});
-            trace::mark("den: egg %d submitted", i);
+            trace::gpu("den egg");
             g_heads[i] = {at[i].x, at[i].y, kNestFloor + 0.8f};  // effects rise from its top
             g_headSet[i] = true;
             continue;
@@ -1970,6 +1989,7 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         localLight(g_posed.pos, blend, local);
         lightDragon(light, local);
         submit(app, g_posed, view, model);
+        trace::gpu("den dragon");
         if (g_posed.form->headBone >= 0) {
             g_heads[i] = apply(model, g_posed.poseMat[g_posed.form->headBone].translation());
             g_headSet[i] = true;
@@ -1996,8 +2016,10 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
         const float plain[3] = {1, 1, 1};
         lightDragon(light, plain);
         drawProps(app, view);
+        trace::gpu("den props");
     }
     drawRoom(app, projection, view, blend, true);
+    trace::gpu("den glows");
     end3D();
     if (fx) drawParticles(app, *fx, true);
 }
@@ -2745,8 +2767,6 @@ void bindValleyStatic(const C3D_Mtx& projection, const C3D_Mtx& view, Rgb tint) 
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSModelView, &view);  // the valley is modelled in world space
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSBlend, 0, 0, 0, 0);
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, tint.r / 65025.0f, tint.g / 65025.0f, tint.b / 65025.0f, 1.0f / 255.0f);
-    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, 0, 0, 0, 0);
-    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, 0, 0, 0);
 }
 
 // The ground's painted texture on (run 19; two channels since the look lab): the grass's strokes
@@ -2754,11 +2774,16 @@ void bindValleyStatic(const C3D_Mtx& projection, const C3D_Mtx& view, Rgb tint) 
 // times it, doubled (its grey middle leaves the colour be); the output's alpha 1 (the vertex's
 // is the mix, not see-through). The texture 8 m a repeat laid over the land from above (a
 // little of the height in it, so slopes and tree trunks take it too). Off: the colour alone.
+// On, the ground's own program (the texture coordinate); off, back to the static program (the
+// uniforms they share stay set: the same registers).
 void groundDetail(bool on) {
     C3D_TexEnv* env = C3D_GetTexEnv(0);
     C3D_TexEnvInit(env);
     C3D_TexEnvInit(C3D_GetTexEnv(1));  // (a pass-through unless the texture's on)
-    if (!on || !g_groundTexOk || g_groundLook == 1) {
+    const bool textured = on && g_groundTexOk && g_groundLook != 1;
+    C3D_BindProgram(textured ? &g_groundProgram : &g_staticProgram);
+    C3D_SetAttrInfo(&g_staticAttr);
+    if (!textured) {
         C3D_TexEnvSrc(env, C3D_RGB, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
         C3D_TexEnvFunc(env, C3D_RGB, GPU_REPLACE);
         if (on) {  // (the faceted look's tiles: their alpha is the texture's mix, not see-through)
@@ -2768,8 +2793,6 @@ void groundDetail(bool on) {
             C3D_TexEnvSrc(env, C3D_Alpha, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
         }
         C3D_TexEnvFunc(env, C3D_Alpha, GPU_REPLACE);
-        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, 0, 0, 0, 0);
-        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, 0, 0, 0);
         return;
     }
     C3D_TexBind(0, &g_groundTex);

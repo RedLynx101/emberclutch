@@ -187,6 +187,7 @@ int main() {
         trace::mark("f%lu prepare", static_cast<unsigned long>(frame));
         if (const SceneFns& s = sceneFns(app.scene); s.prepare) s.prepare(app);  // alongside the GPU's last frame
         trace::mark("f%lu frame begin (the GPU's last frame done?)", static_cast<unsigned long>(frame));
+        trace::sync();
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
         trace::mark("f%lu frame begun", static_cast<unsigned long>(frame));
         r3d::frameBegun();  // the last frame is drawn: what it read can go now
@@ -209,6 +210,7 @@ int main() {
             r3d::setEye(app.stereoPreview && !eye ? 1.0f : (slider > 0.0f ? (eye ? slider : -slider) : 0.0f));
             C2D_TargetClear(target, topClear);
             C2D_SceneBegin(target);
+            trace::target(target);
             perf::Scope timed(perf::Top);
             trace::mark("f%lu top eye %d (slider %.2f)", static_cast<unsigned long>(frame), eye, static_cast<double>(slider));
             if (app.menu == MenuPage::Dex) {
@@ -217,6 +219,7 @@ int main() {
                 sceneFns(app.scene).drawTop(app);
                 if (paused) dimTopForMenu(app);
             }
+            trace::gpu("top scene");
             trace::mark("f%lu top overlays", static_cast<unsigned long>(frame));
             if (!app.photo.snap) {  // the photo's picture has nothing over it
                 drawToast(app);
@@ -224,6 +227,7 @@ int main() {
                 drawSaveIcon(app);
                 if (!app.photo.active) debugDrawOverlay(app);
             }
+            trace::gpu("top overlays");
             app.dt = dt;
         }
         r3d::setEye(0);
@@ -232,6 +236,7 @@ int main() {
         trace::mark("f%lu bottom", static_cast<unsigned long>(frame));
         C2D_TargetClear(app.bottom, theme::kDenPlum);
         C2D_SceneBegin(app.bottom);
+        trace::target(app.bottom);
         {
             perf::Scope timed(perf::Bottom);
             if (paused)
@@ -244,6 +249,7 @@ int main() {
             C2D_DrawRectSolid(in.tx - 0.5f, in.ty - 8, 0, 1, 17, theme::rgba(0, 255, 120));
         }
 
+        trace::gpu("bottom");
         app.bottomTris = app.stats.tris - topTris;
         autotest::beforeFrameEnd();
         screenshot::beforeFrameEnd(app);

@@ -130,40 +130,87 @@ std::vector<Vec2> cut(const std::vector<Vec2>& pts, float d0, float d1) {
     return out;
 }
 
-// Clear of the places' walls (and the villagers) by `margin`.
-bool clearOf(const std::vector<Solid>& solids, Vec2 p, float margin) {
-    for (const Solid& s : solids)
-        if (dist(p, s.at) < s.radius + margin) return false;
-    return true;
-}
-bool lineClear(const std::vector<Solid>& solids, Vec2 a, Vec2 b, float margin) {
+// The places' walls (and the villagers) by where they are: a grid of 16 m cells over them, each
+// listing the walls that reach into it, so asking whether a spot is clear looks at a few walls near
+// it rather than all of them (the network is built as the valley opens: on the 3DS it must be quick).
+struct SolidIndex {
+    static constexpr float kCell = 16.0f, kPad = 1.6f;  // (the margins asked for stay under kPad)
+    const std::vector<Solid>* solids = nullptr;
+    float x0 = 0, y0 = 0;
+    int w = 0, h = 0;
+    std::vector<u32> start;  // per cell: where its walls start in `ids` (and, last, the end)
+    std::vector<u16> ids;
+
+    void span(const Solid& s, int& cx0, int& cy0, int& cx1, int& cy1) const {
+        const float r = s.radius + kPad;
+        cx0 = static_cast<int>((s.at.x - r - x0) / kCell);
+        cy0 = static_cast<int>((s.at.y - r - y0) / kCell);
+        cx1 = std::min(w - 1, static_cast<int>((s.at.x + r - x0) / kCell));
+        cy1 = std::min(h - 1, static_cast<int>((s.at.y + r - y0) / kCell));
+    }
+    void build(const std::vector<Solid>& list) {
+        solids = &list;
+        if (list.empty()) return;
+        float x1 = -1e9f, y1 = -1e9f;
+        x0 = y0 = 1e9f;
+        for (const Solid& s : list) {
+            x0 = std::fmin(x0, s.at.x - s.radius - kPad);
+            y0 = std::fmin(y0, s.at.y - s.radius - kPad);
+            x1 = std::fmax(x1, s.at.x + s.radius + kPad);
+            y1 = std::fmax(y1, s.at.y + s.radius + kPad);
+        }
+        w = static_cast<int>((x1 - x0) / kCell) + 1;
+        h = static_cast<int>((y1 - y0) / kCell) + 1;
+        start.assign(static_cast<std::size_t>(w * h + 1), 0);
+        int cx0, cy0, cx1, cy1;
+        for (const Solid& s : list) {  // (how many in each cell, then where each cell's run starts)
+            span(s, cx0, cy0, cx1, cy1);
+            for (int cy = cy0; cy <= cy1; ++cy)
+                for (int cx = cx0; cx <= cx1; ++cx) ++start[static_cast<std::size_t>(cy * w + cx + 1)];
+        }
+        for (std::size_t c = 1; c < start.size(); ++c) start[c] += start[c - 1];
+        ids.assign(start.back(), 0);
+        std::vector<u32> at(start.begin(), start.end() - 1);
+        for (std::size_t k = 0; k < list.size(); ++k) {
+            span(list[k], cx0, cy0, cx1, cy1);
+            for (int cy = cy0; cy <= cy1; ++cy)
+                for (int cx = cx0; cx <= cx1; ++cx) ids[at[static_cast<std::size_t>(cy * w + cx)]++] = static_cast<u16>(k);
+        }
+    }
+    // Clear of every wall by `margin` (at most kPad).
+    bool clear(Vec2 p, float margin) const {
+        if (!solids || w == 0) return true;
+        const int cx = static_cast<int>(std::floor((p.x - x0) / kCell)), cy = static_cast<int>(std::floor((p.y - y0) / kCell));
+        if (cx < 0 || cy < 0 || cx >= w || cy >= h) return true;
+        const std::size_t c = static_cast<std::size_t>(cy * w + cx);
+        for (u32 k = start[c]; k < start[c + 1]; ++k) {
+            const Solid& s = (*solids)[ids[k]];
+            const float dx = p.x - s.at.x, dy = p.y - s.at.y, r = s.radius + margin;
+            if (dx * dx + dy * dy < r * r) return false;
+        }
+        return true;
+    }
+};
+
+bool lineClear(const SolidIndex& walls, Vec2 a, Vec2 b, float margin) {
     const int n = static_cast<int>(dist(a, b) / 0.5f) + 1;
     for (int k = 0; k <= n; ++k) {
         const float u = static_cast<float>(k) / n;
-        if (!clearOf(solids, {a.x + (b.x - a.x) * u, a.y + (b.y - a.y) * u}, margin)) return false;
+        if (!walls.clear({a.x + (b.x - a.x) * u, a.y + (b.y - a.y) * u}, margin)) return false;
     }
     return true;
 }
 
 // A way nudged round the walls it brushes (a bridge's post, a gatepost): points every metre, any
 // too near a wall pushed out from it, eased along, pushed again. Its ends stay put.
-void keepClear(std::vector<Vec2>& pts, const std::vector<Solid>& solids) {
+void keepClear(std::vector<Vec2>& pts, const SolidIndex& near) {
     constexpr float kMargin = 0.5f;
     if (pts.size() < 2) return;
-    float x0 = 1e9f, y0 = 1e9f, x1 = -1e9f, y1 = -1e9f;
-    for (const Vec2& p : pts) {
-        x0 = std::fmin(x0, p.x);
-        y0 = std::fmin(y0, p.y);
-        x1 = std::fmax(x1, p.x);
-        y1 = std::fmax(y1, p.y);
-    }
-    std::vector<Solid> near;  // (only the walls by this way)
-    for (const Solid& s : solids)
-        if (s.at.x > x0 - s.radius - 2 && s.at.x < x1 + s.radius + 2 && s.at.y > y0 - s.radius - 2 && s.at.y < y1 + s.radius + 2)
-            near.push_back(s);
-    if (near.empty()) return;
     std::vector<float> cum;
     lengths(pts, cum);
+    bool brushes = false;  // (nothing near it: left as it is)
+    for (float d = 0; d <= cum.back() && !brushes; d += 0.5f) brushes = !near.clear(along(pts, cum, d), kMargin);
+    if (!brushes) return;
     const int n = static_cast<int>(cum.back() / 0.5f) + 1;  // (every half metre: no corner cut past a post)
     std::vector<Vec2> even;
     for (int k = 0; k <= n; ++k) even.push_back(along(pts, cum, cum.back() * k / n));
@@ -171,7 +218,7 @@ void keepClear(std::vector<Vec2>& pts, const std::vector<Solid>& solids) {
     // touch leave no gap to squeeze through)
     auto push = [&]() {
         for (std::size_t k = 1; k + 1 < even.size(); ++k) {
-            if (clearOf(near, even[k], kMargin)) continue;
+            if (near.clear(even[k], kMargin)) continue;
             for (float r = 0.25f; r <= 8.0f; r += 0.25f) {
                 float best = 1e9f;
                 Vec2 pick = even[k];
@@ -179,7 +226,7 @@ void keepClear(std::vector<Vec2>& pts, const std::vector<Solid>& solids) {
                     const float ang = a * (2.0f * kPi / 32.0f);
                     const Vec2 q{even[k].x + r * std::cos(ang), even[k].y + r * std::sin(ang)};
                     const float d = dist(q, even[k - 1]);
-                    if (d < best && clearOf(near, q, kMargin)) {
+                    if (d < best && near.clear(q, kMargin)) {
                         best = d;
                         pick = q;
                     }
@@ -214,18 +261,13 @@ void keepClear(std::vector<Vec2>& pts, const std::vector<Solid>& solids) {
 // A way from p to q round the walls between them (a junction's crossing through a busy square):
 // straight if nothing's in the way, else the shortest way on a half-metre grid, pulled straight
 // wherever it can see ahead.
-std::vector<Vec2> routeAround(Vec2 p, Vec2 q, const std::vector<Solid>& solids) {
+std::vector<Vec2> routeAround(Vec2 p, Vec2 q, const SolidIndex& near) {
     constexpr float kMargin = 0.5f, kCell = 0.5f, kPad = 12.0f;
-    if (lineClear(solids, p, q, kMargin)) return {p, q};
+    if (lineClear(near, p, q, kMargin)) return {p, q};
     const float x0 = std::fmin(p.x, q.x) - kPad, y0 = std::fmin(p.y, q.y) - kPad;
     const int w = static_cast<int>((std::fabs(p.x - q.x) + 2 * kPad) / kCell) + 1;
     const int h = static_cast<int>((std::fabs(p.y - q.y) + 2 * kPad) / kCell) + 1;
     if (w > 240 || h > 240) return {p, q};
-    std::vector<Solid> near;
-    for (const Solid& s : solids)
-        if (s.at.x > x0 - s.radius - 1 && s.at.x < x0 + w * kCell + s.radius + 1 && s.at.y > y0 - s.radius - 1 &&
-            s.at.y < y0 + h * kCell + s.radius + 1)
-            near.push_back(s);
     auto centre = [&](int c) { return Vec2{x0 + (c % w + 0.5f) * kCell, y0 + (c / w + 0.5f) * kCell}; };
     auto cellOf = [&](Vec2 v) {
         const int cx = std::min(w - 1, std::max(0, static_cast<int>((v.x - x0) / kCell)));
@@ -233,7 +275,7 @@ std::vector<Vec2> routeAround(Vec2 p, Vec2 q, const std::vector<Solid>& solids) 
         return cy * w + cx;
     };
     std::vector<u8> blocked(static_cast<std::size_t>(w * h));
-    for (int c = 0; c < w * h; ++c) blocked[static_cast<std::size_t>(c)] = !clearOf(near, centre(c), kMargin);
+    for (int c = 0; c < w * h; ++c) blocked[static_cast<std::size_t>(c)] = !near.clear(centre(c), kMargin);
     const int start = cellOf(p), goal = cellOf(q);
     blocked[static_cast<std::size_t>(start)] = blocked[static_cast<std::size_t>(goal)] = 0;
     std::vector<float> cost(static_cast<std::size_t>(w * h), 1e30f);
@@ -381,6 +423,8 @@ Vec2 along(const std::vector<Vec2>& pts, const std::vector<float>& cum, float d,
 
 void buildNet(const Valley& v, const std::vector<Solid>& solids, PathNet& out) {
     out = PathNet{};
+    SolidIndex walls;
+    walls.build(solids);
     // Junctions: every path's ends, and every point another path shares.
     auto nodeAt = [&](Vec2 p) {
         for (std::size_t k = 0; k < out.nodes.size(); ++k)
@@ -457,7 +501,7 @@ void buildNet(const Valley& v, const std::vector<Solid>& solids, PathNet& out) {
         float d = 0;
         while (d < cum.back() * 0.6f) {
             const Vec2 p = along(way, cum, d);
-            if (dist(p, n.view) >= want && clearOf(solids, p, 1.5f)) break;
+            if (dist(p, n.view) >= want && walls.clear(p, 1.5f)) break;
             d += 1.0f;
         }
         n.round = d;
@@ -479,10 +523,10 @@ void buildNet(const Valley& v, const std::vector<Solid>& solids, PathNet& out) {
                 lengths(way, cum);
                 const float from = std::fmin(r, cum.back() * 0.45f);
                 ends.push_back(along(way, cum, from));
-                for (float d = from; d < std::fmin(from + 25.0f, cum.back() * 0.5f); d += 1.0f) bad += !clearOf(solids, along(way, cum, d), 0.4f);
+                for (float d = from; d < std::fmin(from + 25.0f, cum.back() * 0.5f); d += 1.0f) bad += !walls.clear(along(way, cum, d), 0.4f);
             }
             for (std::size_t a = 0; a < ends.size(); ++a)
-                for (std::size_t b = a + 1; b < ends.size(); ++b) bad += lineClear(solids, ends[a], ends[b], 0.6f) ? 0 : 4;
+                for (std::size_t b = a + 1; b < ends.size(); ++b) bad += lineClear(walls, ends[a], ends[b], 0.6f) ? 0 : 4;
             if (bad < fewest) {
                 fewest = bad;
                 n.round = r;
@@ -502,7 +546,7 @@ void buildNet(const Valley& v, const std::vector<Solid>& solids, PathNet& out) {
             rb *= std::fmax(0.0f, s);
         }
         e.pts = cut(e.pts, ra, len - rb);
-        keepClear(e.pts, solids);
+        keepClear(e.pts, walls);
         lengths(e.pts, e.cum);
         e.length = e.cum.back();
     }
@@ -523,7 +567,7 @@ void buildNet(const Valley& v, const std::vector<Solid>& solids, PathNet& out) {
                     return e.a == static_cast<int>(k) ? e.pts.front() : e.pts.back();
                 };
                 const Vec2 p = endAt(links[a]), q = endAt(links[b]);
-                n.cross.push_back(dist(p, q) > 0.05f ? routeAround(p, q, solids) : std::vector<Vec2>{p, q});
+                n.cross.push_back(dist(p, q) > 0.05f ? routeAround(p, q, walls) : std::vector<Vec2>{p, q});
             }
     }
 }

@@ -18,6 +18,7 @@
 #include "app/battle_feature.hpp"
 #include "app/battle_view.hpp"
 #include "app/dialogue.hpp"
+#include "app/glade_show.hpp"
 #include "app/render3d.hpp"
 #include "app/roamers_feature.hpp"
 #include "app/scenes.hpp"
@@ -61,6 +62,7 @@ struct Out {  // a trainer out today
     int greetLine = 0;
     bool greeted = false;
     float fidgetIn = 6;  // seconds to a look about while they stand at a place
+    float clapIn = 0;    // (watching a battle: the next clap heard)
     // Their dragon at their heels.
     Dragon dragon;
     int level = -1;  // (the level it was made at)
@@ -213,6 +215,10 @@ void animatePerson(App& app, Out& o, bool stopped, bool watching, bool speaking,
             play(o, "fist_pump", 1.0f, 0.2f, true);
         } else {
             play(o, "clap");
+            if (nearYou && (o.clapIn -= app.dt) <= 0) {  // (their claps, heard when they're close)
+                o.clapIn = 1.4f + static_cast<float>(app.rng.below(800)) * 0.001f;
+                audio::playSfx(audio::Sfx::Clap, 1.1f, 0.35f);
+            }
         }
     } else if (o.pose.walking && !stopped) {
         play(o, "walk", clampf(o.pose.speed / personWalkSpeed(body), 0.6f, 2.2f));
@@ -317,7 +323,7 @@ void tick(App& app, const vext::Stage& stage) {
     if (!s.about) return;
     const float clock = roam::dayClock(nowLocal(app));
     const int feat = vext::activeFeature(app);
-    const bool mine = ours(app), busy = feat >= 0 && !mine;
+    const bool mine = ours(app), busy = !mine && (bview::running() || glade::showOn());  // (a battle or a show to watch)
     const bool listening = talking(app);
     const int level = levelFor(app, stage, 0);  // (their dragons: about your partner's level)
     int nearest = -1;
@@ -504,9 +510,10 @@ void talkCamera(vext::Stage& stage, const Out& o) {
     dir.z = 0;
     const float l = std::fmax(0.01f, length(dir));
     dir = dir * (1.0f / l);
-    const Vec3 side{-dir.y, dir.x, 0};  // (the side away from their dragon, at their right)
+    Vec3 side{-dir.y, dir.x, 0};
+    if (dot(side, stage.pal - stage.you) > 0) side = side * -1.0f;  // (away from your partner: 7 m off, its lighter model)
     stage.camSet = true;
-    stage.eye = stage.you - dir * 3.4f + side * 1.6f + Vec3{0, 0, 2.0f};
+    stage.eye = stage.you - dir * 6.0f + side * 1.8f + Vec3{0, 0, 2.6f};
     if (stage.valley) stage.eye.z = std::fmax(stage.eye.z, stage.valley->heightAt(stage.eye.x, stage.eye.y) + 1.2f);
     stage.target = o.at - dir * 0.6f + Vec3{0, 0, o.look.form == static_cast<u8>(Person::Child) ? 0.6f : 0.85f};
 }
@@ -678,7 +685,10 @@ void addDragons(App& app, const vext::Stage& stage, r3d::ValleyView& view, Vec3 
     d.lite = true;  // (always its light model: a trainer's dragon about is a passer-by, ~1,100 triangles)
 }
 
-void ambient(App& app, const vext::Stage& stage, r3d::ValleyView& view) { addDragons(app, stage, view, stage.you); }
+void ambient(App& app, const vext::Stage& stage, r3d::ValleyView& view) {
+    if (bview::running() || glade::showOn()) return;  // (a battle's or a show's view has its hands full)
+    addDragons(app, stage, view, stage.you);
+}
 
 void view(App& app, const vext::Stage& stage, r3d::ValleyView& view) {
     State& s = st();

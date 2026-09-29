@@ -289,7 +289,7 @@ pick_up.pose(1.2, HOLD).pose(1.4, HOLD)
 
 
 # ------------------------------------------------------------------------------ settings (workstream D)
-# The valley's people at their doings: audiences clapping, a trainer cheering their dragon on in a
+# The valley's people at their doings: watchers clapping, a trainer cheering their dragon on in a
 # duel (pointing it forward, a fist pump, hands to the face when it's hit, a slump when it loses, a
 # polite bow), villagers at work by the hour (Maple tidying her stall, Bram scattering feed from his
 # bucket, Wren writing on her clipboard, Pip flying his toy dragon about), fishing at the cove,

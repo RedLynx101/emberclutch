@@ -27,6 +27,11 @@
   fireflies and falling leaves, far trees, the new women's voice D92), release prep (player
   README, CREDITS, THIRD-PARTY-NOTICES, `docs/release/universal-db.json`, `tools/release/make_qr.py`;
   nothing published).
+- **Workstream D (roaming trainers, duels, people's doings; D99):** `core/roamers` (eight trainers,
+  3-5 out a day on the paths' network, a fair duel, a little Gleam a day each), `app/feature_roamers`,
+  `core/routines` + `app/people_acts` (villagers by the hour), 17 new people's clips, battles' people
+  react, Tam fishes, trainers stop to watch and clap; autotests `roamers.txt`, `people_anims.txt`. A roamer encounter
+  view ~9.8k triangles (their dragon on its light model ~1.1k, the trainer ~0.6k).
 - **Open with Noah:** the look lab ([page](https://claude.ai/artifact/PAiqpga4pLSsMqbXRjFUBV),
   db `looklab/pick`): A smooth as now, B faceted low-poly, C faceted + painted texture (autotest
   `ground 0|1|2`). My recommendation B/C.

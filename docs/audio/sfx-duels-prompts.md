@@ -13,7 +13,7 @@ storybook, never harsh. People's sounds are small and friendly (the valley's peo
 | Slug | Where it plays | ElevenLabs prompt | Length | Takes |
 |---|---|---|---|---|
 | `roamer-hello` | A roaming trainer waves as you come by (a bubble with their hello) | A cheerful friendly two-note whistle greeting, rising then falling, like a hiker calling hello across a meadow, light and breathy, no words | 0.5 s | 2 |
-| `hands-clap` | A pageant show's audience applauding the results; trainers watching your battle clap | A small group of three or four people clapping warmly for a short moment outdoors, light applause, no cheering, no crowd murmur | 1.2 s | 3 |
+| `hands-clap` | Trainers who stop to watch your battle clap (heard when they're close); an audience, later | A small group of three or four people clapping warmly for a short moment outdoors, light applause, no cheering, no crowd murmur | 1.2 s | 3 |
 | `soft-snore` | A villager dozing at night when you walk by (Old Rowan, Bram, Pip, Sable, Maple on her feet) | One soft cute snore from someone napping, a gentle slow breath in with a light rattle and a tiny whistle out, sleepy and sweet, not loud | 1.5 s | 2 |
 
 The duels themselves reuse the battles' sounds (`battle-start`, `swipe`, `hit`, `victory`,

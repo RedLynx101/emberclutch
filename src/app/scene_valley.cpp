@@ -1275,8 +1275,8 @@ void drawTop(App& app) {
             view.target = s.stage.target;
         }
     }
-    for (int f = 0; f < vext::featureCount() && feat < 0; ++f)  // (the walkers' dragons about: workstream D)
-        if (vext::feature(f).ambient) vext::feature(f).ambient(app, s.walkers, view);
+    for (int f = 0; f < vext::featureCount(); ++f)  // (the walkers' dragons about, in free slots: workstream D)
+        if (vext::feature(f).ambient && f != feat) vext::feature(f).ambient(app, s.walkers, view);
     if (r3d::ready()) r3d::drawValley(app, view, now);
     if (autotest::shooting())
         autotest::log("you (%.1f %.1f %.1f) partner (%.1f %.1f %.1f) mode %d", s.you.pos.x, s.you.pos.y, s.you.pos.z, s.pal.pos.x,

@@ -14,7 +14,6 @@
 #include "app/tips_ui.hpp"
 #include "app/autotest.hpp"
 #include "app/dialogue.hpp"
-#include "app/people_acts.hpp"  // the audience (workstream D)
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
@@ -531,8 +530,6 @@ void showView(App& app, const vext::Stage& stage, r3d::ValleyView& view) {
     view.at.z += L.stage.z;  // yours stands up on the stage too
     view.lead = false;
     view.shadow = 0;
-    if (s.phase == Phase::Intro || s.phase >= Phase::Results)  // the audience on the benches in the wide shots,
-        acts::showAudience(app, v, view, s.phase != Phase::Intro);  // clapping for the results (workstream D)
 }
 
 // ---- 2D over the picture

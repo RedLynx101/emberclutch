@@ -61,8 +61,9 @@ struct Feature {
     void (*drawTop)(App& app, const Stage& stage);                      // 2D over the picture
     void (*drawBottom)(App& app, const Input& in, const Stage& stage);  // the whole bottom screen
     // (Optional, workstream D) Whoever has the valley: every frame, people who walk about (their
-    // places and clips; the stage as lent, read only); while nobody has it, their dragons into the
-    // view's free `others` slots, and 2D over the picture (a greeting's bubble).
+    // places and clips; the stage as the walkers see it, read only); their dragons into the view's
+    // free `others` slots (unless it's this feature that has the valley: its own view does it); and
+    // while nobody has the valley, 2D over the picture (a greeting's bubble).
     void (*tick)(App& app, const Stage& stage) = nullptr;
     void (*ambient)(App& app, const Stage& stage, r3d::ValleyView& view) = nullptr;
     void (*drawOver)(App& app, const Stage& stage) = nullptr;

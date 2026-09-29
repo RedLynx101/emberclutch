@@ -2,8 +2,8 @@
 # tidying her stall and Pip flying his toy dragon in the morning, Bram scattering feed, Wren
 # writing on her clipboard at noon, Old Rowan and Sable sat down in the evening, everyone dozing at
 # night), Tam fishing at the cove with his rod and you casting and holding yours, Tove sat by her
-# camp at the Hollow, a league battle's challenger pointing, cheering and slumping, and a pageant
-# show's audience on the glade's benches, clapping for the results. The overlay's TRI is on.
+# camp at the Hollow, and a league battle's people: a bow as it begins, pointing their dragons in, a
+# fist pump or a wince at a big hit, the loser's slump. The overlay's TRI is on.
 overlay on
 wait 2.5
 name Noah
@@ -125,12 +125,24 @@ shot a12-you-fish
 autoplay off
 key B
 wait 1
-# Frostspire Hollow: Tove sat by her camp.
+# Frostspire Hollow: Tove sat by her camp, talking.
 travel 17
 wait 3
-view 17 0 4.5 2.4 -4.6 6.4 0.9
-wait 2
+battle keeper
+wait 2.5
 shot a13-tove
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 1
+key B
+wait 1
 # A league battle (Oren at the trailhead): he points his dragon in, a fist pump or a wince at a
 # big hit, a bow as it begins, the loser's slump.
 battle level 6

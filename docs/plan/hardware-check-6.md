@@ -1,4 +1,20 @@
-# Run 21, take 4 (0.9.5)
+# Run 21, take 4 (0.9.6)
+
+**0.9.6, the flicker found** (your screenshots and the trace's watch caught it): the teal wasn't
+the ground fogged. It was the lake's see-through water, drawn last, showing over the ground and
+everything still, because the depth they had drawn was gone by then. The colour matches exactly:
+the water at two thirds over the green gives 101, 151, 154, and your frames measure 101, 151, 155.
+What wiped the depth was the screen's own clear. citro2d clears with a memory fill that the 3DS
+runs *alongside* the drawing queued after it, not before it, so on a busy frame it could land after
+the ground had drawn. The dragon and critters, drawn later, kept theirs, which is why they never
+went teal. The emulator runs the two in order, so it never showed. Each screen is now cleared by
+drawing over it, first, in the same list as everything else. The trace now also checks the depth
+after each valley frame and counts any frame where the ground's depth is missing. **The den's
+entrance:** the valley's ground is sampled every 4 m and the arch's floor spans about one sample,
+so the ground there was a slope from samples that rose with the land; the samples round the door
+are now held under the floor (a test checks every point of it). **L/R in flight:** R bursts
+ahead (it spends stamina) and L brakes, as in Sky Rings; they used to bank, which steering
+already does. The build is on your 3DS (at .51).
 
 **0.9.5, your first take 4 notes** (the rest of take 4 goes on below as it was, your ticks kept):
 the ground's flicker was the ground alone drawn heavily fogged, as if far off, in odd frames
@@ -24,6 +40,12 @@ in FBI, SD → cias → `emberclutch.cia` → Install CIA; your save carries ove
 3. (0.9.5) Ride your Crestwing at a walk: it walks at a proper pace now (about four times as fast),
    and you sit on its back, not in it. Your other grown dragons walk no slower than a steady pace.
 4. (0.9.5) Three grown dragons in the den: they get round each other and each sleeps in its own bed.
+5. (0.9.6) The flicker again: walk, ride and fly about the valley (the meadow by the lake, the
+   Market village). Does the ground still go teal or blue, or does anything drop out, on either
+   screen? The overlay's GPU figure: a little higher than before (it draws each screen's clear)?
+6. (0.9.6) The den's entrance from the yard: no ground over the front of its floor.
+7. (0.9.6) Flying: hold **R** to burst ahead (the stamina bar drains) and **L** to brake (slower,
+   easier to land). The help under the map says so.
 
 ## 1. The flicker, and your haze
 Your screenshots showed it: in some frames every see-through shape vanished at once on **both**

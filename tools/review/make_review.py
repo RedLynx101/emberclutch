@@ -34,7 +34,7 @@ RUN_DOC = "docs/plan/hardware-check-6.md"  # the run's steps
 RUN_KEY = "run21d"      # its database collection (each run its own: run 20's notes stay under `run`)
 LABS = []              # banner labs to mark Held/Froze this run (none in run 21)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch Run 21, take 4 (0.9.5)"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch Run 21, take 4 (0.9.6)"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.

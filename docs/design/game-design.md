@@ -199,7 +199,7 @@ at their side, riding it once it's grown; villagers and a first campaign join yo
   Nesting Grove, cliffs, a lake, and a few floating islands. Short draw distance with
   atmospheric fog to keep it fast on old 3DS.
 - Riding finds **Gleam**, **trinkets** (hoard items) and occasionally a **wild egg**.
-- Controls: Circle Pad steer, A flap/accelerate, B brake/land, L/R bank, touch screen
+- Controls: Circle Pad steer, A flap/accelerate, B dive, R burst, L brake (D112; they banked before), touch screen
   shows the map. Optional gyro look.
 - The player appears as a small **rider** on the dragon's back (one model, 3 outfit
   colors) — the only time the player is seen.

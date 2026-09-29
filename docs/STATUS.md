@@ -2,10 +2,24 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.5) on the 3DS** ([plan](plan/v1.md), D89-D111). Take 4's first notes fixed in 0.9.5 (D111): the ground's teal flicker (one program for the valley), walking speeds measured right, the rider on the Crestwing's back, big dragons in the den. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`, Noah's take 4 ticks kept). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.6) on the 3DS** ([plan](plan/v1.md), D89-D112). The teal flicker found and fixed in 0.9.6 (D112): the screen's clear, a memory fill, ran beside the drawing and wiped the ground's depth, so the lake's water showed over it; each screen is now cleared by drawing. Also the den's floor and L/R in flight (burst, brake). Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`, Noah's take 4 ticks kept). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 21, take 4 with 0.9.5 (2026-09-29)
+## Now: run 21, take 4 with 0.9.6 (2026-09-29)
+- **0.9.5 on the 3DS** (Noah, still testing, notes to come on the page): the ground still flickered
+  in and out showing blue; the den's entrance still had ground over its floor; L/R in flight banked.
+  The trace's blip watch logged 635 blips in about three minutes of valley, alternating frame by frame between
+  the green ground (163, 172, 107) and teal (101, 151, 155), their triangles and draws the same.
+- **Diagnosis** (D112): the teal is the lake's water over the ground (the colour matches to a unit);
+  the statics' depth wiped by the screen's clear, a GX memory fill the GSP runs beside the frame's
+  command list (libctru submits three at once); the dragons, drawn later, kept theirs.
+- **0.9.6:** each screen cleared by a quad drawn first (`r3d::clearScreen`); the trace's depth watch
+  (holes counted); the den's floor over the ground (`den_pad`, a test); R burst and L brake in flight.
+  Sent to .51 with trace.on kept, the old trace off.
+- **Next:** Noah goes on with take 4. Pull trace.txt: "depth holes 0 of N" in its 5-second lines and
+  no "blip" lines means the flicker is gone; holes would mean the depth still goes some other way.
+
+## Run 21, take 4 with 0.9.5 (2026-09-29)
 - **Take 4 (0.9.4)'s first notes** (db `run21d` s0): the 2D glitch gone (every bottom screen whole in
   ~35 screenshots); the ground alone going teal in odd frames (0269, 0285, 0289: fogged ~75% toward the
   fog colour, strokes still there, the dragon untouched); the Crestwing crawling (its walk measured 0);

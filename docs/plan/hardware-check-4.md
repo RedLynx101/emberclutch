@@ -35,7 +35,10 @@ any still stands off it.)
 4. **X** opens the Journal (Quests, your dragon, Places, the Dragondex); tap a flag to **track**
    a goal: a gold marker on the map shows where to go. **Home** by the den's door (A), riding
    too.
-5. Tap a pin on the map: "Travel to ...?" asks first. The mill bridge is walkable now, and the
+5. **The camera keeps clear** of walls, caves, cliffs and houses whatever you're doing (walking,
+   riding, battles, fishing, shows): walk into the **Hidden Grotto** behind the falls and turn about
+   (its chest is mended too). Tell me anywhere something still cuts across the view.
+6. Tap a pin on the map: "Travel to ...?" asks first. The mill bridge is walkable now, and the
    paths are graded all the way (no more climbing walls).
 
 ## 3. Creatures in the valley

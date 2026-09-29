@@ -668,6 +668,55 @@ def brake(rng, take):
     return x
 
 
+# ---------------------------------------------------------------- workstream D: trainers and people
+def roamer_hello(rng, take):
+    """A roaming trainer's hello as you pass: a cheery two-note whistle, up then down ('wheet-whoo'),
+    a little breathy, with a soft kalimba pluck under the first note."""
+    sc = (1.0, 1.06)[take]
+    x = []
+    for t0, f0, f1, dur in ((0.0, 1180 * sc, 1560 * sc, 0.16), (0.2, 1480 * sc, 1080 * sc, 0.24)):
+        n = n_of(dur)
+        tone = glide(f0, f1, dur, dur * 0.6, env=hump(n, 0.3, 1.0, 1.2), harmonics=((1, 1.0), (2, 0.08)), vibrato=(7.0, 0.012))
+        add(x, tone, t0, 0.8)
+        add(x, norm(mul(biquad(noise(n, rng), "bp", f1 * 1.0, 3.0), hump(n, 0.3))), t0, 0.12)
+    add(x, kalimba(note("E6") * sc, 0.3, decay=0.12), 0.0, 0.25)
+    return x
+
+
+def hands_clap(rng, take):
+    """A few people clapping for a show or a duel: a small patter of claps over a second or so,
+    each a bright snap of noise with a hollow knock under it, the hands not quite together."""
+    n = n_of(1.3)
+    x = [0.0] * n
+    count = (9, 11, 8)[take]
+    for k in range(count):
+        t = 0.02 + k * (1.1 / count) + rng.uniform(-0.03, 0.03)
+        for hand in range(rng.choice((1, 2))):  # (two in the crowd at almost the same moment)
+            m = n_of(0.05)
+            snap = mul(biquad(biquad(noise(m, rng), "bp", rng.uniform(1300, 2300), 1.1), "hp", 700), decay_env(m, 0.008, 0.0004))
+            knock = glide(rng.uniform(420, 560), 380, 0.05, 0.02, tau=0.01, attack=0.0005)
+            add(x, norm(snap), t + hand * rng.uniform(0.008, 0.02), rng.uniform(0.5, 0.9))
+            add(x, knock, t + hand * 0.01, 0.15)
+    env = [min(1.0, i / n_of(0.05)) * min(1.0, (n - i) / n_of(0.35)) for i in range(n)]
+    return mul(x, env)
+
+
+def soft_snore(rng, take):
+    """Someone dozing: a soft, slow breath in with a low purring rattle, then a gentle whistle out,
+    sleepy and cute rather than loud."""
+    sc = (1.0, 0.92)[take]
+    n_in, n_out = n_of(0.9), n_of(0.7)
+    rattle = [0.55 + 0.45 * math.sin(TAU * 28 * sc * i / RATE) for i in range(n_in)]
+    breath_in = mul(biquad(biquad(noise(n_in, rng), "bp", 420 * sc, 0.9), "lp", 1400), [a * b for a, b in zip(hump(n_in, 0.6, 1.0, 1.4), rattle)])
+    x = add([], norm(breath_in), 0.0, 0.8)
+    add(x, glide(110 * sc, 96 * sc, 0.9, 0.8, env=[a * b for a, b in zip(hump(n_in, 0.6), rattle)],
+                 harmonics=((1, 1.0), (2, 0.5), (3, 0.3))), 0.0, 0.35)
+    breath_out = mul(biquad(noise(n_out, rng), "bp", 900 * sc, 1.4), hump(n_out, 0.25, 1.0, 1.6))
+    add(x, norm(breath_out), 0.95, 0.4)
+    add(x, glide(980 * sc, 720 * sc, 0.55, 0.5, env=hump(n_of(0.55), 0.3), harmonics=((1, 1.0),)), 1.0, 0.12)
+    return x
+
+
 # slug: (kind in process_sfx's KINDS, takes, maker, dB against the kind's target)
 # ----------------------------------------------------------------- the valley's critters (L)
 # Stand-ins until generated ones arrive (docs/audio/sfx-life-prompts.md): small, soft and cute.
@@ -828,6 +877,9 @@ EFFECTS = {
     "whistle-call": ("voice", 1, whistle_call, -3.0),
     "critter-friend": ("ui", 1, critter_friend, 1.0),
     "leaf-rustle": ("body", 1, leaf_rustle, -3.0),
+    "roamer-hello": ("ui", 2, roamer_hello, 1.0),  # (workstream D)
+    "hands-clap": ("care", 3, hands_clap, -2.0),
+    "soft-snore": ("care", 2, soft_snore, -4.0),
 }
 
 

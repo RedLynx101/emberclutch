@@ -62,12 +62,18 @@ struct Progress {
     s32 critterDay = -1000000;
     u8 critterToday = 0, critterPaid = 0;
     u8 critterCounts[8] = {};
+    // The roaming trainers (core/roamers, workstream D): the day their first wins were paid, whose
+    // (a bit each), and the friendly duels won in all.
+    s32 roamDay = -1000000;
+    u8 roamPaid = 0;
+    u16 duelsWon = 0;
 };
 
 // The progress block's bytes in the save (after its u16 size).
 constexpr int kProgressBytes = kAccessoryBytes + 4 + 2 + 1 + kLeagues + 1 + kLeagues + 1 + 8 + 4 + 8 + 4 + 2 * kRecordCounts;
 constexpr int kProgressCoveBytes = 4 + 3;  // (after them: the cove's day, read if there)
 constexpr int kProgressCritterBytes = 2 + 4 + 2 + 8;  // (then the critters, workstream L, read if there)
+constexpr int kProgressRoamBytes = 4 + 1 + 2;  // (after those: the roaming trainers', read if there)
 
 namespace trainer {
 

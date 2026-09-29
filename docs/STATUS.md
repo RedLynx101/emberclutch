@@ -38,7 +38,13 @@
   (D102); the glade's stage 7.2 m round for three dragons (Noah); the camera behind you after a
   battle; the whole-game playthrough script and the README's screenshots.
 - **Valley life (D101):** L merged (seven critters with an A moment each, the Journal's page, one
-  draw, 0-136 triangles); D (roaming trainers, friendly duels, people's animations) running.
+  draw, 0-136 triangles); D merged (below).
+- **Workstream D (roaming trainers, duels, people's doings; D103):** `core/roamers` (eight trainers,
+  3-5 out a day on the paths' network, a fair duel, a little Gleam a day each), `app/feature_roamers`,
+  `core/routines` + `app/people_acts` (villagers by the hour), 17 new people's clips, battles' people
+  react, Tam fishes, trainers stop to watch and clap; autotests `roamers.txt`, `people_anims.txt`. A roamer
+  encounter view ~10.1k triangles with a place in sight (the trainer adds ~1.7k: their dragon on its
+  light model ~1.1k, the trainer ~0.6k); talking ~9.1k; a duel ~10k (as the league's battles).
 - **Sounds and music (D100):** ElevenLabs by API (`tools/audio/eleven_sfx.py`): batch 4 (24 foley
   and beds) and the critters' 9; the Suno brief batch 4 (six tracks). All on the review page:
   https://claude.ai/artifact/52Kf8yemiqCHkq3wQKnxoW (`tools/review/make_review.py`; db `sounds/<slug>`

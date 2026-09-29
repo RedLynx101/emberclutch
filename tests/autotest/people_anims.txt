@@ -1,0 +1,183 @@
+# The people at their doings (workstream D): the villagers by the hour at their spots (Maple
+# tidying her stall and Pip flying his toy dragon in the morning, Bram scattering feed, Wren
+# writing on her clipboard at noon, Old Rowan and Sable sat down in the evening, everyone dozing at
+# night), Tam fishing at the cove with his rod and you casting and holding yours, Tove sat by her
+# camp at the Hollow, and a league battle's people: a bow as it begins, pointing their dragons in, a
+# fist pump or a wince at a big hit, the loser's slump. The overlay's TRI is on.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+# Grown up (Next stage x3), then out into the valley.
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 2
+tips seen
+hour 9
+valley
+wait 5
+# 9:00 at the Market: Maple tidies her stall, Pip flies his toy dragon.
+travel 1
+wait 3
+view 1 -2.5 14 3.2 -2.5 2 0.6
+wait 2
+shot a00-market-morning
+view 1 3.2 2.6 1.4 3 -2 0.7
+wait 1.5
+shot a01-maple-tidy
+view 1 -7.5 10.2 1.3 -8 6 0.5
+wait 1.2
+shot a02-pip-toy
+# The Sanctuary: Bram scatters feed from his bucket.
+travel 3
+wait 3
+view 3 -1.5 12.2 1.6 -2 8 0.6
+wait 1.5
+shot a03-bram-feeds
+wait 0.9
+shot a03b-bram-fling
+# Noon at the arena: Wren writes on her clipboard.
+hour 12
+travel 6
+wait 3
+view 6 4.5 28.2 1.6 4 24 0.8
+wait 1.5
+shot a04-wren-writes
+# 19:00: Old Rowan sits by his lodge, Sable by the trailhead's camp.
+hour 19
+travel 8
+wait 3
+view 8 4.2 8.6 1.1 2.5 6 0.3
+wait 2
+shot a05-rowan-sits
+travel 5
+wait 3
+view 5 -2.4 7.6 1.0 -4 5 0.3
+wait 2
+shot a06-sable-sits
+# 23:00: dozing (Old Rowan sat down, Maple on her feet at the stall, Pip curled up).
+hour 23
+travel 8
+wait 3
+view 8 4.2 8.6 1.1 2.5 6 0.3
+wait 3
+shot a07-rowan-dozes
+travel 1
+wait 3
+view 1 3.2 2.6 1.4 3 -2 0.6
+wait 3
+shot a08-maple-dozes
+view 1 -7.5 9.5 1.2 -8 6 0.3
+wait 1
+shot a09-pip-dozes
+# 10:00 at Driftwood Cove: Tam fishing with his rod out; then you, casting and holding yours.
+hour 10
+travel 16
+wait 3
+view 16 -3.5 23.8 1.6 -8.5 20.8 0.9
+wait 2
+shot a10-tam-fishes
+cove 0
+wait 1.5
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 1
+cove 1
+autoplay on
+wait 1
+shotin 0.5 a11-you-cast
+wait 1.2
+wait 2
+shot a12-you-fish
+autoplay off
+key B
+wait 1
+# Frostspire Hollow: Tove sat by her camp, talking.
+travel 17
+wait 3
+battle keeper
+wait 2.5
+shot a13-tove
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 1
+key B
+wait 1
+# A league battle (Oren at the trailhead): he points his dragon in, a fist pump or a wince at a
+# big hit, a bow as it begins, the loser's slump.
+battle level 6
+autoplay on
+battle start 0 1
+wait 3
+shot a14-battle-bow
+wait 4
+shot a15-battle-point
+wait 5
+shot a16-battle-react
+wait 8
+shot a17-battle-end
+wait 3
+shot a18-battle-card
+wait 8
+autoplay off
+# 20:00, a show at Moonpetal Glade: the audience on the benches, then clapping the results.
+hour 20
+travel 15
+wait 4
+pg autoplay on
+pg show 1 0
+wait 1.2
+shot a20-show-intro
+wait 5
+shot a21-show-look-cards
+wait 9
+shot a22-show-poise
+wait 12
+shot a23-show-perform
+wait 10
+shot a24-show-rivals
+wait 2.8
+shot a25-show-results
+wait 2
+shot a26-show-applause
+quit

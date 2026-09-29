@@ -750,4 +750,18 @@ inline constexpr const char* kHollowLeft = "Good training today. The caves will 
 inline constexpr const char* kHollowNext = "Next: floor %d";
 inline constexpr const char* kHollowDone = "Back to Tove";
 
+// The roaming trainers and their friendly duels (workstream D; their own lines are core/roamers')
+inline constexpr const char* kPromptDuel = "A: duel %s";
+inline constexpr const char* kDuelWants = "%s wants a friendly duel!";
+inline constexpr const char* kDuelAskTitle = "Duel %s?";
+inline constexpr const char* kDuelAskGo = "Duel!";
+inline constexpr const char* kDuelFair = "A fair fight: matched to your partner";
+inline constexpr const char* kDuelPrize = "Their first loss today pays %lu Gleam";
+inline constexpr const char* kDuelPrizeTaken = "Today's Gleam from them is won already";
+inline constexpr const char* kDuelNoPartner = "Oh, no dragon with you? Come back with one and we'll have a duel!";
+inline constexpr const char* kDuelTooTired = "{D} looks worn out. Rest up, and we'll duel another time!";
+inline constexpr const char* kDuelsWonLine = "Friendly duels won: %d";
+inline constexpr const char* kDuelsWon = "Your duels won: %d";
+inline constexpr const char* kDuelWatching = "Watching %s";
+
 }  // namespace ec::str

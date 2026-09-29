@@ -168,10 +168,13 @@ void profileRecord(App& app, const Input& in, const Dragon& d) {
     if (d.battleTitle || d.showTitle) {
         std::snprintf(line, sizeof(line), "%s%s%s", trainer::battleTitleName(d.battleTitle),
                       d.battleTitle && d.showTitle ? "  -  " : "", trainer::showTitleName(d.showTitle));
-        text(app, line, 64, 66, 0.4f, theme::kShell, C2D_AlignLeft, 246);
+        text(app, line, 64, 66, 0.4f, theme::kShell, C2D_AlignLeft, 160);
     } else {
-        text(app, str::kNoTitles, 64, 66, 0.4f, withAlpha(theme::kShell, 0.5f), C2D_AlignLeft, 246);
+        text(app, str::kNoTitles, 64, 66, 0.4f, withAlpha(theme::kShell, 0.5f), C2D_AlignLeft, 160);
     }
+    // Your friendly duels won with the roaming trainers (all your dragons', workstream D).
+    std::snprintf(line, sizeof(line), str::kDuelsWon, static_cast<int>(app.game.progress.duelsWon));
+    text(app, line, 308, 68, 0.32f, withAlpha(theme::kShell, app.game.progress.duelsWon ? 0.8f : 0.45f), C2D_AlignRight, 90);
     // Its wins, and the Hollow's deepest floor.
     const int values[4] = {d.battleWins, d.showWins, d.wildWins, d.frostDeepest};
     const char* const labels[4] = {str::kBattleWins, str::kShowWins, str::kWildWins, str::kHollowDeepest};

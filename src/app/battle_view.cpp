@@ -212,8 +212,8 @@ float beginEvent(App& app, State& s, const Event& e) {
     switch (e.kind) {
         case Ev::Use: {
             setLine(s, str::kBattleUsed, b.name, m.name);
-            if (e.side == 1 && s.setup.trainer) playPerson(s.trainer, "talk", true);
-            if (e.side == 0) playPerson(s.you, "nod", true);
+            if (e.side == 1 && s.setup.trainer) playPerson(s.trainer, "point", true);  // (sending it in: workstream D)
+            if (e.side == 0) playPerson(s.you, "point", true);
             if (m.kind == battle::MoveKind::Body) {
                 me.lungeT = 0;
                 const float gap = length(other.home - me.home);
@@ -256,8 +256,11 @@ float beginEvent(App& app, State& s, const Event& e) {
             s.shake = big ? 0.32f : 0.16f;
             pop(s, topOf(me), e.amount, false);
             s.fx.emit(Fx::Puff, chestOf(me), big ? 6 : 3, sizeOf(me) * 1.4f);
-            if (e.side == 0 && (e.flags & battle::kCrit)) playPerson(s.you, "surprised", true);
-            if (e.side == 1 && s.setup.trainer && (e.flags & battle::kCrit)) playPerson(s.trainer, "surprised", true);
+            if (big) {  // (a wince for their own, a fist pump for the other's: workstream D)
+                const char* wince = (e.flags & battle::kCrit) ? "surprised" : "worried";
+                if (e.side == 0 || s.setup.trainer) playPerson(e.side == 0 ? s.you : s.trainer, wince, true);
+                if (e.side == 1 || s.setup.trainer) playPerson(e.side == 0 ? s.trainer : s.you, "fist_pump", true);
+            }
             return (e.flags & (battle::kCrit | battle::kStrong | battle::kWeak)) ? 1.0f : 0.7f;
         }
         case Ev::StatUp:
@@ -336,8 +339,8 @@ void toEnd(App& app, State& s, battle::Outcome o) {
     s.outcome = o;
     const bool won = o == battle::Outcome::Won;
     audio::playSfx(won ? audio::Sfx::Victory : audio::Sfx::Defeat);
-    playPerson(s.you, won ? "cheer" : "nod", true);
-    if (s.setup.trainer) playPerson(s.trainer, won ? "surprised" : "cheer", true);
+    playPerson(s.you, won ? "cheer" : o == battle::Outcome::GaveUp ? "bow" : "slump", true);  // (workstream D: slump, bow)
+    if (s.setup.trainer) playPerson(s.trainer, won ? "slump" : "cheer", true);
     Side& winner = s.side[won ? 0 : 1];
     if (o != battle::Outcome::GaveUp && !winner.lying) playClip(winner, ClipId::TailWag, 0.25f, true);
     if (won) s.fx.emit(Fx::Heart, chestOf(s.side[0]) + Vec3{0, 0, 0.6f}, 5, sizeOf(s.side[0]) * 1.2f);
@@ -673,7 +676,7 @@ void start(App& app, const Setup& setup) {
     s.fade = 0;
     s.camSnap = true;
     playPerson(s.you, "idle");
-    playPerson(s.trainer, "idle");
+    playPerson(s.trainer, s.setup.trainer ? "bow" : "idle");  // (a trainer bows as it begins: workstream D)
     s.fx.clear();
     s.breath.clear();
     if (s.phase == Phase::Enter) audio::playSfx(audio::Sfx::BattleStart);

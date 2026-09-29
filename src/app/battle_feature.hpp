@@ -30,5 +30,11 @@ void battleCommand(App& app, const char* args);
 // or up to its keeper and A.
 void startHollowFloor(App& app, int floor);
 void startHollowKeeper(App& app);
+// (feature_league.cpp, for the roaming trainers' duels, workstream D) A battle staged round
+// someone standing at `them` as the league stages its challengers' (you on good ground clear of
+// walls, the camera's shoulder clear): false if there's nowhere good to stand.
+namespace bview { struct Setup; }
+bool stageBattle(const Valley& v, Vec3 them, Vec3 you, float youHeading, Vec2 middle, float sizeYou, float sizeFoe, bool small,
+                 bview::Setup& out);
 
 }  // namespace ec

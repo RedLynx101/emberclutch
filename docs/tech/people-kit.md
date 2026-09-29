@@ -97,7 +97,7 @@ villager's, `linear()` converts for Blender.
 | keeper | 546 | 52 | - | 598 | | child | 536 | 52 | 588 |
 | market | 508 | 52 | - | 560 | | traveller | 542 | 52 | 594 |
 
-## The clips (`romfs/anims/person.eca`, 18 clips, one library for everyone)
+## The clips (`romfs/anims/person.eca`, 35 clips, one library for everyone)
 Deltas in armature axes on top of the rest pose, as the dragons' (conventions in
 `person_clips.py`). **The prop hand stays level:** every clip computes `hand_L` as the inverse of
 hips-spine-chest-arm_up_L-arm_lo_L, so a staff, pole, bucket or clipboard held in hand_L stays
@@ -124,6 +124,33 @@ upright however the arm moves (raised aloft in a cheer, planted when kneeling). 
 | sit_loop | 3.0 | yes | seated, feet swinging (an extra, so a held sit doesn't freeze) |
 | surprised | 1.0 | | a startled hop back, hands up (swap to eyes variant 1) |
 | pick_up | 1.4 | | squats and picks up with hand_R, ends holding it up at the chest |
+| clap | 0.8 | yes | clapping at chest height, a little bob; thump at each clap (workstream D, below) |
+| sit_clap | 0.8 | yes | sat as `sit`, clapping, feet swinging |
+| sit_ground | 4.0 | yes | sat on the ground, legs out, hands on the thighs; root down 0.21 m |
+| doze | 5.0 | yes | dozing sat on the ground, chin down, a nod and a catch; root down 0.21 m |
+| doze_stand | 5.0 | yes | dozing on their feet, head drooped, a slow sway |
+| stretch | 2.4 | | arms up in a V, up on the toes (root 0.03 m), a yawn |
+| fist_pump | 1.2 | | the free hand pumped twice, the knees bouncing (cheering a dragon on) |
+| point | 1.2 | | a step and the free arm thrown forward, pointing (sending a dragon in) |
+| worried | 1.4 | | hands up toward the cheeks, a lean back, a wince each way |
+| slump | 1.8 | | a breath in, then shoulders down and head hung (ends slumped) |
+| bow | 1.4 | | a polite bow |
+| fish | 3.0 | yes | a rod held out in both hands, a gentle jig (the cove draws the rod) |
+| cast | 1.2 | | the rod back over the shoulder, whipped forward, ends as `fish` |
+| scatter | 2.2 | yes | a dip into the bucket in hand_L, feed flung out in an arc (Bram) |
+| write | 3.0 | yes | writing on the clipboard held up in hand_L, looking up now and then (Wren) |
+| tidy | 2.4 | yes | both hands busy at a counter in turn, leaning in (Maple) |
+| fly_toy | 2.0 | yes | the toy in hand_L swooped up and round, bouncing (root bob), eyes on it (Pip) |
+
+**Settings (workstream D, 2026-09-28):** the last seventeen are for the people's doings: the
+villagers by the hour (`core/routines`, played by `app/people_acts`), the battle view's trainer
+and you (a bow as it begins, a point as a move is chosen, a fist pump or a wince at a big hit, the
+loser's slump), the roaming trainers (walk, wave, talk, sit_ground at a viewpoint, a look about or a
+stretch, clapping while they watch someone else's battle), fishing at the cove. `sit_clap` waits
+for a seated audience (benches at the glade: left out for now, the show's wide shots being in budget).
+**Root tracks scale by the body:** the game multiplies a clip's root offsets by the body's hips /
+0.315 (`render3d` drawPerson), so the child sits on the ground as the grown-ups do.
+Preview sheets: `people_model.py -- --sheets clips --clip-pages 3,4,5`.
 
 Walk and run speeds are for the standard leg (hips at 0.315 m): scale by hips / 0.315 for other
 bodies (the child 0.67). Events use the dragons' ids: footstep (1), land (7). Mount and dismount

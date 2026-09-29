@@ -328,6 +328,9 @@ float catchSize(Catch c) {
 }  // namespace
 
 // ---------------------------------------------------------------------- the feature
+// Tam fishes by the water while you're not by him (workstream D): his rod out over the lake.
+bool tamFishing(const Spots& s, Vec3 you) { return s.ok && std::hypot(you.x - s.fisher.x, you.y - s.fisher.y) > 8.0f; }
+
 int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* out, int cap) {
     const Spots& s = spots(v);
     if (!s.ok || cap <= 0 || std::hypot(near.x - s.fish.x, near.y - s.fish.y) > radius + 40.0f) return 0;
@@ -348,6 +351,7 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
         f.id = 0;
         f.voice = 0;
         f.pitch = 1.25f;
+        f.clip = tamFishing(s, near) ? "fish" : nullptr;  // his rod out till you come near (drawOver draws it; workstream D)
     }
     if (n < cap && !active(app)) {  // the water's edge: fishing
         vext::Folk& f = out[n++];
@@ -427,7 +431,7 @@ void update(App& app, const Input& in, vext::Stage& stage) {
     stage.eye.z = surfaceAt(*stage.valley, stage.eye.x, stage.eye.y) + 2.6f + 1.3f * size;
     stage.target = s.fish - right * (0.4f + 0.6f * size) + fwd * 5.0f;
     stage.target.z = surfaceAt(*stage.valley, s.fish.x, s.fish.y) + 0.2f + 0.5f * size;
-    stage.youClip = "idle";
+    stage.youClip = "fish";  // (the rod held out: workstream D)
     if (f.nibbleT >= 0) {  // a nibble of the catch
         f.nibbleT += dt;
         stage.palClip = ClipId::Eat;
@@ -450,7 +454,7 @@ void update(App& app, const Input& in, vext::Stage& stage) {
             if (press || (f.autoplay && f.t > 1.2f && fishLeft(app) > 0)) cast(app, f, stage);
             break;
         case Step::Casting: {  // the bobber flies out in an arc
-            stage.youClip = "wave";
+            stage.youClip = "cast";
             const float u = clampf(f.t / 0.75f, 0.0f, 1.0f);
             const Vec3 from = tipOf(f, app.t);
             f.bobber = from + (s.cast - from) * u + Vec3{0, 0, 2.2f * 4.0f * u * (1.0f - u)};
@@ -610,6 +614,23 @@ void drawCoveThings(App& app, const Valley& v, s64 now) {
     Rgb top, horizon, tint;
     valleySky(now, top, horizon, tint);
     r3d::drawChallengeProps(app, props, n, horizon, now);
+}
+
+// Tam's rod while he fishes (workstream D): from his hands out over the lake, the line down to it.
+void drawOver(App& app, const vext::Stage& stage) {
+    if (!stage.valley || active(app)) return;
+    const Spots& s = spots(*stage.valley);
+    if (!tamFishing(s, stage.you) || std::hypot(stage.you.x - s.fisher.x, stage.you.y - s.fisher.y) > 70.0f) return;
+    const Vec3 fwd = forwardOf(s.fisherHeading);
+    const Vec3 hand = s.fisher + fwd * 0.3f + rightOf(s.fisherHeading) * 0.1f + Vec3{0, 0, 0.55f};
+    const Vec3 tip = hand + fwd * 1.5f + Vec3{0, 0, 1.15f + 0.03f * std::sin(app.t * 1.3f)};
+    Vec3 end = tip + fwd * 1.2f;
+    end.z = stage.valley->water;
+    float hx, hy, hp, tx, ty, tp, ex, ey, ep;
+    if (!r3d::project(hand, hx, hy, hp) || !r3d::project(tip, tx, ty, tp) || !r3d::project(end, ex, ey, ep)) return;
+    const u32 rod = theme::rgba(120, 82, 50);
+    C2D_DrawLine(hx, hy, rod, tx, ty, rod, std::fmax(1.2f, 0.035f * hp), 0);
+    C2D_DrawLine(tx, ty, withAlpha(theme::kShell, 0.7f), ex, ey, withAlpha(theme::kShell, 0.7f), 1.0f, 0);
 }
 
 void drawTop(App& app, const vext::Stage& stage) {

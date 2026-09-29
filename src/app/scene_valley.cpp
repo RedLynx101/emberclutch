@@ -19,6 +19,7 @@
 #include "app/battle_view.hpp"
 #include "app/glade_show.hpp"
 #include "app/dialogue.hpp"
+#include "app/people_acts.hpp"  // the villagers' doings by the hour (workstream D)
 #include "app/photo.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
@@ -120,6 +121,7 @@ struct ValleyScene {
     ExtraFigure extraFig[vext::kMaxFolk];
     int actionExtra = -1;
     vext::Stage stage;
+    vext::Stage walkers;  // (the stage as the walkers see it this frame: workstream D)
     int travelAsk = -1;  // a pin tapped: its place, until Go or Stay (run 19: travel asks first)
     // Walking together (run 19): the metres not yet counted; the pouch open to feed it; its meal.
     float walkCarry = 0;
@@ -485,6 +487,7 @@ void gatherExtras(App& app, ValleyScene& s) {
     if ((s.extraCheck -= app.dt) > 0) return;
     s.extraCheck = 0.2f;
     s.extraCount = 0;
+    for (vext::Folk& f : s.extra) f = vext::Folk{};  // (fresh: a feature may leave fields unset, a walker's `live` from before)
     for (int f = 0; f < vext::featureCount() && s.extraCount < vext::kMaxFolk; ++f) {
         const vext::Feature& ft = vext::feature(f);
         if (!ft.folk) continue;
@@ -529,20 +532,20 @@ void animatePeople(App& app, ValleyScene& s) {
         const float d = std::hypot(s.you.pos.x - at.x, s.you.pos.y - at.y);
         if (d > 90.0f) continue;  // far off: left as they were
         // Turning to you when you're near (and while you talk), else back to their place's way.
-        const float want = d < 6.0f ? std::atan2(s.you.pos.x - at.x, -(s.you.pos.y - at.y)) : rest;
+        const bool mine = listening && !app.talk.custom && app.talk.who == who;
+        const bool still = !mine && acts::villagerStill(app, k);  // (sat down or dozing: they stay put)
+        const float want = d < 6.0f && !still ? std::atan2(s.you.pos.x - at.x, -(s.you.pos.y - at.y)) : rest;
         float err = std::remainder(want - f.heading, 6.2831853f);
         f.heading += clampf(err, -3.0f * app.dt, 3.0f * app.dt);
-        const bool mine = listening && !app.talk.custom && app.talk.who == who;
         if (mine) {
             playClip(f, "talk", 1.0f, 0.25f);
         } else if (playing(f, "talk")) {
             playClip(f, "nod", 1.0f, 0.2f);
-        } else if (!f.waved && d < 7.0f) {
+        } else if (!f.waved && d < 7.0f && !still) {
             f.waved = true;
             playClip(f, "wave", 1.0f, 0.2f);
-        } else if (f.anim.clip < 0 || ((playing(f, "wave") || playing(f, "nod")) && f.anim.finished(*lib))) {
-            playClip(f, "idle", 1.0f, 0.3f);
-            f.anim.time = (k * 0.7f);  // not all breathing together
+        } else if (!(playing(f, "wave") || playing(f, "nod")) || f.anim.finished(*lib)) {
+            acts::villagerRest(app, k, f.anim, d);  // their doings by the hour (app/people_acts, workstream D)
         }
         if (d > 15.0f) f.waved = false;  // a new visit: another hello
         f.anim.update(*lib, app.dt, events, 4);
@@ -551,13 +554,14 @@ void animatePeople(App& app, ValleyScene& s) {
     // The features' people: idle where they stand, turning to you when you come near.
     for (int k = 0; k < s.extraCount; ++k) {
         vext::Folk& who = s.extra[k];
-        if (!who.shown) continue;
+        if (!who.shown || who.live) continue;  // (a walker: its feature moves and animates it)
         ValleyScene::Figure& f = extraFigure(s, k);
         const Vec3 at = who.look.at;
         const float d = std::hypot(s.you.pos.x - at.x, s.you.pos.y - at.y);
+        const char* rest = who.clip ? who.clip : "idle";  // (the feature's standing clip)
         if (f.anim.clip < 0) {
             f.heading = who.look.heading;
-            playClip(f, "idle", 1.0f, 0.0f);
+            playClip(f, rest, 1.0f, 0.0f);
             f.anim.time = k * 0.37f;
         }
         const float want = d < 6.0f ? std::atan2(s.you.pos.x - at.x, -(s.you.pos.y - at.y)) : who.look.heading;
@@ -565,8 +569,9 @@ void animatePeople(App& app, ValleyScene& s) {
         if (!f.waved && d < 7.0f) {
             f.waved = true;
             playClip(f, "wave", 1.0f, 0.2f);
-        } else if ((playing(f, "wave") || playing(f, "nod")) && f.anim.finished(*lib)) {
-            playClip(f, "idle", 1.0f, 0.3f);
+        } else if (((playing(f, "wave") || playing(f, "nod")) && f.anim.finished(*lib)) ||
+                   (!playing(f, "wave") && !playing(f, "nod") && !playing(f, rest))) {
+            playClip(f, rest, 1.0f, 0.3f);
         }
         if (d > 15.0f) f.waved = false;
         f.anim.update(*lib, app.dt, events, 4);
@@ -628,8 +633,9 @@ void findAction(ValleyScene& s) {
     s.actionExtra = -1;
     for (int k = 0; k < s.extraCount; ++k) {
         const vext::Folk& who = s.extra[k];
-        const float d = std::hypot(at.x - who.look.at.x, at.y - who.look.at.y);
-        if (d < who.reach && d < best && facing(s.you, {who.look.at.x, who.look.at.y}, 70.0f)) {
+        const Vec3 wp = who.live ? who.live->at : who.look.at;  // (a walker: where it is now)
+        const float d = std::hypot(at.x - wp.x, at.y - wp.y);
+        if (d < who.reach && d < best && facing(s.you, {wp.x, wp.y}, 70.0f)) {
             best = d;
             s.action = Action::Folk;
             s.actionExtra = k;
@@ -874,6 +880,13 @@ void update(App& app, const Input& in) {
         wildlife::tick(app, s.valley, {hereAt(s), r ? s.flight.heading : s.you.heading, r ? s.flight.speed : s.you.speed, r, s.partner,
                                        r ? s.flight.pos : s.pal.pos, r ? s.flight.speed : s.pal.speed, r ? s.flight.heading : s.pal.heading});
     }
+    s.walkers = s.stage;  // the features' walkers, every frame whoever has the valley (workstream D;
+    s.walkers.valley = &s.valley;  // a copy: the stage lent keeps its camera while someone talks)
+    s.walkers.riding = s.mode == Mode::Riding;
+    s.walkers.you = s.walkers.riding ? s.flight.pos : s.you.pos;
+    s.walkers.partner = s.partner;
+    for (int f = 0; f < vext::featureCount(); ++f)
+        if (vext::feature(f).tick) vext::feature(f).tick(app, s.walkers);
     if (app.autoGoto[2] != 0) {  // an autotest's spot
         app.autoGoto[2] = 0;
         s.mode = Mode::OnFoot;
@@ -1195,7 +1208,7 @@ void drawTop(App& app) {
         }
         for (int k = 0; k < s.extraCount; ++k)
             if (s.extra[k].shown) {
-                const Vec3 p = s.extra[k].look.at;
+                const Vec3 p = s.extra[k].live ? s.extra[k].live->at : s.extra[k].look.at;
                 near[nearCount++] = {std::hypot(p.x - view.eye.x, p.y - view.eye.y) + std::hypot(p.x - s.you.pos.x, p.y - s.you.pos.y),
                                      kVillagers + k};
             }
@@ -1212,6 +1225,8 @@ void drawTop(App& app) {
                 p.anim = &s.folk[k].anim;
                 villagerPalette(who, p.pal);
                 p.blink = s.folk[k].blink;
+            } else if (s.extra[k - kVillagers].live) {
+                p = *s.extra[k - kVillagers].live;  // (a walker, as its feature keeps it)
             } else {
                 ValleyScene::Figure& f = extraFigure(s, k - kVillagers);
                 p = s.extra[k - kVillagers].look;
@@ -1286,6 +1301,8 @@ void drawTop(App& app) {
         }
     }
     wildlife::fillView(app, view);  // the valley's critters (workstream L)
+    for (int f = 0; f < vext::featureCount(); ++f)  // (the walkers' dragons about, in free slots: workstream D)
+        if (vext::feature(f).ambient && f != feat) vext::feature(f).ambient(app, s.walkers, view);
     if (r3d::ready()) r3d::drawValley(app, view, now);
     if (autotest::shooting())
         autotest::log("you (%.1f %.1f %.1f) partner (%.1f %.1f %.1f) mode %d", s.you.pos.x, s.you.pos.y, s.you.pos.z, s.pal.pos.x,
@@ -1293,6 +1310,8 @@ void drawTop(App& app) {
     if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
     if (r3d::ready()) cove::drawCoveThings(app, s.valley, now);  // Driftwood Cove's shells, bobber and catch (workstream C)
     if (r3d::ready()) drawLeagueBoards(app, s.valley, now);  // 1.0 battles: the league's boards (workstream B)
+    for (int f = 0; f < vext::featureCount() && feat < 0 && r3d::ready(); ++f)  // (a walker's hello: workstream D)
+        if (vext::feature(f).drawOver) vext::feature(f).drawOver(app, s.walkers);
     if (feat >= 0) {
         if (vext::feature(feat).drawTop) vext::feature(feat).drawTop(app, s.stage);
         return;

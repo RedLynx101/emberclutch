@@ -75,6 +75,7 @@ struct ValleyScene {
     Follower pal;
     WalkCamera wcam;
     bool featureCam = false;  // a 1.0 feature held the camera (when it lets go, ours starts behind you again)
+    float camReach = 1e9f;    // how far out the camera may stand from what it's about (keepClear, eased back out)
     std::vector<Solid> solids;
     std::vector<CameraWall> camWalls;
     // The partner as drawn and animated.
@@ -1299,6 +1300,20 @@ void drawTop(App& app) {
             view.eye = s.stage.eye;
             view.target = s.stage.target;
         }
+    }
+    // Whatever set the camera, kept clear (Noah: textures clipping into the frame from behind): the
+    // eye pulled in toward what it's about until nothing stands between, at once; eased back out.
+    if (s.mode != Mode::FreeCam && r3d::ready()) {
+        const Vec3 pivot = feat >= 0 && s.stage.camSet ? view.target
+                           : riding                    ? s.flight.pos + Vec3{0, 0, 1.2f}
+                                                       : s.you.pos + Vec3{0, 0, 1.5f};
+        const Vec3 kept = r3d::keepClear(s.valley, pivot, view.eye);
+        const float want = length(view.eye - pivot), clear = length(kept - pivot);
+        if (app.dt > 0) s.camReach = clear < s.camReach ? clear : std::fmin(clear, s.camReach + 5.0f * app.dt);
+        if (clear > 0.01f) view.eye = pivot + (kept - pivot) * (std::fmin(s.camReach, clear) / clear);  // (its way, raised in a tight spot)
+        if (autotest::shooting())
+            autotest::log("camera kept clear: wanted %.2f m out, clear to %.2f, held at %.2f; eye (%.1f %.1f %.1f) ground %.1f", want, clear,
+                          s.camReach, view.eye.x, view.eye.y, view.eye.z, s.valley.heightAt(view.eye.x, view.eye.y));
     }
     wildlife::fillView(app, view);  // the valley's critters (workstream L)
     for (int f = 0; f < vext::featureCount(); ++f)  // (the walkers' dragons about, in free slots: workstream D)

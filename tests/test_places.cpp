@@ -10,6 +10,7 @@
 
 #include "check.hpp"
 #include "core/daylight.hpp"
+#include "core/occluders.hpp"
 #include "core/place_layout.hpp"
 #include "core/static_mesh.hpp"
 #include "core/valley.hpp"
@@ -43,6 +44,17 @@ bool inWall(int place, Vec3 p, float margin) {
 }
 
 float dist2d(Vec3 a, Vec3 b) { return std::hypot(a.x - b.x, a.y - b.y); }
+
+const Valley& valley() {
+    static Valley v;
+    static bool loaded = false;
+    if (!loaded) {
+        loaded = true;
+        const std::vector<u8> data = fileBytes("../romfs/valley/skyreach.evl");
+        if (!data.empty()) loadValley(data.data(), data.size(), v);
+    }
+    return v;
+}
 
 }  // namespace
 
@@ -170,9 +182,51 @@ TEST(frame_heights_stay_in_the_frame) {
     CHECK(std::fabs(w.y - (-508.0f + 52.1f)) < 1e-3f);  // (the cove faces north: its front is +y)
 }
 
+// Keeping the camera clear (Noah, 2026-09-29): a wall between the pivot and the eye pulls the eye
+// in front of it; the Hidden Grotto's dome keeps a camera behind you inside the cave; an open way
+// leaves the eye be.
+TEST(the_camera_is_kept_clear_of_the_places) {
+    const Valley& v = valley();
+    // A wall of two triangles 4 m behind a pivot, in a place at the valley's middle on its ground.
+    OccluderMesh wall;
+    const float quad[12] = {-3, 4, 0, 3, 4, 0, 3, 4, 6, -3, 4, 6};
+    const u16 idx[6] = {0, 1, 2, 0, 2, 3};
+    wall.add(quad, idx, 6);
+    wall.bin();
+    CHECK(wall.firstHit({0, 0, 1}, {0, 8, 1}) > 0.49f && wall.firstHit({0, 0, 1}, {0, 8, 1}) < 0.51f);
+    CHECK(wall.firstHit({0, 0, 1}, {0, 3, 1}) == 1.0f && wall.firstHit({5, 0, 1}, {5, 8, 1}) == 1.0f);
+    const ValleyPlaceInfo& market = *v.place(kPlaceMarket);
+    std::vector<PlacedOccluders> placed{{&wall, market.at, market.heading, 8.0f}};
+    const Vec2 p0 = placeToWorld(market, {0, 0}), p8 = placeToWorld(market, {0, 8});
+    const Vec3 pivot{p0.x, p0.y, market.at.z + 1.5f}, eye{p8.x, p8.y, market.at.z + 1.5f};
+    const Vec3 kept = clearEye(v, placed, pivot, eye);
+    CHECK(std::hypot(kept.x - pivot.x, kept.y - pivot.y) < 4.0f - 0.4f);
+    CHECK(std::hypot(kept.x - pivot.x, kept.y - pivot.y) > 1.1f);
+    // Nothing in the way: the eye stays (the market's ground allowing).
+    std::vector<PlacedOccluders> none;
+    const Vec3 open = clearEye(v, none, pivot + Vec3{0, 0, 3}, eye + Vec3{0, 0, 3});
+    CHECK(length(open - (eye + Vec3{0, 0, 3})) < 0.01f);
+    // The grotto: a camera 9 m behind someone standing inside it is brought in under its dome.
+    StaticScene s;
+    const std::vector<u8> bytes = fileBytes("../romfs/valley/places/grotto.esm");
+    CHECK(loadStaticScene(bytes.data(), bytes.size(), s));
+    OccluderMesh cave;
+    for (const StaticPart& part : s.parts)
+        if (occludes(part.name, part.flags)) cave.add(&s.pos[0].x, s.indices.data() + part.firstIndex, part.indexCount);
+    cave.bin();
+    const ValleyPlaceInfo& grotto = *v.place(kPlaceGrotto);
+    std::vector<PlacedOccluders> inside{{&cave, grotto.at, grotto.heading, 12.0f}};
+    const Vec2 you = placeToWorld(grotto, {0, 1.5f}), back = placeToWorld(grotto, {0, 11.0f});
+    const Vec3 c = clearEye(v, inside, {you.x, you.y, grotto.at.z + 1.5f}, {back.x, back.y, grotto.at.z + 4.5f});
+    const float fromMiddle = std::hypot(c.x - grotto.at.x, c.y - grotto.at.y);
+    std::printf("  grotto: the eye kept %.2f m from its middle (the dome ~6.7 m round)\n", fromMiddle);
+    CHECK(fromMiddle < 6.4f);
+}
+
 void runPlaceTests() {
     RUN(every_place_loads_within_its_budget);
     RUN(the_new_places_name_their_spots);
     RUN(the_new_places_spots_are_where_they_belong);
     RUN(frame_heights_stay_in_the_frame);
+    RUN(the_camera_is_kept_clear_of_the_places);
 }

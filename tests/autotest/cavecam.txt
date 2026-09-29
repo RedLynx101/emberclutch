@@ -1,0 +1,55 @@
+# Noah (2026-09-29): textures in a cave clipping into the frame from behind. The Hidden Grotto
+# (behind the falls) and the den's cliff: walking in and turning about, the camera kept clear.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+hour 11
+valley
+wait 4
+travel 12
+wait 3
+shot g00-grotto
+pad 0 1 2.5
+wait 0.3
+shot g01-in
+pad 0 1 2.0
+wait 0.3
+shot g02-deeper
+keyhold L 1.2
+wait 0.3
+shot g03-turned
+keyhold L 1.2
+wait 0.3
+shot g04-turned2
+pad 0 -1 2.5
+wait 0.3
+shot g05-back
+keyhold R 2.0
+wait 0.3
+shot g06-around
+pad 0 1 2.0
+wait 0.3
+shot g07-walk
+quit

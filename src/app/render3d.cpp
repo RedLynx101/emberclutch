@@ -30,6 +30,7 @@
 #include "core/rig.hpp"
 #include "core/people.hpp"
 #include "core/place_layout.hpp"
+#include "core/occluders.hpp"
 #include "core/static_mesh.hpp"
 #include "core/valley.hpp"
 #include "core/accessories.hpp"  // the pageant: what dragons wear, their dyes (app/render_wear.inc)
@@ -2846,7 +2847,9 @@ struct PlaceGpu {
     int partCount = 0;
     float reach = 0, low = 0, high = 0;  // how far it spreads round its anchor, and its height
     bool ok = false, failed = false, asked = false;
+    OccluderMesh occ;  // its solid triangles, binned, for keeping the camera clear (core/occluders)
     void release() {
+        occ.clear();
         retire(pos);
         pos = nullptr;
         for (u8*& c : color) {
@@ -2924,9 +2927,26 @@ bool loadPlace(PlaceGpu& g, const char* path) {
         g.high = std::fmax(g.high, p.z);
     }
     GSPGPU_FlushDataCache(g.pos, sizeof(float) * 3 * s.vertexCount);
+    g.occ.clear();
+    for (const StaticPart& sp : s.parts)
+        if (occludes(sp.name, sp.flags)) g.occ.add(&s.pos[0].x, s.indices.data() + sp.firstIndex, sp.indexCount);
+    g.occ.bin();
     g.ok = true;
     return true;
 }
+
+}  // namespace (keepClear is public)
+
+Vec3 keepClear(const Valley& v, Vec3 pivot, Vec3 eye) {
+    static std::vector<PlacedOccluders> placed;
+    placed.clear();
+    for (const ValleyPlaceInfo& p : v.places)
+        if (p.id < kPlaceCount && g_places[p.id].ok && !g_places[p.id].occ.empty())
+            placed.push_back({&g_places[p.id].occ, p.at, p.heading, g_places[p.id].reach * 1.5f});
+    return clearEye(v, placed, pivot, eye);
+}
+
+namespace {
 
 // Reads ahead the places coming into reach, builds one a frame, lets the far ones go.
 void streamPlaces(const Valley& v, Vec3 eye) {

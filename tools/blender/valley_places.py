@@ -2363,11 +2363,15 @@ def build_grotto(pl):
     dome(s, 0.5, 0.2, 6, GOLD, C @ T(0, 0, 0.48) @ T(0, 0, 0, s=(1.1, 0.66, 1.0)), rings=1, lump=0.2)
     dome(pl.g, 0.56, 0.3, 6, Emit((1.0, 0.78, 0.30), CRYSTAL, fade=lambda p: 0.5), C @ T(0, 0, 0.48) @
          T(0, 0, 0, s=(1.1, 0.66, 1.0)), rings=1)
-    Lh = C @ T(0, -0.4, 0.58) @ Matrix.Rotation(1.9, 4, "X") @ T(0, 0.4, 0)  # the lid, thrown open
+    # The lid, thrown open: hinged a little inside the back's top edge so it meets the box (Noah: its
+    # back stood apart from the lower part), and a hinge bar along that edge joins them.
+    Lh = C @ T(0, -0.37, 0.55) @ Matrix.Rotation(1.9, 4, "X") @ T(0, 0.4, 0)
+    box(s, (-0.56, -0.45, 0.5), (0.56, -0.35, 0.63), (0.30, 0.20, 0.12), C, skip=("-z",))
     lid = [[Vector((x, -0.4 * math.cos(math.pi * k / 5), 0.36 * math.sin(math.pi * k / 5))) for x in
             (-0.62, 0.62)] for k in range(6)]
-    grid(s, lid, (0.64, 0.40, 0.24), Lh, smooth=True, flip=True)
-    grid(s, lid, (0.36, 0.22, 0.14), Lh, smooth=True, flip=False)
+    # (its outside the box's wood, its inside darker: Noah saw the outside's colour inside the open lid)
+    grid(s, lid, (0.36, 0.22, 0.14), Lh, smooth=True, flip=True)
+    grid(s, lid, (0.64, 0.40, 0.24), Lh, smooth=True, flip=False)
     for sx in (-1, 1):
         face(s, [(sx * 0.62, -0.4 * math.cos(math.pi * k / 5), 0.36 * math.sin(math.pi * k / 5))
                  for k in range(6)], (sx, 0, 0), (0.58, 0.36, 0.22), Lh)
@@ -3717,6 +3721,9 @@ def main():
             print(f"[places]   {pid}.esm {size} bytes, parts {[(n, f, t) for n, f, _, t in parts]}")
         data[pid] = place_json(pl)
         if PREVIEW:
+            if arg("--view"):  # a close look: --view "tx,ty,tz,radius,azimuth,elevation" (place frame)
+                tx, ty, tz, rad, az, el = (float(x) for x in arg("--view").split(","))
+                pl.view = dict(radius=rad, target=(tx, ty, tz), azimuth=az, elevation=el)
             render_place(pl, cols, PREVIEW)
     if OUT or ONLY:
         ordered = {k: data[k] for k in PLACE_IDS if k in data}

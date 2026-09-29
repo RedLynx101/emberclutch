@@ -260,6 +260,9 @@ void drawValley(App& app, const ValleyView& view, s64 now);
 // from its mouth (1.0 battles, workstream B). False if it wasn't drawn.
 bool otherHead(int i, Vec3& out);
 void releaseValley();  // leaving the valley: its GPU memory back
+// The eye pulled in toward `pivot` until the way between is clear of the places near (their walls,
+// roofs, a cave) and the ground (core/occluders clearEye over the places loaded now).
+Vec3 keepClear(const Valley& v, Vec3 pivot, Vec3 eye);
 // The look lab (2026-09-28): 0 smooth ground with the painted texture (as it is), 1 faceted
 // low-poly without, 2 faceted with the texture. The tiles rebuild.
 void setGroundLook(int look);

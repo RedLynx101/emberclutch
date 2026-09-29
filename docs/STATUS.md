@@ -2,10 +2,25 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0, run 21 take 3 on the 3DS** ([plan](plan/v1.md), D89-D108). 0.9.2 held in the den on Noah's old 3DS; the valley froze on its first frame. 0.9.3 (D108): the ground's shader writes its output whole, hangs fall back by themselves (hangs.txt), the trace no longer slows the game; sent to .51. Run 21's review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21/<section id>`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 on the 3DS** ([plan](plan/v1.md), D89-D110). Take 3 (0.9.3) held in the valley; its notes all dealt with in 0.9.4 (D109): the flicker traced to stale GPU data (frame flushes), Noah's haze, riding, walking, the camera, the lantern and more. Run 21's review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d/<section id>` for take 4; take 3's notes stay under `run21`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 21, take 3 (2026-09-29)
+## Now: run 21, take 4 (2026-09-29)
+- **Take 3 (0.9.3)** held in the valley (the ground's shader rewrite); one freeze in 29 minutes, on the
+  bottom screen's checkpoint (hangs.txt: "bottom"; no fallback for it). Noah's notes (db `run21`, s0)
+  and ~80 screenshots, 6 photos (pulled read-only to the session's scratchpad).
+- **The flicker, found:** frames where every citro2d solid shape is gone or black on both screens while
+  text and images stay (run 19's screenshots too), with 3D dropping out: stale GPU data. 0.9.4 flushes
+  each frame's command list and 2D buffers, resets the 2D state per screen, reports the heap flush and
+  the 2D buffer on the overlay, guards citro2d's text. Noah's haze: a fog pull with the load (D109).
+- **Everything else in the notes** fixed (D109; new autotests: take4, getoff, lantern, keeper, crestlie,
+  flicker2d). Passed in take 3: Love/Energy, profile, tips, painted ground, fireflies, Journal and
+  tracking, pins, the fox, Tamsin, voices, photos, the den's speed.
+- **Take 4** = hardware-check-6.md; sent to .51 with trace.on kept, the old trace and hangs list off.
+- **Next:** Noah's take 4 results (db `run21d`). If the flicker is gone, the flushes were it; if the
+  overlay says `flush ERR`, citro3d's heap flush fails on the hardware.
+
+## Run 21, take 3 (2026-09-29)
 - **0.9.2 held in the den** (Continue with an egg, hatching, care); the valley froze on its first
   frame, from Map and from heading out (trace: "gpu: top scene sent", never drawn). The title's and
   the den's slowness was the trace itself (per-frame lines for 10 s after each change of view).

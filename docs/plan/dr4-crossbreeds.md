@@ -88,3 +88,8 @@ culled); a hatchling's folded wings must not sink into a round body (turn them o
 hatchling's `base_pose`); parts seated on the skin (no floating tufts); sized on the common
 scale (`measure.py`, `together.py`); the see-through and clipping checks in the kit doc's
 gotchas.
+
+## After these five (D110, Noah in run 21)
+The next crossbreeds get features of their own, not only a blend of their parents: take from
+the parents' types (their elements, their manner, a feature or two), but let some look properly
+new (a shape, a part, a way of moving that no base kind has). Put it in each concept's brief.

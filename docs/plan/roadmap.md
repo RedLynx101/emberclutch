@@ -187,6 +187,7 @@ release's scope. Nothing below is built until it's passed.
 - **Public open-source release** (repo goes public, CIA + 3DSX on GitHub Releases).
 
 ## 1.x — *Friends*
+- New crossbreeds with features of their own, not only their parents blended (D110).
 **Sit-down first (after 1.0):** what friends do together over local wireless, what's shared
 and traded, how a visit plays, what stays single-player.
 - Sky Visits over UDS local wireless (based on `3ds-linkplay`'s uds-demo): visit a den,

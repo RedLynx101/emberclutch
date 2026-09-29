@@ -174,7 +174,7 @@ const DATA = /*DATA*/null;
 let db = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const state = { sounds: {}, music: {}, run: {}, labs: {} };
-const LS = "emberclutch-review-run21";  // (each round its own: run 21)
+const LS = "emberclutch-review-run21d";  // (each round its own: run 21 take 4)
 try { Object.assign(state, JSON.parse(localStorage.getItem(LS) || "{}")); } catch (_) {}
 state.run ||= {}; state.labs ||= {};
 function keepLocal() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (_) {} }

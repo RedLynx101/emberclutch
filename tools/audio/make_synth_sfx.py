@@ -612,7 +612,7 @@ def ice_crack(rng, take):
 
 def step_sand(rng, take):
     """A footstep on sand: a soft grainy 'shff' and the faintest thud."""
-    sc = (1.0, 0.9, 1.12)[take]
+    sc = (1.0, 0.9, 1.12, 0.96)[take]
     n = n_of(0.17)
     env = [e * f for e, f in zip(hump(n, 0.1, 1.0, 1.0), decay_env(n, 0.06, 0.0))]
     grains = [0.0] * n
@@ -634,7 +634,7 @@ def step_snow(rng, take):
     """A footstep in snow: a soft packed crunch of little squeaky grains over a muffled body."""
     n = n_of(0.2)
     x = [0.0] * n
-    count = (22, 18, 26)[take]
+    count = (22, 18, 26, 20)[take]
     env = hump(n, 0.25, 0.8, 1.3)
     for _ in range(count):
         t = rng.uniform(0.01, 0.13)
@@ -748,13 +748,18 @@ def bird_flutter(rng, take):
 
 
 def rabbit_hop(rng, take):
-    """A rabbit bounding off: two or three soft padded thumps on the grass, quick and light, with
-    a whisper of grass under them."""
+    """A rabbit bounding off, cartoon-cute: each bound a soft round 'bup' (a quick tuned thump
+    gliding down, felt more than heard) with a tiny springy 'boing' rising under it and a brush of
+    grass as the feet leave; two or three bounds, each a little further off and higher."""
     x = []
-    for k in range(2 + take):
-        at = k * 0.11
-        add(x, pof(rng, 190 - 10 * k, 110, 0.025, noise_lp=1200, noise_amt=0.5), at, 0.8 - 0.15 * k)
-        add(x, norm(mul(biquad(noise(n_of(0.05), rng), "hp", 2500), decay_env(n_of(0.05), 0.012))), at, 0.12)
+    bounds = (3, 2)[take % 2]
+    for k in range(bounds):
+        at = k * rng.uniform(0.13, 0.16)
+        far = 1.0 - 0.22 * k
+        add(x, glide(260 + 25 * k, 150 + 15 * k, 0.07, 0.06, tau=0.022, harmonics=((1, 1.0), (2, 0.25))), at, 0.9 * far)
+        add(x, glide(520 + 60 * k, 900 + 80 * k, 0.06, 0.05, tau=0.02, harmonics=((1, 1.0),)), at + 0.012, 0.18 * far)
+        grass = mul(svf(noise(n_of(0.06), rng), 3200, 0.9, "bp"), decay_env(n_of(0.06), 0.018))
+        add(x, norm(grass), at + 0.03, 0.14 * far)
     return x
 
 
@@ -862,8 +867,8 @@ EFFECTS = {
     "reel": ("care", 2, reel, -3.0),
     "shell-pick": ("care", 1, shell_pick, 0.0),
     "ice-crack": ("body", 2, ice_crack, 0.0),
-    "step-sand": ("body", 3, step_sand, 0.0),
-    "step-snow": ("body", 3, step_snow, 0.0),
+    "step-sand": ("body", 4, step_sand, 0.0),  # (four: Noah wanted more variety)
+    "step-snow": ("body", 4, step_snow, 0.0),
     "burst": ("body", 1, burst, 0.0),
     "brake": ("body", 1, brake, 0.0),
     # the valley's critters (workstream L)
@@ -1215,7 +1220,9 @@ def main() -> None:
     # Sounds generated since (tools/audio/eleven_sfx.py, recorded in the manifest) keep their files
     # unless named: the synth is their fallback, not their replacement.
     manifest = json.loads((Path(__file__).with_name("sfx_manifest.json")).read_text(encoding="utf-8"))
-    generated = {s for s, e in manifest.items() if isinstance(e, dict) and any(t.startswith("eleven:") for t in e.get("takes", []))}
+    generated = {s for s, e in manifest.items() if isinstance(e, dict) and not e.get("take_offset")
+                 and any(t.startswith("eleven:") for t in e.get("takes", []))}
+    generated |= set(manifest.get("_composed", {}))  # (built from other sounds: tools/audio/compose_flock.py)
     if not args.slugs and generated & set(wanted):
         print(f"[synth] keeping the generated {', '.join(sorted(generated & set(wanted)))} (name one to make its synth)")
         wanted = [s for s in wanted if s not in generated]

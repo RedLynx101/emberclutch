@@ -667,57 +667,47 @@
  "hit": {
   "kind": "body",
   "takes": [
-   "eleven:hit#1",
-   "eleven:hit#2",
-   "eleven:hit#3"
+   "eleven:hit#1"
   ],
   "prompt": "A soft padded cartoon impact, like a pillow bonk, playful and harmless, cute game hit sound",
-  "duration": 0.5
+  "duration": 0.5,
+  "take_offset": 3
  },
  "hop-on": {
   "kind": "body",
   "takes": [
-   "eleven:hop-on#1",
-   "eleven:hop-on#2"
+   "eleven:hop-on#1"
   ],
   "prompt": "A small cartoon character hopping up onto a leather saddle: a quick cloth swish and a soft leather creak as they settle, cute and light",
-  "duration": 1.0
+  "duration": 1.0,
+  "kept": "Noah's review, 2026-09-29"
  },
  "hop-off": {
   "kind": "body",
   "takes": [
-   "eleven:hop-off#1",
    "eleven:hop-off#2"
   ],
   "prompt": "A small cartoon character hopping down from a saddle onto grass: a cloth swish and a soft padded landing thump",
-  "duration": 1.0
+  "duration": 1.0,
+  "kept": "Noah's review, 2026-09-29"
  },
  "nuzzle": {
   "kind": "care",
   "takes": [
-   "eleven:nuzzle#1",
-   "eleven:nuzzle#2"
+   "eleven:nuzzle#1"
   ],
   "prompt": "A small friendly dragon nuzzling its owner affectionately: soft rustle of smooth scales rubbing and a warm, happy, cooing purr, cute",
-  "duration": 1.4
+  "duration": 1.4,
+  "kept": "Noah's review, 2026-09-29"
  },
  "shutter": {
   "kind": "ui",
   "takes": [
-   "eleven:shutter#1",
-   "eleven:shutter#2"
+   "eleven:shutter#1"
   ],
   "prompt": "A small toy camera taking a photo: a crisp bright shutter click and a tiny sparkle chime",
-  "duration": 0.7
- },
- "equip": {
-  "kind": "ui",
-  "takes": [
-   "eleven:equip#1",
-   "eleven:equip#2"
-  ],
-  "prompt": "Putting a cute fabric accessory on a pet: a quick soft cloth fwip and a tiny jingle of a little bell",
-  "duration": 0.8
+  "duration": 0.7,
+  "kept": "Noah's review, 2026-09-29"
  },
  "swipe": {
   "kind": "body",
@@ -729,78 +719,23 @@
   "prompt": "A quick light claw swipe whooshing through the air, cartoon game sound",
   "duration": 0.5
  },
- "hit-big": {
-  "kind": "body",
-  "takes": [
-   "eleven:hit-big#1",
-   "eleven:hit-big#2"
-  ],
-  "prompt": "A bigger, fuller cartoon bonk impact with a springy boing wobble and a few tiny twinkling stars after it, playful and harmless",
-  "duration": 1.0
- },
  "whiff": {
   "kind": "body",
   "takes": [
-   "eleven:whiff#1",
    "eleven:whiff#2"
   ],
   "prompt": "A thin quick whoosh of air as an attack misses and sails past, cartoon",
-  "duration": 0.5
- },
- "faint": {
-  "kind": "body",
-  "takes": [
-   "eleven:faint#1",
-   "eleven:faint#2"
-  ],
-  "prompt": "A cartoon creature getting dizzy and tired: a descending wobbly slide whistle, then a soft gentle flop onto grass, funny and harmless",
-  "duration": 1.5
- },
- "cast": {
-  "kind": "care",
-  "takes": [
-   "eleven:cast#1",
-   "eleven:cast#2"
-  ],
-  "prompt": "Casting a fishing line: the swish of a fishing rod, then the reel's ratchet clicking fast as the line spins out and slows",
-  "duration": 1.3
- },
- "plop": {
-  "kind": "care",
-  "takes": [
-   "eleven:plop#1",
-   "eleven:plop#2"
-  ],
-  "prompt": "A small fishing bobber plopping into calm water: a round little bloop and a few tiny droplets",
-  "duration": 0.7
- },
- "bite": {
-  "kind": "care",
-  "takes": [
-   "eleven:bite#1",
-   "eleven:bite#2"
-  ],
-  "prompt": "A fish tugging a fishing bobber under the water twice: two quick bubbly blubs with small splashes",
-  "duration": 0.9
- },
- "reel": {
-  "kind": "care",
-  "takes": [
-   "eleven:reel#1",
-   "eleven:reel#2"
-  ],
-  "prompt": "A short burst of a fishing reel's ratchet clicking while winding in, soft and small",
-  "duration": 0.6,
-  "gain": -3.0
+  "duration": 0.5,
+  "kept": "Noah's review, 2026-09-29"
  },
  "shell-pick": {
   "kind": "ui",
   "takes": [
-   "eleven:shell-pick#1",
-   "eleven:shell-pick#2"
+   "eleven:shell-pick#1"
   ],
   "prompt": "Picking a small seashell up off the sand: two light porcelain-like clinks",
-  "duration": 0.6
+  "duration": 0.6,
+  "kept": "Noah's review, 2026-09-29"
  },
  "ice-crack": {
   "kind": "body",
@@ -810,30 +745,6 @@
   ],
   "prompt": "Thin ice cracking: a small crisp crack followed by a spray of tiny crackles and a faint glassy ring",
   "duration": 0.9
- },
- "step-sand": {
-  "kind": "body",
-  "takes": [
-   "eleven:step-sand#1",
-   "eleven:step-sand#2",
-   "eleven:step-sand#3"
-  ],
-  "prompt": "A single light footstep on dry beach sand, a soft grainy scuff",
-  "duration": 0.5,
-  "gain": -2.0,
-  "lp": 5000
- },
- "step-snow": {
-  "kind": "body",
-  "takes": [
-   "eleven:step-snow#1",
-   "eleven:step-snow#2",
-   "eleven:step-snow#3"
-  ],
-  "prompt": "A single light footstep crunching into fresh powder snow",
-  "duration": 0.5,
-  "gain": -2.0,
-  "lp": 5000
  },
  "burst": {
   "kind": "body",
@@ -892,46 +803,15 @@
    "xfade": 1.2
   }
  },
- "amb-rush": {
-  "kind": "loop",
-  "takes": [
-   "eleven:amb-rush#1"
-  ],
-  "prompt": "A steady even rush of wind, like flying fast high in the sky, featureless, constant",
-  "duration": 10.0,
-  "loop": {
-   "start": 0.5,
-   "length": 8.0,
-   "xfade": 1.0
-  }
- },
  "bird-chirp": {
   "kind": "care",
   "takes": [
    "eleven:bird-chirp#1",
-   "eleven:bird-chirp#2",
    "eleven:bird-chirp#3"
   ],
   "prompt": "A small songbird's cheerful little twitter in a sunny meadow, two or three quick bright chirps, close, no other birds",
-  "duration": 0.6
- },
- "bird-flutter": {
-  "kind": "care",
-  "takes": [
-   "eleven:bird-flutter#1",
-   "eleven:bird-flutter#2"
-  ],
-  "prompt": "A little flock of small birds bursting up off the grass together, a soft flurry of tiny wingbeats fading as they fly away, a startled peep",
-  "duration": 1.0
- },
- "rabbit-hop": {
-  "kind": "body",
-  "takes": [
-   "eleven:rabbit-hop#1",
-   "eleven:rabbit-hop#2"
-  ],
-  "prompt": "A rabbit bounding away over soft grass, two or three light padded thumps, quick and gentle",
-  "duration": 0.6
+  "duration": 0.6,
+  "kept": "Noah's review, 2026-09-29"
  },
  "frog-croak": {
   "kind": "care",
@@ -986,5 +866,8 @@
   ],
   "prompt": "A small animal diving into a leafy bush, a quick soft rustle of leaves and twigs, then still",
   "duration": 0.6
+ },
+ "_composed": {
+  "bird-flutter": "tools/audio/compose_flock.py: overlapping, varied chirps from bird-chirp's takes (Noah, 2026-09-29)"
  }
 }

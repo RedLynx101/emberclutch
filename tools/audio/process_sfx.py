@@ -181,7 +181,8 @@ def process(slug: str, entry: dict) -> list[str]:
             y = soft_limit(y, 10 ** (gain_db / 20))
         else:
             y = array.array("f", (v * 10 ** (gain_db / 20) for v in y))
-        out = OUT_DIR / (f"{slug}.wav" if i == 1 else f"{slug}-{i}.wav")
+        k = i + entry.get("take_offset", 0)  # (takes after the synth's own in the same slot: Noah kept both)
+        out = OUT_DIR / (f"{slug}.wav" if k == 1 else f"{slug}-{k}.wav")
         write_wav(out, y)
         measure = rms(y) if entry["kind"] == "loop" else loudest_rms(y)
         lines.append(f"[sfx] {out.name:22s} {len(y) / RATE:5.2f} s  level {db(measure):6.1f} dB"

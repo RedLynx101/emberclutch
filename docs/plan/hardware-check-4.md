@@ -37,7 +37,24 @@ you are. Tick each step on the review page as you go (a note where something's o
    paths are graded all the way (no more climbing walls).
 
 ## 3. Creatures in the valley
-(Filled in with workstream L's merge: which ones, where, what A does with each.)
+Seven kinds live about the valley (never near the Market's square), each with something for **A**
+when you're close. Nothing ever gets hurt. The first time you spot one, a toast; the Journal's
+**Places** tab has a **Critters** page (seen, friends made, a note on each).
+1. **Songbirds** peck in little flocks in the meadows (a pair circles high by day). Walk or run at
+   them and they burst up and fly off. Stand near and **A: whistle to the birds**: one hops over,
+   tilts its head and chirps.
+2. **Rabbits** at the woods' edges (and white **snow hares** round Frostspire Hollow): **A: play
+   chase**, and your dragon stalks, pounces and chases; the rabbit always escapes into a bush.
+3. **Butterflies** over the flower patches by day: **A: hold still**, and one lands on your dragon's
+   head for a few seconds, until it sneezes.
+4. **Frogs** at the shallows (croaking more at night): **A: croak back**; it answers twice and leaps
+   in with a splash.
+5. **Ducks**, a mother and her ducklings on the water: **A: call the ducks**; they paddle over and
+   quack.
+6. A **fox** at dusk and night (rare), sitting by the woods: **A: sit quietly**; it trots up and
+   boops noses with your dragon.
+7. Friends pay a pinch of Play, Love or bond to your partner (a few times a day) and a little Gleam
+   the first time for each kind each day.
 
 ## 4. Battles: the Ember league
 1. **Tamsin** stands in the Market's square: walk up, **A**, her lines, then "**Battle?**". Each

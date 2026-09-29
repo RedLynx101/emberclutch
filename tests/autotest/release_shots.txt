@@ -1,0 +1,81 @@
+# The README's screenshots (docs/release/screenshots/): the valley at the den's door with its
+# critters, the den, a battle, a show on the glade's stage, riding over the valley. No overlay, no
+# tip cards, morning light. The top screens are copied over by hand after a look.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+hour 10
+wear 2 9 255 24 0
+battle level 12
+battle energy 100
+wait 2
+shot r01-den
+valley
+wait 4
+critters spawn 0
+wait 1.5
+critters spawn 3
+wait 2.5
+shot r02-valley
+# A battle at the Market.
+travel 1
+wait 3
+battle talk 0 0
+wait 2.5
+key A
+wait 2.5
+key A
+wait 1
+battle auto on
+key A
+wait 4.5
+shot r03-battle
+wait 1.2
+shot r03b-battle
+wait 25
+battle auto off
+# A show on the glade's stage.
+travel 15
+wait 4
+pg give
+pg autoplay on
+pg show 1 0
+wait 3
+shot r04-show
+wait 60
+shot r04b-show-results
+wait 8
+# Riding over the valley.
+travel 7
+wait 3
+pad -1 0 0.3
+wait 0.8
+key A
+wait 3
+keyhold A 4
+shotin 2.0 r05-flying
+wait 3
+shot r05b-flying
+quit

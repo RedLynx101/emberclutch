@@ -931,6 +931,7 @@ void update(App& app, const Input& in) {
     if (const int f = vext::activeFeature(app); f >= 0) {  // a 1.0 feature has the valley (a battle, a show, fishing)
         if (s.mode == Mode::FreeCam) s.mode = s.before;
         if (s.mode == Mode::Riding) getOff(app, s);
+        s.hopT = -1;  // (no hop left hanging: it never moved on under a feature, and you were drawn at its start)
         lendStage(app, s);
         vext::feature(f).update(app, in, s.stage);
         takeStage(s);

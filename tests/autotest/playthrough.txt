@@ -82,13 +82,21 @@ shot t08-hollow-floor
 wait 18
 shot t09-hollow-after
 key B
-wait 1
+wait 1.5
+key A
+wait 0.5
+key A
+wait 0.5
 battle auto off
 # Driftwood Cove: Tam, then fishing.
 travel 16
 wait 3
 cove 0
 wait 1.5
+key A
+wait 0.4
+key A
+wait 0.4
 key A
 wait 0.4
 key A
@@ -112,6 +120,9 @@ shot t10-cove-fishing
 wait 10
 shot t11-cove-landed
 autoplay off
+wait 2
+key B
+wait 1
 key B
 wait 1
 # Moonpetal Glade: a stall, then a show.

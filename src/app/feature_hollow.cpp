@@ -342,8 +342,8 @@ void drawTop(App& app, const vext::Stage& st) {
     if (s.mode == Mode::Battle || s.mode == Mode::Between) {
         char line[24];
         std::snprintf(line, sizeof(line), str::kHollowFloorOf, s.floor, hollow::kFloors);
-        panel({300, 52, 92, 20}, withAlpha(theme::kDenPlum, 0.75f));
-        textCentered(app, line, 346, 62, 0.4f, hollow::guardian(s.floor) ? theme::kClutchGold : theme::kShell, 88);
+        panel({300, 8, 92, 20}, withAlpha(theme::kDenPlum, 0.75f));  // (the top's right corner: the foe's bars at its left)
+        textCentered(app, line, 346, 18, 0.4f, hollow::guardian(s.floor) ? theme::kClutchGold : theme::kShell, 88);
     }
 }
 

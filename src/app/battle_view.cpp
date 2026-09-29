@@ -876,7 +876,7 @@ void drawTop(App& app) {
         text(app, p.text, x, y, 0.62f, withAlpha(p.good ? theme::kSkyTeal : theme::kShell, a), C2D_AlignCenter);
     }
     if (s.phase != Phase::FadeOut && s.phase != Phase::Results) {
-        battlerPanel(app, s, 1, 8, app.overlay ? 96.0f : 8.0f);  // (below the dev overlay's lines)
+        battlerPanel(app, s, 1, 8, 8.0f);  // (at the top, over the dev overlay's lines too: the tests show the players' layout)
         battlerPanel(app, s, 0, 208, 140);
         // What happened, in the box along the bottom.
         panel({8, 192, 384, 40}, withAlpha(theme::kDenPlum, 0.85f));

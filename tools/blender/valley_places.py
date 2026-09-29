@@ -3207,8 +3207,10 @@ def build_hollow(pl):
     Br = on_ground(pl, -4.4, 4.6)
     for k in range(3):
         a = 2 * math.pi * k / 3
-        leg = Br @ T(math.cos(a) * 0.36, math.sin(a) * 0.36, -0.1, rz=a) @ Matrix.Rotation(0.22, 4, "Y")
-        box(s, (-0.04, -0.04, 0), (0.04, 0.04, 1.0), IRON, leg, skip=("-z", "+z"))
+        # (feet splayed out, leaning in to hold the bowl: Noah saw its flame float over legs that
+        # leaned out past it)
+        leg = Br @ T(math.cos(a) * 0.52, math.sin(a) * 0.52, -0.1, rz=a) @ Matrix.Rotation(-0.2, 4, "Y")
+        box(s, (-0.04, -0.04, 0), (0.04, 0.04, 1.08), IRON, leg, skip=("-z", "+z"))
     lathe(s, [(0.2, 0.86), (0.52, 1.12), (0.46, 1.16), (0.0, 1.0)], 6, IRON, Br, sharp=[1, 2], smooth=False)
     flame(pl, Br @ T(0, 0, 1.06), h=0.8, r=0.26, table=LAVA)  # (alight by day too)
     pl.lamp(Br, (0, 0, 1.6), 6.0, 0.9)

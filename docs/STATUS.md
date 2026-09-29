@@ -8,8 +8,9 @@
 ## Now: run 20 is ready (2026-09-29)
 - **For Noah:** the review page above: run 20's steps (tick as you go, notes per section, the banner labs
   Held/Froze), the sounds as kept (round 2: mark only what's still off, and the two made at his note), the six
-  loops' seams to hear. Build: `emberclutch.cia` (0.9.0, 73 MB) and `build/lab/banner-lab-{f..k,a2}.cia`; FTP
-  them when he says the 3DS is on (last seen at .54:5000), or he copies them.
+  loops' seams to hear. Build: `emberclutch.cia` (0.9.0, 73 MB) and `build/lab/banner-lab-{f..k,a2}.cia`,
+  **sent to the 3DS at .53 on 2026-09-29** (sdmc:/cias/emberclutch.cia, sdmc:/cias/lab/; run 19's tested labs
+  B-E removed from the card).
 - **Since the last update:** the chest heart laid on every kind's chest (D104, the kit's `conform_part`, all 14
   kinds re-exported); the camera kept clear of the places and the ground whatever sets it (core/occluders, the
   grotto); the grotto's chest; the stage 7.2 m; the Hollow's camera and brazier; seen while fishing; the foe's

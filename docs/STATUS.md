@@ -2,10 +2,25 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-28 · **Milestone:** **the long run: Beta and 1.0 built together** ([plan](plan/v1.md), [work split](plan/v1-work.md), D92-D102). All six workstreams merged, the look picked (A with painted textures, D99), the valley's creatures merged (L), roaming trainers and duels in progress (D); the long-run review page is up (sounds to mark, music to make); then run 20 (0.9.0) with banner labs F-K and A2. Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0 built together, ready for run 20** ([plan](plan/v1.md), D89-D105). Everything merged (the six workstreams, the valley's critters L, roaming trainers and duels D), Noah's notes fixed as they came, his sound review applied and his Suno batch 4 in; **run 20** (0.9.0, the 1.0 candidate) with banner labs F-K and A2 is packaged and its checklist is on the review page: https://claude.ai/artifact/52Kf8yemiqCHkq3wQKnxoW. Waiting for Noah's 3DS. Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: the long run (2026-09-28)
+## Now: run 20 is ready (2026-09-29)
+- **For Noah:** the review page above: run 20's steps (tick as you go, notes per section, the banner labs
+  Held/Froze), the sounds as kept (round 2: mark only what's still off, and the two made at his note), the six
+  loops' seams to hear. Build: `emberclutch.cia` (0.9.0, 73 MB) and `build/lab/banner-lab-{f..k,a2}.cia`; FTP
+  them when he says the 3DS is on (last seen at .54:5000), or he copies them.
+- **Since the last update:** the chest heart laid on every kind's chest (D104, the kit's `conform_part`, all 14
+  kinds re-exported); the camera kept clear of the places and the ground whatever sets it (core/occluders, the
+  grotto); the grotto's chest; the stage 7.2 m; the Hollow's camera and brazier; seen while fishing; the foe's
+  bars at the top; D merged; the critters' and duels' sounds; the sound review applied (D105); the music in
+  and the Performance on show-stage's beat; a whole-game playthrough script; README screenshots.
+- **Tests:** 374,858 PC checks, 0 failures; every autotest (playthrough, battle, glade, critters, roamers, cove,
+  Hollow, pages, valleyperf, people_anims, cavecam) without unmapped accesses.
+- **After run 20:** fixes from Noah's notes, then `v1.0.0` and the public release only on his word (the GitHub
+  release, the Universal-DB entry in `docs/release/`).
+
+## The long run (2026-09-28)
 - **Foundation** (on main first): Love and Energy apart, a trainer's record per dragon (xp, trained
   stats, moves, wear, dye, titles, wins, cups, ribbons, deepest floor), the save's progress block
   (accessories, dyes, leagues, the Hollow, the day's claims, tips, records, the cove's day), four

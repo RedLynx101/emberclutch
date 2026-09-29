@@ -29,7 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
-RUN_READY = False  # the run 20 checklist on the page (once the build is ready for the 3DS)
+RUN_READY = True  # the run 20 checklist on the page (once the build is ready for the 3DS)
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.

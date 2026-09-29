@@ -1517,7 +1517,7 @@ void buildSongbird(Out& o, const Critter& c, float clock) {
     const int v = c.variant % 4;
     const bool flying = c.state == State::Flee || c.state == State::Soar;
     Frame f;
-    f.set(c.pos + Vec3{0, 0, flying ? 0.0f : c.air}, c.heading, 2.5f * growIn(c));
+    f.set(c.pos + Vec3{0, 0, flying ? 0.0f : c.air}, c.heading, 3.3f * growIn(c));  // (storybook-sized: readable at the walking camera's 9 m)
     float pitch = 0;
     if (c.state == State::Idle) {
         const float peck = std::sin(clock * 7.0f + c.anim);
@@ -1560,7 +1560,7 @@ void buildRabbit(Out& o, const Critter& c, float clock) {
     const Rgb3 light = hare ? Rgb3{250, 251, 255} : kLight[c.variant % 3];
     const Rgb3 ear = hare ? Rgb3{122, 124, 142} : dim(fur, 0.9f);
     Frame f;
-    f.set(c.pos + Vec3{0, 0, c.air}, c.heading, 1.8f * growIn(c));
+    f.set(c.pos + Vec3{0, 0, c.air}, c.heading, 2.4f * growIn(c));
     const bool running = c.state == State::Flee || c.state == State::Chased;
     float pitch = 0;
     if (c.state == State::Idle) {
@@ -1609,7 +1609,7 @@ void buildFrog(Out& o, const Critter& c, float clock) {
     static const Rgb3 kBelly[3] = {{220, 228, 150}, {210, 226, 170}, {232, 232, 160}};
     const Rgb3 skin = kSkin[c.variant % 3], belly = kBelly[c.variant % 3], leg = dim(skin, 0.78f);
     Frame f;
-    f.set(c.pos + Vec3{0, 0, c.air}, c.heading, 2.3f * growIn(c));
+    f.set(c.pos + Vec3{0, 0, c.air}, c.heading, 3.1f * growIn(c));
     const bool leaping = c.state == State::Leap;
     f.tip(leaping ? 0.45f : 0.12f, {0, -0.08f, 0});
     const float p = c.puff > 0 ? std::sin(kPi * clampf(c.puff, 0.0f, 1.0f)) : 0.0f;  // the throat swelling
@@ -1649,7 +1649,7 @@ void buildDuck(Out& o, const Critter& c, float clock) {
 void buildFox(Out& o, const Critter& c, float clock) {
     const Rgb3 fur{228, 122, 52}, white{244, 232, 214}, dark{92, 60, 48}, ear{170, 80, 40};
     Frame f;
-    f.set(c.pos, c.heading, 1.35f * growIn(c));
+    f.set(c.pos, c.heading, 1.6f * growIn(c));
     const float sit = c.puff;
     const float sniff = c.state == State::Visit ? 1.0f : 0.0f;
     f.tip(0.5f * sit - 0.22f * sniff, {0, -0.22f, 0.2f});

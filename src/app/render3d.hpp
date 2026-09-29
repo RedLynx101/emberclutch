@@ -249,6 +249,11 @@ struct ValleyView {
     // The challenges (workstream C): the 3D's zero-parallax distance (0: the flown dragon's). Fruit
     // Catch keeps it on you, so you don't split into two when your dragon runs far off (run 19).
     float focus = 0;
+    // The valley's critters (workstream L, core/critters): one triangle list (three vertices each,
+    // the light baked in), drawn in a single call (app/render_critters.inc).
+    const Vec3* critterPos = nullptr;
+    const u8* critterCol = nullptr;
+    int critterVerts = 0;
 };
 void drawValley(App& app, const ValleyView& view, s64 now);
 // Another dragon's head (view.others[i]) as the last drawValley posed it, for a breath to start

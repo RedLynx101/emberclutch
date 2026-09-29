@@ -55,11 +55,19 @@ struct Progress {
     // beach's shells picked (a bit each), Tam's rod lent (for good).
     s32 coveDay = -1000000;
     u8 coveFish = 0, coveShells = 0, coveRod = 0;
+    // The valley's critters (core/critters, workstream L): the kinds seen and befriended (a bit
+    // each), the day the rewards are for, the kinds befriended that day, the moments paid that
+    // day, and how many times each kind has been befriended.
+    u8 critterSeen = 0, critterFriends = 0;
+    s32 critterDay = -1000000;
+    u8 critterToday = 0, critterPaid = 0;
+    u8 critterCounts[8] = {};
 };
 
 // The progress block's bytes in the save (after its u16 size).
 constexpr int kProgressBytes = kAccessoryBytes + 4 + 2 + 1 + kLeagues + 1 + kLeagues + 1 + 8 + 4 + 8 + 4 + 2 * kRecordCounts;
 constexpr int kProgressCoveBytes = 4 + 3;  // (after them: the cove's day, read if there)
+constexpr int kProgressCritterBytes = 2 + 4 + 2 + 8;  // (then the critters, workstream L, read if there)
 
 namespace trainer {
 

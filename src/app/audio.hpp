@@ -33,6 +33,9 @@ enum class Sfx : u8 {
     HopOn, HopOff, Nuzzle, Shutter, Equip, LevelUp, Unlock, Notice,
     BattleStart, Swipe, Hit, HitBig, Whiff, Faint, StatUp, StatDown, Victory, Defeat,
     Pose, Twirl, Ribbon, Cast, Plop, Bite, Reel, ShellPick, IceCrack, StepSand, StepSnow, Burst, Brake,
+    // The valley's critters (workstream L): synthesised by make_synth_sfx.py until generated ones
+    // arrive (docs/audio/sfx-life-prompts.md).
+    BirdChirp, BirdFlutter, RabbitHop, FrogCroak, DuckQuack, FoxYip, ButterflyLand, Whistle, CritterFriend, LeafRustle,
     Count
 };
 // True once a sound's own file is loaded (not a stand-in).

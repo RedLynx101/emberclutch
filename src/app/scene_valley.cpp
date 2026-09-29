@@ -28,6 +28,7 @@
 #include "app/tracking_ui.hpp"
 #include "app/ui_draw.hpp"
 #include "app/valley_ext.hpp"
+#include "app/wildlife.hpp"  // the valley's critters (workstream L)
 #include "core/accessories.hpp"
 #include "core/campaign.hpp"
 #include "core/care.hpp"
@@ -57,7 +58,7 @@ const char* g_placeMusic = nullptr;  // a 1.0 place's own music near it (set wit
 enum class Mode : u8 { OnFoot, Riding, FreeCam };
 
 // What A does where you stand (checked in this order; Board: the challenges' picker there).
-enum class Action : u8 { None, Talk, Shop, Enter, Light, Ride, Call, Board, Folk };
+enum class Action : u8 { None, Talk, Shop, Enter, Light, Ride, Call, Board, Folk, Critter /* workstream L: last of all */ };
 
 struct ValleyScene {
     Valley valley;
@@ -681,6 +682,7 @@ void findAction(ValleyScene& s) {
         facing(s.you, {s.pal.pos.x, s.pal.pos.y}, 45.0f))
         s.action = Action::Ride;
     if (s.action == Action::None && s.partner >= 0 && s.pal.lost()) s.action = Action::Call;
+    if (s.action == Action::None && wildlife::offer(s.you.pos, s.you.forward(), s.partner >= 0)) s.action = Action::Critter;
 }
 
 // The partner's breath on a lantern: its element's own breath, the lantern alight after a moment.
@@ -809,6 +811,7 @@ void doAction(App& app, ValleyScene& s) {
                 }
             }
             break;
+        case Action::Critter: wildlife::act(app); break;
         case Action::None: break;
     }
 }
@@ -866,6 +869,11 @@ void update(App& app, const Input& in) {
     animatePeople(app, s);
     animateWanderer(app, s);
     animateStar(app, s);
+    {  // the valley's critters (workstream L): round you (both where the flight is, riding)
+        const bool r = s.mode == Mode::Riding;
+        wildlife::tick(app, s.valley, {hereAt(s), r ? s.flight.heading : s.you.heading, r ? s.flight.speed : s.you.speed, r, s.partner,
+                                       r ? s.flight.pos : s.pal.pos, r ? s.flight.speed : s.pal.speed, r ? s.flight.heading : s.pal.heading});
+    }
     if (app.autoGoto[2] != 0) {  // an autotest's spot
         app.autoGoto[2] = 0;
         s.mode = Mode::OnFoot;
@@ -1276,6 +1284,7 @@ void drawTop(App& app) {
             view.target = s.stage.target;
         }
     }
+    wildlife::fillView(app, view);  // the valley's critters (workstream L)
     if (r3d::ready()) r3d::drawValley(app, view, now);
     if (autotest::shooting())
         autotest::log("you (%.1f %.1f %.1f) partner (%.1f %.1f %.1f) mode %d", s.you.pos.x, s.you.pos.y, s.you.pos.z, s.pal.pos.x,
@@ -1315,6 +1324,7 @@ void drawTop(App& app) {
                 hint = line;
             }
             break;
+        case Action::Critter: hint = wildlife::prompt(); break;
         case Action::None: break;
     }
     if (s.action == Action::Enter && s.mode == Mode::Riding) hint = str::kPromptHome;

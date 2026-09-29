@@ -15,6 +15,7 @@
 #include "app/cove.hpp"  // Driftwood Cove (workstream C)
 #include "app/glade.hpp"  // the pageant
 #include "app/battle_feature.hpp"  // 1.0 battles (workstream B)
+#include "app/wildlife.hpp"  // the valley's critters (workstream L)
 #include "app/scenes.hpp"
 #include "core/campaign.hpp"
 #include "core/trainer.hpp"
@@ -35,7 +36,7 @@ enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Nam
                      Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard, Wear,  // (U: Open .. Wear)
                      Energy, Cove,  // (workstream C)
                      Pageant, Ground,
-                     Battle /* 1.0 battles (workstream B) */ };  // the pageant's own commands (app/glade.hpp pageantCommand)
+                     Battle /* 1.0 battles (workstream B) */, Critters /* workstream L */ };  // the pageant's own commands (app/glade.hpp pageantCommand)
 
 struct Cmd {
     Op op = Op::Wait;
@@ -148,6 +149,7 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "wear") { c.op = Op::Wear; nums(5); }
     else if (w == "pg") { c.op = Op::Pageant; c.text = rest; }  // the pageant: pg give / wear / show ...
     else if (w == "battle") { c.op = Op::Battle; c.text = rest; }  // 1.0 battles (workstream B)
+    else if (w == "critters") { c.op = Op::Critters; c.text = rest; }  // the valley's critters (app/wildlife.hpp command)
     else return false;
     return true;
 }
@@ -312,6 +314,7 @@ Input next(App& app) {
                 done = true;
                 break;
             case Op::Battle: battleCommand(app, c.text.c_str()); done = true; break;  // 1.0 battles (workstream B)
+            case Op::Critters: wildlife::command(app, c.text.c_str()); done = true; break;  // (workstream L)
             case Op::Cups:  // each challenge's highest cup won (its ribbons with it)
                 app.game.world.ribbons = 0;
                 for (int k = 0; k < kChallenges; ++k) {

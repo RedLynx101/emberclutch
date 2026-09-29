@@ -669,6 +669,122 @@ def brake(rng, take):
 
 
 # slug: (kind in process_sfx's KINDS, takes, maker, dB against the kind's target)
+# ----------------------------------------------------------------- the valley's critters (L)
+# Stand-ins until generated ones arrive (docs/audio/sfx-life-prompts.md): small, soft and cute.
+def bird_chirp(rng, take):
+    """A songbird's little twitter: two or three quick whistled notes sliding up high, bright and
+    tiny, like a sparrow chatting in the grass."""
+    patterns = (((2600, 4200, 0.07), (3000, 4600, 0.06)),
+                ((3400, 2600, 0.05), (2800, 4400, 0.07), (3300, 4800, 0.05)),
+                ((2400, 3900, 0.09), (3900, 3200, 0.06)))
+    x, t = [], 0.0
+    for f0, f1, d in patterns[take]:
+        add(x, glide(f0, f1, d, d * 0.7, tau=d * 0.5, harmonics=((1, 1.0), (2, 0.12)), vibrato=(38, 0.02), attack=0.004), t, 0.8)
+        t += d + rng.uniform(0.02, 0.05)
+    return x
+
+
+def bird_flutter(rng, take):
+    """A little flock bursting up off the grass: a flurry of soft wingbeats (quick puffs of
+    feathery noise, thick at first and thinning as they fly off) and a startled peep or two."""
+    x, t = [], 0.0
+    while t < 0.75:
+        n = n_of(0.03)
+        puff = mul(biquad(noise(n, rng), "bp", rng.uniform(900, 1800), 0.9), hump(n, 0.3, 1.0, 1.5))
+        add(x, norm(puff), t, (1.0 - t / 0.9) * rng.uniform(0.5, 0.9))
+        t += rng.uniform(0.018, 0.04) * (1 + 1.5 * t)
+    add(x, glide(3200, 4600, 0.06, 0.04, tau=0.03), 0.02, 0.35)
+    add(x, glide(3600, 5000, 0.05, 0.03, tau=0.025), 0.12, 0.25)
+    return x
+
+
+def rabbit_hop(rng, take):
+    """A rabbit bounding off: two or three soft padded thumps on the grass, quick and light, with
+    a whisper of grass under them."""
+    x = []
+    for k in range(2 + take):
+        at = k * 0.11
+        add(x, pof(rng, 190 - 10 * k, 110, 0.025, noise_lp=1200, noise_amt=0.5), at, 0.8 - 0.15 * k)
+        add(x, norm(mul(biquad(noise(n_of(0.05), rng), "hp", 2500), decay_env(n_of(0.05), 0.012))), at, 0.12)
+    return x
+
+
+def frog_croak(rng, take):
+    """A small round frog's 'ribbit': a buzzy, throaty double croak (a warm tone pulsed quickly,
+    like a thumb run along a comb), the second part a little higher. Cute, not slimy."""
+    sc = (1.0, 1.12)[take]
+    x = []
+    for at, f0, f1, d in ((0.0, 280, 330, 0.13), (0.17, 340, 300, 0.1)):
+        n = n_of(d)
+        tone = glide(f0 * sc, f1 * sc, d, d, harmonics=((1, 1.0), (2, 0.6), (3, 0.35), (4, 0.15)), attack=0.004)
+        pulses = [0.35 + 0.65 * max(0.0, math.sin(TAU * 34 * i / RATE)) ** 2 for i in range(n)]
+        add(x, mul(mul(tone, pulses), hump(n, 0.3, 0.8, 1.2)), at, 1.0 if at == 0 else 0.8)
+    return x
+
+
+def duck_quack(rng, take):
+    """A friendly farm duck's soft 'quack': a short nasal honk sliding down, reedy (lots of
+    overtones through a narrow band), rounded off so it's gentle; the second take quacks twice."""
+    sc = (1.0, 0.9)[take]
+    d = 0.2
+    n = n_of(d)
+    tone = glide(560 * sc, 420 * sc, d, 0.12, harmonics=tuple((h, 1.0 / h ** 0.7) for h in range(1, 12)), attack=0.006)
+    x = mul(norm(svf(tone, 1400 * sc, q=2.2)), hump(n, 0.2, 0.7, 1.3))
+    if take == 1:
+        x = add(x, list(x), 0.24, 0.7)  # quack-quack
+    return x
+
+
+def fox_yip(rng, take):
+    """A curious young fox's soft 'yip': a quick bright bark-chirp jumping up and falling back,
+    with a breath of air on it, more puppy than wolf."""
+    x = add([], glide(760, 1500, 0.07, 0.05, harmonics=((1, 1.0), (2, 0.45), (3, 0.2)), attack=0.003), 0.0, 0.9)
+    add(x, glide(1500, 950, 0.12, 0.1, tau=0.05, harmonics=((1, 1.0), (2, 0.35))), 0.055, 0.8)
+    add(x, swish(0.1, 1500, 3000, rng, q=1.2, peak=0.3), 0.0, 0.2)
+    return x
+
+
+def butterfly_land(rng, take):
+    """A butterfly settling: a tiny sparkle of three soft, high chime notes floating down, and
+    the faintest flutter of air, delicate as a whisper."""
+    x = []
+    for i, nm in enumerate(("E7", "C7", "G6")):
+        add(x, chime(note(nm), 0.5, decay=0.18, bright=0.4), 0.07 * i, 0.5 - 0.1 * i)
+    add(x, swish(0.25, 2500, 5000, rng, q=0.8, peak=0.4), 0.0, 0.15)
+    return x
+
+
+def whistle_call(rng, take):
+    """You whistling softly to the birds: a clear two-note call, a rising 'fweee' then a bright
+    little 'whit', breathy and friendly."""
+    x = add([], glide(1300, 2100, 0.32, 0.22, env=hump(n_of(0.32), 0.6, 0.8, 1.0), vibrato=(6, 0.01), attack=0.02), 0.0, 0.85)
+    add(x, glide(2300, 2700, 0.14, 0.06, env=hump(n_of(0.14), 0.3, 0.8, 1.2), attack=0.01), 0.38, 0.8)
+    add(x, swish(0.5, 2000, 3500, rng, q=0.7, peak=0.5), 0.0, 0.06)
+    return x
+
+
+def critter_friend(rng, take):
+    """A new little friend: three warm kalimba notes skipping up (G C E) and a soft bell ringing
+    on top, short and sweet."""
+    x = []
+    for i, nm in enumerate(("G5", "C6", "E6")):
+        add(x, kalimba(note(nm), 0.7, decay=0.3), 0.09 * i, 0.8)
+    add(x, chime(note("G6"), 0.9, decay=0.35, bright=0.5), 0.27, 0.35)
+    return x
+
+
+def leaf_rustle(rng, take):
+    """A critter diving into a bush: a quick, soft rustle of leaves and twigs (a scatter of dry,
+    crackly grains swelling and settling), over in a moment."""
+    x, t = [], 0.0
+    while t < 0.4:
+        add(x, crackle(rng, rng.uniform(2500, 5500), rng.uniform(0.002, 0.005)), t, rng.uniform(0.3, 0.8) * (1.0 - t / 0.45))
+        t += rng.uniform(0.006, 0.02)
+    n = n_of(0.4)
+    add(x, norm(mul(biquad(noise(n, rng), "bp", 3000, 0.7), hump(n, 0.25, 1.0, 1.4))), 0.0, 0.35)
+    return x
+
+
 EFFECTS = {
     "hop-on": ("body", 1, hop_on, 0.0),
     "hop-off": ("body", 1, hop_off, 0.0),
@@ -701,6 +817,17 @@ EFFECTS = {
     "step-snow": ("body", 3, step_snow, 0.0),
     "burst": ("body", 1, burst, 0.0),
     "brake": ("body", 1, brake, 0.0),
+    # the valley's critters (workstream L)
+    "bird-chirp": ("voice", 3, bird_chirp, -3.0),
+    "bird-flutter": ("body", 1, bird_flutter, 0.0),
+    "rabbit-hop": ("body", 2, rabbit_hop, -3.0),
+    "frog-croak": ("voice", 2, frog_croak, -3.0),
+    "duck-quack": ("voice", 2, duck_quack, -3.0),
+    "fox-yip": ("voice", 1, fox_yip, -3.0),
+    "butterfly-land": ("ui", 1, butterfly_land, 0.0),
+    "whistle-call": ("voice", 1, whistle_call, -3.0),
+    "critter-friend": ("ui", 1, critter_friend, 1.0),
+    "leaf-rustle": ("body", 1, leaf_rustle, -3.0),
 }
 
 

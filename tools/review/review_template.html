@@ -81,6 +81,8 @@
   .mark button[aria-pressed="true"][data-v="pass"] { background: var(--pass); border-color: var(--pass); color: var(--panel); }
   .mark button[aria-pressed="true"][data-v="regen-claude"] { background: var(--fail); border-color: var(--fail); color: var(--panel); }
   .mark button[aria-pressed="true"][data-v="regen-noah"] { background: var(--noah); border-color: var(--noah); color: var(--panel); }
+  .mark button[aria-pressed="true"][data-v="held"] { background: var(--pass); border-color: var(--pass); color: var(--panel); }
+  .mark button[aria-pressed="true"][data-v="froze"] { background: var(--fail); border-color: var(--fail); color: var(--panel); }
   .status button[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: var(--panel); }
   .ref { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .ref audio { flex: 0 1 260px; height: 30px; }
@@ -93,6 +95,16 @@
   .facts dt { color: var(--muted); font-weight: 700; }
   .facts dd { margin: 0; }
   .note-box { border-left: 3px solid var(--gold); padding: 8px 12px; background: var(--panel); border-radius: 0 8px 8px 0; }
+  .run-sec { display: grid; gap: 10px; }
+  .step { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; align-items: start; padding: 6px 4px; border-radius: 6px; }
+  .step input { width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--pass); }
+  .step[data-done="true"] { background: var(--pass-soft); }
+  .step label { cursor: pointer; }
+  .labs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; }
+  .lab { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); }
+  .lab[data-v="held"] { background: var(--pass-soft); }
+  .lab[data-v="froze"] { background: var(--fail-soft); }
+  .run-progress { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
   @media (max-width: 520px) { .take { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
@@ -107,12 +119,23 @@
   </header>
 
   <nav aria-label="Sections">
+    <a href="#run" id="nav-run" hidden>Run 20</a>
     <a href="#sounds">Sounds</a>
     <a href="#music">Music</a>
     <span class="tally" id="tally"></span>
   </nav>
 
   <!--SECTIONS-->
+
+  <section id="run" hidden>
+    <div class="section-head">
+      <div class="kicker">On your 3DS</div>
+      <h2 id="run-title"></h2>
+      <p class="muted" id="run-intro"></p>
+      <div class="run-progress" id="run-progress"></div>
+    </div>
+    <div id="run-list" style="display:grid;gap:14px"></div>
+  </section>
 
   <section id="sounds">
     <div class="section-head">
@@ -147,9 +170,10 @@
 const DATA = /*DATA*/null;
 let db = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const state = { sounds: {}, music: {} };
+const state = { sounds: {}, music: {}, run: {}, labs: {} };
 const LS = "emberclutch-review";
 try { Object.assign(state, JSON.parse(localStorage.getItem(LS) || "{}")); } catch (_) {}
+state.run ||= {}; state.labs ||= {};
 function keepLocal() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (_) {} }
 
 function copyButton(text) {
@@ -252,15 +276,75 @@ function musicCard(m) {
   return el;
 }
 
+function runCard(sec) {
+  const st = (state.run[sec.id] ||= { done: {}, note: "" });
+  const el = document.createElement("article");
+  el.className = "card run-sec";
+  el.innerHTML = `<div class="card-head"><h3>${esc(sec.title)}</h3></div>${sec.lead ? `<p>${sec.lead}</p>` : ""}
+    <div class="steps"></div>
+    ${sec.id === "s13" ? '<div class="labs"></div>' : ""}
+    <label class="muted" for="rnote-${esc(sec.id)}" style="font-size:13px;font-weight:700">${sec.send ? "Your notes" : "Notes (anything off)"}</label>
+    <textarea id="rnote-${esc(sec.id)}" placeholder="${sec.send ? "Write here" : "Optional"}"></textarea>
+    <div class="saved" aria-live="polite"></div>`;
+  const list = el.querySelector(".steps");
+  sec.steps.forEach((step) => {
+    const row = document.createElement("div");
+    row.className = "step";
+    row.dataset.done = String(!!st.done[step.id]);
+    row.innerHTML = sec.send ? `<span></span><div>${step.text}</div>`
+      : `<input type="checkbox" id="c-${esc(step.id)}"><label for="c-${esc(step.id)}">${step.text}</label>`;
+    const box = row.querySelector("input");
+    if (box) {
+      box.checked = !!st.done[step.id];
+      box.addEventListener("change", () => { st.done[step.id] = box.checked; row.dataset.done = String(box.checked); save("run", sec.id, el); });
+    }
+    list.appendChild(row);
+  });
+  const labs = el.querySelector(".labs");
+  if (labs) for (const lab of DATA.run.labs) {
+    const ls = (state.labs[lab] ||= { result: "" });
+    const row = document.createElement("div");
+    row.className = "lab"; row.dataset.v = ls.result;
+    row.innerHTML = `<strong>Banner lab ${esc(lab)}</strong><span class="mark" role="group" aria-label="Banner lab ${esc(lab)}">
+      <button type="button" data-v="held">Held</button><button type="button" data-v="froze">Froze</button></span>`;
+    row.querySelectorAll("button").forEach((b) => {
+      b.setAttribute("aria-pressed", String(ls.result === b.dataset.v));
+      b.addEventListener("click", () => {
+        ls.result = ls.result === b.dataset.v ? "" : b.dataset.v;
+        row.dataset.v = ls.result;
+        row.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(ls.result === x.dataset.v)));
+        save("labs", lab, el);
+      });
+    });
+    labs.appendChild(row);
+  }
+  const ta = el.querySelector("textarea");
+  ta.value = st.note || "";
+  ta.addEventListener("change", () => { st.note = ta.value; save("run", sec.id, el); });
+  return el;
+}
+
 function tally() {
   let takes = 0, marked = 0;
   for (const s of DATA.sounds) { takes += s.files.length; const t = (state.sounds[s.slug] || {}).takes || {};
     marked += s.files.filter((_, i) => t[String(i + 1)]).length; }
   const made = DATA.music.filter((m) => ["made", "skip"].includes((state.music[m.slug] || {}).status)).length;
-  document.getElementById("tally").textContent = `${marked} of ${takes} takes marked · ${made} of ${DATA.music.length} tracks done`;
+  let steps = 0, done = 0;
+  for (const sec of (DATA.run.sections || [])) if (!sec.send) { steps += sec.steps.length;
+    const d = (state.run[sec.id] || {}).done || {}; done += sec.steps.filter((x) => d[x.id]).length; }
+  const runText = steps ? `${done} of ${steps} steps done · ` : "";
+  if (steps) document.getElementById("run-progress").textContent = `${done} of ${steps} steps done`;
+  document.getElementById("tally").textContent = `${runText}${marked} of ${takes} takes marked · ${made} of ${DATA.music.length} tracks done`;
 }
 
 function render() {
+  if (DATA.run && DATA.run.sections) {
+    document.getElementById("run").hidden = false;
+    document.getElementById("nav-run").hidden = false;
+    document.getElementById("run-title").textContent = DATA.run.title;
+    document.getElementById("run-intro").innerHTML = DATA.run.intro;
+    document.getElementById("run-list").replaceChildren(...DATA.run.sections.map(runCard));
+  }
   const sl = document.getElementById("sound-list"); sl.replaceChildren(...DATA.sounds.map(soundCard));
   const ml = document.getElementById("music-list"); ml.replaceChildren(...DATA.music.map(musicCard));
   tally();
@@ -272,7 +356,9 @@ render();
     db = window.claude ? await window.claude.use("db") : null;
     if (!db) return;
     let changed = false;
-    for (const [kind, list] of [["sounds", DATA.sounds], ["music", DATA.music]]) {
+    const runSecs = (DATA.run.sections || []).map((x) => ({ slug: x.id }));
+    const labs = (DATA.run.labs || []).map((x) => ({ slug: x }));
+    for (const [kind, list] of [["sounds", DATA.sounds], ["music", DATA.music], ["run", runSecs], ["labs", labs]]) {
       for (const it of list) {
         const snap = await db.doc(`${kind}/${it.slug}`).get();
         if (snap && snap.exists) { const d = snap.data(); delete d.at; state[kind][it.slug] = { ...state[kind][it.slug], ...d }; changed = true; }

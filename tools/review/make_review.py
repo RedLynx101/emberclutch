@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
+RUN_READY = False  # the run 20 checklist on the page (once the build is ready for the 3DS)
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -127,6 +128,47 @@ def music() -> list[dict]:
     return out
 
 
+def inline_md(text: str) -> str:
+    """The run list's markdown, inline: **bold**, `code`, [links](...), escaped otherwise."""
+    t = html.escape(" ".join(text.split()), quote=False)
+    t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
+    t = re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
+    t = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1", t)  # (links to repo docs mean nothing on the page)
+    return t
+
+
+def run_list(path: str = "docs/plan/hardware-check-4.md") -> dict:
+    """The run's steps from its doc: each '## N. Title' section, its numbered steps (or its text)."""
+    p = ROOT / path
+    if not p.exists():
+        return {}
+    md = p.read_text(encoding="utf-8")
+    title = md.split("\n", 1)[0].lstrip("# ").strip()
+    intro = md.split("\n## ", 1)[0].split("\n", 1)[1].strip()
+    sections = []
+    for part in md.split("\n## ")[1:]:
+        head, _, body = part.partition("\n")
+        m = re.match(r"(\d+)\. (.*)", head.strip())
+        steps, lead, cur = [], [], None
+        for line in body.split("\n"):
+            s = re.match(r"(\d+)\. (.*)", line) or re.match(r"()- (.*)", line)  # (numbered steps, or bullets)
+            if s:
+                cur = [s.group(2)]
+                steps.append(cur)
+            elif line.startswith("   ") and cur is not None:
+                cur.append(line.strip())
+            elif line.strip() and not steps:
+                lead.append(line.strip())
+        sec_id = f"s{m.group(1)}" if m else re.sub(r"[^a-z]+", "-", head.lower()).strip("-")
+        if not steps and lead and m:  # (a section that's one paragraph: one thing to tick)
+            steps, lead = [lead], []
+        sections.append({"id": sec_id, "title": m.group(2) if m else head.strip(), "lead": inline_md(" ".join(lead)),
+                         "steps": [{"id": f"{sec_id}-{i + 1}", "text": inline_md(" ".join(st))} for i, st in enumerate(steps)],
+                         "send": not m})
+    return {"title": title, "intro": inline_md(intro), "sections": sections,
+            "labs": ["F", "G", "H", "I", "J", "K", "A2"]}
+
+
 def fragments() -> str:
     d = ROOT / "docs" / "review"
     return "\n".join(p.read_text(encoding="utf-8") for p in sorted(d.glob("*.html"))) if d.exists() else ""
@@ -135,7 +177,7 @@ def fragments() -> str:
 def main() -> None:
     shutil.rmtree(OUT, ignore_errors=True)
     OUT.mkdir(parents=True)
-    data = {"sounds": sounds(), "music": music()}
+    data = {"sounds": sounds(), "music": music(), "run": run_list() if RUN_READY else {}}
     page = (Path(__file__).with_name("review_template.html").read_text(encoding="utf-8")
             .replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
             .replace("<!--SECTIONS-->", fragments()))

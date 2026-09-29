@@ -1,4 +1,4 @@
-<title>Emberclutch Review</title>
+<title>/*TITLE*/</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Nunito:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -113,14 +113,13 @@
   <header>
     <div class="kicker">Emberclutch · the long run (Beta + 1.0)</div>
     <h1>The long run: review</h1>
-    <p class="muted">Everything that needs your ears, hands or say-so, in one place. Marks save as you click and I read them from here.
-      <strong>Run 20</strong> is the long run on your 3DS: Beta and 1.0 together (0.9.0, the 1.0 candidate), with seven banner labs.
-      Tell me when the 3DS is on the network and I'll send the build (or copy <code>emberclutch.cia</code> and <code>cias/lab/</code> over yourself).
-      Then tick the steps as you go; the sounds and the music's loops are below it.</p>
+    <p class="muted">Tick the steps as you go and leave a note wherever something's off; marks save as you click and I read them from here.
+      <strong>Run 21</strong> is run 20 again with its freeze fixed (0.9.1, already on your 3DS: install <code>cias/emberclutch.cia</code> in FBI).
+      A trace is on for this run: if it freezes anywhere, just restart the 3DS and tell me, and I'll read where it stopped.</p>
   </header>
 
   <nav aria-label="Sections">
-    <a href="#run" id="nav-run" hidden>Run 20</a>
+    <a href="#run" id="nav-run" hidden>Run 21</a>
     <a href="#sounds">Sounds</a>
     <a href="#music">Music</a>
     <span class="tally" id="tally"></span>
@@ -175,7 +174,7 @@ const DATA = /*DATA*/null;
 let db = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const state = { sounds: {}, music: {}, run: {}, labs: {} };
-const LS = "emberclutch-review-2";  // (round 2: the sounds renumbered after the first marks)
+const LS = "emberclutch-review-run21";  // (each round its own: run 21)
 try { Object.assign(state, JSON.parse(localStorage.getItem(LS) || "{}")); } catch (_) {}
 state.run ||= {}; state.labs ||= {};
 function keepLocal() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (_) {} }
@@ -200,7 +199,7 @@ async function save(kind, slug, el) {
   keepLocal();
   tally();
   const out = el.querySelector(".saved");
-  const store = kind === "sounds2" ? "sounds" : kind;
+  const store = kind === "sounds2" ? "sounds" : kind === DATA.run.key ? "run" : kind;
   if (!db) { out.textContent = "Saved on this device only; the shared store isn't reachable here."; return; }
   try {
     await db.doc(`${kind}/${slug}`).set({ ...state[store][slug], at: new Date().toISOString() });
@@ -288,7 +287,7 @@ function runCard(sec) {
   el.className = "card run-sec";
   el.innerHTML = `<div class="card-head"><h3>${esc(sec.title)}</h3></div>${sec.lead ? `<p>${sec.lead}</p>` : ""}
     <div class="steps"></div>
-    ${sec.id === "s13" ? '<div class="labs"></div>' : ""}
+    ${sec.labs && DATA.run.labs.length ? '<div class="labs"></div>' : ""}
     <label class="muted" for="rnote-${esc(sec.id)}" style="font-size:13px;font-weight:700">${sec.send ? "Your notes" : "Notes (anything off)"}</label>
     <textarea id="rnote-${esc(sec.id)}" placeholder="${sec.send ? "Write here" : "Optional"}"></textarea>
     <div class="saved" aria-live="polite"></div>`;
@@ -302,7 +301,7 @@ function runCard(sec) {
     const box = row.querySelector("input");
     if (box) {
       box.checked = !!st.done[step.id];
-      box.addEventListener("change", () => { st.done[step.id] = box.checked; row.dataset.done = String(box.checked); save("run", sec.id, el); });
+      box.addEventListener("change", () => { st.done[step.id] = box.checked; row.dataset.done = String(box.checked); save(DATA.run.key, sec.id, el); });
     }
     list.appendChild(row);
   });
@@ -326,7 +325,7 @@ function runCard(sec) {
   }
   const ta = el.querySelector("textarea");
   ta.value = st.note || "";
-  ta.addEventListener("change", () => { st.note = ta.value; save("run", sec.id, el); });
+  ta.addEventListener("change", () => { st.note = ta.value; save(DATA.run.key, sec.id, el); });
   return el;
 }
 
@@ -340,10 +339,17 @@ function tally() {
     const d = (state.run[sec.id] || {}).done || {}; done += sec.steps.filter((x) => d[x.id]).length; }
   const runText = steps ? `${done} of ${steps} steps done · ` : "";
   if (steps) document.getElementById("run-progress").textContent = `${done} of ${steps} steps done`;
-  document.getElementById("tally").textContent = `${runText}${marked} of ${takes} takes marked · ${made} of ${DATA.music.length} tracks done`;
+  const soundText = takes ? ` · ${marked} of ${takes} takes marked` : "", musicText = DATA.music.length ? ` · ${made} of ${DATA.music.length} tracks done` : "";
+  document.getElementById("tally").textContent = `${runText.replace(/ · $/, "")}${soundText}${musicText}`;
 }
 
 function render() {
+  // (sections with nothing in them this round stay hidden, their links too)
+  const noSounds = !DATA.sounds.length, noMusic = !DATA.music.length;
+  document.getElementById("sounds").hidden = noSounds;
+  document.getElementById("music").hidden = noMusic;
+  document.querySelectorAll('nav a[href="#sounds"]').forEach((a) => (a.hidden = noSounds));
+  document.querySelectorAll('nav a[href="#music"]').forEach((a) => (a.hidden = noMusic));
   if (DATA.run && DATA.run.sections) {
     document.getElementById("run").hidden = false;
     document.getElementById("nav-run").hidden = false;
@@ -364,10 +370,10 @@ render();
     let changed = false;
     const runSecs = (DATA.run.sections || []).map((x) => ({ slug: x.id }));
     const labs = (DATA.run.labs || []).map((x) => ({ slug: x }));
-    for (const [kind, list] of [["sounds2", DATA.sounds], ["music", DATA.music], ["run", runSecs], ["labs", labs]]) {
+    for (const [kind, list] of [["sounds2", DATA.sounds], ["music", DATA.music], [DATA.run.key || "run", runSecs], ["labs", labs]]) {
       for (const it of list) {
         const snap = await db.doc(`${kind}/${it.slug}`).get();
-        const into = kind === "sounds2" ? "sounds" : kind;
+        const into = kind === "sounds2" ? "sounds" : kind === DATA.run.key ? "run" : kind;
         if (snap && snap.exists) { const d = snap.data(); delete d.at; state[into][it.slug] = { ...state[into][it.slug], ...d }; changed = true; }
       }
     }

@@ -29,7 +29,12 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
-RUN_READY = True  # the run 20 checklist on the page (once the build is ready for the 3DS)
+RUN_READY = True  # the run's checklist on the page (once the build is ready for the 3DS)
+RUN_DOC = "docs/plan/hardware-check-5.md"  # the run's steps
+RUN_KEY = "run21"      # its database collection (each run its own: run 20's notes stay under `run`)
+LABS = []              # banner labs to mark Held/Froze this run (none in run 21)
+SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
+PAGE_TITLE = "Emberclutch Run 21"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -171,7 +176,7 @@ def inline_md(text: str) -> str:
     return t
 
 
-def run_list(path: str = "docs/plan/hardware-check-4.md") -> dict:
+def run_list(path: str = RUN_DOC) -> dict:
     """The run's steps from its doc: each '## N. Title' section, its numbered steps (or its text)."""
     p = ROOT / path
     if not p.exists():
@@ -198,9 +203,8 @@ def run_list(path: str = "docs/plan/hardware-check-4.md") -> dict:
             steps, lead = [lead], []
         sections.append({"id": sec_id, "title": m.group(2) if m else head.strip(), "lead": inline_md(" ".join(lead)),
                          "steps": [{"id": f"{sec_id}-{i + 1}", "text": inline_md(" ".join(st))} for i, st in enumerate(steps)],
-                         "send": not m})
-    return {"title": title, "intro": inline_md(intro), "sections": sections,
-            "labs": ["F", "G", "H", "I", "J", "K", "A2"]}
+                         "send": not m, "labs": "banner lab" in head.lower()})
+    return {"title": title, "intro": inline_md(intro), "sections": sections, "labs": LABS, "key": RUN_KEY}
 
 
 def fragments() -> str:
@@ -211,9 +215,11 @@ def fragments() -> str:
 def main() -> None:
     shutil.rmtree(OUT, ignore_errors=True)
     OUT.mkdir(parents=True, exist_ok=True)  # (a shell may be sitting in it)
-    data = {"sounds": sounds() + made_sounds(), "music": music(), "run": run_list() if RUN_READY else {}}
+    data = {"sounds": sounds() + made_sounds() if SHOW_SOUNDS else [], "music": music() if SHOW_SOUNDS else [],
+            "run": run_list() if RUN_READY else {}}
     page = (Path(__file__).with_name("review_template.html").read_text(encoding="utf-8")
             .replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
+            .replace("/*TITLE*/", PAGE_TITLE)
             .replace("<!--SECTIONS-->", fragments()))
     (OUT / "index.html").write_text(page, encoding="utf-8")
     n = sum(len(s["files"]) for s in data["sounds"])

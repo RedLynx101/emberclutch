@@ -2,10 +2,21 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0 built together, ready for run 20** ([plan](plan/v1.md), D89-D105). Everything merged (the six workstreams, the valley's critters L, roaming trainers and duels D), Noah's notes fixed as they came, his sound review applied and his Suno batch 4 in; **run 20** (0.9.0, the 1.0 candidate) with banner labs F-K and A2 is packaged and its checklist is on the review page: https://claude.ai/artifact/52Kf8yemiqCHkq3wQKnxoW. Waiting for Noah's 3DS. Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0, run 21 on the 3DS** ([plan](plan/v1.md), D89-D106). Run 20 froze on the den's first frame on Noah's old 3DS (D106: the static shader's new uniforms never set in the den); fixed in 0.9.1, sent to the 3DS at .53 with a trace on, and run 21's review page is https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21/<section id>`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 20 is ready (2026-09-29)
+## Now: run 21 (2026-09-29)
+- **Run 20's results** (the long-run review page, db `run`/`labs`): the game froze at Continue and after
+  a new game's egg (D106, fixed); nothing else could be tried. Banner labs: H (names + paint) and A2
+  (lab A, fresh ID) froze, F, G, I, J, K held ([banner-labs.md](tech/banner-labs.md): the next round
+  when Noah asks). Sound picks applied (the rabbit's hop take 2, the flock take 1).
+- **Run 21** (0.9.1) = run 20's steps again ([hardware-check-5.md](plan/hardware-check-5.md)); sent to
+  .53 (sdmc:/cias/emberclutch.cia) with sdmc:/3ds/emberclutch/trace.on; run 20's labs removed from
+  the card. If it freezes: pull trace.txt (read-only FTP) and read where it stopped.
+- **The emulator** now runs as an old 3DS (Azahar's `is_new_3ds\default=false`, `is_new_3ds=false`
+  in qt-config.ini; the old settings are backed up in the session's scratchpad).
+
+## Run 20 (2026-09-29)
 - **For Noah:** the review page above: run 20's steps (tick as you go, notes per section, the banner labs
   Held/Froze), the sounds as kept (round 2: mark only what's still off, and the two made at his note), the six
   loops' seams to hear. Build: `emberclutch.cia` (0.9.0, 73 MB) and `build/lab/banner-lab-{f..k,a2}.cia`,

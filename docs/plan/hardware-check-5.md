@@ -1,17 +1,20 @@
-# Run 21 (0.9.1): run 20 with its freeze fixed
+# Run 21, take 2 (0.9.2): run 20 with its freeze fixed
 
-**For Noah.** Run 20 froze on your old 3DS as soon as the den drew (Continue, and a new game as your
-egg arrived). The cause: the long run's painted ground gave the room's shader two new settings the
-den never set, so on a 3DS they held leftover values (the emulator zeroes them, which is why it never
-showed there; it now emulates an old 3DS too). Fixed. Everything else from run 20 is here to try, the
-same steps. The build is already on your 3DS: in FBI, SD → cias → `emberclutch.cia` → Install CIA.
-A trace is on for this run (a small file the game writes as it goes): if it freezes anywhere, restart
-the 3DS and tell me, and I'll read where it stopped. Your save from run 20's new game carries over
-(or start a new one: saves from before still load).
+**For Noah.** Runs 20 and 21 (0.9.1) froze on your old 3DS as soon as the den drew. Run 21's trace
+showed where: the game sent the den's first picture and the 3DS's graphics chip never finished
+drawing it. The only change to what draws the den since run 19 (the last build that ran on your
+3DS) was the room's shader, which the long run's painted ground had given a texture output. 0.9.2
+puts the den back on run 19's shader. The valley's ground gets a shader of its own.
+The build is already on your 3DS: in FBI, SD → cias → `emberclutch.cia` → Install CIA.
+The trace is still on, and it no longer slows the title. For the first moments of each screen it
+now makes the graphics chip finish each part of the picture before the next part (a brief flicker
+there is expected). If it freezes again, the trace names the exact part that hung. Restart the 3DS
+and tell me. Your save carries over.
 
 ## 0. Start
 1. Install `emberclutch.cia` (over the old one), start the game and press **Continue**: the den with
-   your egg, no freeze. If you try **New game** as well, it starts your save over.
+   your egg, no freeze. The title should run at full speed again. If you try **New game** as well,
+   it starts your save over.
 
 ## 1. The den: Love, Energy, the profile
 (The dragons' **heartglow** on their chests lies flat on the chest now, every kind: tell me if

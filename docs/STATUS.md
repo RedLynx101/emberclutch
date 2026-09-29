@@ -2,10 +2,23 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0, run 21 on the 3DS** ([plan](plan/v1.md), D89-D106). Run 20 froze on the den's first frame on Noah's old 3DS (D106: the static shader's new uniforms never set in the den); fixed in 0.9.1, sent to the 3DS at .53 with a trace on, and run 21's review page is https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21/<section id>`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0, run 21 take 2 on the 3DS** ([plan](plan/v1.md), D89-D107). Runs 20 and 21 froze on the den's first frame on Noah's old 3DS (the GPU never finished it); 0.9.2 puts the den back on run 19's static shader (D107), sent to .53 with the trace and its GPU checkpoints on. Run 21's review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21/<section id>`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 21 (2026-09-29)
+## Now: run 21, take 2 (2026-09-29)
+- **Run 21 (0.9.1) froze again** at Continue, and the title crawled (the trace wrote a line to the
+  card per mark). Its trace (pulled read-only): the den's first frame was all sent (room, particles,
+  the egg, overlays, bottom), then the next frame's begin never returned: the GPU hung on it.
+- **0.9.2** (D107): the static program is run 19's again (no texture output); the valley ground has
+  its own program (`ground.v.pica`). With trace.on, GPU checkpoints for each scene's first 3 frames
+  name the part that hangs ("gpu: <part> sent" with no "drawn"); the trace writes in batches.
+  Checked in the emulator (old 3DS): Continue into the den with the checkpoints on, and the valley's
+  ground still painted (ground.txt). Sent to .53 (sdmc:/cias/emberclutch.cia), trace.on kept.
+- **If it freezes again:** pull trace.txt (read-only FTP) and read the last "gpu:" line; the part
+  named is what hangs. If it holds: run 21's steps go on as written (hardware-check-5.md).
+- Azahar to be updated (Noah, 2026-09-29), then set to an old 3DS again.
+
+## Run 21 (2026-09-29)
 - **Run 20's results** (the long-run review page, db `run`/`labs`): the game froze at Continue and after
   a new game's egg (D106, fixed); nothing else could be tried. Banner labs: H (names + paint) and A2
   (lab A, fresh ID) froze, F, G, I, J, K held ([banner-labs.md](tech/banner-labs.md): the next round

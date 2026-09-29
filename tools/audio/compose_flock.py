@@ -84,7 +84,7 @@ def flock(chirps: list[list[float]], seed: int) -> list[float]:
 def main() -> None:
     sources = sorted(p for p in SFX.glob("bird-chirp*.wav"))
     chirps = [read(p) for p in sources]
-    for take, seed in ((1, 11), (2, 29)):
+    for take, seed in ((1, 11),):  # (Noah kept take 1, 2026-09-29)
         x = flock(chirps, seed)
         out = SFX / ("bird-flutter.wav" if take == 1 else f"bird-flutter-{take}.wav")
         write(out, x)

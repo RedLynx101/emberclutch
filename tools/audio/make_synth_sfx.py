@@ -874,7 +874,7 @@ EFFECTS = {
     # the valley's critters (workstream L)
     "bird-chirp": ("voice", 3, bird_chirp, -3.0),
     "bird-flutter": ("body", 1, bird_flutter, 0.0),
-    "rabbit-hop": ("body", 2, rabbit_hop, -3.0),
+    "rabbit-hop": ("body", 1, rabbit_hop, -3.0),  # (Noah kept the second take: TAKE_FROM makes it the one)
     "frog-croak": ("voice", 2, frog_croak, -3.0),
     "duck-quack": ("voice", 2, duck_quack, -3.0),
     "fox-yip": ("voice", 1, fox_yip, -3.0),
@@ -1169,12 +1169,17 @@ def write_wav(path: Path, x: list) -> None:
         w.writeframes(struct.pack(f"<{len(pcm)}h", *pcm))
 
 
+# Takes made from another take's seed and variation (the review page's picks: Noah, 2026-09-29).
+TAKE_FROM = {"rabbit-hop": {0: 1}}
+
+
 def make_effect(slug: str) -> list[str]:
     kind, takes, maker, gain_db = EFFECTS[slug]
     lines = []
     for take in range(takes):
-        rng = random.Random(zlib.crc32(f"{slug}:{take}".encode()))
-        y = finish(maker(rng, take), kind, gain_db)
+        src = TAKE_FROM.get(slug, {}).get(take, take)  # (a take Noah picked, made as it was)
+        rng = random.Random(zlib.crc32(f"{slug}:{src}".encode()))
+        y = finish(maker(rng, src), kind, gain_db)
         out = OUT_DIR / (f"{slug}.wav" if take == 0 else f"{slug}-{take + 1}.wav")
         write_wav(out, y)
         lines.append(f"[synth] {out.name:22s} {len(y) / RATE:5.2f} s  level {db(loudest_rms(y)):6.1f} dB"

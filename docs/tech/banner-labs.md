@@ -157,3 +157,22 @@ tools\banner_lab.ps1 -Variants "F=build\banner_labs\F\banner.cgfx;assets\audio\b
 ```
 All seven CIAs (`build/lab/banner-lab-f.cia` ... `-a2.cia`) pass `check_3ds.py`.
 
+
+### Results (run 20, 2026-09-29)
+| Lab | X plus lab A's | Result |
+|---|---|---|
+| F | names + geometry | held |
+| G | names + tail | held |
+| **H** | **names + paint** | **froze** |
+| I | geometry + tail | held |
+| J | geometry + paint | held |
+| K | tail + paint | held |
+| **A2** | lab A itself, fresh title ID | **froze** |
+
+So the title ID wasn't it (A2 froze under its own), and neither part alone freezes (B names and E
+paint held in run 19): **the names and the paint together** do. Paint renames nothing, but it brings
+lab A's 14 materials in its order and colours; with lab A's names on top, the three dotted material
+names (`b_horn.001`, `b_membrane.001`, `b_accent_flat.001`) land in paint's material table. The next
+round, when Noah asks for labs again: X plus paint with each dotted name alone (three labs), and
+paint with the names undotted, to find the one pairing. Noah's note: none of the ones that held look
+good (F's tail doesn't read from the front); a new kind's banner will need its own art pass anyway.

@@ -141,6 +141,9 @@
     <div class="section-head">
       <div class="kicker">ElevenLabs sound effects</div>
       <h2>Sounds to hear</h2>
+      <p class="note-box">Your first round of marks is in the game: the takes you kept (renumbered from 1), the stand-ins where you
+        chose them, hit as the three stand-ins plus its take 1, and the two you asked me to make myself (the rabbit's hop and the flock,
+        at the end). This is the set as it stands now: mark only what's still off, and the two new ones.</p>
       <p class="muted">Each take is the game's own file (trimmed, levelled and filtered for the 3DS's small speakers). Mark every take.
         If a sound should be redone, say which way: I regenerate it, or you take its prompt and make it yourself (drop your file in
         <code>assets/audio/sfx/source/</code> as <code>&lt;slug&gt;-1.wav</code> and tell me). The stand-in it replaces is there to compare.</p>
@@ -171,7 +174,7 @@ const DATA = /*DATA*/null;
 let db = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const state = { sounds: {}, music: {}, run: {}, labs: {} };
-const LS = "emberclutch-review";
+const LS = "emberclutch-review-2";  // (round 2: the sounds renumbered after the first marks)
 try { Object.assign(state, JSON.parse(localStorage.getItem(LS) || "{}")); } catch (_) {}
 state.run ||= {}; state.labs ||= {};
 function keepLocal() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (_) {} }
@@ -196,9 +199,10 @@ async function save(kind, slug, el) {
   keepLocal();
   tally();
   const out = el.querySelector(".saved");
+  const store = kind === "sounds2" ? "sounds" : kind;
   if (!db) { out.textContent = "Saved on this device only; the shared store isn't reachable here."; return; }
   try {
-    await db.doc(`${kind}/${slug}`).set({ ...state[kind][slug], at: new Date().toISOString() });
+    await db.doc(`${kind}/${slug}`).set({ ...state[store][slug], at: new Date().toISOString() });
     out.textContent = "Saved.";
   } catch (err) {
     out.textContent = "Couldn't save (" + (err && err.code ? err.code : "error") + "). Your marks stay on this device; try again.";
@@ -212,7 +216,7 @@ function soundCard(s) {
   el.innerHTML = `
     <div class="card-head"><span class="slug">${esc(s.slug)}</span>${s.loop ? '<span class="chip">loop</span>' : ""}</div>
     <p>${esc(s.where)}</p>
-    <div class="prompt"><div class="prompt-top"><span class="label">Prompt · ${esc(s.duration)} s asked</span></div><code>${esc(s.prompt)}</code></div>
+    <div class="prompt"><div class="prompt-top"><span class="label">${s.duration === "made" ? "How it was made" : `Prompt · ${esc(s.duration)} s asked`}</span></div><code>${esc(s.prompt)}</code></div>
     <div class="takes"></div>
     ${s.synth ? `<div class="ref">Stand-in it replaces <audio controls preload="none" src="${esc(s.synth)}"></audio></div>` : ""}
     <label class="muted" for="note-${esc(s.slug)}" style="font-size:13px;font-weight:700">Note (optional)</label>
@@ -237,14 +241,14 @@ function soundCard(s) {
         st.takes[n] = st.takes[n] === b.dataset.v ? "" : b.dataset.v;
         row.dataset.mark = st.takes[n];
         row.querySelectorAll(".mark button").forEach((x) => x.setAttribute("aria-pressed", String(st.takes[n] === x.dataset.v)));
-        save("sounds", s.slug, el);
+        save("sounds2", s.slug, el);
       });
     });
     list.appendChild(row);
   });
   const ta = el.querySelector("textarea");
   ta.value = st.note || "";
-  ta.addEventListener("change", () => { st.note = ta.value; save("sounds", s.slug, el); });
+  ta.addEventListener("change", () => { st.note = ta.value; save("sounds2", s.slug, el); });
   return el;
 }
 
@@ -256,6 +260,7 @@ function musicCard(m) {
     <div class="card-head"><h3>${esc(m.title)}</h3><span class="slug">${esc(m.slug)}</span><span class="chip">${esc(m.priority)}</span></div>
     <dl class="facts"><dt>Kind</dt><dd>${esc(m.kind)}</dd><dt>Plays</dt><dd>${esc(m.plays)}</dd><dt>Mood</dt><dd>${esc(m.mood)}</dd></dl>
     <div class="prompt"><div class="prompt-top"><span class="label">Style</span></div><code>${esc(m.style)}</code></div>
+    ${m.seam ? `<div class="ref">In the game now: the loop's seam (6 s either side of where it loops back) <audio controls preload="none" src="${esc(m.seam)}"></audio></div>` : ""}
     <div class="status" role="group" aria-label="${esc(m.slug)}">
       <button type="button" data-v="todo">To make</button><button type="button" data-v="made">Made, files in</button><button type="button" data-v="skip">Skip it</button></div>
     <label class="muted" for="mnote-${esc(m.slug)}" style="font-size:13px;font-weight:700">Note (optional)</label>
@@ -358,10 +363,11 @@ render();
     let changed = false;
     const runSecs = (DATA.run.sections || []).map((x) => ({ slug: x.id }));
     const labs = (DATA.run.labs || []).map((x) => ({ slug: x }));
-    for (const [kind, list] of [["sounds", DATA.sounds], ["music", DATA.music], ["run", runSecs], ["labs", labs]]) {
+    for (const [kind, list] of [["sounds2", DATA.sounds], ["music", DATA.music], ["run", runSecs], ["labs", labs]]) {
       for (const it of list) {
         const snap = await db.doc(`${kind}/${it.slug}`).get();
-        if (snap && snap.exists) { const d = snap.data(); delete d.at; state[kind][it.slug] = { ...state[kind][it.slug], ...d }; changed = true; }
+        const into = kind === "sounds2" ? "sounds" : kind;
+        if (snap && snap.exists) { const d = snap.data(); delete d.at; state[into][it.slug] = { ...state[into][it.slug], ...d }; changed = true; }
       }
     }
     if (changed) { keepLocal(); render(); }

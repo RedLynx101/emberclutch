@@ -87,7 +87,7 @@ def sounds() -> list[dict]:
         e = manifest.get(slug)
         if not e or not any(t.startswith("eleven:") for t in e.get("takes", [])):
             continue
-        files = takes_of(slug, len(e["takes"]))
+        files = takes_of(slug, len(e["takes"]) + e.get("take_offset", 0))  # (hit: the synth's three, then its generated take)
         (OUT / "sfx").mkdir(parents=True, exist_ok=True)
         lens = []
         for f in files:
@@ -109,6 +109,27 @@ def sounds() -> list[dict]:
     return out
 
 
+# Sounds made here at Noah's asking (not generated): to hear on the page too.
+MADE = {
+    "rabbit-hop": ("Made in the synth, as you asked: soft round bounds with a springy lift and a brush of grass.",
+                   "A rabbit or snow hare bolting (and in the chase)."),
+    "bird-flutter": ("Built from the chirps you kept (takes 1 and 3), overlapping, pitched up and down, fading off.",
+                     "A flock scattering as you or your dragon come near."),
+}
+
+
+def made_sounds() -> list[dict]:
+    out = []
+    for slug, (how, where) in MADE.items():
+        files = [f for f in takes_of(slug, 4) if (ROOT / "romfs" / "sfx" / f).exists()]
+        (OUT / "sfx").mkdir(parents=True, exist_ok=True)
+        for f in files:
+            shutil.copyfile(ROOT / "romfs" / "sfx" / f, OUT / "sfx" / f)
+        out.append({"slug": slug, "prompt": how, "duration": "made", "loop": False, "where": where,
+                    "files": [f"sfx/{f}" for f in files], "lens": [seconds(OUT / "sfx" / f) for f in files], "synth": None})
+    return out
+
+
 def music() -> list[dict]:
     md = (ROOT / "docs" / "audio" / "suno-music-batch-4.md").read_text(encoding="utf-8")
     rows = {m.group(1): (m.group(2).strip(), m.group(3).strip(), m.group(4).strip())
@@ -122,7 +143,14 @@ def music() -> list[dict]:
         if not (head and slug and style):
             continue
         kind, plays, prio = rows.get(slug.group(1), ("", "", ""))
-        out.append({"slug": slug.group(1), "title": head.group(1), "sub": head.group(2).strip(),
+        seam = ROOT / "assets" / "audio" / "music" / "previews" / f"{slug.group(1)}.seam-preview.wav"
+        heard = None
+        if seam.exists() and (ROOT / "romfs" / "music" / f"{slug.group(1)}.ogg").exists():
+            (OUT / "music").mkdir(parents=True, exist_ok=True)
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(seam), "-ac", "1", "-b:a", "96k",
+                            str(OUT / "music" / f"{slug.group(1)}.seam.mp3")], check=True)
+            heard = f"music/{slug.group(1)}.seam.mp3"
+        out.append({"seam": heard, "slug": slug.group(1), "title": head.group(1), "sub": head.group(2).strip(),
                     "mood": " ".join(mood.group(1).split()) if mood else "", "style": style.group(1).strip(),
                     "kind": kind.replace("**", ""), "plays": plays, "priority": prio.replace("**", "")})
     return out
@@ -176,8 +204,8 @@ def fragments() -> str:
 
 def main() -> None:
     shutil.rmtree(OUT, ignore_errors=True)
-    OUT.mkdir(parents=True)
-    data = {"sounds": sounds(), "music": music(), "run": run_list() if RUN_READY else {}}
+    OUT.mkdir(parents=True, exist_ok=True)  # (a shell may be sitting in it)
+    data = {"sounds": sounds() + made_sounds(), "music": music(), "run": run_list() if RUN_READY else {}}
     page = (Path(__file__).with_name("review_template.html").read_text(encoding="utf-8")
             .replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
             .replace("<!--SECTIONS-->", fragments()))

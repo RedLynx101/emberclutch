@@ -164,7 +164,7 @@ int main() {
         perf::frameStart();
         static u32 frame = 0;
         ++frame;
-        trace::frame(frame, static_cast<int>(app.scene));
+        trace::frame(frame, static_cast<int>(app.scene) | (static_cast<int>(app.menu) << 8));  // (the Map, the Dex...)
         trace::mark("f%lu scene %d splash %.2f: looks", static_cast<unsigned long>(frame), static_cast<int>(app.scene),
                     static_cast<double>(app.splash));
         if (r3d::ready()) r3d::loadNextLook(app.game);  // the save's kinds, a piece a frame (the splash hides it)

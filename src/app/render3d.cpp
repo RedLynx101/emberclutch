@@ -262,6 +262,7 @@ int g_locSDetailU = -1, g_locSDetailV = -1;
 C3D_Tex g_groundTex;  // the valley ground's detail (run 19), made at start, mipmapped (no shimmer far off)
 bool g_groundTexOk = false;
 int g_groundLook = 0;  // the look lab: 0 smooth + texture, 1 faceted, 2 faceted + texture
+bool g_groundPlain = false;  // a session froze drawing the painted ground (trace, hangs.txt): plain
 C3D_AttrInfo g_staticAttr;
 C3D_LightEnv g_lightEnv;
 C3D_Light g_light;
@@ -1236,6 +1237,7 @@ bool init() {
                           shaderInstanceGetUniformLocation(gv, "tint") == g_locSTint;
         if (!same || g_locSDetailU < 0 || g_locSDetailV < 0) g_groundTexOk = false;
     }
+    g_groundPlain = trace::hung("valley ground");
     AttrInfo_Init(&g_staticAttr);
     AttrInfo_AddLoader(&g_staticAttr, 0, GPU_FLOAT, 3);          // position
     AttrInfo_AddLoader(&g_staticAttr, 1, GPU_UNSIGNED_BYTE, 4);  // colour, lighting set A
@@ -2780,7 +2782,7 @@ void groundDetail(bool on) {
     C3D_TexEnv* env = C3D_GetTexEnv(0);
     C3D_TexEnvInit(env);
     C3D_TexEnvInit(C3D_GetTexEnv(1));  // (a pass-through unless the texture's on)
-    const bool textured = on && g_groundTexOk && g_groundLook != 1;
+    const bool textured = on && g_groundTexOk && g_groundLook != 1 && !g_groundPlain;
     C3D_BindProgram(textured ? &g_groundProgram : &g_staticProgram);
     C3D_SetAttrInfo(&g_staticAttr);
     if (!textured) {
@@ -3753,11 +3755,16 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     u32 split[9] = {};
     int splitAt = 0;
     u32 splitFrom = app.stats.tris;
+    // (each part a GPU checkpoint too, while the trace checks: run 21 froze on the valley's first frame)
+    static constexpr const char* kParts[10] = {"",           "",           "valley ground", "valley places", "valley islands",
+                                               "valley partner", "valley others", "valley people", "valley glows", "valley water"};
     auto mark = [&]() {
         if (splitAt < 9) split[splitAt++] = app.stats.tris - splitFrom;
         splitFrom = app.stats.tris;
+        trace::gpu(kParts[splitAt]);
     };
     split[splitAt++] = app.stats.tris;  // (everything before: the horizon and its haze)
+    trace::gpu("valley horizon");
     // The ground round the camera: in view, at a level by distance.
     const int t = v.tiles();
     const float ts = v.tileSize(), reachM = kValleyFar * 0.85f;

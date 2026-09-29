@@ -4,7 +4,8 @@
 ;   * A texture coordinate from the position (run 19: the valley's ground takes a detail
 ;     texture this way, with no more triangles): u = detailU . pos, v = detailV . pos.
 ;   * Its own program since run 21 (D107): with it the den's room froze on the hardware,
-;     so everything else draws with the static program, which has no texture output.
+;     so everything else draws with the static program, which has no texture output. The
+;     valley then froze on its first frame (D108): the output is now written whole.
 ; Uniform budget: 4 + 4 + 1 + 1 + 2 + 1 constant = 13 of 96 float registers.
 
 .fvec projection[4], modelView[4]
@@ -37,8 +38,12 @@
 	dp4 outpos.z, projection[2], r1
 	dp4 outpos.w, projection[3], r1
 
-	dp3 outtc0.x, detailU, r0
-	dp3 outtc0.y, detailV, r0
+	; (every component of the output written, with one mov, as the dragon's and citro2d's
+	; shaders do: the valley froze on its first frame with x and y written apart, run 21)
+	mov r4, consts.yyyx
+	dp3 r4.x, detailU, r0
+	dp3 r4.y, detailV, r0
+	mov outtc0, r4
 
 	; one instruction reads at most one input register
 	mov r3, inA

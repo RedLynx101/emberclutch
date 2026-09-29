@@ -904,5 +904,87 @@
    "length": 8.0,
    "xfade": 1.0
   }
+ },
+ "bird-chirp": {
+  "kind": "care",
+  "takes": [
+   "eleven:bird-chirp#1",
+   "eleven:bird-chirp#2",
+   "eleven:bird-chirp#3"
+  ],
+  "prompt": "A small songbird's cheerful little twitter in a sunny meadow, two or three quick bright chirps, close, no other birds",
+  "duration": 0.6
+ },
+ "bird-flutter": {
+  "kind": "care",
+  "takes": [
+   "eleven:bird-flutter#1",
+   "eleven:bird-flutter#2"
+  ],
+  "prompt": "A little flock of small birds bursting up off the grass together, a soft flurry of tiny wingbeats fading as they fly away, a startled peep",
+  "duration": 1.0
+ },
+ "rabbit-hop": {
+  "kind": "body",
+  "takes": [
+   "eleven:rabbit-hop#1",
+   "eleven:rabbit-hop#2"
+  ],
+  "prompt": "A rabbit bounding away over soft grass, two or three light padded thumps, quick and gentle",
+  "duration": 0.6
+ },
+ "frog-croak": {
+  "kind": "care",
+  "takes": [
+   "eleven:frog-croak#1",
+   "eleven:frog-croak#2"
+  ],
+  "prompt": "One small cute pond frog's round ribbit, a short throaty double croak, no other frogs, no water",
+  "duration": 0.6
+ },
+ "duck-quack": {
+  "kind": "care",
+  "takes": [
+   "eleven:duck-quack#1",
+   "eleven:duck-quack#2"
+  ],
+  "prompt": "A friendly farm duck's single soft quack on a calm lake, short and gentle, not loud",
+  "duration": 0.6
+ },
+ "fox-yip": {
+  "kind": "care",
+  "takes": [
+   "eleven:fox-yip#1",
+   "eleven:fox-yip#2"
+  ],
+  "prompt": "A curious young fox's soft short yip, a bright little bark-chirp, playful and small, more puppy than wolf",
+  "duration": 0.6
+ },
+ "butterfly-land": {
+  "kind": "ui",
+  "takes": [
+   "eleven:butterfly-land#1",
+   "eleven:butterfly-land#2"
+  ],
+  "prompt": "A tiny magical sparkle as a butterfly settles, three soft high chime notes floating down, very delicate",
+  "duration": 0.8
+ },
+ "whistle-call": {
+  "kind": "care",
+  "takes": [
+   "eleven:whistle-call#1",
+   "eleven:whistle-call#2"
+  ],
+  "prompt": "A person whistling softly to call birds, a clear friendly two-note whistle rising, breathy, nothing more",
+  "duration": 0.8
+ },
+ "leaf-rustle": {
+  "kind": "body",
+  "takes": [
+   "eleven:leaf-rustle#1",
+   "eleven:leaf-rustle#2"
+  ],
+  "prompt": "A small animal diving into a leafy bush, a quick soft rustle of leaves and twigs, then still",
+  "duration": 0.6
  }
 }

@@ -2,10 +2,27 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0, run 21 take 2 on the 3DS** ([plan](plan/v1.md), D89-D107). Runs 20 and 21 froze on the den's first frame on Noah's old 3DS (the GPU never finished it); 0.9.2 puts the den back on run 19's static shader (D107), sent to .53 with the trace and its GPU checkpoints on. Run 21's review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21/<section id>`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0, run 21 take 3 on the 3DS** ([plan](plan/v1.md), D89-D108). 0.9.2 held in the den on Noah's old 3DS; the valley froze on its first frame. 0.9.3 (D108): the ground's shader writes its output whole, hangs fall back by themselves (hangs.txt), the trace no longer slows the game; sent to .51. Run 21's review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21/<section id>`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 21, take 2 (2026-09-29)
+## Now: run 21, take 3 (2026-09-29)
+- **0.9.2 held in the den** (Continue with an egg, hatching, care); the valley froze on its first
+  frame, from Map and from heading out (trace: "gpu: top scene sent", never drawn). The title's and
+  the den's slowness was the trace itself (per-frame lines for 10 s after each change of view).
+- **0.9.3** (D108): the ground's shader writes its texture output whole (one `mov`, as the shaders
+  that run on the 3DS do); the valley's parts are GPU checkpoints; a part a session froze in goes
+  in sdmc:/3ds/emberclutch/hangs.txt at the next start, and the ground then draws plain (checked in
+  the emulator with a made-up trail); the trace keeps marks for 3 frames a view, a line every 5 s,
+  and the session before as trace-prev.txt. Noah's notes fixed: X with only an egg, the sleeping
+  dragon's word, the Dragondex's young entries (core `dexStage`, tested), the Journal's goals.
+  Sent to .51 (sdmc:/cias/emberclutch.cia), trace.on kept, the old trace and hangs list removed.
+- **Next:** pull trace.txt, trace-prev.txt and hangs.txt (read-only) after Noah's try. If the
+  ground hung again, the fallback worked around it: find another way to paint the ground (UVs in
+  the vertex, or none). Once the hardware holds, delete hangs.txt and trace.on on the card.
+- **Azahar 2126.1.2**: the checked installer is in Noah's Downloads (winget still has 2126.1.1;
+  admin rights needed, so Noah runs it); afterwards check qt-config.ini's old-3DS lines.
+
+## Run 21, take 2 (2026-09-29)
 - **Run 21 (0.9.1) froze again** at Continue, and the title crawled (the trace wrote a line to the
   card per mark). Its trace (pulled read-only): the den's first frame was all sent (room, particles,
   the egg, overlays, bottom), then the next frame's begin never returned: the GPU hung on it.

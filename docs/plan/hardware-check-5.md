@@ -1,20 +1,24 @@
-# Run 21, take 2 (0.9.2): run 20 with its freeze fixed
+# Run 21, take 3 (0.9.3)
 
-**For Noah.** Runs 20 and 21 (0.9.1) froze on your old 3DS as soon as the den drew. Run 21's trace
-showed where: the game sent the den's first picture and the 3DS's graphics chip never finished
-drawing it. The only change to what draws the den since run 19 (the last build that ran on your
-3DS) was the room's shader, which the long run's painted ground had given a texture output. 0.9.2
-puts the den back on run 19's shader. The valley's ground gets a shader of its own.
-The build is already on your 3DS: in FBI, SD → cias → `emberclutch.cia` → Install CIA.
-The trace is still on, and it no longer slows the title. For the first moments of each screen it
-now makes the graphics chip finish each part of the picture before the next part (a brief flicker
-there is expected). If it freezes again, the trace names the exact part that hung. Restart the 3DS
-and tell me. Your save carries over.
+**For Noah.** 0.9.2 got you into the den. The valley froze on its first frame (heading out, and
+Map, which opens the valley). The trace named the top screen's picture. The one thing still drawn
+there with the shader behind the den's freeze is the valley's painted ground; its shader now
+writes its output the way the working ones do. **If it freezes there again, the game remembers:**
+restart, head out again, and the ground is drawn plain (no paint) so you can keep going, and the
+trace tells me. The trace no longer slows the game: it was logging every frame for ten seconds
+after each screen change, which caused the choppiness you saw (the title and the den with your
+egg ran at full speed whenever it was quiet). From your notes: X with only an egg now says why
+(START > Map walks you out alone); a sleeping dragon says it's asleep when you reach for it; the
+Dragondex shows a kind you've only raised young as a hatchling (grown once one of yours grows,
+or if you met it grown elsewhere); the Journal's goals are in bigger words.
+The build is already on your 3DS (at .51): in FBI, SD → cias → `emberclutch.cia` → Install CIA.
+Your save carries over.
 
 ## 0. Start
-1. Install `emberclutch.cia` (over the old one), start the game and press **Continue**: the den with
-   your egg, no freeze. The title should run at full speed again. If you try **New game** as well,
-   it starts your save over.
+1. Install `emberclutch.cia` (over the old one), start the game and press **Continue**: the den, at
+   full speed.
+2. Head out (**X** → Head out, or **START** → Map): the valley. If it freezes, restart the 3DS and
+   head out again (the ground comes up plain the second time); tell me either way.
 
 ## 1. The den: Love, Energy, the profile
 (The dragons' **heartglow** on their chests lies flat on the chest now, every kind: tell me if

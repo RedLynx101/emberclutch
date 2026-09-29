@@ -257,7 +257,8 @@ float beginEvent(App& app, State& s, const Event& e) {
             pop(s, topOf(me), e.amount, false);
             s.fx.emit(Fx::Puff, chestOf(me), big ? 6 : 3, sizeOf(me) * 1.4f);
             if (big) {  // (a wince for their own, a fist pump for the other's: workstream D)
-                if (e.side == 0 || s.setup.trainer) playPerson(e.side == 0 ? s.you : s.trainer, (e.flags & battle::kCrit) ? "surprised" : "worried", true);
+                const char* wince = (e.flags & battle::kCrit) ? "surprised" : "worried";
+                if (e.side == 0 || s.setup.trainer) playPerson(e.side == 0 ? s.you : s.trainer, wince, true);
                 if (e.side == 1 || s.setup.trainer) playPerson(e.side == 0 ? s.trainer : s.you, "fist_pump", true);
             }
             return (e.flags & (battle::kCrit | battle::kStrong | battle::kWeak)) ? 1.0f : 0.7f;

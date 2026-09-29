@@ -1,0 +1,16 @@
+# Noah's run 20: a new game with the Puffback egg froze as the other eggs went.
+overlay on
+wait 3
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+wait 0.5
+tap 160 120
+wait 2
+shot p01-chosen
+wait 6
+shot p02-den
+wait 6
+shot p03-den-later
+quit

@@ -30,6 +30,7 @@
 #include "core/rig.hpp"
 #include "core/people.hpp"
 #include "core/place_layout.hpp"
+#include "app/trace.hpp"
 #include "core/occluders.hpp"
 #include "core/static_mesh.hpp"
 #include "core/valley.hpp"
@@ -1354,6 +1355,11 @@ void drawRoom(App& app, const C3D_Mtx& projection, const C3D_Mtx& view, const Da
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSProjection, &projection);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSModelView, &view);  // the room is modelled in den space
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSBlend, blend.t, 0, 0, 0);
+    // The shader's texture coordinate, unused here, from zeroed weights: never written, those
+    // registers hold whatever the GPU had (zeros in the emulator, anything on a 3DS; run 20's
+    // freeze on the den's first frame)
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, 0, 0, 0, 0);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, 0, 0, 0);
     C3D_BufInfo* buf = C3D_GetBufInfo();
     BufInfo_Init(buf);
     BufInfo_Add(buf, g_room.pos, sizeof(float) * 3, 1, 0x0);
@@ -1933,13 +1939,16 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
     const DayBlend blend = dayBlend(now);
     const DragonLight light = dragonLight(blend);
 
+    trace::mark("den: room");
     C2D_Flush();
     drawRoom(app, projection, view, blend, false);
+    trace::mark("den: particles");
     if (fx) {
         end3D();
         drawParticles(app, *fx, false);
         C2D_Flush();
     }
+    trace::mark("den: dragons (%d)", count);
     bindDragons(projection);
     for (int i = 0; i < kDenShown; ++i) g_headSet[i] = g_mouthSet[i] = g_backSet[i] = false;
     for (int i = 0; i < count; ++i) {
@@ -1948,7 +1957,9 @@ void drawDen(App& app, const DenDragon* dragons, int count, s64 now, const Parti
             float local[3];
             localLight(at[i], blend, local);
             lightDragon(light, local);
+            trace::mark("den: egg %d (%s)", i, denEgg.ok ? "ok" : "no model");
             submitEgg(app, denEgg, *dragons[i].dragon, *dragons[i].egg, view, {at[i].x, at[i].y, kNestFloor});
+            trace::mark("den: egg %d submitted", i);
             g_heads[i] = {at[i].x, at[i].y, kNestFloor + 0.8f};  // effects rise from its top
             g_headSet[i] = true;
             continue;
@@ -2416,7 +2427,9 @@ bool loadNextLook(const SaveData& s) {
             planPath(plan, a, sizeof(a));
             if (!prefetch::ready(a)) return true;
             hitch::mark("clips");
+            trace::mark("look %d: plan %d (%s)", look, plan, a);
             if (!loadPlan(plan)) g_lookFailed[look] = true;
+            trace::mark("look %d: plan done %d", look, g_lookFailed[look] ? 0 : 1);
             return true;
         }
         for (int k = 0; k < 4; ++k) {
@@ -2425,11 +2438,15 @@ bool loadNextLook(const SaveData& s) {
                 formPaths(look, k, a, b, sizeof(a));
                 if (!prefetch::ready(a) || !prefetch::ready(b)) return true;
                 hitch::mark("form");
+                trace::mark("look %d: form %d (%s)", look, k, a);
                 if (!loadLookForm(look, k)) g_lookFailed[look] = true;
+                trace::mark("look %d: form %d done %d", look, k, g_lookFailed[look] ? 0 : 1);
                 return true;
             }
         }
+        trace::mark("look %d: bind", look);
         loadLook(look);  // all four in: bind its animations
+        trace::mark("look %d: loaded", look);
         return true;
     }
     evictLooks(s);

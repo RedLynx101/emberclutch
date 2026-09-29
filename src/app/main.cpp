@@ -21,7 +21,8 @@
 #include "app/screenshot.hpp"
 #include "app/system_menu.hpp"
 #include "app/glade_show.hpp"
-#include "app/tips_ui.hpp"  // U: the tutorial's tip card
+#include "app/tips_ui.hpp"
+#include "app/trace.hpp"  // U: the tutorial's tip card
 #include "app/dragondex_ui.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
@@ -96,14 +97,21 @@ int main() {
     app.topRight = C2D_CreateScreenTarget(GFX_TOP, GFX_RIGHT);
     gfxSet3D(true);  // the right eye is drawn only while the slider is up (WP11e)
     app.textBuf = C2D_TextBufNew(4096);
-    if (romfsMounted) loadFonts();  // Nunito and Cinzel Decorative (the system font if missing)
+    trace::start();  // (a breadcrumb trail on the SD card while trace.on is there: hardware-only freezes)
+    trace::mark("boot: romfs %d", romfsMounted ? 1 : 0);
+    if (romfsMounted) loadFonts();
+    trace::mark("fonts");  // Nunito and Cinzel Decorative (the system font if missing)
     app.romfsOk = romfsMounted && romfsReady();
     if (app.romfsOk) r3d::init();  // otherwise the den keeps its 2D placeholder
+    trace::mark("r3d init ok %d", r3d::ready() ? 1 : 0);
     care::loadSprites();            // the care tray's tools and foods (built into the program)
 
     audio::init();  // silent if the DSP firmware is missing
+    trace::mark("audio init %d", audio::ok() ? 1 : 0);
     ptmuInit();     // the pedometer, for the Wanderings
-    if (loadGame(app.game, app.slots) && hasDragon(app)) {
+    const bool loaded = loadGame(app.game, app.slots);
+    trace::mark("save loaded %d, %d dragons", loaded ? 1 : 0, app.game.dragonCount);
+    if (loaded && hasDragon(app)) {
         const s64 now = nowLocal(app);
         for (u16 i = 0; i < app.game.dragonCount; ++i)  // catch up on time away
             simulate(app.game.dragons[i], app.game.lastSim, now, eggCooling(app.game));
@@ -154,13 +162,19 @@ int main() {
         const bool paused = app.menu != MenuPage::Closed;  // the game waits under the menu
 
         perf::frameStart();
+        static u32 frame = 0;
+        ++frame;
+        trace::mark("f%lu scene %d splash %.2f: looks", static_cast<unsigned long>(frame), static_cast<int>(app.scene),
+                    static_cast<double>(app.splash));
         if (r3d::ready()) r3d::loadNextLook(app.game);  // the save's kinds, a piece a frame (the splash hides it)
         const SceneFns& scene = sceneFns(app.scene);
         if (scene.update && !app.devMenu && !paused) {
             perf::Scope timed(perf::Update);
             holdTips(false);  // (a scene whose top screen is busy holds them again as it updates)
+            trace::mark("f%lu update", static_cast<unsigned long>(frame));
             scene.update(app, in);
         }
+        trace::mark("f%lu music", static_cast<unsigned long>(frame));
         {
             perf::Scope timed(perf::Audio);
             audio::playMusic(musicFor(app));
@@ -169,8 +183,11 @@ int main() {
 
         app.stats.reset();
         C2D_TextBufClear(app.textBuf);
+        trace::mark("f%lu prepare", static_cast<unsigned long>(frame));
         if (const SceneFns& s = sceneFns(app.scene); s.prepare) s.prepare(app);  // alongside the GPU's last frame
+        trace::mark("f%lu frame begin (the GPU's last frame done?)", static_cast<unsigned long>(frame));
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+        trace::mark("f%lu frame begun", static_cast<unsigned long>(frame));
         r3d::frameBegun();  // the last frame is drawn: what it read can go now
         autotest::afterFrameBegin();  // last frame's picture is finished now
         screenshot::afterFrameBegin(app);
@@ -192,12 +209,14 @@ int main() {
             C2D_TargetClear(target, topClear);
             C2D_SceneBegin(target);
             perf::Scope timed(perf::Top);
+            trace::mark("f%lu top eye %d (slider %.2f)", static_cast<unsigned long>(frame), eye, static_cast<double>(slider));
             if (app.menu == MenuPage::Dex) {
                 drawDexTop(app);  // the book's dragon instead of the scene
             } else {
                 sceneFns(app.scene).drawTop(app);
                 if (paused) dimTopForMenu(app);
             }
+            trace::mark("f%lu top overlays", static_cast<unsigned long>(frame));
             if (!app.photo.snap) {  // the photo's picture has nothing over it
                 drawToast(app);
                 drawTipCard(app);  // U: the tutorial's tip card
@@ -209,6 +228,7 @@ int main() {
         r3d::setEye(0);
 
         const u32 topTris = app.stats.tris;
+        trace::mark("f%lu bottom", static_cast<unsigned long>(frame));
         C2D_TargetClear(app.bottom, theme::kDenPlum);
         C2D_SceneBegin(app.bottom);
         {
@@ -226,6 +246,7 @@ int main() {
         app.bottomTris = app.stats.tris - topTris;
         autotest::beforeFrameEnd();
         screenshot::beforeFrameEnd(app);
+        trace::mark("f%lu frame end", static_cast<unsigned long>(frame));
         C3D_FrameEnd(0);
         if (app.keyboard != KeyboardFor::None) runKeyboard(app);  // between frames: it takes both screens
         if (app.quit) break;

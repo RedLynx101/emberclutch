@@ -60,10 +60,18 @@ CFLAGS	:=	-g -Wall -Wextra -Wno-unused-parameter -O2 -mword-relocations \
 DEV	?=	1
 CFLAGS	+=	$(INCLUDE) -D__3DS__ -DEC_DEV=$(DEV)
 
+# POISON=1: every new allocation filled with garbage, as the real 3DS leaves memory (the emulator
+# hands out zeros, so reads of memory never written hide there): src/app/poison.cpp.
+POISON	?=	0
+CFLAGS	+=	-DEC_POISON=$(POISON)
+
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++17
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+ifeq ($(POISON),1)
+LDFLAGS	+=	-Wl,--wrap=malloc -Wl,--wrap=realloc -Wl,--wrap=memalign -Wl,--wrap=linearAlloc -Wl,--wrap=linearMemAlign
+endif
 
 LIBS	:= -lcitro2d -lcitro3d -lvorbisidec -logg -lctru -lm
 

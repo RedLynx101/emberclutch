@@ -1,0 +1,13 @@
+# Noah's run 20 (2026-09-29): Continue froze on the loading screen on his old 3DS. His save, the
+# title, Continue, and a while to load.
+overlay on
+wait 3
+shot c00-title
+tap 160 107
+wait 4
+shot c01-loading
+wait 8
+shot c02-later
+wait 10
+shot c03-den
+quit

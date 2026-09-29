@@ -2,10 +2,21 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 on the 3DS** ([plan](plan/v1.md), D89-D110). Take 3 (0.9.3) held in the valley; its notes all dealt with in 0.9.4 (D109): the flicker traced to stale GPU data (frame flushes), Noah's haze, riding, walking, the camera, the lantern and more. Run 21's review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d/<section id>` for take 4; take 3's notes stay under `run21`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.5) on the 3DS** ([plan](plan/v1.md), D89-D111). Take 4's first notes fixed in 0.9.5 (D111): the ground's teal flicker (one program for the valley), walking speeds measured right, the rider on the Crestwing's back, big dragons in the den. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`, Noah's take 4 ticks kept). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 21, take 4 (2026-09-29)
+## Now: run 21, take 4 with 0.9.5 (2026-09-29)
+- **Take 4 (0.9.4)'s first notes** (db `run21d` s0): the 2D glitch gone (every bottom screen whole in
+  ~35 screenshots); the ground alone going teal in odd frames (0269, 0285, 0289: fogged ~75% toward the
+  fog colour, strokes still there, the dragon untouched); the Crestwing crawling (its walk measured 0);
+  the rider inside it; big dragons wedged in the den.
+- **0.9.5** (D111): the valley on one program; locomotionSpeed by each foot's sweep (every kind tested);
+  a 1.8 m/s walking floor; the seat's wider window; the den's spacing for big dragons (tested); the
+  trace's blip watch. Sent to .51 with trace.on kept, the old trace off.
+- **Next:** Noah goes on with take 4. If the ground still flickers, pull trace.txt: its "blip" lines
+  say which frames, with their scene, triangles and draws.
+
+## Run 21, take 4 (2026-09-29)
 - **Take 3 (0.9.3)** held in the valley (the ground's shader rewrite); one freeze in 29 minutes, on the
   bottom screen's checkpoint (hangs.txt: "bottom"; no fallback for it). Noah's notes (db `run21`, s0)
   and ~80 screenshots, 6 photos (pulled read-only to the session's scratchpad).

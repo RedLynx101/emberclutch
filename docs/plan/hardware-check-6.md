@@ -1,4 +1,13 @@
-# Run 21, take 4 (0.9.4)
+# Run 21, take 4 (0.9.5)
+
+**0.9.5, your first take 4 notes** (the rest of take 4 goes on below as it was, your ticks kept):
+the ground's flicker was the ground alone drawn heavily fogged, as if far off, in odd frames
+(teal and washed out, its strokes still there); the valley now draws everything still on one
+program, which ends the switch those frames had. The Crestwing's walk had been measured at nothing
+(its trot too), so it crawled; every kind is measured afresh now and walks at its legs' real pace,
+the stocky ones at least a steady 1.8 m/s. You sit on its back at its real height. Big grown
+dragons in the den keep a little less apart, so they stop wedging each other. The build is on your
+3DS (at .51), with a watch for one-frame flickers in the trace: if you see one, the trace has it.
 
 **For Noah.** Take 3 got you out into the valley and through a lot of it: thank you for the photos
 and screenshots, they found the flicker. **Passed in take 3** (no need to try again): the den's
@@ -10,6 +19,11 @@ in FBI, SD → cias → `emberclutch.cia` → Install CIA; your save carries ove
 
 ## 0. Start
 1. Install `emberclutch.cia` (over the old one), **Continue**, and head out to the valley.
+2. (0.9.5) Walk, ride and fly about the valley, the meadow by the lake where the ground went teal:
+   does the ground still flicker or wash out teal? (Only the ground did; fewer things flickered.)
+3. (0.9.5) Ride your Crestwing at a walk: it walks at a proper pace now (about four times as fast),
+   and you sit on its back, not in it. Your other grown dragons walk no slower than a steady pace.
+4. (0.9.5) Three grown dragons in the den: they get round each other and each sleeps in its own bed.
 
 ## 1. The flicker, and your haze
 Your screenshots showed it: in some frames every see-through shape vanished at once on **both**

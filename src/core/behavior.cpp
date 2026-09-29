@@ -1314,7 +1314,7 @@ void startTogether(DenSocial& s, DenBehavior* const* bs, const Dragon* const* ds
         const Vec2 nest = a.den.beds[0], home = a.den.home;
         const float ox = nest.x - home.x, oy = nest.y - home.y, len = std::hypot(ox, oy);
         const Vec2 side{-oy / len, ox / len};
-        const float gap = kBodyRadius * std::fmax(a.size, b.size) * 1.1f;
+        const float gap = kBodyRadius * std::fmax(a.size, b.size) * 1.55f;  // (run 21: two round Puffbacks overlapped at 1.1)
         const Vec2 p0{nest.x + side.x * gap, nest.y + side.y * gap}, p1{nest.x - side.x * gap, nest.y - side.y * gap};
         const bool swap = distance(a.pos, p0) + distance(b.pos, p1) > distance(a.pos, p1) + distance(b.pos, p0);
         a.snuggleAt = swap ? p1 : p0;

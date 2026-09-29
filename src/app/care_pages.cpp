@@ -65,8 +65,11 @@ void drawOuting(App& app, const Input& in, Dragon& d) {
         return;
     }
     const bool isPartner = partner == &d;
-    const bool rideable = d.stage == Stage::Adult;
-    std::snprintf(line, sizeof(line), rideable ? str::kOutingRide : str::kOutingLead, d.name);
+    // Who goes: your travel partner if it's at home, else the one in your care (run 21: Head out
+    // took the one in your care along and made it your partner behind your back).
+    const Dragon& goer = partner && !partner->wanderSince ? *partner : d;
+    const bool rideable = goer.stage == Stage::Adult;
+    std::snprintf(line, sizeof(line), rideable ? str::kOutingRide : str::kOutingLead, goer.name);
     textCentered(app, line, 160, 104, 0.42f, withAlpha(theme::kShell, 0.85f), 300);
     if (!isPartner) {
         std::snprintf(line, sizeof(line), str::kMakePartner, d.name);
@@ -76,8 +79,9 @@ void drawOuting(App& app, const Input& in, Dragon& d) {
             saveNow(app);
         }
     }
-    if (button(app, {40, 158, 240, 34}, str::kHeadOut, in, theme::kClutchGold)) {
-        s.world.partnerId = d.id;
+    std::snprintf(line, sizeof(line), str::kHeadOutWith, goer.name);
+    if (button(app, {40, 158, 240, 34}, line, in, theme::kClutchGold)) {
+        s.world.partnerId = goer.id;
         saveNow(app);
         audio::playSfx(audio::Sfx::Confirm);
         app.care.page = CarePage::None;

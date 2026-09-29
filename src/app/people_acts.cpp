@@ -54,9 +54,10 @@ void villagerRest(App& app, int k, Animator& anim, float dist) {
         if (!r.started) anim.time = k * 0.7f;  // (not all breathing together)
     }
     r.started = true;
-    if (d.asleep && dist < 7.0f && (r.snoreIn -= app.dt) <= 0) {  // a soft snore, now and then
+    if (d.asleep && dist < 8.0f && (r.snoreIn -= app.dt) <= 0) {  // a soft snore, now and then
         r.snoreIn = 3.5f + static_cast<float>(app.rng.below(2500)) * 0.001f;
-        audio::playSfx(audio::Sfx::Snore, static_cast<Villager>(k) == Villager::Child ? 1.3f : 1.0f, 0.5f);
+        const float near = 1.0f - (dist < 2.0f ? 0.0f : (dist - 2.0f) / 6.0f);  // (fainter as you go: run 21)
+        audio::playSfx(audio::Sfx::Snore, static_cast<Villager>(k) == Villager::Child ? 1.3f : 1.0f, 0.5f * near * near);
     }
 }
 

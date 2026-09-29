@@ -46,16 +46,19 @@ void closeMenu(App& app) {
 void mainPage(App& app, const Input& in) {
     heading(app, str::kGameTitle);
     const bool inGame = hasDragon(app) && app.scene != SceneId::Title && app.scene != SceneId::PickStarter;
+    // (Map: the way out of the den, alone too; out in the valley it only led back to the den's
+    // door, run 21: not there)
+    const bool mapShown = inGame && app.scene != SceneId::Valley;
     const float step = inGame ? 38.0f : 50.0f, h = inGame ? 32.0f : 36.0f;
     float y = inGame ? 44.0f : 58.0f;
     if (button(app, {60, y, 200, h}, str::kResume, in) || (in.down & KEY_B)) closeMenu(app);
     y += step;
     if (inGame) {
-        if (button(app, {60, y, 200, h}, str::kMap, in)) {
+        if (mapShown && button(app, {60, y, 200, h}, str::kMap, in)) {
             closeMenu(app);
             openMap(app);
         }
-        y += step;
+        if (mapShown) y += step;
         if (button(app, {60, y, 200, h}, str::kDex, in)) openDex(app);
         y += step;
     }

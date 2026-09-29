@@ -21,7 +21,7 @@ constexpr PersonRow kRows[kPeople] = {
     {"romfs:/people/sanctuary.ecm", 0.315f, 0.335f}, {"romfs:/people/steward.ecm", 0.315f, 0.33f},
     {"romfs:/people/child.ecm", 0.21f, 0.215f},     {"romfs:/people/traveller.ecm", 0.33f, 0.355f},
 };
-constexpr float kWalkClip = 0.69f, kRunClip = 1.76f, kClipHips = 0.315f;  // tools/people/person_clips.py
+constexpr float kWalkClip = 0.69f, kRunClip = 1.708f, kClipHips = 0.315f;  // tools/people/person_clips.py
 
 u8 pick(const u8 look[kLookParts], int part) { return look[part] < kLookChoices[part] ? look[part] : 0; }
 const PersonRow& row(Person p) { return kRows[static_cast<int>(p) < kPeople ? static_cast<int>(p) : 0]; }

@@ -1,0 +1,62 @@
+# Run 21 take 4's fixes in the valley with a grown Crestwing: its Energy under the map, the rider
+# on its back (not above it), its quicker walk, getting off without the camera diving in, the
+# den's arch closed (A at its door goes in), the Keeper's vegetable patch above the ground.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Noodle
+wait 11
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.2
+tap 238 106
+wait 0.2
+tap 238 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 238 56
+key SELECT
+wait 3
+skip 9
+valley
+hour 11
+wait 4
+shot t01-valley
+travel 7
+wait 3
+pad -1 0 0.3
+wait 0.8
+key A
+wait 3
+shot t02-riding
+pad 0 0.6 1.5
+shot t03-riding-walk
+key DOWN
+shotin 0.35 t04-getting-off
+wait 1.2
+shot t05-got-off
+travel 0
+wait 3
+shot t06-den-front
+pad 0 1 3
+shot t07-den-arch
+travel 8
+wait 3
+view 8 1 9 1.9 2.5 6 1.0
+wait 1
+shot t08-keeper
+quit

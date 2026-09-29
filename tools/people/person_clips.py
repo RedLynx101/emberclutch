@@ -158,10 +158,10 @@ walk = clip("walk", WALK_P, loop=True, speed=round(4 * LEG * math.sin(math.radia
 walk.wave(gait(WALK_P, WALK_A, 44, 20))
 walk.event(0.0, "footstep").event(WALK_P / 2, "footstep")
 
-RUN_P, RUN_A, RUN_STANCE = 0.5, 32.0, 0.36
+RUN_P, RUN_A, RUN_STANCE = 0.7, 46.0, 0.36  # (run 21: longer strides, fewer of them, the same speed)
 run = clip("run", RUN_P, loop=True,
            speed=round(2 * LEG * 0.95 * math.sin(math.radians(RUN_A)) / (RUN_STANCE * RUN_P), 3))
-run.wave(gait(RUN_P, RUN_A, 92, 38, stance=RUN_STANCE, bounce_lean=-12, hip_yaw=7, knee_stance=14, elbow=72,
+run.wave(gait(RUN_P, RUN_A, 104, 44, stance=RUN_STANCE, bounce_lean=-12, hip_yaw=7, knee_stance=14, elbow=72,
               elbow_swing=14, head_counter=9, arm_out=9))
 for _k in range(10):  # a bouncy run: up between the steps, down on each landing
     _t = _k * RUN_P / 10

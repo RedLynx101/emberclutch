@@ -98,6 +98,9 @@ void DenActor::reset(const DenLayout& den, u32 seed, int spot) {
 void DenActor::updateSpeeds(const ModelData& m, const AnimBinding& bind, const AnimLibrary& lib, const int* clipIndex,
                             int form, float t, int build, float size, bool baby) {
     if (form == speedForm && t - speedT < 0.01f && speedT - t < 0.01f) return;
+    // A new body (grown up, another look): what it's doing is played again from its own clips
+    // (run 21: a Crestwing grown in its sleep kept the hatchling's sleep, neck down to the floor).
+    if (form != speedForm) playedSerial = 0xFFFF;
     const int walk = clipIndex[static_cast<int>(ClipId::Walk)], trot = clipIndex[static_cast<int>(ClipId::Trot)];
     if (walk < 0 || trot < 0) return;
     behavior.walkSpeed = locomotionSpeed(m, bind, lib.clips[walk], t, build) * size;

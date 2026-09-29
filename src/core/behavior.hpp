@@ -139,6 +139,13 @@ enum class Care : u8 {
     BallWon,     // pulled it free: the ball is yours again
 };
 
+// Walking out in the valley goes quicker than the walk clip's own measured steps (run 21: "many
+// of the dragons are far too slow when walking"; the grown ones' big legs barely moved them): the
+// ground speed and the clip's playback both go up by this, so the feet still hold the ground.
+// (Not in the den: its small room and the others to walk round want the measured pace, run 21's
+// tests: quicker, they circled their beds.)
+inline float walkHaste(bool baby) { return baby ? 1.25f : 1.45f; }
+
 struct DenBehavior {
     Vec2 pos;
     float heading = 0;  // radians about Z; 0 faces -Y (toward the camera)

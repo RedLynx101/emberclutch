@@ -37,7 +37,7 @@ const Quest kQuests_[kQuests] = {
      {1, -1, -1}, 80},
     {"The meadow",
      {{"Visit the Sanctuary meadow", Need::Place, kPlaceSanctuary},
-      {"Find the stray: let your dragon sniff it out", Need::Flag, kFlagFoundStray},
+      {"Find the stray: take your dragon through the meadow's flowers", Need::Flag, kFlagFoundStray},
       {"Light the meadow's lantern", Need::Lantern, kPlaceSanctuary}},
      {1, -1, -1}, 80},
     {"The cold heights",

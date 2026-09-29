@@ -1,0 +1,226 @@
+# Run 21 take 3: the grown Crestwing's lying poses ("the straighter one looked bad: maybe the
+# wrong skeleton"). A Crestwing adult, then every activity in turn from the dev menu.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Noodle
+wait 11
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.2
+tap 238 106
+wait 0.2
+tap 238 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 238 56
+key SELECT
+wait 4
+shot a00
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a01
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a02
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a03
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a04
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a05
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a06
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a07
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a08
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a09
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a10
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a11
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a12
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a13
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a14
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a15
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a16
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a17
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a18
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a19
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a20
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a21
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a22
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a23
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a24
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a25
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a26
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a27
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a28
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a29
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a30
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a31
+key SELECT
+wait 0.3
+tap 82 131
+key SELECT
+wait 2.2
+shot a32
+quit

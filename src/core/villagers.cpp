@@ -96,7 +96,8 @@ Talk sanctuary(const SaveData& s) {
                       "I can't find her anywhere. Maybe {D}'s nose could sniff her out?"},
                      kFlagMetSanctuary);
     if (!(w.flags & kFlagFoundStray))
-        return lines({"Walk through the meadow with {D}. It'll know when she's near."});
+        return lines({"Take {D} through the flowers in the meadow, walking or on its back.",
+                      "Its nose will catch her scent when you're close."});
     return lines({"You found her! She's napping in the hay now, happy as anything.",
                   "Thank you. Any dragon of yours can rest here whenever the den's too full."});
 }

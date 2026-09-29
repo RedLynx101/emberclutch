@@ -62,6 +62,7 @@ enum class Mode : u8 { OnFoot, Riding, FreeCam };
 enum class Action : u8 { None, Talk, Shop, Enter, Light, Ride, Call, Board, Folk, Critter /* workstream L: last of all */ };
 
 struct ValleyScene {
+    float scentIn = 0;  // the stray's scent: the next sniff while it's near (run 21)
     Valley valley;
     bool loaded = false, tried = false;
     Mode mode = Mode::OnFoot;
@@ -96,6 +97,8 @@ struct ValleyScene {
     Villager actionWho = Villager::Keeper;
     u8 actionTab = 0;  // Shop: the Market's page it opens (the egg stand's, the goods stall's)
     float breathT = -1;       // a lantern being lit: seconds in (< 0: none)
+    Vec3 breathTo;            // ...its flame's spot, the breath's way (run 21: seen, not only heard)
+    challenge::BreathFx breath;
     int breathPlace = -1;
     float stepFor = 0;        // your next footstep
     float foundCheck = 0;     // seconds to the next look round for places
@@ -241,9 +244,10 @@ void measureSpeeds(ValleyScene& s) {
     s.natTrot = s.flyer.behavior.trotSpeed > s.natWalk && s.flyer.behavior.trotSpeed < s.natRun
                     ? s.flyer.behavior.trotSpeed
                     : (s.natWalk + s.natRun) * 0.5f;
-    s.flight.walkSpeed = s.natWalk;
+    const float haste = walkHaste(form == kFormHatchling);  // (run 21: the walk quicker, the clip with it)
+    s.flight.walkSpeed = s.natWalk * haste;
     s.flight.runSpeed = clampf(3.0f * s.natRun, s.natWalk * 6.0f, 30.0f);  // run 15 (D81)
-    s.pal.walk = s.natWalk;
+    s.pal.walk = s.natWalk * haste;
     s.pal.trot = s.natTrot;
     s.pal.run = std::fmax(s.natRun * 1.4f, 8.5f);  // it keeps up with you running
     s.speedsSet = true;
@@ -369,7 +373,7 @@ void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swi
         natural = s.natWalk * 1.5f;
     } else if (speed > 0.15f) {
         const bool baby = form == kFormHatchling;
-        const bool running = speed > s.natTrot * 1.3f, trotting = speed > s.natWalk * 1.3f;
+        const bool running = speed > s.natTrot * 1.3f, trotting = speed > s.natWalk * walkHaste(baby) * 1.2f;
         want = running ? (baby ? ClipId::Scamper : ClipId::Gallop) : trotting ? ClipId::Trot : ClipId::Walk;
         natural = running ? s.natRun : trotting ? s.natTrot : s.natWalk;
         fastest = running ? 2.3f : 1.6f;
@@ -524,18 +528,21 @@ void animatePeople(App& app, ValleyScene& s) {
     me.anim.update(*lib, app.dt, events, 4);
     blinkFigure(app, me);
     const bool listening = talking(app);
+    // (Where you are: on your dragon's back while riding. Run 21: measured from where you got on,
+    // Bram snored on at full strength however far you rode.)
+    const Vec3 here = hereAt(s);
     for (int k = 0; k < kVillagers; ++k) {
         ValleyScene::Figure& f = s.folk[k];
         const Villager who = static_cast<Villager>(k);
         const Vec3 at = villagerAt(s.valley, who);
         const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(villagerInfo(who).place));
         const float rest = (p ? p->heading : 0.0f) + villagerInfo(who).facing;
-        const float d = std::hypot(s.you.pos.x - at.x, s.you.pos.y - at.y);
+        const float d = std::hypot(here.x - at.x, here.y - at.y);
         if (d > 90.0f) continue;  // far off: left as they were
         // Turning to you when you're near (and while you talk), else back to their place's way.
         const bool mine = listening && !app.talk.custom && app.talk.who == who;
         const bool still = !mine && acts::villagerStill(app, k);  // (sat down or dozing: they stay put)
-        const float want = d < 6.0f && !still ? std::atan2(s.you.pos.x - at.x, -(s.you.pos.y - at.y)) : rest;
+        const float want = d < 6.0f && !still ? std::atan2(here.x - at.x, -(here.y - at.y)) : rest;
         float err = std::remainder(want - f.heading, 6.2831853f);
         f.heading += clampf(err, -3.0f * app.dt, 3.0f * app.dt);
         if (mine) {
@@ -773,6 +780,13 @@ void doAction(App& app, ValleyScene& s) {
             }
             s.breathT = 0;
             s.breathPlace = s.actionPlace;
+            if (const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(s.actionPlace))) {
+                const PlaceLayout& l = placeLayout(s.actionPlace);
+                const Vec2 lan = placeToWorld(*p, {l.lantern.x, l.lantern.y});
+                s.breathTo = {lan.x, lan.y, s.valley.heightAt(lan.x, lan.y) + 1.7f};  // (the lantern's head)
+                s.pal.heading = std::atan2(lan.x - s.pal.pos.x, -(lan.y - s.pal.pos.y));  // it turns to it
+            }
+            s.breath.look = challenge::breathFor(kindInfo(s.shown.kind < kindCount() ? s.shown.kind : 0).elements[0]);
             audio::playSfx(breathSound(s.shown));
             break;
         case Action::Ride:
@@ -791,7 +805,7 @@ void doAction(App& app, ValleyScene& s) {
             s.flight = Flight{};
             s.flight.pos = s.pal.pos;
             s.flight.heading = s.pal.heading;
-            s.flight.walkSpeed = s.natWalk;
+            s.flight.walkSpeed = s.natWalk * walkHaste(false);  // (grown: ridden)
             s.flight.runSpeed = clampf(3.0f * s.natRun, s.natWalk * 6.0f, 30.0f);
             s.cam = ChaseCamera{};
             if (!(app.game.world.flags & kFlagRode)) {
@@ -839,6 +853,11 @@ void getOff(App& app, ValleyScene& s) {
     s.pal.speed = 0;
     s.wcam = WalkCamera{};
     s.wcam.yaw = s.flight.heading;
+    // Set at once, then started from the ride's own view so it glides down behind you (run 21:
+    // left unset through the hop, the camera sat nowhere, was pulled in close, and popped out).
+    s.wcam.update(s.you, 0, s.valley, 0.0f, &s.camWalls);
+    s.wcam.eye = s.cam.eye;
+    s.wcam.target = s.cam.target;
     s.hopT = 0;  // down off its back, to its side
     s.hopOn = false;
     s.hopFrom = seatOf(s, s.flight.pos, s.flight.heading);
@@ -981,7 +1000,8 @@ void update(App& app, const Input& in) {
     bool flying = false, diving = false, swimming = false;
     float partnerSpeed = 0;
     if (s.mode == Mode::FreeCam) {  // look about: the pad moves it, L/R turn it, up/down on the D-pad
-        s.freeYaw += ((in.held & KEY_R ? 1.0f : 0.0f) - (in.held & KEY_L ? 1.0f : 0.0f)) * 1.6f * app.dt;
+        // (run 21: L turns it left, R right, as on foot)
+        s.freeYaw += ((in.held & KEY_L ? 1.0f : 0.0f) - (in.held & KEY_R ? 1.0f : 0.0f)) * 1.6f * app.dt;
         const Vec3 fwd{std::sin(s.freeYaw), -std::cos(s.freeYaw), 0}, right{-fwd.y, fwd.x, 0};
         const float speed = (in.held & KEY_B ? 60.0f : 22.0f) * app.dt;
         s.freeEye = s.freeEye + fwd * (in.padY * speed) + right * (in.padX * -speed) + Vec3{0, 0, dpadY * speed};
@@ -1081,7 +1101,14 @@ void update(App& app, const Input& in) {
     }
     s.swimT = swimming ? s.swimT + app.dt : 0.0f;
     animatePartner(app, s, flying, diving, swimming, partnerSpeed);
-    // A lantern being lit: the breath, then the flame.
+    // A lantern being lit: the breath, then the flame. The mouth opens and a stream of its
+    // element's breath goes to the lantern (run 21: it only made the sound).
+    s.breath.update(app.dt);
+    s.flyer.jawOpen = s.breathT >= 0 ? std::fmin(1.0f, s.breathT * 5.0f) * (s.breathT < 1.0f ? 1.0f : 0.0f) : 0.0f;
+    if (s.breathT >= 0.1f && s.breathT < 0.95f && s.breath.count() < 60) {
+        Vec3 mouth;
+        if (r3d::mouthOf(0, mouth)) s.breath.emit(s.breath.look, mouth, s.breathTo, 2, 0.35f);
+    }
     if (s.breathT >= 0 && (s.breathT += app.dt) > 1.2f) {
         if (world::lightLantern(app.game, s.breathPlace)) {
             audio::playSfx(audio::Sfx::LanternLight);
@@ -1099,10 +1126,22 @@ void update(App& app, const Input& in) {
     }
     lookRound(app, s);
     // The stray in the meadow (the Sanctuary's quest): your partner near her, it sniffs her out.
-    if (s.mode == Mode::OnFoot && s.partner >= 0 && (app.game.world.flags & kFlagMetSanctuary) &&
+    // On foot with it, or on its back along the ground (run 21: riding never found her, and
+    // nothing said why); as you get near it catches her scent.
+    const bool grounded = s.mode == Mode::OnFoot || (s.mode == Mode::Riding && s.flight.grounded);
+    if (grounded && s.partner >= 0 && (app.game.world.flags & kFlagMetSanctuary) &&
         !(app.game.world.flags & kFlagFoundStray)) {
         const Vec3 stray = strayAt(va);
-        if (std::hypot(s.pal.pos.x - stray.x, s.pal.pos.y - stray.y) < 9.0f) {
+        const Vec3 nose = s.mode == Mode::Riding ? s.flight.pos : s.pal.pos;
+        const float apart = std::hypot(nose.x - stray.x, nose.y - stray.y);
+        if (apart < 32.0f && apart >= 9.0f && (s.scentIn -= app.dt) <= 0) {
+            if (s.scentIn < -1.0f) showToastf(app, str::kStrayScent, s.shown.name);  // (first on coming near)
+            audio::playSfx(audio::Sfx::Sniff);
+            s.scentIn = 3.0f + apart / 8.0f;  // (quicker the nearer)
+        } else if (apart >= 32.0f) {
+            s.scentIn = -2.0f;
+        }
+        if (apart < 9.0f) {
             app.game.world.flags |= kFlagFoundStray;
             audio::playSfx(audio::Sfx::Sniff);
             audio::playSfx(audio::Sfx::FindSparkle);
@@ -1322,6 +1361,7 @@ void drawTop(App& app) {
     if (autotest::shooting())
         autotest::log("you (%.1f %.1f %.1f) partner (%.1f %.1f %.1f) mode %d", s.you.pos.x, s.you.pos.y, s.you.pos.z, s.pal.pos.x,
                       s.pal.pos.y, s.pal.pos.z, static_cast<int>(s.mode));
+    if (s.breath.count() > 0) bview::drawBreath(s.breath);  // (a lantern being breathed alight)
     if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
     if (r3d::ready()) cove::drawCoveThings(app, s.valley, now);  // Driftwood Cove's shells, bobber and catch (workstream C)
     if (r3d::ready()) drawLeagueBoards(app, s.valley, now);  // 1.0 battles: the league's boards (workstream B)
@@ -1487,6 +1527,14 @@ void drawBottom(App& app, const Input& touch) {
         s.travelAsk = tappedPlace == s.travelAsk ? -1 : tappedPlace;
         audio::playSfx(audio::Sfx::Tap);
     }
+    if (s.travelAsk < 0 && s.partner >= 0) {  // your partner's Energy under the map (run 21), as in the den
+        const float e = app.game.dragons[s.partner].needs.energy;
+        const bool tired = e < 20;
+        text(app, str::kEnergy, kMapX, 203, 0.36f, withAlpha(theme::kShell, 0.85f), C2D_AlignLeft);
+        const Rect bar{kMapX + 44, 207, kMapSize - 44, 7};
+        panel(bar, theme::kTrack);
+        if (e > 1) panel({bar.x, bar.y, bar.w * e / 100.0f, bar.h}, tired ? theme::kRose : theme::kSkyTeal);
+    }
     if (s.travelAsk >= 0) {
         const Vec2 m = mapPoint(va, va.place(static_cast<u8>(s.travelAsk)) ? va.place(static_cast<u8>(s.travelAsk))->at.x : 0,
                                 va.place(static_cast<u8>(s.travelAsk)) ? va.place(static_cast<u8>(s.travelAsk))->at.y : 0);
@@ -1585,12 +1633,8 @@ void drawBottom(App& app, const Input& touch) {
         }
         if (shown == 0) text(app, str::kTreatNone, kMapX + 6, kMapY + 124, 0.4f, theme::kShell, C2D_AlignLeft, kMapSize - 12);
     }
-    if (button(app, {x, 200, 62, 32}, str::kHomeX, in)) {
-        audio::playSfx(audio::Sfx::Back);
-        leaveTo(app, SceneId::Den);
-        return;
-    }
-    if (button(app, {x + 66, 200, 62, 32}, str::kJournal, in)) {  // (X too)
+    // (No Home button, run 21: the den's pin travels there and A at its door goes in.)
+    if (button(app, {x, 200, 128, 32}, str::kJournal, in)) {  // (X too)
         app.care.page = CarePage::Journal;
         app.care.journalTab = 0;
         audio::playSfx(audio::Sfx::QuestPage);

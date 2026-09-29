@@ -1,0 +1,52 @@
+# Run 21 take 3: getting off a dragon, the camera kept out behind you (it dived in and popped back).
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Noodle
+wait 11
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.2
+tap 238 106
+wait 0.2
+tap 238 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 238 56
+key SELECT
+wait 3
+skip 9
+valley
+hour 11
+wait 4
+travel 7
+wait 3
+pad -1 0 0.3
+wait 0.8
+key A
+wait 3
+shot d0-riding
+key DOWN
+wait 0.15
+shot d1-off
+wait 0.25
+shot d2-off
+wait 0.5
+shot d3-off
+wait 1.0
+shot d4-off
+quit

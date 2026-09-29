@@ -1,0 +1,38 @@
+# Run 21 take 3: "the Keeper's crops are under the ground". Travel to the Keeper's cottage by day
+# and look round it.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+valley
+hour 11
+wait 4
+travel 8
+wait 4
+shot k00
+keyhold L 0.7
+wait 0.3
+shot k01
+keyhold L 0.7
+wait 0.3
+shot k02
+keyhold L 0.7
+wait 0.3
+shot k03
+keyhold L 0.7
+wait 0.3
+shot k04
+pad 1 0 1.2
+wait 0.3
+shot k05
+quit

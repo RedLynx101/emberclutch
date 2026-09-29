@@ -1,0 +1,50 @@
+# Run 21 take 3: the dragon breathes the lantern alight (it only made the sound): the den's own lantern.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Noodle
+wait 11
+key SELECT
+wait 0.3
+tap 238 106
+wait 0.2
+tap 238 106
+wait 0.2
+tap 238 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 238 56
+key SELECT
+wait 3
+skip 9
+valley
+hour 11
+wait 4
+travel 0
+wait 3
+goto -608.4 58.32
+wait 2
+shot l0-prompt
+key A
+wait 0.3
+shot l1-breath
+wait 0.3
+shot l2-breath
+wait 0.3
+shot l3-breath
+wait 1.2
+shot l4-lit
+quit

@@ -261,7 +261,7 @@ void measureGaits(Out& o) {
     o.natRun = clampf(o.actor.behavior.runSpeed, o.natWalk * 2.0f, 14.0f);
     o.natTrot = o.actor.behavior.trotSpeed > o.natWalk && o.actor.behavior.trotSpeed < o.natRun ? o.actor.behavior.trotSpeed
                                                                                                  : (o.natWalk + o.natRun) * 0.5f;
-    o.pal.walk = o.natWalk;
+    o.pal.walk = o.natWalk * walkHaste(false);  // (run 21: quicker, the clip with it)
     o.pal.trot = o.natTrot;
     o.pal.run = std::fmax(o.natRun * 1.4f, 6.0f);
     o.speedsSet = true;
@@ -300,7 +300,7 @@ void animateDragon(App& app, Out& o, const Valley& v, const vext::Stage& stage, 
     ClipId want = ClipId::Idle;
     float rate = 1.0f;
     if (o.pal.speed > 0.15f) {
-        const bool running = o.pal.speed > o.natTrot * 1.3f, trotting = o.pal.speed > o.natWalk * 1.3f;
+        const bool running = o.pal.speed > o.natTrot * 1.3f, trotting = o.pal.speed > o.natWalk * walkHaste(false) * 1.2f;
         want = running ? ClipId::Gallop : trotting ? ClipId::Trot : ClipId::Walk;
         rate = clampf(o.pal.speed / (running ? o.natRun : trotting ? o.natTrot : o.natWalk), 0.5f, 2.0f);
     } else if (o.pose.sitting) {

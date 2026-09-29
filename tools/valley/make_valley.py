@@ -292,6 +292,13 @@ def near_any_path(x, y, pad):
 
 def height(x, y):
     h = graded(x, y, land(x, y))
+    # The Keeper's yard kept level after the paths' grading (run 21: the path up to the door
+    # raised the ground round the cottage 0.4 m and buried its vegetable patch).
+    kx, ky = PLACES[P_KEEPER][0], PLACES[P_KEEPER][1]
+    dk = math.hypot(x - kx, y - ky)
+    if dk < 16.0:
+        yard = graded(kx, ky, land(kx, ky))
+        h = h + (yard - h) * (1.0 - smoothstep(12.0, 16.0, dk))
     # The river, its outlet, the brook and the stream on the plateau, cut in.
     dr = min(poly_near(x, y, RIVER, 120.0), poly_near(x, y, OUTLET, 120.0))
     h -= 8.0 * math.exp(-(dr / 12.0) ** 2) + 4.0 * math.exp(-(dr / 60.0) ** 2)
@@ -357,7 +364,11 @@ def den_notch(x, y, h, h0):
     yard = smoothstep(-5.0, -1.0, f) * (1.0 - smoothstep(11.0, 17.0, abs(u))) * (1.0 - smoothstep(18.0, 26.0, f))
     mouth = smoothstep(-10.0, -6.5, f) * (1.0 - smoothstep(4.5, 7.5, abs(u)))
     w = max(yard, mouth)
-    return h + (min(h, h0) - h) * w
+    h = h + (min(h, h0) - h) * w
+    # Inside the arch the ground sits under the model's floor (run 21: level with it, the grass
+    # came up through the tunnel's floor).
+    inside = (1.0 - smoothstep(-2.4, -1.4, f)) * smoothstep(-9.0, -7.0, f) * (1.0 - smoothstep(3.2, 4.4, abs(u)))
+    return h - 0.35 * inside
 
 
 def mill_banks(x, y, h):

@@ -14,7 +14,7 @@ const TipInfo kTips[kTipCount] = {
     {"Energy", "Games, challenges and battles tire it out.\nA good sleep brings its Energy back."},
     {"The Journal", "Tap a flag to track a goal:\nthe valley's map shows where to go."},
     {"Skyreach Valley", "Walk with the pad, hold B to run.\nL and R turn the view; A does what's near."},
-    {"The map", "The map shows what you've explored.\nTap a pin to travel there at once."},
+    {"The map", "Tap a pin on the map to travel there at\nonce. The den's pin takes you home."},
     {"Riding", "A takes off and flaps; B dives.\nLet go to glide. Land, then Down to get off."},
     {"The lanterns", "Stand by a dark lantern and press A:\nyour dragon breathes it alight."},
     {"The Market", "Food, goods that change each day\nand an egg of the day. L and R: the stalls."},

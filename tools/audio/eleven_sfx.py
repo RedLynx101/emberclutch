@@ -89,7 +89,8 @@ def main() -> None:
         if s.get("loop_cut"):
             entry["loop"] = s["loop_cut"]
         manifest[slug] = entry
-        MANIFEST.write_text(json.dumps(manifest, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        with open(MANIFEST, "w", encoding="utf-8", newline="\n") as f:  # (LF, as the repo keeps it)
+            f.write(json.dumps(manifest, indent=1, ensure_ascii=False) + "\n")
     print("done")
 
 

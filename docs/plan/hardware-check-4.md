@@ -14,6 +14,8 @@ you are. Tick each step on the review page as you go (a note where something's o
    A2; step 13).
 
 ## 1. The den: Love, Energy, the profile
+(The dragons' **heartglow** on their chests lies flat on the chest now, every kind: tell me if
+any still stands off it.)
 1. Each dragon has a fourth need, **Love**: stroke it (the hand) or brush it to fill it. **Energy**
    shows apart, under the needs: games, challenges and battles spend it; a sleep brings it back.
 2. Tap the **heartglow** (top right of the bottom screen): the profile. **About** (what it wears,
@@ -59,7 +61,8 @@ when you're close. Nothing ever gets hurt. The first time you spot one, a toast;
 ## 4. Battles: the Ember league
 1. **Tamsin** stands in the Market's square: walk up, **A**, her lines, then "**Battle?**". Each
    turn, tap one of four moves (or D-pad and A): body moves lunge, breath moves breathe from an
-   open mouth; super-effective and critical hits, a miss, a stat going up or down.
+   open mouth; super-effective and critical hits, a miss, a stat going up or down. The foe's bars
+   now sit at the very top of the screen, clear of the dragons.
 2. Win or lose, a card: experience (a level up shows on it and as a toast), moves learned, Gleam
    the first time (a rematch pays once a day), titles.
 3. The **league board** by the arena's gate: this league's four challengers and its champion,
@@ -69,11 +72,21 @@ when you're close. Nothing ever gets hurt. The first time you spot one, a toast;
    new place: its pin on the map). A final won: a title for your dragon, a prize (and a prize dye),
    and the **Flame league**'s challengers arrive round the valley.
 
-## 5. Roaming trainers and duels
-(Filled in with workstream D's merge.)
+## 5. Roaming trainers, duels and the villagers' days
+1. Between 8:00 and 20:00, three to five of eight **roaming trainers** walk the valley's paths,
+   each with their dragon at their heels; they sit a while at the paths' ends and look about.
+   Come near and one waves with a hello; walk up and they stop for you.
+2. **A:** their lines, then "**Duel?**": a friendly battle right there, their dragon matched to
+   your partner's level. Experience every time; a little Gleam for each trainer's first loss of
+   the day; your **duels won** on the Record page.
+3. Trainers near someone else's battle stop to watch and clap.
+4. **The villagers' days:** Maple tidies her stall, Bram scatters feed, Wren writes on her
+   clipboard, Pip flies his toy dragon, Rowan and Sable sit in the evening, and everyone dozes at
+   night (a soft snore close by). In a battle the trainers bow, point, wince and cheer.
+5. At Driftwood Cove, Tam fishes with a rod, and you hold yours as you fish.
 
 ## 6. Frostspire Hollow
-1. A new place high in the cold: an icy bowl ringed by spires. **Tove** by the corridor: **A**,
+1. A new place high in the cold: an icy bowl ringed by spires. **Tove** by the corridor (her brazier's legs hold its bowl now): **A**,
    her welcome, then where to start (floor 1, later every fifth floor you've reached).
 2. Each floor a wild dragon comes out of the cave door; beat it and go **Deeper** or **Leave**.
    Every fifth floor is a guardian: the first time past each, a prize (food, a trinket and one of
@@ -84,7 +97,7 @@ when you're close. Nothing ever gets hurt. The first time you spot one, a toast;
 ## 7. Driftwood Cove
 1. A new place on the shore: a beach, a jetty and **Tam**. Walk out on the jetty and
    press **A** to fish: A casts, wait for the bobber to dip, **strike**, then keep the line in
-   the band until it's landed. Eight bites a day.
+   the band until it's landed. Eight bites a day. You're seen fishing now, even if you rode there.
 2. Fish and roots go in the pouch (your dragon gets a nibble); shells and now and then a pearl
    are worth Gleam. Shells wash up on the beach too (A to pick one up).
 
@@ -96,6 +109,8 @@ when you're close. Nothing ever gets hurt. The first time you spot one, a toast;
 2. **Linnet's Finery** (hats, scarves, capes, tail things) and **Madder's Dyes**: buy with Gleam.
    Try them on in the **wardrobe** (the tent, or the profile's **Dress up**). Wins give the shows'
    own prizes; a whole league won, a prize dye.
+4. The stage is bigger now (room for three grown dragons), and the Performance plays your new
+   **show-stage** track: the cues land on its beat.
 3. What your dragon wears shows in the den, the valley and battles.
 
 ## 9. The challenges, again
@@ -104,7 +119,10 @@ when you're close. Nothing ever gets hurt. The first time you spot one, a toast;
 
 ## 10. Voices and sounds
 1. The men speak in your voice, the women and the child in the new one.
-2. The new sounds: riding on and off, the photo, putting on a hat, battles' swipes, hits and
+2. Your new music: battles (**battle-duel**), finals on the caldera (**battle-final**), the
+   Hollow (**hollow-deep**), the cove by day (**cove-day**), the glade (**glade-moon**) and the
+   shows (**show-stage**). Listen for the loops' seams (the review page has each one to hear).
+3. The new sounds (as you kept them on the review page): riding on and off, the photo, putting on a hat, battles' swipes, hits and
    misses, the cove's rod, bobber, bite and reel, the Hollow's ice, sand and snow steps, the
    waves, the caldera and the Hollow's wind. Mark any you dislike on the review page too.
 

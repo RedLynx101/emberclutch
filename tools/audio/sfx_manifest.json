@@ -869,5 +869,32 @@
  },
  "_composed": {
   "bird-flutter": "tools/audio/compose_flock.py: overlapping, varied chirps from bird-chirp's takes (Noah, 2026-09-29)"
+ },
+ "roamer-hello": {
+  "kind": "ui",
+  "takes": [
+   "eleven:roamer-hello#1",
+   "eleven:roamer-hello#2"
+  ],
+  "prompt": "A cheerful friendly two-note whistle greeting, rising then falling, like a hiker calling hello across a meadow, light and breathy, no words",
+  "duration": 0.7
+ },
+ "hands-clap": {
+  "kind": "care",
+  "takes": [
+   "eleven:hands-clap#1",
+   "eleven:hands-clap#2"
+  ],
+  "prompt": "A small group of three or four people clapping warmly for a short moment outdoors, light applause, no cheering, no crowd murmur",
+  "duration": 1.2
+ },
+ "soft-snore": {
+  "kind": "care",
+  "takes": [
+   "eleven:soft-snore#1",
+   "eleven:soft-snore#2"
+  ],
+  "prompt": "One soft cute snore from someone napping, a gentle slow breath in with a light rattle and a tiny whistle out, sleepy and sweet, not loud",
+  "duration": 1.5
  }
 }

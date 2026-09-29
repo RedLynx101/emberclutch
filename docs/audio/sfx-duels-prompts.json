@@ -1,0 +1,11 @@
+[
+ {"slug": "roamer-hello", "kind": "ui", "takes": 2, "duration": 0.7, "influence": 0.5,
+  "prompt": "A cheerful friendly two-note whistle greeting, rising then falling, like a hiker calling hello across a meadow, light and breathy, no words",
+  "where": "A roaming trainer waves as you come by (a bubble with their hello)."},
+ {"slug": "hands-clap", "kind": "care", "takes": 2, "duration": 1.2, "influence": 0.5,
+  "prompt": "A small group of three or four people clapping warmly for a short moment outdoors, light applause, no cheering, no crowd murmur",
+  "where": "Trainers who stop to watch your battle clap (heard when they're close)."},
+ {"slug": "soft-snore", "kind": "care", "takes": 2, "duration": 1.5, "influence": 0.5,
+  "prompt": "One soft cute snore from someone napping, a gentle slow breath in with a light rattle and a tiny whistle out, sleepy and sweet, not loud",
+  "where": "A villager dozing at night when you walk by."}
+]

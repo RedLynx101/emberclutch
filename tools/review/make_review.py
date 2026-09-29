@@ -95,8 +95,14 @@ def sounds() -> list[dict]:
             lens.append(seconds(OUT / "sfx" / f))
         synth = None  # the stand-in it replaces, if there was one
         try:
-            data = subprocess.run(["git", "show", f"{SYNTH_COMMIT}:romfs/sfx/{slug}.wav"], cwd=ROOT, capture_output=True,
-                                  check=True).stdout
+            data = b""
+            for commit in (SYNTH_COMMIT, "d989a57"):  # (before batch 4; the duels' stand-ins came with their merge)
+                r = subprocess.run(["git", "show", f"{commit}:romfs/sfx/{slug}.wav"], cwd=ROOT, capture_output=True)
+                if r.returncode == 0:
+                    data = r.stdout
+                    break
+            if not data:
+                raise subprocess.CalledProcessError(1, "git show")
             (OUT / "synth").mkdir(parents=True, exist_ok=True)
             (OUT / "synth" / f"{slug}.wav").write_bytes(data)
             synth = f"synth/{slug}.wav"

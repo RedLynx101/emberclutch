@@ -166,8 +166,8 @@ inline constexpr const char* kCrittersUnseen = "???";
 inline constexpr const char* kCrittersUnseenNote = "Not spotted yet. Keep exploring the valley, by day and by night.";
 inline constexpr const char* kCrittersSeen = "Spotted";
 inline constexpr const char* kCrittersFriends = "Friends x%d";
-inline constexpr const char* kCrittersToday = "Today: %d made friends";
-inline constexpr const char* kCrittersTreats = "Treats left: %d";
+inline constexpr const char* kCrittersToday = "Friends today: %d";
+inline constexpr const char* kCrittersTreats = "Treats left today: %d";
 inline constexpr const char* kCrittersPlaces = "< Places";
 inline constexpr const char* kCrittersTap = "Tap one for its note.";
 

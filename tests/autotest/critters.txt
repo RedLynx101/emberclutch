@@ -85,8 +85,10 @@ shot c17-frog
 critters act 4
 wait 0.8
 shot c18-croak
-wait 1.7
-shot c19-splash
+wait 1.6
+shot c19-leap
+wait 0.8
+shot c19b-splash
 wait 1
 critters spawn 5
 wait 1.5
@@ -143,3 +145,6 @@ shot c32-journal
 tap 60 113
 wait 0.4
 shot c33-journal-note
+tap 50 219
+wait 0.4
+shot c34-journal-places

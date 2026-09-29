@@ -998,9 +998,9 @@ Ground groundAt(const Valley& v, float x, float y) {
         g.flowers = propNear(v, x, y, 10.0f, 1u << kPropFlowers);
         g.cover = propNear(v, x, y, 9.0f, kCoverKinds);
     }
-    for (const ValleyPlaceInfo& p : v.places) {
+    for (const ValleyPlaceInfo& p : v.places) {  // (the Market's square kept clear: its view is the valley's busiest)
         if (p.id == kPlaceLake || p.id == kPlaceIsles || p.id == kPlaceOrchard) continue;
-        if (std::hypot(p.at.x - x, p.at.y - y) < 20.0f) g.nearPlace = true;
+        if (std::hypot(p.at.x - x, p.at.y - y) < (p.id == kPlaceMarket ? 60.0f : 14.0f)) g.nearPlace = true;
     }
     return g;
 }

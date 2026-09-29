@@ -48,6 +48,7 @@ enum class Mode : u8 { None, Ask, Duel, Words, Watch };  // (Words: their partin
 
 struct Out {  // a trainer out today
     int id = -1;
+    bool shown = false;  // out now (at the day's ends they come and go out of your sight)
     roam::Walk walk;
     float held = 0;  // seconds they've stood for you (their day runs that far behind)
     roam::Pose pose;
@@ -80,7 +81,7 @@ struct State {
     roam::PathNet net;
     const Valley* netOf = nullptr;
     std::vector<Solid> solids;  // the places' walls and the villagers
-    bool about = false;         // (their walking hours)
+    bool about = false;         // (their walking hours: each comes and goes when you're not by them)
     Mode mode = Mode::None;
     int who = -1;        // the one asked, duelling or watched (index in out)
     int talkWith = -1;   // the one whose lines are open
@@ -169,6 +170,7 @@ void refresh(App& app, const Valley& v) {
         Out& o = s.out[k];
         o = Out{};
         o.id = ids[k];
+        o.shown = s.about;
         roam::startWalk(s.net, o.id, day, o.walk);
         const roam::Roamer& r = roam::roamer(o.id);
         o.look.form = r.person;
@@ -320,7 +322,7 @@ void tick(App& app, const vext::Stage& stage) {
     const Valley& v = *stage.valley;
     refresh(app, v);
     s.t += app.dt;
-    if (!s.about) return;
+    if (!s.net.ok() || s.count == 0) return;
     const float clock = roam::dayClock(nowLocal(app));
     const int feat = vext::activeFeature(app);
     const bool mine = ours(app), busy = !mine && (bview::running() || glade::showOn());  // (a battle or a show to watch)
@@ -331,6 +333,12 @@ void tick(App& app, const vext::Stage& stage) {
     for (int k = 0; k < s.count; ++k) {
         Out& o = s.out[k];
         const float d = o.placed ? flat(stage.you, o.at) : 1e9f;
+        if (o.shown != s.about && (!o.placed || d > 60.0f)) o.shown = s.about;  // (not popping in or out before you)
+        if (!o.shown) {
+            o.palSet = false;
+            o.greetT = 0;
+            continue;
+        }
         const bool engaged = (s.who == k && (s.mode == Mode::Ask || s.mode == Mode::Duel || s.mode == Mode::Words)) ||
                              (listening && s.talkWith == k);
         const bool watching = busy && d < kWatchAt && !engaged;
@@ -483,11 +491,10 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
     const State& s = st();
     (void)app;
     (void)v;
-    if (!s.about) return 0;
     int n = 0;
     for (int k = 0; k < s.count && n < cap; ++k) {
         const Out& o = s.out[k];
-        if (!o.placed || (s.mode == Mode::Duel && s.who == k)) continue;  // (the duel draws them)
+        if (!o.shown || !o.placed || (s.mode == Mode::Duel && s.who == k)) continue;  // (the duel draws them)
         if (flat(o.at, near) > radius && !(s.mode == Mode::Watch && s.who == k)) continue;
         const roam::Roamer& r = roam::roamer(o.id);
         vext::Folk& f = out[n++];
@@ -662,12 +669,12 @@ void update(App& app, const Input& in, vext::Stage& stage) {
 void addDragons(App& app, const vext::Stage& stage, r3d::ValleyView& view, Vec3 from) {
     State& s = st();
     (void)app;
-    if (!s.about || !stage.valley || view.otherCount >= r3d::kMaxOthers) return;
+    if (!stage.valley || view.otherCount >= r3d::kMaxOthers) return;
     int pick = -1;
     float best = kDragonNear;
     for (int k = 0; k < s.count; ++k) {
         const Out& o = s.out[k];
-        if (!o.palSet || (s.mode == Mode::Duel && s.who == k) || !r3d::kindReady(o.dragon.kind)) continue;
+        if (!o.shown || !o.palSet || (s.mode == Mode::Duel && s.who == k) || !r3d::kindReady(o.dragon.kind)) continue;
         const float d = flat(o.pal.pos, from);
         if (d < best) {
             best = d;
@@ -704,10 +711,9 @@ void view(App& app, const vext::Stage& stage, r3d::ValleyView& view) {
 void drawOver(App& app, const vext::Stage& stage) {
     State& s = st();
     (void)stage;
-    if (!s.about) return;
     for (int k = 0; k < s.count; ++k) {
         const Out& o = s.out[k];
-        if (o.greetT <= 0) continue;
+        if (!o.shown || o.greetT <= 0) continue;
         float x, y, ppu;
         const float top = o.look.form == static_cast<u8>(Person::Child) ? 1.25f : 1.6f;
         if (!r3d::project(o.at + Vec3{0, 0, top}, x, y, ppu) || x < -40 || x > 440 || y < 0 || y > 240) continue;

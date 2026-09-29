@@ -1,7 +1,8 @@
 // The roaming trainers (core/roamers, workstream D): their table, the day's roster, the paths as
 // a network on the real valley (junctions, stops short of the places, the crossings round the
 // places' walls), a day's walk (continuous, on the paths, sitting at viewpoints, never stopping in
-// the Market), and the friendly duels (fair levels, balance, the day's Gleam, the record).
+// the Market), and the friendly duels (fair levels, balance, the day's Gleam, the record). And the
+// villagers' doings by the hour (core/routines).
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -10,12 +11,14 @@
 #include <vector>
 
 #include "check.hpp"
+#include "core/anim.hpp"
 #include "core/battle.hpp"
 #include "core/clock.hpp"
 #include "core/kinds.hpp"
 #include "core/people.hpp"
 #include "core/place_layout.hpp"
 #include "core/roamers.hpp"
+#include "core/routines.hpp"
 #include "core/save.hpp"
 #include "core/trainer.hpp"
 #include "core/valley.hpp"
@@ -347,7 +350,55 @@ TEST(roamers_rewards_and_record) {
     CHECK(out.dragons[0].battleWins == s.dragons[0].battleWins);
 }
 
+// The villagers' doings by the hour (core/routines): every clip there in the people's library
+// (the loops loop, the now-and-thens play once), everyone asleep deep in the night and nobody at
+// noon, sitting only on the ground-sitting clips, the doings their props suit.
+TEST(villagers_doings) {
+    static AnimLibrary lib;
+    std::vector<u8> bytes;
+    if (FILE* f = std::fopen("../romfs/anims/person.eca", "rb")) {
+        u8 buf[4096];
+        std::size_t n;
+        while ((n = std::fread(buf, 1, sizeof(buf), f)) > 0) bytes.insert(bytes.end(), buf, buf + n);
+        std::fclose(f);
+    }
+    CHECK(!bytes.empty() && loadAnims(bytes.data(), bytes.size(), lib));
+    for (int k = 0; k < kVillagers; ++k) {
+        const Villager v = static_cast<Villager>(k);
+        int asleep = 0;
+        for (int hour = 0; hour < 24; ++hour) {
+            const routine::Doing d = routine::villager(v, hour);
+            const int c = lib.find(d.clip);
+            CHECK(c >= 0 && lib.clips[static_cast<std::size_t>(c)].loop);
+            if (d.now) {
+                const int n = lib.find(d.now);
+                CHECK(n >= 0 && !lib.clips[static_cast<std::size_t>(n)].loop);
+            }
+            const bool ground = std::strcmp(d.clip, "sit_ground") == 0 || std::strcmp(d.clip, "doze") == 0;
+            CHECK(d.seated == ground);
+            CHECK(d.asleep == (std::strcmp(d.clip, "doze") == 0 || std::strcmp(d.clip, "doze_stand") == 0));
+            asleep += d.asleep;
+        }
+        CHECK(routine::villager(v, 2).asleep && !routine::villager(v, 12).asleep && !routine::villager(v, 9).asleep);
+        CHECK(asleep >= 7 && asleep <= 11);  // a night's sleep
+        CHECK(std::strcmp(routine::villager(v, 26).clip, routine::villager(v, 2).clip) == 0);  // (hours wrap)
+    }
+    CHECK(std::strcmp(routine::villager(Villager::Market, 7).clip, "tidy") == 0);        // her stall, set out
+    CHECK(std::strcmp(routine::villager(Villager::Sanctuary, 7).clip, "scatter") == 0);  // the bucket of feed
+    CHECK(std::strcmp(routine::villager(Villager::Steward, 12).clip, "write") == 0);     // the clipboard
+    CHECK(std::strcmp(routine::villager(Villager::Child, 10).clip, "fly_toy") == 0);     // the toy dragon
+    CHECK(routine::villager(Villager::Traveller, 19).seated && routine::villager(Villager::Keeper, 19).seated);
+    float lo = 1e9f, hi = 0;
+    for (u32 seed = 0; seed < 500; ++seed) {
+        const float g = routine::nextGap(seed);
+        lo = std::fmin(lo, g);
+        hi = std::fmax(hi, g);
+    }
+    CHECK(lo >= 8.0f && hi <= 20.0f && hi - lo > 8.0f);
+}
+
 void runRoamerTests() {
+    RUN(villagers_doings);
     RUN(roamers_table);
     RUN(roamers_roster);
     RUN(roamers_paths_network);

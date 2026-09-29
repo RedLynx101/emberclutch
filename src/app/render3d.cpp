@@ -3086,10 +3086,11 @@ void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_M
     if (frame) {
         model = *frame;
     } else {
+        const float legs = p.scale * personHips(static_cast<Person>(p.form)) / 0.315f;  // (root tracks are the standard body's: workstream D)
         Mtx_Identity(&model);
-        Mtx_Translate(&model, p.at.x, p.at.y, p.at.z + root[1] * p.scale, true);
+        Mtx_Translate(&model, p.at.x, p.at.y, p.at.z + root[1] * legs, true);
         Mtx_RotateZ(&model, p.heading, true);
-        Mtx_Translate(&model, 0, -root[0] * p.scale, 0, true);  // forward is -Y
+        Mtx_Translate(&model, 0, -root[0] * legs, 0, true);  // forward is -Y
         Mtx_Scale(&model, p.scale, p.scale, p.scale);
     }
     Mtx_Multiply(&mv, &viewM, &model);

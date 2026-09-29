@@ -226,6 +226,7 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
     f.voice = 1;
     f.pitch = 1.4f;
     f.reach = 2.6f;
+    f.clip = "sit_ground";  // (sat by her camp, getting up to wave as you come: workstream D)
     return 1;
 }
 

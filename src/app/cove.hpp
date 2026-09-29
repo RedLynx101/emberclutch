@@ -19,6 +19,7 @@ bool active(const App& app);
 void update(App& app, const Input& in, vext::Stage& stage);
 void drawTop(App& app, const vext::Stage& stage);
 void drawBottom(App& app, const Input& in, const vext::Stage& stage);
+void drawOver(App& app, const vext::Stage& stage);  // (Tam's rod while he fishes: workstream D)
 
 // The cove's things in 3D, after drawValley (scene_valley calls it every frame, fishing or not):
 // the day's shells on the beach, and while fishing the bobber and the catch.

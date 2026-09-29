@@ -19,6 +19,7 @@
 #include "app/battle_view.hpp"
 #include "app/glade_show.hpp"
 #include "app/dialogue.hpp"
+#include "app/people_acts.hpp"  // the villagers' doings by the hour (workstream D)
 #include "app/photo.hpp"
 #include "app/render3d.hpp"
 #include "app/scenes.hpp"
@@ -483,6 +484,7 @@ void gatherExtras(App& app, ValleyScene& s) {
     if ((s.extraCheck -= app.dt) > 0) return;
     s.extraCheck = 0.2f;
     s.extraCount = 0;
+    for (vext::Folk& f : s.extra) f = vext::Folk{};  // (fresh: a feature may leave fields unset, a walker's `live` from before)
     for (int f = 0; f < vext::featureCount() && s.extraCount < vext::kMaxFolk; ++f) {
         const vext::Feature& ft = vext::feature(f);
         if (!ft.folk) continue;
@@ -527,20 +529,20 @@ void animatePeople(App& app, ValleyScene& s) {
         const float d = std::hypot(s.you.pos.x - at.x, s.you.pos.y - at.y);
         if (d > 90.0f) continue;  // far off: left as they were
         // Turning to you when you're near (and while you talk), else back to their place's way.
-        const float want = d < 6.0f ? std::atan2(s.you.pos.x - at.x, -(s.you.pos.y - at.y)) : rest;
+        const bool mine = listening && !app.talk.custom && app.talk.who == who;
+        const bool still = !mine && acts::villagerStill(app, k);  // (sat down or dozing: they stay put)
+        const float want = d < 6.0f && !still ? std::atan2(s.you.pos.x - at.x, -(s.you.pos.y - at.y)) : rest;
         float err = std::remainder(want - f.heading, 6.2831853f);
         f.heading += clampf(err, -3.0f * app.dt, 3.0f * app.dt);
-        const bool mine = listening && !app.talk.custom && app.talk.who == who;
         if (mine) {
             playClip(f, "talk", 1.0f, 0.25f);
         } else if (playing(f, "talk")) {
             playClip(f, "nod", 1.0f, 0.2f);
-        } else if (!f.waved && d < 7.0f) {
+        } else if (!f.waved && d < 7.0f && !still) {
             f.waved = true;
             playClip(f, "wave", 1.0f, 0.2f);
-        } else if (f.anim.clip < 0 || ((playing(f, "wave") || playing(f, "nod")) && f.anim.finished(*lib))) {
-            playClip(f, "idle", 1.0f, 0.3f);
-            f.anim.time = (k * 0.7f);  // not all breathing together
+        } else if (!(playing(f, "wave") || playing(f, "nod")) || f.anim.finished(*lib)) {
+            acts::villagerRest(app, k, f.anim, d);  // their doings by the hour (app/people_acts, workstream D)
         }
         if (d > 15.0f) f.waved = false;  // a new visit: another hello
         f.anim.update(*lib, app.dt, events, 4);

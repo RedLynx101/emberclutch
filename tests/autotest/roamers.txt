@@ -1,7 +1,8 @@
 # Roaming trainers (workstream D): today's trainers out on the valley's paths with their dragons
 # at their heels (the camera beside two of them as they walk), one walking up to you, waving
 # hello (a bubble) and stopping; A: their lines and "Duel?"; a friendly duel played through to its
-# card and their parting words (a win at a fair level), then a loss (their dragon made strong).
+# card and their parting words (a win), then a loss (their dragon made strong); the Record page's
+# duels won.
 # The overlay is on: its TRI is the top screen's triangles (a roamer near: one more dragon).
 overlay on
 wait 2.5
@@ -106,4 +107,14 @@ wait 1.5
 roamer level 0
 autoplay off
 shot r23-done
+# The dragon's Record page: your duels won (all your dragons').
+open den
+wait 2.5
+tap 298 16
+wait 1.2
+key R
+wait 0.6
+key R
+wait 0.8
+shot r24-record
 quit

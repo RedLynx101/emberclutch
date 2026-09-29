@@ -47,10 +47,22 @@ void start() {
     if (g_on) mark("trace on");
 }
 
+bool g_live = true;  // marks written (a window after the start and each scene change)
+
+void frame(unsigned long n, int scene) {
+    static int last = -1;
+    static unsigned long until = 600;
+    if (scene != last) {
+        last = scene;
+        until = n + 600;
+    }
+    g_live = n <= until;
+}
+
 bool on() { return g_on; }
 
 void mark(const char* fmt, ...) {
-    if (!g_on) return;
+    if (!g_on || !g_live) return;
     char text[96];
     va_list args;
     va_start(args, fmt);

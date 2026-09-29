@@ -11,5 +11,8 @@ namespace ec::trace {
 void start();  // checks for trace.on (after the SD card is up)
 bool on();
 void mark(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
+// Each frame: the trail is kept for the first 10 seconds and 10 seconds after each change of
+// scene (writing every stage slows the game), quiet in between.
+void frame(unsigned long n, int scene);
 
 }  // namespace ec::trace

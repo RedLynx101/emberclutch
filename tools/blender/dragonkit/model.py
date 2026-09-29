@@ -975,7 +975,7 @@ def build_heart(mats):
         x = 16 * math.sin(t) ** 3
         zz = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)
         pts.append(c + Vector((x, 0, zz + 2)) * (size / 17))
-    obj = flat_fan("heart", pts, 0.2 * size)
+    obj = flat_fan("heart", pts, 0.08 * size)  # (thin: it lies on the chest now, bent to it)
     if F["heart"].get("tilt"):
         obj.rotation_euler.x = math.radians(F["heart"]["tilt"])
     obj.data.materials.append(mats["heart"])
@@ -1643,7 +1643,20 @@ def rest_pose(d, t):
 
 
 def apply_t(d, t, build):
-    """Bone and part scales for growth t, then seat the parts on the body surface."""
+    """Bone and part scales for growth t, then seat the parts on the body surface. A build other
+    than neutral seats them for neutral first (the conformed parts take their shape there), then
+    moves them for the build (as the game shifts a part per build)."""
+    if build != "neutral":
+        _scale_for(d, t, "neutral")
+        snap_parts(d)
+        _scale_for(d, t, build)
+        snap_parts(d, conform=False)
+        return
+    _scale_for(d, t, build)
+    snap_parts(d)
+
+
+def _scale_for(d, t, build):
     bones, parts = scales_for_t(t, build)
     pb = d["arm"].pose.bones
     for name, sc in bones.items():
@@ -1655,14 +1668,116 @@ def apply_t(d, t, build):
             if "base_scale" not in o:
                 o["base_scale"] = list(o.scale)
             o.scale = Vector(o["base_scale"]) * s
-    snap_parts(d)
 
 
 SNAP_FROM = {"eyes": "head"}  # parts on these bones are seated along rays from this joint
 SETTLE = {"spikes"}           # parts brought down onto the skin after the ray snap
+DEBUG_CONFORM = False
+CONFORM = {"heart"}           # flat emblems laid along the skin's slope under them, just off it
 
 
-def snap_parts(d):
+def conform_part(d, anchor, members, body, bvh, inv_body, direction):
+    """Lay a flat emblem (the heartglow) along the chest: turn it so its face follows the skin's
+    slope across its own width (four rays round its centre, not one face's normal), then set it
+    down so its nearest vertex sits just off the skin. Noah (2026-09-28): an upright heart before a
+    sloping chest touched it at one point and hung in the air below it."""
+    c = anchor.constraints[0]
+    m = d["arm"].matrix_world @ d["arm"].pose.bones[c.subtarget].matrix @ c.inverse_matrix
+    q_m = m.to_quaternion()
+    for o in members:
+        o.rotation_euler = (0, 0, 0)
+        if "flat_co" not in o:  # (its flat shape, kept on the object: names repeat between builds)
+            o["flat_co"] = [c for v in o.data.vertices for c in v.co]
+        flat = o["flat_co"]
+        for i, v in enumerate(o.data.vertices):
+            v.co = Vector(flat[3 * i:3 * i + 3])
+        o.data.update()
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    centre = anchor.matrix_world.translation.copy()
+    radius = 0.0
+    for o in members:
+        ev = o.evaluated_get(dg)
+        me = ev.to_mesh()
+        radius = max([radius] + [(ev.matrix_world @ v.co - centre).length for v in me.vertices])
+        ev.to_mesh_clear()
+    if radius <= 0:
+        return
+    up = Vector((0, 0, 1)) - direction * direction.z
+    if up.length < 1e-4:
+        return
+    up.normalize()
+    side = direction.cross(up).normalized()
+    ldir = (inv_body.to_3x3() @ direction).normalized()
+
+    def surface(offset):
+        origin = inv_body @ (centre - direction * (3.0 * radius) + offset)
+        hit, _, _, _ = bvh.ray_cast(origin, ldir, 6.0 * radius)
+        return body.matrix_world @ hit if hit is not None else None
+    r = 0.85 * radius
+    s_pos, s_neg, u_pos, u_neg = surface(side * r), surface(-side * r), surface(up * r), surface(-up * r)
+    mid = surface(Vector((0, 0, 0)))
+    # (a sample off the skin's edge, a belly curving away under the heart: its middle stands in)
+    s_pos, s_neg, u_pos, u_neg = (x if x is not None else mid for x in (s_pos, s_neg, u_pos, u_neg))
+    if None in (s_pos, s_neg, u_pos, u_neg) or (s_pos - s_neg).length < 1e-5 or (u_pos - u_neg).length < 1e-5:
+        return
+    n = (s_pos - s_neg).cross(u_pos - u_neg)
+    if n.dot(direction) < 0:  # (outward: the way from the joint out to the part)
+        n = -n
+    n.x = 0.0  # (the hearts sit on the midline: kept square to it)
+    if n.length < 1e-6:
+        return
+    n.normalize()
+    horizontal = Vector((0, n.y, 0)).normalized() if abs(n.y) > 1e-4 else Vector((0, -1, 0))
+    if n.angle(horizontal) > math.radians(60) and n.z < 0:  # (a chest facing mostly down: not under it)
+        n = (horizontal * math.cos(math.radians(60)) - Vector((0, 0, math.sin(math.radians(60))))).normalized()
+    front = q_m @ Vector((0, -1, 0))
+    turn = (q_m.inverted() @ front.rotation_difference(n) @ q_m).to_euler()
+    for o in members:
+        o.rotation_euler = turn
+    bpy.context.view_layer.update()
+    gap = skin_gap(members, body, bvh, inv_body)
+    if gap is None:
+        return
+    lift = 0.05 * radius
+    delta = m.to_3x3().inverted() @ (n * (lift - gap))
+    for o in members:
+        o["conform_add"] = list(delta)
+        off = Vector(o["snap_off"]) + delta if "snap_off" in o else delta
+        o["snap_off"] = list(off)
+        o.location = Vector(o["base_loc"]) + off
+    # Then bent onto the curve of the chest: each vertex brought down along the face's normal to
+    # the skin under it (a flat heart on a round chest touched at its middle, its rim in the air),
+    # its two sheets kept apart as they were. The export reads the mesh at each growth key.
+    bpy.context.view_layer.update()
+    for o in members:
+        me = o.data
+        mw = o.matrix_world.copy()
+        inv_o = mw.inverted()
+        world = [mw @ v.co for v in me.vertices]
+        centre_now = o.matrix_world.translation
+        sheet = [(q - centre_now).dot(n) for q in world]
+        back = min(sheet) if sheet else 0.0
+        ldir_n = (inv_body.to_3x3() @ -n).normalized()
+        for i, q in enumerate(world):
+            planar = q - n * sheet[i]
+            hit, _, _, _ = bvh.ray_cast(inv_body @ (planar + n * (1.5 * radius)), ldir_n, 3.0 * radius)
+            if hit is not None:
+                surf = body.matrix_world @ hit
+                me.vertices[i].co = inv_o @ (surf + n * (lift + sheet[i] - back))
+                continue
+            # (past the skin's edge, a chest curving under: wrapped onto the nearest skin instead)
+            near, nrm, _, _ = bvh.find_nearest(inv_body @ planar)
+            if near is not None:
+                nw = (body.matrix_world.to_3x3() @ nrm).normalized()
+                me.vertices[i].co = inv_o @ (body.matrix_world @ near + nw * (lift + sheet[i] - back))
+        me.update()
+    if DEBUG_CONFORM:
+        bpy.context.view_layer.update()
+        print(f"[conform] n {tuple(round(x, 3) for x in n)} r {radius:.3f} gap {gap:+.3f} -> {skin_gap(members, body, bvh, inv_body):+.3f}")
+
+
+def snap_parts(d, conform=True):
     """Seat each part on the body surface for the current stage: ray from the bone joint
     toward the part's anchor, place the anchor at the outermost hit (minus the group's inset),
     or at the first one if a member is marked o["snap_first"] (a part whose ray would go on
@@ -1699,6 +1814,13 @@ def snap_parts(d):
             for o in members:
                 o["snap_off"] = list(delta)
                 o.location = Vector(o["base_loc"]) + delta
+            if key in CONFORM and conform:
+                conform_part(d, anchor, members, body, bvh, inv_body, direction)
+            elif key in CONFORM:  # (a build: the neutral shape, lifted as it was, moved with the snap)
+                for o in members:
+                    add = Vector(o.get("conform_add", (0, 0, 0)))
+                    o["snap_off"] = list(Vector(o["snap_off"]) + add)
+                    o.location = Vector(o["base_loc"]) + Vector(o["snap_off"])
             if key in SETTLE:
                 bpy.context.view_layer.update()
                 gap = skin_gap(members, body, bvh, inv_body)

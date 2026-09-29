@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-28 · **Milestone:** **the long run: Beta and 1.0 built together** ([plan](plan/v1.md), [work split](plan/v1-work.md), D92-D98). All six workstreams merged; a **look lab** is open with Noah (faceted low-poly ground or not); then the whole-game playthrough, the big review, run 20 and banner labs. Before it: Beta and 1.0 settled (D89-D91), Beta 1 built (0.3.0), Alpha 2 done (`v0.2.0-alpha2`).
+**Updated:** 2026-09-28 · **Milestone:** **the long run: Beta and 1.0 built together** ([plan](plan/v1.md), [work split](plan/v1-work.md), D92-D102). All six workstreams merged, the look picked (A with painted textures, D99), the valley's creatures merged (L), roaming trainers and duels in progress (D); the long-run review page is up (sounds to mark, music to make); then run 20 (0.9.0) with banner labs F-K and A2. Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Now: the long run (2026-09-28)
@@ -27,12 +27,27 @@
   fireflies and falling leaves, far trees, the new women's voice D92), release prep (player
   README, CREDITS, THIRD-PARTY-NOTICES, `docs/release/universal-db.json`, `tools/release/make_qr.py`;
   nothing published).
-- **Open with Noah:** the look lab ([page](https://claude.ai/artifact/PAiqpga4pLSsMqbXRjFUBV),
-  db `looklab/pick`): A smooth as now, B faceted low-poly, C faceted + painted texture (autotest
-  `ground 0|1|2`). My recommendation B/C.
-- **Budgets:** valley views 3.8k-10.3k triangles (the Market and battles there ~10-12k; faceted
-  ground would take 1-2.6k off every view).
-- **Tests:** 314,938 PC checks, 0 failures; every autotest run without unmapped accesses.
+- **The look (D99):** Noah picked A in the look lab; the ground's texture now has two channels
+  (grass strokes; earth, path, rock and bark speckle) mixed per vertex. C (`ground 2`) is the
+  fallback if the 3DS can't carry it.
+- **Since the merges:** the integration pass (tips wait only while a battle, show or race plays;
+  the battle's tip at "Battle?"); the Hollow's camera (a wall across the screen: the eye by an ice
+  spire; `bview::viewClear`, the Hollow's nearer camera); prizes nothing gave (the Hollow's and the
+  found things to wear, a prize dye per league final); the league tracker on the next challenger;
+  new music taking over as its files arrive; the ground's detail following the triangle budget
+  (D102); the glade's stage 7.2 m round for three dragons (Noah); the camera behind you after a
+  battle; the whole-game playthrough script and the README's screenshots.
+- **Valley life (D101):** L merged (seven critters with an A moment each, the Journal's page, one
+  draw, 0-136 triangles); D (roaming trainers, friendly duels, people's animations) running.
+- **Sounds and music (D100):** ElevenLabs by API (`tools/audio/eleven_sfx.py`): batch 4 (24 foley
+  and beds) and the critters' 9; the Suno brief batch 4 (six tracks). All on the review page:
+  https://claude.ai/artifact/52Kf8yemiqCHkq3wQKnxoW (`tools/review/make_review.py`; db `sounds/<slug>`
+  and `music/<slug>`).
+- **Run 20 (0.9.0):** steps drafted in [hardware-check-4.md](plan/hardware-check-4.md) (duels to
+  add); banner labs F-K and A2 built (`build/lab/`, [banner-labs.md](tech/banner-labs.md)).
+- **Budgets:** most views under ~9.6k triangles (the ground's detail adapts); the Market ~10.6k and
+  the shows up to ~12.7k are run 20's frame checks.
+- **Tests:** 369,831 PC checks, 0 failures; every autotest run without unmapped accesses.
 
 ## Where things stand
 - **Design** complete for v1: [GDD](design/game-design.md), [breeds & genetics](design/breeds-and-genetics.md),

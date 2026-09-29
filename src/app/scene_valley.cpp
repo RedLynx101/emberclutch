@@ -225,6 +225,13 @@ Sky skyFor(s64 now) {
     return {mix(&Sky::top), mix(&Sky::horizon), mix(&Sky::tint)};
 }
 
+// Walking out here: its measured walk, quickened (walkHaste), and never slower than 1.8 m/s for
+// a grown dragon (1.2 a hatchling), short of its trot (take 4: the stocky kinds' measured walks
+// were 1.2 m/s with you on their backs). Past what its walk clip can keep up with, it trots.
+float valleyWalk(float natWalk, float natTrot, bool baby) {
+    return std::fmax(natWalk * walkHaste(baby), std::fmin(natTrot, baby ? 1.2f : 1.8f));
+}
+
 // The partner's gaits, measured on its own legs once its body is loaded (no skating).
 void measureSpeeds(ValleyScene& s) {
     if (s.speedsSet || s.partner < 0) return;
@@ -244,13 +251,16 @@ void measureSpeeds(ValleyScene& s) {
     s.natTrot = s.flyer.behavior.trotSpeed > s.natWalk && s.flyer.behavior.trotSpeed < s.natRun
                     ? s.flyer.behavior.trotSpeed
                     : (s.natWalk + s.natRun) * 0.5f;
-    const float haste = walkHaste(form == kFormHatchling);  // (run 21: the walk quicker, the clip with it)
-    s.flight.walkSpeed = s.natWalk * haste;
+    const float walk = valleyWalk(s.natWalk, s.natTrot, form == kFormHatchling);  // (run 21)
+    s.flight.walkSpeed = walk;
     s.flight.runSpeed = clampf(3.0f * s.natRun, s.natWalk * 6.0f, 30.0f);  // run 15 (D81)
-    s.pal.walk = s.natWalk * haste;
+    s.pal.walk = walk;
     s.pal.trot = s.natTrot;
     s.pal.run = std::fmax(s.natRun * 1.4f, 8.5f);  // it keeps up with you running
     s.speedsSet = true;
+    if (autotest::active())
+        autotest::log("partner speeds: walk %.2f (measured %.2f) trot %.2f run %.2f, ridden walk %.2f run %.2f", s.pal.walk,
+                      s.flyer.behavior.walkSpeed, s.natTrot, s.natRun, s.flight.walkSpeed, s.flight.runSpeed);
 }
 
 // The partner's clip for how it's moving (flying, swimming, walking, trotting, running).
@@ -373,7 +383,8 @@ void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swi
         natural = s.natWalk * 1.5f;
     } else if (speed > 0.15f) {
         const bool baby = form == kFormHatchling;
-        const bool running = speed > s.natTrot * 1.3f, trotting = speed > s.natWalk * walkHaste(baby) * 1.2f;
+        // (trotting past what its walk clip keeps up with: 1.6 times its own pace)
+        const bool running = speed > s.natTrot * 1.3f, trotting = speed > s.natWalk * 1.6f;
         want = running ? (baby ? ClipId::Scamper : ClipId::Gallop) : trotting ? ClipId::Trot : ClipId::Walk;
         natural = running ? s.natRun : trotting ? s.natTrot : s.natWalk;
         fastest = running ? 2.3f : 1.6f;
@@ -805,7 +816,7 @@ void doAction(App& app, ValleyScene& s) {
             s.flight = Flight{};
             s.flight.pos = s.pal.pos;
             s.flight.heading = s.pal.heading;
-            s.flight.walkSpeed = s.natWalk * walkHaste(false);  // (grown: ridden)
+            s.flight.walkSpeed = valleyWalk(s.natWalk, s.natTrot, false);  // (grown: ridden)
             s.flight.runSpeed = clampf(3.0f * s.natRun, s.natWalk * 6.0f, 30.0f);
             s.cam = ChaseCamera{};
             if (!(app.game.world.flags & kFlagRode)) {

@@ -39,26 +39,35 @@ float locomotionSpeed(const ModelData& m, const AnimBinding& bind, const AnimCli
     Quat delta[kMaxBones];
     float root[2];
     Mat34 poseMat[kMaxBones], skin[kMaxBones];
+    // Each foot sweeps back along the ground while it carries the body, at the ground speed, and
+    // swings forward faster through the air: its backward sweep over the time it spends sweeping is
+    // the ground speed. Averaged over the feet by how far each sweeps. (Run 21 take 4: taking the
+    // lowest foot's speed read a long-legged plan's swinging foot, lower than its planted ones,
+    // and measured the Crestwing's trot at nothing and its walk as a crawl.)
     constexpr int kSteps = 48;
     const float dt = clip.duration() / kSteps;
-    float prev[4] = {}, sum = 0;
+    float prevY[4] = {}, back[4] = {}, time[4] = {};
     for (int k = 0; k <= kSteps; ++k) {
         sampleClip(clip, bind, m.skel.count, k * dt, delta, root);
         for (int i = 0; i < m.skel.count; ++i) pose[i] = idle[i];
         applyDeltas(pose, delta, m.skel.count);
         evaluatePose(m.skel, pose, poseMat, skin);
-        // The lowest foot carries the body: its backward (+Y) speed is the ground speed.
-        int low = 0;
-        float y[4];
         for (int f = 0; f < 4; ++f) {
-            const Vec3 p = poseMat[feet[f]].translation();
-            y[f] = p.y;
-            if (p.z < poseMat[feet[low]].translation().z) low = f;
+            const float y = poseMat[feet[f]].translation().y;
+            if (k > 0 && y > prevY[f]) {
+                back[f] += y - prevY[f];
+                time[f] += dt;
+            }
+            prevY[f] = y;
         }
-        if (k > 0) sum += (y[low] - prev[low]) / dt;
-        for (int f = 0; f < 4; ++f) prev[f] = y[f];
     }
-    const float speed = sum / kSteps;
+    float swept = 0, weighted = 0;
+    for (int f = 0; f < 4; ++f)
+        if (time[f] > 0) {
+            weighted += back[f] * (back[f] / time[f]);
+            swept += back[f];
+        }
+    const float speed = swept > 0 ? weighted / swept : 0.0f;
     return speed > 0 ? speed : clip.speed;
 }
 

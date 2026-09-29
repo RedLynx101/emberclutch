@@ -2764,8 +2764,14 @@ void drawValleyShadow(App& app, const Valley& v, const ValleyView& view) {
 }
 
 // The static program for the valley's ground and things, fogged, lit by the day's tint.
+// Out in the valley everything static draws with the ground's program (its texture coordinate
+// zero unless the ground's on): take 4 on the 3DS drew the ground now and then as if with the far
+// haze's depth, heavily fogged, in the frames it switched programs between setting the view and
+// drawing (the dragons, which set theirs after binding, never did). The den keeps the static one.
+bool valleyOnGroundProgram() { return g_groundDvlb && g_groundTexOk && !g_groundPlain; }
+
 void bindValleyStatic(const C3D_Mtx& projection, const C3D_Mtx& view, Rgb tint) {
-    C3D_BindProgram(&g_staticProgram);
+    C3D_BindProgram(valleyOnGroundProgram() ? &g_groundProgram : &g_staticProgram);
     C3D_SetAttrInfo(&g_staticAttr);
     C3D_LightEnvBind(nullptr);
     C3D_TexEnv* env = C3D_GetTexEnv(0);
@@ -2777,6 +2783,8 @@ void bindValleyStatic(const C3D_Mtx& projection, const C3D_Mtx& view, Rgb tint) 
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSModelView, &view);  // the valley is modelled in world space
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSBlend, 0, 0, 0, 0);
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, tint.r / 65025.0f, tint.g / 65025.0f, tint.b / 65025.0f, 1.0f / 255.0f);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, 0, 0, 0, 0);  // (no texture coordinate: the ground's own only)
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, 0, 0, 0);
 }
 
 // The ground's painted texture on (run 19; two channels since the look lab): the grass's strokes
@@ -2791,9 +2799,12 @@ void groundDetail(bool on) {
     C3D_TexEnvInit(env);
     C3D_TexEnvInit(C3D_GetTexEnv(1));  // (a pass-through unless the texture's on)
     const bool textured = on && g_groundTexOk && g_groundLook != 1 && !g_groundPlain;
-    C3D_BindProgram(textured ? &g_groundProgram : &g_staticProgram);
-    C3D_SetAttrInfo(&g_staticAttr);
+    // (no program switch here: bindValleyStatic has the valley on the ground's program already)
     if (!textured) {
+        if (valleyOnGroundProgram()) {
+            C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, 0, 0, 0, 0);
+            C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, 0, 0, 0);
+        }
         C3D_TexEnvSrc(env, C3D_RGB, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
         C3D_TexEnvFunc(env, C3D_RGB, GPU_REPLACE);
         if (on) {  // (the faceted look's tiles: their alpha is the texture's mix, not see-through)
@@ -3517,19 +3528,22 @@ bool riderFrame(const Posed& d, const ValleyView& view, const C3D_Mtx& dragonMod
     const Vec3 head = inverseAffine(d.form->model.skel.invRest[bone]).translation();
     Vec3 rest = head + plan.seat * kind.formScale[d.cache->form];
     // The seat down on the back itself (run 21: the rider floated over broad backs and narrow
-    // ones alike): the top of the body mesh round the plan's seat, found once per form.
+    // ones alike): the top of the body mesh round the plan's seat, found once per form. The
+    // window runs 0.3 along the spine either way and 0.25 across (take 4: a narrower one fell
+    // between the Crestwing's few spine vertices and sat you inside it), and never below the
+    // seat's own joint.
     Form& form = const_cast<Form&>(*d.form);
     if (!form.seatSet && form.bodyData && form.bodyData->vertexCount) {
         const MeshData& m = *form.bodyData;
-        float lo = 1e9f, hi = -1e9f;
-        for (int v = 0; v < m.vertexCount; ++v) lo = std::fmin(lo, m.pos[v].x), hi = std::fmax(hi, m.pos[v].x);
-        const float r = std::fmax(0.02f, (hi - lo) * 0.12f);
         float top = -1e9f;
         for (int v = 0; v < m.vertexCount; ++v)
-            if (std::fabs(m.pos[v].x - rest.x) < r && std::fabs(m.pos[v].y - rest.y) < r) top = std::fmax(top, m.pos[v].z);
-        form.seatTop = top > -1e8f ? top : rest.z;
+            if (std::fabs(m.pos[v].x - rest.x) < 0.25f && std::fabs(m.pos[v].y - rest.y) < 0.3f) top = std::fmax(top, m.pos[v].z);
+        form.seatTop = top > -1e8f ? std::fmax(top, head.z + 0.1f) : rest.z;
         form.seatSet = true;
     }
+    if (autotest::shooting())
+        autotest::log("seat: plan (%.2f %.2f %.2f) head (%.2f %.2f %.2f) top %.2f set %d", rest.x, rest.y, rest.z, head.x, head.y, head.z,
+                      form.seatTop, form.seatSet ? 1 : 0);
     if (form.seatSet) rest.z = form.seatTop;
     const Vec3 seat = transformPoint(d.skin[bone], rest);
     const Vec3 w = apply(dragonModel, seat);

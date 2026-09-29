@@ -32,4 +32,11 @@ void gpu(const char* what);
 // trace is on or not; deleting hangs.txt clears the list.
 bool hung(const char* part);
 
+// A watch for one-frame blips in the picture (take 4: the valley's ground went teal for a frame now
+// and then on the 3DS): with the trace on, the top screen's lower half is sampled as each frame
+// finishes, and a frame unlike the one before and the one after (which match each other) is
+// logged with what drew it. `info` is kept with the frame: its triangles, draws and scene.
+void watchBeforeFrameEnd(unsigned tris, unsigned draws, int scene);
+void watchAfterFrameBegin();
+
 }  // namespace ec::trace

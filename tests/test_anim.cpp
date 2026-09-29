@@ -9,6 +9,7 @@
 #include "check.hpp"
 #include "core/anim.hpp"
 #include "core/den_actor.hpp"
+#include "core/kinds.hpp"
 #include "core/model.hpp"
 #include "core/rig.hpp"
 
@@ -204,19 +205,21 @@ TEST(locomotion_speeds_follow_the_body) {
         const float young = locomotionSpeed(m, bind, lib.clips[lib.find("walk")], 0.0f, kBuildNeutral);
         std::printf("  %s: walk %.2f (t=0: %.2f), trot %.2f units/s\n", f == kFormHatchling ? "hatchling" : "grown",
                     walk[f], young, trot[f]);
-        CHECK(walk[f] > 0.05f && trot[f] > walk[f] * 1.5f);
+        CHECK(walk[f] > 0.05f && trot[f] > walk[f] * 1.2f);  // (run 21 take 4: measured by each foot's sweep)
         CHECK(young > 0 && young < walk[f]);  // shorter legs, shorter strides
     }
     CHECK(walk[kFormHatchling] < walk[kFormGrown] && trot[kFormHatchling] < trot[kFormGrown]);
     // A baby's own toddle (Noah, run 13: the grown walk was far too slow on it): at least twice
-    // the grown walk's pace on the same body.
+    // the grown walk's pace on the same body, short of its scamper.
     {
         const ModelData& m = form(kFormHatchling);
         AnimBinding bind;
         bindAnims(lib, m.skel, bind);
         const float toddle = locomotionSpeed(m, bind, lib.clips[lib.find("walk_h")], 1.0f, kBuildNeutral);
         std::printf("  hatchling: toddles at %.2f units/s (the grown walk %.2f)\n", toddle, walk[kFormHatchling]);
-        CHECK(toddle > walk[kFormHatchling] * 2.0f && toddle < trot[kFormHatchling]);
+        const int sc = lib.find("scamper");
+        CHECK(sc >= 0 && toddle > walk[kFormHatchling] * 2.0f &&
+              toddle < locomotionSpeed(m, bind, lib.clips[sc], 1.0f, kBuildNeutral));
     }
     // Running (WP12c): the hatchling's scamper and the grown dragon's gallop outrun their trots.
     for (int f = 0; f < kFormCount; ++f) {
@@ -229,6 +232,35 @@ TEST(locomotion_speeds_follow_the_body) {
         const float speed = locomotionSpeed(m, bind, lib.clips[run], 1.0f, kBuildNeutral);
         std::printf("  %s: runs at %.2f units/s\n", f == kFormHatchling ? "hatchling" : "grown", speed);
         CHECK(speed > trot[f] * 1.3f && speed < trot[f] * 3.0f);
+    }
+}
+
+// Every kind's grown walk and trot measured on its own body with its plan's clips (run 21 take 4:
+// the Crestwing's walk measured 0, fell back to the slowest pace and crawled). The per-foot motion
+// is printed for a kind that fails, to see why.
+TEST(every_kind_walks_at_a_measured_speed) {
+    for (int k = 0; k < kindCount(); ++k) {
+        const KindInfo& kind = kindInfo(k);
+        const PlanInfo& plan = planInfo(kind.plan);
+        const std::vector<u8> mb = readAll((std::string("../romfs/dragons/") + kind.name + "/grown.ecm").c_str());
+        const std::vector<u8> ab = readAll((std::string("../romfs/anims/") + plan.name + ".eca").c_str());
+        static ModelData m;
+        static AnimLibrary lib;
+        m = ModelData{};
+        lib = AnimLibrary{};
+        if (mb.empty() || ab.empty() || !loadModel(mb.data(), mb.size(), m) || !loadAnims(ab.data(), ab.size(), lib)) {
+            std::printf("  %s: files missing\n", kind.name);
+            CHECK(false);
+            continue;
+        }
+        for (int i = 0; i < 4; ++i) m.contacts[i] = static_cast<s8>(m.skel.find(plan.contacts[i]));
+        AnimBinding bind;
+        bindAnims(lib, m.skel, bind);
+        const int wi = lib.find("walk"), ti = lib.find("trot");
+        const float walk = wi >= 0 ? locomotionSpeed(m, bind, lib.clips[wi], 1.0f, kBuildNeutral) : 0.0f;
+        const float trot = ti >= 0 ? locomotionSpeed(m, bind, lib.clips[ti], 1.0f, kBuildNeutral) : 0.0f;
+        std::printf("  %-12s (%s): walk %.2f, trot %.2f units/s\n", kind.name, plan.name, walk, trot);
+        CHECK(walk > 0.2f && trot > walk);
     }
 }
 
@@ -343,6 +375,7 @@ void runAnimTests() {
     RUN(animator_crossfades_between_clips);
     RUN(animator_reports_event_markers);
     RUN(locomotion_speeds_follow_the_body);
+    RUN(every_kind_walks_at_a_measured_speed);
     RUN(one_bone_chain_matches_the_whole_pose);
     RUN(look_at_turns_the_head_within_limits);
     RUN(walking_keeps_the_body_level);

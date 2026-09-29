@@ -190,6 +190,7 @@ int main() {
         trace::sync();
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
         gpuFrameBegun();
+        trace::watchAfterFrameBegin();  // (the frame before: a blip in it?)
         trace::mark("f%lu frame begun", static_cast<unsigned long>(frame));
         r3d::frameBegun();  // the last frame is drawn: what it read can go now
         autotest::afterFrameBegin();  // last frame's picture is finished now
@@ -258,6 +259,7 @@ int main() {
         screenshot::beforeFrameEnd(app);
         trace::mark("f%lu frame end", static_cast<unsigned long>(frame));
         twoDEndFrame();
+        trace::watchBeforeFrameEnd(app.stats.tris, app.stats.draws, static_cast<int>(app.scene));
         gpuFrameFlush();
         C3D_FrameEnd(0);
         if (app.keyboard != KeyboardFor::None) runKeyboard(app);  // between frames: it takes both screens

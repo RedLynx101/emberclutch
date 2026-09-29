@@ -16,6 +16,9 @@ constexpr float kPetHold = 1.2f;                     // a petting reaction outla
 constexpr float kClearance = 0.8f;                   // body room around obstacles (adult units, x size)
 constexpr float kWanderClearance = 1.6f;             // wander targets keep further off
 constexpr float kBodyRadius = 1.2f;                  // how close two dragons come (adult units, x size)
+// ...growing more slowly past a Pouncer's size (take 4: three big grown dragons barely fitted the
+// den's floor and wedged each other in the narrow spots); a Pouncer's and smaller as it was.
+inline float bodyRadius(float size) { return kBodyRadius * (size <= 1.0f ? size : 1.0f + 0.45f * (size - 1.0f)); }
 constexpr float kGrabAt = 0.35f;                     // into the pick-up and leap clips: the jaw closes on the ball
 constexpr float kDropAt = 0.45f;                     // into "drop_wait": the ball falls from its mouth
 constexpr float kGroomHold = 1.6f;                   // standing for grooming outlasts the last stroke by this
@@ -76,7 +79,7 @@ template <typename Fn>
 void eachSolid(const DenBehavior& b, float margin, Fn fn) {
     for (const DenObstacle& o : b.den.obstacles) fn(o.at, o.radius + margin);
     for (int i = 0; i < b.crowdCount; ++i)
-        fn(b.crowd[i].at, b.crowd[i].radius + std::fmax(margin, kBodyRadius * b.size));
+        fn(b.crowd[i].at, b.crowd[i].radius + std::fmax(margin, bodyRadius(b.size)));
 }
 
 bool ambient(Activity a) { return a <= Activity::Flutter; }
@@ -176,8 +179,8 @@ bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
     const bool ownSpot = activity == Activity::GoSulk || activity == Activity::TugWar || activity == Activity::Spar ||
                          (activity == Activity::GoNap && snuggle);
     for (int i = 0; i < crowdCount && !ownSpot; ++i)
-        if (distance(goal, crowd[i].at) < crowd[i].radius + kBodyRadius * size &&
-            dist < crowd[i].radius + kBodyRadius * size + 0.3f)
+        if (distance(goal, crowd[i].at) < crowd[i].radius + bodyRadius(size) &&
+            dist < crowd[i].radius + bodyRadius(size) + 0.3f)
             return true;
     const Vec2 via = steerTarget(goal);
     const float err = wrapAngle(headingTo(pos, via) - heading);
@@ -1251,7 +1254,7 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
                          (activity == Activity::TugWar && step == 2) ||
                          ((activity == Activity::Sit || activity == Activity::Lie) && step == 1);
     if (!settled)
-        for (int i = 0; i < crowdCount; ++i) pushOut(crowd[i].at, crowd[i].radius + kBodyRadius * size);
+        for (int i = 0; i < crowdCount; ++i) pushOut(crowd[i].at, crowd[i].radius + bodyRadius(size));
     clipDone = false;  // consumed
 }
 
@@ -1441,7 +1444,7 @@ void shareCrowd(DenBehavior* const* dragons, int count) {
         DenBehavior& b = *dragons[i];
         b.crowdCount = 0;
         for (int j = 0; j < count && b.crowdCount < DenLayout::kSpots - 1; ++j)
-            if (j != i) b.crowd[b.crowdCount++] = {dragons[j]->pos, kBodyRadius * dragons[j]->size};
+            if (j != i) b.crowd[b.crowdCount++] = {dragons[j]->pos, bodyRadius(dragons[j]->size)};
     }
 }
 

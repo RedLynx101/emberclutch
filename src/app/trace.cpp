@@ -6,6 +6,7 @@
 
 #include <cstdarg>
 #include <cstdio>
+#include <cmath>
 #include <cstring>
 #include <malloc.h>
 
@@ -27,6 +28,14 @@ bool g_live = true;  // marks kept: the start, then the first frames of each vie
 u64 g_start = 0, g_lastWrite = 0, g_lastBeat = 0;
 unsigned long g_frames = 0;  // since the last beat
 C3D_RenderTarget* g_target = nullptr;
+
+// The blip watch: the last three finished frames' samples and what drew them.
+constexpr int kWatchPoints = 24;
+const u8* g_watchFb = nullptr;
+unsigned g_watchNext[3] = {};    // this frame's triangles, draws, scene (kept as it finishes)
+float g_watch[3][kWatchPoints][3] = {};
+unsigned g_watchInfo[3][3] = {};
+int g_watchCount = 0, g_blips = 0;
 
 constexpr int kMaxHangs = 8;
 char g_hangs[kMaxHangs][32];
@@ -145,8 +154,8 @@ void frame(unsigned long n, int view) {
     g_live = n < from + kChecked;
     ++g_frames;
     if (g_on && osGetTime() - g_lastBeat >= kBeatMs) {
-        note("f%lu view %x: %lu frames in %.1f s", n, static_cast<unsigned>(view), g_frames,
-             (osGetTime() - g_lastBeat) / 1000.0);
+        note("f%lu view %x: %lu frames in %.1f s, blips %d", n, static_cast<unsigned>(view), g_frames,
+             (osGetTime() - g_lastBeat) / 1000.0, g_blips);
         g_lastBeat = osGetTime();
         g_frames = 0;
     }
@@ -178,6 +187,45 @@ void gpu(const char* what) {
     C3D_FrameBegin(0);  // waits for the GPU to finish all of it
     mark("gpu: %s drawn", what);
     C3D_FrameDrawOn(g_target);  // drawing goes on where it was
+}
+
+void watchBeforeFrameEnd(unsigned tris, unsigned draws, int scene) {
+    if (!g_on) return;
+    g_watchFb = reinterpret_cast<const u8*>(gfxGetFramebuffer(GFX_TOP, GFX_LEFT, nullptr, nullptr));
+    g_watchNext[0] = tris, g_watchNext[1] = draws, g_watchNext[2] = static_cast<unsigned>(scene);
+}
+
+void watchAfterFrameBegin() {
+    if (!g_on || !g_watchFb) return;
+    constexpr int kW = 400, kH = 240;
+    GSPGPU_InvalidateDataCache(g_watchFb, kW * kH * 3);
+    std::memmove(g_watch[1], g_watch[0], sizeof(g_watch[0]) * 2);
+    std::memmove(g_watchInfo[1], g_watchInfo[0], sizeof(g_watchInfo[0]) * 2);
+    for (int i = 0; i < kWatchPoints; ++i) {  // eight across, three down the lower half
+        const int x = 20 + (i % 8) * 50, y = 150 + (i / 8) * 35;
+        const u8* p = g_watchFb + (x * kH + (kH - 1 - y)) * 3;  // (the screen lies on its side, BGR)
+        g_watch[0][i][0] = p[2], g_watch[0][i][1] = p[1], g_watch[0][i][2] = p[0];
+    }
+    std::memcpy(g_watchInfo[0], g_watchNext, sizeof(g_watchNext));
+    g_watchFb = nullptr;
+    if (++g_watchCount < 3) return;
+    auto apart = [](const float (*a)[3], const float (*b)[3]) {
+        float d = 0;
+        for (int i = 0; i < kWatchPoints; ++i)
+            for (int c = 0; c < 3; ++c) d += std::fabs(a[i][c] - b[i][c]);
+        return d / (kWatchPoints * 3);
+    };
+    const float before = apart(g_watch[1], g_watch[2]), after = apart(g_watch[0], g_watch[1]),
+                across = apart(g_watch[0], g_watch[2]);
+    if (before > 25.0f && after > 25.0f && across < before * 0.4f) {
+        ++g_blips;
+        float was[3] = {}, blip[3] = {};
+        for (int i = 0; i < kWatchPoints; ++i)
+            for (int c = 0; c < 3; ++c) was[c] += g_watch[2][i][c] / kWatchPoints, blip[c] += g_watch[1][i][c] / kWatchPoints;
+        note("blip %d: scene %u, %u triangles %u draws; lower half %.0f %.0f %.0f -> %.0f %.0f %.0f (apart %.0f, then %.0f)", g_blips,
+             g_watchInfo[1][2], g_watchInfo[1][0], g_watchInfo[1][1], was[0], was[1], was[2], blip[0], blip[1], blip[2], before,
+             across);
+    }
 }
 
 bool hung(const char* part) {

@@ -427,6 +427,45 @@ TEST(a_walk_it_cant_finish_ends_where_it_can) {
     CHECK(frames < 30 * 8);
 }
 
+// Three big grown dragons (Noah, run 21 take 4: "the adults were still getting stuck on each
+// other in the den"): through an evening they keep moving, never wedged deep in one another, and
+// at night each still reaches its own bed.
+TEST(three_big_dragons_share_the_den) {
+    const DenLayout den;
+    DenActor a[3];
+    DenBehavior* crowd[3];
+    constexpr float kBig = 1.5f;
+    for (int i = 0; i < 3; ++i) {
+        a[i].reset(den, 57 + i, i);
+        crowd[i] = &a[i].behavior;
+    }
+    a[1].behavior.pos = {-1.9f, 1.0f};
+    a[2].behavior.pos = {2.0f, 1.3f};
+    Dragon d = contentDragon();
+    float closest = 1e9f;
+    for (int f = 0; f < 10 * 60 * 30; ++f) {
+        shareCrowd(crowd, 3);
+        for (int i = 0; i < 3; ++i) a[i].update(d, false, kBig, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+        for (int i = 0; i < 3; ++i)
+            for (int j = i + 1; j < 3; ++j) closest = std::fmin(closest, dist(a[i].behavior.pos, a[j].behavior.pos));
+    }
+    std::printf("  3 big dragons, 10 min: closest %.2f apart\n", closest);
+    CHECK(closest > 2.2f);
+    bool asleep[3] = {};
+    for (int f = 0; f < 120 * 30; ++f) {
+        shareCrowd(crowd, 3);
+        for (int i = 0; i < 3; ++i) {
+            a[i].update(d, true, kBig, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+            asleep[i] = a[i].behavior.activity == Activity::Sleep;
+        }
+        if (asleep[0] && asleep[1] && asleep[2]) break;
+    }
+    for (int i = 0; i < 3; ++i) {
+        std::printf("  bed %d: %s %.2f from it\n", i, activityName(a[i].behavior.activity), dist(a[i].behavior.pos, den.beds[i]));
+        CHECK(asleep[i] && dist(a[i].behavior.pos, den.beds[i]) < 0.6f);
+    }
+}
+
 TEST(three_dragons_share_the_den) {
     const DenLayout den;
     DenActor a[3];
@@ -803,6 +842,7 @@ void runBehaviorTests() {
     RUN(hands_on_care_reactions);
     RUN(dragons_walk_around_the_hearth_and_hoard);
     RUN(three_dragons_share_the_den);
+    RUN(three_big_dragons_share_the_den);
     RUN(den_dragons_live_together);
     RUN(a_new_hatchling_can_be_bathed);
     RUN(dragons_play_with_toys_up_close);

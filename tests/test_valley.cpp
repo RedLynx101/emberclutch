@@ -169,6 +169,18 @@ TEST(flying_over_the_valley) {
     run(bankLeft, 1);
     const float banked = std::fabs(std::remainder(f.heading - h1, 6.2831853f));
     CHECK(plain > 0.5f && banked > plain * 1.4f && f.roll < -0.3f);
+    // R bursts ahead, level, spending stamina; L brakes (the valley's L/R since take 4, D112).
+    FlightInput burst, brake;
+    burst.burst = true;
+    brake.brake = true;
+    f.stamina = 1;
+    const float zb = f.pos.z;
+    run(burst, 3);
+    std::printf("  a burst: %.1f m/s, stamina %.2f, %.1f m down\n", f.speed, f.stamina, zb - f.pos.z);
+    CHECK(f.speed > 20 && f.stamina < 0.6f && zb - f.pos.z < 3);
+    run(brake, 3);
+    std::printf("  braking: %.1f m/s\n", f.speed);
+    CHECK(!f.grounded && f.speed < 8);
     // A dive: fast and down.
     run(flap, 4);
     const float z1 = f.pos.z;
@@ -436,6 +448,24 @@ TEST(every_path_walks) {
     }
 }
 
+// The den's tunnel floor over the ground (run 21 take 4: "a bit of the ground over the floor
+// entrance"): its model's floor sits 3 cm over the anchor (the arch spans x +-3.6, y -3.6 .. 0.35
+// in its frame), and the ground under all of it stays below.
+TEST(the_den_floor_stays_over_the_ground) {
+    const Valley& v = valley();
+    const ValleyPlaceInfo& den = *v.place(kPlaceDen);
+    const float floor = den.at.z + 0.03f;
+    float worst = -1e9f, wx = 0, wy = 0;
+    for (float x = -3.5f; x <= 3.5f; x += 0.1f)
+        for (float y = -3.6f; y <= 0.35f; y += 0.05f) {
+            const Vec2 w = placeToWorld(den, {x, y});
+            const float over = v.heightAt(w.x, w.y) - floor;
+            if (over > worst) worst = over, wx = x, wy = y;
+        }
+    std::printf("  the ground under the den's floor: at most %.3f m from it (at %.1f, %.2f)\n", worst, wx, wy);
+    CHECK(worst < -0.02f);
+}
+
 void runValleyTests() {
     RUN(islands_and_mountainsides);
     RUN(every_path_walks);
@@ -444,4 +474,5 @@ void runValleyTests() {
     RUN(flying_over_the_valley);
     RUN(walking_in_the_valley);
     RUN(on_foot_with_your_partner);
+    RUN(the_den_floor_stays_over_the_ground);
 }

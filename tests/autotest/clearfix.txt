@@ -1,0 +1,35 @@
+# D112: each screen cleared by drawing (not citro2d's memory fill): the den, the valley by day
+# and by the lake, the bottom screen's panels and map whole. With sdmc:/3ds/emberclutch/trace.on
+# the trace's depth watch logs how empty each half of the top screen's depth is (no holes).
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+shot c01-den
+skip 9
+valley
+hour 11
+wait 5
+shot c02-den-door
+view 7 40 180 60 0 -150 0
+wait 3
+shot c03-lake
+travel 7
+wait 4
+shot c04-lake-side
+key START
+wait 0.8
+shot c05-menu
+key B
+wait 0.5
+wait 6
+quit

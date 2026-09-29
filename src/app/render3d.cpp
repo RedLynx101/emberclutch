@@ -2765,9 +2765,9 @@ void drawValleyShadow(App& app, const Valley& v, const ValleyView& view) {
 
 // The static program for the valley's ground and things, fogged, lit by the day's tint.
 // Out in the valley everything static draws with the ground's program (its texture coordinate
-// zero unless the ground's on): take 4 on the 3DS drew the ground now and then as if with the far
-// haze's depth, heavily fogged, in the frames it switched programs between setting the view and
-// drawing (the dragons, which set theirs after binding, never did). The den keeps the static one.
+// zero unless the ground's on; one program, no switches): 0.9.5 did it for take 4's teal frames,
+// read then as the ground fogged after a switch. They were the lake's water over the ground, its
+// depth wiped by the screen's clear (D112: clearScreen). The den keeps the static one.
 bool valleyOnGroundProgram() { return g_groundDvlb && g_groundTexOk && !g_groundPlain; }
 
 void bindValleyStatic(const C3D_Mtx& projection, const C3D_Mtx& view, Rgb tint) {
@@ -4215,6 +4215,72 @@ void reset2D() {
     C3D_StencilTest(false, GPU_ALWAYS, 0, 0xFF, 0);
     C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
     end3D();
+}
+
+// The screen's clear, drawn (D112). Take 4 on the 3DS: the valley's ground and everything still
+// went teal in runs of frames, the lake's see-through water (70, 140, 178 at two thirds) laid over
+// them, while the dragons and critters drawn after them stayed clear: the depth the ground had
+// written was gone by the time the water drew, wiped by the screen's clear (a GX memory fill,
+// queued before the frame's drawing, running beside it). A quad over the whole screen in clip
+// space, on the far plane, draws in the same command list as the rest, before it.
+bool clearScreen(u32 color) {
+    static Vec3* pos = nullptr;
+    static u8* col = nullptr;
+    static u16* idx = nullptr;
+    if (!g_ready) return false;
+    if (!pos) {
+        pos = static_cast<Vec3*>(linearAlloc(4 * sizeof(Vec3)));
+        col = static_cast<u8*>(linearAlloc(4 * 4));
+        idx = static_cast<u16*>(linearAlloc(6 * sizeof(u16)));
+        if (!pos || !col || !idx) {
+            if (pos) linearFree(pos);
+            if (col) linearFree(col);
+            if (idx) linearFree(idx);
+            pos = nullptr;
+            return false;
+        }
+        constexpr float kFar = -1e-6f;  // (just inside the far plane, z = 0: depth 0, as the fill left it)
+        const Vec3 corners[4] = {{-1, -1, kFar}, {1, -1, kFar}, {1, 1, kFar}, {-1, 1, kFar}};
+        std::memcpy(pos, corners, sizeof(corners));
+        std::memset(col, 255, 4 * 4);
+        const u16 tris[6] = {0, 1, 2, 0, 2, 3};
+        std::memcpy(idx, tris, sizeof(tris));
+        GSPGPU_FlushDataCache(pos, 4 * sizeof(Vec3));
+        GSPGPU_FlushDataCache(col, 4 * 4);
+        GSPGPU_FlushDataCache(idx, sizeof(tris));
+    }
+    C2D_Flush();
+    C3D_Mtx identity;
+    Mtx_Identity(&identity);
+    C3D_BindProgram(&g_staticProgram);
+    C3D_SetAttrInfo(&g_staticAttr);
+    C3D_LightEnvBind(nullptr);
+    C3D_TexEnv* env = C3D_GetTexEnv(0);
+    C3D_TexEnvInit(env);
+    C3D_TexEnvSrc(env, C3D_Both, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR, GPU_PRIMARY_COLOR);
+    C3D_TexEnvFunc(env, C3D_Both, GPU_REPLACE);
+    for (int i = 1; i < 6; ++i) C3D_TexEnvInit(C3D_GetTexEnv(i));
+    C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSProjection, &identity);
+    C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSModelView, &identity);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSBlend, 0, 0, 0, 0);
+    // (white vertices times the tint: the colour; citro2d's colours are ABGR)
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, (color & 0xFF) / 65025.0f, ((color >> 8) & 0xFF) / 65025.0f,
+                  ((color >> 16) & 0xFF) / 65025.0f, 1.0f / 255.0f);
+    C3D_FogGasMode(GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
+    C3D_AlphaTest(false, GPU_ALWAYS, 0);
+    C3D_StencilTest(false, GPU_ALWAYS, 0, 0xFF, 0);
+    C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_ONE, GPU_ZERO, GPU_ONE, GPU_ZERO);
+    C3D_DepthTest(true, GPU_ALWAYS, GPU_WRITE_ALL);
+    C3D_CullFace(GPU_CULL_NONE);
+    C3D_BufInfo* buf = C3D_GetBufInfo();
+    BufInfo_Init(buf);
+    BufInfo_Add(buf, pos, sizeof(Vec3), 1, 0x0);
+    BufInfo_Add(buf, col, 4, 1, 0x1);
+    BufInfo_Add(buf, col, 4, 1, 0x2);
+    C3D_DrawElements(GPU_TRIANGLES, 6, C3D_UNSIGNED_SHORT, idx);
+    C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA);
+    end3D();
+    return true;
 }
 
 }  // namespace ec::r3d

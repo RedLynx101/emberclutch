@@ -1,7 +1,8 @@
 // Flying a grown dragon over the valley (Beta WP1/WP5, D73 5A): arcade controls. The circle
 // pad steers (left/right turns, up/down noses down/up a little), A flaps to climb, B dives,
-// L/R bank for a tighter turn, and letting go glides, sinking slowly. Stamina drains with
-// each flap and comes back gliding or on the ground. Takes off from the ground with A and
+// R bursts ahead and L brakes (as in Sky Rings: D112; a bank for a tighter turn is still here,
+// unused by the valley), and letting go glides, sinking slowly. Stamina drains with each flap
+// and a burst, and comes back gliding or on the ground. Takes off from the ground with A and
 // lands on flat ground when slow. On the ground it walks (pad up, turning with the pad) and
 // runs with B; in deep water it swims, floating (D81); it stops at slopes too steep to climb,
 // and walking off a drop it glides. Coming down slowly onto the lake it splashes in and swims;
@@ -18,9 +19,11 @@ struct Valley;
 struct FlightInput {
     float steer = 0;   // -1 (left) .. 1 (right)
     float pitch = 0;   // -1 (nose up) .. 1 (nose down)
-    float bank = 0;    // -1 (L) .. 1 (R)
+    float bank = 0;    // -1 .. 1: a tighter turn
     bool flap = false; // held: a wingbeat every so often
     bool dive = false;
+    bool burst = false;  // held (R): faster and level, while the stamina lasts
+    bool brake = false;  // held (L): slower, sinking a little faster (to land, to turn tight)
 };
 
 // Tuning, in metres and seconds (a grown dragon crosses the 1 km valley in 2-3 minutes).
@@ -31,7 +34,10 @@ struct FlightTuning {
     float flapEvery = 0.55f;       // seconds between wingbeats while A is held
     float flapCost = 0.07f;        // stamina per wingbeat (of 1)
     float turnRate = 1.1f;         // radians a second at full steer
-    float bankBoost = 0.9f;        // how much tighter L/R make a turn
+    float bankBoost = 0.9f;        // how much tighter a bank makes a turn
+    float burstSpeed = 24;         // R: level flight at this speed...
+    float burstCost = 0.16f;       // ...spending this much stamina a second (about 6 s from full)
+    float brakeSpeed = 6;          // L: slowed to this
     float ceiling = 250;           // thin air above: wingbeats weaker
     float landSpeed = 18;          // slower than this over flat ground: it lands (run 15: 13 made it glide on too long)
     float clearance = 1.2f;        // its feet above the ground in flight

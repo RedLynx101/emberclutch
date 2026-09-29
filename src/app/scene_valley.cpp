@@ -1083,14 +1083,20 @@ void update(App& app, const Input& in) {
         FlightInput fi;
         fi.steer = clampf(in.padX + dpadX, -1, 1);
         fi.pitch = clampf(in.padY + dpadY, -1, 1);
-        fi.bank = (in.held & KEY_R ? 1.0f : 0.0f) - (in.held & KEY_L ? 1.0f : 0.0f);
+        // R bursts ahead and L brakes, as in Sky Rings (take 4, Noah: "aren't they meant to be a
+        // boost and slow down?"; they banked, which the pad's steering does anyway: D112)
+        fi.burst = in.held & KEY_R;
+        fi.brake = in.held & KEY_L;
         fi.flap = in.held & KEY_A;
         fi.dive = in.held & KEY_B;
         const bool wasDiving = s.flight.diving(s.last);
         const bool wasGrounded = s.flight.grounded;
+        const FlightInput was = s.last;
         s.last = fi;
         s.flight.update(fi, va, app.dt);
         s.cam.update(s.flight, va, app.dt);
+        if (!s.flight.grounded && fi.burst && !fi.brake && !was.burst && s.flight.stamina > 0) audio::playSfx(audio::Sfx::Burst);
+        if (!s.flight.grounded && fi.brake && !was.brake) audio::playSfx(audio::Sfx::Brake);
         if (s.flight.tookOff) audio::playSfx(audio::Sfx::Takeoff);
         if (s.flight.landed) audio::playSfx(audio::Sfx::Landing);
         if (s.flight.splashed) audio::playSfx(audio::Sfx::SplashBig);

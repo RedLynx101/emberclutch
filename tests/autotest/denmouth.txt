@@ -1,0 +1,38 @@
+# The den's arch from the yard (run 21 take 4: "a bit of the ground over the floor entrance"):
+# the tunnel's floor in front, from the sides and from above, the ground kept under it.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+valley
+hour 11
+wait 3
+wait 1
+travel 3
+wait 3
+view 0 0 4.5 1.1 0 -2.5 0.1
+wait 1.5
+shot d01-front-low
+view 0 0 5 2.6 0 -2.2 0
+wait 1.5
+shot d02-front-high
+view 0 -2.8 0.6 1.0 0 -2.2 0.1
+wait 1.5
+shot d03-side-left
+view 0 2.8 0.6 1.0 0 -2.2 0.1
+wait 1.5
+shot d04-side-right
+view 0 0.3 0.8 2.4 0 -2.4 0
+wait 1.5
+shot d05-above
+quit

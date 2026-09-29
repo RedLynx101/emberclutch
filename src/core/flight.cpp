@@ -100,6 +100,14 @@ void Flight::update(const FlightInput& in, const Valley& v, float dt, const Flig
         targetSpeed += in.pitch * 4.0f;            // nose down: faster; up: slower
         targetClimb += -in.pitch * 2.5f + 0.0f;    // and it rises or sinks a little
         if (sinceFlap < 1.2f) targetSpeed = tune.flapSpeed;
+        if (in.brake) {  // L: slowing, a steeper glide
+            targetSpeed = tune.brakeSpeed;
+            targetClimb = -tune.sinkRate * 1.5f;
+        } else if (in.burst && stamina > 0.0f) {  // R: a burst ahead, level, while it has the breath
+            targetSpeed = tune.burstSpeed;
+            targetClimb = std::fmax(targetClimb, 0.0f);
+            stamina = std::fmax(0.0f, stamina - tune.burstCost * dt);
+        }
     }
     if (in.flap && !in.dive && (flapIn -= dt) <= 0) {  // a wingbeat
         flapIn = tune.flapEvery;
@@ -111,8 +119,9 @@ void Flight::update(const FlightInput& in, const Valley& v, float dt, const Flig
         flapped = true;
     }
     if (!in.flap) flapIn = 0;  // the next press beats at once
-    if (!in.flap || in.dive) stamina = std::fmin(1.0f, stamina + 0.04f * dt);
-    speed = approach(speed, targetSpeed, in.dive ? 1.2f : 0.6f, dt);
+    const bool bursting = in.burst && !in.brake && !in.dive && stamina > 0.0f;
+    if ((!in.flap || in.dive) && !bursting) stamina = std::fmin(1.0f, stamina + 0.04f * dt);
+    speed = approach(speed, targetSpeed, in.dive ? 1.2f : in.brake ? 1.5f : bursting ? 1.0f : 0.6f, dt);
     climb = approach(climb, targetClimb, in.dive ? 2.0f : 1.4f, dt);
     pitch = approach(pitch, clampf(-climb / std::fmax(4.0f, speed) * 1.2f, -0.9f, 0.6f), 5, dt);
     // Move, and keep inside the valley (turned back gently at its edges). Into a slope too steep

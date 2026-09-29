@@ -1,0 +1,43 @@
+# D112: in the valley's flight R bursts ahead and L brakes (as in Sky Rings); the help says so.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Noodle
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 238 56
+key SELECT
+wait 3
+skip 9
+valley
+hour 11
+wait 4
+travel 7
+wait 3
+pad -1 0 0.3
+wait 0.8
+key A
+wait 3
+keyhold A 3
+wait 1
+shot f01-flying
+shotin 2.5 f02-burst
+keyhold R 3
+shotin 2 f03-brake
+keyhold L 2.5
+quit

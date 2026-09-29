@@ -44,6 +44,12 @@ void prepare2D();
 // Everything citro2d takes for granted, whatever drew last (run 21: frames on the 3DS drew their
 // 2D shapes with another draw's settings): before each screen's 2D.
 void reset2D();
+// Clears the screen being drawn, its colour and its depth, by drawing over all of it: the first
+// thing drawn on it after C2D_SceneBegin, in place of C2D_TargetClear. citro2d's clear is a
+// memory fill that the GSP runs alongside the drawing queued after it (libctru sends up to three
+// commands at once), so on the 3DS it could land late and wipe what had been drawn (D112). False
+// if the 3D isn't ready: then C2D_TargetClear it is.
+bool clearScreen(u32 color);
 
 // A dragon in the den and the actor animating it (nullptr: stands in its idle pose). An egg
 // sits in the egg nest, moved by its EggMotion (eggs without one are skipped).

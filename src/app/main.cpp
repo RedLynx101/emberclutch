@@ -191,6 +191,7 @@ int main() {
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
         gpuFrameBegun();
         trace::watchAfterFrameBegin();  // (the frame before: a blip in it?)
+        trace::watchDepth(app.top, static_cast<int>(SceneId::Valley));  // (its depth whole?)
         trace::mark("f%lu frame begun", static_cast<unsigned long>(frame));
         r3d::frameBegun();  // the last frame is drawn: what it read can go now
         autotest::afterFrameBegin();  // last frame's picture is finished now
@@ -210,8 +211,10 @@ int main() {
             const float dt = app.dt;
             if (eye) app.dt = 0;
             r3d::setEye(app.stereoPreview && !eye ? 1.0f : (slider > 0.0f ? (eye ? slider : -slider) : 0.0f));
-            C2D_TargetClear(target, topClear);
+            // (cleared by drawing, in the frame's own command list: citro2d's fill could land late on
+            // the 3DS and wipe the valley's depth, D112)
             C2D_SceneBegin(target);
+            if (!r3d::clearScreen(topClear)) C2D_TargetClear(target, topClear);
             trace::target(target);
             perf::Scope timed(perf::Top);
             trace::mark("f%lu top eye %d (slider %.2f)", static_cast<unsigned long>(frame), eye, static_cast<double>(slider));
@@ -237,8 +240,8 @@ int main() {
 
         const u32 topTris = app.stats.tris;
         trace::mark("f%lu bottom", static_cast<unsigned long>(frame));
-        C2D_TargetClear(app.bottom, theme::kDenPlum);
         C2D_SceneBegin(app.bottom);
+        if (!r3d::clearScreen(theme::kDenPlum)) C2D_TargetClear(app.bottom, theme::kDenPlum);
         trace::target(app.bottom);
         r3d::reset2D();
         {

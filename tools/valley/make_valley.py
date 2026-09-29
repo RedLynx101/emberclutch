@@ -291,6 +291,32 @@ def near_any_path(x, y, pad):
 
 
 def height(x, y):
+    return den_pad(x, y, height_raw(x, y))
+
+
+_DEN_Z = []  # the ground at the den's anchor, before den_pad (worked out once)
+
+
+def den_pad(x, y, h):
+    """The ground held under the den's tunnel floor (run 21 take 4: "a bit of the ground over the
+    floor entrance"). The height samples are 4 m apart and the arch's floor (at its anchor's height
+    and 3 cm, over x +-3.6 and y -3.6 .. 0.35 in its frame) spans little more than one of their
+    cells, so the ground over it is a plane between samples: those in the anchor's row and in front
+    of it are held level with the anchor (it sits on a sample), those behind it 0.3 m under."""
+    u, f = local(x, y, P_DEN)
+    if f < -10.0 or f > 10.0 or abs(u) > 9.0:
+        return h
+    if not _DEN_Z:
+        _DEN_Z.append(height_raw(PLACES[P_DEN][0], PLACES[P_DEN][1]))
+    z = _DEN_Z[0]
+    side = 1.0 - smoothstep(5.5, 8.5, abs(u))
+    level = z - 0.3 * (1.0 - smoothstep(-2.5, -1.0, f))  # under the floor behind, level in front
+    if f < -1.0:
+        return h + (min(h, level) - h) * side * smoothstep(-10.0, -7.0, f)
+    return h + (level - h) * side * (1.0 - smoothstep(5.0, 9.0, f))
+
+
+def height_raw(x, y):
     h = graded(x, y, land(x, y))
     # The Keeper's yard kept level after the paths' grading (run 21: the path up to the door
     # raised the ground round the cottage 0.4 m and buried its vegetable patch).

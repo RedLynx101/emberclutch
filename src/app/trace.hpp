@@ -38,5 +38,10 @@ bool hung(const char* part);
 // logged with what drew it. `info` is kept with the frame: its triangles, draws and scene.
 void watchBeforeFrameEnd(unsigned tris, unsigned draws, int scene);
 void watchAfterFrameBegin();
+// And the depth the last frame left on the top screen (D112: the teal frames were the ground's depth
+// wiped before the water drew): after C3D_FrameBegin, a sample of each half of the depth buffer;
+// a valley frame whose lower half is mostly empty (depth 0, as cleared) is a hole, counted in the
+// 5-second lines and the first ones logged.
+void watchDepth(C3D_RenderTarget_tag* top, int valleyScene);
 
 }  // namespace ec::trace

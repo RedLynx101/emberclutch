@@ -36,6 +36,7 @@ unsigned g_watchNext[3] = {};    // this frame's triangles, draws, scene (kept a
 float g_watch[3][kWatchPoints][3] = {};
 unsigned g_watchInfo[3][3] = {};
 int g_watchCount = 0, g_blips = 0;
+int g_holes = 0, g_depthFrames = 0;  // valley frames with the ground's depth gone, of those looked at
 
 constexpr int kMaxHangs = 8;
 char g_hangs[kMaxHangs][32];
@@ -138,7 +139,7 @@ void start() {
     }
     std::remove(kPrev);
     std::rename(kTrace, kPrev);  // (the session before, whole)
-    note("trace on (0.9.3: marks and GPU checkpoints for %lu frames a view)", kChecked);
+    note("trace on (0.9.6: marks and GPU checkpoints for %lu frames a view; the blip and depth watches)", kChecked);
     if (part[0]) note("the last session froze in: %s", part);
     for (int i = 0; i < g_hangCount; ++i) note("drawn the safe way (hangs.txt): %s", g_hangs[i]);
     write();
@@ -154,8 +155,8 @@ void frame(unsigned long n, int view) {
     g_live = n < from + kChecked;
     ++g_frames;
     if (g_on && osGetTime() - g_lastBeat >= kBeatMs) {
-        note("f%lu view %x: %lu frames in %.1f s, blips %d", n, static_cast<unsigned>(view), g_frames,
-             (osGetTime() - g_lastBeat) / 1000.0, g_blips);
+        note("f%lu view %x: %lu frames in %.1f s, blips %d, depth holes %d of %d", n, static_cast<unsigned>(view), g_frames,
+             (osGetTime() - g_lastBeat) / 1000.0, g_blips, g_holes, g_depthFrames);
         g_lastBeat = osGetTime();
         g_frames = 0;
     }
@@ -226,6 +227,33 @@ void watchAfterFrameBegin() {
              g_watchInfo[1][2], g_watchInfo[1][0], g_watchInfo[1][1], was[0], was[1], was[2], blip[0], blip[1], blip[2], before,
              across);
     }
+}
+
+void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
+    if (!g_on || !top || static_cast<int>(g_watchNext[2]) != valleyScene) return;
+    const C3D_FrameBuf& fb = top->frameBuf;
+    if (!fb.depthBuf || fb.depthFmt != GPU_RB_DEPTH16) return;  // (citro2d's screens: 16 bits)
+    // The buffer in 8 x 8 tiles, the screen on its side (240 across, 400 down): the first half of
+    // each row of tiles is the screen's lower half.
+    const int tw = fb.width / 8, th = fb.height / 8;
+    const u16* d = static_cast<const u16*>(fb.depthBuf);
+    static s32 invalidated = 1;
+    const s32 r = GSPGPU_InvalidateDataCache(fb.depthBuf, static_cast<u32>(fb.width) * fb.height * 2);
+    if (r != invalidated) note("depth watch: invalidate %08lX", static_cast<unsigned long>(invalidated = r));
+    int zero[2] = {}, seen[2] = {};
+    for (int ty = 0; ty < th; ty += 2)
+        for (int tx = 0; tx < tw; ++tx) {
+            const int half = tx < tw / 2 ? 0 : 1;
+            ++seen[half];
+            zero[half] += d[(ty * tw + tx) * 64 + 27] == 0;  // (a pixel inside each tile)
+        }
+    const float lower = zero[0] / static_cast<float>(seen[0] ? seen[0] : 1),
+                upper = zero[1] / static_cast<float>(seen[1] ? seen[1] : 1);
+    if (++g_depthFrames <= 3 || (g_depthFrames % 1500) == 0)
+        note("depth watch: lower half %.0f%% empty, upper %.0f%%", lower * 100.0f, upper * 100.0f);
+    if (lower > 0.6f && ++g_holes <= 40)
+        note("depth hole %d: %u triangles %u draws; lower half %.0f%% empty, upper %.0f%%", g_holes, g_watchNext[0],
+             g_watchNext[1], lower * 100.0f, upper * 100.0f);
 }
 
 bool hung(const char* part) {

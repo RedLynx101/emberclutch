@@ -159,12 +159,13 @@ PoiseParts poiseParts(const Dragon& d) {
 
 float poiseScore(const Dragon& d) { return clampf(poiseParts(d).total(), 0, 100); }
 
-Routine makeRoutine(int league, u32 seed) {
+Routine makeRoutine(int league, u32 seed, float beat) {
     static constexpr float kBeat[kLeagues] = {0.75f, 0.66f, 0.58f, 0.5f};
     static constexpr int kCount[kLeagues] = {8, 10, 12, 14};
     const int l = clampLeague(league) - 1;
     Routine r;
-    r.beat = kBeat[l];
+    r.beat = beat > 0.2f ? beat : kBeat[l];
+    const float step = beat > 0.2f && l == 0 ? 2.0f : 1.0f;  // (a beat apart, or two for the first league)
     Rng rng(static_cast<std::uint64_t>(seed) * 0x9E3779B97F4A7C15ull + 0xDA5Cu);
     float t = r.beat * 4;  // a bar to find the beat
     Cue last = Cue::Count, before = Cue::Count;
@@ -177,7 +178,7 @@ Routine makeRoutine(int league, u32 seed) {
         last = c;
         // Mostly a beat apart, now and then a rest; the higher leagues a half-beat now and then.
         const u32 roll = rng.below(10);
-        t += roll < 2 ? 2 * r.beat : (l >= 2 && roll >= 8 ? 0.5f * r.beat : r.beat);
+        t += step * (roll < 2 ? 2 * r.beat : (l >= 2 && roll >= 8 ? 0.5f * r.beat : r.beat));
     }
     r.length = r.at[r.count - 1] + 2 * r.beat;
     return r;

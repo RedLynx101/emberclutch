@@ -133,6 +133,9 @@ struct Stream {
     s64 loopStart = 0;
     ndspWaveBuf wbuf[kNumBufs];
     s16* data[kNumBufs] = {};
+    s64 bufAt[kNumBufs] = {};  // each buffer's first sample, counted from the track's start as heard
+    s64 queued = 0;            // samples queued since the track opened
+    long rate = 32000;
 };
 
 struct Clip {
@@ -262,6 +265,8 @@ bool openStream(const char* slug) {
     vorbis_info* vi = ov_info(&g_stream.vf, -1);
     g_stream.channels = vi->channels;
     g_stream.loopStart = parseLoopStart(&g_stream.vf);
+    g_stream.queued = 0;
+    g_stream.rate = vi->rate;
     g_stream.open = true;
     setupChannel(kMusicCh, vi->channels, vi->rate);
     setMix(kMusicCh, 0.0f);
@@ -349,6 +354,8 @@ void streamThread(void*) {
                 if (n <= 0) break;
                 w.data_pcm16 = g_stream.data[i];
                 w.nsamples = static_cast<u32>(n);
+                g_stream.bufAt[i] = g_stream.queued;
+                g_stream.queued += n;
                 DSP_FlushDataCache(g_stream.data[i], n * g_stream.channels * 2);
                 ndspChnWaveBufAdd(kMusicCh, &w);
             }
@@ -468,6 +475,46 @@ void playMusic(const char* slug) {
 }
 
 const char* currentMusic() { return g_current; }
+
+double musicSeconds() {
+    if (!g_ok || !g_stream.open || !ndspChnIsPlaying(kMusicCh)) return -1.0;
+    const u16 seq = ndspChnGetWaveBufSeq(kMusicCh);
+    for (int i = 0; i < kNumBufs; ++i)
+        if (g_stream.wbuf[i].sequence_id == seq && g_stream.wbuf[i].status == NDSP_WBUF_PLAYING)
+            return static_cast<double>(g_stream.bufAt[i] + ndspChnGetSamplePos(kMusicCh)) / g_stream.rate;
+    return -1.0;
+}
+
+namespace {
+// A field of a track's entry in loops.json ("show-stage": {..., "bpm": 101.03, ...}); 0 if not there.
+double loopField(const char* slug, const char* field) {
+    static char text[4096];
+    static bool read = false;
+    if (!read) {
+        read = true;
+        if (FILE* f = std::fopen("romfs:/music/loops.json", "rb")) {
+            const std::size_t n = std::fread(text, 1, sizeof(text) - 1, f);
+            text[n] = 0;
+            std::fclose(f);
+        }
+    }
+    char key[48];
+    std::snprintf(key, sizeof(key), "\"%s\"", slug);
+    const char* at = std::strstr(text, key);
+    if (!at) return 0.0;
+    const char* end = std::strchr(at, '}');
+    std::snprintf(key, sizeof(key), "\"%s\":", field);
+    const char* f = std::strstr(at, key);
+    return f && (!end || f < end) ? std::atof(f + std::strlen(key)) : 0.0;
+}
+}  // namespace
+
+float musicBpm(const char* slug) { return static_cast<float>(loopField(slug, "bpm")); }
+
+float musicLoopStart(const char* slug) {
+    const double rate = loopField(slug, "rate");
+    return rate > 0 ? static_cast<float>(loopField(slug, "loopStart") / rate) : 0.0f;
+}
 
 bool hasMusic(const char* slug) {
     struct Seen {

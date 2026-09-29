@@ -20,6 +20,7 @@
 #include "app/scenes.hpp"
 #include "app/screenshot.hpp"
 #include "app/system_menu.hpp"
+#include "app/glade_show.hpp"
 #include "app/tips_ui.hpp"  // U: the tutorial's tip card
 #include "app/dragondex_ui.hpp"
 #include "app/theme.hpp"
@@ -62,6 +63,7 @@ Input readInput() {
 const char* musicFor(const App& app) {
     if (app.scene == SceneId::Market) return "market-bustle";
     if (app.scene == SceneId::Valley && battleMusic(app)) return battleMusic(app);  // 1.0 battles (workstream B)
+    if (app.scene == SceneId::Valley && glade::showOn() && audio::hasMusic("show-stage")) return "show-stage";  // (the show's cues on its beat)
     if (app.scene == SceneId::Valley && valleyPlaceMusic(app)) return valleyPlaceMusic(app);  // Suno batch 4, as it arrives
     if (app.scene == SceneId::Valley) return isNight(nowLocal(app)) ? "valley-night" : "valley-day";  // batch 3
     if (app.scene == SceneId::Challenge) return challengeMusic(app);  // Beta WP8: cup day

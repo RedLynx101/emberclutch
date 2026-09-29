@@ -75,7 +75,9 @@ struct Routine {
     float beat = 0.7f;        // seconds a beat
     float length = 0;         // when it ends
 };
-Routine makeRoutine(int league, u32 seed);
+// `beat`: the music's (seconds; 0: the league's own tempo). On the music's beat the first league's
+// cues come two beats apart (its tempo is quicker than that league's own).
+Routine makeRoutine(int league, u32 seed, float beat = 0.0f);
 enum class Hit : u8 { Perfect, Good, Miss };
 // The timing windows (seconds either side), wider with more bond.
 float perfectWindow(const Dragon& d);

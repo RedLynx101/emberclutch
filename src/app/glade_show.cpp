@@ -60,6 +60,7 @@ struct Show {
     Hit hits[pageant::kMaxCues] = {};
     bool judged[pageant::kMaxCues] = {};
     float perfT = 0;
+    double musicAnchor = -1;  // the music's time at the routine's zero (-1: timed by the frames)
     int lastBeat = -1;
     const char* feedback = nullptr;
     float feedbackT = 0;
@@ -265,10 +266,23 @@ void pressed(App& app, Cue c) {
 void updatePerform(App& app, const Input& in) {
     Show& s = sh();
     const float before = s.perfT;
-    s.perfT += app.dt;
-    // A soft tick on each beat, so the cues have a pulse to land on.
+    // On show-stage's beat: the routine's zero set on a beat of the music's (its bar grid from the
+    // loop's start) a count-in ahead, then its time read off the music, sample for sample.
+    const double heard = std::strcmp(audio::currentMusic(), "show-stage") == 0 ? audio::musicSeconds() : -1.0;
+    if (s.musicAnchor < 0 && heard >= 0 && s.perfT < 0) {
+        const double grid = audio::musicLoopStart("show-stage"), b = s.routine.beat;
+        const double next = grid + std::ceil((heard - grid) / b) * b;
+        s.musicAnchor = next + 2 * b;
+        s.perfT = static_cast<float>(heard - s.musicAnchor);
+        autotest::log("show: on show-stage's beat (%.3f s a beat, the routine's zero at %.3f s of the music)", b, s.musicAnchor);
+    }
+    if (s.musicAnchor >= 0 && heard >= 0 && std::fabs((heard - s.musicAnchor) - s.perfT) < 0.5)
+        s.perfT = static_cast<float>(heard - s.musicAnchor);
+    else
+        s.perfT += app.dt;  // (no music to follow, or it jumped: by the frames)
+    // A soft tick on each beat, so the cues have a pulse to land on (the music's own, when it plays).
     const int beat = static_cast<int>(std::floor(s.perfT / s.routine.beat));
-    if (beat != s.lastBeat && s.perfT >= 0) {
+    if (beat != s.lastBeat && s.perfT >= 0 && s.musicAnchor < 0) {
         s.lastBeat = beat;
         audio::playSfx(audio::Sfx::Tap, beat % 4 == 0 ? 1.5f : 1.25f, 0.35f);
     }
@@ -393,7 +407,8 @@ void beginShow(App& app, vext::Stage& stage, int league, int slot) {
     for (int e = 0; e < kEntrants; ++e)
         for (int round = 0; round < kRounds; ++round)
             if (e > 0 || round != kRoundPerformance) pageant::judgeCards(s.score[e][round], round, judge, s.cards[e][round]);
-    s.routine = pageant::makeRoutine(s.league, static_cast<u32>(day * 31 + s.slot + attempt));
+    const float bpm = audio::hasMusic("show-stage") ? audio::musicBpm("show-stage") : 0.0f;
+    s.routine = pageant::makeRoutine(s.league, static_cast<u32>(day * 31 + s.slot + attempt), bpm > 40 ? 60.0f / bpm : 0.0f);
     s.perfT = -2.0f * s.routine.beat;  // a count-in
     for (int r = 0; r < kRivals; ++r) playRival(app, r, ClipId::Idle);
     // The host's welcome.

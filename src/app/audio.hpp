@@ -69,6 +69,12 @@ void playMusic(const char* slug);
 const char* currentMusic();
 // True if romfs has the track (looked for once per slug): new music takes over as it arrives.
 bool hasMusic(const char* slug);
+// The music as it plays: seconds of the current track heard since it began (its intro, then round
+// its loop; from the DSP's own position, so a rhythm can lock to it), -1 with none; and a track's
+// tempo and where its loop starts (a bar line), from romfs:/music/loops.json (0 if unknown).
+double musicSeconds();
+float musicBpm(const char* slug);
+float musicLoopStart(const char* slug);
 
 // A one-shot music cue (e.g. the hatching stinger) that ducks the loop, then resumes it.
 void playStinger(const char* slug);

@@ -1,4 +1,28 @@
 {
+  "battle-duel": {
+    "file": "battle-duel.ogg",
+    "rate": 32000,
+    "loopStart": 343027,
+    "loopLength": 1404800,
+    "bpm": 143.0,
+    "lufs": -16.0
+  },
+  "battle-final": {
+    "file": "battle-final.ogg",
+    "rate": 32000,
+    "loopStart": 205229,
+    "loopLength": 2538560,
+    "bpm": 153.31,
+    "lufs": -16.0
+  },
+  "cove-day": {
+    "file": "cove-day.ogg",
+    "rate": 32000,
+    "loopStart": 386376,
+    "loopLength": 3321280,
+    "bpm": 92.49,
+    "lufs": -16.0
+  },
   "cup-day": {
     "file": "cup-day.ogg",
     "rate": 32000,
@@ -13,6 +37,22 @@
     "loopStart": 503742,
     "loopLength": 4505280,
     "bpm": 75.0,
+    "lufs": -16.0
+  },
+  "glade-moon": {
+    "file": "glade-moon.ogg",
+    "rate": 32000,
+    "loopStart": 371065,
+    "loopLength": 3690240,
+    "bpm": 83.96,
+    "lufs": -16.0
+  },
+  "hollow-deep": {
+    "file": "hollow-deep.ogg",
+    "rate": 32000,
+    "loopStart": 367863,
+    "loopLength": 4968000,
+    "bpm": 91.59,
     "lufs": -16.0
   },
   "lantern-festival": {
@@ -37,6 +77,14 @@
     "loopStart": 595082,
     "loopLength": 1952000,
     "bpm": 62.97,
+    "lufs": -16.0
+  },
+  "show-stage": {
+    "file": "show-stage.ogg",
+    "rate": 32000,
+    "loopStart": 329803,
+    "loopLength": 2433280,
+    "bpm": 101.03,
     "lufs": -16.0
   },
   "skyreach": {

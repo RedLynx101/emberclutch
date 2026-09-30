@@ -251,6 +251,10 @@ TEST(accessories_fit_every_kind) {
                     CHECK(unit[s] > 0.02f && unit[s] < 1.2f);
                     CHECK(length(z) > 0.01f && length(y) > 0.01f);
                 }
+                // Hats clear the eyes (D126): none comes up through a brim, and the hat isn't lifted far.
+                const float through = eyesThroughBrim(m, fit.frame[0], kHatBrim, 0.0f);
+                CHECK(through <= 1e-4f);
+                if (through > 1e-4f) std::printf("  FAIL: %s %s: an eye %.2f through the brim\n", kindInfo(k).name, form ? "grown" : "hatchling", through);
                 const Vec3 hat = fit.frame[0].translation(), back = fit.frame[2].translation();
                 CHECK(hat.z > headJoint.z - 0.05f);                              // on top of the head
                 CHECK(hat.y < m.skel.rest[chest].translation().y);               // well forward of the chest

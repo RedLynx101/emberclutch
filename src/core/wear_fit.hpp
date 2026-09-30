@@ -25,4 +25,12 @@ struct WearFit {
 // `grown` the form's.
 bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out);
 
+// Hats clear the eyes (D126): no eye comes up through a brim this wide (in the hat's units, the
+// top hat's 0.72 and the crowns' with a little over), its underside this high.
+constexpr float kHatBrim = 0.8f, kHatBrimZ = -0.08f;
+// The eyes' vertices (skinned to the "eyes" bone) in a head frame's units: how high the highest one
+// within `radius` of the frame's middle stands above the brim's underside, plus `margin` (0 or less:
+// clear).
+float eyesThroughBrim(const ModelData& m, const Mat34& frame, float radius, float margin);
+
 }  // namespace ec

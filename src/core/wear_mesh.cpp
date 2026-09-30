@@ -638,13 +638,13 @@ void snowCharm(Builder& b) {
     b.emit = 0;
 }
 
-void tailWreath(Builder& b) {
+void tailWreath(Builder& b) {  // (D126: fuller and a little out from the tail, so it shows)
     b.slot = 0;
-    tailBand(b, 1.05f, 0.12f);
-    for (int k = 0; k < 6; ++k) {
-        const float a = 2 * kPi * k / 6;
+    tailBand(b, 1.14f, 0.18f);
+    for (int k = 0; k < 7; ++k) {
+        const float a = 2 * kPi * k / 7;
         const Vec3 radial{std::sin(a), 0, std::cos(a)};
-        b.flower(radial * 1.16f, radial, 0.5f, 4, k % 2 ? 1 : 2, 3);
+        b.flower(radial * 1.28f, radial, 0.58f, 5, k % 2 ? 1 : 2, 3);
     }
 }
 

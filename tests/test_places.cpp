@@ -75,7 +75,7 @@ TEST(every_place_loads_within_its_budget) {
         for (const StaticPart& part : s.parts) {
             const bool glow = std::strcmp(part.name, "glow") == 0, light = std::strcmp(part.name, "lantern_light") == 0;
             CHECK(glow || light || std::strcmp(part.name, "solid") == 0 || std::strcmp(part.name, "lantern") == 0 ||
-                  std::strcmp(part.name, "sails") == 0);
+                  std::strcmp(part.name, "sails") == 0 || std::strcmp(part.name, "strings") == 0);  // (strings: D125)
             CHECK(((part.flags & kStaticAdditive) != 0) == (glow || light));
         }
         // All of it near its anchor (the renderer's reach and culling box come from it).

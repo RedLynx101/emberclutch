@@ -110,7 +110,14 @@ void drawDressing(App& app, const Dragon& d, s64 now, float spin, int slot, floa
             radius += (std::fmin(close, radius) - radius) * zoom;
         }
     }
-    const Vec3 dir = normalize(Vec3{-0.35f * std::cos(spin) - 0.9f * std::sin(spin), 0.35f * std::sin(spin) - 0.9f * std::cos(spin), 0.3f});
+    Vec3 dir = normalize(Vec3{-0.35f * std::cos(spin) - 0.9f * std::sin(spin), 0.35f * std::sin(spin) - 0.9f * std::cos(spin), 0.3f});
+    if (slot == static_cast<int>(WearSlot::Tail) && zoom > 0.001f) {  // (D126: the tail from its own side, not through the body)
+        Vec3 out{target.x - hips.x, target.y - hips.y, 0};
+        if (length(out) > 1e-3f) {
+            out = normalize(out);
+            dir = normalize(lerp(dir, normalize(out * 0.8f + dir * 0.35f + Vec3{0, 0, 0.35f}), zoom));
+        }
+    }
     const float dist = radius / std::tan(kFovY * 0.5f);
     topProjection(projection, 0.05f, dist * 4.0f, dist);
     lookAt(view, target + dir * dist, target);

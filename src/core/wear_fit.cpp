@@ -1,5 +1,6 @@
 #include "core/wear_fit.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <vector>
@@ -178,7 +179,40 @@ Girth girth(const Body& body, Vec3 c, Vec3 ex, Vec3 ey, Filter take) {
     return g;
 }
 
+// Every eye vertex in a frame's units (x across, y back, z up about its middle).
+void eyePoints(const ModelData& m, const Mat34& frame, std::vector<Vec3>& out) {
+    out.clear();
+    const int eyes = m.skel.find("eyes");
+    if (eyes < 0) return;
+    const Vec3 ex{frame.m[0][0], frame.m[1][0], frame.m[2][0]}, ey{frame.m[0][1], frame.m[1][1], frame.m[2][1]},
+        ez{frame.m[0][2], frame.m[1][2], frame.m[2][2]}, o = frame.translation();
+    const float uu = dot(ex, ex);
+    if (uu < 1e-9f) return;
+    for (const MeshData& md : m.meshes)
+        for (int v = 0; v < md.vertexCount; ++v) {
+            const u8* sk = &md.skin[std::size_t(v) * 4];
+            if (sk[0] >= md.paletteCount || md.palette[sk[0]] != eyes || sk[2] < 128) continue;
+            const Vec3 d = md.pos[std::size_t(v)] - o;
+            out.push_back({dot(d, ex) / uu, dot(d, ey) / uu, dot(d, ez) / uu});
+        }
+}
+
+float highestThrough(const std::vector<Vec3>& pts, float backBy, float radius, float margin) {
+    float worst = -1e9f;
+    for (const Vec3& p : pts) {
+        const float y = p.y - backBy;
+        if (p.x * p.x + y * y < radius * radius) worst = std::fmax(worst, p.z + margin - kHatBrimZ);
+    }
+    return worst;
+}
+
 }  // namespace
+
+float eyesThroughBrim(const ModelData& m, const Mat34& frame, float radius, float margin) {
+    std::vector<Vec3> pts;
+    eyePoints(m, frame, pts);
+    return highestThrough(pts, 0.0f, radius, margin);
+}
 
 bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out) {
     out = WearFit{};
@@ -322,8 +356,34 @@ bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out) {
             axes(up - axis * dot(axis, up), axis, ex, ey, ez);
             const Girth g = girth(body, c, ex, ez, [&](int b) { return startsWith(s.name[b], "tail"); });
             const float floorR = 0.25f * headW;
-            const float rx = g.ok ? std::fmax(g.rx, floorR) : 0.5f * headW;
-            const float rz = g.ok ? std::fmax(g.ry, floorR) : 0.5f * headW;
+            float rx = g.ok ? std::fmax(g.rx, floorR) : 0.5f * headW;
+            float rz = g.ok ? std::fmax(g.ry, floorR) : 0.5f * headW;
+            {  // (D126: the fur, plates and spikes round it too, the parts' meshes the body's girth
+               // misses: a Puffback's wreath sat inside its tail's fluff. Most of the way out, not to
+               // the tip of a lone spike.)
+                std::vector<float> ax, az;
+                const float slab = 0.35f * segLen;
+                for (const MeshData& md : m.meshes) {
+                    const int key = md.keyCount > 1 ? (grown ? md.keyCount - 1 : 0) : 0;
+                    for (int v = 0; v < md.vertexCount; ++v) {
+                        const u8* sk = &md.skin[std::size_t(v) * 4];
+                        const int b = md.palette[sk[2] >= sk[3] ? sk[0] : sk[1]];
+                        if (!startsWith(s.name[b], "tail")) continue;
+                        const Vec3 d = md.pos[std::size_t(key) * md.vertexCount + v] - c;
+                        if (std::fabs(dot(d, axis)) > slab) continue;
+                        ax.push_back(std::fabs(dot(d, ex) - g.cx));
+                        az.push_back(std::fabs(dot(d, ez) - g.cy));
+                    }
+                }
+                auto share = [](std::vector<float>& v, float at) {
+                    if (v.empty()) return 0.0f;
+                    std::size_t k = static_cast<std::size_t>(at * (v.size() - 1));
+                    std::nth_element(v.begin(), v.begin() + static_cast<long>(k), v.end());
+                    return v[k];
+                };
+                rx = std::fmax(rx, share(ax, 0.85f));
+                rz = std::fmax(rz, share(az, 0.85f));
+            }
             const Vec3 mid = c + ex * g.cx + ez * g.cy;
             const int k = static_cast<int>(WearSlot::Tail);
             out.frame[k] = makeFrame(mid, ex, ey, ez, rx, (rx + rz) * 0.5f, rz);
@@ -337,6 +397,26 @@ bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out) {
     if (grown && out.ok[0])
         for (int r = 0; r < 3; ++r)
             for (int c = 0; c < 3; ++c) out.frame[0].m[r][c] *= 1.35f;
+
+    // Clear of the eyes (D126, Noah: the hats went through the Crestwing's and the Curlstone's eyes):
+    // on most grown kinds the eyes' tops stand above the skull's top where the hat sits. It moves
+    // back from them (up to a third of its size) and up, the least it can, until no eye comes up
+    // through its brim.
+    if (out.ok[0]) {
+        std::vector<Vec3> pts;
+        eyePoints(m, out.frame[0], pts);
+        constexpr float kMargin = 0.05f;
+        float bestBack = 0, bestLift = 0, bestCost = 1e9f;
+        for (int step = 0; step <= 8; ++step) {
+            const float back = 0.04f * step;
+            const float lift = std::fmax(0.0f, highestThrough(pts, back, kHatBrim, kMargin));
+            const float cost = lift + 0.5f * back;  // (a little back reads better than floating up)
+            if (cost < bestCost) bestCost = cost, bestBack = back, bestLift = lift;
+        }
+        Mat34& f = out.frame[0];
+        const Vec3 ey{f.m[0][1], f.m[1][1], f.m[2][1]}, ez{f.m[0][2], f.m[1][2], f.m[2][2]};
+        f.setTranslation(f.translation() + ey * bestBack + ez * bestLift);
+    }
 
     // The plan's nudges.
     for (int k = 0; k < kWearSlots; ++k) {

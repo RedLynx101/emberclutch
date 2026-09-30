@@ -1,0 +1,131 @@
+# Hats on grown dragons (D126: the Crestwing's and the Curlstone's hats sat through their eyes):
+# every kind grown, in the little top hat and the flower wreath on its tail, head and whole.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 238 56
+key SELECT
+wait 3
+pg give
+pg wear 1 13 17 30
+pg wardrobe
+wait 2
+pg spin 0.9
+pg kind 0 0
+pg tab 0
+wait 1.8
+shot k01a-pouncer-head
+pg tab 3
+wait 1.3
+shot k01b-pouncer-tail
+pg kind 1 0
+pg tab 0
+wait 1.8
+shot k02a-puffback-head
+pg tab 3
+wait 1.3
+shot k02b-puffback-tail
+pg kind 2 0
+pg tab 0
+wait 1.8
+shot k03a-curlstone-head
+pg tab 3
+wait 1.3
+shot k03b-curlstone-tail
+pg kind 3 0
+pg tab 0
+wait 1.8
+shot k04a-crestwing-head
+pg tab 3
+wait 1.3
+shot k04b-crestwing-tail
+pg kind 4 0
+pg tab 0
+wait 1.8
+shot k05a-ribbontail-head
+pg tab 3
+wait 1.3
+shot k05b-ribbontail-tail
+pg kind 5 0
+pg tab 0
+wait 1.8
+shot k06a-flurrytail-head
+pg tab 3
+wait 1.3
+shot k06b-flurrytail-tail
+pg kind 6 0
+pg tab 0
+wait 1.8
+shot k07a-glimmermoth-head
+pg tab 3
+wait 1.3
+shot k07b-glimmermoth-tail
+pg kind 7 0
+pg tab 0
+wait 1.8
+shot k08a-duskwing-head
+pg tab 3
+wait 1.3
+shot k08b-duskwing-tail
+pg kind 8 0
+pg tab 0
+wait 1.8
+shot k09a-blazeplume-head
+pg tab 3
+wait 1.3
+shot k09b-blazeplume-tail
+pg kind 9 0
+pg tab 0
+wait 1.8
+shot k10a-kindlemoss-head
+pg tab 3
+wait 1.3
+shot k10b-kindlemoss-tail
+pg kind 10 0
+pg tab 0
+wait 1.8
+shot k11a-cindershell-head
+pg tab 3
+wait 1.3
+shot k11b-cindershell-tail
+pg kind 11 0
+pg tab 0
+wait 1.8
+shot k12a-bloomstone-head
+pg tab 3
+wait 1.3
+shot k12b-bloomstone-tail
+pg kind 12 0
+pg tab 0
+wait 1.8
+shot k13a-lilyfin-head
+pg tab 3
+wait 1.3
+shot k13b-lilyfin-tail
+pg kind 13 0
+pg tab 0
+wait 1.8
+shot k14a-frostcurl-head
+pg tab 3
+wait 1.3
+shot k14b-frostcurl-tail
+quit

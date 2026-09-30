@@ -2,11 +2,13 @@
 
 #include <3ds.h>
 #include <citro3d.h>
+#include <dirent.h>
 #include <sys/stat.h>
 
 #include <algorithm>
 #include <atomic>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <vector>
@@ -53,11 +55,6 @@ Job g_job;
 Thread g_thread = nullptr;
 std::atomic<bool> g_finished{false};
 
-bool exists(const char* path) {
-    struct stat st;
-    return stat(path, &st) == 0;
-}
-
 void shotPath(char* out, std::size_t cap, int n, bool photo) {
     if (photo)
         std::snprintf(out, cap, "%s/photo_%04d.bmp", kPhotoDir, n);
@@ -94,7 +91,7 @@ void buildBmp(std::vector<u8>& file, bool photo) {
     if (!photo) copyScreen(h + 54, imgH, g_bottom, kBotW, (kTopW - kBotW) / 2, kH);
 }
 
-// On the writing thread: the file (one write: row by row is slower still), then the log line.
+// On the writing thread: the file (in pieces, the card shared), then the log line.
 void writeJob(void*) {
     mkdir("sdmc:/3ds", 0777);
     mkdir("sdmc:/3ds/emberclutch", 0777);
@@ -102,13 +99,28 @@ void writeJob(void*) {
     mkdir(photo ? kPhotoDir : kDir, 0777);
     char path[64];
     int& next = photo ? g_nextPhoto : g_next;
-    if (next == 0) {  // after the last one already on the card
+    if (next == 0) {  // after the last one already on the card (the folder read once, not a file at a time)
         next = 1;
-        while (next < 9999 && (shotPath(path, sizeof(path), next, photo), exists(path))) ++next;
+        const char* prefix = photo ? "photo_" : "shot_";
+        const std::size_t len = std::strlen(prefix);
+        if (DIR* dir = opendir(photo ? kPhotoDir : kDir)) {
+            while (const dirent* e = readdir(dir))
+                if (std::strncmp(e->d_name, prefix, len) == 0) next = std::max(next, std::atoi(e->d_name + len) + 1);
+            closedir(dir);
+        }
+        next = std::min(next, 9999);
     }
     shotPath(path, sizeof(path), next, photo);
     FILE* f = std::fopen(path, "wb");
-    bool ok = f && std::fwrite(g_job.file.data(), 1, g_job.file.size(), f) == g_job.file.size();
+    // In 16 KB pieces with a rest between (take 4: a photo in the den stopped the music and held
+    // the game a moment): one long write kept the card from the music's reads and the game's own
+    // until it was done; the pieces let them through.
+    bool ok = f != nullptr;
+    for (std::size_t at = 0; ok && at < g_job.file.size(); at += 16 * 1024) {
+        const std::size_t n = std::min<std::size_t>(16 * 1024, g_job.file.size() - at);
+        ok = std::fwrite(g_job.file.data() + at, 1, n, f) == n && std::fflush(f) == 0;
+        svcSleepThread(3000000);
+    }
     if (f) ok = std::fclose(f) == 0 && ok;
     if (ok && photo) {
         g_job.number = next++;

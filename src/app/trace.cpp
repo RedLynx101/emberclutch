@@ -38,9 +38,9 @@ unsigned g_watchInfo[3][3] = {};
 int g_watchCount = 0, g_blips = 0;
 int g_holes = 0, g_depthFrames = 0;  // valley frames with the ground's depth gone, of those looked at
 
-// The depth fixes under trial (D113), their holes counted apart; what each valley frame did (its
+// The old way and the fix (D116), their holes counted apart; what each valley frame did (its
 // haze table made again, tiles built), for the holes; the probes after a hole.
-constexpr int kTrialFrames = 12600, kModeRun = 600, kModeSettle = 60, kModes = 7;
+constexpr int kDiagFrames = 2000, kDiagProbes = 10, kModes = 2;  // (the tracer's window: the old way, 0; then the fix, 1)
 int g_mode = 0, g_modeUsed = -1, g_modeDrawn = -1;  // the next frame's; the one drawing's; the last drawn's
 int g_modeHoles[kModes] = {}, g_modeFrames[kModes] = {};
 bool g_trialDone = false;
@@ -161,7 +161,7 @@ void start() {
     }
     std::remove(kPrev);
     std::rename(kTrace, kPrev);  // (the session before, whole)
-    note("trace on (0.9.9: marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the ground trial)", kChecked);
+    note("trace on (0.9.10: marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the GPU register tracer)", kChecked);
     if (part[0]) note("the last session froze in: %s", part);
     for (int i = 0; i < g_hangCount; ++i) note("drawn the safe way (hangs.txt): %s", g_hangs[i]);
     write();
@@ -331,6 +331,34 @@ void depthMap(C3D_RenderTarget* t, const char* what) {
     }
 }
 
+// The GPU's own registers (D116's tracer): its internal registers read back through the GSP, as
+// the GPU holds them after the part just finished, against what the game sent. The fragment
+// operations (0x100-0x107: colour op, blend, logic op, blend colour, alpha test, stencil test and
+// op, the depth test and the colour and depth writes), the framebuffer's (0x112-0x11e: colour and
+// depth reads and writes, formats, early depth's second switch, where the buffers are), the depth
+// map and culling (0x040, 0x04d-0x04e, 0x06d), early depth (0x061, 0x062, 0x06a), the texture units
+// (0x080, 0x08b, 0x08e) and the fog (0x0e0, 0x0e1).
+constexpr u32 kGpuRegs = 0x401000;  // (the internal registers, relative to 0x1EB00000)
+
+void gpuRegs() {
+    u32 a[32] = {}, b[32] = {}, c[32] = {}, d[32] = {}, e[2] = {};
+    const Result ra = GSPGPU_ReadHWRegs(kGpuRegs + 0x100 * 4, a, sizeof(a));
+    GSPGPU_ReadHWRegs(kGpuRegs + 0x040 * 4, b, sizeof(b));
+    GSPGPU_ReadHWRegs(kGpuRegs + 0x060 * 4, c, sizeof(c));
+    GSPGPU_ReadHWRegs(kGpuRegs + 0x080 * 4, d, sizeof(d));
+    GSPGPU_ReadHWRegs(kGpuRegs + 0x0e0 * 4, e, sizeof(e));
+    note("    GPU regs%s: 100=%lx 101=%lx 102=%lx 103=%lx 104=%lx 105=%lx 106=%lx 107=%lx | 112=%lx 113=%lx 114=%lx 115=%lx 116=%lx 117=%lx 118=%lx",
+         R_FAILED(ra) ? " (not read)" : "", (unsigned long)a[0], (unsigned long)a[1], (unsigned long)a[2], (unsigned long)a[3],
+         (unsigned long)a[4], (unsigned long)a[5], (unsigned long)a[6], (unsigned long)a[7], (unsigned long)a[0x12],
+         (unsigned long)a[0x13], (unsigned long)a[0x14], (unsigned long)a[0x15], (unsigned long)a[0x16], (unsigned long)a[0x17],
+         (unsigned long)a[0x18]);
+    note("    11b=%lx 11c=%lx 11d=%lx 11e=%lx | 040=%lx 04d=%lx 04e=%lx 061=%lx 062=%lx 06a=%lx 06d=%lx 06e=%lx | 080=%lx 08b=%lx 08e=%lx | 0e0=%lx 0e1=%lx",
+         (unsigned long)a[0x1b], (unsigned long)a[0x1c], (unsigned long)a[0x1d], (unsigned long)a[0x1e], (unsigned long)b[0],
+         (unsigned long)b[0xd], (unsigned long)b[0xe], (unsigned long)c[1], (unsigned long)c[2], (unsigned long)c[0xa],
+         (unsigned long)c[0xd], (unsigned long)c[0xe], (unsigned long)d[0], (unsigned long)d[0xb], (unsigned long)d[0xe],
+         (unsigned long)e[0], (unsigned long)e[1]);
+}
+
 // A command list, decoded: each command's register and value (all its values up to four, else its
 // first and how many), a handful to a line.
 void dumpCommands(const u32* w, int n, const char* what) {
@@ -372,7 +400,7 @@ void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
     const bool hole = lower > 0.6f;
     const int mode = g_modeDrawn;
     ++g_depthFrames;
-    if (mode >= 0 && mode < kModes && (g_depthFrames % kModeRun) >= kModeSettle) {  // (a way's first frames: the last one's)
+    if (mode >= 0 && mode < kModes) {
         ++g_modeFrames[mode];
         g_modeHoles[mode] += hole;
     }
@@ -400,46 +428,32 @@ void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
     }
     // The next frame probed (its depth read after each part): after a hole a few times, spaced out,
     // and once early on as a reference.
-    if ((hole && g_probes < 12 && g_depthFrames - g_lastProbe >= 40) || g_depthFrames == 200) {
+    if ((hole && g_probes < 16 && g_depthFrames - g_lastProbe >= 30) || g_depthFrames == 200) {
         g_probeNow = true;
         g_lastProbe = g_depthFrames;
         ++g_probes;
         note("probe %d%s: the next frame's depth after each part", g_probes, hole ? "" : " (a reference, no hole)");
     }
-    // The fix for the frame about to be drawn: the trial's turn, then the one that did best.
-    if (g_depthFrames < kTrialFrames) {
-        g_mode = (g_depthFrames / kModeRun) % kModes;
-    } else if (!g_trialDone) {
+    // The way the next frame's ground is drawn: the tracer's window the old way (the fault to be
+    // caught, the GPU's registers read in its probes), then the fix.
+    if (!g_trialDone && (g_depthFrames >= kDiagFrames || g_probes >= kDiagProbes)) {
         g_trialDone = true;
-        auto rate = [](int m) { return g_modeFrames[m] >= 300 ? g_modeHoles[m] / static_cast<float>(g_modeFrames[m]) : 1.0f; };
-        g_mode = 0;
-        for (int m = 1; m < kModes; ++m)
-            if (rate(m) < rate(g_mode)) g_mode = m;
-        if (g_mode == 1)  // (untextured is plainer: a textured way nearly as good is kept instead)
-            for (int m = 2; m < kModes; ++m)
-                if (rate(m) <= rate(1) + 0.005f) {
-                    g_mode = m;
-                    break;
-                }
-        if (rate(g_mode) > rate(0) * 0.8f) g_mode = 0;  // (a clear gain only)
-        char ways[96];
-        int at = 0;
-        for (int m = 0; m < kModes; ++m)
-            at += std::snprintf(ways + at, sizeof(ways) - static_cast<std::size_t>(at), "%s%d/%d", m ? " " : "", g_modeHoles[m], g_modeFrames[m]);
-        note("depth trial done: holes by way %s; way %d from now on", ways, g_mode);
+        note("the tracer's window done (%d probes): holes the old way %d/%d; the fix from now on", g_probes, g_modeHoles[0],
+             g_modeFrames[0]);
     }
+    g_mode = g_trialDone ? 1 : 0;
 }
 
 int g_heldFix = -1;  // (scripted runs: one fix held)
 
 int depthMode() {
     if (g_heldFix >= 0) return g_modeUsed = g_heldFix;
-    if (!g_on) return 0;
+    if (!g_on) return 1;
     g_modeUsed = g_mode;
     return g_mode;
 }
 
-void holdFix(int fix) { g_heldFix = fix < kModes ? fix : -1; }
+void holdFix(int fix) { g_heldFix = fix < 0 ? -1 : fix > 0; }  // (0 the old way; any other the fix)
 
 void commands(bool begin) {
     if (!g_on || g_probeNow || g_live) return;  // (not while checkpoints split the frame's commands)
@@ -465,12 +479,16 @@ void tileProbe(int i, int tx, int ty, int lod, int count) {
     float lower = 0, upper = 0;
     depthEmpty(g_probeTop, lower, upper);
     const int filled = static_cast<int>(100.0f - (lower + upper) * 50.0f + 0.5f);
-    if (g_tileAt > 130) {
+    u32 mask = 0, fb = 0;  // (the GPU's own: the depth test and writes; the depth buffer's write enable)
+    GSPGPU_ReadHWRegs(kGpuRegs + 0x107 * 4, &mask, 4);
+    GSPGPU_ReadHWRegs(kGpuRegs + 0x115 * 4, &fb, 4);
+    if (g_tileAt > 120) {
         note("  tiles:%s", g_tileLine);
         g_tileAt = 0;
     }
-    g_tileAt += std::snprintf(g_tileLine + g_tileAt, sizeof(g_tileLine) - static_cast<std::size_t>(g_tileAt), " %d(%d,%d L%d n%d):%d%%", i,
-                              tx, ty, lod, count, filled);
+    g_tileAt += std::snprintf(g_tileLine + g_tileAt, sizeof(g_tileLine) - static_cast<std::size_t>(g_tileAt), " %d(L%d n%d):%d%% %lx/%lx", i,
+                              lod, count, filled, static_cast<unsigned long>(mask), static_cast<unsigned long>(fb));
+    (void)tx, (void)ty;
     C3D_FrameDrawOn(g_target);
 }
 
@@ -503,8 +521,14 @@ void checkpoint(const char* part) {
         depthEmpty(g_probeTop, lower, upper);
         colourMean(g_probeTop, rgb);
     }
+    if (g_tileAt > 0) {  // (the last tiles before the part's line)
+        note("  tiles:%s", g_tileLine);
+        g_tileAt = 0;
+        g_tileLine[0] = 0;
+    }
     note("  after %s (fix %d): lower half %.0f%% empty, upper %.0f%%; its colour %d %d %d", part, g_modeUsed, lower * 100.0f,
          upper * 100.0f, rgb[0], rgb[1], rgb[2]);
+    gpuRegs();
     C3D_FrameDrawOn(g_target);
 }
 

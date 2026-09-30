@@ -28,7 +28,7 @@ constexpr u32 kSliceFrames = 4096;
 constexpr int kSfxSlices = 12;       // per sound-effect channel: up to ~2.2 s at 22 kHz in full slices
 constexpr int kBedRing = 6;          // slices queued ahead per bed (~1.1 s at 22 kHz), refilled as they finish
 constexpr int kStingerSlices = 64;
-constexpr int kNumBufs = 3;
+constexpr int kNumBufs = 5;  // (~640 ms ahead: a picture written to the card held the music's reads, take 4)
 constexpr float kFadeSeconds = 0.7f;
 
 const char* const kSfxFiles[] = {

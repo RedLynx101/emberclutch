@@ -78,6 +78,18 @@ void retire(void* p) {
 
 void retireTex(const C3D_Tex& t) { g_graveTex.push_back(t); }
 
+// The depth test's, blending's and culling's state sent to the GPU again before a draw, as it is
+// (D116: on the 3DS the valley's ground tiles, sent it once before the first, drew in runs of frames
+// without writing depth; sent again before each, they wrote it). Early depth is off: setting it off
+// again only marks the state to be sent.
+void resendEffect() { C3D_EarlyDepthTest(false, GPU_EARLYDEPTH_GREATER, 0); }
+
+// A draw of indexed triangles, the state sent again first.
+void drawIndexed(int count, const u16* idx) {
+    resendEffect();
+    C3D_DrawElements(GPU_TRIANGLES, count, C3D_UNSIGNED_SHORT, idx);
+}
+
 void bury() {
     for (void* p : g_graveLinear) linearFree(p);
     g_graveLinear.clear();
@@ -1169,7 +1181,7 @@ void drawMesh(App& app, const GpuMesh& g, const Mat34* skin, float dust = 0.0f) 
     C3D_BufInfo* buf = C3D_GetBufInfo();
     BufInfo_Init(buf);
     BufInfo_Add(buf, g.vbo, sizeof(GpuVertex), 5, 0x43210);
-    C3D_DrawElements(GPU_TRIANGLES, g.indexCount, C3D_UNSIGNED_SHORT, g.ibo);
+    drawIndexed(g.indexCount, g.ibo);
     app.stats.tris += g.indexCount / 3;
     app.stats.draws += 1;
     if (g.paletteCount > app.stats.maxBonesPerDraw) app.stats.maxBonesPerDraw = g.paletteCount;
@@ -1188,7 +1200,7 @@ void drawBody(App& app, const GpuMesh& g, const Mat34* skin, const Cache& c) {
     BufInfo_Init(buf);
     BufInfo_Add(buf, g.vbo, sizeof(GpuVertex), 5, 0x43210);
     BufInfo_Add(buf, c.dust, 4, 1, 0x5);
-    C3D_DrawElements(GPU_TRIANGLES, g.indexCount, C3D_UNSIGNED_SHORT, g.ibo);
+    drawIndexed(g.indexCount, g.ibo);
     app.stats.tris += g.indexCount / 3;
     app.stats.draws += 1;
     if (g.paletteCount > app.stats.maxBonesPerDraw) app.stats.maxBonesPerDraw = g.paletteCount;
@@ -1399,7 +1411,7 @@ void drawRoom(App& app, const C3D_Mtx& projection, const C3D_Mtx& view, const Da
         if (((run.flags & kStaticAdditive) != 0) != glows) continue;
         const float k = (run.flags & kStaticFlicker) ? flicker(app.t) : 1.0f;
         C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, k / 255.0f, k / 255.0f, k / 255.0f, 1.0f / 255.0f);
-        C3D_DrawElements(GPU_TRIANGLES, run.count, C3D_UNSIGNED_SHORT, run.idx);
+        drawIndexed(run.count, run.idx);
         app.stats.tris += run.count / 3;
         app.stats.draws += 1;
     }
@@ -2702,7 +2714,7 @@ bool uploadValley(ValleyGpu& g, const ValleyMesh& m) {
     return true;
 }
 
-void drawValleyGpu(App& app, const ValleyGpu& g, bool skirts = true) {
+void drawValleyGpu(App& app, const ValleyGpu& g, bool skirts = true, bool resend = true) {
     if (!g.count) return;
     const int count = skirts ? g.count : g.ground;
     C3D_BufInfo* buf = C3D_GetBufInfo();
@@ -2710,6 +2722,7 @@ void drawValleyGpu(App& app, const ValleyGpu& g, bool skirts = true) {
     BufInfo_Add(buf, g.pos, sizeof(Vec3), 1, 0x0);
     BufInfo_Add(buf, g.col, 4, 1, 0x1);
     BufInfo_Add(buf, g.col, 4, 1, 0x2);  // one colour set: no blend between two
+    if (resend) resendEffect();
     C3D_DrawElements(GPU_TRIANGLES, count, C3D_UNSIGNED_SHORT, g.idx);
     app.stats.tris += count / 3;
     app.stats.draws += 1;
@@ -2757,7 +2770,7 @@ void drawValleyShadow(App& app, const Valley& v, const ValleyView& view) {
     BufInfo_Add(buf, g.col, 4, 1, 0x1);
     BufInfo_Add(buf, g.col, 4, 1, 0x2);
     C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_COLOR);  // under the dragon, hiding nothing
-    C3D_DrawElements(GPU_TRIANGLES, kShadowRim * 3, C3D_UNSIGNED_SHORT, g.idx);
+    drawIndexed(kShadowRim * 3, g.idx);
     C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
     app.stats.tris += kShadowRim;
     app.stats.draws += 1;
@@ -2794,9 +2807,6 @@ void bindValleyStatic(const C3D_Mtx& projection, const C3D_Mtx& view, Rgb tint) 
 // little of the height in it, so slopes and tree trunks take it too). Off: the colour alone.
 // On, the ground's own program (the texture coordinate); off, back to the static program (the
 // uniforms they share stay set: the same registers).
-Vec3 g_detailEye;                                // (the trial's way 3: the eye the coordinates count from)
-bool g_detailSmall = false, g_detailBound = false;  // (ways 3 and 2)
-
 void groundDetail(bool on, bool texture = true) {
     C3D_TexEnv* env = C3D_GetTexEnv(0);
     C3D_TexEnvInit(env);
@@ -2819,7 +2829,7 @@ void groundDetail(bool on, bool texture = true) {
         C3D_TexEnvFunc(env, C3D_Alpha, GPU_REPLACE);
         return;
     }
-    if (!g_detailBound) C3D_TexBind(0, &g_groundTex);
+    C3D_TexBind(0, &g_groundTex);
     // The mix: earth (the texture's alpha) x w + grass (its luminance) x (1 - w), w the vertex's alpha.
     C3D_TexEnvSrc(env, C3D_RGB, GPU_TEXTURE0, GPU_TEXTURE0, GPU_PRIMARY_COLOR);
     C3D_TexEnvOpRgb(env, GPU_TEVOP_RGB_SRC_ALPHA, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_ALPHA);
@@ -2834,12 +2844,8 @@ void groundDetail(bool on, bool texture = true) {
     C3D_TexEnvSrc(times, C3D_Alpha, GPU_PREVIOUS, GPU_PREVIOUS, GPU_PREVIOUS);
     C3D_TexEnvFunc(times, C3D_Alpha, GPU_REPLACE);
     constexpr float k = 1.0f / 8.0f;
-    // (the trial's way 3: whole repeats taken off so the coordinates stay small near the eye; the
-    // texture repeats every whole number, so it doesn't move)
-    const float du = g_detailSmall ? -std::floor(k * g_detailEye.x + 0.45f * k * g_detailEye.z) : 0.0f;
-    const float dv = g_detailSmall ? -std::floor(k * g_detailEye.y + 0.7f * k * g_detailEye.z) : 0.0f;
-    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, k, 0, 0.45f * k, du);
-    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, k, 0.7f * k, dv);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, k, 0, 0.45f * k, 0);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, k, 0.7f * k, 0);
 }
 
 // True if a box can't be seen: every corner is beyond the same side of the view.
@@ -3096,7 +3102,7 @@ void drawPlaces(App& app, const Valley& v, const ValleyView& view, const C3D_Mtx
             const float k = (part.flags & kStaticFlicker) ? flicker(app.t + p.id) : 1.0f;
             C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSTint, k / 255.0f, k / 255.0f, k / 255.0f, 1.0f / 255.0f);
             C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locSModelView, part.role == kRoleSails ? &sails : &mv);
-            C3D_DrawElements(GPU_TRIANGLES, part.count, C3D_UNSIGNED_SHORT, part.idx);
+            drawIndexed(part.count, part.idx);
             app.stats.tris += part.count / 3;
             app.stats.draws += 1;
             g_valleyStats.places += part.count / 3;
@@ -3282,7 +3288,7 @@ void drawLead(App& app, const Valley& v, Vec3 hand, Vec3 collar, Vec3 eye) {
     BufInfo_Add(buf, g.col, 4, 1, 0x1);
     BufInfo_Add(buf, g.col, 4, 1, 0x2);
     C3D_CullFace(GPU_CULL_NONE);
-    C3D_DrawElements(GPU_TRIANGLES, kLeadSegments * 6, C3D_UNSIGNED_SHORT, g.idx);
+    drawIndexed(kLeadSegments * 6, g.idx);
     app.stats.tris += kLeadSegments * 2;
     app.stats.draws += 1;
 }
@@ -3428,12 +3434,12 @@ void drawValleyLife(App& app, const Valley& v, const ValleyView& view, const C3D
     C3D_CullFace(GPU_CULL_NONE);
     if (leaves) {  // (after the fireflies in the buffer: drawn solid)
         C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
-        C3D_DrawElements(GPU_TRIANGLES, leaves * 6, C3D_UNSIGNED_SHORT, g.idx + fireflies * 6);
+        drawIndexed(leaves * 6, g.idx + fireflies * 6);
     }
     if (fireflies) {  // glowing: added, no depth written
         C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_COLOR);
         C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_ONE, GPU_ONE, GPU_ZERO, GPU_ONE);
-        C3D_DrawElements(GPU_TRIANGLES, fireflies * 6, C3D_UNSIGNED_SHORT, g.idx);
+        drawIndexed(fireflies * 6, g.idx);
         C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA,
                        GPU_ONE_MINUS_SRC_ALPHA);
     }
@@ -3518,7 +3524,7 @@ void drawGlints(App& app, const ValleyView& view, const C3D_Mtx& viewM) {
     C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_COLOR);
     C3D_CullFace(GPU_CULL_NONE);
     C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_ONE, GPU_ONE, GPU_ZERO, GPU_ONE);
-    C3D_DrawElements(GPU_TRIANGLES, view.glintCount * 36, C3D_UNSIGNED_SHORT, g.idx);
+    drawIndexed(view.glintCount * 36, g.idx);
     C3D_AlphaBlend(GPU_BLEND_ADD, GPU_BLEND_ADD, GPU_SRC_ALPHA, GPU_ONE_MINUS_SRC_ALPHA, GPU_SRC_ALPHA,
                    GPU_ONE_MINUS_SRC_ALPHA);
     C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
@@ -3766,10 +3772,10 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         fogDensity = density;
         trace::frameFacts(true, 0);
     }
-    // The flicker's trial (D115, while the trace is on: the ways the ground is drawn, below).
+    // The flicker's fix (D116): the depth test's state sent again before each tile; the tracer's
+    // first frames draw the ground without it (0), so the fault shows and is caught.
     const int fix = trace::depthMode();
     C2D_Flush();
-    if (fix == 2 && g_groundTexOk && g_groundLook != 1 && !g_groundPlain) C3D_TexBind(0, &g_groundTex);  // (bound now, sent with the haze)
     trace::checkpoint("the clear and the sky");
     C3D_FogGasMode(GPU_FOG, GPU_PLAIN_DENSITY, false);
     C3D_FogColor(u32(view.fog.r) | (u32(view.fog.g) << 8) | (u32(view.fog.b) << 16));
@@ -3835,7 +3841,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
             BufInfo_Add(buf, g_vhorizon.pos, sizeof(Vec3), 1, 0x0);
             BufInfo_Add(buf, haze, 4, 1, 0x1);
             BufInfo_Add(buf, haze, 4, 1, 0x2);
-            C3D_DrawElements(GPU_TRIANGLES, g_vhorizon.count, C3D_UNSIGNED_SHORT, g_vhorizon.idx);
+            drawIndexed(g_vhorizon.count, g_vhorizon.idx);
             app.stats.tris += g_vhorizon.count / 3;
             app.stats.draws += 1;
             C3D_FogGasMode(GPU_FOG, GPU_PLAIN_DENSITY, false);
@@ -3889,52 +3895,31 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
                 drawnLod[std::size_t(ty) * t + tx] = static_cast<s8>(g->lod);
             }
         }
-    // The ground. Take 4's probes on the 3DS: in the flicker's frames every one of these tiles,
-    // textured, draws its colour and writes no depth, from the first; untextured, they write it
-    // (the commands sent are the same either way). The trial's ways (D115): 1 untextured, 2 the
-    // texture bound before the haze (none of its unit's settings sent with the tiles), 3 small
-    // texture coordinates (counted from near the eye, not the valley's corner), 4 a depth pass
-    // first (untextured, depth only) then the textured one (colour only, equal depth), 5 no
-    // mipmaps, 6 the depth test set again before each tile.
+    // The ground. Take 4 on the 3DS: in runs of frames these tiles drew their colour and wrote no
+    // depth at all (the commands sent the same as in a whole frame), whatever the texture; sending
+    // the depth test's state again before each tile ended it (the trial's way 6: no holes in 1,620
+    // frames against 74% as drawn, then 1.2% on its own over 17,000). D116. With the trace on, the
+    // first valley frames are drawn the old way (fix 0), so the tracer catches the fault.
     const DayBlend blend = dayBlend(now);
     streamPlaces(v, view.eye);
-    g_detailEye = view.eye;
-    g_detailSmall = fix == 3;
-    g_detailBound = fix == 2;
-    const u8 levels = g_groundTex.maxLevel;
-    if (fix == 5) g_groundTex.maxLevel = 0;
-    auto tileLoop = [&](bool watched) {
-        int drawnTiles = 0;
-        for (const Pick& p : picks) {
-            const int tx = p.tile % t, ty = p.tile / t;
-            bool skirts = false;
-            const int around[4][2] = {{tx - 1, ty}, {tx + 1, ty}, {tx, ty - 1}, {tx, ty + 1}};
-            for (const auto& n : around)
-                if (n[0] >= 0 && n[1] >= 0 && n[0] < t && n[1] < t) {
-                    const s8 l = drawnLod[std::size_t(n[1]) * t + n[0]];
-                    skirts |= l >= 0 && l != p.g->lod;
-                }
-            if (fix == 6) C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
-            drawValleyGpu(app, *p.g, skirts);
-            if (!watched) continue;
-            if (drawnTiles++ == 0) trace::commands(false);  // (what the first tile's draw sent)
-            trace::tileProbe(drawnTiles - 1, tx, ty, p.g->lod, skirts ? p.g->count : p.g->ground);
-            ++g_valleyStats.tiles;
-            g_valleyStats.ground += (skirts ? p.g->count : p.g->ground) / 3;
-        }
-    };
-    if (fix == 4) {  // the depth first, untextured
-        groundDetail(true, false);
-        C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_DEPTH);
-        tileLoop(false);
-        C3D_DepthTest(true, GPU_GEQUAL, GPU_WRITE_COLOR);
-    }
-    groundDetail(true, fix != 1);
+    groundDetail(true);
     trace::commands(true);
-    tileLoop(true);
-    if (fix == 4) C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
-    g_groundTex.maxLevel = levels;
-    g_detailSmall = g_detailBound = false;
+    int drawnTiles = 0;
+    for (const Pick& p : picks) {
+        const int tx = p.tile % t, ty = p.tile / t;
+        bool skirts = false;
+        const int around[4][2] = {{tx - 1, ty}, {tx + 1, ty}, {tx, ty - 1}, {tx, ty + 1}};
+        for (const auto& n : around)
+            if (n[0] >= 0 && n[1] >= 0 && n[0] < t && n[1] < t) {
+                const s8 l = drawnLod[std::size_t(n[1]) * t + n[0]];
+                skirts |= l >= 0 && l != p.g->lod;
+            }
+        drawValleyGpu(app, *p.g, skirts, fix != 0);
+        if (drawnTiles++ == 0) trace::commands(false);  // (what the first tile's draw sent)
+        trace::tileProbe(drawnTiles - 1, tx, ty, p.g->lod, skirts ? p.g->count : p.g->ground);
+        ++g_valleyStats.tiles;
+        g_valleyStats.ground += (skirts ? p.g->count : p.g->ground) / 3;
+    }
     for (const Pick& p : picks) drawnLod[std::size_t(p.tile)] = -1;  // (clean for the next frame)
     trace::frameFacts(false, g_valleyStats.built);
     groundDetail(false);
@@ -3964,7 +3949,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
             const Vec3 lo{isl.at.x - r, isl.at.y - r, isl.at.z - isl.radius * 1.9f}, hi{isl.at.x + r, isl.at.y + r, isl.at.z + 12.0f};
             if (outsideView(clip, lo, hi) || std::hypot(isl.at.x - view.eye.x, isl.at.y - view.eye.y) > kValleyFar * g_reachScale) continue;
             const int count = static_cast<int>(islandParts[k + 1] - islandParts[k]);
-            C3D_DrawElements(GPU_TRIANGLES, count, C3D_UNSIGNED_SHORT, g_vextras.idx + islandParts[k]);
+            drawIndexed(count, g_vextras.idx + islandParts[k]);
             app.stats.tris += count / 3;
             app.stats.draws += 1;
         }

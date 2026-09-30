@@ -1,6 +1,6 @@
-# D115's flicker trial: each way of drawing the ground held in turn at the den's door (0 as drawn,
-# 1 untextured, 2 the texture bound before the haze, 3 small texture coordinates, 4 a depth pass
-# first, 5 no mipmaps, 6 the depth test set again before each tile): every one draws the valley.
+# D116's flicker fix held each way at the den's door (0 the old way, 1 the depth test's state sent
+# again before every 3D draw): both draw the valley alike. Then the fix let go, long enough for the
+# tracer's reference probe (valley frame 200) to read the GPU's registers when trace.on is there.
 overlay off
 wait 2.5
 name Noah
@@ -21,24 +21,11 @@ hour 11
 wait 4
 trialfix 0
 wait 0.5
-shot t0-as-drawn
+shot t0-old-way
 trialfix 1
 wait 0.5
-shot t1-untextured
-trialfix 2
-wait 0.5
-shot t2-bound-early
-trialfix 3
-wait 0.5
-shot t3-small-coords
-trialfix 4
-wait 0.5
-shot t4-depth-first
-trialfix 5
-wait 0.5
-shot t5-no-mipmaps
-trialfix 6
-wait 0.5
-shot t6-depth-each
+shot t1-fix
 trialfix -1
+wait 10
+shot t2-after-probe
 quit

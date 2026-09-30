@@ -403,8 +403,8 @@ void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swi
     for (int k = 0; k < n; ++k) {
         if (events[k] == kAnimFlap) audio::playSfx(audio::Sfx::Wingbeat, 1.0f, 0.8f);
         if (events[k] == kAnimFootstep && !flying)
-            audio::playSfx(swimming ? audio::Sfx::Splash : audio::Sfx::DragonStep,
-                           swimming ? 1.3f : 0.94f + 0.12f * (app.rng.below(100) / 100.0f), swimming ? 0.35f : 0.7f);
+            audio::playSfx(swimming ? audio::Sfx::Splash : audio::Sfx::DragonStep,  // (the paddling a little softer: take 4)
+                           swimming ? 1.3f : 0.94f + 0.12f * (app.rng.below(100) / 100.0f), swimming ? 0.22f : 0.7f);
     }
     s.flyer.eyes.update(0.0f, app.dt);
     windOnTail(app, s, flying, diving);
@@ -1033,6 +1033,13 @@ void update(App& app, const Input& in) {
         const float speed = (in.held & KEY_B ? 60.0f : 22.0f) * app.dt;
         s.freeEye = s.freeEye + fwd * (in.padY * speed) + right * (in.padX * -speed) + Vec3{0, 0, dpadY * speed};
         s.freePitch = clampf(s.freePitch + dpadX * 0.8f * app.dt, -1.2f, 0.4f);
+        if (!autotest::active()) {  // (tied to you: far, not too far; take 4. Scripts' views go anywhere)
+            constexpr float kReach = 100.0f, kAbove = 60.0f;
+            const Vec3 you = s.before == Mode::Riding ? s.flight.pos : s.you.pos;
+            const float dx = s.freeEye.x - you.x, dy = s.freeEye.y - you.y, d = std::hypot(dx, dy);
+            if (d > kReach) s.freeEye.x = you.x + dx * (kReach / d), s.freeEye.y = you.y + dy * (kReach / d);
+            s.freeEye.z = std::fmin(s.freeEye.z, you.z + kAbove);
+        }
         s.freeEye.z = std::fmax(s.freeEye.z, va.heightAt(s.freeEye.x, s.freeEye.y) + 0.6f);
         if (in.down & KEY_A) photo::snapNow(app);  // a framed photo of the view (run 19)
         animatePartner(app, s, s.before == Mode::Riding && !s.flight.grounded, false, false, 0);
@@ -1222,7 +1229,7 @@ void update(App& app, const Input& in) {
         const float a = k * 1.2566f, r = k ? 25.0f : 0.0f;
         wet += va.heightAt(at.x + r * std::cos(a), at.y + r * std::sin(a)) < va.water;
     }
-    audio::setBed(audio::Bed::Lake, (swimming ? 1.0f : wet / 5.0f) * nearGround);
+    audio::setBed(audio::Bed::Lake, (swimming ? 0.7f : wet / 5.0f) * nearGround);
 }
 
 void drawTop(App& app) {

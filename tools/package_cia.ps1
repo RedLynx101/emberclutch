@@ -15,18 +15,28 @@
 # makerom (3DSGuy/Project_CTR) and bannertool (diasurgical/bannertool) aren't kept in this
 # repo: by default they're taken from the 3D-Claw project next to it (3ds-ai\tools\win64),
 # else from PATH.
+# -Player packs the player build (D135: no dev menu, tracer or Y screenshots) into dist\player\:
+# emberclutch.cia, emberclutch.3dsx and emberclutch-<version>.zip, the files a release carries.
+# The version defaults to the Makefile's VERSION.
 param(
     [switch]$NoBuild,
     [switch]$Banner3D,
     [switch]$Banner2D,
+    [switch]$Player,
     [string]$ToolsDir = "",
-    [string]$Version = "0.1.0"
+    [string]$Version = ""
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+if (-not $Version) {
+    $line = Select-String -Path (Join-Path $root "Makefile") -Pattern "^VERSION\s*:=\s*(\S+)" | Select-Object -First 1
+    if (-not $line) { throw "No VERSION in the Makefile" }
+    $Version = $line.Matches[0].Groups[1].Value
+}
+$name = if ($Player) { "emberclutch-player" } else { "emberclutch" }
 if (-not $ToolsDir) { $ToolsDir = Join-Path (Split-Path $root -Parent) "3ds-ai\tools\win64" }
 
 function Find-Tool($relative, $name) {
@@ -39,8 +49,8 @@ function Find-Tool($relative, $name) {
 $makerom = Find-Tool "makerom\makerom.exe" "makerom"
 $bannertool = Find-Tool "bannertool\windows-x86_64\bannertool.exe" "bannertool"
 
-if (-not $NoBuild) { & (Join-Path $PSScriptRoot "build.ps1") }
-$elf = Join-Path $root "emberclutch.elf"
+if (-not $NoBuild) { & (Join-Path $PSScriptRoot "build.ps1") -Player:$Player }
+$elf = Join-Path $root "$name.elf"
 if (-not (Test-Path $elf)) { throw "Missing $elf (build first)" }
 foreach ($f in "assets\icon.png", "assets\banner.png", "assets\audio\banner.wav") {
     if (-not (Test-Path (Join-Path $root $f))) { throw "Missing $f" }
@@ -50,7 +60,9 @@ $work = Join-Path $root "build\cia"
 New-Item -ItemType Directory -Force $work | Out-Null
 $smdh = Join-Path $work "emberclutch.smdh"
 $bnr = Join-Path $work "emberclutch.bnr"
-$cia = Join-Path $root "emberclutch.cia"
+$dist = Join-Path $root "dist\player"
+if ($Player) { New-Item -ItemType Directory -Force $dist | Out-Null }
+$cia = if ($Player) { Join-Path $dist "emberclutch.cia" } else { Join-Path $root "emberclutch.cia" }
 
 $smdhArgs = @("-s", "Emberclutch: Skyreach Valley", "-l", "Emberclutch: Skyreach Valley. Raise, breed and fly with dragons", "-p", "Noah Hicks",
     "-i", (Join-Path $root "assets\icon.png"), "-o", $smdh)
@@ -81,3 +93,10 @@ $size = [math]::Round((Get-Item $cia).Length / 1MB, 1)
 "Built $cia ($size MB, version $Version, $(if ($Banner3D) { '3D' } else { '2D' }) banner)"
 & py -3.12 (Join-Path $PSScriptRoot "check_3ds.py") --quiet $cia
 if ($LASTEXITCODE -ne 0) { throw "$cia failed its checks (tools\check_3ds.py): don't put it on the 3DS" }
+if ($Player) {  # the release's files: the CIA, the .3dsx for the Homebrew Launcher, and both zipped
+    Copy-Item (Join-Path $root "$name.3dsx") (Join-Path $dist "emberclutch.3dsx") -Force
+    $zip = Join-Path $dist "emberclutch-$Version.zip"
+    Remove-Item $zip -ErrorAction SilentlyContinue
+    Compress-Archive -Path (Join-Path $dist "emberclutch.cia"), (Join-Path $dist "emberclutch.3dsx") -DestinationPath $zip
+    "Player build: $dist (emberclutch.cia, emberclutch.3dsx, $(Split-Path $zip -Leaf))"
+}

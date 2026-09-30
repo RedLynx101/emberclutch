@@ -159,7 +159,7 @@ int main() {
 
         const Input in = autotest::active() ? autotest::next(app) : readInput();
         if (in.down & KEY_START) toggleSystemMenu(app);
-        if (in.down & KEY_Y) screenshot::request();  // anywhere, in every build: both screens to the SD card
+        if (EC_DEV && (in.down & KEY_Y)) screenshot::request();  // anywhere (dev builds): both screens to the SD card
         const bool paused = app.menu != MenuPage::Closed;  // the game waits under the menu
 
         perf::frameStart();

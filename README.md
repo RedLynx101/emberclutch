@@ -62,7 +62,6 @@ in `sdmc:/3ds/emberclutch/` (two copies, so an interrupted save never loses both
 | **B** | Run; dive when flying |
 | **L / R** | Turn the view; bank when flying |
 | **X** | The Journal in the valley, the outing in the den |
-| **Y** | A screenshot of both screens (to `sdmc:/3ds/emberclutch/screenshots/`) |
 | **START** | The system menu: settings, the Dragondex, save and quit |
 
 The first steps of the game show short tips as things come up; the settings can show them
@@ -71,6 +70,8 @@ again.
 ## Build it yourself
 
 See [docs/DEVELOPING.md](docs/DEVELOPING.md): devkitPro with the `3ds-dev` group, then `make`.
+`make` builds the dev build (a dev menu on SELECT, a performance overlay, a tracer and Y
+screenshots); `make DEV=0` builds the player build that the releases carry.
 PC unit tests and scripted emulator runs are described there too.
 
 ## Credits and licences

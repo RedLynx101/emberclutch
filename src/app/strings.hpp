@@ -1,6 +1,13 @@
 // Every player-facing string (D30: English only for v1; a translation adds a table here).
 #pragma once
 
+#ifndef EC_DEV
+#define EC_DEV 1
+#endif
+#ifndef EC_VERSION
+#define EC_VERSION "0.0.0"  // (the Makefile's VERSION)
+#endif
+
 namespace ec::str {
 
 inline constexpr const char* kGameTitle = "Emberclutch";
@@ -8,7 +15,8 @@ inline constexpr const char* kGameSubtitle = "Skyreach Valley";  // (1.0: Emberc
 inline constexpr const char* kGameFullTitle = "Emberclutch: Skyreach Valley";
 inline constexpr const char* kTagline = "raise, breed and fly with dragons";
 inline constexpr const char* kTouchToBegin = "Touch to begin";
-inline constexpr const char* kBuildLabel = "1.0 preview";
+// Under the title: the player build shows its version, the dev build says it is one (D135).
+inline constexpr const char* kBuildLabel = EC_DEV ? "dev build " EC_VERSION : "v" EC_VERSION;
 inline constexpr const char* kCredits = "Credits";
 inline constexpr const char* kCreditsBy = "A game by Noah Hicks";
 inline constexpr const char* kCreditsEmi = "Inspired by Emi";

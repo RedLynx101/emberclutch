@@ -33,8 +33,18 @@ include $(DEVKITARM)/3ds_rules
 #     - icon.png
 #     - <libctru folder>/default_icon.png
 #---------------------------------------------------------------------------------
+# DEV=1 (the default) is the dev build: the dev menu, the overlay, the tracer, Y screenshots, the
+# autotests. DEV=0 is the player build (D135), in its own folders: `make DEV=0` (tools/build.ps1 -Player).
+DEV	?=	1
+ifeq ($(DEV),0)
+TARGET		:=	emberclutch-player
+BUILD		:=	build-player
+else
 TARGET		:=	emberclutch
 BUILD		:=	build
+endif
+# The version, shown on the title screen and packed in the CIA (tools/package_cia.ps1 reads it here).
+VERSION		:=	0.9.14
 SOURCES		:=	src/app src/core
 DATA		:=	data
 INCLUDES	:=	src
@@ -56,9 +66,7 @@ CFLAGS	:=	-g -Wall -Wextra -Wno-unused-parameter -O2 -mword-relocations \
 			-ffunction-sections \
 			$(ARCH)
 
-# DEV=1 (default) builds the budget overlay and dev menu; `make DEV=0` for release.
-DEV	?=	1
-CFLAGS	+=	$(INCLUDE) -D__3DS__ -DEC_DEV=$(DEV)
+CFLAGS	+=	$(INCLUDE) -D__3DS__ -DEC_DEV=$(DEV) -DEC_VERSION='"$(VERSION)"'
 
 # POISON=1: every new allocation filled with garbage, as the real 3DS leaves memory (the emulator
 # hands out zeros, so reads of memory never written hide there): src/app/poison.cpp.

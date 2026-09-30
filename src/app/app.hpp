@@ -20,7 +20,10 @@
 #include "core/wanderings.hpp"
 
 #ifndef EC_DEV
-#define EC_DEV 1  // dev builds show the budget overlay and the dev menu (SELECT)
+#define EC_DEV 1  // dev builds show the budget overlay and the dev menu (SELECT); 0 is the player build (D135)
+#endif
+#ifndef EC_VERSION
+#define EC_VERSION "0.0.0"  // (the Makefile's VERSION)
 #endif
 
 namespace ec {

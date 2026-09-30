@@ -85,7 +85,7 @@ u32 keyNamed(const char* s) {
     return keys;
 }
 
-bool parse(const char* line, Cmd& c) {
+[[maybe_unused]] bool parse(const char* line, Cmd& c) {  // (the player build runs no scripts)
     char word[16] = {}, rest[96] = {};
     if (std::sscanf(line, " %15s %95[^\r\n]", word, rest) < 1 || word[0] == '#') return false;
     const std::string w = word;

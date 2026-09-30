@@ -150,6 +150,7 @@ void findHang(char* part, std::size_t size) {
 // writes what it sees to watchdog.txt: the last mark, and whether the music's thread is moving.
 constexpr const char* kWatchdog = "sdmc:/3ds/emberclutch/watchdog.txt";
 volatile u32 g_beat = 0;  // (frames started)
+int g_viewLast = -1;       // (the scene and menu of the last frame: the watchdog's note)
 volatile bool g_watchQuit = false;
 Thread g_watchThread = nullptr;
 
@@ -172,9 +173,10 @@ void watchdog(void*) {
         char last[kWidth];
         std::snprintf(last, sizeof(last), "%s", line(0));
         if (FILE* f = std::fopen(kWatchdog, "ab")) {
-            std::fprintf(f, "%.3f the game stuck %.1f s (frame %lu); the last mark: %s; the music's thread: stage %d, loops %lu -> %lu in 0.1 s\n",
-                         (now - g_start) / 1000.0, (now - since) / 1000.0, static_cast<unsigned long>(seen), last, b.stage,
-                         static_cast<unsigned long>(a.loops), static_cast<unsigned long>(b.loops));
+            std::fprintf(f, "%s %.3f the game stuck %.1f s (frame %lu, view %x); the last mark: %s; the music's thread: stage %d, loops %lu -> %lu in 0.1 s\n",
+                         EC_VERSION, (now - g_start) / 1000.0, (now - since) / 1000.0, static_cast<unsigned long>(seen),
+                         static_cast<unsigned>(g_viewLast), last, b.stage, static_cast<unsigned long>(a.loops),
+                         static_cast<unsigned long>(b.loops));
             std::fclose(f);
         }
         told = osGetTime();
@@ -183,10 +185,17 @@ void watchdog(void*) {
 
 void start() {
     readHangs();
+#if EC_DEV
     FILE* f = std::fopen("sdmc:/3ds/emberclutch/trace.on", "rb");
     g_on = f != nullptr;
     if (f) std::fclose(f);
+#else
+    g_on = false;  // (the player build never traces: D135)
+#endif
     g_start = g_lastBeat = osGetTime();
+    // The watchdog runs in every build (Noah: keep it if it doesn't hurt; it wakes four times a second
+    // and writes only when the game has stopped).
+    g_watchThread = threadCreate(watchdog, nullptr, 16 * 1024, 0x19, -2, false);
     if (!g_on) return;
     char part[32];
     findHang(part, sizeof(part));
@@ -203,14 +212,12 @@ void start() {
         std::fprintf(w, "session: trace on\n");
         std::fclose(w);
     }
-    g_watchThread = threadCreate(watchdog, nullptr, 16 * 1024, 0x19, -2, false);
-    note("trace on (0.9.13: marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the probes)", kChecked);
+    note("trace on (" EC_VERSION ": marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the probes)", kChecked);
     if (part[0]) note("the last session froze in: %s", part);
     for (int i = 0; i < g_hangCount; ++i) note("drawn the safe way (hangs.txt): %s", g_hangs[i]);
     write();
 }
 
-int g_viewLast = -1;
 unsigned long g_viewFrom = 0, g_frameNo = 0;
 int g_parityHoles[2] = {}, g_parityFrames[2] = {};  // (holes by the drawn frame's number, even and odd)
 

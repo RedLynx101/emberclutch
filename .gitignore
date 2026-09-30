@@ -1,5 +1,7 @@
-# devkitPro build outputs
+# devkitPro build outputs (build-player/ and dist/: the player build, D135)
 build/
+build-player/
+dist/
 *.elf
 *.3dsx
 *.smdh

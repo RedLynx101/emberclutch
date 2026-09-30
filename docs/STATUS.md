@@ -2,10 +2,25 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-29 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.6) on the 3DS** ([plan](plan/v1.md), D89-D112). The teal flicker found and fixed in 0.9.6 (D112): the screen's clear, a memory fill, ran beside the drawing and wiped the ground's depth, so the lake's water showed over it; each screen is now cleared by drawing. Also the den's floor and L/R in flight (burst, brake). Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`, Noah's take 4 ticks kept). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.7) on the 3DS** ([plan](plan/v1.md), D89-D113). The flicker's hunt goes on on the 3DS (D113): 0.9.6 without fills still lost the statics' depth in runs; 0.9.7 trials three ways of drawing the far haze (the only draw with the depth test off) and probes the depth after each part following a hole. Also the take 4 notes: roamers' smooth clock, seats near the neck, the XP bar filling, a burst's wingbeats, Gale's colour. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 21, take 4 with 0.9.6 (2026-09-29)
+## Now: run 21, take 4 with 0.9.7 (2026-09-30)
+- **0.9.6 on the 3DS** (db `run21d` s0, 90 screenshots, trace): the flicker less but still there
+  ("large sections of the ground flicker away"); depth holes in 619 of ~16,900 valley frames with
+  no fill: every still thing without depth, the dragons' draws with theirs. Also: the roamers move
+  in bursts; Gale and Frost the same blue; the XP card should fill; flap while bursting; the
+  Crestwing's rider too far back (walking speed fixed).
+- **0.9.7** (D113): the depth trial (fix 0 as before, 1 the haze's test left on + a framebuffer
+  flush, 2 left on + a split; 6,000 valley frames, holes per fix, then the best kept), probes after
+  holes (the depth after each part), depth maps; the roamers' smooth clock; seats forward (Crestwing,
+  Flurrytail) and their height from the body's triangles; the XP bar filling; wingbeats in a burst;
+  Gale seafoam. Sent to .51, trace.on kept.
+- **Next:** Noah plays the valley 5+ minutes with the trace on. Pull trace.txt: "depth trial done:
+  holes by fix a/b c/d e/f" says which fix works; the "probe" lines say after which part the
+  depth goes if none does.
+
+## Run 21, take 4 with 0.9.6 (2026-09-29)
 - **0.9.5 on the 3DS** (Noah, still testing, notes to come on the page): the ground still flickered
   in and out showing blue; the den's entrance still had ground over its floor; L/R in flight banked.
   The trace's blip watch logged 635 blips in about three minutes of valley, alternating frame by frame between

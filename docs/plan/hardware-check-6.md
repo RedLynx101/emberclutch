@@ -1,4 +1,30 @@
-# Run 21, take 4 (0.9.6)
+# Run 21, take 4 (0.9.7)
+
+**0.9.7, the flicker hunted on your 3DS itself.** Your 0.9.6 trace proved me wrong: the ground's
+depth still vanished (in 619 of about 16,900 valley frames), with no memory fill left in the frame.
+So the clear wasn't it. What the trace does show: in those frames nothing still (ground, trees,
+houses) kept any depth, while your dragon and the people did, and it happens in runs on busy
+views. This build finds out on the 3DS itself, since the emulator never shows it.
+- **For your first two minutes or so in the valley** it takes turns, a second at a time, between
+  the old way of drawing the far haze and two new ones. The haze was the only thing in the game
+  drawn with its depth test switched off, and on the 3DS that behaves differently from the
+  emulator. It counts the flicker under each way, then keeps the best. You may still see the
+  flicker now and then in those first minutes; after that it should be gone if one of the new ways
+  is the fix.
+- **After a flicker** it checks the depth part-way through the next frame, after each part (the
+  ground, the houses, your dragon...), to see where it goes missing. The first few are mapped too.
+Just play as usual in the valley with the trace on, then tell me: the trace has the rest.
+**Your other notes:**
+- The roaming trainers walked by a clock that only counted whole seconds, so they hopped once a
+  second, and when they stopped for you they slid back and hopped on. Now they walk smoothly and
+  stand still.
+- You sit on the Crestwing just behind its neck, in front of the wings. The seat had been behind
+  its hips, on the base of its tail. The Flurrytail had the same fault and is fixed too, and the
+  seat's height now comes from the back's actual surface.
+- After a battle the experience bar fills from where it was ("+38 exp"), with the fanfare as it
+  passes a level.
+- Bursting (R) beats the wings.
+- Gale is seafoam now; its sky blue and Frost's ice blue looked the same.
 
 **0.9.6, the flicker found** (your screenshots and the trace's watch caught it): the teal wasn't
 the ground fogged. It was the lake's see-through water, drawn last, showing over the ground and
@@ -46,6 +72,13 @@ in FBI, SD → cias → `emberclutch.cia` → Install CIA; your save carries ove
 6. (0.9.6) The den's entrance from the yard: no ground over the front of its floor.
 7. (0.9.6) Flying: hold **R** to burst ahead (the stamina bar drains) and **L** to brake (slower,
    easier to land). The help under the map says so.
+8. (0.9.7) The flicker: play in the valley as usual for five minutes or more (busy views: the
+   Market village, the meadow by the lake, near the roaming trainers). After the first couple of
+   minutes, does the ground still flicker or go blue?
+9. (0.9.7) The roaming trainers walk smoothly and stand still when they stop for you.
+10. (0.9.7) Ride your Crestwing: you sit just behind its neck. A Flurrytail too, if you have one.
+11. (0.9.7) Win a battle: the experience bar fills up on the card.
+12. (0.9.7) Burst (R) in flight: the wings beat. Gale's moves are seafoam, not Frost's blue.
 
 ## 1. The flicker, and your haze
 Your screenshots showed it: in some frames every see-through shape vanished at once on **both**

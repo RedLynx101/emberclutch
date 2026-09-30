@@ -1,4 +1,25 @@
-# Run 21, take 4 (0.9.12)
+# Run 21, take 4 (0.9.13)
+
+**0.9.13, Emberclutch: Skyreach Valley.** The flicker held in 0.9.12 (3 flashing frames in 32,819),
+so this build is your list:
+- **The name**: the splash, the title screen, the HOME Menu, the 3D banner and the photo frame say
+  *Emberclutch: Skyreach Valley*. The title says "by Noah, for Emi", and a **Credits** page (from the
+  title, or the heart on the system menu's first page) credits you, and Emi as the inspiration.
+- **The Trailhead freeze**: I couldn't make it freeze in the emulator, so there are three guards. The
+  music can no longer spin on a bad read. The Wanderings wait a few frames before they draw your dragon
+  in 3D. And a **watchdog** writes down what the game and the music were doing if the picture stops for
+  3 seconds. If it freezes, **wait 5 seconds before you turn the 3DS off**, so the note gets written.
+- **The 3D flicker at doors and menus**: in 3D, the tracer's checks were sending a half-drawn eye to the
+  screens on the first frames of every new scene (the den's door, the map, the Cold Vault). They don't now.
+- **Swimming**: getting off over the lake is a jump in, with a splash. Deep water holds you, you swim
+  (a breaststroke), and you climb out at any shore.
+- The rest: leaves rustle when you fly through a treetop; riding energy follows your dragon's Stamina and
+  Wing; dragons make way for the one chasing the ball; the pageant's close-up and its rope; hats clear
+  the eyes on every kind; the tail wreath; the Gleam in the den; a Curlstone walks unless you ride it;
+  Linnet's stall; the Nesting Stone; the cold heights; the rod in your hands; 20 Gleam a shell; a harder
+  hit sound in battle. You can't go out without a dragon now ("It's dangerous to go alone!").
+- **Somewhere on the Nesting Stone's hill** there's a picnic, left from a date.
+- **At the end of this page**, every dragon as a hatchling and grown: pass or fail each for 1.0, with a note.
 
 **0.9.12, the flicker pinned to one draw.** Your 0.9.11 session gave the clearest picture yet. You
 stood still by the den's door for a while, and the tracer checked the same view twelve times. Each
@@ -189,6 +210,35 @@ in FBI, SD → cias → `emberclutch.cia` → Install CIA; your save carries ove
     five minutes or more. Does the ground still flash to the lake's blue anywhere?
 23. (0.9.12) A few battles: do the health bars, the move text and the win card stay steady?
 24. (0.9.12) Go into the Wanderers' Trailhead. If it freezes, restart and tell me (the trace shows where).
+25. (0.9.13) The title: *Emberclutch: Skyreach Valley* on the splash and the title screen, and "by Noah,
+    for Emi". Open **Credits** from the title, and from the heart at the top right of the system menu.
+    The HOME Menu's banner (3D slider up) and the photo frame carry the new name too.
+26. (0.9.13) Go into the Wanderers' Trailhead a few times. If it freezes, wait 5 seconds, then restart.
+27. (0.9.13) With the 3D slider up: go in and out of the den, open the map, go into the Cold Vault and
+    the other places. Is the 3D steady as each screen starts, with no flashing?
+28. (0.9.13) Ride out over the lake and get off (Down): you jump in with a splash. Then swim about, and
+    climb out at a shore. Your dragon swims after you.
+29. (0.9.13) Fly low through the trees' tops: a rush of leaves as you go through.
+30. (0.9.13) Fly on dragons with different Stamina: a high-Stamina dragon bursts longer (about 9 s at 10,
+    4 s at 1), and a high-Wing dragon is a little faster and quicker to turn.
+31. (0.9.13) Throw the ball in the den with all three dragons out: the others step aside for the one
+    chasing it, and it gets there.
+32. (0.9.13) The pageant: the close-up on the judges (Celestine) is clean. There's one lantern string
+    now, over the benches: nothing hangs over the dragons, and the camera doesn't push in.
+33. (0.9.13) Linnet's hats on the Crestwing and the Curlstone, and on the others: the eyes stay clear
+    of every brim. The Puffback's autumn wreath shows on its tail.
+34. (0.9.13) Leave Linnet's stall: you're right where you stood, with no stutter.
+35. (0.9.13) The den's top screen shows your Gleam at the bottom left (not in photos).
+36. (0.9.13) A Curlstone walks when it follows you and in the den, and rolls only when you ride it.
+37. (0.9.13) Try to go out with no dragon to take (only an egg, or everyone away): "It's dangerous to go
+    alone!", and you stay in the den.
+38. (0.9.13) The Nesting Stone: no trust needed, and the two dragons stand apart (the big kinds too).
+39. (0.9.13) The cold heights: take off anywhere up by the Cold Vault and glide down to land 25 m or
+    more below. The Journal's step says so.
+40. (0.9.13) Fishing at the cove: the rod sits in your hands, and a cast swings back over your
+    shoulder, whips forward and flies out. Shells pay 20 Gleam.
+41. (0.9.13) A battle: a heavier hit sound when a dragon takes damage.
+42. (0.9.13) Walk about the Nesting Stone's hill and look for something glinting (with Emi, if you like).
 
 ## 1. The flicker, and your haze
 Your screenshots showed it: in some frames every see-through shape vanished at once on **both**

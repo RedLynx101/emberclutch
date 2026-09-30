@@ -34,7 +34,7 @@ RUN_DOC = "docs/plan/hardware-check-6.md"  # the run's steps
 RUN_KEY = "run21d"      # its database collection (each run its own: run 20's notes stay under `run`)
 LABS = []              # banner labs to mark Held/Froze this run (none in run 21)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch Run 21, take 4 (0.9.12)"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch: Skyreach Valley, run 21 take 4 (0.9.13)"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -207,6 +207,34 @@ def run_list(path: str = RUN_DOC) -> dict:
     return {"title": title, "intro": inline_md(intro), "sections": sections, "labs": LABS, "key": RUN_KEY}
 
 
+# The dragons before 1.0 (Noah: "a list of all of the existing dragons visually and let me PASS/FAIL
+# them with comments"): every kind as a hatchling and grown, from tests/autotest/dragons_*.txt's shots
+# (build/autotest/dragons_hatchling|grown/dNN-<slug>_top.png), cropped to the dragon. Collection
+# `dragons`: a document per kind ({mark: "pass"|"fail", note}).
+DRAGONS = True
+
+
+def dragons() -> list[dict]:
+    inc = (ROOT / "src" / "core" / "kinds_data.inc").read_text(encoding="utf-8")
+    kinds = []
+    for m in re.finditer(r'^    \{"([a-z]+)", "([^"]+)", \d+, \{[^}]*\}, \d+, \{[^}]*\}, Rarity::(\w+).*?"([^"]{24,})"', inc, re.M | re.S):
+        kinds.append({"slug": m.group(1), "name": m.group(2), "rarity": m.group(3), "blurb": m.group(4)})
+    out = []
+    (OUT / "dragons").mkdir(parents=True, exist_ok=True)
+    for k in kinds:
+        pics = {}
+        for form, key in (("hatchling", "h"), ("grown", "g")):
+            shots = sorted((ROOT / "build" / "autotest" / f"dragons_{form}").glob(f"d??-{k['slug']}_top.png"))
+            if not shots:
+                continue
+            dst = OUT / "dragons" / f"{k['slug']}_{key}.png"
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(shots[0]), "-vf", "crop=258:208:68:26", str(dst)], check=True)
+            pics[key] = f"dragons/{dst.name}"
+        if pics:
+            out.append({**k, **pics})
+    return out
+
+
 def fragments() -> str:
     d = ROOT / "docs" / "review"
     return "\n".join(p.read_text(encoding="utf-8") for p in sorted(d.glob("*.html"))) if d.exists() else ""
@@ -216,14 +244,15 @@ def main() -> None:
     shutil.rmtree(OUT, ignore_errors=True)
     OUT.mkdir(parents=True, exist_ok=True)  # (a shell may be sitting in it)
     data = {"sounds": sounds() + made_sounds() if SHOW_SOUNDS else [], "music": music() if SHOW_SOUNDS else [],
-            "run": run_list() if RUN_READY else {}}
+            "run": run_list() if RUN_READY else {}, "dragons": dragons() if DRAGONS else []}
     page = (Path(__file__).with_name("review_template.html").read_text(encoding="utf-8")
             .replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
             .replace("/*TITLE*/", PAGE_TITLE)
             .replace("<!--SECTIONS-->", fragments()))
     (OUT / "index.html").write_text(page, encoding="utf-8")
     n = sum(len(s["files"]) for s in data["sounds"])
-    print(f"[review] {len(data['sounds'])} sounds ({n} takes), {len(data['music'])} music prompts -> {OUT / 'index.html'}")
+    print(f"[review] {len(data['sounds'])} sounds ({n} takes), {len(data['music'])} music prompts, "
+          f"{len(data['dragons'])} dragons -> {OUT / 'index.html'}")
 
 
 if __name__ == "__main__":

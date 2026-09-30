@@ -104,6 +104,14 @@
   .lab { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); }
   .lab[data-v="held"] { background: var(--pass-soft); }
   .lab[data-v="froze"] { background: var(--fail-soft); }
+  .dragon[data-mark="pass"] { background: var(--pass-soft); }
+  .dragon[data-mark="fail"] { background: var(--fail-soft); }
+  .dragon .pics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+  .dragon figure { margin: 0; }
+  .dragon img { width: 100%; height: auto; display: block; border-radius: 8px; background: #2a1d33; }
+  .dragon figcaption { font-size: 12px; color: var(--muted); text-align: center; margin-top: 2px; }
+  .dragon .mark button[aria-pressed="true"][data-v="pass"] { background: var(--pass); border-color: var(--pass); color: var(--panel); }
+  .dragon .mark button[aria-pressed="true"][data-v="fail"] { background: var(--fail); border-color: var(--fail); color: var(--panel); }
   .run-progress { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
   @media (max-width: 520px) { .take { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
@@ -122,6 +130,7 @@
     <a href="#run" id="nav-run" hidden>Run 21</a>
     <a href="#sounds">Sounds</a>
     <a href="#music">Music</a>
+    <a href="#dragons" hidden>Dragons</a>
     <span class="tally" id="tally"></span>
   </nav>
 
@@ -167,16 +176,30 @@
     </div>
     <div id="music-list" class="grid-2"></div>
   </section>
+
+  <section id="dragons" hidden>
+    <div class="section-head">
+      <div class="kicker">Before 1.0</div>
+      <h2>The dragons</h2>
+      <p class="muted">Every kind, as a hatchling and grown (their first colouring, nothing worn). Pass the ones that are ready for 1.0;
+        fail the ones to change and say what in the note (the model, the colours, the face, a clip, their size).</p>
+      <div class="legend">
+        <span><i class="dot" style="background: var(--pass)"></i>Pass: ready for 1.0</span>
+        <span><i class="dot" style="background: var(--fail)"></i>Fail: change it (say what)</span>
+      </div>
+    </div>
+    <div id="dragon-list" class="grid-2"></div>
+  </section>
 </div>
 
 <script>
 const DATA = /*DATA*/null;
 let db = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const state = { sounds: {}, music: {}, run: {}, labs: {} };
+const state = { sounds: {}, music: {}, run: {}, labs: {}, dragons: {} };
 const LS = "emberclutch-review-run21d";  // (each round its own: run 21 take 4)
 try { Object.assign(state, JSON.parse(localStorage.getItem(LS) || "{}")); } catch (_) {}
-state.run ||= {}; state.labs ||= {};
+state.run ||= {}; state.labs ||= {}; state.dragons ||= {};
 function keepLocal() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (_) {} }
 
 function copyButton(text) {
@@ -329,6 +352,36 @@ function runCard(sec) {
   return el;
 }
 
+function dragonCard(k) {
+  const st = (state.dragons[k.slug] ||= { mark: "", note: "" });
+  const el = document.createElement("article");
+  el.className = "card dragon";
+  el.dataset.mark = st.mark;
+  el.innerHTML = `<div class="card-head"><h3>${esc(k.name)}</h3><span class="chip">${esc(k.rarity)}</span></div>
+    <p class="muted">${esc(k.blurb)}</p>
+    <div class="pics">
+      ${k.h ? `<figure><img src="${esc(k.h)}" alt="${esc(k.name)} hatchling" loading="lazy"><figcaption>Hatchling</figcaption></figure>` : "<span></span>"}
+      ${k.g ? `<figure><img src="${esc(k.g)}" alt="${esc(k.name)} grown" loading="lazy"><figcaption>Grown</figcaption></figure>` : "<span></span>"}
+    </div>
+    <div class="mark" role="group" aria-label="${esc(k.name)}"><button type="button" data-v="pass">Pass</button><button type="button" data-v="fail">Fail</button></div>
+    <label class="muted" for="dnote-${esc(k.slug)}" style="font-size:13px;font-weight:700">Comments</label>
+    <textarea id="dnote-${esc(k.slug)}" placeholder="What's good, what to change"></textarea>
+    <div class="saved" aria-live="polite"></div>`;
+  el.querySelectorAll(".mark button").forEach((b) => {
+    b.setAttribute("aria-pressed", String(st.mark === b.dataset.v));
+    b.addEventListener("click", () => {
+      st.mark = st.mark === b.dataset.v ? "" : b.dataset.v;
+      el.dataset.mark = st.mark;
+      el.querySelectorAll(".mark button").forEach((x) => x.setAttribute("aria-pressed", String(st.mark === x.dataset.v)));
+      save("dragons", k.slug, el);
+    });
+  });
+  const ta = el.querySelector("textarea");
+  ta.value = st.note || "";
+  ta.addEventListener("change", () => { st.note = ta.value; save("dragons", k.slug, el); });
+  return el;
+}
+
 function tally() {
   let takes = 0, marked = 0;
   for (const s of DATA.sounds) { takes += s.files.length; const t = (state.sounds[s.slug] || {}).takes || {};
@@ -340,7 +393,9 @@ function tally() {
   const runText = steps ? `${done} of ${steps} steps done · ` : "";
   if (steps) document.getElementById("run-progress").textContent = `${done} of ${steps} steps done`;
   const soundText = takes ? ` · ${marked} of ${takes} takes marked` : "", musicText = DATA.music.length ? ` · ${made} of ${DATA.music.length} tracks done` : "";
-  document.getElementById("tally").textContent = `${runText.replace(/ · $/, "")}${soundText}${musicText}`;
+  const drags = (DATA.dragons || []).length, dragMarked = (DATA.dragons || []).filter((k) => (state.dragons[k.slug] || {}).mark).length;
+  const dragText = drags ? ` · ${dragMarked} of ${drags} dragons marked` : "";
+  document.getElementById("tally").textContent = `${runText.replace(/ · $/, "")}${soundText}${musicText}${dragText}`;
 }
 
 function render() {
@@ -359,6 +414,11 @@ function render() {
   }
   const sl = document.getElementById("sound-list"); sl.replaceChildren(...DATA.sounds.map(soundCard));
   const ml = document.getElementById("music-list"); ml.replaceChildren(...DATA.music.map(musicCard));
+  if ((DATA.dragons || []).length) {
+    document.getElementById("dragons").hidden = false;
+    document.querySelectorAll('nav a[href="#dragons"]').forEach((a) => (a.hidden = false));
+    document.getElementById("dragon-list").replaceChildren(...DATA.dragons.map(dragonCard));
+  }
   tally();
 }
 render();
@@ -370,7 +430,8 @@ render();
     let changed = false;
     const runSecs = (DATA.run.sections || []).map((x) => ({ slug: x.id }));
     const labs = (DATA.run.labs || []).map((x) => ({ slug: x }));
-    for (const [kind, list] of [["sounds2", DATA.sounds], ["music", DATA.music], [DATA.run.key || "run", runSecs], ["labs", labs]]) {
+    for (const [kind, list] of [["sounds2", DATA.sounds], ["music", DATA.music], [DATA.run.key || "run", runSecs], ["labs", labs],
+                                ["dragons", DATA.dragons || []]]) {
       for (const it of list) {
         const snap = await db.doc(`${kind}/${it.slug}`).get();
         const into = kind === "sounds2" ? "sounds" : kind === DATA.run.key ? "run" : kind;

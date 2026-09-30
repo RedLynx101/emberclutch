@@ -1,0 +1,75 @@
+# Every kind, grown, for the review's dragons (1.0: Noah's PASS/FAIL before 1.0): the wardrobe's
+# whole view, nothing worn.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 238 56
+key SELECT
+wait 3
+tips seen
+pg wardrobe
+wait 2
+pg spin 0.6
+pg tab 4
+pg kind 0 0
+wait 1.8
+shot d01-pouncer
+pg kind 1 0
+wait 1.8
+shot d02-puffback
+pg kind 2 0
+wait 1.8
+shot d03-curlstone
+pg kind 3 0
+wait 1.8
+shot d04-crestwing
+pg kind 4 0
+wait 1.8
+shot d05-ribbontail
+pg kind 5 0
+wait 1.8
+shot d06-flurrytail
+pg kind 6 0
+wait 1.8
+shot d07-glimmermoth
+pg kind 7 0
+wait 1.8
+shot d08-duskwing
+pg kind 8 0
+wait 1.8
+shot d09-blazeplume
+pg kind 9 0
+wait 1.8
+shot d10-kindlemoss
+pg kind 10 0
+wait 1.8
+shot d11-cindershell
+pg kind 11 0
+wait 1.8
+shot d12-bloomstone
+pg kind 12 0
+wait 1.8
+shot d13-lilyfin
+pg kind 13 0
+wait 1.8
+shot d14-frostcurl
+quit

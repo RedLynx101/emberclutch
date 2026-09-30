@@ -21,7 +21,6 @@
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
-#include "core/campaign.hpp"
 #include "core/kinds.hpp"
 #include "core/place_layout.hpp"
 #include "core/rig.hpp"

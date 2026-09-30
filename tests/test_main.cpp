@@ -796,7 +796,10 @@ TEST(save_round_trip) {
     std::vector<u8> buf(maxEncodedSize());
     const std::size_t n = encodeSave(s, 7, kT0 + 99, buf.data(), buf.size());
     CHECK(n > kSaveHeaderSize);
-    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots + kBreedCount + 6 + (1 + kDexKindSlots + 8 + 1) + (1 + kWorldBytes) + (2 + kProgressBytes + kProgressCoveBytes + kProgressCritterBytes + kProgressRoamBytes) + 2 + 5 + 2 + 2 +
+    // (the story block, D137: its size, then quests, flags, vars (each with its count), the mailbox, the days)
+    constexpr std::size_t kStoryBlock = 2 + (1 + story::kMaxQuests) + (1 + story::kFlagBytes) + (1 + story::kMaxVars) + 16 +
+                                        (1 + 4 * story::kMaxQuests) + (1 + 4 * story::kMaxEvents);
+    CHECK(n == kSaveHeaderSize + 16 + 8 + 8 + 4 + 12 + 16 + 24 + 27 + kBowlSlots + kBreedCount + 6 + (1 + kDexKindSlots + 8 + 1) + (1 + kWorldBytes) + (2 + kProgressBytes + kProgressCoveBytes + kProgressCritterBytes + kProgressRoamBytes) + kStoryBlock + 2 + 5 + 2 + 2 +
                    5 * (132 + 16 + 9 + 1 + 12 + 2 + 2 + 1 + kRegionCount + 12 + 37));
     static SaveData out;
     SaveHeaderInfo info;
@@ -1073,6 +1076,7 @@ int main() {
     runFishingTests();  // Driftwood Cove (workstream C)
     runPageantTests();  // the pageant, accessories and dyes
     runBattleTests();  // 1.0 battles (workstream B)
+    runStoryTests();  // the story engine (D137)
     runCritterTests();  // the valley's critters (workstream L)
     runRoamerTests();  // roaming trainers and duels (workstream D)
     std::printf("\n%d checks, %d failures\n", g_checks, g_failures);

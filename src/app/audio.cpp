@@ -56,7 +56,11 @@ const char* const kSfxFiles[] = {
     "bird-chirp", "bird-flutter", "rabbit-hop", "frog-croak", "duck-quack", "fox-yip", "butterfly-land", "whistle-call",
     "critter-friend", "leaf-rustle",
     "roamer-hello", "hands-clap", "soft-snore",  // (workstream D)
-    "hurt", "tree-rush"};  // (1.0, D122: docs/audio/sfx-batch-5.json)
+    "hurt", "tree-rush",  // (1.0, D122: docs/audio/sfx-batch-5.json)
+    // (D137: the feelings' pops, the mailbox, Custard; make_synth_sfx.py)
+    "emote-happy", "emote-laugh", "emote-excited", "emote-surprised", "emote-shock", "emote-sad", "emote-crying",
+    "emote-angry", "emote-huff", "emote-worried", "emote-scared", "emote-sleepy", "emote-love", "emote-proud",
+    "emote-cool", "emote-shy", "emote-thinking", "emote-wistful", "emote-dizzy", "mail-arrive", "bark"};
 static_assert(sizeof(kSfxFiles) / sizeof(kSfxFiles[0]) == static_cast<int>(Sfx::Count), "one file per Sfx");
 // Stand-ins (D35) for sound brief 2, in Sfx order from BallRoll: what plays until the sound's
 // own file arrives, and how it's retuned. They match what these moments played before.
@@ -98,6 +102,13 @@ constexpr StandIn kStandIns[] = {
     {Sfx::Confirm, 1.2f, 0.8f},  {Sfx::Brush, 1.0f, 0.6f},
     {Sfx::WhistleStart, 1.3f, 0.5f}, {Sfx::Thump, 1.9f, 0.4f}, {Sfx::Purr, 0.7f, 0.5f},  // (workstream D)
     {Sfx::HitBig, 0.8f, 1.0f},   {Sfx::LeafRustle, 0.8f, 1.0f},  // (1.0: their files are in)
+    // the feelings' pops, the mailbox, Custard (D137: their synths are in; these only if one goes missing)
+    {Sfx::Sparkle, 1.3f, 0.5f},  {Sfx::Chirp, 1.6f, 0.5f},   {Sfx::Sparkle, 1.5f, 0.6f}, {Sfx::Notice, 1.0f, 0.8f},
+    {Sfx::Notice, 1.2f, 0.9f},   {Sfx::Whimper, 1.0f, 0.5f}, {Sfx::Whimper, 1.2f, 0.5f}, {Sfx::Thump, 0.9f, 0.6f},
+    {Sfx::Thump, 1.2f, 0.5f},    {Sfx::Splash, 1.8f, 0.3f},  {Sfx::Whimper, 1.4f, 0.4f}, {Sfx::Purr, 0.8f, 0.4f},
+    {Sfx::Sparkle, 1.0f, 0.6f},  {Sfx::Confirm, 1.0f, 0.7f}, {Sfx::Tap, 0.7f, 0.6f},     {Sfx::Tap, 1.4f, 0.4f},
+    {Sfx::Tap, 0.9f, 0.5f},      {Sfx::Sparkle, 0.8f, 0.4f}, {Sfx::Chirp, 0.8f, 0.4f},   {Sfx::Notice, 1.3f, 0.8f},
+    {Sfx::Chirp, 0.7f, 0.6f},
 };
 static_assert(sizeof(kStandIns) / sizeof(kStandIns[0]) == static_cast<int>(Sfx::Count) - kFirstBrief2,
               "a stand-in for every brief 2 sound");

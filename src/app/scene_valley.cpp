@@ -31,7 +31,8 @@
 #include "app/valley_ext.hpp"
 #include "app/wildlife.hpp"  // the valley's critters (workstream L)
 #include "core/accessories.hpp"
-#include "core/campaign.hpp"
+#include "app/story_app.hpp"
+#include "core/story.hpp"
 #include "core/care.hpp"
 #include "core/clock.hpp"
 #include "core/daylight.hpp"
@@ -331,15 +332,15 @@ void animateStar(App& app, ValleyScene& s) {
     const int kind = findKind("glimmermoth");
     if (kind < 0) return;
     const SaveData& g = app.game;
-    const campaign::QuestView wings = campaign::view(g, 5), festival = campaign::view(g, 7);
+    const int wings = story::questStep(g, story::kQWings), festival = story::questStep(g, story::kQLanternFestival);
     const DayBlend day = dayBlend(nowLocal(app));
     int over = -1;
-    if (festival.done) {
+    if (festival == story::kQuestDone) {
         if (day.weight(kLightDay) < 0.35f) over = kPlaceLake;  // on nights after, now and then about
-    } else if (festival.started && festival.stepIndex >= 1) {
+    } else if (festival >= 2) {
         over = kPlaceArena;  // every lantern lit: it waits over the arena for the festival
-    } else if (wings.done || (wings.started && wings.stepIndex >= 2)) {
-        over = kPlaceIsles;  // the first sighting, over the floating isles
+    } else if (wings >= 3) {
+        over = kPlaceIsles;  // the first sighting, over the floating isles (from the isles' step on)
     }
     r3d::wantKind(over >= 0 ? kind : -1);
     if (over < 0 || !r3d::kindReady(kind)) return;
@@ -435,8 +436,7 @@ void lookRound(App& app, ValleyScene& s) {
         if (reached && world::findPlace(app.game, p.id)) {
             audio::playStinger("place-found");
             showToastf(app, str::kFoundPlace, info.name);
-            const campaign::News n = campaign::update(app.game);
-            if (n.stepped >= 0 || n.finished >= 0) audio::playSfx(audio::Sfx::QuestPage);
+            storyUpdate(app);
             saveNow(app);
         }
     }
@@ -822,7 +822,7 @@ void doAction(App& app, ValleyScene& s) {
                 showToast(app, str::kLanternLit);
                 break;
             }
-            if (s.actionPlace == kPlaceArena && campaign::view(app.game, campaign::kQuests - 1).stepIndex < 2) {
+            if (s.actionPlace == kPlaceArena && story::questStep(app.game, story::kQLanternFestival) < 3) {
                 showToast(app, str::kLanternFestival);  // the great lantern waits for the festival
                 break;
             }
@@ -858,7 +858,7 @@ void doAction(App& app, ValleyScene& s) {
             s.cam = ChaseCamera{};
             if (!(app.game.world.flags & kFlagRode)) {
                 app.game.world.flags |= kFlagRode;
-                campaign::update(app.game);
+                storyUpdate(app);
             }
             break;
         case Action::Call:
@@ -1193,7 +1193,7 @@ void update(App& app, const Input& in) {
             if (const ValleyPlaceInfo* vault = va.place(kPlaceVault);
                 vault && glidedFromHeights(vault->at, 70.0f, s.leftGround, s.flight.pos)) {
                 app.game.world.flags |= kFlagGlided;
-                campaign::update(app.game);
+                storyUpdate(app);
             }
         s.skimFor -= app.dt;
         if (s.flight.skimming && s.skimFor <= 0) {
@@ -1220,13 +1220,7 @@ void update(App& app, const Input& in) {
         if (world::lightLantern(app.game, s.breathPlace)) {
             audio::playSfx(audio::Sfx::LanternLight);
             showToastf(app, str::kLanternLitAt, world::placeInfo(s.breathPlace).name);
-            const campaign::News n = campaign::update(app.game);
-            if (n.finished >= 0) {
-                audio::playStinger("quest-done");
-                showToastf(app, str::kQuestFinished, campaign::view(app.game, n.finished).title);
-            } else if (n.stepped >= 0) {
-                audio::playSfx(audio::Sfx::QuestPage);
-            }
+            storyUpdate(app);
             saveNow(app);
         }
         s.breathT = -1;
@@ -1253,7 +1247,7 @@ void update(App& app, const Input& in) {
             audio::playSfx(audio::Sfx::Sniff);
             audio::playSfx(audio::Sfx::FindSparkle);
             showToastf(app, str::kFoundStray, s.shown.name);
-            campaign::update(app.game);
+            storyUpdate(app);
             saveNow(app);
         }
     }
@@ -1835,9 +1829,9 @@ void openValleyAt(App& app, int place) {
     app.scene = SceneId::Valley;
     if (!s.loaded) return;
     travelTo(app, s, place, true);
-    if (!(g.world.flags & kFlagEnteredValley)) {  // the first step outside: the Lantern Festival's first step
+    if (!(g.world.flags & kFlagEnteredValley)) {  // the first step outside
         g.world.flags |= kFlagEnteredValley;
-        campaign::update(g);
+        story::update(g, nowLocal(app));
     }
     g.world.inValley = 1;
 }

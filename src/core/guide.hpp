@@ -18,7 +18,7 @@ namespace guide {
 
 struct Goal {
     Tracked kind = Tracked::None;
-    int id = 0;  // the quest (core/campaign) or the place (core/valley ValleyPlace); else 0
+    int id = 0;  // the quest (core/story) or the place (core/valley ValleyPlace); else 0
     bool operator==(const Goal& o) const { return kind == o.kind && id == o.id; }
 };
 
@@ -26,7 +26,7 @@ struct Goal {
 // league left to win, the Hollow, once their places are found; any place.
 bool open(const SaveData& s, const Goal& g);
 // The goal tracked now: the one picked while it's still open, else the quest in hand
-// (campaign::currentQuest), else nothing (kind None).
+// (story::currentQuest), else nothing (kind None).
 Goal current(const SaveData& s);
 // Picked in the Journal (rather than just being the quest in hand).
 bool picked(const SaveData& s, const Goal& g);
@@ -47,7 +47,7 @@ struct Target {
 };
 // Where a goal points in the valley (`from`: where you are, for the nearest of several, as the
 // festival's unlit lanterns). Not valid when there's nowhere to go (grow up together...).
-Target target(const SaveData& s, const Valley& v, const Goal& g, Vec2 from);
+Target target(const SaveData& s, const Valley& v, const Goal& g, Vec2 from, s64 now);
 
 }  // namespace guide
 }  // namespace ec

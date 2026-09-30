@@ -56,6 +56,12 @@ constexpr Accessory kAccessories[kAccessoryCount] = {
     {"Snowflake charm", S::Tail, H::SnowCharm, 240, {{214, 228, 246}, {170, 220, 255}}, kSilver, kIce, kStyleFrosty | kStyleStarry, W::Hollow},
     {"Flower wreath", S::Tail, H::TailWreath, 100, {{110, 170, 90}, {255, 210, 110}}, {250, 150, 180}, {255, 236, 150}, kStyleFloral, W::Find},
     {"Ember tassel", S::Tail, H::Tassel, 150, {{230, 90, 40}, {250, 190, 80}}, kGold, {255, 200, 100}, kStyleFiery | kStyleWild, W::Find},
+    // the story's gifts (D137: the Living Valley pass), never sold
+    {"Nest blanket", S::Back, H::Blanket, 200, {{196, 120, 80}, {120, 150, 110}}, {245, 226, 180}, {250, 236, 200}, kStyleCute | kStyleFloral, W::Gift},
+    {"Surveyor cap", S::Head, H::SunHat, 160, {{110, 140, 80}, {214, 86, 70}}, kBrass, {250, 210, 90}, kStyleWild | kStyleCute, W::Gift},
+    {"Starfire crown", S::Head, H::Crown, 500, {{250, 236, 180}, {120, 160, 250}}, kGold, {200, 230, 255}, kStyleStarry | kStyleElegant | kStyleFestive, W::Gift},
+    {"Warden scale", S::Tail, H::SnowCharm, 400, {{220, 240, 255}, {140, 200, 240}}, kSilver, kIce, kStyleFrosty | kStyleStarry, W::Gift},
+    {"Lucky lure", S::Tail, H::Tassel, 260, {{210, 120, 60}, {240, 220, 120}}, kBrass, {255, 120, 90}, kStyleWild | kStyleCute, W::Gift},
 };
 
 // The dyes: natural (its own colours), eight at the dye stall, four won at the shows.

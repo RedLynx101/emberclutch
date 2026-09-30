@@ -156,8 +156,18 @@ enum class KeyboardFor : u8 { None, PlayerName, NameHatchling, Rename };
 // START's system menu (src/app/system_menu.cpp): the game waits while it's open.
 enum class MenuPage : u8 { Closed, Main, Settings, DeleteAsk, DeleteSure, Dex, Credits };
 
+// The mailbox by the den's door (D137, app/mailbox.cpp): open over the scene, the letter picked (-1:
+// the list) and its page, the list's first row.
+struct MailboxState {
+    bool open = false;
+    int letter = -1;
+    int page = 0;
+    int first = 0;
+};
+
 struct App {
     DialogueState talk;       // talking to someone in the valley (app/dialogue)
+    MailboxState mailbox;     // the mailbox's letters (app/mailbox)
     bool fromValley = false;  // a place's scene was entered from the valley (leaving goes back out)
     SceneId scene = SceneId::Title;
     C3D_RenderTarget* top = nullptr;
@@ -297,6 +307,8 @@ u32 stepCount(const App& app);
 
 // Saves to the next A/B slot; shows a toast if the SD card write fails.
 void saveNow(App& app);
+// The festival's gift (the end of Act 1): a star-born egg into a free nest (else the Cold Vault).
+void giveStarEgg(App& app);
 
 // A fresh game in memory (the settings stay): nothing is written until the new egg is chosen.
 void resetForNewGame(App& app);

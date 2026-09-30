@@ -1,6 +1,5 @@
-// Beta's world (core/world) and the Lantern Festival (core/campaign): places found and lanterns
-// lit; the quests follow the world in any order and never stick; the save keeps it all and an
-// older save starts a fresh world with the den found.
+// Beta's world (core/world): places found and lanterns lit; the save keeps it all and an older
+// save starts a fresh world with the den found. (The quests are the story's: tests/test_story.cpp.)
 #include <cmath>
 #include <cstring>
 #include <string>
@@ -8,7 +7,6 @@
 
 #include "check.hpp"
 #include "core/accessories.hpp"
-#include "core/campaign.hpp"
 #include "core/trainer.hpp"
 #include "core/items.hpp"
 #include "core/market.hpp"
@@ -33,48 +31,6 @@ TEST(places_and_lanterns) {
     CHECK(!world::lightLantern(s, kPlaceLake));  // no lantern there
     CHECK(world::lightLantern(s, kPlaceDen) && !world::lightLantern(s, kPlaceDen) && world::lanternsLit(s) == 1);
     for (int p = 0; p < world::placeCount(); ++p) CHECK(world::placeInfo(p).name[0] != 0 && world::placeInfo(p).findRadius > 0);
-}
-
-// The quests: the first begins at once; steps move on when the world allows, several at once;
-// later quests wait for earlier ones; the festival needs every lantern and ends in the egg.
-TEST(the_lantern_festival) {
-    static SaveData s;
-    s = SaveData{};
-    world::startWorld(s);
-    s.gleam = 0;
-    campaign::News n = campaign::update(s);
-    CHECK(n.started == 0 && campaign::currentQuest(s) == 0);
-    CHECK(std::strcmp(campaign::view(s, 0).step, "Head out of the den with your dragon") == 0);
-    CHECK(!campaign::view(s, 1).started);
-    // Everything for quest 1 at once: it finishes in one update, and Market day begins.
-    s.world.flags |= kFlagEnteredValley | kFlagMetKeeper;
-    world::lightLantern(s, kPlaceDen);
-    n = campaign::update(s);
-    CHECK(n.finished == 0 && s.world.quest[0] == campaign::kQuestDone && n.gleam == 60 && s.gleam == 60);
-    CHECK(campaign::view(s, 1).started && campaign::currentQuest(s) == 1);
-    // Out of order: the Market's lantern lit before the Fruit Catch is won; the quest waits on the cup.
-    world::findPlace(s, kPlaceMarket);
-    world::lightLantern(s, kPlaceMarket);
-    campaign::update(s);
-    CHECK(campaign::view(s, 1).stepIndex == 1);
-    s.world.cups[static_cast<int>(Challenge::FruitCatch)] = 1;
-    n = campaign::update(s);
-    CHECK(n.finished == 1 && campaign::view(s, 2).started && campaign::view(s, 3).started && campaign::view(s, 4).started);
-    CHECK(!campaign::view(s, 7).started);  // the festival waits for the rest
-    // Every other quest done, every lantern lit but the arena's: the festival, then the egg.
-    for (int p = 0; p < kPlaceCount; ++p)
-        if (world::placeInfo(p).lantern && p != kPlaceArena) world::lightLantern(s, p);
-    for (int p = 0; p < kPlaceCount; ++p) world::findPlace(s, p);
-    s.world.flags |= kFlagHeardStory | kFlagFoundStray | kFlagGlided | kFlagRode | kFlagMetTraveller | kFlagWandered;
-    s.world.cups[static_cast<int>(Challenge::SkyRings)] = 1;
-    campaign::update(s);
-    for (int q = 0; q < 7; ++q) CHECK(s.world.quest[q] == campaign::kQuestDone);
-    CHECK(campaign::view(s, 7).stepIndex == 1);  // all lanterns: on to the trial
-    s.world.cups[static_cast<int>(Challenge::LanternTrial)] = 2;
-    s.world.flags |= kFlagFestival;
-    n = campaign::update(s);
-    CHECK(n.finished == 7 && n.starEgg && campaign::currentQuest(s) == -1);
-    CHECK(!campaign::update(s).starEgg);  // once
 }
 
 TEST(the_world_saves) {
@@ -126,54 +82,6 @@ TEST(the_goods_stall) {
     for (int i = 0; i < kItems; ++i) buyItem(s, static_cast<Item>(i));
     stallToday(s, 102, b);
     for (int k = 0; k < kStallSpots; ++k) CHECK(b[k] == Item::Count);
-}
-
-// The villagers: first meetings settle a flag once, names fill in, and the festival night is told
-// by Rowan or Wren once the Lantern Trial is won.
-TEST(the_villagers_talk) {
-    static SaveData s;
-    s = SaveData{};
-    world::startWorld(s);
-    std::strcpy(s.playerName, "Noah");
-    s.dragons[0] = Dragon{};
-    s.dragons[0].id = 7;
-    std::strcpy(s.dragons[0].name, "Ember");
-    s.dragonCount = 1;
-    s.world.partnerId = 7;
-    campaign::update(s);
-    Talk t = talkTo(s, Villager::Keeper);
-    CHECK(t.count >= 3 && (t.sets & kFlagMetKeeper));
-    char line[160];
-    fillLine(t.lines[0], s, line, sizeof(line));
-    CHECK(std::strstr(line, "Noah") && !std::strchr(line, '{'));
-    fillLine(t.lines[3], s, line, sizeof(line));
-    CHECK(std::strstr(line, "Ember") != nullptr);
-    CHECK(finishTalk(s, Villager::Keeper, t) && !finishTalk(s, Villager::Keeper, t));
-    CHECK(!(talkTo(s, Villager::Keeper).sets & kFlagMetKeeper));  // met: the next talk is ordinary
-    for (int v = 0; v < kVillagers; ++v) {
-        const Talk k = talkTo(s, static_cast<Villager>(v));
-        CHECK(k.count >= 1);
-        for (int i = 0; i < k.count; ++i) {
-            fillLine(k.lines[i], s, line, sizeof(line));
-            CHECK(std::strlen(line) < 150);  // fits the box
-        }
-    }
-    // The meadow stray: Bram asks, then waits for it.
-    finishTalk(s, Villager::Sanctuary, talkTo(s, Villager::Sanctuary));
-    CHECK((s.world.flags & kFlagMetSanctuary) && std::strstr(talkTo(s, Villager::Sanctuary).lines[0], "meadow"));
-    // The festival night: every quest but the last done, the trial won.
-    for (int q = 0; q < 7; ++q) s.world.quest[q] = campaign::kQuestDone;
-    for (int p = 0; p < kPlaceCount; ++p) {
-        world::findPlace(s, p);
-        if (world::placeInfo(p).lantern) world::lightLantern(s, p);
-    }
-    s.world.cups[static_cast<int>(Challenge::LanternTrial)] = 1;
-    campaign::update(s);
-    CHECK(campaign::view(s, 7).stepIndex == 2);
-    t = talkTo(s, Villager::Steward);
-    CHECK(t.sets & kFlagFestival);
-    finishTalk(s, Villager::Steward, t);
-    CHECK(campaign::update(s).starEgg);
 }
 
 // The people: every model loads with the game's reader, binds the one clip library (every
@@ -329,10 +237,8 @@ TEST(finds_and_the_fog) {
 
 void runWorldTests() {
     RUN(places_and_lanterns);
-    RUN(the_lantern_festival);
     RUN(the_world_saves);
     RUN(the_goods_stall);
-    RUN(the_villagers_talk);
     RUN(the_people);
     RUN(finds_and_the_fog);
 }

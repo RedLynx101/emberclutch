@@ -32,7 +32,7 @@ enum StyleTag : u8 {
 constexpr int kStyleTags = 8;
 const char* styleName(int bit);  // the tag's name by its bit index (0 cute .. 7 starry)
 
-enum class WearSource : u8 { Stall, Prize, Hollow, Find };
+enum class WearSource : u8 { Stall, Prize, Hollow, Find, Gift };  // (Gift: a story's reward, never sold: D137)
 
 // The meshes (core/wear_mesh builds each in its slot's own frame, core/wear_fit puts it on).
 enum class WearShape : u8 {
@@ -56,7 +56,7 @@ struct Accessory {
     WearSource source;
 };
 
-constexpr int kAccessoryCount = 32;  // (room for 64: Progress::accessories)
+constexpr int kAccessoryCount = 37;  // (room for 64: Progress::accessories)
 int accessoryCount();
 const Accessory& accessoryInfo(int accessory);
 const char* slotName(WearSlot slot);

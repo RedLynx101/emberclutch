@@ -19,7 +19,7 @@
 #include "app/wildlife.hpp"  // the valley's critters (workstream L)
 #include "app/roamers_feature.hpp"  // roaming trainers (workstream D)
 #include "app/scenes.hpp"
-#include "core/campaign.hpp"
+#include "core/story.hpp"
 #include "core/trainer.hpp"
 #include "core/clock.hpp"
 #include "core/valley.hpp"
@@ -289,15 +289,20 @@ Input next(App& app) {
                 app.autoGoto[5] = c.a[4];
                 done = true;
                 break;
-            case Op::Festival:  // the Lantern Festival's eve: every other quest done, every lantern but the arena's lit
-                for (int q = 0; q < campaign::kQuests - 1; ++q) app.game.world.quest[q] = campaign::kQuestDone;
+            case Op::Festival: {  // the Lantern Festival's eve: the main story's other quests done, every lantern but the arena's lit
+                const s64 now = nowLocal(app);
+                for (int q : {story::kQKeepersApprentice, story::kQMarketDay, story::kQHilltop, story::kQMeadow, story::kQColdHeights,
+                              story::kQWings, story::kQTrailhead})
+                    story::finishQuest(app.game, q, now);
                 for (int p = 0; p < kPlaceCount; ++p) {
                     world::findPlace(app.game, p);
                     if (world::placeInfo(p).lantern && p != kPlaceArena) world::lightLantern(app.game, p);
                 }
-                campaign::update(app.game);
+                story::startQuest(app.game, story::kQLanternFestival);
+                story::update(app.game, now);
                 done = true;
                 break;
+            }
             case Op::Wander:  // the dragon cared for sets off (if no one's out), and that many steps are walked
                 if (wandererIndex(app.game) < 0) setOff(app.game, app.careIndex, stepCount(app), nowLocal(app));
                 app.devSteps += static_cast<u32>(c.a[0]);

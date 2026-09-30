@@ -73,7 +73,8 @@ TEST(accessories_table_is_sound) {
         CHECK(shape >= first[s] && shape < first[s + 1]);
     }
     CHECK(names.size() == static_cast<std::size_t>(kAccessoryCount));
-    for (int n : perSlot) CHECK(n == 8);
+    // eight a slot to buy or win, and the story's gifts on top (D137: two hats, a blanket, two tail charms)
+    CHECK(perSlot[0] == 10 && perSlot[1] == 8 && perSlot[2] == 9 && perSlot[3] == 10);
     CHECK(prizes >= 5);
     // Every style is carried by something, and something at the stall for each slot.
     for (int b = 0; b < kStyleTags; ++b) {

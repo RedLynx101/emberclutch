@@ -38,5 +38,6 @@ void runInterfaceTests(); // tests/test_interface.cpp (1.0 interface: the tracke
 void runFishingTests();   // tests/test_fishing.cpp (Driftwood Cove, workstream C)
 void runPageantTests();   // tests/test_pageant.cpp (the pageant, accessories and dyes)
 void runBattleTests();    // tests/test_battle.cpp (1.0 battles, workstream B)
+void runStoryTests();     // tests/test_story.cpp (the story engine, D137)
 void runCritterTests();   // tests/test_critters.cpp (the valley's critters, workstream L)
 void runRoamerTests();    // tests/test_roamers.cpp (roaming trainers and duels, workstream D)

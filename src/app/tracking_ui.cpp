@@ -8,7 +8,8 @@
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
-#include "core/campaign.hpp"
+#include "core/story.hpp"
+#include "core/villagers.hpp"
 #include "core/valley.hpp"
 #include "core/world.hpp"
 
@@ -17,10 +18,10 @@ namespace ec {
 void goalWords(const SaveData& s, const guide::Goal& g, char* title, int titleCap, char* step, int stepCap) {
     title[0] = step[0] = 0;
     switch (g.kind) {
-        case Tracked::Quest: {
-            const campaign::QuestView q = campaign::view(s, g.id);
+        case Tracked::Quest: {  // (the story's, D137: its step's words with your names in them)
+            const story::QuestView q = story::view(s, g.id, 0);
             std::snprintf(title, titleCap, "%s", q.title);
-            std::snprintf(step, stepCap, "%s", q.done ? str::kQuestDone : q.step);
+            fillLine(q.done ? str::kQuestDone : q.step, s, step, stepCap);
             break;
         }
         case Tracked::BattleBoard:
@@ -66,7 +67,7 @@ void trackFlag(float x, float y, float size, float t, bool on) {
 void drawTrackedOnMap(App& app, const Valley& v, float mapX, float mapY, float mapSize) {
     const guide::Goal g = guide::current(app.game);
     if (g.kind == Tracked::None || v.size() <= 0) return;
-    const guide::Target t = guide::target(app.game, v, g, {app.game.world.x, app.game.world.y});
+    const guide::Target t = guide::target(app.game, v, g, {app.game.world.x, app.game.world.y}, nowLocal(app));
     if (!t.valid) return;
     const float k = mapSize / v.size();
     float mx = mapX + (t.at.x - v.x0) * k, my = mapY + (1.0f - (t.at.y - v.y0) / v.size()) * mapSize;

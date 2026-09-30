@@ -27,7 +27,7 @@
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
 #include "app/wardrobe.hpp"  // the pageant
-#include "core/campaign.hpp"
+#include "core/story.hpp"
 #include "core/clock.hpp"
 #include "core/dragon.hpp"
 #include "core/items.hpp"
@@ -122,7 +122,7 @@ int main() {
         fixCare(app);
         markVisit(activeDragon(app), now);
         dexSeeAll(app.game);  // a save from before the Dragondex: everyone hatched is in it
-        campaign::update(app.game);  // Beta: a save from before it begins the Lantern Festival
+        story::update(app.game, now);  // the story caught up (letters due while you were away wait in the mailbox)
     }
 
     audio::setVolumes(app.game.settings.musicVolume, app.game.settings.sfxVolume);

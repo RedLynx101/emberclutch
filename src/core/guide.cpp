@@ -2,10 +2,10 @@
 
 #include <cmath>
 
-#include "core/campaign.hpp"
 #include "core/league.hpp"
 #include "core/place_layout.hpp"
 #include "core/save.hpp"
+#include "core/story.hpp"
 #include "core/valley.hpp"
 #include "core/villagers.hpp"
 #include "core/world.hpp"
@@ -14,12 +14,10 @@ namespace ec::guide {
 namespace {
 
 // Spots the game keeps elsewhere, in their places' frames (keep them in step): the challenges'
-// notice boards (app/scene_challenge kBoards) and the stray in the meadow (app/scene_valley strayAt).
+// notice boards (app/scene_challenge kBoards). (A quest's search areas, the stray's flowers and the
+// cold heights' edges, are the story's now: story/*.story `where area`.)
 constexpr Vec2 kArenaBoard{-5.0f, 20.5f};
 constexpr Vec2 kOrchardBoard{-3.5f, 11.0f};
-constexpr Vec2 kStray{-46.0f, 58.0f};
-constexpr float kStrayArea = 40.0f;    // metres: the flowers she hides in
-constexpr float kHeightsArea = 60.0f;  // the cold heights' edges, to glide from
 constexpr float kPlaceAreaMin = 60.0f; // a place not found yet: at least this wide a search (a map's 10 px)
 
 Target spot(const Valley& v, int place, Vec2 local) {
@@ -82,26 +80,42 @@ Target nearestUnlit(const SaveData& s, const Valley& v, Vec2 from) {
     return best;
 }
 
-Target questTarget(const SaveData& s, const Valley& v, int quest, Vec2 from) {
-    const campaign::StepNeed n = campaign::stepNeed(s, quest);
-    switch (n.need) {
-        case campaign::Need::Flag:
-            switch (n.arg) {
-                case kFlagEnteredValley: return placeTarget(s, v, kPlaceDen);
-                case kFlagMetKeeper:
-                case kFlagHeardStory: return villager(v, Villager::Keeper);
-                case kFlagFoundStray: return area(v, kPlaceSanctuary, kStray, kStrayArea);
-                case kFlagGlided: return area(v, kPlaceVault, {0, 0}, kHeightsArea);
-                case kFlagMetTraveller: return villager(v, Villager::Traveller);
-                case kFlagWandered: return placeTarget(s, v, kPlaceTrailhead);
-                case kFlagFestival: return villager(v, Villager::Steward);
-                default: return {};
+// Where a quest's step points (the story's `where`, D137): a place, its lantern, a challenge's board,
+// someone (where the story stands them, else a villager's own spot), a search area, a spot, the
+// nearest lantern still dark, or the nearest thing of a group to pick up.
+Target questTarget(const SaveData& s, const Valley& v, int quest, Vec2 from, s64 now) {
+    const story::StepWhere w = story::stepWhere(s, quest);
+    switch (w.kind) {
+        case story::Where::None: return {};
+        case story::Where::Place: return placeTarget(s, v, w.a);
+        case story::Where::Lantern: return lanternTarget(s, v, w.a);
+        case story::Where::Cup: return cupTarget(v, static_cast<u32>(w.a));
+        case story::Where::Person: {
+            story::Spot sp;
+            if (story::spotOf(s, w.a, now, sp)) return spot(v, sp.place, sp.at);
+            const int villagerNo = story::person(w.a).villager;
+            if (villagerNo >= 0) return villager(v, static_cast<Villager>(villagerNo));
+            return {};
+        }
+        case story::Where::Area: return area(v, w.a, w.at, w.radius);
+        case story::Where::Spot: return spot(v, w.a, w.at);
+        case story::Where::Unlit: return nearestUnlit(s, v, from);
+        case story::Where::Group: {
+            story::Pickup found[24];
+            const int n = story::pickups(s, now, found, 24);
+            Target best;
+            float bestD = 1e30f;
+            for (int k = 0; k < n; ++k) {
+                if (found[k].group != w.a) continue;
+                const Target t = spot(v, found[k].place, found[k].at);
+                const float d = std::hypot(t.at.x - from.x, t.at.y - from.y);
+                if (t.valid && d < bestD) {
+                    bestD = d;
+                    best = t;
+                }
             }
-        case campaign::Need::Place: return placeTarget(s, v, static_cast<int>(n.arg));
-        case campaign::Need::Lantern: return lanternTarget(s, v, static_cast<int>(n.arg));
-        case campaign::Need::Cup: return cupTarget(v, n.arg);
-        case campaign::Need::AllLanterns: return nearestUnlit(s, v, from);
-        case campaign::Need::GrownPartner: return {};  // no place for it: time and care
+            return best;
+        }
     }
     return {};
 }
@@ -111,8 +125,8 @@ Target questTarget(const SaveData& s, const Valley& v, int quest, Vec2 from) {
 bool open(const SaveData& s, const Goal& g) {
     switch (g.kind) {
         case Tracked::Quest: {
-            const campaign::QuestView q = campaign::view(s, g.id);
-            return g.id >= 0 && g.id < campaign::questCount() && q.started && !q.done;
+            const int at = story::questStep(s, g.id);
+            return g.id >= 0 && g.id < story::questCount() && at != 0 && at != story::kQuestDone;
         }
         case Tracked::BattleBoard: return world::placeFound(s, kPlaceArena) && s.progress.battleLeague < kLeagues;
         case Tracked::ShowBoard: return world::placeFound(s, kPlaceGlade) && s.progress.showLeague < kLeagues;
@@ -125,7 +139,7 @@ bool open(const SaveData& s, const Goal& g) {
 Goal current(const SaveData& s) {
     const Goal g{trainer::tracked(s), s.progress.trackId};
     if (g.kind != Tracked::None && open(s, g)) return g;
-    const int q = campaign::currentQuest(s);
+    const int q = story::currentQuest(s);
     if (q >= 0) return {Tracked::Quest, q};
     return {};
 }
@@ -146,16 +160,16 @@ int trackables(const SaveData& s, Goal* out, int cap) {
     auto add = [&](Goal g) {
         if (n < cap && open(s, g)) out[n++] = g;
     };
-    for (int q = 0; q < campaign::questCount(); ++q) add({Tracked::Quest, q});
+    for (int q = 0; q < story::questCount(); ++q) add({Tracked::Quest, q});
     add({Tracked::BattleBoard, 0});
     add({Tracked::ShowBoard, 0});
     add({Tracked::Hollow, 0});
     return n;
 }
 
-Target target(const SaveData& s, const Valley& v, const Goal& g, Vec2 from) {
+Target target(const SaveData& s, const Valley& v, const Goal& g, Vec2 from, s64 now) {
     switch (g.kind) {
-        case Tracked::Quest: return questTarget(s, v, g.id, from);
+        case Tracked::Quest: return questTarget(s, v, g.id, from, now);
         // The league: the challenger to battle next (the one tracked from the board, else the first
         // not yet beaten, then the champion at the caldera); the shows' glade; the Hollow's mouth.
         case Tracked::BattleBoard: {

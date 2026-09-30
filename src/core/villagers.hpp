@@ -1,8 +1,6 @@
-// The valley's people (Beta WP13, D74-D75) and what they say (WP14: the Lantern Festival):
-// who each is, where they stand (at a place, in its frame), how their voice sounds, and their
-// lines, which follow the festival's quests. Talking to someone plays their lines (the dialogue
-// box shows them letter by letter, voiced); finishing sets what the talk settles (a flag the
-// quests watch). Pure logic (PC-tested).
+// The valley's people (Beta WP13, D74-D75): who each is, where they stand (at a place, in its
+// frame) and how their voice sounds; the talk shape the dialogue box plays (lines, their feelings
+// and speakers). What they say is the story's (core/story, D137). Pure logic (PC-tested).
 #pragma once
 
 #include "core/math3d.hpp"
@@ -25,17 +23,19 @@ struct VillagerInfo {
 };
 const VillagerInfo& villagerInfo(Villager v);
 
-constexpr int kMaxLines = 6;
+constexpr int kMaxLines = 12;
 struct Talk {
     const char* lines[kMaxLines] = {};
+    u8 feel[kMaxLines] = {};         // each line's feeling (core/story Feel; a line's own "[tag]" too)
+    s8 speaker[kMaxLines] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};  // a story person saying it (-1: whoever this is with)
     int count = 0;
     u32 sets = 0;        // WorldFlag bits it settles once the last line is read
+    s16 rule = -1;       // the story rule it came from (its effects once read; core/story), or -1
+    s16 pickup = -1;     // or the story pickup it came from
+    s8 person = -1;      // the story person it's with (-1: a villager by the dialogue's `who`, or a custom speaker)
 };
 
-// What they say now (the festival's progress, the flags, your dragon's name for {D}, yours for {P}).
-Talk talkTo(const SaveData& s, Villager v);
-// The last line read: what it settles is set; true if anything new was.
-bool finishTalk(SaveData& s, Villager v, const Talk& t);
+// (What they say is the story's now: core/story talkTo, from story/*.story, D137.)
 
 // A talk in progress (the dialogue box, app/dialogue).
 struct DialogueState {
@@ -55,6 +55,12 @@ struct DialogueState {
     float pitch = 1.0f;
     s8 portrait = -1;
     Rgb tint{250, 226, 196};  // the initial's disc (a custom speaker without a portrait)
+    // This line (D137): its feeling (core/story Feel), who says it (a story person; -1: the talk's own
+    // speaker), seconds since its feeling popped (-1: no pop), and the voice alphabet loaded now.
+    u8 feel = 0;
+    s8 speaker = -1;
+    float emoteT = -1;
+    u8 voiceLoaded = 0xFF;
 };
 
 // A line with {D} (your partner's name) and {P} (yours) filled in.

@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "core/kinds.hpp"
+#include "core/story.hpp"
 
 namespace ec {
 namespace {
@@ -297,7 +298,7 @@ u32 crc32(const u8* data, std::size_t size) {
 std::size_t maxEncodedSize() {
     // header + player/settings sections (generous) + dragons with room for growth
     // (Beta: the world block and its map; 1.0: the progress block, a trainer's record per dragon)
-    return kSaveHeaderSize + 2048 + kMaxDragons * (kDragonRecordV1 + 2 + 128);
+    return kSaveHeaderSize + 4096 + kMaxDragons * (kDragonRecordV1 + 2 + 128);
 }
 
 std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std::size_t cap) {
@@ -397,6 +398,27 @@ std::size_t encodeSave(const SaveData& data, u32 seq, s64 savedAt, u8* out, std:
         w.s32v(p.roamDay);  // (the roaming trainers', after the cove's)
         w.u8v(p.roamPaid);
         w.u16v(p.duelsWon);
+        w.patchU16(sizeAt, static_cast<u16>(w.pos() - from));
+    }
+    {  // The Living Valley pass (D137): the story (its size first, and each array's, so they can grow)
+        const story::StoryState& st = data.story;
+        const std::size_t sizeAt = w.pos();
+        w.u16v(0);
+        const std::size_t from = w.pos();
+        w.u8v(static_cast<u8>(story::kMaxQuests));
+        for (u8 q : st.quest) w.u8v(q);
+        w.u8v(static_cast<u8>(story::kFlagBytes));
+        for (u8 f : st.flags) w.u8v(f);
+        w.u8v(static_cast<u8>(story::kMaxVars));
+        for (u8 v : st.vars) w.u8v(v);
+        w.u32v(static_cast<u32>(st.mailIn));
+        w.u32v(static_cast<u32>(st.mailIn >> 32));
+        w.u32v(static_cast<u32>(st.mailRead));
+        w.u32v(static_cast<u32>(st.mailRead >> 32));
+        w.u8v(static_cast<u8>(story::kMaxQuests));
+        for (s32 d : st.questDay) w.s32v(d);
+        w.u8v(static_cast<u8>(story::kMaxEvents));
+        for (s32 d : st.eventDay) w.s32v(d);
         w.patchU16(sizeAt, static_cast<u16>(w.pos() - from));
     }
     w.patchU16(at, static_cast<u16>(w.pos() - start));
@@ -616,6 +638,40 @@ LoadResult decodeSave(const u8* data, std::size_t size, SaveData& out, SaveHeade
             p.duelsWon = r.u16v();
         }
         r.seek(from + n);
+    }
+    if (r.pos() + 2 <= start + sectionSize) {  // D137: the story (older saves: none; their quests migrate)
+        const std::size_t n = r.u16v(), from = r.pos();
+        story::StoryState& st = tmp.story;
+        auto has = [&](std::size_t bytes) { return r.pos() + bytes <= from + n; };
+        auto bytesInto = [&](u8* out, int cap) {  // (a count, then that many: extra ones skipped)
+            if (!has(1)) return;
+            const int count = r.u8v();
+            for (int k = 0; k < count && has(1); ++k) {
+                const u8 v = r.u8v();
+                if (k < cap) out[k] = v;
+            }
+        };
+        bytesInto(st.quest, story::kMaxQuests);
+        bytesInto(st.flags, story::kFlagBytes);
+        bytesInto(st.vars, story::kMaxVars);
+        if (has(16)) {
+            const u64 a = r.u32v(), b = r.u32v(), c = r.u32v(), d = r.u32v();
+            st.mailIn = a | (b << 32);
+            st.mailRead = c | (d << 32);
+        }
+        auto daysInto = [&](s32* out, int cap) {
+            if (!has(1)) return;
+            const int count = r.u8v();
+            for (int k = 0; k < count && has(4); ++k) {
+                const s32 v = r.s32v();
+                if (k < cap) out[k] = v;
+            }
+        };
+        daysInto(st.questDay, story::kMaxQuests);
+        daysInto(st.eventDay, story::kMaxEvents);
+        r.seek(from + n);
+    } else {
+        story::migrate(tmp, info.savedAt);
     }
     r.seek(start + sectionSize);
 

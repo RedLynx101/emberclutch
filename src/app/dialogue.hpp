@@ -26,6 +26,9 @@ struct Speaker {
 };
 void startSpeech(App& app, const Speaker& who, const Talk& lines);
 bool talking(const App& app);
+// The story person saying the line now (-1: nobody, or someone the story doesn't know): the valley
+// shows their feeling on their face and over their head (D137).
+int talkSpeaker(const App& app);
 // While talking: advance the letters, read on with A or a tap. Returns true while it's open.
 bool updateTalk(App& app, const Input& in);
 // The box over the bottom screen (call last).

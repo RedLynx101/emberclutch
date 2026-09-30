@@ -5,13 +5,14 @@
 
 #include "app/audio.hpp"
 #include "app/scenes.hpp"
+#include "app/story_app.hpp"
 #include "app/wardrobe.hpp"  // the pageant
 #include "core/breeding.hpp"
 #include "core/den_roster.hpp"
 #include "core/genetics.hpp"
 #include "core/items.hpp"
 #include "core/kinds.hpp"
-#include "core/campaign.hpp"
+#include "core/story.hpp"
 #include "core/valley.hpp"
 #include "core/world.hpp"
 #include "app/strings.hpp"
@@ -64,8 +65,7 @@ void resetForNewGame(App& app) {
     const Settings keep = app.game.settings;
     app.game = SaveData{};
     app.game.settings = keep;
-    world::startWorld(app.game);  // Beta: the den found, the first quest begun
-    campaign::update(app.game);
+    world::startWorld(app.game);  // Beta: the den found (the story begins when the first egg hatches: D137)
     for (u32& id : app.actorId) id = 0;
     for (EggMotion& e : app.eggs) e = EggMotion{};
     for (int& c : app.eggCracks) c = -1;
@@ -83,9 +83,9 @@ u32 stepCount(const App& app) {
     return steps + app.devSteps;
 }
 
-// The festival's gift (the campaign's end): a star-born egg, a Glimmermoth in its rare
+// The festival's gift (the end of Act 1, D137): a star-born egg, a Glimmermoth in its rare
 // colouring with the Starborn trait, into a free nest (else the Cold Vault).
-void giveStarEgg(App& app) {
+void giveStarEgg(App& app) {  // (app.hpp)
     SaveData& s = app.game;
     if (s.dragonCount >= kMaxDragons) return;
     Dragon egg = makeEgg(s.nextId++, makePurebred(Element::Lumen, app.rng), rollSex(app.rng), nowLocal(app));
@@ -115,17 +115,7 @@ void tickWorld(App& app) {
     u32 trinkets = 0;
     for (u16 n : app.game.hoard) trinkets += n;
     app.ambience.hoard = trinkets > 60 ? 3.0f : trinkets / 20.0f;
-    {  // the Lantern Festival follows the world (a Wandering home, a flag set elsewhere)
-        const campaign::News n = campaign::update(app.game);
-        if (n.finished >= 0) {
-            audio::playStinger("quest-done");
-            queueToastf(app, str::kQuestFinished, campaign::view(app.game, n.finished).title);
-        } else if (n.stepped >= 0) {
-            audio::playSfx(audio::Sfx::QuestPage);
-        }
-        if (n.starEgg) giveStarEgg(app);
-        if (n.finished >= 0 || n.stepped >= 0) saveNow(app);
-    }
+    storyUpdate(app);  // the story follows the world (a Wandering home, a flag set elsewhere, a letter's day)
     const int egg = layDueEgg(app.game, now, app.rng);  // the pair's egg, the day after they nested
     if (egg >= 0) {
         showToast(app, app.game.dragons[egg].location == Location::Den ? str::kNewEggNest : str::kNewEggVault);

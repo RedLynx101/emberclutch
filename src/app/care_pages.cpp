@@ -14,7 +14,7 @@
 #include "app/tracking_ui.hpp"
 #include "app/ui_draw.hpp"
 #include "app/wildlife.hpp"  // the Journal's valley critters (workstream L)
-#include "core/campaign.hpp"
+#include "core/story.hpp"
 #include "core/guide.hpp"
 #include "core/finds.hpp"
 #include "core/items.hpp"
@@ -92,23 +92,31 @@ void drawOuting(App& app, const Input& in, Dragon& d) {
 }
 
 // ------------------------------------------------------------------------------ Journal
-// The goals (1.0, D89): what can be tracked (the begun quests, the leagues' boards, the Hollow),
-// the one tracked now flagged in gold; a tap on a row tracks it (again: back to the quest in
-// hand). The quests done follow, in teal. Four rows a page (run 21: bigger words).
+// The goals (1.0, D89; the story's since D137): what can be tracked (the begun quests, each with its
+// line of the story, then the leagues' boards and the Hollow), the one tracked now flagged in gold; a
+// tap on a row tracks it (again: back to the quest in hand). Then the rumours (quests waiting for you
+// to ask about them), then the quests done, in teal. Four rows a page.
 void journalGoals(App& app, const Input& in) {
     SaveData& s = app.game;
+    const s64 now = nowLocal(app);
     constexpr int kRows = 4;
+    enum class Kind : u8 { Goal, Rumour, Done };
     struct Row {
         guide::Goal goal;
-        bool done;
+        Kind kind;
     };
-    Row rows[campaign::kQuests + 4];
+    constexpr int kMax = story::kMaxQuests * 2 + 4;
+    static Row rows[kMax];
     int n = 0;
-    guide::Goal open[campaign::kQuests + 4];
-    const int tracks = guide::trackables(s, open, campaign::kQuests + 4);
-    for (int k = 0; k < tracks; ++k) rows[n++] = {open[k], false};
-    for (int q = 0; q < campaign::questCount(); ++q)
-        if (campaign::view(s, q).done) rows[n++] = {{Tracked::Quest, q}, true};
+    guide::Goal open[story::kMaxQuests + 4];
+    const int tracks = guide::trackables(s, open, story::kMaxQuests + 4);
+    for (int k = 0; k < tracks && n < kMax; ++k) rows[n++] = {open[k], Kind::Goal};
+    for (int q = 0; q < story::questCount() && n < kMax; ++q) {
+        const story::QuestView v = story::view(s, q, now);
+        if (v.open && v.rumour[0]) rows[n++] = {{Tracked::Quest, q}, Kind::Rumour};
+    }
+    for (int q = 0; q < story::questCount() && n < kMax; ++q)
+        if (story::questDone(s, q)) rows[n++] = {{Tracked::Quest, q}, Kind::Done};
     if (n == 0) {
         text(app, str::kNoQuests, 160, 110, 0.45f, withAlpha(theme::kShell, 0.75f), C2D_AlignCenter, 290);
         return;
@@ -116,19 +124,32 @@ void journalGoals(App& app, const Input& in) {
     static int page = 0;
     const int pages = (n + kRows - 1) / kRows;
     if (page >= pages) page = pages - 1;
-    const guide::Goal now = guide::current(s);
-    char title[64], step[96];
+    const guide::Goal tracked = guide::current(s);
+    char title[64], step[160];
     for (int k = 0; k < kRows && page * kRows + k < n; ++k) {
         const Row& row = rows[page * kRows + k];
         const Rect r{8, 62.0f + k * 34, 304, 32};
-        const bool on = !row.done && row.goal == now;
-        panel(r, row.done ? withAlpha(theme::kSkyTeal, 0.25f)
+        const bool done = row.kind == Kind::Done, rumour = row.kind == Kind::Rumour;
+        const bool on = row.kind == Kind::Goal && row.goal == tracked;
+        panel(r, done     ? withAlpha(theme::kSkyTeal, 0.25f)
+                 : rumour ? withAlpha(theme::kDusk, 0.5f)
                           : withAlpha(on ? theme::kClutchGold : theme::kShell, on ? 0.28f : 0.12f));
-        goalWords(s, row.goal, title, sizeof(title), step, sizeof(step));
-        text(app, title, r.x + 7, r.y + 1, 0.46f, row.done ? withAlpha(theme::kShell, 0.65f) : theme::kClutchGold,
-             C2D_AlignLeft, 220);
-        text(app, step, r.x + 7, r.y + 16, 0.41f, withAlpha(theme::kShell, row.done ? 0.6f : 0.88f), C2D_AlignLeft, 236);
-        if (row.done) continue;
+        if (rumour) {
+            const story::QuestView v = story::view(s, row.goal.id, now);
+            std::snprintf(title, sizeof(title), str::kRumourTitle, v.title);
+            fillLine(v.rumour, s, step, sizeof(step));
+        } else {
+            goalWords(s, row.goal, title, sizeof(title), step, sizeof(step));
+        }
+        text(app, title, r.x + 7, r.y + 1, 0.46f,
+             done ? withAlpha(theme::kShell, 0.65f) : rumour ? withAlpha(theme::kShell, 0.85f) : theme::kClutchGold, C2D_AlignLeft, 200);
+        if (row.goal.kind == Tracked::Quest && !rumour) {  // its line of the story, small at the right
+            const story::QuestView v = story::view(s, row.goal.id, now);
+            text(app, story::lineName(v.line), r.x + r.w - (done ? 6 : 68), r.y + 3, 0.3f, withAlpha(theme::kShell, 0.55f),
+                 C2D_AlignRight, 70);
+        }
+        text(app, step, r.x + 7, r.y + 16, 0.41f, withAlpha(theme::kShell, done ? 0.6f : 0.88f), C2D_AlignLeft, done ? 290 : 236);
+        if (row.kind != Kind::Goal) continue;
         // The flag: gold on the one tracked (its word under it), faint on the others.
         trackFlag(r.x + r.w - 58, r.y + 22, 13, app.t, on);
         text(app, on ? str::kTracking : str::kTrack, r.x + r.w - 6, r.y + 9, 0.36f,

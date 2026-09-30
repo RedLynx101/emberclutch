@@ -16,7 +16,7 @@ struct SaveData;
 enum LookPart : u8 { kLookBody, kLookHair, kLookHairColour, kLookSkin, kLookOutfit, kLookEyes, kLookParts };
 constexpr u8 kLookChoices[kLookParts] = {2, 6, 6, 5, 3, 4};
 
-// Things done that the campaign and the world remember (a bit each in WorldState::flags).
+// Things done that the story and the world remember (a bit each in WorldState::flags).
 enum WorldFlag : u32 {
     kFlagEnteredValley = 1u << 0,  // out of the den into the valley for the first time
     kFlagMetKeeper = 1u << 1,      // the old keeper at the waterfall
@@ -54,7 +54,7 @@ struct WorldState {
     u32 partnerId = 0;                  // the travel partner (D81; 0: none chosen)
     u32 placesFound = 0;                // a bit per place (the den from the start)
     u32 lanternsLit = 0;                // a bit per place with a festival lantern
-    u8 quest[8] = {};                   // per quest (core/campaign): 0 not begun, 1.. its step, 0xFF done
+    u8 quest[8] = {};                   // Beta's campaign (save v1; migrated to the story, D137): 0, 1.. its step, 0xFF done
     u8 cups[kChallenges] = {};          // per challenge: the highest cup won (0 none .. 4 Starfire)
     u32 flags = 0;                      // WorldFlag bits
     u16 ribbons = 0;                    // the cups' ribbons won (den decor): a bit per cup, challenge * 4 + cup - 1

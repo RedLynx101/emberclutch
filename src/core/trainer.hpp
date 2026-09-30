@@ -39,7 +39,7 @@ struct Progress {
     u8 accessories[kAccessoryBytes] = {};  // owned (core/accessories), a bit each
     u32 dyes = 0;                          // owned (core/accessories Dye), a bit each
     u8 trackKind = 0;                      // Tracked
-    u8 trackId = 0;                        // the quest (core/campaign) or place (core/valley) it points at
+    u8 trackId = 0;                        // the quest (core/story) or place (core/valley) it points at
     u8 battleLeague = 0;                   // battle leagues won (0 .. 4)
     u8 battleBeaten[kLeagues] = {};        // per league, the board's challengers beaten (a bit each)
     u8 showLeague = 0;                     // pageant leagues won (0 .. 4)

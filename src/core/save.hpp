@@ -14,12 +14,13 @@
 #include <cstddef>
 
 #include "core/dragon.hpp"
+#include "core/story_state.hpp"
 #include "core/trainer.hpp"
 #include "core/world.hpp"
 
 namespace ec {
 
-constexpr u16 kSaveVersion = 1;
+constexpr u16 kSaveVersion = 2;  // 2: the story block (D137; a v1 save's quests migrate to it)
 constexpr int kBowlSlots = 6;  // portions the food bowl holds
 constexpr u32 kMaxDragons = 200;
 constexpr std::size_t kSaveHeaderSize = 32;
@@ -78,6 +79,8 @@ struct SaveData {
     // 1.0 (D90): accessories and dyes owned, the leagues, Frostspire Hollow, the day's rewards,
     // the tracked goal, the tips, your records (core/trainer).
     Progress progress{};
+    // The Living Valley pass (D137): the story's quests, flags, counters, mailbox and days (core/story).
+    story::StoryState story{};
     Settings settings{};
     u16 dragonCount = 0;
     Dragon dragons[kMaxDragons];

@@ -839,6 +839,166 @@ def leaf_rustle(rng, take):
     return x
 
 
+# ------------------------------------------------------------ feelings (D137, the Living Valley pass)
+# Each line of dialogue carries a feeling, and its icon pops over the speaker's head with one of these:
+# short (under half a second), soft and round, in the spirit of Animal Crossing's reactions.
+def emote_happy(rng, take):
+    """Happy: two bright kalimba plucks stepping up (E6 G6), a tiny chime on top."""
+    x = add([], kalimba(note("E6"), 0.3, decay=0.12), 0.0, 0.8)
+    add(x, kalimba(note("G6"), 0.35, decay=0.14), 0.07, 0.8)
+    add(x, chime(note("C7"), 0.25, decay=0.08, bright=0.4), 0.12, 0.25)
+    return x
+
+
+def emote_laugh(rng, take):
+    """A giggle: four quick bubbly blips skipping down and up, like a held-in laugh."""
+    x = []
+    for i, (f0, f1) in enumerate(((1250, 1500), (1150, 1380), (1300, 1560), (1200, 1450))):
+        add(x, glide(f0, f1, 0.07, 0.04, tau=0.03, harmonics=((1, 1.0), (2, 0.25))), 0.075 * i, 0.7)
+    return x
+
+
+def emote_excited(rng, take):
+    """Excited: a quick trill of chimes running up (C6 E6 G6 C7), sparkling."""
+    x = []
+    for i, nm in enumerate(("C6", "E6", "G6", "C7")):
+        add(x, chime(note(nm), 0.3, decay=0.09, bright=0.6), 0.045 * i, 0.55)
+    return x
+
+
+def emote_surprised(rng, take):
+    """Surprised: a round 'bwip!' popping up an octave, with a click at its start."""
+    x = add([], glide(520, 1180, 0.14, 0.06, tau=0.05, harmonics=((1, 1.0), (2, 0.2))), 0.0, 0.85)
+    add(x, tick(rng, 2400, 0.004, 3000, 0.4), 0.0, 0.3)
+    return x
+
+
+def emote_shock(rng, take):
+    """Shock: two sharp high pops and a little rush of air, a jolt without being loud."""
+    x = add([], glide(700, 1500, 0.08, 0.03, tau=0.03, harmonics=((1, 1.0), (3, 0.2))), 0.0, 0.8)
+    add(x, glide(820, 1760, 0.1, 0.03, tau=0.04, harmonics=((1, 1.0), (3, 0.2))), 0.07, 0.8)
+    add(x, swish(0.18, 1800, 4200, rng, q=1.2, peak=0.2), 0.0, 0.3)
+    return x
+
+
+def emote_sad(rng, take):
+    """Sad: a soft 'wah-wah' drooping down, two sighs of a muted tone."""
+    x = add([], glide(620, 520, 0.2, 0.18, tau=0.12, harmonics=((1, 1.0), (2, 0.35), (3, 0.1)), vibrato=(6, 0.01)), 0.0, 0.7)
+    add(x, glide(520, 400, 0.28, 0.25, tau=0.16, harmonics=((1, 1.0), (2, 0.35), (3, 0.1)), vibrato=(6, 0.012)), 0.17, 0.7)
+    return x
+
+
+def emote_crying(rng, take):
+    """Crying: two little sniffles (breathy noise) and a wobbling whimper."""
+    x = []
+    for t in (0.0, 0.13):
+        n = n_of(0.08)
+        add(x, norm(mul(biquad(noise(n, rng), "bp", 2400, 1.2), hump(n, 0.3))), t, 0.45)
+    add(x, glide(900, 760, 0.25, 0.22, tau=0.14, harmonics=((1, 1.0), (2, 0.2)), vibrato=(14, 0.03)), 0.2, 0.55)
+    return x
+
+
+def emote_angry(rng, take):
+    """Angry: a low huffy puff of air and a dull bonk, cross but cute."""
+    n = n_of(0.16)
+    x = add([], norm(mul(biquad(noise(n, rng), "lp", 900), decay_env(n, 0.05))), 0.0, 0.7)
+    add(x, glide(240, 170, 0.18, 0.1, tau=0.06, harmonics=((1, 1.0), (2, 0.5), (3, 0.2))), 0.0, 0.8)
+    return x
+
+
+def emote_huff(rng, take):
+    """A 'hmph': a short nasal tone sliding down, with a breath through the nose."""
+    x = add([], glide(420, 300, 0.16, 0.12, tau=0.07, harmonics=((1, 1.0), (2, 0.6), (3, 0.35), (4, 0.15))), 0.0, 0.7)
+    n = n_of(0.14)
+    add(x, norm(mul(biquad(noise(n, rng), "bp", 1500, 1.5), hump(n, 0.2))), 0.05, 0.3)
+    return x
+
+
+def emote_worried(rng, take):
+    """Worried: a gulp, a water drop's bubble sinking."""
+    x = add([], droplet(1100, tau=0.03, rise=0.55), 0.0, 0.8)
+    add(x, glide(700, 480, 0.12, 0.1, tau=0.05, harmonics=((1, 1.0),)), 0.04, 0.5)
+    return x
+
+
+def emote_scared(rng, take):
+    """Scared: a thin, trembling tone, shivering."""
+    n = n_of(0.35)
+    trem = [0.6 + 0.4 * math.sin(TAU * 22 * i / RATE) for i in range(n)]
+    return mul(glide(1300, 1150, 0.35, 0.3, env=[a * b for a, b in zip(hump(n, 0.2), trem)], harmonics=((1, 1.0), (2, 0.15))), [1.0] * n)
+
+
+def emote_sleepy(rng, take):
+    """Sleepy: a slow yawn of a whistle sinking, soft as a sigh."""
+    n = n_of(0.45)
+    x = add([], glide(900, 500, 0.45, 0.42, env=hump(n, 0.35, 1.0, 1.4), harmonics=((1, 1.0), (2, 0.1)), vibrato=(4, 0.01)), 0.0, 0.55)
+    add(x, norm(mul(biquad(noise(n, rng), "bp", 700, 0.9), hump(n, 0.4))), 0.0, 0.25)
+    return x
+
+
+def emote_love(rng, take):
+    """Love: a warm little arpeggio of chimes (G5 B5 D6 G6), and two twinkles."""
+    x = []
+    for i, nm in enumerate(("G5", "B5", "D6", "G6")):
+        add(x, chime(note(nm), 0.4, decay=0.14, bright=0.5), 0.06 * i, 0.5)
+    for k in range(2):
+        add(x, chime(note(rng.choice(("D7", "G7", "B6"))), 0.15, decay=0.04, bright=0.3), 0.22 + 0.07 * k, 0.15)
+    return x
+
+
+def emote_proud(rng, take):
+    """Proud: a bold two-note marimba fanfare (C5 then G5, then C6 together)."""
+    x = add([], mallet(note("C5"), 0.3, decay=0.12, rng=rng), 0.0, 0.7)
+    add(x, mallet(note("G5"), 0.3, decay=0.12, rng=rng), 0.08, 0.7)
+    add(x, mallet(note("C6"), 0.4, decay=0.18, rng=rng), 0.16, 0.6)
+    add(x, mallet(note("E6"), 0.4, decay=0.18, rng=rng), 0.16, 0.4)
+    return x
+
+
+def emote_cool(rng, take):
+    """Cool: a low, unbothered 'heh', one soft kalimba note."""
+    return add([], kalimba(note("A4"), 0.3, decay=0.12), 0.0, 0.8)
+
+
+def emote_shy(rng, take):
+    """Shy: a tiny, quiet blip."""
+    return add([], glide(1400, 1650, 0.08, 0.05, tau=0.03, harmonics=((1, 1.0),)), 0.0, 0.5)
+
+
+def emote_thinking(rng, take):
+    """Thinking: a curious 'hm?' sliding up at the end."""
+    return add([], glide(430, 620, 0.22, 0.2, tau=0.12, harmonics=((1, 1.0), (2, 0.4), (3, 0.15))), 0.0, 0.7)
+
+
+def emote_wistful(rng, take):
+    """Wistful: one soft, ringing chime, far away."""
+    return add([], chime(note("E6"), 0.5, decay=0.22, bright=0.35), 0.0, 0.55)
+
+
+def emote_dizzy(rng, take):
+    """Dizzy: a wobbling tone going round and round."""
+    return add([], glide(700, 700, 0.4, 0.0, tau=0.2, harmonics=((1, 1.0), (2, 0.2)), vibrato=(9, 0.08)), 0.0, 0.65)
+
+
+def mail_arrive(rng, take):
+    """A letter in the mailbox: a papery flutter and a small, bright bell."""
+    n = n_of(0.18)
+    x = add([], norm(mul(biquad(noise(n, rng), "bp", 3200, 0.8), hump(n, 0.3))), 0.0, 0.35)
+    add(x, chime(note("A6"), 0.45, decay=0.16, bright=0.6), 0.1, 0.6)
+    add(x, chime(note("E7"), 0.3, decay=0.08, bright=0.4), 0.16, 0.25)
+    return x
+
+
+def bark(rng, take):
+    """Custard's 'wuff!': a round, friendly bark (a quick pitched swell with a breathy edge)."""
+    sc = (1.0, 1.08)[take]
+    n = n_of(0.16)
+    x = add([], glide(380 * sc, 300 * sc, 0.16, 0.08, env=hump(n, 0.25, 1.0, 1.2),
+                      harmonics=((1, 1.0), (2, 0.7), (3, 0.45), (4, 0.2))), 0.0, 0.8)
+    add(x, norm(mul(biquad(noise(n, rng), "bp", 1100 * sc, 1.1), hump(n, 0.2))), 0.0, 0.35)
+    return x
+
+
 EFFECTS = {
     "hop-on": ("body", 1, hop_on, 0.0),
     "hop-off": ("body", 1, hop_off, 0.0),
@@ -885,6 +1045,28 @@ EFFECTS = {
     "roamer-hello": ("ui", 2, roamer_hello, 1.0),  # (workstream D)
     "hands-clap": ("care", 3, hands_clap, -2.0),
     "soft-snore": ("care", 2, soft_snore, -4.0),
+    # feelings (D137): one take each, levelled a little under the UI's sounds
+    "emote-happy": ("ui", 1, emote_happy, -3.0),
+    "emote-laugh": ("ui", 1, emote_laugh, -3.0),
+    "emote-excited": ("ui", 1, emote_excited, -3.0),
+    "emote-surprised": ("ui", 1, emote_surprised, -3.0),
+    "emote-shock": ("ui", 1, emote_shock, -2.0),
+    "emote-sad": ("ui", 1, emote_sad, -3.0),
+    "emote-crying": ("ui", 1, emote_crying, -3.0),
+    "emote-angry": ("ui", 1, emote_angry, -3.0),
+    "emote-huff": ("ui", 1, emote_huff, -3.0),
+    "emote-worried": ("ui", 1, emote_worried, -3.0),
+    "emote-scared": ("ui", 1, emote_scared, -4.0),
+    "emote-sleepy": ("ui", 1, emote_sleepy, -4.0),
+    "emote-love": ("ui", 1, emote_love, -3.0),
+    "emote-proud": ("ui", 1, emote_proud, -3.0),
+    "emote-cool": ("ui", 1, emote_cool, -4.0),
+    "emote-shy": ("ui", 1, emote_shy, -5.0),
+    "emote-thinking": ("ui", 1, emote_thinking, -4.0),
+    "emote-wistful": ("ui", 1, emote_wistful, -4.0),
+    "emote-dizzy": ("ui", 1, emote_dizzy, -4.0),
+    "mail-arrive": ("ui", 1, mail_arrive, 0.0),
+    "bark": ("voice", 2, bark, -2.0),
 }
 
 

@@ -21,7 +21,8 @@
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
-#include "core/campaign.hpp"
+#include "app/story_app.hpp"
+#include "core/story.hpp"
 #include "core/clock.hpp"
 #include "core/daylight.hpp"
 #include "core/kinds.hpp"
@@ -194,7 +195,7 @@ bool tryStartCup(App& app) {
     return false;
 }
 
-// The run is over: record it, tell the campaign, a stinger, the host's word.
+// The run is over: record it, tell the story, a stinger, the host's word.
 void showResults(App& app) {
     Scene& c = sc();
     Set& s = stage::get();
@@ -247,9 +248,7 @@ void showResults(App& app) {
             queueToastf(app, "%s", str::kGreatLantern);
         }
     }
-    const campaign::News n = campaign::update(app.game);
-    if (n.finished >= 0) queueToastf(app, str::kQuestFinished, campaign::view(app.game, n.finished).title);
-    else if (n.stepped >= 0) audio::playSfx(audio::Sfx::QuestPage);
+    storyUpdate(app);
     if (s.pick == Challenge::SkyRings) rings::end(app, s);
     saveNow(app);
 }
@@ -939,8 +938,8 @@ void openChallenges(App& app, int place) {
     c.phase = Phase::Picker;
     // What's offered first: the orchard's own; at the arena the Lantern Trial on the festival night
     // (and for a dragon too young to ride), else Sky Rings.
-    const campaign::QuestView festival = campaign::view(app.game, campaign::kQuests - 1);
-    const bool trialNight = festival.started && !festival.done && festival.stepIndex >= 1;
+    const int festival = story::questStep(app.game, story::kQLanternFestival);  // (step 2: the trial)
+    const bool trialNight = festival >= 2 && festival != story::kQuestDone;
     const bool canRide = s.partner >= 0 && s.shown.stage == Stage::Adult;
     c.pick = static_cast<int>(s.place == kPlaceOrchard        ? Challenge::FruitCatch
                               : trialNight || !canRide ? Challenge::LanternTrial
@@ -970,15 +969,15 @@ void openChallengeCup(App& app, int challengeId, int cup) {
 void setChallengeAutoplay(bool on) { sc().autoplay = on; }
 
 bool wrenOpensChallenges(const App& app) {
-    // Anything she says but the festival night's story (that ends the campaign, not in a menu).
-    return app.talk.who == Villager::Steward && !(app.talk.talk.sets & kFlagFestival);
+    // Anything she says opens the board (the festival night's story is Rowan's now: D137).
+    return app.talk.who == Villager::Steward && app.talk.talk.person == story::kPWren;
 }
 
 const char* challengeMusic(const App& app) {
     const Scene& c = sc();
     // The festival night's trial: the festival's own music.
     if (c.phase != Phase::Picker && stage::get().pick == Challenge::LanternTrial &&
-        campaign::view(app.game, campaign::kQuests - 1).stepIndex == 1 && campaign::view(app.game, campaign::kQuests - 1).started)
+        story::questStep(app.game, story::kQLanternFestival) == 2)
         return "lantern-festival";
     return "cup-day";
 }

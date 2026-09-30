@@ -7,7 +7,8 @@
 #include <vector>
 
 #include "check.hpp"
-#include "core/campaign.hpp"
+#include "core/clock.hpp"
+#include "core/story.hpp"
 #include "core/guide.hpp"
 #include "core/league.hpp"
 #include "core/place_layout.hpp"
@@ -48,39 +49,33 @@ Vec3 placeAt(const Valley& v, int place) {
 }  // namespace
 
 // What's tracked: the quest in hand until something is picked; a pick holds while it's open and
-// lets go (back to the quest in hand) when it's done or tapped again.
+// lets go (back to the quest in hand) when it's done or tapped again. (The quests begin as the story
+// says: core/story, D137.)
 TEST(guide_current_and_picking) {
+    constexpr s64 now = 20000 * kDay + 12 * kHour;
     static SaveData s;
     s = SaveData{};
     world::startWorld(s);
-    campaign::update(s);
+    CHECK(guide::current(s).kind == Tracked::None);  // nothing begun yet
+    story::startQuest(s, story::kQKeepersApprentice);
     guide::Goal g = guide::current(s);
-    CHECK(g.kind == Tracked::Quest && g.id == 0 && !guide::picked(s, g));
+    CHECK(g.kind == Tracked::Quest && g.id == story::kQKeepersApprentice && !guide::picked(s, g));
     guide::Goal list[8];
     CHECK(guide::trackables(s, list, 8) == 1 && list[0] == g);
-    // Quest 0 done: three quests begin (Market day, then its followers after it).
-    s.world.flags |= kFlagEnteredValley | kFlagMetKeeper;
-    world::lightLantern(s, kPlaceDen);
-    campaign::update(s);
-    CHECK(guide::current(s).id == 1);
-    world::findPlace(s, kPlaceMarket);
-    s.world.cups[static_cast<int>(Challenge::FruitCatch)] = 1;
-    world::lightLantern(s, kPlaceMarket);
-    campaign::update(s);
+    story::finishQuest(s, story::kQKeepersApprentice, now);
+    story::startQuest(s, story::kQHilltop);
+    story::startQuest(s, story::kQMeadow);
+    story::startQuest(s, story::kQColdHeights);
     const int n = guide::trackables(s, list, 8);
-    CHECK(n == 3 && list[0].id == 2 && list[1].id == 3 && list[2].id == 4);
-    CHECK(guide::current(s).id == 2);  // the earliest begun
-    guide::toggle(s, list[2]);         // the cold heights, picked
+    CHECK(n == 3 && list[0].id == story::kQHilltop && list[1].id == story::kQMeadow && list[2].id == story::kQColdHeights);
+    CHECK(guide::current(s).id == story::kQHilltop);  // the earliest begun
+    guide::toggle(s, list[2]);                         // the cold heights, picked
     CHECK(guide::picked(s, list[2]) && guide::current(s) == list[2]);
-    guide::toggle(s, list[2]);         // tapped again: back to the quest in hand
-    CHECK(!guide::picked(s, list[2]) && guide::current(s).id == 2);
+    guide::toggle(s, list[2]);                         // tapped again: back to the quest in hand
+    CHECK(!guide::picked(s, list[2]) && guide::current(s).id == story::kQHilltop);
     guide::toggle(s, list[1]);
-    // Its quest done: the pick lets go by itself.
-    s.world.flags |= kFlagFoundStray;
-    world::findPlace(s, kPlaceSanctuary);
-    world::lightLantern(s, kPlaceSanctuary);
-    campaign::update(s);
-    CHECK(!guide::open(s, list[1]) && guide::current(s).id == 2);
+    story::finishQuest(s, story::kQMeadow, now);       // its quest done: the pick lets go by itself
+    CHECK(!guide::open(s, list[1]) && guide::current(s).id == story::kQHilltop);
     // The boards and the Hollow join the list once their places are found, and places track too.
     world::findPlace(s, kPlaceArena);
     world::findPlace(s, kPlaceHollow);
@@ -90,82 +85,86 @@ TEST(guide_current_and_picking) {
     CHECK(!guide::open(s, {Tracked::BattleBoard, 0}));
     guide::toggle(s, {Tracked::Place, kPlaceLake});
     CHECK(guide::current(s).kind == Tracked::Place && guide::current(s).id == kPlaceLake);
-    CHECK(!guide::open(s, {Tracked::Place, 99}) && !guide::open(s, {Tracked::Quest, 42}));
+    CHECK(!guide::open(s, {Tracked::Place, 99}) && !guide::open(s, {Tracked::Quest, 63}));
     CHECK(guide::trackables(s, list, 1) == 1);  // never past the room given
 }
 
 // Where the goals point, on the real valley: the keeper, the den's lantern, a place not found yet
-// as a search area round it (not centred on it), the stray's meadow, the orchard's board, the
-// nearest dark lantern.
+// as a search area round it (not centred on it), Fig's woods, the stray's meadow, the orchard's
+// board, the nearest dark lantern, the nearest of Fig's pages; every step of every quest somewhere.
 TEST(guide_targets_in_the_valley) {
     const Valley& v = valley();
     CHECK(v.n > 0);
     if (v.n == 0) return;
+    constexpr s64 now = 20000 * kDay + 12 * kHour;
     static SaveData s;
     s = SaveData{};
     world::startWorld(s);
-    campaign::update(s);
     const Vec2 den{placeAt(v, kPlaceDen).x, placeAt(v, kPlaceDen).y};
-    guide::Target t = guide::target(s, v, guide::current(s), den);  // head out: the den's door
-    CHECK(t.valid && !t.area && t.place == kPlaceDen && distTo(t.at, placeAt(v, kPlaceDen)) < 30);
-    s.world.flags |= kFlagEnteredValley;
-    campaign::update(s);
-    t = guide::target(s, v, guide::current(s), den);  // meet the keeper: where he stands
+    story::startQuest(s, story::kQKeepersApprentice);
+    guide::Target t = guide::target(s, v, guide::current(s), den, now);  // meet the keeper: where he stands
     const VillagerInfo& keeper = villagerInfo(Villager::Keeper);
     CHECK(t.valid && t.place == keeper.place && distTo(t.at, placeAt(v, kPlaceKeeper)) < 15);
-    s.world.flags |= kFlagMetKeeper;
-    campaign::update(s);
-    t = guide::target(s, v, guide::current(s), den);  // the den's lantern
+    s.story.quest[story::kQKeepersApprentice] = 2;
+    t = guide::target(s, v, guide::current(s), den, now);  // the den's lantern
     const PlaceLayout& dl = placeLayout(kPlaceDen);
     CHECK(t.valid && !t.area && dl.hasLantern);
     CHECK(std::hypot(t.at.x - placeToWorld(*v.place(kPlaceDen), {dl.lantern.x, dl.lantern.y}).x,
                      t.at.y - placeToWorld(*v.place(kPlaceDen), {dl.lantern.x, dl.lantern.y}).y) < 0.01f);
-    world::lightLantern(s, kPlaceDen);
-    campaign::update(s);
-    t = guide::target(s, v, guide::current(s), den);  // find the Market: a search area
-    CHECK(t.valid && t.area && t.place == kPlaceMarket && t.radius >= 28);
-    const float off = distTo(t.at, placeAt(v, kPlaceMarket));
+    story::finishQuest(s, story::kQKeepersApprentice, now);
+    story::startQuest(s, story::kQHilltop);
+    t = guide::target(s, v, {Tracked::Quest, story::kQHilltop}, den, now);  // find the Nesting Stone: a search area
+    CHECK(t.valid && t.area && t.place == kPlaceStone && t.radius >= 28);
+    const float off = distTo(t.at, placeAt(v, kPlaceStone));
     CHECK(off > 1.0f && off < t.radius);  // it's in the circle, not at its middle
-    world::findPlace(s, kPlaceMarket);
-    campaign::update(s);
-    t = guide::target(s, v, guide::current(s), den);  // win a Fruit Catch: the orchard's board
+    story::startQuest(s, story::kQMarketDay);
+    s.story.quest[story::kQMarketDay] = 2;
+    t = guide::target(s, v, {Tracked::Quest, story::kQMarketDay}, den, now);  // Fig in the Whisperwood: a soft circle
+    CHECK(t.valid && t.area && t.place == kPlaceMarket && t.radius > 10);
+    s.story.quest[story::kQMarketDay] = 3;
+    t = guide::target(s, v, {Tracked::Quest, story::kQMarketDay}, den, now);  // a Fruit Catch: the orchard's board
     CHECK(t.valid && !t.area && t.place == kPlaceOrchard && distTo(t.at, placeAt(v, kPlaceOrchard)) < 20);
-    // The meadow's stray: a soft circle in the flowers.
-    s.world.quest[3] = 2;
-    t = guide::target(s, v, {Tracked::Quest, 3}, den);
+    story::startQuest(s, story::kQMeadow);
+    s.story.quest[story::kQMeadow] = 2;
+    t = guide::target(s, v, {Tracked::Quest, story::kQMeadow}, den, now);  // the meadow's stray
     CHECK(t.valid && t.area && t.place == kPlaceSanctuary && t.radius > 10);
-    // Growing up has no place: nothing to point at.
-    s.world.quest[5] = 1;
-    CHECK(!guide::target(s, v, {Tracked::Quest, 5}, den).valid);
+    story::startQuest(s, story::kQWings);  // growing up has no place: nothing to point at
+    CHECK(!guide::target(s, v, {Tracked::Quest, story::kQWings}, den, now).valid);
     // The festival's lanterns: the nearest one still dark, from where you stand.
-    s.world.quest[7] = 1;
+    story::startQuest(s, story::kQLanternFestival);
     for (int p = 0; p < kPlaceCount; ++p) world::findPlace(s, p);
     const Vec3 stone = placeAt(v, kPlaceStone);
-    t = guide::target(s, v, {Tracked::Quest, 7}, {stone.x, stone.y});
+    t = guide::target(s, v, {Tracked::Quest, story::kQLanternFestival}, {stone.x, stone.y}, now);
     CHECK(t.valid && t.place == kPlaceStone);
     world::lightLantern(s, kPlaceStone);
-    t = guide::target(s, v, {Tracked::Quest, 7}, {stone.x, stone.y});
+    t = guide::target(s, v, {Tracked::Quest, story::kQLanternFestival}, {stone.x, stone.y}, now);
     CHECK(t.valid && t.place != kPlaceStone && t.place != kPlaceArena);
+    // Fig's pages: the nearest one not picked up yet.
+    story::startQuest(s, story::kQFigMap);
+    const Vec3 mill = placeAt(v, kPlaceMill);
+    t = guide::target(s, v, {Tracked::Quest, story::kQFigMap}, {mill.x, mill.y}, now);
+    CHECK(t.valid && t.place == kPlaceMill);
     // A place tracked from the Journal's places: its door once found.
-    t = guide::target(s, v, {Tracked::Place, kPlaceTrailhead}, den);
+    t = guide::target(s, v, {Tracked::Place, kPlaceTrailhead}, den, now);
     CHECK(t.valid && !t.area && t.place == kPlaceTrailhead);
-    // The league's board: the challenger to battle next, where they stand (the one tracked, else
-    // the first not beaten).
+    // The league's board: the challenger to battle next, where they stand.
     const int next = league::nextChallenger(s);
-    t = guide::target(s, v, {Tracked::BattleBoard, 0}, den);
+    t = guide::target(s, v, {Tracked::BattleBoard, 0}, den, now);
     CHECK(t.valid && t.place == league::challenger(next).place);
     const Vec2 stands = placeToWorld(*v.place(league::challenger(next).place), league::spotOf(next));
     CHECK(std::hypot(t.at.x - stands.x, t.at.y - stands.y) < 0.5f);
-    CHECK(!guide::target(s, v, {}, den).valid);
-    // Every quest's every step points somewhere sensible (or nowhere, for growing up).
-    for (int q = 0; q < campaign::questCount(); ++q)
-        for (int st = 1; st <= 3; ++st) {
-            s.world.quest[q] = static_cast<u8>(st);
-            const guide::Target a = guide::target(s, v, {Tracked::Quest, q}, den);
+    CHECK(!guide::target(s, v, {}, den, now).valid);
+    // Every quest's every step points somewhere sensible (or nowhere).
+    for (int q = 0; q < story::questCount(); ++q) {
+        const int steps = story::view(s, q, now).stepCount;
+        for (int st = 1; st <= steps; ++st) {
+            s.story.quest[q] = static_cast<u8>(st);
+            const guide::Target a = guide::target(s, v, {Tracked::Quest, q}, den, now);
             if (!a.valid) continue;
             CHECK(v.inside(a.at.x, a.at.y) && a.place >= 0 && a.place < kPlaceCount);
             CHECK(!a.area || (a.radius > 5 && a.radius < 80));
         }
+    }
 }
 
 // The tips: each shown once (a bit in the save), short enough for the card, all again from the

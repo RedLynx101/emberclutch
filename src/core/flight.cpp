@@ -22,6 +22,26 @@ float wrap(float a) {
 
 Vec3 Flight::forward() const { return {std::sin(heading), -std::cos(heading), 0}; }
 
+FlightTuning flightTuningFor(float wingLevel, float staminaLevel) {
+    auto edge = [](float level) {  // (as core/challenges statEdge: 0 average, 1 at 10, up to 1.4 trained)
+        const float e = (level - 5.0f) / 5.0f;
+        return e < -0.8f ? -0.8f : (e > 1.4f ? 1.4f : e);
+    };
+    const float w = edge(wingLevel), st = edge(staminaLevel);
+    FlightTuning t;
+    const float cost = 1.0f / (1.0f + 0.5f * st);  // (10: half as long again on a breath; 1: two thirds)
+    t.flapCost *= cost;
+    t.burstCost *= cost;
+    t.restRate *= 1.0f + 0.3f * st;
+    t.glideRate *= 1.0f + 0.3f * st;
+    t.flapSpeed *= 1.0f + 0.08f * w;
+    t.burstSpeed *= 1.0f + 0.1f * w;
+    t.glideSpeed *= 1.0f + 0.06f * w;
+    t.flapLift *= 1.0f + 0.1f * w;
+    t.turnRate *= 1.0f + 0.08f * w;
+    return t;
+}
+
 void Flight::update(const FlightInput& in, const Valley& v, float dt, const FlightTuning& tune) {
     landed = tookOff = flapped = splashed = skimming = false;
     sinceFlap += dt;
@@ -29,7 +49,7 @@ void Flight::update(const FlightInput& in, const Valley& v, float dt, const Flig
     const bool onIsland = v.islandAt(pos.x, pos.y, pos.z) >= 0 || v.deckAt(pos.x, pos.y, pos.z) >= 0;  // (or a deck)
     const float floatAt = v.water - tune.swimDepth;  // where a swimmer's feet are
     if (grounded) {
-        stamina = std::fmin(1.0f, stamina + 0.25f * dt);
+        stamina = std::fmin(1.0f, stamina + tune.restRate * dt);
         climb = 0;
         pitch = approach(pitch, 0, 6, dt);
         roll = approach(roll, 0, 6, dt);
@@ -120,7 +140,7 @@ void Flight::update(const FlightInput& in, const Valley& v, float dt, const Flig
     }
     if (!in.flap) flapIn = 0;  // the next press beats at once
     const bool bursting = in.burst && !in.brake && !in.dive && stamina > 0.0f;
-    if ((!in.flap || in.dive) && !bursting) stamina = std::fmin(1.0f, stamina + 0.04f * dt);
+    if ((!in.flap || in.dive) && !bursting) stamina = std::fmin(1.0f, stamina + tune.glideRate * dt);
     speed = approach(speed, targetSpeed, in.dive ? 1.2f : in.brake ? 1.5f : bursting ? 1.0f : 0.6f, dt);
     climb = approach(climb, targetClimb, in.dive ? 2.0f : 1.4f, dt);
     pitch = approach(pitch, clampf(-climb / std::fmax(4.0f, speed) * 1.2f, -0.9f, 0.6f), 5, dt);

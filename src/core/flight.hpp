@@ -46,7 +46,14 @@ struct FlightTuning {
     float swimDepth = 1.1f;        // swimming: its feet this far under the surface (it floats, half in)
     float steepest = 0.7f;         // on foot: no climbing slopes whose normal is flatter than this
     float drop = 2.0f;             // on foot: a step down this far is an edge, and it glides off
+    float restRate = 0.25f;        // stamina back a second, grounded
+    float glideRate = 0.04f;       // ...and gliding (not beating or bursting)
 };
+
+// A dragon's flight by its stats (D123): Stamina makes each wingbeat and burst cheaper and the breath
+// come back sooner; Wing makes it a little faster, stronger in the climb and quicker to turn. Levels as
+// core/challenges statLevel (1..10, more with training); an average dragon (5, 5) flies as the defaults.
+FlightTuning flightTuningFor(float wingLevel, float staminaLevel);
 
 struct Flight {
     Vec3 pos;              // its feet

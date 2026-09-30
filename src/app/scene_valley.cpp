@@ -37,6 +37,7 @@
 #include "core/daylight.hpp"
 #include "core/dragondex.hpp"
 #include "core/finds.hpp"
+#include "core/challenges.hpp"
 #include "core/flight.hpp"
 #include "core/genetics.hpp"
 #include "core/kinds.hpp"
@@ -1142,7 +1143,10 @@ void update(App& app, const Input& in) {
         const bool wasGrounded = s.flight.grounded;
         const FlightInput was = s.last;
         s.last = fi;
-        s.flight.update(fi, va, app.dt);
+        const FlightTuning tune = s.partner >= 0 ? flightTuningFor(challenge::statLevel(app.game.dragons[s.partner], kStatWing),
+                                                                  challenge::statLevel(app.game.dragons[s.partner], kStatStamina))
+                                                : FlightTuning{};  // (its Wing and Stamina: D123)
+        s.flight.update(fi, va, app.dt, tune);
         s.cam.update(s.flight, va, app.dt);
         if (!s.flight.grounded && fi.burst && !fi.brake && !was.burst && s.flight.stamina > 0) audio::playSfx(audio::Sfx::Burst);
         if (!s.flight.grounded && fi.brake && !was.brake) audio::playSfx(audio::Sfx::Brake);

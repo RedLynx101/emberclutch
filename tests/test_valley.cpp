@@ -285,6 +285,20 @@ TEST(walking_in_the_valley) {
 
 
 
+// Riding by the dragon's stats (D123): an average dragon flies as the defaults; a strong one's
+// wingbeats and bursts cost less and it's a little faster; a weak one tires sooner.
+TEST(flight_follows_wing_and_stamina) {
+    const FlightTuning plain, avg = flightTuningFor(5, 5), strong = flightTuningFor(10, 10), weak = flightTuningFor(1, 1);
+    CHECK(std::fabs(avg.flapCost - plain.flapCost) < 1e-6f && std::fabs(avg.burstSpeed - plain.burstSpeed) < 1e-6f);
+    CHECK(strong.flapCost < plain.flapCost && strong.burstCost < plain.burstCost && strong.restRate > plain.restRate);
+    CHECK(strong.burstSpeed > plain.burstSpeed && strong.flapLift > plain.flapLift);
+    CHECK(weak.flapCost > plain.flapCost && weak.burstCost > plain.burstCost && weak.burstSpeed < plain.burstSpeed);
+    // A full breath of bursting: about 9 s strong, 6 s average, under 4 s weak.
+    std::printf("  flight: a breath of bursting %.1f s strong, %.1f s average, %.1f s weak\n", 1.0f / strong.burstCost,
+                1.0f / plain.burstCost, 1.0f / weak.burstCost);
+    CHECK(1.0f / strong.burstCost > 8.5f && 1.0f / weak.burstCost < 4.0f);
+}
+
 // Flying through a treetop (D122): inside a tree's crown it's that tree; over it, beside it or
 // under its leaves (by the trunk), none.
 TEST(a_treetop_has_a_crown) {
@@ -574,6 +588,7 @@ void runValleyTests() {
     RUN(on_foot_with_your_partner);
     RUN(you_swim_in_deep_water);
     RUN(a_treetop_has_a_crown);
+    RUN(flight_follows_wing_and_stamina);
     RUN(the_den_floor_stays_over_the_ground);
     RUN(the_hollow_floor_meets_its_place);
 }

@@ -109,6 +109,30 @@ void trunk(ValleyMesh& m, Vec3 base, float h, float r, int sides, const u8 col[3
     }
 }
 
+}  // namespace
+
+int crownAt(const Valley& v, Vec3 p) {
+    const int t = v.tiles();
+    if (t <= 0 || v.tileTrees.size() != std::size_t(t) * t) return -1;
+    const float ts = v.tileSize();
+    const int cx = static_cast<int>(std::floor((p.x - v.x0) / ts)), cy = static_cast<int>(std::floor((p.y - v.y0) / ts));
+    for (int ty = cy - 1; ty <= cy + 1; ++ty)
+        for (int tx = cx - 1; tx <= cx + 1; ++tx) {
+            if (tx < 0 || ty < 0 || tx >= t || ty >= t) continue;
+            for (int k : v.tileTrees[std::size_t(ty) * t + tx]) {
+                const ValleyTree& tr = v.trees[std::size_t(k)];
+                if (tr.kind != kPropTree && tr.kind != kPropPine && tr.kind != kPropFruit) continue;
+                const float h = tr.height, u = (p.z - v.heightAt(tr.x, tr.y)) / h;  // how far up it (0 its foot, 1 its top)
+                if (u < 0.22f || u > 1.02f) continue;
+                const float r = tr.kind == kPropPine ? 0.3f * h * (1.0f - u) + 0.25f : 0.42f * h;  // (as prop() shapes them)
+                if (std::hypot(p.x - tr.x, p.y - tr.y) < r) return k;
+            }
+        }
+    return -1;
+}
+
+namespace {
+
 // One prop at a detail level (0 near, 1 further, 2 far: trees only, as cones; nothing beyond).
 void prop(ValleyMesh& m, const Valley& v, const ValleyTree& p, int lod) {
     const float z = v.heightAt(p.x, p.y);

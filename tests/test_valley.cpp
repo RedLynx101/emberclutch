@@ -285,6 +285,29 @@ TEST(walking_in_the_valley) {
 
 
 
+// Flying through a treetop (D122): inside a tree's crown it's that tree; over it, beside it or
+// under its leaves (by the trunk), none.
+TEST(a_treetop_has_a_crown) {
+    const Valley& v = valley();
+    int checked = 0;
+    for (std::size_t k = 0; k < v.trees.size() && checked < 40; ++k) {
+        const ValleyTree& tr = v.trees[k];
+        if (tr.kind != kPropTree && tr.kind != kPropPine && tr.kind != kPropFruit) continue;
+        const float g = v.heightAt(tr.x, tr.y);
+        const int in = crownAt(v, {tr.x, tr.y, g + tr.height * 0.6f});
+        CHECK(in >= 0);
+        if (in >= 0) {
+            const ValleyTree& found = v.trees[std::size_t(in)];
+            CHECK(std::hypot(found.x - tr.x, found.y - tr.y) < tr.height);  // (itself, or one its leaves touch)
+        }
+        CHECK(crownAt(v, {tr.x, tr.y, g + tr.height * 1.3f + 1.0f}) < 0 || crownAt(v, {tr.x, tr.y, g + tr.height * 1.3f + 1.0f}) != static_cast<int>(k));
+        ++checked;
+    }
+    std::printf("  treetops: %d checked of %zu props\n", checked, v.trees.size());
+    CHECK(checked > 10);
+    CHECK(crownAt(v, {v.x0 - 50, v.y0 - 50, 20}) < 0);  // (outside the valley)
+}
+
 // Swimming (1.0, D121): set down in the lake you float, the water at your shoulders, and swim where
 // the pad points; out at a shore you walk again. Your partner may swim out after you.
 TEST(you_swim_in_deep_water) {
@@ -550,6 +573,7 @@ void runValleyTests() {
     RUN(walking_in_the_valley);
     RUN(on_foot_with_your_partner);
     RUN(you_swim_in_deep_water);
+    RUN(a_treetop_has_a_crown);
     RUN(the_den_floor_stays_over_the_ground);
     RUN(the_hollow_floor_meets_its_place);
 }

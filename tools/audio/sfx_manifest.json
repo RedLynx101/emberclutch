@@ -896,5 +896,24 @@
   ],
   "prompt": "One soft cute snore from someone napping, a gentle slow breath in with a light rattle and a tiny whistle out, sleepy and sweet, not loud",
   "duration": 1.5
+ },
+ "hurt": {
+  "kind": "body",
+  "takes": [
+   "eleven:hurt#1",
+   "eleven:hurt#2",
+   "eleven:hurt#3"
+  ],
+  "prompt": "A dragon taking a hard hit in a creature battle: a heavy, visceral body impact, a deep punchy thump with a crunchy smack of scales and a short pained grunt of air, powerful and satisfying game hit",
+  "duration": 0.8
+ },
+ "tree-rush": {
+  "kind": "body",
+  "takes": [
+   "eleven:tree-rush#1",
+   "eleven:tree-rush#2"
+  ],
+  "prompt": "A dragon flying fast straight through the top of a leafy tree: a sudden loud rush of leaves thrashing, branches whipping and small twigs snapping as it bursts through and out the other side",
+  "duration": 1.3
  }
 }

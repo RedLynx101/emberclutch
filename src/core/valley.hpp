@@ -103,6 +103,10 @@ struct ValleyMesh {
 // skirts round its edges (hanging down, so neighbours at another level never show a gap)
 // and, on the nearer levels, its trees.
 void buildValleyTile(const Valley& v, int tx, int ty, int lod, ValleyMesh& out);
+// The tree whose leaves p is in (a round tree's or a fruit tree's crown, a pine's cone), or -1
+// (D122: a rustle as you fly through a treetop).
+int crownAt(const Valley& v, Vec3 p);
+
 // What isn't ground: the floating islands (grassy tops, rocky undersides, a few trees) and
 // the den's cave mouth in its cliff.
 void buildValleyExtras(const Valley& v, ValleyMesh& out);

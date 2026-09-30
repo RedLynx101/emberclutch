@@ -252,7 +252,9 @@ float beginEvent(App& app, State& s, const Event& e) {
             else if (e.flags & battle::kStrong) setLine(s, "%s", str::kBattleStrong);
             else if (e.flags & battle::kWeak) setLine(s, "%s", str::kBattleWeak);
             const bool big = (e.flags & (battle::kCrit | battle::kStrong)) != 0;
-            audio::playSfx(big ? audio::Sfx::HitBig : audio::Sfx::Hit, pitch);
+            // The blow itself (D122: "a more visceral got hit sound"), under the move's own thud.
+            audio::playSfx(audio::Sfx::Hurt, big ? 0.9f + 0.1f * pitch : 1.0f + 0.08f * (pitch - 1.0f), big ? 1.0f : 0.85f);
+            audio::playSfx(big ? audio::Sfx::HitBig : audio::Sfx::Hit, pitch, 0.6f);
             me.knockT = 0;
             me.flash = 1;
             s.shake = big ? 0.32f : 0.16f;

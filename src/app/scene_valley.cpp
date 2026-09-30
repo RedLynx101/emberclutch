@@ -134,6 +134,8 @@ struct ValleyScene {
     // Hopping on or off its back (run 19): seconds in (< 0: not hopping), which way, from and to.
     float hopT = -1;
     bool hopWater = false;  // the hop down lands in deep water: a jump, and a splash (D121)
+    int crown = -1;          // the treetop you're flying through (D122), and a moment's quiet after one
+    float crownQuiet = 0;
     bool hopOn = true;
     Vec3 hopFrom, hopTo;
     // A dragon out on the Wanderings (D69): its place on the loop, its clip.
@@ -1148,6 +1150,16 @@ void update(App& app, const Input& in) {
         if (s.flight.landed) audio::playSfx(audio::Sfx::Landing);
         if (s.flight.splashed) audio::playSfx(audio::Sfx::SplashBig);
         if (s.flight.diving(fi) && !wasDiving) audio::playSfx(audio::Sfx::DiveWhoosh);
+        {  // through a treetop: the leaves thrash as you burst through (D122)
+            const int crown = s.flight.grounded ? -1 : crownAt(va, s.flight.pos + Vec3{0, 0, 0.6f});
+            if (crown >= 0 && crown != s.crown && s.crownQuiet <= 0) {
+                audio::playSfx(audio::Sfx::TreeRush, 0.92f + 0.16f * (app.rng.below(100) / 100.0f),
+                               clampf(s.flight.speed / 14.0f, 0.4f, 1.0f));
+                s.crownQuiet = 0.35f;
+            }
+            s.crown = crown;
+            s.crownQuiet -= app.dt;
+        }
         if (wasGrounded && !s.flight.grounded && !s.flight.tookOff && !(app.game.world.flags & kFlagGlided)) {
             app.game.world.flags |= kFlagGlided;  // off an edge into a glide (the cold heights' quest)
             campaign::update(app.game);

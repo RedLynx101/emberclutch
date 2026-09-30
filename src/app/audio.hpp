@@ -37,6 +37,7 @@ enum class Sfx : u8 {
     // arrive (docs/audio/sfx-life-prompts.md).
     BirdChirp, BirdFlutter, RabbitHop, FrogCroak, DuckQuack, FoxYip, ButterflyLand, Whistle, CritterFriend, LeafRustle,
     Greet, Clap, Snore,  // the roaming trainers' hello, clapping, a villager dozing (workstream D)
+    Hurt, TreeRush,      // 1.0 (D122): a hit that lands in battle; bursting through a treetop in flight
     Count
 };
 // True once a sound's own file is loaded (not a stand-in).

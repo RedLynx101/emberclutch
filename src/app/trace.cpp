@@ -1,5 +1,7 @@
 #include "app/trace.hpp"
 
+#include "app/audio.hpp"
+
 #include <3ds.h>
 #include <citro2d.h>
 #include <citro3d.h>
@@ -142,6 +144,43 @@ void findHang(char* part, std::size_t size) {
 
 }  // namespace
 
+// The watchdog (D119: 0.9.10-0.9.12 froze on a scene's first frames, the trail ending on a wait for
+// the GPU; the GPU stuck, or the music's thread, above the game's, never letting it run?): a thread
+// above both, asleep but for a look four times a second. When the game's frames stop for 3 s, it
+// writes what it sees to watchdog.txt: the last mark, and whether the music's thread is moving.
+constexpr const char* kWatchdog = "sdmc:/3ds/emberclutch/watchdog.txt";
+volatile u32 g_beat = 0;  // (frames started)
+volatile bool g_watchQuit = false;
+Thread g_watchThread = nullptr;
+
+void watchdog(void*) {
+    u32 seen = g_beat;
+    u64 since = osGetTime(), told = 0;
+    while (!g_watchQuit) {
+        svcSleepThread(250000000LL);
+        if (g_beat != seen) {
+            seen = g_beat;
+            since = osGetTime();
+            told = 0;
+            continue;
+        }
+        const u64 now = osGetTime();
+        if (seen == 0 || now - since < 3000 || (told && now - told < 10000)) continue;  // (not before the first frame)
+        const audio::DebugInfo a = audio::debugInfo();
+        svcSleepThread(100000000LL);
+        const audio::DebugInfo b = audio::debugInfo();
+        char last[kWidth];
+        std::snprintf(last, sizeof(last), "%s", line(0));
+        if (FILE* f = std::fopen(kWatchdog, "ab")) {
+            std::fprintf(f, "%.3f the game stuck %.1f s (frame %lu); the last mark: %s; the music's thread: stage %d, loops %lu -> %lu in 0.1 s\n",
+                         (now - g_start) / 1000.0, (now - since) / 1000.0, static_cast<unsigned long>(seen), last, b.stage,
+                         static_cast<unsigned long>(a.loops), static_cast<unsigned long>(b.loops));
+            std::fclose(f);
+        }
+        told = osGetTime();
+    }
+}
+
 void start() {
     readHangs();
     FILE* f = std::fopen("sdmc:/3ds/emberclutch/trace.on", "rb");
@@ -160,7 +199,12 @@ void start() {
     }
     std::remove(kPrev);
     std::rename(kTrace, kPrev);  // (the session before, whole)
-    note("trace on (0.9.12: marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the probes)", kChecked);
+    if (FILE* w = std::fopen(kWatchdog, "ab")) {  // (a line per session, so its reports can be placed)
+        std::fprintf(w, "session: trace on\n");
+        std::fclose(w);
+    }
+    g_watchThread = threadCreate(watchdog, nullptr, 16 * 1024, 0x19, -2, false);
+    note("trace on (0.9.13: marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the probes)", kChecked);
     if (part[0]) note("the last session froze in: %s", part);
     for (int i = 0; i < g_hangCount; ++i) note("drawn the safe way (hangs.txt): %s", g_hangs[i]);
     write();
@@ -172,6 +216,7 @@ int g_parityHoles[2] = {}, g_parityFrames[2] = {};  // (holes by the drawn frame
 
 void frame(unsigned long n, int view) {
     g_frameNo = n;
+    ++g_beat;
     if (view != g_viewLast) {
         g_viewLast = view;
         g_viewFrom = n;
@@ -201,6 +246,14 @@ void view(unsigned long n, int view) {
 
 bool on() { return g_on; }
 
+void stop() {
+    if (!g_watchThread) return;
+    g_watchQuit = true;
+    threadJoin(g_watchThread, U64_MAX);
+    threadFree(g_watchThread);
+    g_watchThread = nullptr;
+}
+
 void mark(const char* fmt, ...) {
     if (!g_on || !g_live) return;
     va_list args;
@@ -209,20 +262,38 @@ void mark(const char* fmt, ...) {
     va_end(args);
 }
 
+// A frame split for a check: the GPU given what's drawn so far and waited for, with nothing half-drawn
+// sent to the screens (D119: in 3D a check's split sent one eye's picture ahead of the other's, so
+// the first frames of every view, a door or a menu, flickered; run 21's flashes as a screen began).
+C3D_RenderTarget_tag* g_screens[3] = {};
+
+void split() {
+    bool used[3] = {};
+    for (int i = 0; i < 3; ++i)
+        if (g_screens[i]) used[i] = g_screens[i]->used, g_screens[i]->used = false;
+    if (g_target) g_target->used = false;
+    C2D_Flush();
+    C3D_FrameEnd(0);
+    C3D_FrameBegin(0);  // (waits for the GPU to finish all of it)
+    for (int i = 0; i < 3; ++i)
+        if (g_screens[i]) g_screens[i]->used = used[i];
+}
+
 void sync() {
     if (g_on && (g_live || osGetTime() - g_lastWrite > kBeatMs)) write();
 }
 
 void target(C3D_RenderTarget_tag* t) { g_target = t; }
 
+void screens(C3D_RenderTarget_tag* top, C3D_RenderTarget_tag* topRight, C3D_RenderTarget_tag* bottom) {
+    g_screens[0] = top, g_screens[1] = topRight, g_screens[2] = bottom;
+}
+
 void gpu(const char* what) {
     if (!g_on || !g_live || !g_target) return;
     mark("gpu: %s sent", what);
     write();
-    C2D_Flush();
-    g_target->used = false;  // (half a picture isn't shown: run 21's flashes as a screen began)
-    C3D_FrameEnd(0);    // (what's drawn so far goes to the GPU)
-    C3D_FrameBegin(0);  // waits for the GPU to finish all of it
+    split();  // (what's drawn so far goes to the GPU, and is waited for)
     mark("gpu: %s drawn", what);
     C3D_FrameDrawOn(g_target);  // drawing goes on where it was
 }
@@ -448,10 +519,7 @@ void commands(bool begin) {
 
 void tileProbe(int i, int tx, int ty, int lod, int count) {
     if (!g_on || !g_probeNow || !g_target || !g_probeTop) return;
-    C2D_Flush();
-    g_target->used = false;
-    C3D_FrameEnd(0);
-    C3D_FrameBegin(0);
+    split();
     float lower = 0, upper = 0;
     depthEmpty(g_probeTop, lower, upper);
     const int filled = static_cast<int>(100.0f - (lower + upper) * 50.0f + 0.5f);
@@ -483,10 +551,7 @@ void checkpoint(const char* part) {
         return;
     }
     if (!g_on || !g_probeNow || !g_target) return;
-    C2D_Flush();
-    g_target->used = false;
-    C3D_FrameEnd(0);
-    C3D_FrameBegin(0);
+    split();
     float lower = 0, upper = 0;
     int rgb[3] = {-1, -1, -1};
     if (g_probeTop) {  // (the top screen's, whichever is being drawn)

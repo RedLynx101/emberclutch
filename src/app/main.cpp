@@ -95,6 +95,7 @@ int main() {
     app.top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
     app.bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     app.topRight = C2D_CreateScreenTarget(GFX_TOP, GFX_RIGHT);
+    trace::screens(app.top, app.topRight, app.bottom);
     gfxSet3D(true);  // the right eye is drawn only while the slider is up (WP11e)
     app.textBuf = C2D_TextBufNew(4096);
     trace::start();  // (a breadcrumb trail on the SD card while trace.on is there: hardware-only freezes)
@@ -273,6 +274,7 @@ int main() {
     if (hasDragon(app) && !app.quit) saveNow(app);  // (Save & quit has just saved)
     finishSaves();  // the save thread's last write lands before the game goes
     prefetch::shutdown();
+    trace::stop();
     hitch::write();
     autotest::finish();
     screenshot::finish();

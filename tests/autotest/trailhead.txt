@@ -1,5 +1,6 @@
 # Through the Wanderers' Trailhead's door from the valley (take 4: 0.9.11 froze the 3DS going in):
-# travel there, A at the door, the Wanderings' first frames, then back out.
+# travel there, A at the door, the Wanderings' first frames, then back out. Cinder grown first (Next stage
+# twice), so the Wanderings shows it in 3D by the sign (0.9.12 froze there, the top scene).
 overlay on
 wait 2.5
 name Noah
@@ -14,6 +15,13 @@ key SELECT
 name Cinder
 wait 11
 skip 9
+key SELECT
+wait 0.3
+tap 81 106
+wait 0.3
+tap 81 106
+key SELECT
+wait 2
 tips seen
 valley
 hour 11

@@ -219,13 +219,21 @@ void drawBlanket(App& app, const paint::Light& l) {
 void drawTop(App& app) {
     const s64 now = nowLocal(app);
     const paint::Light l = paint::lightFor(now);
+    // The dragon in 3D from the scene's fourth frame (D119: the 3DS froze on this scene's first
+    // frame twice, the GPU never finishing its top screen; the painting alone first).
+    static float lastT = -1.0f;
+    static int fresh = 0;
+    if (app.t - lastT > 0.25f) fresh = 3;
+    lastT = app.t;
+    const bool show3d = r3d::ready() && fresh == 0;
+    if (fresh > 0) --fresh;
     drawTrailScene(app, l);
     const int out = wandererIndex(app.game);
     char line[80], sub[80];
     static EggMotion none;
     if (app.findsFrom >= 0 && app.findsFrom < app.game.dragonCount) {  // back, its finds on the blanket
         const Dragon& d = app.game.dragons[app.findsFrom];
-        if (r3d::ready()) {
+        if (show3d) {
             r3d::frameShowcase(1.7f, -70, 38);
             r3d::drawShowcase(app, d, &none, now, 0.35f * std::sin(app.t * 0.5f));
         }
@@ -242,7 +250,7 @@ void drawTop(App& app) {
         const float t = std::fmin(1.0f, steps / kTrailSteps);
         const Vec2 p = paintedTrail(t * 0.92f);
         const float zoom = 2.6f + 6.0f * t;
-        if (r3d::ready()) {
+        if (show3d) {
             r3d::frameShowcase(zoom, p.x - kTopW / 2, p.y - 118.0f / zoom - kScreenH / 2);
             r3d::drawShowcase(app, d, &none, now, 1.25f, ClipId::Walk);
         }
@@ -253,7 +261,7 @@ void drawTop(App& app) {
         paint::caption(app, line, both, 198);
     } else if (app.wanderPick >= 0 && app.wanderPick < app.game.dragonCount) {  // the one picked, by the sign
         const Dragon& d = app.game.dragons[app.wanderPick];
-        if (r3d::ready()) {
+        if (show3d) {
             r3d::frameShowcase(1.7f, -70, 38);
             r3d::drawShowcase(app, d, &none, now, 0.35f * std::sin(app.t * 0.5f));
         }

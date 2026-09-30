@@ -12,6 +12,7 @@ struct C3D_RenderTarget_tag;
 namespace ec::trace {
 
 void start();  // checks for trace.on and reads hangs.txt (after the SD card is up)
+void stop();   // the watchdog's thread ended (the game closing)
 bool on();
 void mark(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 // Each frame, with what's on screen (the scene and the menu page): the marks are kept only for
@@ -29,6 +30,7 @@ void sync();
 // that it did, so a freeze ends the trail on the part that hung ("sent" with no "drawn").
 // `target` names the screen being drawn (drawing goes on there after the wait).
 void target(C3D_RenderTarget_tag* t);
+void screens(C3D_RenderTarget_tag* top, C3D_RenderTarget_tag* topRight, C3D_RenderTarget_tag* bottom);  // (never sent half-drawn)
 void gpu(const char* what);
 // A part a session froze in (its trail ended on "gpu: <part> sent"): listed in hangs.txt at the
 // next start, so the game can draw it a safer way (the valley's ground: plain). Read whether the

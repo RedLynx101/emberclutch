@@ -28,7 +28,7 @@ constexpr u32 kSliceFrames = 4096;
 constexpr int kSfxSlices = 12;       // per sound-effect channel: up to ~2.2 s at 22 kHz in full slices
 constexpr int kBedRing = 6;          // slices queued ahead per bed (~1.1 s at 22 kHz), refilled as they finish
 constexpr int kStingerSlices = 64;
-constexpr int kNumBufs = 5;  // (~640 ms ahead: a picture written to the card held the music's reads, take 4)
+constexpr int kNumBufs = 3;  // (~384 ms ahead; 0.9.10's 5 came with the first hangs on scene changes, D119)
 constexpr float kFadeSeconds = 0.7f;
 
 const char* const kSfxFiles[] = {
@@ -219,14 +219,18 @@ int decodeInto(Stream& s, s16* out, int frames) {
     const int want = frames * s.channels * 2;
     int got = 0, bitstream = 0;
     char* dst = reinterpret_cast<char*>(out);
-    int loops = 0;
+    int loops = 0, errors = 0;
     while (got < want) {
         const long r = ov_read(&s.vf, dst + got, want - got, &bitstream);
         if (r == 0) {  // end of file: jump back to the loop point (sample-accurate)
             if (++loops > 2 || ov_pcm_seek(&s.vf, s.loopStart) != 0) break;
             continue;
         }
-        if (r < 0) continue;  // a hole in the data: keep reading
+        if (r < 0) {  // a hole in the data: keep reading, but never for ever (this thread is above the game's)
+            if (++errors > 32) break;
+            continue;
+        }
+        errors = 0;
         got += static_cast<int>(r);
     }
     return got / (s.channels * 2);
@@ -292,11 +296,13 @@ void startStinger(const char* slug) {
     char* dst = reinterpret_cast<char*>(g_stingerData);
     const long want = static_cast<long>(total * channels * 2);
     long got = 0, sinceRest = 0;
-    int bitstream = 0;
+    int bitstream = 0, errors = 0;
+    g_dbgStage = 5;
     while (got < want) {
         const long r = ov_read(&vf, dst + got, static_cast<int>(want - got), &bitstream);
-        if (r == 0) break;
+        if (r == 0 || (r < 0 && ++errors > 32)) break;  // (the end, or a file that won't read: never a spin)
         if (r > 0) {
+            errors = 0;
             got += r;
             sinceRest += r;
         }
@@ -308,6 +314,7 @@ void startStinger(const char* slug) {
             svcSleepThread(1000000);
         }
     }
+    g_dbgStage = 2;
     setupChannel(kStingerCh, channels, vi->rate);
     ov_clear(&vf);
     DSP_FlushDataCache(g_stingerData, got);
@@ -358,6 +365,7 @@ void streamThread(void*) {
                 g_stream.queued += n;
                 DSP_FlushDataCache(g_stream.data[i], n * g_stream.channels * 2);
                 ndspChnWaveBufAdd(kMusicCh, &w);
+                break;  // (one a wake, ~5 ms apart: a track's start never holds the game in one burst, D119)
             }
         }
         LightEvent_Wait(&g_event);

@@ -117,6 +117,7 @@ inline constexpr const char* kPromptCall = "A: call your partner";
 inline constexpr const char* kTravelledTo = "Off to %s";
 inline constexpr const char* kRidingGround = "Riding (on the ground)";
 inline constexpr const char* kFlying = "Flying";
+inline constexpr const char* kSwimming = "Swimming";
 inline constexpr const char* kFreeCamera = "Looking about";
 inline constexpr const char* kOnFoot = "On foot";
 inline constexpr const char* kPlacesAndLanterns = "Places %d/%d  Lanterns %d/%d";

@@ -283,6 +283,66 @@ TEST(walking_in_the_valley) {
     CHECK(f.grounded && f.swimming && splashed);
 }
 
+
+
+// Swimming (1.0, D121): set down in the lake you float, the water at your shoulders, and swim where
+// the pad points; out at a shore you walk again. Your partner may swim out after you.
+TEST(you_swim_in_deep_water) {
+    const Valley& v = valley();
+    const ValleyPlaceInfo& lake = *v.place(kPlaceLake);
+    WalkTuning tune;
+    tune.swim = 0.95f;
+    // Dropped off a dragon's back over the deepest water near the lake's anchor: afloat, not on its bed.
+    Vec3 deep = lake.at;
+    for (int dx = -40; dx <= 40; dx += 4)
+        for (int dy = -40; dy <= 40; dy += 4)
+            if (v.heightAt(lake.at.x + dx, lake.at.y + dy) < v.heightAt(deep.x, deep.y))
+                deep = {lake.at.x + dx, lake.at.y + dy, 0};
+    CHECK(v.heightAt(deep.x, deep.y) < v.water - 1.5f);
+    Walker you;
+    you.pos = deep + Vec3{0, 0, v.water + 6.0f};
+    CHECK(you.drop(v, tune));
+    CHECK(you.swimming && std::fabs(you.pos.z - (v.water - 0.95f)) < 1e-3f);
+    // It swims: every way the pad points it goes, and stays afloat on the surface.
+    const float dt = 1.0f / 30;
+    const Vec3 start = you.pos;
+    WalkInput east;
+    east.x = 1;
+    for (int k = 0; k < 60; ++k) you.update(east, 3.14159f, v, {}, dt, tune);
+    const float swam = std::hypot(you.pos.x - start.x, you.pos.y - start.y);
+    CHECK(swam > 1.5f && !you.blocked);
+    CHECK(you.speed > 1.0f && you.speed <= tune.swimSpeed + 0.01f);
+    // Out the other side at a shore: swimming on toward it, it walks out of the water.
+    WalkInput north;
+    north.y = 1;
+    bool outOfWater = false;
+    for (int k = 0; k < 30 * 120 && !outOfWater; ++k) {
+        you.update(north, 3.14159f, v, {}, dt, tune);
+        outOfWater = !you.swimming && v.heightAt(you.pos.x, you.pos.y) > v.water;
+    }
+    std::printf("  swimming: %.1f m in 2 s from the deep water, then out on the shore at %.0f %.0f\n", swam, you.pos.x, you.pos.y);
+    CHECK(outOfWater);
+    // Without swimming (the default), deep water stays a wall.
+    Walker wader;
+    wader.pos = deep;
+    CHECK(!wader.drop(v));
+    CHECK(wader.pos.z < v.water - 0.5f);
+    // The partner: told it may swim, it follows you out into deep water.
+    Walker me;
+    me.pos = deep;
+    me.drop(v, tune);
+    Follower pal;
+    pal.swim = true;
+    pal.pos = deep + Vec3{6, 0, 0};
+    pal.pos.z = std::fmax(v.heightAt(pal.pos.x, pal.pos.y), v.water - 0.8f);
+    me.heading = 1.0f;
+    for (int k = 0; k < 90; ++k) {
+        me.update(east, 3.14159f, v, {}, dt, tune);
+        pal.update(me, v, {}, dt);
+    }
+    CHECK(std::hypot(pal.pos.x - me.pos.x, pal.pos.y - me.pos.y) < 4.0f && !pal.lost());
+}
+
 // On foot (Beta WP5, D81): you walk the way the pad points from the camera's view, run with B,
 // stop at deep water and walls; your partner keeps its spot at your side and, lost far behind,
 // comes when called; the camera stays above the ground and turns with L and R.
@@ -489,6 +549,7 @@ void runValleyTests() {
     RUN(flying_over_the_valley);
     RUN(walking_in_the_valley);
     RUN(on_foot_with_your_partner);
+    RUN(you_swim_in_deep_water);
     RUN(the_den_floor_stays_over_the_ground);
     RUN(the_hollow_floor_meets_its_place);
 }

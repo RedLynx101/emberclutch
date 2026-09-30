@@ -1,0 +1,52 @@
+# Getting off your dragon in the lake (1.0, D121): it swims out with you on its back, you get off
+# (down) and jump into the water, afloat, then swim.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 82 106
+wait 0.2
+tap 238 56
+key SELECT
+wait 3
+skip 9
+tips seen
+valley
+hour 11
+wait 3
+travel 7
+wait 3
+pad -1 0 0.3
+wait 0.8
+key A
+wait 3
+shot o1-riding
+pad -1 0 0.7
+wait 0.3
+shot o1b-turned
+keyhold UP 22.0
+wait 2
+shot o2-out-on-the-water
+key DOWN
+shotin 0.3 o3-jumping
+wait 0.6
+wait 1.0
+shot o4-in-the-water
+keyhold UP 2.5
+shot o5-swimming
+quit

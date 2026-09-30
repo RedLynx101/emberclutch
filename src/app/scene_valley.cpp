@@ -133,6 +133,7 @@ struct ValleyScene {
     float eatFor = 0;  // seconds of its Eat clip left
     // Hopping on or off its back (run 19): seconds in (< 0: not hopping), which way, from and to.
     float hopT = -1;
+    bool hopWater = false;  // the hop down lands in deep water: a jump, and a splash (D121)
     bool hopOn = true;
     Vec3 hopFrom, hopTo;
     // A dragon out on the Wanderings (D69): its place on the loop, its clip.
@@ -458,6 +459,16 @@ void lookRound(App& app, ValleyScene& s) {
 void travelTo(App& app, ValleyScene& s, int place, bool outward);
 Vec3 villagerAt(const Valley& v, Villager who);
 
+// Your walking: a chibi's paces, and swimming where the water's over your chest (D121).
+const WalkTuning& youTune() {
+    static const WalkTuning t = [] {
+        WalkTuning w;
+        w.swim = 0.95f;  // (afloat, the water at your shoulders)
+        return w;
+    }();
+    return t;
+}
+
 // A clip by name on a figure (nothing if the library or the clip isn't there).
 void playClip(ValleyScene::Figure& f, const char* name, float rate = 1.0f, float fade = 0.2f) {
     const AnimLibrary* lib = r3d::personAnims();
@@ -531,6 +542,9 @@ void animatePeople(App& app, ValleyScene& s) {
         playClip(me, roll > 0.3f ? "ride_lean_left" : roll < -0.3f ? "ride_lean_right" : "ride", 1.0f, 0.3f);
     } else if (vext::activeFeature(app) >= 0 && s.stage.youClip) {
         // (a feature's clip: played in update)
+    } else if (s.you.swimming) {  // afloat: a breaststroke, or treading water (D121)
+        if (s.you.speed > 0.3f) playClip(me, "swim", clampf(s.you.speed / youTune().swimSpeed, 0.6f, 1.8f), 0.3f);
+        else playClip(me, "tread", 1.0f, 0.3f);
     } else if (s.you.speed < 0.25f || talking(app)) {
         playClip(me, "idle", 1.0f, 0.25f);
     } else if (s.you.speed < 1.3f) {
@@ -539,7 +553,9 @@ void animatePeople(App& app, ValleyScene& s) {
         playClip(me, "run", clampf(s.you.speed / personRunSpeed(body), 0.8f, 3.0f));
     }
     u8 events[4];
-    me.anim.update(*lib, app.dt, events, 4);
+    const int strokes = me.anim.update(*lib, app.dt, events, 4);
+    for (int k = 0; k < strokes && s.you.swimming && s.hopT < 0; ++k)  // (each pull of a stroke: a soft splash)
+        if (events[k] == kAnimFootstep) audio::playSfx(audio::Sfx::Splash, 1.45f + 0.1f * (app.rng.below(100) / 100.0f), 0.16f);
     blinkFigure(app, me);
     const bool listening = talking(app);
     // (Where you are: on your dragon's back while riding. Run 21: measured from where you got on,
@@ -733,10 +749,11 @@ Vec3 seatOf(const ValleyScene& s, Vec3 feet, float heading) {
 
 constexpr float kHopSeconds = 0.55f;
 
-// You along the hop's arc: up and over onto its back, or down off it to its side.
+// You along the hop's arc: up and over onto its back, or down off it to its side (a jump, higher,
+// down into water: 1.0, D121).
 Vec3 hopAt(const ValleyScene& s) {
     const float t = clampf(s.hopT / kHopSeconds, 0.0f, 1.0f), e = t * t * (3 - 2 * t);
-    const float lift = std::sin(3.14159265f * t) * (s.hopOn ? 0.9f : 0.6f);
+    const float lift = std::sin(3.14159265f * t) * (s.hopOn ? 0.9f : s.hopWater ? 1.1f : 0.6f);
     return s.hopFrom + (s.hopTo - s.hopFrom) * e + Vec3{0, 0, lift};
 }
 
@@ -855,11 +872,14 @@ void getOff(App& app, ValleyScene& s) {
     s.mode = Mode::OnFoot;
     const Vec3 f = s.flight.forward();
     s.you.pos = s.flight.pos + Vec3{-f.y, f.x, 0} * -2.4f;  // down on its left
-    s.you.pos.z = s.valley.groundAt(s.you.pos.x, s.you.pos.y, s.flight.pos.z);  // (an island's top too)
+    s.you.pos.z = s.flight.pos.z;
     if (s.valley.islandAt(s.flight.pos.x, s.flight.pos.y, s.flight.pos.z) >= 0 &&
         s.valley.islandAt(s.you.pos.x, s.you.pos.y, s.flight.pos.z) < 0) {  // on an island: down beside it, on it
         s.you.pos = s.flight.pos;
     }
+    // Down on the ground, an island's top, wading, or afloat (D121: set down in the lake, you sank
+    // to its bed and walked nowhere): the hop then a jump, out and down into the water.
+    s.hopWater = s.you.drop(s.valley, youTune());
     s.you.heading = s.flight.heading;
     s.you.speed = 0;
     s.pal.pos = s.flight.pos;
@@ -1015,6 +1035,9 @@ void update(App& app, const Input& in) {
             if (s.hopOn) {  // up: now you ride (Ride sees the hop done)
                 s.action = Action::Ride;
                 doAction(app, s);
+            } else if (s.hopWater) {  // into the water with a splash, treading it
+                audio::playSfx(audio::Sfx::SplashBig, 1.25f, 0.55f);
+                playClip(s.youFig, "tread", 1.0f, 0.15f);
             }
             s.hopT = -1;
         }
@@ -1052,11 +1075,12 @@ void update(App& app, const Input& in) {
         wi.x = clampf(in.padX + dpadX, -1, 1);
         wi.y = clampf(in.padY + dpadY, -1, 1);
         wi.run = in.held & KEY_B;
-        s.you.update(wi, s.wcam.yaw, va, s.solids, app.dt);
+        s.you.update(wi, s.wcam.yaw, va, s.solids, app.dt, youTune());
         // L/R turn the view (run 19: the other way round, L to the left)
         s.wcam.update(s.you, (in.held & KEY_L ? 1.0f : 0.0f) - (in.held & KEY_R ? 1.0f : 0.0f), va, app.dt, &s.camWalls);
         if (s.partner >= 0) {
             const Vec3 palWas = s.pal.pos;
+            s.pal.swim = s.you.swimming;  // (you out swimming: it swims after you)
             s.pal.update(s.you, va, s.solids, app.dt);
             if (s.shown.stage != Stage::Adult) {  // on its lead: it can't fall further behind than the lead
                 const float dx = s.pal.pos.x - s.you.pos.x, dy = s.pal.pos.y - s.you.pos.y, d = std::hypot(dx, dy);
@@ -1400,8 +1424,9 @@ void drawTop(App& app) {
         if (vext::feature(f).ambient && f != feat) vext::feature(f).ambient(app, s.walkers, view);
     if (r3d::ready()) r3d::drawValley(app, view, now);
     if (autotest::shooting())
-        autotest::log("you (%.1f %.1f %.1f) partner (%.1f %.1f %.1f) mode %d", s.you.pos.x, s.you.pos.y, s.you.pos.z, s.pal.pos.x,
-                      s.pal.pos.y, s.pal.pos.z, static_cast<int>(s.mode));
+        autotest::log("you (%.1f %.1f %.1f) partner (%.1f %.1f %.1f) mode %d; you: speed %.2f heading %.2f blocked %d swimming %d, camera yaw %.2f",
+                      s.you.pos.x, s.you.pos.y, s.you.pos.z, s.pal.pos.x, s.pal.pos.y, s.pal.pos.z, static_cast<int>(s.mode), s.you.speed,
+                      s.you.heading, s.you.blocked ? 1 : 0, s.you.swimming ? 1 : 0, s.wcam.yaw);
     if (s.breath.count() > 0) bview::drawBreath(s.breath);  // (a lantern being breathed alight)
     if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
     if (r3d::ready()) cove::drawCoveThings(app, s.valley, now);  // Driftwood Cove's shells, bobber and catch (workstream C)
@@ -1598,7 +1623,7 @@ void drawBottom(App& app, const Input& touch) {
     char line[80];
     const float x = 184;
     const char* doing = s.mode == Mode::Riding ? (s.flight.grounded ? str::kRidingGround : str::kFlying)
-                        : s.mode == Mode::FreeCam ? str::kFreeCamera : str::kOnFoot;
+                        : s.mode == Mode::FreeCam ? str::kFreeCamera : s.you.swimming ? str::kSwimming : str::kOnFoot;
     text(app, doing, x, 26, 0.45f, theme::kShell, C2D_AlignLeft, 132);
     if (s.mode == Mode::Riding) {
         const Rect bar{x, 44, 128, 8};

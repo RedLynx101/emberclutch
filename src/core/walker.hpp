@@ -29,6 +29,9 @@ struct WalkTuning {
     float walkSpeed = 2.8f, runSpeed = 5.6f;  // m/s at a full push (a chibi's jog and run, D86)
     float accel = 14.0f, turnRate = 9.0f;     // m/s^2; radians a second at most
     float wade = 0.6f;                        // no deeper into water than this
+    float swim = 0.0f;                        // 1.0 (D121): deeper than this you float, feet this far under the
+                                              // surface (0: no swimming, deep water a wall)
+    float swimSpeed = 1.6f, swimRun = 2.5f;   // m/s swimming (the swim clip's pace)
     float steepest = 0.72f;                   // no climbing ground whose normal is flatter than this
     float radius = 0.35f;                     // your body, for the walls
 };
@@ -38,11 +41,14 @@ struct Walker {
     float heading = 0;  // radians about Z; 0 faces -Y (as the dragons)
     float speed = 0;    // m/s, along the heading
     bool blocked = false;  // this step: pushed back by water, a slope or a wall
+    bool swimming = false;  // afloat in deep water (WalkTuning::swim)
 
     Vec3 forward() const;
     // One step; `cameraYaw` turns the pad's up into the direction the camera looks.
     void update(const WalkInput& in, float cameraYaw, const Valley& v, const std::vector<Solid>& solids, float dt,
                 const WalkTuning& tune = WalkTuning{});
+    // Set down where it is (off a dragon's back): on the ground, wading, or afloat; true if afloat.
+    bool drop(const Valley& v, const WalkTuning& tune = WalkTuning{});
 };
 
 // The partner at your side (D81): it keeps a spot beside you and a little behind (on your
@@ -55,6 +61,7 @@ struct Follower {
     float walk = 2.2f, trot = 4.0f, run = 7.0f;  // its gaits' speeds, set from its legs
     float gap = 2.2f;                            // how far to the side it walks (bigger dragons, further)
     bool settled = false;                        // staying put by you while you stand still
+    bool swim = false;                           // it may swim out after you (you're swimming, D121)
     float stuckFor = 0;                          // seconds getting no nearer while far off
     bool lost() const { return stuckFor > 3.0f; }
 

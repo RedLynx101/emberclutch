@@ -435,6 +435,32 @@ for _t, _u in ((0.0, 0.0), (0.5, 1.0), (1.0, 0.3), (1.5, 1.0)):
 fly_toy.root(0.0).root(0.25, 0.0, 0.04).root(0.5).root(0.75, 0.0, 0.04).root(1.0).root(1.25, 0.0, 0.04).root(1.5).root(1.75, 0.0, 0.04)
 
 
+# Swimming (1.0, D121): a breaststroke, the body leaning into the water with the head held up and
+# the legs kicking behind; and treading water, upright, the arms sculling and the legs cycling. The
+# valley floats you with the water at your shoulders (core/walker: kFloat).
+SWIM = {"spine": (-26, 0, 0), "chest": (-10, 0, 0), "neck": (10, 0, 0), "head": (24, 0, 0),
+        "leg_up*": (-16, 0, 4), "leg_lo*": (-18, 0, 0), "foot*": (-30, 0, 0), "hand*": (-10, 0, 0)}
+swim = clip("swim", 1.2, loop=True, speed=1.6)
+for _t, _up, _lo in ((0.0, (82, 0, 10), (6, 0, 0)),     # reaching forward
+                     (0.35, (64, 0, 56), (22, 0, 0)),   # the sweep out
+                     (0.7, (30, 0, 24), (92, 0, 0)),    # the pull in to the chest
+                     (1.0, (70, 0, 8), (42, 0, 0))):    # pushing forward again
+    swim.pose(_t, merge(SWIM, {"arm_up*": _up, "arm_lo*": _lo}))
+swim.wave(lambda t: {"leg_up_R": (14 * sin01(t, 0.6), 0, 0), "leg_up_L": (-14 * sin01(t, 0.6), 0, 0),
+                     "leg_lo_R": (-8 * max(0.0, sin01(t, 0.6)), 0, 0), "leg_lo_L": (-8 * max(0.0, -sin01(t, 0.6)), 0, 0)})
+swim.root(0.0).root(0.4, 0.0, -0.03).root(0.8, 0.0, 0.02)
+swim.event(0.55, "footstep")  # (the pull: the valley plays a soft splash)
+
+TREAD = {"spine": (-5, 0, 0), "head": (5, 0, 0), "hand*": (-6, 0, 0)}
+tread = clip("tread", 1.6, loop=True).pose(0.0, TREAD)
+tread.wave(lambda t: {"arm_up_R": (32 + 6 * sin01(t, 0.8), 0, 40 + 12 * sin01(t, 0.8)),
+                      "arm_up_L": (32 + 6 * sin01(t, 0.8), 0, -(40 + 12 * sin01(t, 0.8))),
+                      "arm_lo_R": (40 + 12 * sin01(t, 0.8, 0.25), 0, 0), "arm_lo_L": (40 + 12 * sin01(t, 0.8, 0.25), 0, 0),
+                      "leg_up_R": (22 + 18 * sin01(t, 1.6), 0, 4), "leg_up_L": (22 - 18 * sin01(t, 1.6), 0, -4),
+                      "leg_lo_R": (-34 - 18 * sin01(t, 1.6, 0.25), 0, 0), "leg_lo_L": (-34 + 18 * sin01(t, 1.6, 0.25), 0, 0)})
+tread.root(0.0).root(0.8, 0.0, 0.025)
+
+
 def by_name(name):
     for c in CLIPS:
         if c.name == name:
@@ -480,8 +506,11 @@ PURPOSE = {
     "write": "writing on the clipboard held up in hand_L, looking up now and then (loop)",
     "tidy": "both hands busy at a counter in turn, leaning in (loop)",
     "fly_toy": "the toy in hand_L swooped up and round, bouncing, eyes on it (loop; root bob)",
+    # 1.0 (D121)
+    "swim": "a breaststroke, leaning into the water, head up, legs kicking (loop; footstep on the pull)",
+    "tread": "treading water upright, arms sculling, legs cycling (loop; root bob)",
 }
 REQUIRED = ["idle", "look_around", "walk", "run", "wave", "talk", "nod", "cheer", "crouch_pet", "mount", "ride",
             "ride_lean_left", "ride_lean_right", "dismount", "sit", "surprised", "pick_up",
             "clap", "sit_clap", "sit_ground", "doze", "doze_stand", "stretch", "fist_pump", "point", "worried", "slump",
-            "bow", "fish", "cast", "scatter", "write", "tidy", "fly_toy"]
+            "bow", "fish", "cast", "scatter", "write", "tidy", "fly_toy", "swim", "tread"]

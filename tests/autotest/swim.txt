@@ -1,0 +1,38 @@
+# Swimming (1.0, D121): from the lake's shore into deep water (wading, then afloat, the breaststroke
+# and treading water), and back out; the partner swims after you.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+wait 0.3
+tap 81 106
+wait 0.3
+tap 81 106
+key SELECT
+name Cinder
+wait 11
+skip 9
+tips seen
+valley
+hour 11
+wait 3
+travel 7
+wait 3
+shot s1-shore
+shotin 9.0 s2-wading
+keyhold UP 10.0
+shotin 5.0 s3-swimming
+keyhold UP 7.0
+wait 1.5
+shot s4-treading
+shotin 1.5 s5-turning
+keyhold DOWN 9.0
+keyhold DOWN 9.0
+shot s6-out
+quit

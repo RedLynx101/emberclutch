@@ -18,16 +18,22 @@ float wrap(float a) {
 
 float clampf(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
-// Can a body at height z stand at (x, y) coming from `from`? Not in deep water, not up too
-// steep a slope, not off the edge of a floating island.
-bool standable(const Valley& v, Vec2 from, Vec2 to, float z, float wade, float steepest) {
+// Can a body at height z stand at (x, y) coming from `from`? Not in deep water (unless it swims,
+// `swim` > 0: then deep water holds it), not up too steep a slope, not off the edge of a floating
+// island. Afloat, it climbs out onto a bank no higher than a step above its feet, or a gentle one.
+bool standable(const Valley& v, Vec2 from, Vec2 to, float z, float wade, float steepest, float swim = 0.0f) {
     if (!v.inside(to.x, to.y)) return false;
     const int on = v.islandAt(from.x, from.y, z);
     if (on >= 0) return v.islandAt(to.x, to.y, z) == on;  // an island's top is flat; its edge a wall
     if (v.deckAt(to.x, to.y, z) >= 0) return v.groundAt(to.x, to.y, z) < z + 0.6f;  // along a deck (a step up at most)
     const float g = v.heightAt(to.x, to.y);
-    if (g < v.water - wade) return false;
     const float g0 = v.heightAt(from.x, from.y);
+    if (swim > 0) {
+        if (g < v.water - wade) return true;
+        if (g0 < v.water - swim) return g < v.water - swim + 0.45f || v.normalAt(to.x, to.y).z >= steepest;
+    } else if (g < v.water - wade) {
+        return false;
+    }
     return !(g > g0 + 0.02f && v.normalAt(to.x, to.y).z < steepest);
 }
 
@@ -47,11 +53,11 @@ Vec2 pushOut(Vec2 p, float radius, const std::vector<Solid>& solids, bool& hit) 
 // A step from `pos` along `dir` of `step` metres: straight if it can, else sliding along
 // whatever's in the way (a wall of water, a slope, a solid). Returns the new position.
 Vec2 move(const Valley& v, Vec2 pos, float z, Vec2 dir, float step, float radius, float wade, float steepest,
-          const std::vector<Solid>& solids, bool& blocked) {
+          const std::vector<Solid>& solids, bool& blocked, float swim = 0.0f) {
     Vec2 next{pos.x + dir.x * step, pos.y + dir.y * step};
     bool hit = false;
     next = pushOut(next, radius, solids, hit);
-    if (standable(v, pos, next, z, wade, steepest)) {
+    if (standable(v, pos, next, z, wade, steepest, swim)) {
         // Against a wall it slides round it; only when that hardly gets anywhere is it blocked
         // (a well in the way is walked round, not stopped at).
         if (hit && std::hypot(next.x - pos.x, next.y - pos.y) < step * 0.3f) blocked = true;
@@ -62,16 +68,22 @@ Vec2 move(const Valley& v, Vec2 pos, float z, Vec2 dir, float step, float radius
         Vec2 alt{pos.x + slide.x * step, pos.y + slide.y * step};
         bool h2 = false;
         alt = pushOut(alt, radius, solids, h2);
-        if (standable(v, pos, alt, z, wade, steepest)) return alt;
+        if (standable(v, pos, alt, z, wade, steepest, swim)) return alt;
     }
-    return hit && standable(v, pos, next, z, wade, steepest) ? next : pos;
+    return hit && standable(v, pos, next, z, wade, steepest, swim) ? next : pos;
 }
 
 // Where a body ends up standing at p (from height z): an island's top, else the land or the
-// water it wades in.
-float standZ(const Valley& v, Vec2 p, float z, float wade) {
-    return v.islandAt(p.x, p.y, z) >= 0 || v.deckAt(p.x, p.y, z) >= 0 ? v.groundAt(p.x, p.y, z)
-                                                                      : std::fmax(v.heightAt(p.x, p.y), v.water - wade);
+// water it wades in (or, swimming, floats in: its feet `swim` under the surface).
+float standZ(const Valley& v, Vec2 p, float z, float wade, float swim = 0.0f) {
+    return v.islandAt(p.x, p.y, z) >= 0 || v.deckAt(p.x, p.y, z) >= 0
+               ? v.groundAt(p.x, p.y, z)
+               : std::fmax(v.heightAt(p.x, p.y), v.water - (swim > 0 ? swim : wade));
+}
+
+// Afloat at p: deep water under it, no island or deck (swimming, D121).
+bool afloat(const Valley& v, Vec3 p, float swim) {
+    return swim > 0 && v.islandAt(p.x, p.y, p.z) < 0 && v.deckAt(p.x, p.y, p.z) < 0 && v.heightAt(p.x, p.y) < v.water - swim;
 }
 
 }  // namespace
@@ -81,6 +93,7 @@ Vec3 Walker::forward() const { return {std::sin(heading), -std::cos(heading), 0}
 void Walker::update(const WalkInput& in, float cameraYaw, const Valley& v, const std::vector<Solid>& solids, float dt,
                     const WalkTuning& tune) {
     blocked = false;
+    swimming = afloat(v, pos, tune.swim);
     const float push = std::fmin(1.0f, std::hypot(in.x, in.y));
     float want = 0;
     if (push > 0.05f) {
@@ -88,19 +101,29 @@ void Walker::update(const WalkInput& in, float cameraYaw, const Valley& v, const
         const float padAngle = std::atan2(in.x, in.y);  // 0 up, + to the right
         const float goal = wrap(cameraYaw - padAngle);  // (the heading turns the other way: right of the view is minus)
         const float err = wrap(goal - heading);
-        heading = wrap(heading + clampf(err, -tune.turnRate * dt, tune.turnRate * dt));
-        want = push * (in.run ? tune.runSpeed : tune.walkSpeed) * (std::fabs(err) > 1.6f ? 0.3f : 1.0f);  // a little arc
+        const float turn = tune.turnRate * (swimming ? 0.5f : 1.0f);  // (afloat: a slower, gliding turn)
+        heading = wrap(heading + clampf(err, -turn * dt, turn * dt));
+        const float pace = swimming ? (in.run ? tune.swimRun : tune.swimSpeed) : (in.run ? tune.runSpeed : tune.walkSpeed);
+        want = push * pace * (std::fabs(err) > 1.6f ? 0.3f : 1.0f);  // a little arc
     }
-    const float a = tune.accel * dt;
+    const float a = tune.accel * dt * (swimming ? 0.35f : 1.0f);  // (afloat: it glides up to speed and on)
     speed += clampf(want - speed, -a * 1.5f, a);
     if (speed < 0.01f) {
         speed = 0;
         return;
     }
     const Vec2 dir{std::sin(heading), -std::cos(heading)};
-    const Vec2 p = move(v, {pos.x, pos.y}, pos.z, dir, speed * dt, tune.radius, tune.wade, tune.steepest, solids, blocked);
+    const Vec2 p = move(v, {pos.x, pos.y}, pos.z, dir, speed * dt, tune.radius, tune.wade, tune.steepest, solids, blocked,
+                        tune.swim);
     if (blocked) speed *= 0.6f;
-    pos = {p.x, p.y, standZ(v, p, pos.z, tune.wade)};
+    pos = {p.x, p.y, standZ(v, p, pos.z, tune.wade, tune.swim)};
+    swimming = afloat(v, pos, tune.swim);
+}
+
+bool Walker::drop(const Valley& v, const WalkTuning& tune) {
+    pos.z = standZ(v, {pos.x, pos.y}, pos.z, tune.wade, tune.swim);
+    swimming = afloat(v, pos, tune.swim);
+    return swimming;
 }
 
 Vec3 Follower::spot(const Walker& you) const {
@@ -137,7 +160,7 @@ void Follower::update(const Walker& you, const Valley& v, const std::vector<Soli
     if (speed > 0.01f) {
         bool blocked = false;
         const Vec2 p = move(v, {pos.x, pos.y}, pos.z, {std::sin(heading), -std::cos(heading)}, speed * dt, gap * 0.3f, 0.8f,
-                            0.6f, solids, blocked);
+                            0.6f, solids, blocked, swim ? 0.8f : 0.0f);
         pos = {p.x, p.y, standZ(v, p, pos.z, 0.8f)};
     } else {
         speed = 0;

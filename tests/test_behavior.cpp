@@ -3,10 +3,12 @@
 // spot, care interrupts the right things, and the dragon stays on the floor.
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 #include <vector>
 
 #include "check.hpp"
 #include "core/den_actor.hpp"
+#include "core/kinds.hpp"
 #include "core/props.hpp"
 #include "core/rig.hpp"
 
@@ -245,6 +247,35 @@ TEST(a_dragon_in_the_way_makes_way_for_the_ball) {
     std::printf("  made way: the ball picked up in %.1f s, the one in the way moved %.2f\n", t, moved);
     CHECK(got);
     CHECK(moved > 0.6f);
+}
+
+// Walking at every pace (D130: "Curlstone should only use its walking animation when following the
+// player and when in the den. Rolling only for human riders"): a walk-only body's zoomies are its
+// walk, quicker; never its run. Kinds on the Curlstone's plan roll to run, the others don't.
+TEST(a_walk_only_body_never_rolls) {
+    const DenLayout den;
+    DenActor a;
+    a.reset(den, 5);
+    a.walkOnly = true;
+    Dragon d = contentDragon();
+    a.behavior.force(Activity::Zoomies);
+    const int walk = world().clips[static_cast<int>(ClipId::Walk)], run = world().clips[static_cast<int>(ClipId::Gallop)];
+    bool ran = false, walked = false;
+    float fastest = 0;
+    for (int f = 0; f < 120; ++f) {
+        a.update(d, false, 1.0f, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+        ran |= run != walk && a.anim.clip == run;
+        walked |= a.anim.clip == walk && a.behavior.speed > 0;
+        fastest = std::fmax(fastest, a.behavior.speed);
+    }
+    std::printf("  walk only: zoomies at %.2f a second, its walk %.2f\n", fastest, a.behavior.walkSpeed);
+    CHECK(!ran && walked);
+    Dragon stone;
+    for (int k = 0; k < kindCount(); ++k) {
+        stone.kind = static_cast<u8>(k);
+        if (std::strcmp(kindInfo(k).name, "curlstone") == 0) CHECK(rollsToRun(stone));
+        if (std::strcmp(kindInfo(k).name, "pouncer") == 0) CHECK(!rollsToRun(stone));
+    }
 }
 
 // Fighting for the ball back (Noah, run 13): held near its mouth it hangs on and tugs; let go
@@ -877,6 +908,7 @@ void runBehaviorTests() {
     RUN(care_interrupts_everyday_life);
     RUN(dragons_fetch_the_ball_and_bring_it_back);
     RUN(a_dragon_in_the_way_makes_way_for_the_ball);
+    RUN(a_walk_only_body_never_rolls);
     RUN(hands_on_care_reactions);
     RUN(dragons_walk_around_the_hearth_and_hoard);
     RUN(three_dragons_share_the_den);

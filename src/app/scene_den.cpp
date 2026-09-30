@@ -154,6 +154,7 @@ void matchSpeeds(DenActor& actor, const Dragon& d, s64 now) {
     const int build = d.genome.build < kModelBuilds ? d.genome.build : kBuildNeutral;
     const AnimLibrary* lib = r3d::animsFor(d);
     if (!lib) return;
+    actor.walkOnly = rollsToRun(d);  // (in the den it walks: D130)
     actor.updateSpeeds(*m, *bind, *lib, r3d::clipIndexFor(d, g.form), g.form * r3d::kLookSlots + look, g.t, build,
                        kindSize(d), g.form == kFormHatchling);
 }

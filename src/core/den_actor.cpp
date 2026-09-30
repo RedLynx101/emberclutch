@@ -6,6 +6,8 @@
 #include "core/rig.hpp"
 
 namespace ec {
+
+constexpr float kWalkOnlyTrot = 1.45f, kWalkOnlyRun = 1.9f;  // (a walk-only body's trot and run: its walk this much quicker, D130)
 namespace {
 
 // Hatchlings walked 30% faster than their steps (Noah, 2026-09-24); since run 13 their own
@@ -117,6 +119,10 @@ void DenActor::updateSpeeds(const ModelData& m, const AnimBinding& bind, const A
     behavior.baby = baby;  // the hatchling's body scampers, the grown one gallops
     const int run = clipIndex[static_cast<int>(behavior.baby ? ClipId::Scamper : ClipId::Gallop)];
     if (run >= 0) behavior.runSpeed = locomotionSpeed(m, bind, lib.clips[run], t, build) * size;
+    if (walkOnly) {  // (its walk, quicker: D130)
+        behavior.trotSpeed = behavior.walkSpeed * kWalkOnlyTrot;
+        behavior.runSpeed = behavior.walkSpeed * kWalkOnlyRun;
+    }
     // How far its snout reaches in front of it, standing: its tip is about as far past the
     // snout's joint as that is past the head's.
     const int head = m.skel.find("head"), snout = m.skel.find("snout");
@@ -144,15 +150,16 @@ int DenActor::update(const Dragon& d, bool night, float moveScale, float dt, con
     const float k = dt * 3.0f < 1.0f ? dt * 3.0f : 1.0f;
     look += (behavior.lookWeight() - look) * k;
     eyes.update(behavior.eyesClosed(), dt);
+    const ClipId c = behavior.clip;
+    const bool quickWalk = walkOnly && (c == ClipId::Trot || c == ClipId::Gallop || c == ClipId::Scamper);
     if (behavior.clipSerial != playedSerial) {
-        const int index = clipIndex[static_cast<int>(behavior.clip)];
-        if (index >= 0) anim.play(index, behavior.blend, true);
+        const int index = clipIndex[static_cast<int>(quickWalk ? ClipId::Walk : c)];
+        if (index >= 0) anim.play(index, behavior.blend, !quickWalk);
         playedSerial = behavior.clipSerial;
     }
-    const ClipId c = behavior.clip;
     anim.rate = c == ClipId::Walk || c == ClipId::Trot || c == ClipId::Carry || c == ClipId::Scamper ||
                         c == ClipId::Gallop
-                    ? behavior.gait
+                    ? behavior.gait * (quickWalk ? (c == ClipId::Trot ? kWalkOnlyTrot : kWalkOnlyRun) : 1.0f)
                     : 1.0f;
     return anim.update(lib, dt, events, maxEvents);
 }

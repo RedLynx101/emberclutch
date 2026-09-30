@@ -56,6 +56,8 @@ int findKind(const char* name) {
     return -1;
 }
 int planCount() { return count(kPlans); }
+bool rollsToRun(const Dragon& d) { return std::strcmp(planInfo(kindInfo(d.kind).plan).name, "curlstone") == 0; }
+
 const PlanInfo& planInfo(int plan) { return kPlans[plan >= 0 && plan < planCount() ? plan : 0]; }
 int elementCount() { return count(kElementNames); }
 const char* elementName(int e) { return e >= 0 && e < elementCount() ? kElementNames[e] : "?"; }

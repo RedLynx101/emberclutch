@@ -48,6 +48,9 @@ struct DenActor {
     // The wind on its tail in flight (D84), set by the valley: a bend across the whole tail in
     // radians (+yaw toward its right, +pitch up) and how straight the airflow pulls it (0..1).
     float tailYaw = 0, tailPitch = 0, tailStraight = 0;
+    // Walking at every pace (a kind that rolls to run, when nobody rides it: core/kinds rollsToRun,
+    // D130): its trot and run are its walk played quicker, and no faster than that can carry it.
+    bool walkOnly = false;
 
     void reset(const DenLayout& den, u32 seed, int spot = 0);  // spot: its bed and sulking spot
     // Re-measures walk/trot/run speeds when the body changes (form, growth, build, size).

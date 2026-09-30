@@ -388,6 +388,10 @@ void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swi
     } else if (swimming) {
         want = ClipId::Walk;
         natural = s.natWalk * 1.5f;
+    } else if (speed > 0.15f && rollsToRun(s.shown) && s.mode != Mode::Riding) {  // (it rolls with you on it alone: D130)
+        want = ClipId::Walk;
+        natural = s.natWalk;
+        fastest = 3.0f;
     } else if (speed > 0.15f) {
         const bool baby = form == kFormHatchling;
         // (trotting past what its walk clip keeps up with: 1.6 times its own pace)

@@ -101,6 +101,9 @@ Rgb kindGlow(const Dragon& d);
 Rgb kindShell(const Dragon& d);
 // Its grown size next to a Pouncer (0.67..1.5): the kind's, a little either way (the size gene).
 float kindSize(const Dragon& d);
+// Its run is a roll (the Curlstone's plan: tucked into a ball, D130): only with you riding; else it
+// walks at every pace, following you or in the den.
+bool rollsToRun(const Dragon& d);
 // The kind's elements (1 or 2) as text: "Ember" or "Ember / Gale".
 void kindElements(int kind, char* out, int cap);
 const char* rarityName(Rarity r);  // "Common", "Harder to find", "Rare"

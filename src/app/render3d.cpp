@@ -266,7 +266,6 @@ bool g_groundTexOk = false;
 int g_groundLook = 0;  // the look lab: 0 smooth + texture, 1 faceted, 2 faceted + texture
 bool g_groundPlain = false;  // a session froze drawing the painted ground (trace, hangs.txt): plain
 C3D_AttrInfo g_staticAttr;
-C3D_AttrInfo g_tileAttr;  // (the trial's fix 4: the second colour a constant, one colour buffer read)
 C3D_LightEnv g_lightEnv;
 C3D_Light g_light;
 C3D_LightLut g_lutToon[3], g_lutRim[2];  // per look: the classic ramp, V1's soft one, V3's hard one; the rims
@@ -1245,10 +1244,6 @@ bool init() {
     AttrInfo_AddLoader(&g_staticAttr, 0, GPU_FLOAT, 3);          // position
     AttrInfo_AddLoader(&g_staticAttr, 1, GPU_UNSIGNED_BYTE, 4);  // colour, lighting set A
     AttrInfo_AddLoader(&g_staticAttr, 2, GPU_UNSIGNED_BYTE, 4);  // colour, lighting set B
-    AttrInfo_Init(&g_tileAttr);
-    AttrInfo_AddLoader(&g_tileAttr, 0, GPU_FLOAT, 3);
-    AttrInfo_AddLoader(&g_tileAttr, 1, GPU_UNSIGNED_BYTE, 4);
-    AttrInfo_AddFixed(&g_tileAttr, 2);  // (set B unused while blend is 0)
 
     C3D_LightEnvInit(&g_lightEnv);
     C3D_LightEnvMaterial(&g_lightEnv, &kMaterial);
@@ -2707,14 +2702,14 @@ bool uploadValley(ValleyGpu& g, const ValleyMesh& m) {
     return true;
 }
 
-void drawValleyGpu(App& app, const ValleyGpu& g, bool skirts = true, bool oneColour = false) {
+void drawValleyGpu(App& app, const ValleyGpu& g, bool skirts = true) {
     if (!g.count) return;
     const int count = skirts ? g.count : g.ground;
     C3D_BufInfo* buf = C3D_GetBufInfo();
     BufInfo_Init(buf);
     BufInfo_Add(buf, g.pos, sizeof(Vec3), 1, 0x0);
     BufInfo_Add(buf, g.col, 4, 1, 0x1);
-    if (!oneColour) BufInfo_Add(buf, g.col, 4, 1, 0x2);  // one colour set: no blend between two
+    BufInfo_Add(buf, g.col, 4, 1, 0x2);  // one colour set: no blend between two
     C3D_DrawElements(GPU_TRIANGLES, count, C3D_UNSIGNED_SHORT, g.idx);
     app.stats.tris += count / 3;
     app.stats.draws += 1;
@@ -2799,6 +2794,9 @@ void bindValleyStatic(const C3D_Mtx& projection, const C3D_Mtx& view, Rgb tint) 
 // little of the height in it, so slopes and tree trunks take it too). Off: the colour alone.
 // On, the ground's own program (the texture coordinate); off, back to the static program (the
 // uniforms they share stay set: the same registers).
+Vec3 g_detailEye;                                // (the trial's way 3: the eye the coordinates count from)
+bool g_detailSmall = false, g_detailBound = false;  // (ways 3 and 2)
+
 void groundDetail(bool on, bool texture = true) {
     C3D_TexEnv* env = C3D_GetTexEnv(0);
     C3D_TexEnvInit(env);
@@ -2821,7 +2819,7 @@ void groundDetail(bool on, bool texture = true) {
         C3D_TexEnvFunc(env, C3D_Alpha, GPU_REPLACE);
         return;
     }
-    C3D_TexBind(0, &g_groundTex);
+    if (!g_detailBound) C3D_TexBind(0, &g_groundTex);
     // The mix: earth (the texture's alpha) x w + grass (its luminance) x (1 - w), w the vertex's alpha.
     C3D_TexEnvSrc(env, C3D_RGB, GPU_TEXTURE0, GPU_TEXTURE0, GPU_PRIMARY_COLOR);
     C3D_TexEnvOpRgb(env, GPU_TEVOP_RGB_SRC_ALPHA, GPU_TEVOP_RGB_SRC_COLOR, GPU_TEVOP_RGB_SRC_ALPHA);
@@ -2836,8 +2834,12 @@ void groundDetail(bool on, bool texture = true) {
     C3D_TexEnvSrc(times, C3D_Alpha, GPU_PREVIOUS, GPU_PREVIOUS, GPU_PREVIOUS);
     C3D_TexEnvFunc(times, C3D_Alpha, GPU_REPLACE);
     constexpr float k = 1.0f / 8.0f;
-    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, k, 0, 0.45f * k, 0);
-    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, k, 0.7f * k, 0);
+    // (the trial's way 3: whole repeats taken off so the coordinates stay small near the eye; the
+    // texture repeats every whole number, so it doesn't move)
+    const float du = g_detailSmall ? -std::floor(k * g_detailEye.x + 0.45f * k * g_detailEye.z) : 0.0f;
+    const float dv = g_detailSmall ? -std::floor(k * g_detailEye.y + 0.7f * k * g_detailEye.z) : 0.0f;
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, k, 0, 0.45f * k, du);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, k, 0.7f * k, dv);
 }
 
 // True if a box can't be seen: every corner is beyond the same side of the view.
@@ -3064,9 +3066,13 @@ void drawPlaces(App& app, const Valley& v, const ValleyView& view, const C3D_Mtx
         const float r = g.reach * 1.415f;  // (turned by its heading, a corner reaches this far)
         const Vec3 lo{p.at.x - r, p.at.y - r, p.at.z + g.low};
         const Vec3 hi{p.at.x + r, p.at.y + r, p.at.z + g.high};
-        // (Past 260 m the fog has them: not drawn.)
-        if (outsideView(clip, lo, hi) || std::hypot(view.eye.x - p.at.x, view.eye.y - p.at.y) > 260.0f * g_reachScale + g.reach)
-            continue;
+        // (Past 260 m the fog has them: not drawn. The haze brings that nearer as a view grows
+        // busy; each keeps being drawn 15 m past the line once it's in, so none blinks out and back
+        // as the haze moves: take 4, Noah: "the buildings were also sometimes skipping out of view".)
+        static bool inReach[kPlaceCount] = {};
+        const float far = std::hypot(view.eye.x - p.at.x, view.eye.y - p.at.y) - (260.0f * g_reachScale + g.reach);
+        if (!glows) inReach[p.id] = far < (inReach[p.id] ? 15.0f : 0.0f);
+        if (!inReach[p.id] || outsideView(clip, lo, hi)) continue;
         const bool lit = (view.lanternsLit >> p.id) & 1u;
         const C3D_Mtx frame = placeFrame(p);
         C3D_Mtx mv;
@@ -3760,11 +3766,10 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         fogDensity = density;
         trace::frameFacts(true, 0);
     }
-    // The flicker's trial (D114, while the trace is on): 0 as drawn, 1 the ground untextured, 2 its
-    // depth test set again before each tile, 3 the places drawn before the ground, 4 the tiles'
-    // second colour a constant (no two attribute loaders reading one buffer).
+    // The flicker's trial (D115, while the trace is on: the ways the ground is drawn, below).
     const int fix = trace::depthMode();
     C2D_Flush();
+    if (fix == 2 && g_groundTexOk && g_groundLook != 1 && !g_groundPlain) C3D_TexBind(0, &g_groundTex);  // (bound now, sent with the haze)
     trace::checkpoint("the clear and the sky");
     C3D_FogGasMode(GPU_FOG, GPU_PLAIN_DENSITY, false);
     C3D_FogColor(u32(view.fog.r) | (u32(view.fog.g) << 8) | (u32(view.fog.b) << 16));
@@ -3884,46 +3889,58 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
                 drawnLod[std::size_t(ty) * t + tx] = static_cast<s8>(g->lod);
             }
         }
-    // The places, near enough to have been built (in the trial's fix 3, before the ground).
+    // The ground. Take 4's probes on the 3DS: in the flicker's frames every one of these tiles,
+    // textured, draws its colour and writes no depth, from the first; untextured, they write it
+    // (the commands sent are the same either way). The trial's ways (D115): 1 untextured, 2 the
+    // texture bound before the haze (none of its unit's settings sent with the tiles), 3 small
+    // texture coordinates (counted from near the eye, not the valley's corner), 4 a depth pass
+    // first (untextured, depth only) then the textured one (colour only, equal depth), 5 no
+    // mipmaps, 6 the depth test set again before each tile.
     const DayBlend blend = dayBlend(now);
     streamPlaces(v, view.eye);
-    if (fix == 3) {
-        drawPlaces(app, v, view, viewM, clip, blend, false);
-        bindValleyStatic(projection, viewM, view.tint);
-        mark("valley places (first)");
+    g_detailEye = view.eye;
+    g_detailSmall = fix == 3;
+    g_detailBound = fix == 2;
+    const u8 levels = g_groundTex.maxLevel;
+    if (fix == 5) g_groundTex.maxLevel = 0;
+    auto tileLoop = [&](bool watched) {
+        int drawnTiles = 0;
+        for (const Pick& p : picks) {
+            const int tx = p.tile % t, ty = p.tile / t;
+            bool skirts = false;
+            const int around[4][2] = {{tx - 1, ty}, {tx + 1, ty}, {tx, ty - 1}, {tx, ty + 1}};
+            for (const auto& n : around)
+                if (n[0] >= 0 && n[1] >= 0 && n[0] < t && n[1] < t) {
+                    const s8 l = drawnLod[std::size_t(n[1]) * t + n[0]];
+                    skirts |= l >= 0 && l != p.g->lod;
+                }
+            if (fix == 6) C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+            drawValleyGpu(app, *p.g, skirts);
+            if (!watched) continue;
+            if (drawnTiles++ == 0) trace::commands(false);  // (what the first tile's draw sent)
+            trace::tileProbe(drawnTiles - 1, tx, ty, p.g->lod, skirts ? p.g->count : p.g->ground);
+            ++g_valleyStats.tiles;
+            g_valleyStats.ground += (skirts ? p.g->count : p.g->ground) / 3;
+        }
+    };
+    if (fix == 4) {  // the depth first, untextured
+        groundDetail(true, false);
+        C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_DEPTH);
+        tileLoop(false);
+        C3D_DepthTest(true, GPU_GEQUAL, GPU_WRITE_COLOR);
     }
-    // The ground (take 4's probes on the 3DS: in the flicker's frames these tiles, textured, write
-    // their colour and no depth, while the places after them write theirs; the trial's fix 1 draws
-    // them untextured, fix 2 sets the depth test again before each).
     groundDetail(true, fix != 1);
-    if (fix == 4) {  // (the second colour a constant: no two loaders reading the same buffer)
-        C3D_SetAttrInfo(&g_tileAttr);
-        C3D_FVec* b = C3D_FixedAttribGetWritePtr(2);
-        if (b) *b = FVec4_New(0, 0, 0, 0);
-    }
     trace::commands(true);
-    int drawnTiles = 0;
-    for (const Pick& p : picks) {
-        const int tx = p.tile % t, ty = p.tile / t;
-        bool skirts = false;
-        const int around[4][2] = {{tx - 1, ty}, {tx + 1, ty}, {tx, ty - 1}, {tx, ty + 1}};
-        for (const auto& n : around)
-            if (n[0] >= 0 && n[1] >= 0 && n[0] < t && n[1] < t) {
-                const s8 l = drawnLod[std::size_t(n[1]) * t + n[0]];
-                skirts |= l >= 0 && l != p.g->lod;
-            }
-        if (fix == 2) C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
-        drawValleyGpu(app, *p.g, skirts, fix == 4);
-        if (drawnTiles++ == 0) trace::commands(false);  // (what the first tile's draw sent)
-        trace::tileProbe(drawnTiles - 1, tx, ty, p.g->lod, skirts ? p.g->count : p.g->ground);
-        ++g_valleyStats.tiles;
-        g_valleyStats.ground += (skirts ? p.g->count : p.g->ground) / 3;
-    }
+    tileLoop(true);
+    if (fix == 4) C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+    g_groundTex.maxLevel = levels;
+    g_detailSmall = g_detailBound = false;
     for (const Pick& p : picks) drawnLod[std::size_t(p.tile)] = -1;  // (clean for the next frame)
     trace::frameFacts(false, g_valleyStats.built);
     groundDetail(false);
-    mark(fix == 3 ? "valley ground (after the places)" : nullptr);
-    if (fix != 3) drawPlaces(app, v, view, viewM, clip, blend, false);
+    mark();
+    // The places, near enough to have been built.
+    drawPlaces(app, v, view, viewM, clip, blend, false);
     bindValleyStatic(projection, viewM, view.tint);
     // The islands (built once), both faces drawn.
     static std::vector<u32> islandParts;  // where each island's indices start

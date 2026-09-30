@@ -44,11 +44,12 @@ void watchAfterFrameBegin();
 // 5-second lines and the first ones logged.
 void watchDepth(C3D_RenderTarget_tag* top, int valleyScene);
 
-// The trial (D114: 0.9.7's probes found the ground's tiles writing colour and no depth): 0 as drawn,
-// 1 the tiles untextured, 2 their depth test set again before each, 3 the places drawn before them,
-// 4 their second colour a constant. With the trace on, the first 10,000 valley frames take them in
-// turn, 60 frames each (holes counted apart in the 5-second lines), then the one clearly best stays
-// (else 0); with it off, 0. Read once per valley frame, as it's drawn.
+// The trial (D115: 0.9.8's probes found the textured tiles alone writing no depth): the ways the
+// valley's ground is drawn (render3d drawValley): 0 as drawn, 1 untextured, 2 the texture bound
+// before the haze, 3 small texture coordinates, 4 a depth pass first, 5 no mipmaps, 6 the depth test
+// set again before each tile. With the trace on, the first 12,600 valley frames take them in turn,
+// 600 frames each (their first 60 not counted: the last way's), holes counted apart in the 5-second
+// lines, then the one clearly best stays (else 0); with it off, 0. Read once per valley frame.
 int depthMode();
 void holdFix(int fix);  // (scripted runs: that fix held whatever the trace; -1 lets go)
 // The commands sent for the ground's first tile (between begin and end), kept for the frame and

@@ -2,7 +2,7 @@
 ;   * The same inputs and uniforms as static.v.pica, in the same order (so the same
 ;     registers: render3d checks it), and the same colour.
 ;   * A texture coordinate from the position (run 19: the valley's ground takes a detail
-;     texture this way, with no more triangles): u = detailU . pos, v = detailV . pos.
+;     texture this way, with no more triangles): u = detailU . (pos, 1), v = detailV . (pos, 1).
 ;   * Its own program since run 21 (D107): with it the den's room froze on the hardware,
 ;     so everything else draws with the static program, which has no texture output. The
 ;     valley then froze on its first frame (D108): the output is now written whole.
@@ -11,7 +11,7 @@
 .fvec projection[4], modelView[4]
 .fvec blend  ; x: weight of set B
 .fvec tint   ; rgba multiplier / 255
-.fvec detailU, detailV  ; xyz: the position's weights for the texture coordinate
+.fvec detailU, detailV  ; xyz: the position's weights for the texture coordinate, w: an offset
 
 .constf consts(1.0, 0.0, 0.0, 0.0)
 .alias  ones consts.xxxx
@@ -41,8 +41,8 @@
 	; (every component of the output written, with one mov, as the dragon's and citro2d's
 	; shaders do: the valley froze on its first frame with x and y written apart, run 21)
 	mov r4, consts.yyyx
-	dp3 r4.x, detailU, r0
-	dp3 r4.y, detailV, r0
+	dp4 r4.x, detailU, r0
+	dp4 r4.y, detailV, r0
 	mov outtc0, r4
 
 	; one instruction reads at most one input register

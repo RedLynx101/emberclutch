@@ -40,7 +40,7 @@ int g_holes = 0, g_depthFrames = 0;  // valley frames with the ground's depth go
 
 // The depth fixes under trial (D113), their holes counted apart; what each valley frame did (its
 // haze table made again, tiles built), for the holes; the probes after a hole.
-constexpr int kTrialFrames = 10000, kModeRun = 60, kModes = 5;
+constexpr int kTrialFrames = 12600, kModeRun = 600, kModeSettle = 60, kModes = 7;
 int g_mode = 0, g_modeUsed = -1, g_modeDrawn = -1;  // the next frame's; the one drawing's; the last drawn's
 int g_modeHoles[kModes] = {}, g_modeFrames[kModes] = {};
 bool g_trialDone = false;
@@ -161,7 +161,7 @@ void start() {
     }
     std::remove(kPrev);
     std::rename(kTrace, kPrev);  // (the session before, whole)
-    note("trace on (0.9.8: marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the ground trial)", kChecked);
+    note("trace on (0.9.9: marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the ground trial)", kChecked);
     if (part[0]) note("the last session froze in: %s", part);
     for (int i = 0; i < g_hangCount; ++i) note("drawn the safe way (hangs.txt): %s", g_hangs[i]);
     write();
@@ -177,10 +177,12 @@ void frame(unsigned long n, int view) {
     g_live = n < from + kChecked;
     ++g_frames;
     if (g_on && osGetTime() - g_lastBeat >= kBeatMs) {
-        note("f%lu view %x: %lu frames in %.1f s, blips %d, holes %d of %d (by fix %d/%d %d/%d %d/%d %d/%d %d/%d; built %d/%d)",
-             n, static_cast<unsigned>(view), g_frames, (osGetTime() - g_lastBeat) / 1000.0, g_blips, g_holes, g_depthFrames,
-             g_modeHoles[0], g_modeFrames[0], g_modeHoles[1], g_modeFrames[1], g_modeHoles[2], g_modeFrames[2], g_modeHoles[3],
-             g_modeFrames[3], g_modeHoles[4], g_modeFrames[4], g_builtHoles, g_builtFrames);
+        char ways[96];
+        int at = 0;
+        for (int m = 0; m < kModes; ++m)
+            at += std::snprintf(ways + at, sizeof(ways) - static_cast<std::size_t>(at), "%s%d/%d", m ? " " : "", g_modeHoles[m], g_modeFrames[m]);
+        note("f%lu view %x: %lu frames in %.1f s, blips %d, holes %d of %d (by way %s)", n, static_cast<unsigned>(view), g_frames,
+             (osGetTime() - g_lastBeat) / 1000.0, g_blips, g_holes, g_depthFrames, ways);
         g_lastBeat = osGetTime();
         g_frames = 0;
     }
@@ -370,7 +372,7 @@ void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
     const bool hole = lower > 0.6f;
     const int mode = g_modeDrawn;
     ++g_depthFrames;
-    if (mode >= 0 && mode < kModes) {
+    if (mode >= 0 && mode < kModes && (g_depthFrames % kModeRun) >= kModeSettle) {  // (a way's first frames: the last one's)
         ++g_modeFrames[mode];
         g_modeHoles[mode] += hole;
     }
@@ -412,10 +414,19 @@ void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
         auto rate = [](int m) { return g_modeFrames[m] >= 300 ? g_modeHoles[m] / static_cast<float>(g_modeFrames[m]) : 1.0f; };
         g_mode = 0;
         for (int m = 1; m < kModes; ++m)
-            if (rate(m) < rate(g_mode) * 0.8f) g_mode = m;  // (a clear gain only)
-        note("depth trial done: holes by fix %d/%d %d/%d %d/%d %d/%d %d/%d; fix %d from now on", g_modeHoles[0], g_modeFrames[0],
-             g_modeHoles[1], g_modeFrames[1], g_modeHoles[2], g_modeFrames[2], g_modeHoles[3], g_modeFrames[3], g_modeHoles[4],
-             g_modeFrames[4], g_mode);
+            if (rate(m) < rate(g_mode)) g_mode = m;
+        if (g_mode == 1)  // (untextured is plainer: a textured way nearly as good is kept instead)
+            for (int m = 2; m < kModes; ++m)
+                if (rate(m) <= rate(1) + 0.005f) {
+                    g_mode = m;
+                    break;
+                }
+        if (rate(g_mode) > rate(0) * 0.8f) g_mode = 0;  // (a clear gain only)
+        char ways[96];
+        int at = 0;
+        for (int m = 0; m < kModes; ++m)
+            at += std::snprintf(ways + at, sizeof(ways) - static_cast<std::size_t>(at), "%s%d/%d", m ? " " : "", g_modeHoles[m], g_modeFrames[m]);
+        note("depth trial done: holes by way %s; way %d from now on", ways, g_mode);
     }
 }
 

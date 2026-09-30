@@ -1,0 +1,29 @@
+# Not alone (D127): with only an egg, START > Map says it's dangerous to go alone and you stay in the
+# den; once it hatches, out you go together.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key START
+wait 0.6
+tap 160 98
+wait 0.4
+shot a1-alone
+key X
+wait 0.6
+shot a2-egg-x
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+tips seen
+valley
+wait 3
+shot a3-together
+quit

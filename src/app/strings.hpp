@@ -72,7 +72,8 @@ inline constexpr const char* kPartnerIs = "Your travel partner: %s the %s";
 inline constexpr const char* kNoPartner = "No travel partner yet";
 inline constexpr const char* kPartnerWhy = "Your partner goes out into the valley with you.";
 inline constexpr const char* kEggStays = "An egg stays warm in its nest.";
-inline constexpr const char* kEggStaysHome = "Eggs stay warm at home. START > Map walks you out alone.";
+inline constexpr const char* kEggStaysHome = "It's dangerous to go alone! Eggs stay warm at home: hatch a dragon to take along.";
+inline constexpr const char* kDangerousAlone = "It's dangerous to go alone! Take a dragon with you.";
 // Reaching for a sleeping dragon (run 21: it just didn't answer); one %s, its name.
 inline constexpr const char* kAsleep[3] = {"%s is fast asleep.", "%s is sleeping soundly.", "%s is snoozing. Let it rest."};
 inline constexpr const char* kOutingRide = "%s is grown: ride it, fly, land and walk about.";

@@ -34,7 +34,8 @@ extern const SceneFns kCreatorScene;
 // Beta's technical test (WP1): into Skyreach Valley with your dragon, grown (scene_valley).
 void openValley(App& app);
 // Out into the valley, on foot before a place (core/valley ValleyPlace) with your partner.
-void openValleyAt(App& app, int place);
+void openValleyAt(App& app, int place);  // (not without a dragon: D127; it says so and stays)
+int valleyPartner(const App& app);        // who'd come out with you (its index; -1: nobody can)
 void resumeValley(App& app);  // Continue, left in the valley: back where you were
 void openCreator(App& app, SceneId back);  // your look, then back to `back`
 

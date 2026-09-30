@@ -1728,7 +1728,24 @@ void drawBottom(App& app, const Input& touch) {
 
 }  // namespace
 
+// Your partner out there: the one chosen (D81), else the one you're caring for; eggs stay home, and
+// one out on the Wanderings is off on its own.
+int valleyPartner(const App& app) {
+    const SaveData& g = app.game;
+    for (int i = 0; i < g.dragonCount; ++i)
+        if (g.dragons[i].id == g.world.partnerId && g.dragons[i].stage != Stage::Egg && !g.dragons[i].wanderSince) return i;
+    if (hasDragon(app) && activeDragon(app).stage != Stage::Egg && !activeDragon(app).wanderSince) return app.careIndex;
+    return -1;
+}
+
 void openValleyAt(App& app, int place) {
+    // Not alone (D127, Noah: "Don't let players leave without a dragon/partner"): it says so, and
+    // you stay where you are.
+    if (valleyPartner(app) < 0) {
+        showToast(app, str::kDangerousAlone);
+        audio::playSfx(audio::Sfx::Error);
+        return;
+    }
     ValleyScene& s = vs();
     if (!s.tried) {
         s.tried = true;
@@ -1743,12 +1760,8 @@ void openValleyAt(App& app, int place) {
         }
     }
     SaveData& g = app.game;
-    // Your partner: the one chosen (D81), else the one you're caring for; eggs stay home.
-    s.partner = -1;
-    for (int i = 0; i < g.dragonCount; ++i)
-        if (g.dragons[i].id == g.world.partnerId && g.dragons[i].stage != Stage::Egg && !g.dragons[i].wanderSince) s.partner = i;
-    if (s.partner < 0 && hasDragon(app) && activeDragon(app).stage != Stage::Egg && !activeDragon(app).wanderSince)
-        s.partner = app.careIndex;  // (one out on the Wanderings is off on its own)
+    // Your partner (valleyPartner: there's always one now, D127).
+    s.partner = valleyPartner(app);
     if (s.partner >= 0) {
         s.shown = g.dragons[s.partner];
         g.world.partnerId = s.shown.id;
@@ -1778,6 +1791,11 @@ void openValley(App& app) { openValleyAt(app, kPlaceDen); }
 // Continue, left in the valley: back where you were (on foot, your partner at your side), if
 // that's still somewhere to stand; else out of the den's door.
 void resumeValley(App& app) {
+    if (valleyPartner(app) < 0) {  // (left out there alone before D127: home to the den instead)
+        app.game.world.inValley = 0;
+        app.scene = SceneId::Den;
+        return;
+    }
     openValleyAt(app, kPlaceDen);
     ValleyScene& s = vs();
     const WorldState& w = app.game.world;

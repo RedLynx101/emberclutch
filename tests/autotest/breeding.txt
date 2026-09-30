@@ -39,11 +39,7 @@ key SELECT
 wait 2
 shot b01-den-grown
 # The Nesting Stone.
-valley
-wait 0.8
-tap 214 176
-wait 0.4
-tap 214 176
+open stone
 wait 2.5
 shot b02-stone
 tap 82 81

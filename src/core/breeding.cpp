@@ -10,7 +10,8 @@ namespace {
 BreedBlock blockFor(const Dragon& d, s64 now) {
     if (d.stage != Stage::Adult) return BreedBlock::NotAdult;
     if (d.location != Location::Den) return BreedBlock::NotInDen;
-    if (d.bond < kBreedingBond) return BreedBlock::LowBond;
+    // (No bond needed any more, D129: Noah, "take out the reqs for trust for the nesting stone"; LowBond stays
+    // in the list for the saves' sake, never given.)
     if (moodOf(d) < Mood::Content) return BreedBlock::Unhappy;
     if (d.lastBredAt != 0 && now - d.lastBredAt < kBreedingRest) return BreedBlock::Resting;
     return BreedBlock::None;

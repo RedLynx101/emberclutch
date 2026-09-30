@@ -354,8 +354,9 @@ Input next(App& app) {
                 done = true;
                 break;
             }
-            case Op::Open:  // U: market, wander, sanctuary, vault, den, valley
+            case Op::Open:  // U: market, wander, sanctuary, vault, den, valley, stone
                 if (c.text.rfind("market", 0) == 0) app.scene = SceneId::Market;
+                else if (c.text.rfind("stone", 0) == 0) app.scene = SceneId::NestingStone;
                 else if (c.text.rfind("wander", 0) == 0) app.scene = SceneId::Wanderings;
                 else if (c.text.rfind("valley", 0) == 0) openValley(app);
                 else if (c.text.rfind("sanctuary", 0) == 0) app.scene = SceneId::Sanctuary;

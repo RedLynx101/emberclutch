@@ -46,7 +46,9 @@ void poseThePair(App& app, s64 now) {
         if (app.stoneIds[i] != d.id) {
             a = DenActor{};
             app.stoneIds[i] = d.id;
-            const float apart = 0.55f + 0.9f * bodyScale(d, now);
+            // Each by its own size, the kind's too (D129: big kinds stood into each other): room for
+            // both snouts when they turn in to nuzzle.
+            const float apart = 0.45f + 1.3f * bodyScale(d, now) * kindSize(d);
             a.behavior.pos = {i == 0 ? -apart : apart, 0};
             a.behavior.heading = i == 0 ? 1.5708f : -1.5708f;  // facing each other
             a.anim.play(clips[static_cast<int>(ClipId::Idle)], 0.0f, true);

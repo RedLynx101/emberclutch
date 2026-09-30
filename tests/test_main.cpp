@@ -277,8 +277,8 @@ TEST(breeding_requirements) {
     f.stage = Stage::Adolescent;
     CHECK(breedingBlock(m, f, kT0) == BreedBlock::NotAdult);
     f.stage = Stage::Adult;
-    f.bond = 100;
-    CHECK(breedingBlock(m, f, kT0) == BreedBlock::LowBond);
+    f.bond = 0;  // (no trust needed, D129)
+    CHECK(breedingBlock(m, f, kT0) == BreedBlock::None);
     f.bond = 400;
     f.upset = true;
     CHECK(breedingBlock(m, f, kT0) == BreedBlock::Unhappy);

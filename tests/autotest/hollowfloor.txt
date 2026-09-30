@@ -1,0 +1,40 @@
+# Take 4: Frostspire Hollow's cave and frost ring floated (the river's broad valley had lowered the
+# room 3 m under the place's anchor). You and your dragon in the room, its door and ring on the floor.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 2
+skip 9
+tips seen
+valley
+hour 11
+wait 4
+travel 17
+wait 4
+shot h01-arrive
+view 17 6 6 2.5 0 -6 1.0
+wait 1.5
+shot h02-door
+view 17 -9 2 3.0 0 -2 0.2
+wait 1.5
+shot h03-ring
+quit

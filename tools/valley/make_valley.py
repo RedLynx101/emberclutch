@@ -332,6 +332,7 @@ def height_raw(x, y):
     h -= 7.0 * math.exp(-(db / 6.0) ** 2)
     ds = poly_near(x, y, STREAM, 40.0)
     h -= 3.5 * math.exp(-(ds / 7.0) ** 2) * (1.0 if x < CLIFF_X + 4 else 0.0)
+    h = hollow_floor(x, y, h)
     # Where a path crosses them: a shallow ford you wade (the mill's bridge keeps its channel below).
     if h < FORD:
         dp = near_any_path(x, y, PATH_EDGE)
@@ -395,6 +396,20 @@ def den_notch(x, y, h, h0):
     # came up through the tunnel's floor).
     inside = (1.0 - smoothstep(-2.4, -1.4, f)) * smoothstep(-9.0, -7.0, f) * (1.0 - smoothstep(3.2, 4.4, abs(u)))
     return h - 0.35 * inside
+
+
+def hollow_floor(x, y, h):
+    """Frostspire Hollow's room and corridor held at its floor after the water's cuts (take 4: the
+    river 33 m off lowered them ~3 m with its broad valley, and the place, anchored at the floor,
+    floated its cave and ring over the ground)."""
+    hx, hy = HOLLOW
+    d = math.hypot(x - hx, y - hy)
+    if d > 80.0:
+        return h
+    u, f = local(x, y, P_HOLLOW)
+    room = 1.0 - smoothstep(15.0, 19.0, d)
+    mouth = (1.0 - smoothstep(3.5, 6.5, abs(u))) * smoothstep(6.0, 10.0, f) * (1.0 - smoothstep(48.0, 64.0, f))
+    return h + (HOLLOW_FLOOR - h) * max(room, mouth)
 
 
 def mill_banks(x, y, h):

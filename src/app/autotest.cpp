@@ -1,4 +1,5 @@
 #include "app/autotest.hpp"
+#include "app/trace.hpp"
 
 #include <3ds.h>
 #include <sys/stat.h>
@@ -32,7 +33,7 @@ constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
 enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
-                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Valley, Hour, Quit,
+                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Valley, Hour, Quit, TrialFix,
                      Sound,  // (sounds, 1.0: bed, sfx, sfxcheck)
                      Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard, Wear,  // (U: Open .. Wear)
                      Energy, Cove,  // (workstream C)
@@ -122,6 +123,7 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "splash") { c.op = Op::Splash; }
     else if (w == "travel") { c.op = Op::Travel; nums(1); }
     else if (w == "light") { c.op = Op::Light; }
+    else if (w == "trialfix") { c.op = Op::TrialFix; nums(1); }  // trialfix <n>: the flicker trial's fix held (-1: its turns)
     else if (w == "view") { c.op = Op::View; nums(7); }
     else if (w == "creator") { c.op = Op::Creator; }
     else if (w == "wander") { c.op = Op::Wander; nums(1); }
@@ -296,6 +298,10 @@ Input next(App& app) {
                 break;
             case Op::View:
                 for (int k = 0; k < 7; ++k) app.autoView[k] = c.a[k];
+                done = true;
+                break;
+            case Op::TrialFix:
+                trace::holdFix(static_cast<int>(c.a[0]));
                 done = true;
                 break;
             case Op::Light:

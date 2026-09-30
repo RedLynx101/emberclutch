@@ -466,6 +466,21 @@ TEST(the_den_floor_stays_over_the_ground) {
     CHECK(worst < -0.02f);
 }
 
+// Frostspire Hollow's room level with the place's anchor (take 4: the river's broad valley had
+// lowered it 3 m, and the cave and the frost ring floated over the ground you stood on).
+TEST(the_hollow_floor_meets_its_place) {
+    const Valley& v = valley();
+    const ValleyPlaceInfo& hollow = *v.place(kPlaceHollow);
+    float worst = 0;
+    for (float r = 0; r <= 11.0f; r += 1.0f)  // (the floor proper: past it the rim rises, spires stand)
+        for (int k = 0; k < 16; ++k) {
+            const float a = k * 0.3927f;
+            worst = std::fmax(worst, std::fabs(v.heightAt(hollow.at.x + r * std::cos(a), hollow.at.y + r * std::sin(a)) - hollow.at.z));
+        }
+    std::printf("  the Hollow's room: at most %.3f m off its place's height\n", worst);
+    CHECK(worst < 0.05f);
+}
+
 void runValleyTests() {
     RUN(islands_and_mountainsides);
     RUN(every_path_walks);
@@ -475,4 +490,5 @@ void runValleyTests() {
     RUN(walking_in_the_valley);
     RUN(on_foot_with_your_partner);
     RUN(the_den_floor_stays_over_the_ground);
+    RUN(the_hollow_floor_meets_its_place);
 }

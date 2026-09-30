@@ -44,12 +44,17 @@ void watchAfterFrameBegin();
 // 5-second lines and the first ones logged.
 void watchDepth(C3D_RenderTarget_tag* top, int valleyScene);
 
-// The trial of depth fixes (D113: 0.9.6's holes came without the fill): 0 as before (the valley's far
-// haze drawn with the depth test off), 1 the test left on (set to always) and the framebuffer flushed
-// after the haze, 2 the test left on and the command list split after it. With the trace on, the
-// first 6,000 valley frames take them in turn, 60 frames each (holes counted apart in the 5-second
-// lines), then the better of 1 and 2 stays; with it off, 1. Read once per valley frame, as it's drawn.
+// The trial (D114: 0.9.7's probes found the ground's tiles writing colour and no depth): 0 as drawn,
+// 1 the tiles untextured, 2 their depth test set again before each, 3 the places drawn before them,
+// 4 their second colour a constant. With the trace on, the first 10,000 valley frames take them in
+// turn, 60 frames each (holes counted apart in the 5-second lines), then the one clearly best stays
+// (else 0); with it off, 0. Read once per valley frame, as it's drawn.
 int depthMode();
+void holdFix(int fix);  // (scripted runs: that fix held whatever the trace; -1 lets go)
+// The commands sent for the ground's first tile (between begin and end), kept for the frame and
+// logged for the first holes and a whole frame; and, in a probed frame, the depth after each tile.
+void commands(bool begin);
+void tileProbe(int i, int tx, int ty, int lod, int count);
 // What the valley frame being drawn did, logged with its hole if it has one: its haze table made
 // again, tiles built (counted against the holes too), and a note (the haze, the eye).
 void frameFacts(bool lutRebuilt, int built);

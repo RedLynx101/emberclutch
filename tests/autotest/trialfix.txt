@@ -1,0 +1,38 @@
+# D114's flicker trial: each fix held in turn at the den's door (0 as drawn, 1 the ground
+# untextured, 2 its depth test set again before each tile, 3 the places first, 4 the tiles' second
+# colour a constant): every one draws the valley as it should.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+tips seen
+valley
+hour 11
+wait 4
+trialfix 0
+wait 0.5
+shot t0-as-drawn
+trialfix 1
+wait 0.5
+shot t1-untextured
+trialfix 2
+wait 0.5
+shot t2-depth-each
+trialfix 3
+wait 0.5
+shot t3-places-first
+trialfix 4
+wait 0.5
+shot t4-one-colour
+trialfix -1
+quit

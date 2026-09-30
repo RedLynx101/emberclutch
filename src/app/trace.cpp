@@ -40,8 +40,8 @@ int g_holes = 0, g_depthFrames = 0;  // valley frames with the ground's depth go
 
 // The depth fixes under trial (D113), their holes counted apart; what each valley frame did (its
 // haze table made again, tiles built), for the holes; the probes after a hole.
-constexpr int kTrialFrames = 6000, kModeRun = 60, kModes = 3;
-int g_mode = 1, g_modeUsed = -1, g_modeDrawn = -1;  // the next frame's; the one drawing's; the last drawn's
+constexpr int kTrialFrames = 10000, kModeRun = 60, kModes = 5;
+int g_mode = 0, g_modeUsed = -1, g_modeDrawn = -1;  // the next frame's; the one drawing's; the last drawn's
 int g_modeHoles[kModes] = {}, g_modeFrames[kModes] = {};
 bool g_trialDone = false;
 bool g_factLut = false, g_factLutDone = false;
@@ -51,6 +51,14 @@ char g_note[112] = {}, g_noteDone[112] = {};
 bool g_probeNow = false;
 int g_probes = 0, g_lastProbe = -1000, g_maps = 0;
 C3D_RenderTarget* g_probeTop = nullptr;
+// The commands the first tile's draw sent (D114): this frame's, the last finished frame's.
+constexpr int kCmdWords = 600;
+u32 g_cmd[kCmdWords], g_cmdDone[kCmdWords];
+int g_cmdCount = 0, g_cmdDoneCount = 0, g_cmdDumps = 0;
+u32* g_cmdBase = nullptr;
+u32 g_cmdFrom = 0;
+char g_tileLine[172] = {};
+int g_tileAt = 0;
 
 constexpr int kMaxHangs = 8;
 char g_hangs[kMaxHangs][32];
@@ -153,7 +161,7 @@ void start() {
     }
     std::remove(kPrev);
     std::rename(kTrace, kPrev);  // (the session before, whole)
-    note("trace on (0.9.7: marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the depth trial)", kChecked);
+    note("trace on (0.9.8: marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the ground trial)", kChecked);
     if (part[0]) note("the last session froze in: %s", part);
     for (int i = 0; i < g_hangCount; ++i) note("drawn the safe way (hangs.txt): %s", g_hangs[i]);
     write();
@@ -169,10 +177,10 @@ void frame(unsigned long n, int view) {
     g_live = n < from + kChecked;
     ++g_frames;
     if (g_on && osGetTime() - g_lastBeat >= kBeatMs) {
-        note("f%lu view %x: %lu frames in %.1f s, blips %d, depth holes %d of %d (by fix %d/%d %d/%d %d/%d; haze table %d/%d, built %d/%d)",
+        note("f%lu view %x: %lu frames in %.1f s, blips %d, holes %d of %d (by fix %d/%d %d/%d %d/%d %d/%d %d/%d; built %d/%d)",
              n, static_cast<unsigned>(view), g_frames, (osGetTime() - g_lastBeat) / 1000.0, g_blips, g_holes, g_depthFrames,
-             g_modeHoles[0], g_modeFrames[0], g_modeHoles[1], g_modeFrames[1], g_modeHoles[2], g_modeFrames[2], g_lutHoles,
-             g_lutFrames, g_builtHoles, g_builtFrames);
+             g_modeHoles[0], g_modeFrames[0], g_modeHoles[1], g_modeFrames[1], g_modeHoles[2], g_modeFrames[2], g_modeHoles[3],
+             g_modeFrames[3], g_modeHoles[4], g_modeFrames[4], g_builtHoles, g_builtFrames);
         g_lastBeat = osGetTime();
         g_frames = 0;
     }
@@ -216,6 +224,12 @@ void watchBeforeFrameEnd(unsigned tris, unsigned draws, int scene) {
     g_factLut = false, g_factBuilt = 0;
     std::memcpy(g_noteDone, g_note, sizeof(g_note));
     g_note[0] = 0;
+    std::memcpy(g_cmdDone, g_cmd, sizeof(u32) * static_cast<std::size_t>(g_cmdCount));
+    g_cmdDoneCount = g_cmdCount;
+    g_cmdCount = 0;
+    if (g_probeNow && g_tileAt > 0) note("  tiles:%s", g_tileLine);
+    g_tileAt = 0;
+    g_tileLine[0] = 0;
     g_probeNow = false;
 }
 
@@ -315,6 +329,37 @@ void depthMap(C3D_RenderTarget* t, const char* what) {
     }
 }
 
+// A command list, decoded: each command's register and value (all its values up to four, else its
+// first and how many), a handful to a line.
+void dumpCommands(const u32* w, int n, const char* what) {
+    note("commands (%s): %d words", what, n);
+    char line[172];
+    int at = 0;
+    for (int i = 0; i + 1 < n;) {
+        const u32 h = w[i + 1];
+        const int extra = static_cast<int>((h >> 20) & 0xFF), reg = static_cast<int>(h & 0xFFFF);
+        const int mask = static_cast<int>((h >> 16) & 0xF);
+        char item[96];
+        int k = std::snprintf(item, sizeof(item), " %03x%s%s", reg, (h >> 31) ? "+" : "", mask != 0xF ? "&" : "");
+        if (mask != 0xF) k += std::snprintf(item + k, sizeof(item) - static_cast<std::size_t>(k), "%x", mask);
+        if (extra < 4) {
+            for (int j = 0; j <= extra && i + 2 + j - 1 < n; ++j)
+                k += std::snprintf(item + k, sizeof(item) - static_cast<std::size_t>(k), "%s%lx", j ? "," : "=",
+                                   static_cast<unsigned long>(j == 0 ? w[i] : w[i + 1 + j]));
+        } else {
+            k += std::snprintf(item + k, sizeof(item) - static_cast<std::size_t>(k), "=%lx x%d", static_cast<unsigned long>(w[i]), extra + 1);
+        }
+        if (at + k > 160) {
+            note(" %s", line);
+            at = 0;
+        }
+        std::memcpy(line + at, item, static_cast<std::size_t>(k) + 1);
+        at += k;
+        i += 2 + extra + (extra & 1);
+    }
+    if (at) note(" %s", line);
+}
+
 }  // namespace
 
 void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
@@ -334,6 +379,12 @@ void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
     if (g_depthFrames <= 3 || (g_depthFrames % 1500) == 0)
         note("depth watch: lower half %.0f%% empty, upper %.0f%% (fix %d)", lower * 100.0f, upper * 100.0f, mode);
     if (g_depthFrames == 150 && !hole) depthMap(top, "a whole frame, for comparison");
+    if (g_cmdDoneCount > 0 && ((hole && g_cmdDumps < 3) || (!hole && g_depthFrames >= 160 && g_cmdDumps == 0))) {
+        char what[48];
+        std::snprintf(what, sizeof(what), "%s, fix %d", hole ? "a hole" : "a whole frame", mode);
+        dumpCommands(g_cmdDone, g_cmdDoneCount, what);
+        ++g_cmdDumps;
+    }
     if (hole) {
         if (++g_holes <= 40)
             note("depth hole %d (fix %d): %u triangles %u draws; lower half %.0f%% empty, upper %.0f%%; %s", g_holes, mode,
@@ -359,16 +410,57 @@ void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
     } else if (!g_trialDone) {
         g_trialDone = true;
         auto rate = [](int m) { return g_modeFrames[m] >= 300 ? g_modeHoles[m] / static_cast<float>(g_modeFrames[m]) : 1.0f; };
-        g_mode = rate(2) < rate(1) ? 2 : 1;
-        note("depth trial done: holes by fix %d/%d %d/%d %d/%d; fix %d from now on", g_modeHoles[0], g_modeFrames[0],
-             g_modeHoles[1], g_modeFrames[1], g_modeHoles[2], g_modeFrames[2], g_mode);
+        g_mode = 0;
+        for (int m = 1; m < kModes; ++m)
+            if (rate(m) < rate(g_mode) * 0.8f) g_mode = m;  // (a clear gain only)
+        note("depth trial done: holes by fix %d/%d %d/%d %d/%d %d/%d %d/%d; fix %d from now on", g_modeHoles[0], g_modeFrames[0],
+             g_modeHoles[1], g_modeFrames[1], g_modeHoles[2], g_modeFrames[2], g_modeHoles[3], g_modeFrames[3], g_modeHoles[4],
+             g_modeFrames[4], g_mode);
     }
 }
 
+int g_heldFix = -1;  // (scripted runs: one fix held)
+
 int depthMode() {
-    if (!g_on) return 1;
+    if (g_heldFix >= 0) return g_modeUsed = g_heldFix;
+    if (!g_on) return 0;
     g_modeUsed = g_mode;
     return g_mode;
+}
+
+void holdFix(int fix) { g_heldFix = fix < kModes ? fix : -1; }
+
+void commands(bool begin) {
+    if (!g_on || g_probeNow || g_live) return;  // (not while checkpoints split the frame's commands)
+    u32* base = nullptr;
+    u32 size = 0, offset = 0;
+    GPUCMD_GetBuffer(&base, &size, &offset);
+    if (begin) {
+        g_cmdBase = base, g_cmdFrom = offset;
+        g_cmdCount = 0;
+        return;
+    }
+    if (base != g_cmdBase || offset < g_cmdFrom) return;
+    g_cmdCount = static_cast<int>(offset - g_cmdFrom > static_cast<u32>(kCmdWords) ? kCmdWords : offset - g_cmdFrom);
+    std::memcpy(g_cmd, base + g_cmdFrom, sizeof(u32) * static_cast<std::size_t>(g_cmdCount));
+}
+
+void tileProbe(int i, int tx, int ty, int lod, int count) {
+    if (!g_on || !g_probeNow || !g_target || !g_probeTop) return;
+    C2D_Flush();
+    g_target->used = false;
+    C3D_FrameEnd(0);
+    C3D_FrameBegin(0);
+    float lower = 0, upper = 0;
+    depthEmpty(g_probeTop, lower, upper);
+    const int filled = static_cast<int>(100.0f - (lower + upper) * 50.0f + 0.5f);
+    if (g_tileAt > 130) {
+        note("  tiles:%s", g_tileLine);
+        g_tileAt = 0;
+    }
+    g_tileAt += std::snprintf(g_tileLine + g_tileAt, sizeof(g_tileLine) - static_cast<std::size_t>(g_tileAt), " %d(%d,%d L%d n%d):%d%%", i,
+                              tx, ty, lod, count, filled);
+    C3D_FrameDrawOn(g_target);
 }
 
 void frameFacts(bool lutRebuilt, int built) {

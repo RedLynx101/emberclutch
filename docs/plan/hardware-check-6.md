@@ -1,4 +1,16 @@
-# Run 21, take 4 (0.9.10)
+# Run 21, take 4 (0.9.11)
+
+**0.9.11, back to what worked.** 0.9.10 froze twice for you, both times soon after you went out to
+the valley. It was a freeze, not a crash: there was no crash dump on the card. The first time, the
+graphics chip never finished drawing the bottom screen in the third frame outside. The second time,
+it froze within a few seconds of the tracer's first check, the first time it read the chip's own
+settings back. Two things were new in 0.9.10, and neither was tried on your 3DS before: re-sending the
+depth setting before *every* 3D draw, and reading the chip's settings back. This build takes both
+out and draws the valley exactly as 0.9.9 did after its trial, which ran about 17,500 frames without
+a single freeze: the setting re-sent before each ground tile only, trace or not. There's no window
+of the old way now, so no deliberate flicker. The flicker should be as it was at the end of your
+0.9.9 session (much better, not perfect). The photo, music, free camera and swimming changes from
+0.9.10 stay. If it still freezes, the trace will show where.
 
 **0.9.10, the fix kept, and a tracer for the rest.** Your 0.9.9 session settled which way works. Of
 the seven ways, each tried for about 13 seconds, the ground flickered in 74% of frames as drawn, 66%
@@ -152,6 +164,9 @@ in FBI, SD → cias → `emberclutch.cia` → Install CIA; your save carries ove
 19. (0.9.10) Swim with your dragon: the paddling and the water are a little quieter.
 20. (0.9.10) Photo mode in the den: take several photos in a row. Does the music keep going, and
     the game run on without a pause?
+21. (0.9.11) Go from the den out to the valley and back a few times, then play the valley five minutes
+    or more. Does it run without freezing? (Step 17's deliberate flicker is gone. Is the flicker as it
+    was at the end of 0.9.9, or better?)
 
 ## 1. The flicker, and your haze
 Your screenshots showed it: in some frames every see-through shape vanished at once on **both**

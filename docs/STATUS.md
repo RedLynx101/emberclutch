@@ -2,10 +2,22 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.10) on the 3DS** ([plan](plan/v1.md), D89-D116). The flicker: the depth test's state sent again before every 3D draw (D116: 0.9.9's trial took the ground's holes from 74% of frames to 0 in its turn, 1.2% after); a GPU register tracer (trace on) for what's left. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.11) on the 3DS** ([plan](plan/v1.md), D89-D117). 0.9.10 hung the 3DS twice on entering the valley (D117); 0.9.11 draws the valley exactly as 0.9.9's way 6 (the depth test's state sent again before each ground tile: holes 74% -> about 1%), no register reads. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 21, take 4 with 0.9.10 (2026-09-30)
+## Now: run 21, take 4 with 0.9.11 (2026-09-30)
+- **0.9.10 on the 3DS:** froze twice soon after leaving the den (no crash dump). Trails: the GPU never
+  finished the bottom screen in the third valley frame; then a hang around the reference probe (valley
+  frame 200), the register reads' first use.
+- **0.9.11** (D117): the resend before each ground tile only (0.9.9's way 6, byte for byte), trace or
+  not; no register reads, no window. The emulator caught a slip first (the resend inside
+  drawValleyGpu forced depth writes on the far haze disc). Photos, music buffers, free camera and
+  swimming kept. Sent to .51, trace.on kept, hangs.txt cleared.
+- **Next:** Noah: step 21 (den to valley a few times, 5+ minutes). If it freezes, pull trace.txt and
+  trace-prev.txt (the last "gpu: ... sent"). If it holds, the remaining ~1% flicker: find what else to
+  re-send, one draw kind at a time, each tried on the 3DS.
+
+## Run 21, take 4 with 0.9.10 (2026-09-30)
 - **0.9.9 on the 3DS** (trace): the trial's holes by way 74%, 66% (untextured), 84%, 85%, 42%, 75%,
   and 0/1620 for the depth test per tile; kept, 1.2% after. Noah: much better everywhere, not quite
   perfect; untextured flickered too; photos in the den stopped the music and held the game.

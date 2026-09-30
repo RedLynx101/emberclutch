@@ -17,7 +17,7 @@ constexpr const char* kTrace = "sdmc:/3ds/emberclutch/trace.txt";
 constexpr const char* kPrev = "sdmc:/3ds/emberclutch/trace-prev.txt";
 constexpr const char* kHangs = "sdmc:/3ds/emberclutch/hangs.txt";
 constexpr int kLines = 64;
-constexpr int kWidth = 176;
+constexpr int kWidth = 208;
 constexpr unsigned long kChecked = 3;  // frames of marks and GPU checkpoints after each change of view
 constexpr u64 kBeatMs = 5000;          // a line this often in between
 char g_ring[kLines][kWidth];
@@ -37,6 +37,20 @@ float g_watch[3][kWatchPoints][3] = {};
 unsigned g_watchInfo[3][3] = {};
 int g_watchCount = 0, g_blips = 0;
 int g_holes = 0, g_depthFrames = 0;  // valley frames with the ground's depth gone, of those looked at
+
+// The depth fixes under trial (D113), their holes counted apart; what each valley frame did (its
+// haze table made again, tiles built), for the holes; the probes after a hole.
+constexpr int kTrialFrames = 6000, kModeRun = 60, kModes = 3;
+int g_mode = 1, g_modeUsed = -1, g_modeDrawn = -1;  // the next frame's; the one drawing's; the last drawn's
+int g_modeHoles[kModes] = {}, g_modeFrames[kModes] = {};
+bool g_trialDone = false;
+bool g_factLut = false, g_factLutDone = false;
+int g_factBuilt = 0, g_factBuiltDone = 0;
+int g_lutFrames = 0, g_lutHoles = 0, g_builtFrames = 0, g_builtHoles = 0;
+char g_note[112] = {}, g_noteDone[112] = {};
+bool g_probeNow = false;
+int g_probes = 0, g_lastProbe = -1000, g_maps = 0;
+C3D_RenderTarget* g_probeTop = nullptr;
 
 constexpr int kMaxHangs = 8;
 char g_hangs[kMaxHangs][32];
@@ -65,7 +79,7 @@ void write() {
 }
 
 void add(const char* fmt, va_list args) {
-    char text[112];
+    char text[172];
     std::vsnprintf(text, sizeof(text), fmt, args);
     const struct mallinfo mi = mallinfo();
     std::snprintf(g_ring[g_next], kWidth, "%7.3f %s  [lin %u heap %u]", (osGetTime() - g_start) / 1000.0, text,
@@ -139,7 +153,7 @@ void start() {
     }
     std::remove(kPrev);
     std::rename(kTrace, kPrev);  // (the session before, whole)
-    note("trace on (0.9.6: marks and GPU checkpoints for %lu frames a view; the blip and depth watches)", kChecked);
+    note("trace on (0.9.7: marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the depth trial)", kChecked);
     if (part[0]) note("the last session froze in: %s", part);
     for (int i = 0; i < g_hangCount; ++i) note("drawn the safe way (hangs.txt): %s", g_hangs[i]);
     write();
@@ -155,8 +169,10 @@ void frame(unsigned long n, int view) {
     g_live = n < from + kChecked;
     ++g_frames;
     if (g_on && osGetTime() - g_lastBeat >= kBeatMs) {
-        note("f%lu view %x: %lu frames in %.1f s, blips %d, depth holes %d of %d", n, static_cast<unsigned>(view), g_frames,
-             (osGetTime() - g_lastBeat) / 1000.0, g_blips, g_holes, g_depthFrames);
+        note("f%lu view %x: %lu frames in %.1f s, blips %d, depth holes %d of %d (by fix %d/%d %d/%d %d/%d; haze table %d/%d, built %d/%d)",
+             n, static_cast<unsigned>(view), g_frames, (osGetTime() - g_lastBeat) / 1000.0, g_blips, g_holes, g_depthFrames,
+             g_modeHoles[0], g_modeFrames[0], g_modeHoles[1], g_modeFrames[1], g_modeHoles[2], g_modeFrames[2], g_lutHoles,
+             g_lutFrames, g_builtHoles, g_builtFrames);
         g_lastBeat = osGetTime();
         g_frames = 0;
     }
@@ -194,6 +210,13 @@ void watchBeforeFrameEnd(unsigned tris, unsigned draws, int scene) {
     if (!g_on) return;
     g_watchFb = reinterpret_cast<const u8*>(gfxGetFramebuffer(GFX_TOP, GFX_LEFT, nullptr, nullptr));
     g_watchNext[0] = tris, g_watchNext[1] = draws, g_watchNext[2] = static_cast<unsigned>(scene);
+    g_modeDrawn = g_modeUsed;  // (what this frame drew with, for its depth read after it)
+    g_modeUsed = -1;
+    g_factLutDone = g_factLut, g_factBuiltDone = g_factBuilt;
+    g_factLut = false, g_factBuilt = 0;
+    std::memcpy(g_noteDone, g_note, sizeof(g_note));
+    g_note[0] = 0;
+    g_probeNow = false;
 }
 
 void watchAfterFrameBegin() {
@@ -229,12 +252,13 @@ void watchAfterFrameBegin() {
     }
 }
 
-void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
-    if (!g_on || !top || static_cast<int>(g_watchNext[2]) != valleyScene) return;
-    const C3D_FrameBuf& fb = top->frameBuf;
-    if (!fb.depthBuf || fb.depthFmt != GPU_RB_DEPTH16) return;  // (citro2d's screens: 16 bits)
-    // The buffer in 8 x 8 tiles, the screen on its side (240 across, 400 down): the first half of
-    // each row of tiles is the screen's lower half.
+namespace {
+
+// How empty each half of a screen's depth is (the buffer in 8 x 8 tiles, the screen on its side,
+// 240 across and 400 down: the first half of each row of tiles is the screen's lower half).
+bool depthEmpty(C3D_RenderTarget* t, float& lower, float& upper) {
+    const C3D_FrameBuf& fb = t->frameBuf;
+    if (!fb.depthBuf || fb.depthFmt != GPU_RB_DEPTH16) return false;  // (citro2d's screens: 16 bits)
     const int tw = fb.width / 8, th = fb.height / 8;
     const u16* d = static_cast<const u16*>(fb.depthBuf);
     static s32 invalidated = 1;
@@ -247,13 +271,138 @@ void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
             ++seen[half];
             zero[half] += d[(ty * tw + tx) * 64 + 27] == 0;  // (a pixel inside each tile)
         }
-    const float lower = zero[0] / static_cast<float>(seen[0] ? seen[0] : 1),
-                upper = zero[1] / static_cast<float>(seen[1] ? seen[1] : 1);
-    if (++g_depthFrames <= 3 || (g_depthFrames % 1500) == 0)
-        note("depth watch: lower half %.0f%% empty, upper %.0f%%", lower * 100.0f, upper * 100.0f);
-    if (lower > 0.6f && ++g_holes <= 40)
-        note("depth hole %d: %u triangles %u draws; lower half %.0f%% empty, upper %.0f%%", g_holes, g_watchNext[0],
-             g_watchNext[1], lower * 100.0f, upper * 100.0f);
+    lower = zero[0] / static_cast<float>(seen[0] ? seen[0] : 1);
+    upper = zero[1] / static_cast<float>(seen[1] ? seen[1] : 1);
+    return true;
+}
+
+// The lower half's mean colour (RGBA8 in tiles, each pixel's bytes A, B, G, R).
+void colourMean(C3D_RenderTarget* t, int rgb[3]) {
+    const C3D_FrameBuf& fb = t->frameBuf;
+    rgb[0] = rgb[1] = rgb[2] = -1;
+    if (!fb.colorBuf || fb.colorFmt != GPU_RB_RGBA8) return;
+    const int tw = fb.width / 8, th = fb.height / 8;
+    const u8* c = static_cast<const u8*>(fb.colorBuf);
+    GSPGPU_InvalidateDataCache(fb.colorBuf, static_cast<u32>(fb.width) * fb.height * 4);
+    long sum[3] = {};
+    int n = 0;
+    for (int ty = 0; ty < th; ty += 2)
+        for (int tx = 0; tx < tw / 2; ++tx, ++n) {
+            const u8* p = c + ((ty * tw + tx) * 64 + 27) * 4;
+            sum[0] += p[3], sum[1] += p[2], sum[2] += p[1];
+        }
+    for (int k = 0; k < 3; ++k) rgb[k] = static_cast<int>(sum[k] / (n ? n : 1));
+}
+
+// A map of which parts of the top screen have depth ('#') and which don't ('.'), 40 x 12 over the
+// screen as seen (left to right perhaps mirrored), a line each.
+void depthMap(C3D_RenderTarget* t, const char* what) {
+    const C3D_FrameBuf& fb = t->frameBuf;
+    if (!fb.depthBuf || fb.depthFmt != GPU_RB_DEPTH16) return;
+    const int tw = fb.width / 8;
+    const u16* d = static_cast<const u16*>(fb.depthBuf);
+    note("depth map (%s):", what);
+    for (int row = 0; row < 12; ++row) {
+        char line[41];
+        for (int col = 0; col < 40; ++col) {
+            const int sy = row * 20 + 10, sx = col * 10 + 5;  // the screen's point
+            const int x = 239 - sy, y = sx;                   // in the buffer
+            const int m = (x & 1) | ((y & 1) << 1) | ((x & 2) << 1) | ((y & 2) << 2) | ((x & 4) << 2) | ((y & 4) << 3);
+            line[col] = d[((y / 8) * tw + x / 8) * 64 + m] ? '#' : '.';
+        }
+        line[40] = 0;
+        note("  %s", line);
+    }
+}
+
+}  // namespace
+
+void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
+    if (!g_on || !top || static_cast<int>(g_watchNext[2]) != valleyScene) return;
+    g_probeTop = top;
+    float lower = 0, upper = 0;
+    if (!depthEmpty(top, lower, upper)) return;
+    const bool hole = lower > 0.6f;
+    const int mode = g_modeDrawn;
+    ++g_depthFrames;
+    if (mode >= 0 && mode < kModes) {
+        ++g_modeFrames[mode];
+        g_modeHoles[mode] += hole;
+    }
+    if (g_factLutDone) ++g_lutFrames, g_lutHoles += hole;
+    if (g_factBuiltDone) ++g_builtFrames, g_builtHoles += hole;
+    if (g_depthFrames <= 3 || (g_depthFrames % 1500) == 0)
+        note("depth watch: lower half %.0f%% empty, upper %.0f%% (fix %d)", lower * 100.0f, upper * 100.0f, mode);
+    if (g_depthFrames == 150 && !hole) depthMap(top, "a whole frame, for comparison");
+    if (hole) {
+        if (++g_holes <= 40)
+            note("depth hole %d (fix %d): %u triangles %u draws; lower half %.0f%% empty, upper %.0f%%; %s", g_holes, mode,
+                 g_watchNext[0], g_watchNext[1], lower * 100.0f, upper * 100.0f, g_noteDone);
+        if (g_maps < 4) {
+            char what[32];
+            std::snprintf(what, sizeof(what), "hole %d, fix %d", g_holes, mode);
+            depthMap(top, what);
+            ++g_maps;
+        }
+    }
+    // The next frame probed (its depth read after each part): after a hole a few times, spaced out,
+    // and once early on as a reference.
+    if ((hole && g_probes < 12 && g_depthFrames - g_lastProbe >= 40) || g_depthFrames == 200) {
+        g_probeNow = true;
+        g_lastProbe = g_depthFrames;
+        ++g_probes;
+        note("probe %d%s: the next frame's depth after each part", g_probes, hole ? "" : " (a reference, no hole)");
+    }
+    // The fix for the frame about to be drawn: the trial's turn, then the one that did best.
+    if (g_depthFrames < kTrialFrames) {
+        g_mode = (g_depthFrames / kModeRun) % kModes;
+    } else if (!g_trialDone) {
+        g_trialDone = true;
+        auto rate = [](int m) { return g_modeFrames[m] >= 300 ? g_modeHoles[m] / static_cast<float>(g_modeFrames[m]) : 1.0f; };
+        g_mode = rate(2) < rate(1) ? 2 : 1;
+        note("depth trial done: holes by fix %d/%d %d/%d %d/%d; fix %d from now on", g_modeHoles[0], g_modeFrames[0],
+             g_modeHoles[1], g_modeFrames[1], g_modeHoles[2], g_modeFrames[2], g_mode);
+    }
+}
+
+int depthMode() {
+    if (!g_on) return 1;
+    g_modeUsed = g_mode;
+    return g_mode;
+}
+
+void frameFacts(bool lutRebuilt, int built) {
+    g_factLut = g_factLut || lutRebuilt;
+    g_factBuilt += built;
+}
+
+void frameNote(const char* fmt, ...) {
+    if (!g_on) return;
+    va_list args;
+    va_start(args, fmt);
+    std::vsnprintf(g_note, sizeof(g_note), fmt, args);
+    va_end(args);
+}
+
+void checkpoint(const char* part) {
+    if (g_live) {
+        gpu(part);
+        return;
+    }
+    if (!g_on || !g_probeNow || !g_target) return;
+    C2D_Flush();
+    g_target->used = false;
+    C3D_FrameEnd(0);
+    C3D_FrameBegin(0);
+    float lower = 0, upper = 0;
+    int rgb[3] = {-1, -1, -1};
+    if (g_probeTop) {  // (the top screen's, whichever is being drawn)
+        depthEmpty(g_probeTop, lower, upper);
+        colourMean(g_probeTop, rgb);
+    }
+    note("  after %s (fix %d): lower half %.0f%% empty, upper %.0f%%; its colour %d %d %d", part, g_modeUsed, lower * 100.0f,
+         upper * 100.0f, rgb[0], rgb[1], rgb[2]);
+    C3D_FrameDrawOn(g_target);
 }
 
 bool hung(const char* part) {

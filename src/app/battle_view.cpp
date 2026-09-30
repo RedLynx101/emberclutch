@@ -77,6 +77,8 @@ struct State {
     bool askGiveUp = false;
     battle::Outcome outcome = battle::Outcome::Lost;
     Results results;
+    u32 xpFrom = 0, xpTo = 0;  // the partner's experience before and after the results (the bar fills between)
+    int levelShown = 0;       // the level the filling bar has reached
     // Effects and the camera.
     Particles fx;
     challenge::BreathFx breath;
@@ -356,11 +358,12 @@ void toResults(App& app, State& s) {
     std::snprintf(s.results.title, sizeof(s.results.title), "%s",
                   s.outcome == battle::Outcome::Won ? str::kBattleWon
                   : s.outcome == battle::Outcome::Lost ? str::kBattleLost : str::kBattleGaveUpTitle);
+    const int who = s.setup.partner >= 0 && s.setup.partner < app.game.dragonCount ? s.setup.partner : 0;
+    s.xpFrom = app.game.dragonCount ? app.game.dragons[who].xp : 0;
     if (s.setup.finish) s.setup.finish(app, s.outcome, s.results);
-    if (s.results.levelUp) {
-        audio::playSfx(audio::Sfx::LevelUp);
-        showTip(app, tips::kTipLevelUp);
-    }
+    s.xpTo = app.game.dragonCount ? app.game.dragons[who].xp : 0;
+    if (s.xpTo < s.xpFrom) s.xpTo = s.xpFrom;
+    s.levelShown = trainer::levelOf(s.xpFrom);  // (a level gained sounds as the bar passes it: drawBottom)
 }
 
 // ---- The camera: over your shoulder (the side the staging found clear), your dragon before you
@@ -928,16 +931,30 @@ void drawBottom(App& app, const Input& in) {
     if (s.phase == Phase::Results) {
         text(app, s.results.title, 160, 14, 0.62f, theme::kClutchGold, C2D_AlignCenter, 300, Face::Title);
         // Its level and the way to the next.
+        // (filling from where it was to where it is now, take 4; a level passed gets its fanfare)
         const Dragon& d = app.game.dragons[s.setup.partner < app.game.dragonCount ? s.setup.partner : 0];
+        const float k = clampf((s.t - 0.5f) / 1.6f, 0.0f, 1.0f);
+        Dragon shown = d;
+        shown.xp = s.xpFrom + static_cast<u32>(static_cast<float>(s.xpTo - s.xpFrom) * (k * k * (3.0f - 2.0f * k)) + 0.5f);
+        const int level = trainer::levelOf(shown);
+        if (level > s.levelShown) {
+            s.levelShown = level;
+            audio::playSfx(audio::Sfx::LevelUp);
+            if (s.results.levelUp) showTip(app, tips::kTipLevelUp);
+        }
         u32 into = 0, span = 0;
-        trainer::levelProgress(d, into, span);
-        std::snprintf(line, sizeof(line), "%s  Lv %d", d.name, trainer::levelOf(d));
+        trainer::levelProgress(shown, into, span);
+        std::snprintf(line, sizeof(line), "%s  Lv %d", d.name, level);
         text(app, line, 24, 58, 0.5f, theme::kShell, C2D_AlignLeft, 200);
         hpBar(24, 80, 272, 9, span ? static_cast<float>(into) / span : 1.0f);
         if (span) {
             std::snprintf(line, sizeof(line), "%lu / %lu exp to level %d", static_cast<unsigned long>(into),
-                          static_cast<unsigned long>(span), trainer::levelOf(d) + 1);
+                          static_cast<unsigned long>(span), level + 1);
             text(app, line, 296, 94, 0.4f, withAlpha(theme::kShell, 0.8f), C2D_AlignRight, 272);
+        }
+        if (s.xpTo > s.xpFrom) {
+            std::snprintf(line, sizeof(line), "+%lu exp", static_cast<unsigned long>(s.xpTo - s.xpFrom));
+            text(app, line, 296, 58, 0.46f, withAlpha(theme::kClutchGold, clampf(s.t * 2.0f, 0.0f, 1.0f)), C2D_AlignRight, 120);
         }
         std::snprintf(line, sizeof(line), "Energy %d", static_cast<int>(d.needs.energy + 0.5f));
         text(app, line, 24, 94, 0.4f, withAlpha(theme::kShell, 0.8f), C2D_AlignLeft, 120);

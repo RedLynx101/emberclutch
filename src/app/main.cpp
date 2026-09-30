@@ -224,7 +224,7 @@ int main() {
                 sceneFns(app.scene).drawTop(app);
                 if (paused) dimTopForMenu(app);
             }
-            trace::gpu("top scene");
+            trace::checkpoint("top scene");
             r3d::reset2D();
             trace::mark("f%lu top overlays", static_cast<unsigned long>(frame));
             if (!app.photo.snap) {  // the photo's picture has nothing over it
@@ -233,7 +233,7 @@ int main() {
                 drawSaveIcon(app);
                 if (!app.photo.active) debugDrawOverlay(app);
             }
-            trace::gpu("top overlays");
+            trace::checkpoint("top overlays");
             app.dt = dt;
         }
         r3d::setEye(0);
@@ -256,7 +256,7 @@ int main() {
             C2D_DrawRectSolid(in.tx - 0.5f, in.ty - 8, 0, 1, 17, theme::rgba(0, 255, 120));
         }
 
-        trace::gpu("bottom");
+        trace::checkpoint("bottom");
         app.bottomTris = app.stats.tris - topTris;
         autotest::beforeFrameEnd();
         screenshot::beforeFrameEnd(app);

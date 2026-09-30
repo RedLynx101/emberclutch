@@ -67,7 +67,7 @@ WING_BONES = [f"{n}_{side}" for side in ("L", "R") for n, *_ in WING_CHAIN]
 BONE_ORDER = [b[0] for b in BONES] + WING_BONES
 WING_BODY = ("chest", "hips")
 CONTACTS = ("hand_L", "hand_R", "foot_L", "foot_R")
-SEAT = ("hips", (0.0, 0.62, 0.5))
+SEAT = ("hips", (0.0, -0.37, 0.5))  # forward along the body bone, mid-back (take 4: +0.62 was on the tail)
 REGION = {}
 
 # ------------------------------------------------------------------------------ helpers

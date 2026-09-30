@@ -94,6 +94,7 @@ struct State {
     int forceLevel = 0;  // (scripted runs: their dragon's level; 0 fair)
     s32 forceDay = INT_MIN;  // (scripted runs: the roster of this day, whatever the clock says)
     float t = 0;
+    float clock = -1e9f;  // the day's clock for their walks, smooth (walkClock)
 };
 
 State& st() {
@@ -315,6 +316,19 @@ void animateDragon(App& app, Out& o, const Valley& v, const vext::Stage& stage, 
     o.actor.eyes.update(0.0f, app.dt);
 }
 
+// The day's clock for their walks, smooth: nowLocal counts whole seconds, so they walked in one-second
+// hops and, stopped for you, slid back and hopped on (take 4, Noah: "move in bursts and don't just
+// 'stand' in one place very well"). The frames' time goes on between its ticks, never ahead of the
+// second it shows.
+float walkClock(App& app) {
+    State& s = st();
+    const float whole = roam::dayClock(nowLocal(app));
+    s.clock += app.dt;
+    if (s.clock < whole || s.clock > whole + 2.0f) s.clock = whole;  // (the clock skipped: taken as it is)
+    else if (s.clock > whole + 0.999f) s.clock = whole + 0.999f;     // (ahead of it: waits for its tick)
+    return s.clock;
+}
+
 // ---- Every frame, whoever has the valley.
 void tick(App& app, const vext::Stage& stage) {
     State& s = st();
@@ -323,7 +337,7 @@ void tick(App& app, const vext::Stage& stage) {
     refresh(app, v);
     s.t += app.dt;
     if (!s.net.ok() || s.count == 0) return;
-    const float clock = roam::dayClock(nowLocal(app));
+    const float clock = walkClock(app);
     const int feat = vext::activeFeature(app);
     const bool mine = ours(app), busy = !mine && (bview::running() || glade::showOn());  // (a battle or a show to watch)
     const bool listening = talking(app);
@@ -579,7 +593,7 @@ void update(App& app, const Input& in, vext::Stage& stage) {
             Out& o = s.out[k];
             // A few steps ahead on their way: where their walk has them in 9 seconds.
             roam::Walk later = o.walk;
-            const roam::Pose p = roam::walkAt(s.net, later, roam::dayClock(nowLocal(app)) - o.held + 9.0f);
+            const roam::Pose p = roam::walkAt(s.net, later, s.clock - o.held + 9.0f);
             const Vec3 at{p.at.x, p.at.y, 0};
             const bool moving = flat(at, o.at) > 3.0f;
             const Vec3 spot = moving ? at : o.at + forwardOf(o.heading) * 7.0f;

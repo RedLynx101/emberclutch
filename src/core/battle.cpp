@@ -285,7 +285,7 @@ Rgb elementColour(int element) {
         {232, 102, 43},   // Ember: the hearth's orange
         {104, 170, 72},   // Grove: leaf green
         {186, 142, 92},   // Stone: sandstone
-        {110, 196, 214},  // Gale: sky
+        {80, 204, 158},   // Gale: seafoam (take 4: its sky blue and Frost's ice read as one)
         {64, 128, 212},   // Tide: deep water
         {150, 198, 240},  // Frost: ice
         {240, 196, 72},   // Lumen: gold

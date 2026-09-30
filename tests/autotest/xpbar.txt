@@ -1,0 +1,79 @@
+# Take 4: after a battle the experience bar fills from where it was to where it is now (a level
+# passed with its fanfare), "+N exp" beside it. A battle played by itself, then the card's bar
+# caught filling.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 2
+skip 9
+tips seen
+valley
+wait 5
+battle level 5
+battle start 0 0
+wait 4
+autoplay on
+wait 1
+shot x01
+wait 1
+shot x02
+wait 1
+shot x03
+wait 1
+shot x04
+wait 1
+shot x05
+wait 1
+shot x06
+wait 1
+shot x07
+wait 1
+shot x08
+wait 1
+shot x09
+wait 1
+shot x10
+wait 1
+shot x11
+wait 1
+shot x12
+wait 1
+shot x13
+wait 1
+shot x14
+wait 1
+shot x15
+wait 1
+shot x16
+wait 1
+shot x17
+wait 1
+shot x18
+wait 1
+shot x19
+wait 1
+shot x20
+wait 1
+shot x21
+wait 1
+shot x22
+quit

@@ -1,0 +1,65 @@
+# Take 4: the roaming trainers walked in one-second hops and, stopped for you, slid back and hopped
+# on (their day's clock counted whole seconds). Their places a few frames apart, walking and stood.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 2
+hour 10
+valley
+wait 5
+roamer day 20000
+wait 1
+roamer watch 2 7
+wait 2
+roamer list
+wait 0.1
+roamer list
+wait 0.1
+roamer list
+wait 0.1
+roamer list
+wait 0.1
+roamer list
+wait 0.1
+roamer list
+wait 0.1
+roamer list
+wait 0.1
+roamer list
+shot w01-walking
+roamer near 2
+wait 4
+roamer list
+wait 0.1
+roamer list
+wait 0.1
+roamer list
+wait 0.1
+roamer list
+wait 0.1
+roamer list
+wait 0.1
+roamer list
+wait 0.1
+roamer list
+shot w02-stopped
+quit

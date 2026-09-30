@@ -3517,6 +3517,27 @@ void drawGlints(App& app, const ValleyView& view, const C3D_Mtx& viewM) {
 
 // Where the rider sits on the flown dragon (its plan's seat on its seat bone), as a frame for
 // the rider: on the seat, turned and tilted with the dragon.
+// The body's back over (x, y) at rest: the first of its surfaces above `from` there (a tail curled
+// up over the back is further up: the Flurrytail's), else the highest; -1e9 if none.
+float backTop(const MeshData& m, float x, float y, float from = -1e9f) {
+    float top = -1e9f, above = 1e9f;
+    for (std::size_t i = 0; i + 2 < m.indices.size(); i += 3) {
+        const Vec3& a = m.pos[m.indices[i]];
+        const Vec3& b = m.pos[m.indices[i + 1]];
+        const Vec3& c = m.pos[m.indices[i + 2]];
+        const float det = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
+        if (std::fabs(det) < 1e-9f) continue;
+        const float l1 = ((b.y - c.y) * (x - c.x) + (c.x - b.x) * (y - c.y)) / det;
+        const float l2 = ((c.y - a.y) * (x - c.x) + (a.x - c.x) * (y - c.y)) / det;
+        const float l3 = 1.0f - l1 - l2;
+        if (l1 < -1e-4f || l2 < -1e-4f || l3 < -1e-4f) continue;
+        const float z = l1 * a.z + l2 * b.z + l3 * c.z;
+        top = std::fmax(top, z);
+        if (z > from) above = std::fmin(above, z);
+    }
+    return above < 1e8f ? above : top;
+}
+
 bool riderFrame(const Posed& d, const ValleyView& view, const C3D_Mtx& dragonModel, Person rider, C3D_Mtx& out) {
     if (!d.cache || !isKind(d.cache->look)) return false;
     const KindInfo& kind = kindInfo(kindOfSlot(d.cache->look));
@@ -3528,22 +3549,26 @@ bool riderFrame(const Posed& d, const ValleyView& view, const C3D_Mtx& dragonMod
     const Vec3 head = inverseAffine(d.form->model.skel.invRest[bone]).translation();
     Vec3 rest = head + plan.seat * kind.formScale[d.cache->form];
     // The seat down on the back itself (run 21: the rider floated over broad backs and narrow
-    // ones alike): the top of the body mesh round the plan's seat, found once per form. The
-    // window runs 0.3 along the spine either way and 0.25 across (take 4: a narrower one fell
-    // between the Crestwing's few spine vertices and sat you inside it), and never below the
-    // seat's own joint.
+    // ones alike): the body's top surface right over the plan's seat, found once per form from its
+    // triangles (take 4: vertices near the seat missed the Crestwing's back, which has none on top
+    // between its neck and its hips), never below the seat's own joint.
     Form& form = const_cast<Form&>(*d.form);
     if (!form.seatSet && form.bodyData && form.bodyData->vertexCount) {
-        const MeshData& m = *form.bodyData;
-        float top = -1e9f;
-        for (int v = 0; v < m.vertexCount; ++v)
-            if (std::fabs(m.pos[v].x - rest.x) < 0.25f && std::fabs(m.pos[v].y - rest.y) < 0.3f) top = std::fmax(top, m.pos[v].z);
+        const float top = backTop(*form.bodyData, rest.x, rest.y, head.z + 0.05f);
         form.seatTop = top > -1e8f ? std::fmax(top, head.z + 0.1f) : rest.z;
         form.seatSet = true;
     }
-    if (autotest::shooting())
+    if (autotest::shooting()) {
         autotest::log("seat: plan (%.2f %.2f %.2f) head (%.2f %.2f %.2f) top %.2f set %d", rest.x, rest.y, rest.z, head.x, head.y, head.z,
                       form.seatTop, form.seatSet ? 1 : 0);
+        if (form.bodyData) {  // (the back's top along the spine, every 0.2 m)
+            char line[200];
+            int at = std::snprintf(line, sizeof(line), "back:");
+            for (float y = rest.y - 1.2f; y <= rest.y + 1.21f && at < 180; y += 0.2f)
+                at += std::snprintf(line + at, sizeof(line) - at, " %.1f:%.2f", y, backTop(*form.bodyData, rest.x, y, head.z + 0.05f));
+            autotest::log("%s", line);
+        }
+    }
     if (form.seatSet) rest.z = form.seatTop;
     const Vec3 seat = transformPoint(d.skin[bone], rest);
     const Vec3 w = apply(dragonModel, seat);
@@ -3728,8 +3753,13 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         g_fogOk = true;
         fogFor = g_groundLook;
         fogDensity = density;
+        trace::frameFacts(true, 0);
     }
+    // The depth fix (D113, on trial while the trace is on): the far haze drawn with the depth test
+    // left on (set to always), and the framebuffer flushed (1) or the command list split (2) after it.
+    const int fix = trace::depthMode();
     C2D_Flush();
+    trace::checkpoint("the clear and the sky");
     C3D_FogGasMode(GPU_FOG, GPU_PLAIN_DENSITY, false);
     C3D_FogColor(u32(view.fog.r) | (u32(view.fog.g) << 8) | (u32(view.fog.b) << 16));
     C3D_FogLutBind(&g_fogLut);
@@ -3764,7 +3794,9 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
             C3D_Mtx far;
             topProjection(far, 40.0f, 5000.0f, focus);
             C3D_FogGasMode(GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
-            C3D_DepthTest(false, GPU_ALWAYS, GPU_WRITE_COLOR);
+            // (on the 3DS the test off still writes depth by the mask, and the statics drawn next went
+            // without depth in runs of frames: these were the only draws with it off, D113)
+            C3D_DepthTest(fix != 0, GPU_ALWAYS, GPU_WRITE_COLOR);
             C3D_CullFace(GPU_CULL_NONE);
             // First the haze over the far valley floor: a disc at the water's level out to the far
             // plane in the fog's colour (under the ring's foot and the ground drawn after).
@@ -3796,6 +3828,8 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
             app.stats.tris += g_vhorizon.count / 3;
             app.stats.draws += 1;
             C3D_FogGasMode(GPU_FOG, GPU_PLAIN_DENSITY, false);
+            if (fix == 1) GPUCMD_AddWrite(GPUREG_FRAMEBUFFER_FLUSH, 1);  // (the haze's fragments out first)
+            else if (fix == 2) C3D_FrameSplit(GX_CMDLIST_FLUSH);        // (the haze its own command list)
         }
     }
     bindValleyStatic(projection, viewM, view.tint);
@@ -3812,10 +3846,10 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     auto mark = [&]() {
         if (splitAt < 9) split[splitAt++] = app.stats.tris - splitFrom;
         splitFrom = app.stats.tris;
-        trace::gpu(kParts[splitAt]);
+        trace::checkpoint(kParts[splitAt]);
     };
     split[splitAt++] = app.stats.tris;  // (everything before: the horizon and its haze)
-    trace::gpu("valley horizon");
+    trace::checkpoint("valley horizon");
     // The ground round the camera: in view, at a level by distance.
     const int t = v.tiles();
     const float ts = v.tileSize(), reachM = kValleyFar * 0.85f * g_reachScale;  // (the haze's reach)
@@ -3861,6 +3895,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         g_valleyStats.ground += (skirts ? p.g->count : p.g->ground) / 3;
     }
     for (const Pick& p : picks) drawnLod[std::size_t(p.tile)] = -1;  // (clean for the next frame)
+    trace::frameFacts(false, g_valleyStats.built);
     groundDetail(false);
     mark();
     // The places, near enough to have been built.
@@ -4037,6 +4072,9 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     drawValleyGpu(app, g_vwater);
     C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
     C3D_FogGasMode(GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
+    trace::frameNote("haze pull %.2f, eye %.0f %.0f %.0f, %d tiles (%d built)", static_cast<double>(g_fogPull),
+                     static_cast<double>(view.eye.x), static_cast<double>(view.eye.y), static_cast<double>(view.eye.z),
+                     g_valleyStats.tiles, g_valleyStats.built);
     end3D();
     mark();
     if (autotest::shooting())

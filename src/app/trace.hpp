@@ -44,4 +44,18 @@ void watchAfterFrameBegin();
 // 5-second lines and the first ones logged.
 void watchDepth(C3D_RenderTarget_tag* top, int valleyScene);
 
+// The trial of depth fixes (D113: 0.9.6's holes came without the fill): 0 as before (the valley's far
+// haze drawn with the depth test off), 1 the test left on (set to always) and the framebuffer flushed
+// after the haze, 2 the test left on and the command list split after it. With the trace on, the
+// first 6,000 valley frames take them in turn, 60 frames each (holes counted apart in the 5-second
+// lines), then the better of 1 and 2 stays; with it off, 1. Read once per valley frame, as it's drawn.
+int depthMode();
+// What the valley frame being drawn did, logged with its hole if it has one: its haze table made
+// again, tiles built (counted against the holes too), and a note (the haze, the eye).
+void frameFacts(bool lutRebuilt, int built);
+void frameNote(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
+// A GPU checkpoint (gpu() in a view's first frames) and, in a frame probed after a hole, the top
+// screen's depth read back after that part (the GPU made to finish it first).
+void checkpoint(const char* part);
+
 }  // namespace ec::trace

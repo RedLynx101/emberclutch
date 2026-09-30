@@ -377,7 +377,10 @@ void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swi
     } else if (s.eatFor > 0 && speed < 0.3f) {  // a treat from the pouch
         want = ClipId::Eat;
     } else if (flying) {
-        want = diving ? ClipId::FlyDive : s.flight.sinceFlap < 0.8f ? ClipId::FlyFlap : ClipId::FlyGlide;
+        // (a burst beats its wings the while, quicker: take 4, Noah: "make it so the dragon flaps still")
+        const bool bursting = s.last.burst && !s.last.brake && !diving && s.flight.stamina > 0;
+        want = diving ? ClipId::FlyDive : bursting || s.flight.sinceFlap < 0.8f ? ClipId::FlyFlap : ClipId::FlyGlide;
+        if (bursting) natural = -1.0f;  // (the rate below: quicker beats)
     } else if (swimming) {
         want = ClipId::Walk;
         natural = s.natWalk * 1.5f;
@@ -394,7 +397,7 @@ void animatePartner(App& app, ValleyScene& s, bool flying, bool diving, bool swi
         if (index >= 0) s.flyer.anim.play(index, 0.3f, want != ClipId::FlyDive && want != ClipId::FlyGlide);
         s.clip = want;
     }
-    s.flyer.anim.rate = staged ? s.stage.palClipRate : natural > 0 ? clampf(speed / natural, 0.5f, fastest) : 1.0f;
+    s.flyer.anim.rate = staged ? s.stage.palClipRate : natural > 0 ? clampf(speed / natural, 0.5f, fastest) : natural < 0 ? 1.4f : 1.0f;
     u8 events[8];
     const int n = s.flyer.anim.update(*lib, app.dt, events, 8);
     for (int k = 0; k < n; ++k) {
@@ -943,7 +946,20 @@ void update(App& app, const Input& in) {
         s.freePitch = clampf(std::atan2(d.z, std::hypot(d.x, d.y)), -1.2f, 0.4f);
         app.autoView[0] = -1;
     }
-    if (app.autoView[0] >= 0 && app.autoView[0] != 99.0f) {  // an autotest's view: the free camera at a place, looking at a point
+    if (app.autoView[0] == 98.0f && (s.mode == Mode::Riding || (s.mode == Mode::FreeCam && s.before == Mode::Riding))) {
+        // (98: by the dragon you ride, in its frame: right, ahead, up)
+        const float* a = app.autoView;
+        const float h = s.flight.heading;
+        const Vec3 fwd{std::sin(h), -std::cos(h), 0}, right{std::cos(h), std::sin(h), 0};
+        s.before = Mode::Riding;
+        s.mode = Mode::FreeCam;
+        s.freeEye = s.flight.pos + right * a[1] + fwd * a[2] + Vec3{0, 0, a[3]};
+        const Vec3 d = s.flight.pos + right * a[4] + fwd * a[5] + Vec3{0, 0, a[6]} - s.freeEye;
+        s.freeYaw = std::atan2(d.x, -d.y);
+        s.freePitch = clampf(std::atan2(d.z, std::hypot(d.x, d.y)), -1.2f, 0.4f);
+        app.autoView[0] = -1;
+    }
+    if (app.autoView[0] >= 0 && app.autoView[0] != 99.0f && app.autoView[0] != 98.0f) {  // an autotest's view: the free camera at a place, looking at a point
         if (const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(app.autoView[0]))) {
             const float* a = app.autoView;
             const Vec3 eye = placeToWorld3(s.valley, *p, {a[1], a[2], 0}), at = placeToWorld3(s.valley, *p, {a[4], a[5], 0});
@@ -1178,7 +1194,8 @@ void update(App& app, const Input& in) {
     audio::setBed(audio::Bed::ValleyNight, night * nearGround);
     if (flying) {
         audio::setBed(audio::Bed::WindHigh, clampf((high - 8.0f) / 60.0f, 0.0f, 0.8f) + clampf(partnerSpeed / 40.0f, 0.0f, 0.35f));
-        if (s.flight.sinceFlap > 0.8f) audio::setBed(audio::Bed::WingFlutter, clampf(partnerSpeed / 18.0f, 0.3f, 1.0f));
+        const bool bursting = s.last.burst && !s.last.brake && s.flight.stamina > 0;  // (beating, not gliding)
+        if (s.flight.sinceFlap > 0.8f && !bursting) audio::setBed(audio::Bed::WingFlutter, clampf(partnerSpeed / 18.0f, 0.3f, 1.0f));
     }
     auto near = [&](int place, float radius) {
         const ValleyPlaceInfo* p = va.place(static_cast<u8>(place));

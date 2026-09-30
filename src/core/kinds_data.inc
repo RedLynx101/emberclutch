@@ -8,10 +8,10 @@ const char* const kTraitNames[] = {"Swift", "Sturdy", "Keen Nose", "Tidy", "Hear
 const u8 kTraitTier[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3};
 
 const PlanInfo kPlans[] = {
-    {"crestwing", {"hand_L", "hand_R", "foot_L", "foot_R"}, "hips", {0.0f, 0.5f, 0.5f}},
+    {"crestwing", {"hand_L", "hand_R", "foot_L", "foot_R"}, "hips", {0.0f, -0.42f, 0.5f}},
     {"curlstone", {"hand_L", "hand_R", "foot_L", "foot_R"}, "belly", {0.0f, 0.1f, 0.62f}},
     {"duskwing", {"wing_thumb_L", "wing_thumb_R", "foot_L", "foot_R"}, "belly", {0.0f, -0.1f, 0.52f}},
-    {"flurrytail", {"hand_L", "hand_R", "foot_L", "foot_R"}, "hips", {0.0f, 0.62f, 0.5f}},
+    {"flurrytail", {"hand_L", "hand_R", "foot_L", "foot_R"}, "hips", {0.0f, -0.37f, 0.5f}},
     {"glimmermoth", {"hand_L", "hand_R", "foot_L", "foot_R"}, "belly", {0.0f, 0.15f, 0.5f}},
     {"pouncer", {"hand_L", "hand_R", "foot_L", "foot_R"}, "belly", {0.0f, 0.2f, 0.55f}},
     {"puffback", {"hand_L", "hand_R", "foot_L", "foot_R"}, "belly", {0.0f, -0.2f, 1.4f}},

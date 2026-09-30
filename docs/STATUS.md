@@ -2,10 +2,29 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.12) on the 3DS** ([plan](plan/v1.md), D89-D118). The flicker pinned to one draw: the first after a big batch of state (the first ground tile; the 2D after 3D) loses its depth setting in runs of frames (D118); 0.9.12 gives each such batch a throwaway draw. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.13) on the 3DS** ([plan](plan/v1.md), D89-D134). The game is now **Emberclutch: Skyreach Valley** (D120). The flicker held in 0.9.12 (3 flashing frames in 32,819); 0.9.13 is Noah's list of fixes and features, a watchdog for the Trailhead freeze, and the review page's PASS/FAIL list of every dragon before 1.0. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`, `dragons`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 21, take 4 with 0.9.12 (2026-09-30)
+## Now: run 21, take 4 with 0.9.13 (2026-09-30)
+- **0.9.12 on the 3DS:** the flicker gone (3 flashing frames in 32,819); 3D flicker on every door and
+  menu (the tracer's split frames sent a half-drawn eye); the Trailhead froze again.
+- **0.9.13** (D119-D134): the name (splash, title, credits for Noah and Emi, SMDH, the 3D banner's
+  wordmark, the photo frame); `split()` keeps each screen's `used` flag; the watchdog (`watchdog.txt`
+  when frames stop for 3 s); the music can't spin on bad reads; the Wanderings' 3D from the 4th frame;
+  swimming for you; tree rush and hurt sounds; flight by Stamina and Wing; making way for the ball; the
+  pageant's judges' shot, lead and one lantern string; hats clear the eyes on every kind, tail things
+  outside the tail; not alone ("It's dangerous to go alone!"); 20 Gleam shells and the den's Gleam badge;
+  the Stone without trust, spaced; the Curlstone walks unless ridden; Linnet's stall back in place; the
+  cold heights' glide; the picnic's letter; the rod in your hands and the cast. Tests 375,879 checks, 0
+  failures. Sent to .51 (CIA 73.5 MB, 3D banner), trace.on kept, the last trace pulled first.
+- **The review page:** 0.9.13's steps 25-42 in section 0, and **the dragons**: every kind as a
+  hatchling and grown (`tests/autotest/dragons_hatchling.txt`, `dragons_grown.txt`, the wardrobe's
+  whole view), pass or fail with a note (collection `dragons`).
+- **Next:** Noah: steps 25-42 and the dragons' marks. If the Trailhead freezes, pull `watchdog.txt`
+  (a music spin or the GPU) with trace.txt. Then 1.0's dragon fixes from the fails; the human model
+  choice (two sets, boy and girl, for Noah); the questline flowchart for expanding the story.
+
+## Run 21, take 4 with 0.9.12 (2026-09-30)
 - **0.9.11 on the 3DS** (trace, 20 screenshots): no hang in the valley; holes 11% of valley frames with
   way 6, the first ground tile alone losing its depth (12 probes of one view by the den's door); the
   battle's bars and win card flashed; froze going into the Wanderers' Trailhead (the switched frame,

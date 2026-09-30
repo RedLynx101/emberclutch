@@ -2,10 +2,22 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.11) on the 3DS** ([plan](plan/v1.md), D89-D117). 0.9.10 hung the 3DS twice on entering the valley (D117); 0.9.11 draws the valley exactly as 0.9.9's way 6 (the depth test's state sent again before each ground tile: holes 74% -> about 1%), no register reads. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.12) on the 3DS** ([plan](plan/v1.md), D89-D118). The flicker pinned to one draw: the first after a big batch of state (the first ground tile; the 2D after 3D) loses its depth setting in runs of frames (D118); 0.9.12 gives each such batch a throwaway draw. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 21, take 4 with 0.9.11 (2026-09-30)
+## Now: run 21, take 4 with 0.9.12 (2026-09-30)
+- **0.9.11 on the 3DS** (trace, 20 screenshots): no hang in the valley; holes 11% of valley frames with
+  way 6, the first ground tile alone losing its depth (12 probes of one view by the den's door); the
+  battle's bars and win card flashed; froze going into the Wanderers' Trailhead (the switched frame,
+  unchecked). Noah asked about renaming the game Skyreach / Skyreach Valley (answered: his call; the
+  title ID and save folder can stay).
+- **0.9.12** (D118): a throwaway draw takes the ground's batch (the smallest tile first) and each
+  3D-to-2D hand-over's (two see-through pixels); the tracer checks a switched scene from its first
+  frame, and counts holes by frame parity. Sent to .51, trace.on kept.
+- **Next:** Noah: steps 22-24. Pull trace.txt: holes (by parity), probes' tile 0, and any "gpu: ...
+  sent" at the end of a frozen session's trail.
+
+## Run 21, take 4 with 0.9.11 (2026-09-30)
 - **0.9.10 on the 3DS:** froze twice soon after leaving the den (no crash dump). Trails: the GPU never
   finished the bottom screen in the third valley frame; then a hang around the reference probe (valley
   frame 200), the register reads' first use.

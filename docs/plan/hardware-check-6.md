@@ -1,4 +1,22 @@
-# Run 21, take 4 (0.9.11)
+# Run 21, take 4 (0.9.12)
+
+**0.9.12, the flicker pinned to one draw.** Your 0.9.11 session gave the clearest picture yet. You
+stood still by the den's door for a while, and the tracer checked the same view twelve times. Each
+time, every ground tile but the first wrote its depth normally. The first tile (the big one under
+you, 60% of the screen) wrote all of it in some frames and none in others, with the view unchanged.
+The first tile is also the only one whose draw carries the whole batch of new settings (the texture,
+the haze's table, the colour stages, the shader's numbers) after the depth setting; each later tile
+carries the depth setting alone. The flashing lake is the water showing through where that tile's
+depth is missing, and it came back often (11% of valley frames), sometimes every other frame. The
+battle's flashing health bars and win card look like the same fault the other way round: the 2D
+drawn over the 3D keeps the 3D's depth setting and is hidden behind it. This build:
+- draws a small far tile first as a throwaway, so it takes that batch, and every real tile then goes
+  with the depth setting alone (it's drawn again in its turn);
+- does the same wherever the game switches from 3D to 2D: two invisible one-pixel draws take the
+  switch's batch, so the bars, cards and panels keep the right setting;
+- **the Trailhead freeze:** the tracer missed that frame, because it only started checking a new
+  scene one frame late. It now checks the new scene from its first frame, so if it freezes again the
+  trace will show the part. It went through the door fine in the emulator.
 
 **0.9.11, back to what worked.** 0.9.10 froze twice for you, both times soon after you went out to
 the valley. It was a freeze, not a crash: there was no crash dump on the card. The first time, the
@@ -167,6 +185,10 @@ in FBI, SD → cias → `emberclutch.cia` → Install CIA; your save carries ove
 21. (0.9.11) Go from the den out to the valley and back a few times, then play the valley five minutes
     or more. Does it run without freezing? (Step 17's deliberate flicker is gone. Is the flicker as it
     was at the end of 0.9.9, or better?)
+22. (0.9.12) The flicker: stand by the den's door a minute (where it flashed most), then play the valley
+    five minutes or more. Does the ground still flash to the lake's blue anywhere?
+23. (0.9.12) A few battles: do the health bars, the move text and the win card stay steady?
+24. (0.9.12) Go into the Wanderers' Trailhead. If it freezes, restart and tell me (the trace shows where).
 
 ## 1. The flicker, and your haze
 Your screenshots showed it: in some frames every see-through shape vanished at once on **both**

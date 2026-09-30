@@ -201,8 +201,8 @@ void dressUp(App& app, const vext::Stage& stage) {
     g.toWardrobe = false;
     if (stage.partner < 0) return;
     g.mode = Mode::None;
-    r3d::releaseValley();
-    app.game.world.inValley = 0;
+    // (The valley kept, loaded, and you where you stand: back out by Linnet's stall after, D131. Its
+    // release and the reload after stuttered, and the way back in put you at the glade's middle.)
     openWardrobe(app, stage.partner, SceneId::Valley);
 }
 

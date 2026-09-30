@@ -1,0 +1,32 @@
+# Linnet's stall to the wardrobe and back (D131): back out where you stood by her stall, no reload.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+pg grown
+valley
+wait 4
+travel 15
+wait 4
+pg stall 0 1
+wait 2
+shot l1-stall
+tap 237 185
+wait 2.5
+shot l2-wardrobe
+key B
+wait 0.4
+shot l3-back-at-once
+wait 2
+shot l4-back
+quit

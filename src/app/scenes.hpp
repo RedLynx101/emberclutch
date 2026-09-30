@@ -37,6 +37,7 @@ void openValley(App& app);
 void openValleyAt(App& app, int place);  // (not without a dragon: D127; it says so and stays)
 int valleyPartner(const App& app);        // who'd come out with you (its index; -1: nobody can)
 void resumeValley(App& app);  // Continue, left in the valley: back where you were
+void backToValley(App& app);  // from a scene opened over it (the wardrobe): where you stood, the valley still loaded
 void openCreator(App& app, SceneId back);  // your look, then back to `back`
 
 // ---- The challenges (Beta WP8-WP11, scene_challenge.cpp): the notice boards by the arena and

@@ -1792,6 +1792,17 @@ void openValleyAt(App& app, int place) {
 
 void openValley(App& app) { openValleyAt(app, kPlaceDen); }
 
+void backToValley(App& app) {
+    ValleyScene& s = vs();
+    if (!s.loaded) {
+        openValleyAt(app, kPlaceGlade);
+        return;
+    }
+    if (s.partner >= 0 && s.partner < app.game.dragonCount) s.shown = app.game.dragons[s.partner];  // (dressed)
+    app.game.world.inValley = 1;
+    app.scene = SceneId::Valley;
+}
+
 // Continue, left in the valley: back where you were (on foot, your partner at your side), if
 // that's still somewhere to stand; else out of the den's door.
 void resumeValley(App& app) {

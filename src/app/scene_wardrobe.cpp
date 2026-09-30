@@ -53,7 +53,7 @@ void leave(App& app) {
     audio::playSfx(audio::Sfx::Back);
     saveNow(app);
     if (s.back == SceneId::Valley) {
-        openValleyAt(app, kPlaceGlade);  // back out at the glade, dressed
+        backToValley(app);  // back out where you stood at the glade, dressed (D131)
     } else {
         app.scene = s.back;
     }

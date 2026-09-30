@@ -2,10 +2,22 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.7) on the 3DS** ([plan](plan/v1.md), D89-D113). The flicker's hunt goes on on the 3DS (D113): 0.9.6 without fills still lost the statics' depth in runs; 0.9.7 trials three ways of drawing the far haze (the only draw with the depth test off) and probes the depth after each part following a hole. Also the take 4 notes: roamers' smooth clock, seats near the neck, the XP bar filling, a burst's wingbeats, Gale's colour. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.8) on the 3DS** ([plan](plan/v1.md), D89-D114). The flicker narrowed (D114): in its frames the ground's tiles write colour and no depth; 0.9.8 trials five ways of drawing them and logs the first tile's GPU commands. Frostspire Hollow on its floor. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 21, take 4 with 0.9.7 (2026-09-30)
+## Now: run 21, take 4 with 0.9.8 (2026-09-30)
+- **0.9.7 on the 3DS** (80 screenshots, trace): the Hollow's cave and ring floated; the flicker still
+  there, even flying at ~3,000 triangles. The trace: the haze's three ways alike (25%, 18%, 18% of
+  frames); the probes: the ground's tiles write no depth in the flicker's frames, the places after
+  them do.
+- **0.9.8** (D114): the ground trial (as drawn / untextured / depth test per tile / places first /
+  one colour loader), the first tile's commands logged, per-tile probes; the Hollow's room held at its
+  floor after the river's cut, the Hollow rebuilt (a test). Sent to .51, trace.on kept.
+- **Next:** Noah plays the valley (the den's door first) 5+ minutes with the trace on. Pull trace.txt:
+  "depth trial done: holes by fix ..." (which way works), "commands (a hole ...)" against "commands
+  (a whole frame ...)" (what differs in what the GPU is sent), and the "tiles:" lines.
+
+## Run 21, take 4 with 0.9.7 (2026-09-30)
 - **0.9.6 on the 3DS** (db `run21d` s0, 90 screenshots, trace): the flicker less but still there
   ("large sections of the ground flicker away"); depth holes in 619 of ~16,900 valley frames with
   no fill: every still thing without depth, the dragons' draws with theirs. Also: the roamers move

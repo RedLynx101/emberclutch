@@ -1,4 +1,23 @@
-# Run 21, take 4 (0.9.7)
+# Run 21, take 4 (0.9.8)
+
+**0.9.8, the flicker cornered.** Your 0.9.7 session's checks found the culprit part: in the flicker's
+frames the ground's own tiles draw their colour but write no depth at all. The depth was still
+empty straight after them even with the graphics chip finished first, while the houses, the den's
+cliff and your dragon drawn next wrote theirs. The haze turned out not to matter: the three ways
+flickered alike (25%, 18%, 18% of frames by the den's door). This build tests five ways of drawing
+the tiles in turn:
+- as they are now;
+- without their painted texture (the ground looks plainer in those moments);
+- with the depth setting sent again before each tile;
+- with the houses drawn before them;
+- with their colours read once instead of twice.
+It keeps whichever clearly beats the rest. It also records the exact graphics commands sent for
+the first tile in a flicker frame and in a good one, so I can compare them word for word, and
+checks the depth after each tile. As before, the flicker may come and go for the first few minutes
+in the valley (the den's door was the worst spot last time: stand there a while).
+**Frostspire Hollow:** the river runs 33 m from it, and its broad valley had lowered the room
+about 3 m under where the Hollow was built, so the cave and frost ring floated. The room is level
+again and the Hollow rebuilt on it.
 
 **0.9.7, the flicker hunted on your 3DS itself.** Your 0.9.6 trace proved me wrong: the ground's
 depth still vanished (in 619 of about 16,900 valley frames), with no memory fill left in the frame.
@@ -79,6 +98,9 @@ in FBI, SD → cias → `emberclutch.cia` → Install CIA; your save carries ove
 10. (0.9.7) Ride your Crestwing: you sit just behind its neck. A Flurrytail too, if you have one.
 11. (0.9.7) Win a battle: the experience bar fills up on the card.
 12. (0.9.7) Burst (R) in flight: the wings beat. Gale's moves are seafoam, not Frost's blue.
+13. (0.9.8) The flicker: stand by the den's door a minute, then play the valley as usual for five
+    minutes or more (flying too). After the first few minutes, does the ground still flicker?
+14. (0.9.8) Frostspire Hollow: the cave door and the frost ring sit on the floor.
 
 ## 1. The flicker, and your haze
 Your screenshots showed it: in some frames every see-through shape vanished at once on **both**

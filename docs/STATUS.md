@@ -5,6 +5,22 @@
 **Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.13) on the 3DS** ([plan](plan/v1.md), D89-D134). The game is now **Emberclutch: Skyreach Valley** (D120). The flicker held in 0.9.12 (3 flashing frames in 32,819); 0.9.13 is Noah's list of fixes and features, a watchdog for the Trailhead freeze, and the review page's PASS/FAIL list of every dragon before 1.0. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`, `dragons`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
+## Now: planning the Living Valley pass (2026-09-30)
+- **Noah's notes** (two pages on the quests, plus: a separate player build; the chosen people set for
+  everyone; grown in 5.5 days and eggs in 1.6; Celestine fiery and funny, personalities dug in; feelings
+  on faces, bodies, emotes, voices and synthesized sounds, Animal Crossing style). Planning only: no code yet.
+- **The story bible**: `docs/design/story.md` (the lore, including why the lanterns went dark; the cast;
+  Act 1 rebuilt with the mailbox, Fig the friend, Custard, Cinder; the pageant, league, Hollow and cove
+  lines; the letters; the feelings table; the future threads).
+- **The plan**: `docs/plan/living-valley.md` (the player build, growing up faster, the looks, the feelings
+  kit, the story engine with story scripts, save v2 and its migration, the world changes, testing and
+  run 22, the order of work, ten questions for Noah).
+- **The storyboard page** (Keep / Change per card, the questions' answers, in collections `board` and
+  `answers`): https://claude.ai/artifact/49LAdA7jCCQmaFfZtQHfhg
+- **Next:** read Noah's marks and answers (above all, which look: he wrote "set for"), turn the approved
+  parts into decisions D135 on, then build the pass in the plan's order. The 0.9.13 run (below) is
+  still on his 3DS.
+
 ## Now: run 21, take 4 with 0.9.13 (2026-09-30)
 - **0.9.12 on the 3DS:** the flicker gone (3 flashing frames in 32,819); 3D flicker on every door and
   menu (the tracer's split frames sent a half-drawn eye); the Trailhead froze again.

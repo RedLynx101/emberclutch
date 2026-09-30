@@ -35,7 +35,7 @@ struct OccluderMesh {
 };
 
 // Whether a place's part stands in the camera's way: its solid parts do; glows and lit shells
-// (see-through), and the mill's turning sails (they move) don't.
+// (see-through), the mill's turning sails (they move) and strings of lanterns (thin) don't.
 bool occludes(const char* partName, u8 flags);
 
 // A place's occluders placed in the valley (its anchor and heading: core/place_layout's frame).

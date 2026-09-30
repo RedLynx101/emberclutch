@@ -4067,7 +4067,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         }
     }
     // Your small dragon's lead.
-    if (view.lead && collarSet && handSet) {
+    if (view.lead && collarSet && handSet && length(collar - hand) < 5.0f) {  // (never a rope across the valley)
         bindValleyStatic(projection, viewM, view.tint);
         C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
         drawLead(app, v, hand, collar, view.eye);

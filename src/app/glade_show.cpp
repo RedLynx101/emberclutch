@@ -216,8 +216,11 @@ void wantCamera(const App& app, const Valley& v, Vec3& eye, Vec3& target) {
         const Vec2 toStage{L.stage.x - L.judges.x, L.stage.y - L.judges.y};
         const float len = std::sqrt(toStage.x * toStage.x + toStage.y * toStage.y);
         const Vec2 d{toStage.x / len, toStage.y / len};
-        eye = gladePoint(v, {L.judges.x + d.x * 5.0f - d.y * 1.5f, L.judges.y + d.y * 5.0f + d.x * 1.5f}, 4.2f);
-        target = gladePoint(v, L.judges, 1.2f);
+        // (D125: at their faces on the stools behind the table, over the moonpetals on it: aimed at
+        // the table's middle, the camera was pulled in to 1.2 m by the flowers standing right there,
+        // Noah's pink close-up; and from their other side, clear of the dragon at the row's right end)
+        eye = gladePoint(v, {L.judges.x + d.x * 4.8f + d.y * 2.2f, L.judges.y + d.y * 4.8f - d.x * 2.2f}, 3.9f);
+        target = gladePoint(v, {L.judges.x - d.x * 0.85f, L.judges.y - d.y * 0.85f}, 1.4f);
     } else {
         eye = gladePoint(v, {L.stage.x, L.stage.y + 19.0f}, L.stage.z + 10.0f);  // (the whole 7.2 m stage)
         target = gladePoint(v, {L.stage.x, L.stage.y}, L.stage.z + 1.3f);
@@ -529,6 +532,7 @@ bool updateShow(App& app, const Input& in, vext::Stage& stage) {
     // The camera eases to where the phase wants it.
     Vec3 eye, target;
     wantCamera(app, v, eye, target);
+    if (autotest::shooting()) autotest::log("show: phase %d, t %.1f", static_cast<int>(s.phase), static_cast<double>(s.t));
     if (!s.camSet) {
         s.eye = eye, s.target = target, s.camSet = true;
     } else {

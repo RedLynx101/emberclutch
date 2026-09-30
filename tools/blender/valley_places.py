@@ -87,7 +87,7 @@ LANTERN_GLOW = (1.0, 0.60, 0.26)
 AO_REACH, AO_STRENGTH = 2.4, 0.42  # ambient occlusion: ray length (m) and how dark it gets
 ADDITIVE, FLICKER = 1, 2  # mesh flags (.esm)
 NOSHADOW, NOAO = 1, 2     # vertex flags (bake)
-PART_ORDER = ("solid", "lantern", "sails", "glow", "lantern_light")
+PART_ORDER = ("solid", "lantern", "sails", "strings", "glow", "lantern_light")  # (strings: thin, the camera looks past them, D125)
 PART_FLAGS = {"glow": ADDITIVE, "lantern_light": ADDITIVE | FLICKER}
 
 # ------------------------------------------------------------------------------ palette
@@ -2751,9 +2751,9 @@ def moonpetals(pl, M, heads=3, seed=0, r=0.5):
     pl.lamp(M, (0, 0, 0.5), 2.8, 0.35, rgb=PETAL_GLOW[seed % 3], table=MOONPETAL)
 
 
-def paper_lantern(pl, p, r=0.16, col=CLOTH_CREAM, glow=(1.0, 0.72, 0.40)):
-    """A little paper lantern hanging at p: two pyramids (solid) in a glowing shell."""
-    bead(pl.s, I4, p, r, col)
+def paper_lantern(pl, p, r=0.16, col=CLOTH_CREAM, glow=(1.0, 0.72, 0.40), part=None):
+    """A little paper lantern hanging at p: two pyramids (solid, or into `part`) in a glowing shell."""
+    bead(part or pl.s, I4, p, r, col)
     bead(pl.g, I4, p, r * 1.35, Emit(glow, GLOW), h=r * 1.9)
     pl.lamp(I4, p, 3.0, 0.35)
 
@@ -2763,9 +2763,12 @@ def lantern_string(pl, a, b, sag, count):
 
     def at(t):
         return a.lerp(b, t) - Vector((0, 0, sag * 4 * t * (1 - t)))
-    ribbon(pl.s, [at(t / 3) for t in range(4)], 0.04, DARKWOOD, I4, normal_hint=(0, 0, 1))
+    # Its own part, "strings" (D125): thin, so the camera looks past it rather than being pulled in
+    # (the pageant's close-ups on the dragon under it, Noah's run 21 take 4).
+    st = pl.part("strings")
+    ribbon(st, [at(t / 3) for t in range(4)], 0.04, DARKWOOD, I4, normal_hint=(0, 0, 1))
     for k in range(count):
-        paper_lantern(pl, at((k + 0.5) / count) - Vector((0, 0, 0.22)))
+        paper_lantern(pl, at((k + 0.5) / count) - Vector((0, 0, 0.22)), part=st)
 
 
 def willow(pl, M, h=6.0, r=2.8, seed=0.0):
@@ -2906,9 +2909,9 @@ def build_glade(pl):
         puff(s, (0, 0, 4.1), 0.12, GOLD, P, segs=4, h=0.16)
         pl.solid(P, 0, 0, 0.3)
     za, zb = pl.gz(*posts[0]) + 3.95, pl.gz(*posts[1]) + 3.95
-    lantern_string(pl, (posts[0][0], posts[0][1], za), (posts[1][0], posts[1][1], zb), 0.7, 4)
-    arch_top = A @ Vector((AW, 0, AH))
-    lantern_string(pl, (posts[1][0], posts[1][1], zb), tuple(arch_top), 0.6, 3)
+    # (One string, over the benches: the second, from the right-hand post up to the arch, hung over
+    # the stage's end and cut through the dragons standing there, Noah's run 21 take 4, D125.)
+    lantern_string(pl, (posts[0][0], posts[0][1], za), (posts[1][0], posts[1][1], zb), 0.7, 5)
     pl.mark("lanterns")
     willow(pl, on_ground(pl, -12.5, -7.0, sink=0.1), seed=0.7)
     pl.mark("willow")

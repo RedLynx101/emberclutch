@@ -33,7 +33,7 @@ float crossing(Vec3 p, Vec3 d, Vec3 a, Vec3 b, Vec3 c) {
 bool occludes(const char* partName, u8 flags) {
     if (flags & 1) return false;  // (additive: a glow over what's behind it)
     return std::strcmp(partName, "lantern_light") != 0 && std::strcmp(partName, "glow") != 0 &&
-           std::strcmp(partName, "sails") != 0;
+           std::strcmp(partName, "sails") != 0 && std::strcmp(partName, "strings") != 0;  // (thin: D125)
 }
 
 void OccluderMesh::clear() {

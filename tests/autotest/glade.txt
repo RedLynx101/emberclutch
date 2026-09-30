@@ -48,9 +48,11 @@ shot p06-look
 wait 5
 shot p07-look-cards
 wait 9
-shot p08-poise
-wait 9
-shot p09-judges
+shot p08-judges
+wait 3
+shot p09-perform-early
+wait 6
+shot p09-perform
 wait 5
 shot p10-perform
 wait 4

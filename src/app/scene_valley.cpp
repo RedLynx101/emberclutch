@@ -1315,7 +1315,9 @@ void drawTop(App& app) {
         me.hair = static_cast<s8>(app.game.world.look[kLookHair] < kHairStyles ? app.game.world.look[kLookHair] : 0);
         me.blink = s.youFig.blink;
         me.seated = s.mode == Mode::Riding || (s.mode == Mode::FreeCam && s.before == Mode::Riding);
-        view.lead = !me.seated && s.partner >= 0 && s.shown.stage != Stage::Adult;  // too small to ride: on its lead
+        // Too small to ride: on its lead; not while a feature has it (D125: in the pageant it stood on the
+        // stage and its lead ran from you across the stage and through the other dragons)
+        view.lead = !me.seated && s.partner >= 0 && s.shown.stage != Stage::Adult && vext::activeFeature(app) < 0;
         // The villagers and the features' people, nearest first, as many as there's room for.
         struct Near {
             float d;

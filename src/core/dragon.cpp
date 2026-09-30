@@ -44,7 +44,7 @@ void closeDay(Dragon& d, s32 newDay) {
 
 void promote(Dragon& d, s64 now) {
     if (d.stage == Stage::Egg) return;
-    const Stage s = stageFor(daysSinceHatch(d, now), d.careStars);
+    const Stage s = stageFor(hoursSinceHatch(d, now), d.careStars);
     if (s > d.stage) d.stage = s;  // never regress
 }
 
@@ -128,27 +128,27 @@ float Needs::lowest() const {
     return m;
 }
 
-int stageMinDay(Stage s) {
+int stageMinHours(Stage s) {
     switch (s) {
-        case Stage::Juvenile: return 4;
-        case Stage::Adolescent: return 8;
-        case Stage::Adult: return 14;
+        case Stage::Juvenile: return 36;     // 1.5 days
+        case Stage::Adolescent: return 78;   // 3.25 days
+        case Stage::Adult: return 132;       // 5.5 days
         default: return 0;
     }
 }
 
 int stageMinStars(Stage s) {
     switch (s) {
-        case Stage::Juvenile: return 6;
-        case Stage::Adolescent: return 14;
-        case Stage::Adult: return 26;
+        case Stage::Juvenile: return 3;      // (a star a day or more)
+        case Stage::Adolescent: return 7;
+        case Stage::Adult: return 12;        // (about five days close in 5.5: near-perfect care)
         default: return 0;
     }
 }
 
-Stage stageFor(int days, int stars) {
+Stage stageFor(int hours, int stars) {
     for (Stage s : {Stage::Adult, Stage::Adolescent, Stage::Juvenile})
-        if (days >= stageMinDay(s) && stars >= stageMinStars(s)) return s;
+        if (hours >= stageMinHours(s) && stars >= stageMinStars(s)) return s;
     return Stage::Hatchling;
 }
 
@@ -296,13 +296,18 @@ int daysSinceHatch(const Dragon& d, s64 now) {
     return static_cast<int>((now - d.hatchedAt) / kDay);
 }
 
+int hoursSinceHatch(const Dragon& d, s64 now) {
+    if (d.stage == Stage::Egg || now <= d.hatchedAt) return 0;
+    return static_cast<int>((now - d.hatchedAt) / 3600);
+}
+
 float stageProgress(const Dragon& d, s64 now) {
     if (d.stage == Stage::Egg) return 0.0f;
     if (d.stage == Stage::Adult) return 1.0f;
     const Stage next = static_cast<Stage>(static_cast<int>(d.stage) + 1);
-    const float span = static_cast<float>(stageMinDay(next) - stageMinDay(d.stage));
-    const float days = now > d.hatchedAt ? static_cast<float>(now - d.hatchedAt) / kDay : 0.0f;
-    float p = (days - stageMinDay(d.stage)) / span;
+    const float span = static_cast<float>(stageMinHours(next) - stageMinHours(d.stage));
+    const float hours = now > d.hatchedAt ? static_cast<float>(now - d.hatchedAt) / 3600.0f : 0.0f;
+    float p = (hours - stageMinHours(d.stage)) / span;
     if (p < 0) p = 0;
     if (p > 0.95f) p = 0.95f;  // the last step waits for promotion
     return p;

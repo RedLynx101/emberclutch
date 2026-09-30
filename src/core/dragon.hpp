@@ -115,14 +115,15 @@ struct Dragon {
     u8 frostDeepest = 0;
 };
 
-constexpr s32 kIncubationSeconds = 24 * 3600;
+constexpr s32 kIncubationSeconds = 36 * 3600;  // a day and a half warm (D136)
 constexpr s32 kEggTurnGap = 3 * 3600;  // a turn counts again this long after the last one
 constexpr u8 kMaxEggTurns = 4;
 constexpr u16 kBondPerEggTurn = 30;    // a well-turned egg hatches already fond of you
 
-// Stage gates: minimum days since hatching and minimum total care stars.
-Stage stageFor(int daysSinceHatch, int careStars);
-int stageMinDay(Stage s);
+// Stage gates: minimum hours since hatching and minimum total care stars (D136: grown in 5.5 days
+// with the best care; Juvenile at 1.5 days and 3 stars, Adolescent 3.25 days and 7, Adult 5.5 and 12).
+Stage stageFor(int hoursSinceHatch, int careStars);
+int stageMinHours(Stage s);
 int stageMinStars(Stage s);
 
 Sex rollSex(Rng& rng);
@@ -158,6 +159,7 @@ void makeUp(Dragon& d);
 
 Mood moodOf(const Dragon& d);
 int daysSinceHatch(const Dragon& d, s64 now);
+int hoursSinceHatch(const Dragon& d, s64 now);
 // How far through its current stage the dragon is: 0 at the stage-up, capped at 0.95 until
 // the next promotion; 1 for adults. Drives in-stage growth of the model (rig.hpp growthFor).
 float stageProgress(const Dragon& d, s64 now);

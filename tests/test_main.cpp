@@ -129,20 +129,23 @@ TEST(clock_rollback_and_cap) {
 }
 
 TEST(stage_gates) {
+    // (hours since hatching, stars: D136, grown in 5.5 days with the best care)
     CHECK(stageFor(0, 0) == Stage::Hatchling);
-    CHECK(stageFor(4, 5) == Stage::Hatchling);  // time without care is not enough
-    CHECK(stageFor(4, 6) == Stage::Juvenile);
-    CHECK(stageFor(20, 6) == Stage::Juvenile);
-    CHECK(stageFor(8, 14) == Stage::Adolescent);
-    CHECK(stageFor(13, 40) == Stage::Adolescent);  // care without time is not enough
-    CHECK(stageFor(14, 26) == Stage::Adult);
+    CHECK(stageFor(36, 2) == Stage::Hatchling);  // time without care is not enough
+    CHECK(stageFor(35, 9) == Stage::Hatchling);  // care without time is not enough
+    CHECK(stageFor(36, 3) == Stage::Juvenile);
+    CHECK(stageFor(480, 3) == Stage::Juvenile);
+    CHECK(stageFor(78, 7) == Stage::Adolescent);
+    CHECK(stageFor(131, 40) == Stage::Adolescent);
+    CHECK(stageFor(132, 12) == Stage::Adult);
+    CHECK(kIncubationSeconds == 36 * 3600);
 }
 
 TEST(egg_hatches_when_kept_warm_and_pauses_in_vault) {
     Rng rng(3);
     Dragon egg = makeEgg(1, makePurebred(Element::Ember, rng), Sex::Female, kT0);
     s64 t = kT0;
-    for (int h = 0; h < 30; ++h) {  // rub every 3 hours for 30 hours
+    for (int h = 0; h < 40; ++h) {  // rub every 3 hours for 40 hours (it needs 36 warm: D136)
         if (h % 3 == 0) warmEgg(egg, 30);
         simulate(egg, t, t + kHour);
         t += kHour;
@@ -188,18 +191,21 @@ static Dragon raise(int visitsPerDay, int days) {
     return d;
 }
 
-TEST(good_care_reaches_adult_in_about_two_weeks) {
-    const Dragon d = raise(3, 15);
+TEST(good_care_reaches_adult_in_about_five_and_a_half_days) {  // (D136)
+    const Dragon early = raise(3, 5);  // (5 days and an hour after hatching)
+    CHECK(early.stage == Stage::Adolescent);
+    const Dragon d = raise(3, 6);
     CHECK(d.stage == Stage::Adult);
-    CHECK(d.bond > 100);
-    std::printf("  3 visits/day for 15 days: stage=%s stars=%d bond=%d\n", stageName(d.stage), d.careStars, d.bond);
+    CHECK(d.bond > 60);
+    std::printf("  3 visits/day: day 5 %s (%d stars), day 6 %s (%d stars, bond %d)\n", stageName(early.stage), early.careStars,
+                stageName(d.stage), d.careStars, d.bond);
 }
 
 TEST(light_care_grows_slower_but_still_grows) {
-    const Dragon d = raise(1, 15);
+    const Dragon d = raise(1, 6);
     CHECK(d.stage >= Stage::Juvenile);
     CHECK(d.stage < Stage::Adult);
-    std::printf("  1 visit/day for 15 days: stage=%s stars=%d\n", stageName(d.stage), d.careStars);
+    std::printf("  1 visit/day for 6 days: stage=%s stars=%d\n", stageName(d.stage), d.careStars);
 }
 
 TEST(neglect_upsets_but_never_harms) {
@@ -1027,7 +1033,7 @@ int main() {
     RUN(clock_rollback_and_cap);
     RUN(stage_gates);
     RUN(egg_hatches_when_kept_warm_and_pauses_in_vault);
-    RUN(good_care_reaches_adult_in_about_two_weeks);
+    RUN(good_care_reaches_adult_in_about_five_and_a_half_days);
     RUN(light_care_grows_slower_but_still_grows);
     RUN(neglect_upsets_but_never_harms);
     RUN(sanctuary_keeps_needs_safe);

@@ -20,7 +20,8 @@ not hurt.
 1. **A bond you can feel.** Touch, voice and daily care are the core verbs. The dragon
    notices you, remembers you, and reacts.
 2. **Watch it grow.** Every day the dragon is a little bigger. Egg → Adult takes about
-   two weeks of real time, driven by care, not grinding.
+   a week of real time (a day and a half in the egg, 5.5 days to grown with the best care: D136),
+   driven by care, not grinding.
 3. **Every clutch is a surprise.** Breeding produces visibly different dragons. You build
    a den full of dragons that are *yours*.
 4. **Forgiving, never punishing.** No death, no loss, no running away. Neglect shows up as
@@ -41,17 +42,20 @@ not hurt.
 
 ### 3.1 Life stages
 
-Stages advance when **both** gates are met: minimum real days since hatching (from the
+Stages advance when **both** gates are met: minimum real time since hatching (from the
 3DS clock) **and** total care stars earned. With good care, the day gate is the limiter;
 with patchy care, growth slows down but never reverses.
 
-| Stage | Min day | Care stars | Size | Unlocks |
+| Stage | Min time | Care stars | Size | Unlocks |
 |---|---|---|---|---|
-| **Egg** | 1 day incubating | — | — | Rub to warm, turn, listen. Hatches in the den nest. |
+| **Egg** | 1.5 days warm | — | — | Rub to warm, turn, listen. Hatches in the den nest. |
 | **Hatchling** | 0 | — | 25% | Feeding, petting, naming by voice, first tricks (Sit, Roar). |
-| **Juvenile** | 4 | 6 | 45% | Ground tricks, Fruit Catch (hop version), Command Trial, walks. |
-| **Adolescent** | 8 | 14 | 70% | Gliding, short flights, Sky Rings, full Fruit Catch, Shine Show, breath puff. |
-| **Adult** | 14 | 26 | 100% | Full flight, **riding**, Lantern Trial, breeding, Wanderings finds improve. |
+| **Juvenile** | 1.5 days | 3 | 45% | Ground tricks, Fruit Catch (hop version), Command Trial, walks. |
+| **Adolescent** | 3.25 days | 7 | 70% | Gliding, short flights, Sky Rings, full Fruit Catch, Shine Show, breath puff. |
+| **Adult** | 5.5 days | 12 | 100% | Full flight, **riding**, Lantern Trial, breeding, Wanderings finds improve. |
+
+(D136, 2026-09-30: was 1 day in the egg and 4 / 8 / 14 days with 6 / 14 / 26 stars. A dragon earns at
+most 3 stars a day and about five days close in 5.5, so 12 stars needs near-perfect care.)
 
 **Continuous growth:** within a stage the dragon grows smoothly each day (bone scales and
 proportions interpolate), so a player sees change on every check-in. Proportions follow a

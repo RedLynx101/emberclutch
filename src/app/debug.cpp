@@ -28,7 +28,7 @@ void line(App& app, float y, const char* s, u32 color) { text(app, s, 6, y, 0.42
 void forceNextStage(Dragon& d, s64 now) {
     if (d.stage == Stage::Egg || d.stage == Stage::Adult) return;
     const Stage next = static_cast<Stage>(static_cast<int>(d.stage) + 1);
-    d.hatchedAt = now - static_cast<s64>(stageMinDay(next)) * kDay - 60;
+    d.hatchedAt = now - static_cast<s64>(stageMinHours(next)) * 3600 - 60;
     if (d.careStars < stageMinStars(next)) d.careStars = static_cast<u16>(stageMinStars(next));
     simulate(d, now, now);  // re-evaluates the stage
 }

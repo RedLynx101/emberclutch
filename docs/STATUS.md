@@ -2,10 +2,23 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.9) on the 3DS** ([plan](plan/v1.md), D89-D115). The flicker is the GPU dropping the textured ground's depth in stretches (D115: the commands are the same in good and bad frames); 0.9.9 trials seven ways of drawing the ground in 13-second turns and keeps the best. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.10) on the 3DS** ([plan](plan/v1.md), D89-D116). The flicker: the depth test's state sent again before every 3D draw (D116: 0.9.9's trial took the ground's holes from 74% of frames to 0 in its turn, 1.2% after); a GPU register tracer (trace on) for what's left. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 21, take 4 with 0.9.9 (2026-09-30)
+## Now: run 21, take 4 with 0.9.10 (2026-09-30)
+- **0.9.9 on the 3DS** (trace): the trial's holes by way 74%, 66% (untextured), 84%, 85%, 42%, 75%,
+  and 0/1620 for the depth test per tile; kept, 1.2% after. Noah: much better everywhere, not quite
+  perfect; untextured flickered too; photos in the den stopped the music and held the game.
+- **0.9.10** (D116): `resendEffect()` before every 3D draw, trace or not; the trial taken out; with the
+  trace on, a window the old way (up to 2,000 valley frames or 10 probes) whose probes read the GPU's
+  own registers after each part and tile (GSPGPU_ReadHWRegs), then the fix. Photos in pieces, a deeper
+  music buffer, one folder read for the number; the free camera within 100 m / 60 m up; swimming
+  quieter. Sent to .51, trace.on kept.
+- **Next:** pull trace.txt: the "GPU regs" lines of the probes in the window (fix 0) against the
+  reference (valley frame 200) and any later probes (fix 1), and the "tiles:" lines' 0x107/0x115 per
+  tile. Noah: steps 17-20 in hardware-check-6.
+
+## Run 21, take 4 with 0.9.9 (2026-09-30)
 - **0.9.8 on the 3DS** (70 screenshots, trace): buildings blinking out; the flicker better for a minute,
   then back by the den; the view's angle starts and stops it. The trace: textured tiles write no depth
   in the flicker's frames (every probe), untextured ones do; the first tile's commands the same in good

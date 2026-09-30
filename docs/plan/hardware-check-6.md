@@ -1,4 +1,25 @@
-# Run 21, take 4 (0.9.9)
+# Run 21, take 4 (0.9.10)
+
+**0.9.10, the fix kept, and a tracer for the rest.** Your 0.9.9 session settled which way works. Of
+the seven ways, each tried for about 13 seconds, the ground flickered in 74% of frames as drawn, 66%
+without its texture (so the texture was not the cause after all), 84% and 85% with the texture set
+up earlier or with smaller coordinates, 42% with a depth pass first and 75% without mipmaps. With
+the depth setting sent again before each tile, it flickered in none of its 1,620 frames. Kept after
+the trial, it flickered in about 1 frame in 85 (209 of 17,500), which matches what you saw: much
+better everywhere, not quite perfect. So this build:
+- **sends that setting again before every 3D draw**, not just the ground's tiles (the places, the
+  dragons, the people, the water and the rest), whether the trace is on or not;
+- **with the trace on, starts with a short window drawn the old way on purpose**, so the flicker
+  shows and the tracer catches it. For up to about 40 seconds (it usually ends sooner), the ground
+  will flicker a lot and stutter now and then. In a flicker frame the tracer stops the next frame
+  after each part and each ground tile, and reads the graphics chip's own settings back from the
+  chip, to compare with what the game sent. After the window, the fix; any flicker left is traced
+  the same way;
+- **the free camera** (valley, the camera button) stays within about 100 m of you and 60 m above;
+- **the dragon's swimming** is quieter;
+- **photos**: the picture is written to the card in small pieces with pauses between, the music
+  keeps more ahead of itself (about 0.64 s instead of 0.38 s), and finding the next photo number
+  reads the photos folder once instead of checking each file.
 
 **0.9.9, the ground's texture.** Your 0.9.8 session narrowed it to one thing: in every checked frame
 where the ground was drawn with its painted texture, not one tile wrote depth, from the very first.
@@ -124,6 +145,13 @@ in FBI, SD → cias → `emberclutch.cia` → Install CIA; your save carries ove
     in the places it flickered before. After that, does the ground still flicker? (The ground may look
     plainer or a little grainier in some stretches: those are the ways under test.)
 16. (0.9.9) Buildings no longer blink out of view as you move about.
+17. (0.9.10) The flicker: go out to the valley and keep playing through the first minute, when it
+    flickers on purpose (the tracer's window). After that, play five minutes or more (the den's door,
+    the meadow, flying). Does the ground still flicker at all?
+18. (0.9.10) The free camera: fly it away from your dragon. It stops about 100 m out and 60 m up.
+19. (0.9.10) Swim with your dragon: the paddling and the water are a little quieter.
+20. (0.9.10) Photo mode in the den: take several photos in a row. Does the music keep going, and
+    the game run on without a pause?
 
 ## 1. The flicker, and your haze
 Your screenshots showed it: in some frames every see-through shape vanished at once on **both**

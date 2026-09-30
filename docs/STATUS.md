@@ -2,10 +2,22 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.8) on the 3DS** ([plan](plan/v1.md), D89-D114). The flicker narrowed (D114): in its frames the ground's tiles write colour and no depth; 0.9.8 trials five ways of drawing them and logs the first tile's GPU commands. Frostspire Hollow on its floor. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.9) on the 3DS** ([plan](plan/v1.md), D89-D115). The flicker is the GPU dropping the textured ground's depth in stretches (D115: the commands are the same in good and bad frames); 0.9.9 trials seven ways of drawing the ground in 13-second turns and keeps the best. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: run 21, take 4 with 0.9.8 (2026-09-30)
+## Now: run 21, take 4 with 0.9.9 (2026-09-30)
+- **0.9.8 on the 3DS** (70 screenshots, trace): buildings blinking out; the flicker better for a minute,
+  then back by the den; the view's angle starts and stops it. The trace: textured tiles write no depth
+  in the flicker's frames (every probe), untextured ones do; the first tile's commands the same in good
+  and bad frames; the 60-frame turns muddied the counts.
+- **0.9.9** (D115): seven ways of drawing the ground in 600-frame turns (as drawn, untextured, bound
+  early, small coordinates, depth first, no mipmaps, depth test per tile), the best kept; buildings
+  held 15 m past the haze's reach. Sent to .51, trace.on kept.
+- **Next:** Noah plays the valley 6+ minutes (the den's door too). Pull trace.txt: "depth trial done:
+  holes by way ..." names the way that works; make it the build's own (trace or not) and retire the
+  trial.
+
+## Run 21, take 4 with 0.9.8 (2026-09-30)
 - **0.9.7 on the 3DS** (80 screenshots, trace): the Hollow's cave and ring floated; the flicker still
   there, even flying at ~3,000 triangles. The trace: the haze's three ways alike (25%, 18%, 18% of
   frames); the probes: the ground's tiles write no depth in the flicker's frames, the places after

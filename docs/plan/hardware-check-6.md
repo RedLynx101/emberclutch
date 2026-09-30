@@ -1,4 +1,23 @@
-# Run 21, take 4 (0.9.8)
+# Run 21, take 4 (0.9.9)
+
+**0.9.9, the ground's texture.** Your 0.9.8 session narrowed it to one thing: in every checked frame
+where the ground was drawn with its painted texture, not one tile wrote depth, from the very first.
+In the checked frames drawn without the texture, every tile wrote it normally. The commands sent
+to the graphics chip were exactly the same in a flicker frame as in a good one, so the chip itself
+drops the depth when it textures the ground under some conditions. The turns were too short to
+trust the counts (the fault seems to carry over a second or so into the next way), and it varies
+with where you look, as you noticed. This build takes longer turns, about 13 seconds each, between
+seven ways of drawing the ground:
+- as now;
+- without the texture (plainer ground);
+- with the texture set up earlier in the frame;
+- with smaller texture coordinates;
+- with a depth-only pass first;
+- without the texture's smaller copies for the distance (mipmaps: a little grainier far off);
+- with the depth setting sent before each tile.
+After about five minutes it keeps whichever works best, preferring a textured way if one works
+nearly as well as plain. **Buildings** also stay drawn a little past the haze's distance once
+they're in, so they don't blink out as it moves.
 
 **0.9.8, the flicker cornered.** Your 0.9.7 session's checks found the culprit part: in the flicker's
 frames the ground's own tiles draw their colour but write no depth at all. The depth was still
@@ -101,6 +120,10 @@ in FBI, SD → cias → `emberclutch.cia` → Install CIA; your save carries ove
 13. (0.9.8) The flicker: stand by the den's door a minute, then play the valley as usual for five
     minutes or more (flying too). After the first few minutes, does the ground still flicker?
 14. (0.9.8) Frostspire Hollow: the cave door and the frost ring sit on the floor.
+15. (0.9.9) The flicker: play the valley for six minutes or more, some of it by the den's door and
+    in the places it flickered before. After that, does the ground still flicker? (The ground may look
+    plainer or a little grainier in some stretches: those are the ways under test.)
+16. (0.9.9) Buildings no longer blink out of view as you move about.
 
 ## 1. The flicker, and your haze
 Your screenshots showed it: in some frames every see-through shape vanished at once on **both**

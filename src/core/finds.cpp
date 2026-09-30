@@ -43,6 +43,98 @@ constexpr FindSpot kSpots[kFindSpots] = {
 
 const FindSpot& findSpot(int i) { return kSpots[i >= 0 && i < kFindSpots ? i : 0]; }
 
+bool takeLetter(SaveData& s) {
+    if (s.world.flags & kFlagLoveLetter) return false;
+    s.world.flags |= kFlagLoveLetter;
+    s.gleam += kLetterGleam;
+    return true;
+}
+
+namespace {
+
+// A box on the picnic (its middle at `c`, half sizes, turned `yaw`), its faces shaded a little
+// (the static program has no light: the top brightest, the sides darker).
+void picnicBox(ValleyMesh& m, Vec3 c, Vec3 half, float yaw, const u8 rgb[3]) {
+    const float cs = std::cos(yaw), sn = std::sin(yaw);
+    auto at = [&](float x, float y, float z) {
+        return Vec3{c.x + x * cs - y * sn, c.y + x * sn + y * cs, c.z + z};
+    };
+    const float sx = half.x, sy = half.y, sz = half.z;
+    const Vec3 p[8] = {at(-sx, -sy, -sz), at(sx, -sy, -sz), at(sx, sy, -sz), at(-sx, sy, -sz),
+                       at(-sx, -sy, sz),  at(sx, -sy, sz),  at(sx, sy, sz),  at(-sx, sy, sz)};
+    struct Face { int a, b, c, d; float shade; };
+    const Face faces[5] = {{4, 5, 6, 7, 1.0f}, {0, 1, 5, 4, 0.78f}, {1, 2, 6, 5, 0.86f}, {2, 3, 7, 6, 0.7f}, {3, 0, 4, 7, 0.82f}};
+    for (const Face& f : faces) {
+        const u8 r = static_cast<u8>(rgb[0] * f.shade), g = static_cast<u8>(rgb[1] * f.shade), b = static_cast<u8>(rgb[2] * f.shade);
+        const u16 base = static_cast<u16>(m.pos.size());
+        for (int k : {f.a, f.b, f.c, f.d}) {
+            m.pos.push_back(p[k]);
+            m.color.insert(m.color.end(), {r, g, b, 255});
+        }
+        m.idx.insert(m.idx.end(), {base, static_cast<u16>(base + 1), static_cast<u16>(base + 2), base, static_cast<u16>(base + 2),
+                                   static_cast<u16>(base + 3)});
+    }
+}
+
+// A flat quad on the picnic (corners given counter-clockwise from above).
+void picnicQuad(ValleyMesh& m, Vec3 a, Vec3 b, Vec3 c, Vec3 d, const u8 rgb[3]) {
+    const u16 base = static_cast<u16>(m.pos.size());
+    for (const Vec3& p : {a, b, c, d}) {
+        m.pos.push_back(p);
+        m.color.insert(m.color.end(), {rgb[0], rgb[1], rgb[2], 255});
+    }
+    m.idx.insert(m.idx.end(), {base, static_cast<u16>(base + 1), static_cast<u16>(base + 2), base, static_cast<u16>(base + 2),
+                               static_cast<u16>(base + 3)});
+}
+
+}  // namespace
+
+void buildPicnic(const Valley& v, bool letter, ValleyMesh& out) {
+    out.clear();
+    constexpr float kYaw = 0.35f;  // (turned a little to the view down the valley)
+    const float cs = std::cos(kYaw), sn = std::sin(kYaw);
+    const float z0 = v.heightAt(kPicnicAt.x, kPicnicAt.y) + 0.03f;
+    auto at = [&](float x, float y, float z) {
+        return Vec3{kPicnicAt.x + x * cs - y * sn, kPicnicAt.y + x * sn + y * cs, z0 + z};
+    };
+    // The blanket: red and cream checks, 2.2 x 1.6 m, each square on the ground where it lies.
+    constexpr int kCols = 6, kRows = 4;
+    constexpr float kW = 2.2f, kH = 1.6f;
+    const u8 red[3] = {206, 64, 72}, cream[3] = {246, 236, 214};
+    for (int cx = 0; cx < kCols; ++cx)
+        for (int cy = 0; cy < kRows; ++cy) {
+            const float x0 = -kW / 2 + kW * cx / kCols, x1 = -kW / 2 + kW * (cx + 1) / kCols;
+            const float y0 = -kH / 2 + kH * cy / kRows, y1 = -kH / 2 + kH * (cy + 1) / kRows;
+            auto ground = [&](float x, float y) {
+                const Vec3 p = at(x, y, 0);
+                return Vec3{p.x, p.y, v.heightAt(p.x, p.y) + 0.03f};
+            };
+            picnicQuad(out, ground(x0, y0), ground(x1, y0), ground(x1, y1), ground(x0, y1), (cx + cy) % 2 ? red : cream);
+        }
+    // The basket at the back corner: wicker, its lid, and a handle arched over it.
+    const u8 wicker[3] = {178, 126, 72}, lid[3] = {150, 100, 58}, white[3] = {250, 248, 242}, pink[3] = {242, 176, 190};
+    const Vec3 basket = at(0.62f, 0.38f, 0.15f);
+    picnicBox(out, basket, {0.28f, 0.19f, 0.14f}, kYaw, wicker);
+    picnicBox(out, basket + Vec3{0, 0, 0.155f}, {0.3f, 0.21f, 0.02f}, kYaw, lid);
+    for (int k = 0; k < 5; ++k) {  // the handle: five little pieces round an arch
+        const float a0 = 3.14159f * k / 5.0f, a1 = 3.14159f * (k + 1) / 5.0f, am = (a0 + a1) * 0.5f;
+        const Vec3 c = basket + Vec3{0, 0, 0.17f} + Vec3{-std::cos(am) * 0.22f * cs, -std::cos(am) * 0.22f * sn, std::sin(am) * 0.2f};
+        picnicBox(out, c, {0.03f, 0.03f, 0.03f}, kYaw, lid);
+    }
+    // Two cups, and a little pink cake on a plate.
+    picnicBox(out, at(-0.35f, 0.3f, 0.05f), {0.045f, 0.045f, 0.05f}, kYaw, white);
+    picnicBox(out, at(-0.1f, 0.42f, 0.05f), {0.045f, 0.045f, 0.05f}, kYaw, white);
+    picnicBox(out, at(-0.55f, -0.2f, 0.012f), {0.14f, 0.14f, 0.012f}, kYaw, white);
+    picnicBox(out, at(-0.55f, -0.2f, 0.06f), {0.08f, 0.08f, 0.045f}, kYaw, pink);
+    // The letter, on the blanket's front: a folded card sealed with a red heart.
+    if (letter) {
+        const Vec3 c = at(0.15f, -0.35f, 0.012f);
+        picnicBox(out, c, {0.15f, 0.1f, 0.008f}, kYaw + 0.2f, white);
+        const u8 seal[3] = {214, 40, 64};
+        picnicBox(out, c + Vec3{0, 0, 0.01f}, {0.04f, 0.04f, 0.004f}, kYaw + 0.2f + 0.785f, seal);  // (its seal)
+    }
+}
+
 Vec3 findAt(const Valley& v, int i) {
     const FindSpot& f = findSpot(i);
     if (f.island >= 0 && f.island < static_cast<int>(v.islands.size())) {

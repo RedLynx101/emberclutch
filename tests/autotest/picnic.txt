@@ -1,0 +1,30 @@
+# The picnic on the Nesting Stone's hill (D133): the blanket, the basket and the letter; walked up to,
+# the letter opens on the bottom screen (and its Gleam), A folds it away and the picnic stays.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+tips seen
+valley
+hour 11
+wait 3
+goto 613 544 608 550
+wait 3
+shot n1-picnic
+goto 608.6 549.2
+wait 1.5
+shot n2-letter
+key A
+wait 1
+shot n3-folded
+quit

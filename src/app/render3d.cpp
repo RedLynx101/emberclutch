@@ -25,6 +25,7 @@
 #include "core/dragon_mesh.hpp"
 #include "core/kinds.hpp"
 #include "core/egg.hpp"
+#include "core/finds.hpp"  // the picnic on the Stone's hill (D133)
 #include "core/shell_burst.hpp"
 #include "core/prop_mesh.hpp"
 #include "core/rig.hpp"
@@ -2666,7 +2667,8 @@ int tileLod(const Valley& v, int tx, int ty, float d) {
     last = static_cast<u8>(want);
     return want;
 }
-ValleyGpu g_vextras, g_vwater, g_vhorizon, g_vskirt;
+ValleyGpu g_vextras, g_vwater, g_vhorizon, g_vskirt, g_vpicnic;
+int g_vpicnicLetter = -1;  // (built with the letter on it, or not)
 std::vector<u8> g_horizonBase;  // the ring's own colours (hazed toward the fog each frame)
 u8* g_horizonHaze[2] = {};
 int g_horizonFlip = 0;
@@ -3673,6 +3675,8 @@ void releaseValley() {
     g_vwater.release();
     g_vhorizon.release();
     g_vskirt.release();
+    g_vpicnic.release();
+    g_vpicnicLetter = -1;
     for (u8*& c : g_horizonHaze) {
         retire(c);
         c = nullptr;
@@ -3936,6 +3940,20 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     // The places, near enough to have been built.
     drawPlaces(app, v, view, viewM, clip, blend, false);
     bindValleyStatic(projection, viewM, view.tint);
+    // The picnic on the Stone's hill (D133): a blanket, a basket, and the letter till it's read.
+    if (view.picnic) {
+        if (!g_vpicnic.count || g_vpicnicLetter != (view.letter ? 1 : 0)) {
+            ValleyMesh m;
+            buildPicnic(v, view.letter, m);
+            g_vpicnic.release();  // (retired: the GPU may still be drawing last frame's)
+            uploadValley(g_vpicnic, m);
+            g_vpicnicLetter = view.letter ? 1 : 0;
+        }
+        C3D_CullFace(GPU_CULL_NONE);
+        drawValleyGpu(app, g_vpicnic, false);
+        C3D_CullFace(GPU_CULL_BACK_CCW);
+        if (autotest::shooting()) autotest::log("picnic: %d triangles drawn (letter %d)", g_vpicnic.count / 3, view.letter ? 1 : 0);
+    }
     // The islands (built once), both faces drawn.
     static std::vector<u32> islandParts;  // where each island's indices start
     if (!g_vextras.count) {

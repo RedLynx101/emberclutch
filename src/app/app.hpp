@@ -242,7 +242,7 @@ struct App {
     // Debug
     bool overlay = EC_DEV;
     int autoTravel = -1;  // autotest: the valley's place to go to next (-1: none)
-    float autoGoto[3] = {0, 0, 0};  // autotest: somewhere in the valley to stand (x, y; [2] set)
+    float autoGoto[6] = {0, 0, 0, 0, 0, 0};  // autotest: somewhere in the valley to stand (x, y; [2] set; [3] [4] a point to face, [5] set)
     float autoView[7] = {-1};  // autotest: a free-camera view (place, eye x y z, target x y z; -1: none)
     // Dev (WP11d): leave out one part of the drawing (1 the room and its things, 2 the den's
     // dragons and eggs, 3 the close-up, 4 particles) to see its share of the GPU's time on the

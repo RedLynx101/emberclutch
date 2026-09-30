@@ -31,6 +31,7 @@ enum WorldFlag : u32 {
     kFlagMetSanctuary = 1u << 10,  // the Sanctuary's keeper
     kFlagMetSteward = 1u << 11,    // the arena's steward
     kFlagStarEgg = 1u << 12,       // the star-born egg given
+    kFlagLoveLetter = 1u << 13,    // the letter left at the picnic on the Stone's hill, read (D133)
 };
 
 enum class Challenge : u8 { FruitCatch, SkyRings, LanternTrial, Count };

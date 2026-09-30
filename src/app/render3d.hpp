@@ -250,6 +250,7 @@ struct ValleyView {
     Vec3 skyAt;
     float skyHeading = 0;
     Vec3 glints[8];                      // the finds not yet taken, near enough to glint (WP7)
+    bool picnic = false, letter = false;  // the picnic on the Stone's hill near enough to draw; its letter still there (D133)
     int glintCount = 0;
     PersonView people[kMaxPeopleShown];  // you first, then the villagers
     int peopleCount = 0;

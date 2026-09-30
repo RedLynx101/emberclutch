@@ -9,6 +9,7 @@
 #include "core/place_layout.hpp"
 #include "core/valley.hpp"
 #include "core/walker.hpp"
+#include "core/finds.hpp"
 
 using namespace ec;
 
@@ -319,6 +320,24 @@ TEST(the_cold_heights_glide) {
     CHECK(vault.at.z - lowest > 30.0f);
 }
 
+// The picnic on the Stone's hill (D133): on open, gentle ground above the water, its blanket and
+// basket within a couple of metres of the spot, the letter read once for its Gleam.
+TEST(the_picnic_and_its_letter) {
+    const Valley& v = valley();
+    CHECK(v.heightAt(kPicnicAt.x, kPicnicAt.y) > v.water + 1.0f);
+    CHECK(v.normalAt(kPicnicAt.x, kPicnicAt.y).z > 0.95f);
+    ValleyMesh with, without;
+    buildPicnic(v, true, with);
+    buildPicnic(v, false, without);
+    CHECK(with.triangles() > without.triangles() && without.triangles() > 40);
+    for (const Vec3& p : with.pos) CHECK(std::hypot(p.x - kPicnicAt.x, p.y - kPicnicAt.y) < 2.0f && p.z > v.water);
+    std::printf("  picnic: %d triangles (%d with the letter)\n", without.triangles(), with.triangles());
+    SaveData s;
+    const u32 before = s.gleam;
+    CHECK(takeLetter(s) && s.gleam == before + kLetterGleam && (s.world.flags & kFlagLoveLetter));
+    CHECK(!takeLetter(s) && s.gleam == before + kLetterGleam);
+}
+
 // Flying through a treetop (D122): inside a tree's crown it's that tree; over it, beside it or
 // under its leaves (by the trunk), none.
 TEST(a_treetop_has_a_crown) {
@@ -610,6 +629,7 @@ void runValleyTests() {
     RUN(a_treetop_has_a_crown);
     RUN(flight_follows_wing_and_stamina);
     RUN(the_cold_heights_glide);
+    RUN(the_picnic_and_its_letter);
     RUN(the_den_floor_stays_over_the_ground);
     RUN(the_hollow_floor_meets_its_place);
 }

@@ -137,6 +137,7 @@ struct ValleyScene {
     bool hopWater = false;  // the hop down lands in deep water: a jump, and a splash (D121)
     int crown = -1;          // the treetop you're flying through (D122), and a moment's quiet after one
     Vec3 leftGround{0, 0, -1e9f};  // where the flight last left the ground (the cold heights' glide, D132)
+    bool letterOpen = false;       // the picnic's letter, open on the bottom screen (D133)
     float crownQuiet = 0;
     bool hopOn = true;
     Vec3 hopFrom, hopTo;
@@ -458,6 +459,14 @@ void lookRound(App& app, ValleyScene& s) {
             showToast(app, app.toastText);  // (the toast keeps its text's pointer)
         }
         if (r.accessory >= 0) queueToastf(app, str::kShowPrize, accessoryInfo(r.accessory).name);  // (after the find's own)
+        saveNow(app);
+    }
+    // The letter at the picnic (D133): walked up to, it's read.
+    if (s.mode == Mode::OnFoot && !(app.game.world.flags & kFlagLoveLetter) &&
+        std::hypot(s.you.pos.x - kPicnicAt.x, s.you.pos.y - kPicnicAt.y) < kLetterReach && takeLetter(app.game)) {
+        s.letterOpen = true;
+        audio::playStinger("place-found");
+        audio::playSfx(audio::Sfx::FindSparkle);
         saveNow(app);
     }
     // The map's fog lifts round you (further seen from the air).
@@ -928,6 +937,13 @@ void update(App& app, const Input& in) {
         }
     }
     if (!s.loaded) return;
+    if (s.letterOpen) {  // (reading the letter: the world waits)
+        if (in.down & (KEY_A | KEY_B)) {
+            s.letterOpen = false;
+            audio::playSfx(audio::Sfx::QuestPage);
+        }
+        return;
+    }
     for (int k = 0; k < kVillagers && s.folk[0].anim.clip < 0 && r3d::personAnims(); ++k) {
         const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(villagerInfo(static_cast<Villager>(k)).place));
         s.folk[k].heading = (p ? p->heading : 0.0f) + villagerInfo(static_cast<Villager>(k)).facing;
@@ -953,6 +969,7 @@ void update(App& app, const Input& in) {
         app.autoGoto[2] = 0;
         s.mode = Mode::OnFoot;
         s.you.pos = {app.autoGoto[0], app.autoGoto[1], s.valley.heightAt(app.autoGoto[0], app.autoGoto[1])};
+        if (app.autoGoto[5] != 0) s.you.heading = std::atan2(app.autoGoto[3] - s.you.pos.x, -(app.autoGoto[4] - s.you.pos.y));
         s.you.speed = 0;
         if (s.partner >= 0) s.pal.call(s.you, s.valley);
         s.wcam = WalkCamera{};
@@ -1296,6 +1313,10 @@ void drawTop(App& app) {
     view.fog = sky.horizon;
     view.tint = sky.tint;
     view.lanternsLit = app.game.world.lanternsLit;
+    view.letter = !(app.game.world.flags & kFlagLoveLetter);  // (the picnic on the Stone's hill, D133)
+    view.picnic = std::hypot(kPicnicAt.x - hereAt(s).x, kPicnicAt.y - hereAt(s).y) < 140.0f;  // (the eye isn't set yet here)
+    if (view.letter && view.picnic && view.glintCount < r3d::kMaxGlints)  // (its letter glints till it's read)
+        view.glints[view.glintCount++] = {kPicnicAt.x, kPicnicAt.y, s.valley.heightAt(kPicnicAt.x, kPicnicAt.y) + 0.35f};
     for (int i = 0; i < kAllFinds && view.glintCount < r3d::kMaxGlints; ++i) {  // the finds not yet taken, near
         if (findDone(app.game, i)) continue;
         const Vec3 g = findAt(s.valley, app.game, i);
@@ -1544,8 +1565,33 @@ void travelTo(App& app, ValleyScene& s, int place, bool outward) {
     (void)app;
 }
 
+// The picnic's letter (D133), on the bottom screen: a card of cream paper, a red heart for its seal.
+void drawLetter(App& app, const Input& in) {
+    ValleyScene& s = vs();
+    verticalGradient(0, 0, kBotW, kScreenH, theme::kDusk, theme::kDenPlum);
+    textCentered(app, str::kLetterTitle, 160, 16, 0.5f, withAlpha(theme::kShell, 0.8f), 300);
+    panel({26, 32, 268, 146}, withAlpha(theme::rgba(40, 24, 40), 0.35f));  // (its shadow)
+    panel({22, 28, 268, 146}, theme::rgba(250, 243, 226));
+    heart(156, 44, 14.0f, theme::rgba(214, 40, 64));
+    const u32 ink = theme::rgba(86, 52, 70);
+    text(app, str::kLetterTo, 40, 62, 0.62f, ink, C2D_AlignLeft);
+    textCentered(app, str::kLetterBody, 156, 110, 0.58f, ink, 240);
+    text(app, str::kLetterFrom, 272, 138, 0.62f, ink, C2D_AlignRight);
+    char gleam[64];
+    std::snprintf(gleam, sizeof(gleam), str::kLetterGleamLine, static_cast<unsigned>(kLetterGleam));
+    textCentered(app, gleam, 160, 188, 0.42f, theme::kClutchGold, 300);
+    if (button(app, {100, 200, 120, 32}, str::kLetterClose, in)) {
+        s.letterOpen = false;
+        audio::playSfx(audio::Sfx::QuestPage);
+    }
+}
+
 void drawBottom(App& app, const Input& touch) {
     ValleyScene& s = vs();
+    if (s.letterOpen) {
+        drawLetter(app, touch);
+        return;
+    }
     static const Input kNothing{};
     const Input& in = talking(app) ? kNothing : touch;  // someone talking: the map and buttons wait
     if (const int f = vext::activeFeature(app); f >= 0 && s.loaded && vext::feature(f).drawBottom) {

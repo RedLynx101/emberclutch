@@ -18,6 +18,17 @@ constexpr int kDailyFinds = 10;  // the day's little finds (world.finds' bits 22
 constexpr int kAllFinds = kFindSpots + kDailyFinds;
 constexpr int kFogCells = 32;  // a side (world.explored holds a bit each)
 
+// The picnic on the Nesting Stone's hill (1.0, D133): a blanket and a basket from a date there, a
+// letter left on it, and Gleam in the basket. Read once (kFlagLoveLetter).
+constexpr Vec2 kPicnicAt{608, 550};
+constexpr u16 kLetterGleam = 250;
+constexpr float kLetterReach = 2.4f;  // how near you come to pick it up
+// Picks the letter up: the flag, and the Gleam; false if it was read already.
+bool takeLetter(SaveData& s);
+// The picnic's triangles, in the valley's space (the blanket on the ground, the basket, two cups,
+// a little cake; the letter on the blanket unless it's been taken).
+void buildPicnic(const Valley& v, bool letter, ValleyMesh& out);
+
 struct FindSpot {
     Vec2 at;
     s8 island = -1;   // on this floating island's top (Valley::islands), else on the ground

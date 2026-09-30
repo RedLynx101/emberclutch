@@ -128,7 +128,11 @@ bool parse(const char* line, Cmd& c) {
     else if (w == "creator") { c.op = Op::Creator; }
     else if (w == "wander") { c.op = Op::Wander; nums(1); }
     else if (w == "festival") { c.op = Op::Festival; }
-    else if (w == "goto") { c.op = Op::Goto; nums(2); }
+    else if (w == "goto") {  // (x y, and optionally a point to face: fx fy)
+        c.op = Op::Goto;
+        nums(4);
+        c.a[4] = std::strchr(rest, ' ') && std::strchr(std::strchr(rest, ' ') + 1, ' ') ? 1.0f : 0.0f;
+    }
     else if (w == "challenge") { c.op = Op::Challenge; nums(2); }
     else if (w == "autoplay") { c.op = Op::Autoplay; c.a[0] = std::strcmp(rest, "on") == 0; }
     else if (w == "cups") { c.op = Op::Cups; nums(3); }
@@ -280,6 +284,9 @@ Input next(App& app) {
                 app.autoGoto[0] = c.a[0];
                 app.autoGoto[1] = c.a[1];
                 app.autoGoto[2] = 1;
+                app.autoGoto[3] = c.a[2];
+                app.autoGoto[4] = c.a[3];
+                app.autoGoto[5] = c.a[4];
                 done = true;
                 break;
             case Op::Festival:  // the Lantern Festival's eve: every other quest done, every lantern but the arena's lit

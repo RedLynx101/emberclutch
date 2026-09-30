@@ -1,0 +1,26 @@
+# The valley at the den's door over time (D117: the draw path back to 0.9.9's; the view checked
+# as the places stream in): shots at 4, 8 and 14 seconds, the overlay on.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+tips seen
+valley
+hour 11
+wait 4
+shot v4
+wait 4
+shot v8
+wait 6
+shot v14
+quit

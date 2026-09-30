@@ -44,16 +44,14 @@ void watchAfterFrameBegin();
 // 5-second lines and the first ones logged.
 void watchDepth(C3D_RenderTarget_tag* top, int valleyScene);
 
-// The fix (D116): the depth test's state sent again before every 3D draw (D115's trial: way 6 took
-// the ground's holes from 74% of frames to about 1%). depthMode() is 1 for it, 0 for the old way.
-// With the trace off, always 1. With it on, the tracer's window comes first: the old way for up to
-// 2,000 valley frames or 10 probes, so the fault shows and the probes read the GPU's own registers
-// (after each part, and the depth registers after each tile); then 1. Read once per valley frame.
+// The fix (D116, D117): the depth test's state sent again before each of the valley's ground tiles
+// (D115's trial: the ground's holes from 74% of frames to about 1%). depthMode() is 1 for it, 0 for
+// the old way (held by scripts alone: 0.9.10's window of the old way and its reads of the GPU's
+// registers hung the 3DS). Read once per valley frame.
 int depthMode();
 void holdFix(int fix);  // (scripted runs: that fix held whatever the trace; -1 lets go)
 // The commands sent for the ground's first tile (between begin and end), kept for the frame and
-// logged for the first holes and a whole frame; and, in a probed frame, the depth after each tile
-// with the GPU's depth test (0x107) and depth write (0x115) registers as it holds them.
+// logged for the first holes and a whole frame; and, in a probed frame, the depth after each tile.
 void commands(bool begin);
 void tileProbe(int i, int tx, int ty, int lod, int count);
 // What the valley frame being drawn did, logged with its hole if it has one: its haze table made
@@ -61,8 +59,7 @@ void tileProbe(int i, int tx, int ty, int lod, int count);
 void frameFacts(bool lutRebuilt, int built);
 void frameNote(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 // A GPU checkpoint (gpu() in a view's first frames) and, in a frame probed after a hole, the top
-// screen's depth read back after that part (the GPU made to finish it first), and the GPU's own
-// registers: the fragment operations, the framebuffer's, early depth, the depth map, the textures.
+// screen's depth read back after that part (the GPU made to finish it first).
 void checkpoint(const char* part);
 
 }  // namespace ec::trace

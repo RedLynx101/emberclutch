@@ -1,6 +1,6 @@
 # D116's flicker fix held each way at the den's door (0 the old way, 1 the depth test's state sent
-# again before every 3D draw): both draw the valley alike. Then the fix let go, long enough for the
-# tracer's reference probe (valley frame 200) to read the GPU's registers when trace.on is there.
+# again before each ground tile, D117): both draw the valley alike. Then the fix let go, long enough
+# for the tracer's reference probe (valley frame 200) when trace.on is there.
 overlay off
 wait 2.5
 name Noah

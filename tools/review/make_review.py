@@ -235,6 +235,43 @@ def dragons() -> list[dict]:
     return out
 
 
+# The people before 1.0 (Noah: "2 more 3d models that could replace the general human design in-game ...
+# two sets of two (boy and girl) ... One should be more like animal crossing, the other is up to you"):
+# tools/people/candidates.py, rendered by `blender -b -P tools/blender/people_model.py -- --candidates
+# --out <abs>/build/people_cand --sheets candidates --res 400`. Collection `people`: one document,
+# `choice` ({pick: "vil"|"story"|"now", note}).
+PEOPLE_SHOTS = ROOT / "build" / "people_cand"
+PEOPLE_SETS = [
+    {"key": "vil", "title": "Set 1: Villager",
+     "blurb": "The Animal Crossing way: a big round head, about half their height, on a small body; dot eyes with a glint, "
+              "rosy cheeks, chunky hair. A striped tee and shorts; a collared dress with a bow, and twin tails. About 1.2 m "
+              "tall. Their arms are short, so the wave and cheer clips would need their arms raised higher to show."},
+    {"key": "story", "title": "Set 2: Storybook",
+     "blurb": "My pick: taller, about three heads, with big irised eyes, brows (and her lashes), and a dragon keeper's "
+              "clothes. His tunic, hooded capelet with a brass clasp, satchel and boots; her long braid, pinafore over a "
+              "puff-sleeved blouse, and an egg carried in a pouch at her hip. About 1.35 m tall."},
+]
+
+
+def people_cands() -> dict:
+    if not (PEOPLE_SHOTS / "cand_lineup.png").exists():
+        return {}
+    (OUT / "people").mkdir(parents=True, exist_ok=True)
+
+    def jpg(name):
+        src = PEOPLE_SHOTS / f"cand_{name}.png"
+        dst = OUT / "people" / f"{name}.jpg"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-q:v", "3", str(dst)], check=True)
+        return f"people/{dst.name}"
+
+    sets = []
+    for st in PEOPLE_SETS:
+        k = st["key"]
+        sets.append({**st, "turn": jpg(f"{k}_turn"), "faces": jpg(f"{k}_faces"),
+                     "moves": [jpg(f"{k}_boy_moves"), jpg(f"{k}_girl_moves")]})
+    return {"lineup": jpg("lineup"), "ride": jpg("ride"), "sets": sets}
+
+
 def fragments() -> str:
     d = ROOT / "docs" / "review"
     return "\n".join(p.read_text(encoding="utf-8") for p in sorted(d.glob("*.html"))) if d.exists() else ""
@@ -244,7 +281,8 @@ def main() -> None:
     shutil.rmtree(OUT, ignore_errors=True)
     OUT.mkdir(parents=True, exist_ok=True)  # (a shell may be sitting in it)
     data = {"sounds": sounds() + made_sounds() if SHOW_SOUNDS else [], "music": music() if SHOW_SOUNDS else [],
-            "run": run_list() if RUN_READY else {}, "dragons": dragons() if DRAGONS else []}
+            "run": run_list() if RUN_READY else {}, "dragons": dragons() if DRAGONS else [],
+            "people": people_cands()}
     page = (Path(__file__).with_name("review_template.html").read_text(encoding="utf-8")
             .replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
             .replace("/*TITLE*/", PAGE_TITLE)

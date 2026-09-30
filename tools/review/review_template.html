@@ -112,6 +112,12 @@
   .dragon figcaption { font-size: 12px; color: var(--muted); text-align: center; margin-top: 2px; }
   .dragon .mark button[aria-pressed="true"][data-v="pass"] { background: var(--pass); border-color: var(--pass); color: var(--panel); }
   .dragon .mark button[aria-pressed="true"][data-v="fail"] { background: var(--fail); border-color: var(--fail); color: var(--panel); }
+  .people-fig { margin: 0; display: grid; gap: 4px; }
+  .people-fig img { width: 100%; height: auto; display: block; border-radius: 8px; }
+  .people-fig figcaption { font-size: 12.5px; color: var(--muted); }
+  .people-set { display: grid; gap: 10px; }
+  .pick { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pick button[aria-pressed="true"] { background: var(--pass); border-color: var(--pass); color: var(--panel); }
   .run-progress { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
   @media (max-width: 520px) { .take { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
@@ -131,6 +137,7 @@
     <a href="#sounds">Sounds</a>
     <a href="#music">Music</a>
     <a href="#dragons" hidden>Dragons</a>
+    <a href="#people" hidden>People</a>
     <span class="tally" id="tally"></span>
   </nav>
 
@@ -190,16 +197,27 @@
     </div>
     <div id="dragon-list" class="grid-2"></div>
   </section>
+
+  <section id="people" hidden>
+    <div class="section-head">
+      <div class="kicker">Before 1.0</div>
+      <h2>The people</h2>
+      <p class="muted">Two candidate looks for you and the other people, a boy and a girl each. Both are built in the game's own
+        people kit: the same skeleton and animations as today's players, each under the 600-triangle budget, so either can go in
+        as it is. The colours are examples: the character creator still sets skin, hair and outfit.</p>
+    </div>
+    <div id="people-body" class="people-set"></div>
+  </section>
 </div>
 
 <script>
 const DATA = /*DATA*/null;
 let db = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const state = { sounds: {}, music: {}, run: {}, labs: {}, dragons: {} };
+const state = { sounds: {}, music: {}, run: {}, labs: {}, dragons: {}, people: {} };
 const LS = "emberclutch-review-run21d";  // (each round its own: run 21 take 4)
 try { Object.assign(state, JSON.parse(localStorage.getItem(LS) || "{}")); } catch (_) {}
-state.run ||= {}; state.labs ||= {}; state.dragons ||= {};
+state.run ||= {}; state.labs ||= {}; state.dragons ||= {}; state.people ||= {};
 function keepLocal() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (_) {} }
 
 function copyButton(text) {
@@ -382,6 +400,50 @@ function dragonCard(k) {
   return el;
 }
 
+function fig(src, cap) {
+  const f = document.createElement("figure");
+  f.className = "people-fig";
+  f.innerHTML = `<img src="${esc(src)}" alt="${esc(cap)}" loading="lazy"><figcaption>${esc(cap)}</figcaption>`;
+  return f;
+}
+
+function peopleSection(P) {
+  const body = document.getElementById("people-body");
+  body.replaceChildren();
+  body.append(fig(P.lineup, "Side by side: today's two, then Set 1 (Villager), then Set 2 (Storybook)"));
+  for (const st of P.sets) {
+    const card = document.createElement("article");
+    card.className = "card people-set";
+    card.innerHTML = `<div class="card-head"><h3>${esc(st.title)}</h3></div><p class="muted">${esc(st.blurb)}</p>`;
+    card.append(fig(st.turn, "Front, three-quarter, side and back"), fig(st.faces, "Their faces"),
+                fig(st.moves[0], "His walk and wave"), fig(st.moves[1], "Her walk and wave"));
+    body.append(card);
+  }
+  body.append(fig(P.ride, "Riding (on a stand-in for a grown dragon's back): Set 1 above, Set 2 below"));
+  const st = (state.people.choice ||= { pick: "", note: "" });
+  const card = document.createElement("article");
+  card.className = "card";
+  card.innerHTML = `<div class="card-head"><h3>Your pick</h3></div>
+    <div class="pick" role="group" aria-label="Which people">
+      <button type="button" data-v="vil">Set 1: Villager</button><button type="button" data-v="story">Set 2: Storybook</button>
+      <button type="button" data-v="now">Keep today's</button></div>
+    <label class="muted" for="people-note" style="font-size:13px;font-weight:700">Comments (mix and match, colours, clothes)</label>
+    <textarea id="people-note" placeholder="What to keep, what to change"></textarea>
+    <div class="saved" aria-live="polite"></div>`;
+  card.querySelectorAll(".pick button").forEach((b) => {
+    b.setAttribute("aria-pressed", String(st.pick === b.dataset.v));
+    b.addEventListener("click", () => {
+      st.pick = st.pick === b.dataset.v ? "" : b.dataset.v;
+      card.querySelectorAll(".pick button").forEach((x) => x.setAttribute("aria-pressed", String(st.pick === x.dataset.v)));
+      save("people", "choice", card);
+    });
+  });
+  const ta = card.querySelector("textarea");
+  ta.value = st.note || "";
+  ta.addEventListener("change", () => { st.note = ta.value; save("people", "choice", card); });
+  body.append(card);
+}
+
 function tally() {
   let takes = 0, marked = 0;
   for (const s of DATA.sounds) { takes += s.files.length; const t = (state.sounds[s.slug] || {}).takes || {};
@@ -419,6 +481,11 @@ function render() {
     document.querySelectorAll('nav a[href="#dragons"]').forEach((a) => (a.hidden = false));
     document.getElementById("dragon-list").replaceChildren(...DATA.dragons.map(dragonCard));
   }
+  if (DATA.people && DATA.people.sets) {
+    document.getElementById("people").hidden = false;
+    document.querySelectorAll('nav a[href="#people"]').forEach((a) => (a.hidden = false));
+    peopleSection(DATA.people);
+  }
   tally();
 }
 render();
@@ -431,7 +498,7 @@ render();
     const runSecs = (DATA.run.sections || []).map((x) => ({ slug: x.id }));
     const labs = (DATA.run.labs || []).map((x) => ({ slug: x }));
     for (const [kind, list] of [["sounds2", DATA.sounds], ["music", DATA.music], [DATA.run.key || "run", runSecs], ["labs", labs],
-                                ["dragons", DATA.dragons || []]]) {
+                                ["dragons", DATA.dragons || []], ["people", DATA.people && DATA.people.sets ? [{ slug: "choice" }] : []]]) {
       for (const it of list) {
         const snap = await db.doc(`${kind}/${it.slug}`).get();
         const into = kind === "sounds2" ? "sounds" : kind === DATA.run.key ? "run" : kind;

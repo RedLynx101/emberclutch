@@ -20,9 +20,17 @@
 - **The review page:** 0.9.13's steps 25-42 in section 0, and **the dragons**: every kind as a
   hatchling and grown (`tests/autotest/dragons_hatchling.txt`, `dragons_grown.txt`, the wardrobe's
   whole view), pass or fail with a note (collection `dragons`).
-- **Next:** Noah: steps 25-42 and the dragons' marks. If the Trailhead freezes, pull `watchdog.txt`
-  (a music spin or the GPU) with trace.txt. Then 1.0's dragon fixes from the fails; the human model
-  choice (two sets, boy and girl, for Noah); the questline flowchart for expanding the story.
+- **The people, two candidate sets** (`tools/people/candidates.py`, the same kit, skeleton and clips,
+  588-600 triangles each): Set 1 "Villager" (Animal Crossing-like: head about half the height, dot eyes;
+  its short arms would need the wave and cheer raised) and Set 2 "Storybook" (about three heads, irised
+  eyes, a keeper's capelet and satchel; a braid, pinafore and egg pouch). Renders:
+  `blender -b -P tools/blender/people_model.py -- --candidates --out <abs>/build/people_cand --sheets candidates --res 400`;
+  on the review page's People section (Noah's pick in collection `people`, doc `choice`).
+- **The story map** (questlines and side lines as a flowchart, open threads for expanding):
+  https://claude.ai/artifact/AxoiYqNWSykCUm2epuu2wj
+- **Next:** Noah: steps 25-42, the dragons' marks, the people pick. If the Trailhead freezes, pull
+  `watchdog.txt` (a music spin or the GPU) with trace.txt. Then 1.0's dragon fixes from the fails, and
+  the chosen people set into people.py (players first, then the villagers in its style).
 
 ## Run 21, take 4 with 0.9.12 (2026-09-30)
 - **0.9.11 on the 3DS** (trace, 20 screenshots): no hang in the valley; holes 11% of valley frames with

@@ -210,6 +210,7 @@ class Shown:
 
 
 MATERIAL = None
+CANDIDATES = None  # tools/people/candidates.py, with --candidates
 
 
 def make_object(name, m, palette):
@@ -293,6 +294,8 @@ def sheet(files, cols, out, labels=None):
 
 
 def palette_for(pid, look=(0, 0, 0)):
+    if CANDIDATES and pid in CANDIDATES.PALETTES:
+        return CANDIDATES.PALETTES[pid]
     if pid in people.PLAYERS:
         return looks.player_palette(*look)
     return looks.VILLAGERS[pid]
@@ -436,6 +439,87 @@ def sheet_looks(cam):
     sheet(files, 7, os.path.join(OUT, "looks.png"))
 
 
+def sheet_candidates(cam):
+    """The candidate looks (tools/people/candidates.py): each person front, three-quarter, side and
+    back; the faces; a line-up with today's players; a walk, a wave and the ride."""
+    C = CANDIDATES
+    for title, ids in C.SETS:
+        key = ids[0].split("_")[0]
+        files = []
+        for pid in ids:
+            sh = Shown(people.build(pid), palette_for(pid))
+            sh.pose(person_clips.by_name("idle"), 0.0)
+            for view in ("front", "three_quarter", "side", "back"):
+                frame(cam, (0, 0, 0.7), 1.62, view)
+                files.append(render(os.path.join(TILES, f"cand_{pid}_{view}.png")))
+            sh.remove()
+        sheet(files, 4, os.path.join(OUT, f"cand_{key}_turn.png"))
+        files = []
+        for pid in ids:
+            p = people.build(pid)
+            sh = Shown(p, palette_for(pid))
+            sh.pose(None)
+            span = (p.head.azt + p.head.azb) * 1.5
+            for view in ("front", "three_quarter"):
+                frame(cam, (0, p.head.c[1], p.head.c[2] - 0.02), span, view, lens=85)
+                files.append(render(os.path.join(TILES, f"cand_{pid}_face_{view}.png")))
+            sh.remove()
+        sheet(files, 4, os.path.join(OUT, f"cand_{key}_faces.png"))
+        for pid in ids:  # a walk and a wave, five frames each
+            p = people.build(pid)
+            sh = Shown(p, palette_for(pid))
+            files = []
+            for name, view in (("walk", "three_quarter"), ("wave", "front")):
+                c = person_clips.by_name(name)
+                n = c.frame_count()
+                picks = [round(k * n / 5) for k in range(5)] if c.loop else [round(k * (n - 1) / 4) for k in range(5)]
+                for k, f in enumerate(picks):
+                    sh.pose(c, f / FPS)
+                    frame(cam, (0, -c.sample_root(f / FPS)[0], 0.7), 1.62, view)
+                    files.append(render(os.path.join(TILES, f"cand_{pid}_{name}_{k}.png")))
+            sh.remove()
+            sheet(files, 5, os.path.join(OUT, f"cand_{pid}_moves.png"))
+    # the line-up: today's two, then each set, in a row (three-quarter from the front)
+    scene = bpy.context.scene
+    scene.render.resolution_x, scene.render.resolution_y = RES * 3, RES
+    floor = bpy.data.objects["floor"]
+    floor.scale = (4.4, 2.0, 1)
+    order = ["player_a", "player_b"] + [pid for _, ids in C.SETS for pid in ids]
+    shown = []
+    for k, pid in enumerate(order):
+        sh = Shown(people.build(pid), palette_for(pid), hair=0)
+        sh.offset = Vector(((k - (len(order) - 1) / 2) * 0.62, 0.0, 0.0))
+        sh.pose(person_clips.by_name("idle"), 0.0)
+        shown.append(sh)
+    d = Vector((-0.18, -1.0, 0.16)).normalized()
+    cam.data.lens = 70.0
+    fov_h = 2 * math.atan(18.0 / 70.0)
+    width = len(order) * 0.62 + 0.3
+    dist = (width * 0.5) / math.tan(fov_h / 2)
+    center = Vector((0.0, 0.0, 0.72))
+    cam.location = center + d * dist
+    cam.rotation_euler = (center - cam.location).to_track_quat("-Z", "Y").to_euler()
+    render(os.path.join(OUT, "cand_lineup.png"))
+    for sh in shown:
+        sh.remove()
+    floor.scale = (1.4, 1.4, 1)
+    scene.render.resolution_x = scene.render.resolution_y = RES
+    # riding: each on the stand-in back
+    back, seat = stand_in_back()
+    floor.hide_render = True
+    files = []
+    for pid in order[2:]:
+        sh = Shown(people.build(pid), palette_for(pid))
+        for name, t, view in (("ride", 0.0, "three_quarter"), ("ride", 0.0, "chase")):
+            sh.pose(person_clips.by_name(name), t, seat=seat)
+            frame(cam, (0.0, 0.0, 1.55), 1.4, view)
+            files.append(render(os.path.join(TILES, f"cand_{pid}_ride_{view}.png")))
+        sh.remove()
+    bpy.data.objects.remove(back, do_unlink=True)
+    floor.hide_render = False
+    sheet(files, 4, os.path.join(OUT, "cand_ride.png"))
+
+
 def portraits(cam, ids, out_dir):
     """64 x 64 transparent: head and shoulders, front three-quarter, smiling (the idle pose)."""
     scene = bpy.context.scene
@@ -488,12 +572,19 @@ def downsample(src, dst, k):
 
 
 def main():
+    global CANDIDATES
     os.makedirs(TILES, exist_ok=True)
+    if "--candidates" in argv:
+        import candidates
+        CANDIDATES = candidates
+        people.PEOPLE.update(candidates.PEOPLE)
     scene, cam = setup_scene()
     only = arg("--only")
     ids = only.split(",") if only else list(people.PLAYERS) + list(people.VILLAGER_IDS)
     ids = [i for i in ids if i in people.PEOPLE]
     sheets = arg("--sheets", "models,hair,clips,ride,looks,portraits").split(",")
+    if "candidates" in sheets:
+        sheet_candidates(cam)
     if "models" in sheets:
         sheet_models(cam, ids)
     if "faces" in sheets:

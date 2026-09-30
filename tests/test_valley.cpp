@@ -299,6 +299,26 @@ TEST(flight_follows_wing_and_stamina) {
     CHECK(1.0f / strong.burstCost > 8.5f && 1.0f / weak.burstCost < 4.0f);
 }
 
+// The cold heights' glide (D132): up by the Vault and down 25 m counts; too far from it, not high
+// enough, or not far enough down, no; and there's that far to glide down below it.
+TEST(the_cold_heights_glide) {
+    const Valley& v = valley();
+    const ValleyPlaceInfo& vault = *v.place(kPlaceVault);
+    const Vec3 up = vault.at + Vec3{20, 10, 0};
+    CHECK(glidedFromHeights(vault.at, 70, up, up + Vec3{60, 0, -30}));
+    CHECK(!glidedFromHeights(vault.at, 70, up, up + Vec3{60, 0, -10}));             // not far enough down
+    CHECK(!glidedFromHeights(vault.at, 70, up + Vec3{120, 0, 0}, up + Vec3{160, 0, -40}));  // not by the Vault
+    CHECK(!glidedFromHeights(vault.at, 70, up - Vec3{0, 0, 20}, up + Vec3{60, 0, -60}));   // below the heights
+    // Somewhere 25 m or more below the heights within an easy glide (the valley below the Vault).
+    float lowest = 1e9f;
+    for (int dx = -240; dx <= 240; dx += 8)
+        for (int dy = -240; dy <= 240; dy += 8)
+            if (v.inside(vault.at.x + dx, vault.at.y + dy))
+                lowest = std::fmin(lowest, std::fmax(v.water, v.heightAt(vault.at.x + dx, vault.at.y + dy)));
+    std::printf("  cold heights: the Vault at %.0f m, the valley below it down to %.0f m\n", vault.at.z, lowest);
+    CHECK(vault.at.z - lowest > 30.0f);
+}
+
 // Flying through a treetop (D122): inside a tree's crown it's that tree; over it, beside it or
 // under its leaves (by the trunk), none.
 TEST(a_treetop_has_a_crown) {
@@ -589,6 +609,7 @@ void runValleyTests() {
     RUN(you_swim_in_deep_water);
     RUN(a_treetop_has_a_crown);
     RUN(flight_follows_wing_and_stamina);
+    RUN(the_cold_heights_glide);
     RUN(the_den_floor_stays_over_the_ground);
     RUN(the_hollow_floor_meets_its_place);
 }

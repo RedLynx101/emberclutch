@@ -42,6 +42,11 @@ FlightTuning flightTuningFor(float wingLevel, float staminaLevel) {
     return t;
 }
 
+bool glidedFromHeights(Vec3 vault, float radius, Vec3 leftGroundAt, Vec3 downAt) {
+    const float fromVault = std::hypot(leftGroundAt.x - vault.x, leftGroundAt.y - vault.y);
+    return fromVault <= radius && leftGroundAt.z >= vault.z - 12.0f && leftGroundAt.z - downAt.z >= 25.0f;
+}
+
 void Flight::update(const FlightInput& in, const Valley& v, float dt, const FlightTuning& tune) {
     landed = tookOff = flapped = splashed = skimming = false;
     sinceFlap += dt;
@@ -78,7 +83,9 @@ void Flight::update(const FlightInput& in, const Valley& v, float dt, const Flig
                 pos = next;
                 pos.z = std::fmax(g, floatAt);  // floating, never below the bed
                 swimming = true;
-            } else if (!swimming && g < ground - tune.drop) {
+            } else if (!swimming && (g < ground - tune.drop ||
+                                     (g < ground - 0.25f && v.normalAt(next.x, next.y).z < tune.steepest - 0.1f))) {
+                // (over the edge, or down a slope too steep to walk: gliding, D132)
                 pos = next;  // over the edge: gliding down
                 grounded = false;
                 speed = std::fmax(speed, 6.0f);

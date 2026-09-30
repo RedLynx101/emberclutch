@@ -42,7 +42,7 @@ const Quest kQuests_[kQuests] = {
      {1, -1, -1}, 80},
     {"The cold heights",
      {{"Climb the path to the Cold Vault", Need::Place, kPlaceVault},
-      {"Glide down from the heights", Need::Flag, kFlagGlided},
+      {"Take off from the heights by the Vault and glide down to the valley", Need::Flag, kFlagGlided},
       {"Light the Vault's lantern", Need::Lantern, kPlaceVault}},
      {1, -1, -1}, 100},
     {"Wings",

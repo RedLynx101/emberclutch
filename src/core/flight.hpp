@@ -55,6 +55,12 @@ struct FlightTuning {
 // core/challenges statLevel (1..10, more with training); an average dragon (5, 5) flies as the defaults.
 FlightTuning flightTuningFor(float wingLevel, float staminaLevel);
 
+// The cold heights' glide (D132): leaving the ground up on the heights (within `radius` of the
+// Vault's anchor `vault`, no more than 12 m below it), however you took off, and touching down again
+// (land or water) at least 25 m lower. Noah couldn't find how: it only counted riding off a sheer
+// 2 m drop there, without a wingbeat.
+bool glidedFromHeights(Vec3 vault, float radius, Vec3 leftGroundAt, Vec3 downAt);
+
 struct Flight {
     Vec3 pos;              // its feet
     float heading = 0;     // radians about Z; 0 faces -Y (as in the den)

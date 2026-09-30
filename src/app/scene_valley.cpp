@@ -136,6 +136,7 @@ struct ValleyScene {
     float hopT = -1;
     bool hopWater = false;  // the hop down lands in deep water: a jump, and a splash (D121)
     int crown = -1;          // the treetop you're flying through (D122), and a moment's quiet after one
+    Vec3 leftGround{0, 0, -1e9f};  // where the flight last left the ground (the cold heights' glide, D132)
     float crownQuiet = 0;
     bool hopOn = true;
     Vec3 hopFrom, hopTo;
@@ -1168,10 +1169,15 @@ void update(App& app, const Input& in) {
             s.crown = crown;
             s.crownQuiet -= app.dt;
         }
-        if (wasGrounded && !s.flight.grounded && !s.flight.tookOff && !(app.game.world.flags & kFlagGlided)) {
-            app.game.world.flags |= kFlagGlided;  // off an edge into a glide (the cold heights' quest)
-            campaign::update(app.game);
-        }
+        // The cold heights' quest (D132): off the heights by the Vault, however you took off, and down
+        // 25 m or more to land or water.
+        if (wasGrounded && !s.flight.grounded) s.leftGround = s.flight.pos;
+        if (!wasGrounded && s.flight.grounded && !(app.game.world.flags & kFlagGlided))
+            if (const ValleyPlaceInfo* vault = va.place(kPlaceVault);
+                vault && glidedFromHeights(vault->at, 70.0f, s.leftGround, s.flight.pos)) {
+                app.game.world.flags |= kFlagGlided;
+                campaign::update(app.game);
+            }
         s.skimFor -= app.dt;
         if (s.flight.skimming && s.skimFor <= 0) {
             audio::playSfx(audio::Sfx::WaterSkim, 0.95f + 0.1f * (s.flight.speed / 30.0f));

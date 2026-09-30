@@ -62,7 +62,7 @@ void drawFrameTitled(App& app, const char* name, s64 now) {
             C2D_DrawTriangle(x - r, y, gold, x + r, y, gold, x, y + r, gold, 0);
             C2D_DrawCircleSolid(x, y, 0, 2.2f, theme::kEmber);
         }
-    text(app, str::kGameTitle, kTopW - 16, 12, 0.5f, withAlpha(gold, 0.9f), C2D_AlignRight, 0, Face::Title);
+    text(app, str::kGameFullTitle, kTopW - 16, 12, 0.42f, withAlpha(gold, 0.9f), C2D_AlignRight, 0, Face::Title);
     char date[48];
     const std::time_t t = static_cast<std::time_t>(now);  // the 3DS clock is local time already
     std::strftime(date, sizeof(date), "%d %B %Y", std::gmtime(&t));

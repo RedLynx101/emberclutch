@@ -4,9 +4,17 @@
 namespace ec::str {
 
 inline constexpr const char* kGameTitle = "Emberclutch";
+inline constexpr const char* kGameSubtitle = "Skyreach Valley";  // (1.0: Emberclutch: Skyreach Valley, D120)
+inline constexpr const char* kGameFullTitle = "Emberclutch: Skyreach Valley";
 inline constexpr const char* kTagline = "raise, breed and fly with dragons";
 inline constexpr const char* kTouchToBegin = "Touch to begin";
-inline constexpr const char* kBuildLabel = "Beta 1";
+inline constexpr const char* kBuildLabel = "1.0 preview";
+inline constexpr const char* kCredits = "Credits";
+inline constexpr const char* kCreditsBy = "A game by Noah Hicks";
+inline constexpr const char* kCreditsEmi = "Inspired by Emi";
+inline constexpr const char* kCreditsEmiLine = "who makes every day feel like hatching day";
+inline constexpr const char* kCreditsTools = "Nunito and Cinzel Decorative (SIL OFL)  -  devkitPro, citro2d, citro3d";
+inline constexpr const char* kTitleByLine = "by Noah, for Emi";
 
 inline constexpr const char* kChooseEgg = "Choose your first egg";
 inline constexpr const char* kTapAgain = "Tap again to choose";

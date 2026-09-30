@@ -52,7 +52,7 @@ $smdh = Join-Path $work "emberclutch.smdh"
 $bnr = Join-Path $work "emberclutch.bnr"
 $cia = Join-Path $root "emberclutch.cia"
 
-$smdhArgs = @("-s", "Emberclutch", "-l", "Emberclutch: raise, breed and fly with dragons", "-p", "Noah Hicks",
+$smdhArgs = @("-s", "Emberclutch: Skyreach Valley", "-l", "Emberclutch: Skyreach Valley. Raise, breed and fly with dragons", "-p", "Noah Hicks",
     "-i", (Join-Path $root "assets\icon.png"), "-o", $smdh)
 $bannerArgs = @("-i", (Join-Path $root "assets\banner.png"))
 $Banner3D = -not $Banner2D

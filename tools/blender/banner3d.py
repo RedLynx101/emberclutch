@@ -2,7 +2,7 @@
 
 The face of the game (D80): the Blazeplume's hatchling (tools/dragons/kinds/blazeplume.py, the
 dragon kit's model) peeks out of its cracked, ember-lit egg (the cap sits on its head),
-the Emberclutch wordmark above it, gold sparkles twinkling round them, over the HOME Menu's
+the Emberclutch: Skyreach Valley wordmark above it, gold sparkles twinkling round them, over the HOME Menu's
 own background, all centred. Twice in a 10 second loop (one turn of the HOME Menu's camera,
 below) it tilts its head, wags its tail, blinks twice and its heart pulses (scale, and a
 diffuse-colour animation); the sparkles glint in turn.
@@ -536,21 +536,9 @@ def wordmark_texture(path, width=256, height=64):
     scene.render.film_transparent = True
     scene.view_settings.view_transform = "Standard"
     scene.render.resolution_x, scene.render.resolution_y = width, height
-    curve = bpy.data.curves.new("wordmark_text", "FONT")
-    curve.body = "Emberclutch"
-    if os.path.exists(FONT):
-        curve.font = bpy.data.fonts.load(FONT)
-    curve.align_x, curve.align_y = "CENTER", "CENTER"
-    curve.size = 1.0
-    curve.offset = 0.035  # a dark edge (the letters grown a little, behind the gold)
-    text = bpy.data.objects.new("wordmark_text", curve)
-    scene.collection.objects.link(text)
     edge = bpy.data.materials.new("edge")
     edge.use_nodes = True
     edge.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = (0.14, 0.05, 0.10, 1)
-    curve.materials.append(edge)
-    gold_curve = curve.copy()
-    gold_curve.offset = 0.0
     gold = bpy.data.materials.new("gold_emit")
     gold.use_nodes = True
     nt = gold.node_tree
@@ -559,11 +547,34 @@ def wordmark_texture(path, width=256, height=64):
     em.inputs["Color"].default_value = (*GOLD, 1)
     out = nt.nodes.new("ShaderNodeOutputMaterial")
     nt.links.new(em.outputs[0], out.inputs["Surface"])
-    gold_curve.materials.clear()
-    gold_curve.materials.append(gold)
-    top = bpy.data.objects.new("wordmark_gold", gold_curve)
-    top.location.z = 0.01
-    scene.collection.objects.link(top)
+    font = bpy.data.fonts.load(FONT) if os.path.exists(FONT) else None
+    made = []
+
+    def line(body, size, y, name):
+        """One line of the wordmark: its dark edge (the letters grown a little), the gold over it."""
+        curve = bpy.data.curves.new(name, "FONT")
+        curve.body = body
+        if font:
+            curve.font = font
+        curve.align_x, curve.align_y = "CENTER", "CENTER"
+        curve.size = size
+        curve.offset = 0.035 * size
+        curve.materials.append(edge)
+        o = bpy.data.objects.new(name, curve)
+        o.location.y = y
+        scene.collection.objects.link(o)
+        gold_curve = curve.copy()
+        gold_curve.offset = 0.0
+        gold_curve.materials.clear()
+        gold_curve.materials.append(gold)
+        g = bpy.data.objects.new(name + "_gold", gold_curve)
+        g.location = (0, y, 0.01)
+        scene.collection.objects.link(g)
+        made.extend((o, g))
+
+    # 1.0 (D120): Emberclutch, and Skyreach Valley small under it
+    line("Emberclutch", 0.82, 0.44, "wordmark_text")
+    line("Skyreach Valley", 0.36, -0.3, "wordmark_sub")
     ecur = edge.node_tree.nodes["Principled BSDF"]
     ecur.inputs["Roughness"].default_value = 1.0
     cam = bpy.data.objects.new("wordmark_cam", bpy.data.cameras.new("wordmark_cam"))
@@ -578,7 +589,7 @@ def wordmark_texture(path, width=256, height=64):
     scene.world = world
     scene.render.filepath = path
     bpy.ops.render.render(write_still=True, scene=scene.name)
-    for o in (text, top, cam):  # none of it may reach the banner's glTF (it did, in WP10)
+    for o in (*made, cam):  # none of it may reach the banner's glTF (it did, in WP10)
         bpy.data.objects.remove(o, do_unlink=True)
     bpy.data.scenes.remove(scene, do_unlink=True)
     img = bpy.data.images.load(path)
@@ -789,11 +800,11 @@ def build():
     # In the frame: the pair just left of centre and low; the wordmark across the top, behind.
     # Nothing else: the HOME Menu's own background shows round them (Noah took the wall out;
     # the flat 2D banner keeps its backdrop, see main()).
-    shift = Vector((0.0, 0.0, -10.8))  # centred (run 10: the wordmark sat off centre)
+    shift = Vector((0.0, 0.0, -11.3))  # centred (run 10: the wordmark sat off centre); 1.0 a little lower, clear of the subtitle
     for o in world_objs:
         o.location += shift
     word = wordmark(30.0)
-    word.location = (0.0, 5.0, 7.9)  # 5 px lower on the 3DS than 8.4 (Noah, run 11)
+    word.location = (0.0, 5.0, 8.4)  # (run 11: 7.9, 5 px lower on the 3DS than 8.4; 1.0: two lines, the subtitle clear of the head)
     # Banner-lab variants (run 3: the new scene froze the HOME Menu, 0.1.1's didn't).
     if "--keep-glow" in sys.argv:
         glow_disc(9.8, (0.55, 0.22, 0.12), (0.0, 16.0, -1.0))

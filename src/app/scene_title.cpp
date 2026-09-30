@@ -18,6 +18,7 @@ namespace {
 
 constexpr float kReveal = 0.45f;  // the title's fade up from black, the splash's last moments
 constexpr const char* kSplashWord = "EMBERCLUTCH";
+constexpr const char* kSplashSub = "SKYREACH VALLEY";
 
 float smooth(float a, float b, float x) {
     x = (x - a) / (b - a);
@@ -36,7 +37,9 @@ void drawSplashTop(App& app) {
     blackout(kTopW, 1.0f);
     for (int i = 16; i >= 1; --i)  // a soft ember glow: many faint rings (glow()'s five band on black)
         C2D_DrawCircleSolid(200, 118, 0, 150 * i / 16.0f, withAlpha(theme::kEmber, 0.035f * a));
-    textCentered(app, kSplashWord, 200, 118 + 6 * (1 - a), 1.9f, withAlpha(theme::kClutchGold, a), 370, Face::Title);
+    textCentered(app, kSplashWord, 200, 110 + 6 * (1 - a), 1.9f, withAlpha(theme::kClutchGold, a), 370, Face::Title);
+    const float b = smooth(0.55f, 1.1f, t) * (1.0f - smooth(1.7f, kSplashSeconds - kReveal, t));  // (a beat after)
+    textCentered(app, kSplashSub, 200, 150, 0.62f, withAlpha(theme::kShell, 0.85f * b), 300, Face::Title);
 }
 
 void drawTop(App& app) {
@@ -48,8 +51,16 @@ void drawTop(App& app) {
     verticalGradient(0, 0, kTopW, kScreenH, theme::kDenPlum, theme::kDusk);
     embers(app.t, kTopW);
     const float pulse = 0.7f + 0.3f * std::sin(app.t * 2.5f);
-    egg(200, 138, 64, 84, {255, 236, 205}, {255, 140, 40}, pulse);
-    textCentered(app, str::kGameTitle, 200, 42, 1.75f, theme::kClutchGold, 380, Face::Title);
+    egg(200, 148, 60, 80, {255, 236, 205}, {255, 140, 40}, pulse);
+    textCentered(app, str::kGameTitle, 200, 40, 1.75f, theme::kClutchGold, 380, Face::Title);
+    // Skyreach Valley under it, between two short gold rules (1.0, D120)
+    const float sw = textWidth(app, str::kGameSubtitle, 0.72f, Face::Title);
+    textCentered(app, str::kGameSubtitle, 200, 78, 0.72f, withAlpha(theme::kShell, 0.95f), 300, Face::Title);
+    for (int side = -1; side <= 1; side += 2) {
+        const float x0 = 200 + side * (sw * 0.5f + 10), x1 = x0 + side * 34;
+        C2D_DrawRectSolid(std::fmin(x0, x1), 78, 0, 34, 1.2f, withAlpha(theme::kClutchGold, 0.8f));
+        C2D_DrawCircleSolid(x1, 78.6f, 0, 1.8f, theme::kClutchGold);
+    }
     textCentered(app, str::kTagline, 200, 206, 0.52f, theme::kShell, 380);
     if (app.splash > 0) blackout(kTopW, app.splash / kReveal);
 }
@@ -96,6 +107,15 @@ void drawBottom(App& app, const Input& in) {
         if (button(app, {168, 150, 136, 40}, str::kYesStartOver, in, theme::kRose)) newGame(app);
     }
     text(app, str::kBuildLabel, 160, 216, 0.4f, theme::kAsh);
+    // by Noah, for Emi, with a little heart; the credits a tap away
+    const float bw = textWidth(app, str::kTitleByLine, 0.4f);
+    text(app, str::kTitleByLine, 312 - 12, 214, 0.4f, withAlpha(theme::kShell, 0.7f), C2D_AlignRight);
+    heart(312 - 5, 221, 9.0f, withAlpha(theme::kRose, 0.85f + 0.15f * std::sin(app.t * 3.0f)));
+    if (app.titleConfirm == 0 && button(app, {8, 206, 70, 26}, str::kCredits, in)) {
+        app.menu = MenuPage::Credits;
+        audio::playSfx(audio::Sfx::Tap);
+    }
+    (void)bw;
     if (app.splash > 0) blackout(kBotW, app.splash / kReveal);
 }
 

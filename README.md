@@ -1,6 +1,8 @@
-# Emberclutch
+# Emberclutch: Skyreach Valley
 
 *Raise, train and ride dragons in a cozy valley — a homebrew game for the Nintendo 3DS.*
+
+Made by Noah Hicks. Inspired by Emi, who makes every day feel like hatching day.
 
 ![Your dragon and you at the den's door in Skyreach Valley](docs/release/screenshots/valley.png)
 

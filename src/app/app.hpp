@@ -151,7 +151,7 @@ struct PhotoState {
 enum class KeyboardFor : u8 { None, PlayerName, NameHatchling, Rename };
 
 // START's system menu (src/app/system_menu.cpp): the game waits while it's open.
-enum class MenuPage : u8 { Closed, Main, Settings, DeleteAsk, DeleteSure, Dex };
+enum class MenuPage : u8 { Closed, Main, Settings, DeleteAsk, DeleteSure, Dex, Credits };
 
 struct App {
     DialogueState talk;       // talking to someone in the valley (app/dialogue)

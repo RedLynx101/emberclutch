@@ -1,5 +1,6 @@
 #include "app/system_menu.hpp"
 
+#include <cmath>
 #include <cstdio>
 
 #include "app/audio.hpp"
@@ -45,6 +46,11 @@ void closeMenu(App& app) {
 
 void mainPage(App& app, const Input& in) {
     heading(app, str::kGameTitle);
+    {  // the credits: a little heart up in the corner
+        const bool tapped = button(app, {280, 8, 32, 26}, "", in, withAlpha(theme::kShell, 0.25f));
+        heart(296, 22, 13.0f, theme::kRose);
+        if (tapped) app.menu = MenuPage::Credits;
+    }
     const bool inGame = hasDragon(app) && app.scene != SceneId::Title && app.scene != SceneId::PickStarter;
     // (Map: the way out of the den, alone too; out in the valley it only led back to the den's
     // door, run 21: not there)
@@ -129,6 +135,24 @@ void deletePage(App& app, const Input& in, bool sure) {
     }
 }
 
+// Who made it, and for whom (1.0, D120).
+void creditsPage(App& app, const Input& in) {
+    heading(app, str::kCredits);
+    textCentered(app, str::kGameTitle, 160, 50, 0.8f, theme::kClutchGold, 300, Face::Title);
+    textCentered(app, str::kGameSubtitle, 160, 70, 0.5f, withAlpha(theme::kClutchGold, 0.85f), 300, Face::Title);
+    textCentered(app, str::kCreditsBy, 160, 93, 0.52f, theme::kShell, 300);
+    // two eggs leaning in under a heart that beats
+    const float beat = 1.0f + 0.08f * std::fmax(0.0f, std::sin(app.t * 5.0f));
+    egg(145, 129, 16, 21, {255, 236, 205}, {255, 140, 40}, 0.5f);
+    egg(175, 129, 16, 21, {214, 232, 244}, {120, 170, 255}, 0.5f);
+    heart(160, 109, 16.0f * beat, theme::kRose);
+    textCentered(app, str::kCreditsEmi, 160, 150, 0.58f, theme::kClutchGold, 300);
+    textCentered(app, str::kCreditsEmiLine, 160, 167, 0.42f, withAlpha(theme::kShell, 0.85f), 300);
+    textCentered(app, str::kCreditsTools, 160, 187, 0.34f, withAlpha(theme::kShell, 0.55f), 304);
+    if (button(app, {110, 204, 100, 30}, str::kBack, in) || (in.down & KEY_B))
+        app.menu = app.scene == SceneId::Title ? MenuPage::Closed : MenuPage::Main;
+}
+
 }  // namespace
 
 void toggleSystemMenu(App& app) {
@@ -150,6 +174,7 @@ void drawSystemMenu(App& app, const Input& in) {
         case MenuPage::DeleteAsk: deletePage(app, in, false); break;
         case MenuPage::DeleteSure: deletePage(app, in, true); break;
         case MenuPage::Dex: drawDexBottom(app, in); break;
+        case MenuPage::Credits: creditsPage(app, in); break;
         default: break;
     }
 }

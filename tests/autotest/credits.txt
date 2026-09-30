@@ -1,0 +1,24 @@
+# The title with its subtitle (1.0: Emberclutch: Skyreach Valley, D120), the splash, and the credits
+# from the title and from the system menu.
+overlay off
+shotin 1.2 c0-splash
+wait 1.5
+wait 2.5
+shot c1-title
+tap 43 219
+wait 0.8
+shot c2-credits
+key B
+wait 0.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key START
+wait 0.6
+shot c3-menu
+tap 296 21
+wait 0.6
+shot c4-credits-menu
+quit

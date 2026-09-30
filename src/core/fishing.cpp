@@ -64,7 +64,7 @@ const CatchInfo& catchInfo(Catch c) {
         {"a Honeyroot", Food::Honeyroot, 1, 0, 0.8f, false},   // a sunken root, snagged
         {"a Skyberry sprig", Food::Skyberry, 1, 0, 0.6f, false},  // floating by
         {"a Frostmelon", Food::Frostmelon, 1, 0, 0.9f, false},  // cooling in the shallows
-        {"a shell", Food::Count, 0, 8, 0.6f, false},          // tangled on the hook
+        {"a shell", Food::Count, 0, 20, 0.6f, false},         // tangled on the hook (20: D128)
         {"a pearl!", Food::Count, 0, 120, 0.7f, false},
     };
     return kInfo[c < Catch::Count ? static_cast<int>(c) : 0];
@@ -186,10 +186,7 @@ int shellKind(s32 day, int spot) {
 
 u32 shellGleam(s32 day, int spot) {
     if (shellAt(day, spot) == Catch::Pearl) return catchInfo(Catch::Pearl).gleam;
-    Rng rng = shellRng(day, spot);
-    rng.next();
-    rng.next();
-    return 5 + rng.below(8);  // 5..12
+    return catchInfo(Catch::Shell).gleam;  // (1.0, D128: 20 a shell, was 5..12)
 }
 
 // ------------------------------------------------------------------------------ your partner

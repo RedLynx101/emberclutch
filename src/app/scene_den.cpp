@@ -776,9 +776,17 @@ void drawTop(App& app) {
                       d.napping ? str::kNapping : "");
         text(app, line, 200, 26, 0.45f, theme::kClutchGold);
     }
-    if (!app.hatch.active)  // the map, and how to switch
+    if (!app.hatch.active) {  // the map, and how to switch; your Gleam, bottom left (D128; not in a photo: above)
         text(app, count > 1 ? str::kSwitchHint : str::kMapHint, 392, 226, 0.4f, withAlpha(theme::kShell, 0.6f),
              C2D_AlignRight);
+        char gleam[24];
+        std::snprintf(gleam, sizeof(gleam), "%lu", static_cast<unsigned long>(app.game.gleam));
+        const float w = 30 + textWidth(app, gleam, 0.45f);
+        panel({6, 216, w, 18}, withAlpha(theme::kDenPlum, 0.7f));
+        C2D_DrawCircleSolid(17, 225, 0, 5, theme::kClutchGold);
+        C2D_DrawCircleSolid(17, 225, 0, 2.6f, withAlpha(theme::rgba(255, 244, 200), 0.9f));
+        text(app, gleam, 26, 218, 0.45f, theme::kShell, C2D_AlignLeft);
+    }
     if (app.hatch.flash > 0)  // the burst's warm flash
         C2D_DrawRectSolid(0, 0, 0, kTopW, kScreenH, withAlpha(theme::rgba(255, 214, 150), 0.85f * app.hatch.flash));
 }

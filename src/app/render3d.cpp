@@ -316,6 +316,8 @@ bool g_lookFailed[kLookSlots] = {};  // a look whose models are missing: drawn c
 int g_forceLook = -1;  // dev: every dragon in one look (-1: their own)
 Cache g_caches[kCacheSlots];
 u32 g_frame = 0;
+Vec3 g_grip;               // your hands' middle, this valley frame (the fishing rod's grip, D134)
+bool g_gripFresh = false;
 Posed g_posed;
 float g_adultRadius = 1;  // framing radius of a neutral adult: the camera's reference size
 PartsMesh g_parts;
@@ -3196,8 +3198,11 @@ void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_M
     Mtx_Multiply(&mv, &viewM, &model);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locModelView, &mv);
     if (handOut) {  // your left hand (the people kit's hand_R: its _R bones are the person's own left)
-        const int hand = f->model.skel.find("hand_R");
+        const int hand = f->model.skel.find("hand_R"), other = f->model.skel.find("hand_L");
         *handOut = hand >= 0 ? apply(model, poseMat[hand].translation()) : p.at + Vec3{0, 0, 0.5f};
+        // (and between both hands: where a rod is held, D134)
+        g_grip = other >= 0 ? (*handOut + apply(model, poseMat[other].translation())) * 0.5f : *handOut;
+        g_gripFresh = true;
     }
     lookShading(kLookCount);  // the storybook look, as the kinds (D75): soft bands, a face never in shadow
     for (int i = 0; i < kPalCount; ++i)
@@ -3725,7 +3730,14 @@ void drawPersonShowcase(App& app, const PersonView& p, s64 now) {
 }
 const AnimLibrary* personAnims() { return personLibReady() ? &g_personLib : nullptr; }
 
+bool youGrip(Vec3& out) {
+    if (!g_gripFresh) return false;
+    out = g_grip;
+    return true;
+}
+
 void drawValley(App& app, const ValleyView& view, s64 now) {
+    g_gripFresh = false;
     if (!g_ready || !view.valley) return;
     const Valley& v = *view.valley;
     if (g_valleyOf != &v) {

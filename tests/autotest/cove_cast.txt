@@ -1,0 +1,70 @@
+# (cove_cast: the cast, frame by frame, D134) Driftwood Cove (1.0, workstream C): the cove (Tam by the water in his oilskin, today's shells on
+# the sand), talking to Tam (he lends you his rod), then fishing by itself with a young partner
+# sitting beside you: the cast, the wait with its nibbles, the bite, the reel on the bottom screen
+# (the tension gauge, the fish coming in, the crank), the catch held up and the partner's nibble;
+# then the rod put away and a shell picked up. The log has each picture's triangles.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+valley
+wait 4
+travel 16
+wait 3
+view 16 7 33 3.5 -2 42 0.4
+wait 1.5
+shot c00-cove
+cove 0
+wait 1.5
+shot c01-tam
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 1
+cove 1
+autoplay on
+wait 1.1
+shot k1-ready
+wait 0.12
+shot k2-cast
+wait 0.12
+shot k3-cast
+wait 0.12
+shot k4-cast
+wait 0.12
+shot k5-cast
+wait 0.12
+shot k6-cast
+wait 0.12
+shot k7-cast
+wait 0.12
+shot k8-cast
+wait 1
+shot k9-waiting
+quit

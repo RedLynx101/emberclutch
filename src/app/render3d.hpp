@@ -165,6 +165,7 @@ void setDenClose(bool close);
 // Projects a den-space point with the last den camera: top-screen pixels and pixels per
 // den unit at that depth. False before the first drawDen or behind the camera.
 bool project(Vec3 p, float& x, float& y, float& pixelsPerUnit);
+bool youGrip(Vec3& out);  // your hands' middle as drawn this valley frame (a rod's grip, D134); false if you weren't
 // Den dragon i's head (den space) in the last drawDen; false if it was not drawn.
 bool headOf(int i, Vec3& out);
 // ...and the top of its back, from its chest to its hips.

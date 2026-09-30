@@ -151,13 +151,31 @@ void ripple(State& f, Vec3 at, float size) {
     f.nextRipple = (f.nextRipple + 1) % 4;
 }
 
-// Your hand and the rod's tip (raised while you wait, pulled down toward the fish as you reel).
-Vec3 handOf(const State& f) { return f.you + forwardOf(f.facing) * 0.28f + rightOf(f.facing) * 0.22f + Vec3{0, 0, 0.62f}; }
+// Your hands (where the renderer drew them this frame: D134, the rod floated ahead of a guessed
+// hand) and the rod's tip: raised while you wait, pulled down toward the fish as you reel, and in a
+// cast swung back over your shoulder, whipped forward and let out over the water.
+constexpr float kCastTime = 0.75f;
+constexpr float kReleaseAt = 0.55f;  // (of the cast: the whip forward, where the line flies)
+Vec3 handOf(const State& f) {
+    Vec3 grip;
+    if (r3d::youGrip(grip) && length(grip - f.you) < 1.5f) return grip;
+    return f.you + forwardOf(f.facing) * 0.22f + rightOf(f.facing) * 0.12f + Vec3{0, 0, 0.5f};
+}
+float easeIn(float x) { x = clampf(x, 0.0f, 1.0f); return x * x * (3 - 2 * x); }
 Vec3 tipOf(const State& f, float t) {
     const bool reeling = f.step == Step::Reeling;
     const float bend = reeling ? f.reel.tension : 0.0f;
     const float wobble = reeling && f.reel.running() ? 0.08f * std::sin(t * 23.0f) : 0.0f;
-    return handOf(f) + forwardOf(f.facing) * (1.5f + 0.3f * bend) + Vec3{0, 0, 1.25f - 0.6f * bend + wobble};
+    const Vec3 fwd = forwardOf(f.facing), up{0, 0, 1};
+    Vec3 dir = fwd * (1.5f + 0.3f * bend) + up * (1.25f - 0.6f * bend + wobble);
+    if (f.step == Step::Casting) {
+        const float u = f.t / kCastTime;
+        const Vec3 back = fwd * -0.6f + up * 1.8f, whip = fwd * 1.75f + up * 0.5f, rest = dir;
+        dir = u < 0.3f ? lerp(rest, back, easeIn(u / 0.3f))
+            : u < kReleaseAt ? lerp(back, whip, easeIn((u - 0.3f) / (kReleaseAt - 0.3f)))
+                             : lerp(whip, rest, easeIn((u - kReleaseAt) / (1.0f - kReleaseAt)));
+    }
+    return handOf(f) + dir;
 }
 
 // Where the bobber hangs from the tip before a cast.
@@ -453,11 +471,16 @@ void update(App& app, const Input& in, vext::Stage& stage) {
         case Step::Ready:
             if (press || (f.autoplay && f.t > 1.2f && fishLeft(app) > 0)) cast(app, f, stage);
             break;
-        case Step::Casting: {  // the bobber flies out in an arc
+        case Step::Casting: {  // back, whipped forward, and the bobber flies out in an arc from the tip
             stage.youClip = "cast";
-            const float u = clampf(f.t / 0.75f, 0.0f, 1.0f);
+            const float u = clampf(f.t / kCastTime, 0.0f, 1.0f);
             const Vec3 from = tipOf(f, app.t);
-            f.bobber = from + (s.cast - from) * u + Vec3{0, 0, 2.2f * 4.0f * u * (1.0f - u)};
+            if (u < kReleaseAt) {
+                f.bobber = from - Vec3{0, 0, 0.3f};  // (on the line's end, swung with the rod)
+            } else {
+                const float w = (u - kReleaseAt) / (1.0f - kReleaseAt);
+                f.bobber = from + (s.cast - from) * w + Vec3{0, 0, 2.2f * 4.0f * w * (1.0f - w)};
+            }
             if (u >= 1.0f) {
                 f.bobber = s.cast;
                 f.step = Step::Waiting;

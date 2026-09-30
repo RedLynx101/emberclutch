@@ -176,8 +176,9 @@ bool DenBehavior::walkTo(Vec2 goal, bool trotting, float moveScale, float dt) {
     // Not for its own sulking spot (one only passing by stood in for it), nor for its end of a
     // game with another (the partner heading for the next spot stood in for it: a tug from
     // across the room). Run 13's tests.
+    // (Nor for the ball: one standing on it steps aside, D124.)
     const bool ownSpot = activity == Activity::GoSulk || activity == Activity::TugWar || activity == Activity::Spar ||
-                         (activity == Activity::GoNap && snuggle);
+                         (activity == Activity::GoNap && snuggle) || activity == Activity::Fetch;
     for (int i = 0; i < crowdCount && !ownSpot; ++i)
         if (distance(goal, crowd[i].at) < crowd[i].radius + bodyRadius(size) &&
             dist < crowd[i].radius + bodyRadius(size) + 0.3f)
@@ -875,7 +876,8 @@ void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt)
             if (clipDone) start(Activity::Idle);
             break;
         case Activity::Wander:
-            if (walkTo(target, trot, moveScale, dt)) start(Activity::Idle);
+            if (makingWay > 0) makingWay -= dt;  // (stepping aside: a trot, and then it stays out of the way)
+            if (walkTo(target, trot || makingWay > 0, moveScale, dt)) start(makingWay > 0 ? Activity::LookAround : Activity::Idle);
             break;
         case Activity::Sit:
         case Activity::Lie:
@@ -1438,6 +1440,45 @@ void startTogether(DenSocial& s, DenBehavior* const* bs, const Dragon* const* ds
 }
 
 }  // namespace
+
+bool DenBehavior::makeWay(Vec2 to) {
+    switch (activity) {
+        case Activity::Idle: case Activity::LookAround: case Activity::Scratch: case Activity::Wander: case Activity::Sit:
+        case Activity::Lie: case Activity::Yawn: case Activity::TailWag: case Activity::Flutter:
+            break;
+        default:
+            return false;  // (asleep, eating, being cared for, in a game: it stays)
+    }
+    if (makingWay > 0) return false;
+    start(Activity::Wander);
+    target = reachable(to);
+    makingWay = 1.6f;
+    return true;
+}
+
+void makeWayForBall(DenBehavior* const* dragons, int count) {
+    for (int i = 0; i < count; ++i) {
+        const DenBehavior& runner = *dragons[i];
+        if (runner.activity != Activity::Fetch || runner.step > 1 || !runner.ball || !runner.ball->active) continue;
+        const Vec2 goal{runner.ball->pos.x, runner.ball->pos.y};
+        const Vec2 d{goal.x - runner.pos.x, goal.y - runner.pos.y};
+        const float len = std::hypot(d.x, d.y);
+        if (len < 1e-3f) continue;
+        const Vec2 along{d.x / len, d.y / len};
+        for (int j = 0; j < count; ++j) {
+            if (j == i) continue;
+            DenBehavior& other = *dragons[j];
+            const Vec2 rel{other.pos.x - runner.pos.x, other.pos.y - runner.pos.y};
+            const float t = rel.x * along.x + rel.y * along.y;             // how far along the run it stands
+            const float side = rel.x * along.y - rel.y * along.x;          // and how far to the side (signed)
+            const float room = bodyRadius(runner.size) + bodyRadius(other.size) + 0.15f;
+            if (t < 0.1f || t > len + room || std::fabs(side) > room) continue;  // (behind, past the ball, or clear)
+            const float away = side >= 0 ? 1.0f : -1.0f;                   // off to whichever side it's already on
+            const float out = room - std::fabs(side) + 0.6f;
+            other.makeWay({other.pos.x + along.y * away * out, other.pos.y - along.x * away * out});
+        }
+    }
+}
 
 void shareCrowd(DenBehavior* const* dragons, int count) {
     for (int i = 0; i < count; ++i) {

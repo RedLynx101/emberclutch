@@ -210,6 +210,43 @@ TEST(dragons_fetch_the_ball_and_bring_it_back) {
     }
 }
 
+// The ball's way cleared (D124, Noah: "other dragons can get in the way and block the main dragon
+// from getting the ball"): one sitting right where the ball lands trots aside, and yours gets it.
+TEST(a_dragon_in_the_way_makes_way_for_the_ball) {
+    const DenLayout den;
+    DenActor a[2];
+    DenBehavior* crowd[2];
+    for (int i = 0; i < 2; ++i) {
+        a[i].reset(den, 71 + i, i);
+        crowd[i] = &a[i].behavior;
+    }
+    Dragon d = contentDragon();
+    d.stage = Stage::Adult;
+    d.personality = Personality::Brave;
+    Ball ball;
+    const Vec2 lands{0.8f, 2.4f};
+    a[0].behavior.pos = {den.player.x, den.player.y + 0.8f};
+    a[1].behavior.pos = lands;  // sitting right on the spot
+    a[1].behavior.force(Activity::Sit);
+    for (int i = 0; i < 2; ++i) a[i].behavior.ball = &ball;
+    ball.launch({lands.x, lands.y, ball.radius + 0.02f}, {0, 0, 0});
+    a[0].behavior.care(Care::Throw, d);
+    CHECK(a[0].behavior.activity == Activity::Fetch);
+    bool got = false;
+    float t = 0;
+    for (; t < 20.0f && !got; t += 1.0f / 30) {
+        ball.step(den, 1.0f / 30);
+        shareCrowd(crowd, 2);
+        makeWayForBall(crowd, 2);
+        for (int i = 0; i < 2; ++i) a[i].update(d, false, 1.0f, 1.0f / 30, world().lib, world().clips, nullptr, 0);
+        got = a[0].behavior.holdingBall;
+    }
+    const float moved = dist(a[1].behavior.pos, lands);
+    std::printf("  made way: the ball picked up in %.1f s, the one in the way moved %.2f\n", t, moved);
+    CHECK(got);
+    CHECK(moved > 0.6f);
+}
+
 // Fighting for the ball back (Noah, run 13): held near its mouth it hangs on and tugs; let go
 // and it keeps it; pull long enough (the scene decides when) and the ball is yours.
 TEST(tug_of_war_over_the_ball) {
@@ -839,6 +876,7 @@ void runBehaviorTests() {
     RUN(dragons_blink_and_shut_their_eyes_to_sleep);
     RUN(care_interrupts_everyday_life);
     RUN(dragons_fetch_the_ball_and_bring_it_back);
+    RUN(a_dragon_in_the_way_makes_way_for_the_ball);
     RUN(hands_on_care_reactions);
     RUN(dragons_walk_around_the_hearth_and_hoard);
     RUN(three_dragons_share_the_den);

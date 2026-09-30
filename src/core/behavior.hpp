@@ -251,6 +251,10 @@ struct DenBehavior {
     void join(Activity a, s8 withPartner, Vec2 at);
     // True while it's free to start something with another dragon.
     bool sociable() const;
+    // Making way (D124): standing about (idle, sitting, lying, wandering) in another's path, it trots
+    // aside to `to`; true if it went. makingWay: seconds it keeps to that before minding its own business.
+    bool makeWay(Vec2 to);
+    float makingWay = 0;
     Vec2 zoomPoint();  // the next lap's turn for the zoomies: round the den, clear of things
     // How much the dragon looks at the player right now (0..1): full when idle or greeting,
     // none while eating, sleeping or sulking.
@@ -282,6 +286,11 @@ private:
 // Tells each den dragon where the others are, so they walk around each other. Call once a
 // frame before updating them.
 void shareCrowd(DenBehavior* const* dragons, int count);
+
+// The ball's way cleared (D124: another dragon sat between yours and the ball, and yours gave up):
+// a dragon running for the ball has the ones idling in its path, or on the ball, trot aside. Call
+// once a frame after shareCrowd.
+void makeWayForBall(DenBehavior* const* dragons, int count);
 
 // Life together (Alpha 2 WP1): now and then two idle dragons start a game of chase or meet
 // for a nuzzle; by bright day one goes to lie in the sunbeam (and another may join it); most

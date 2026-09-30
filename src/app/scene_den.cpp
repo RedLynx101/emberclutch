@@ -219,6 +219,7 @@ void denLife(App& app, const DenRoster& r, s64 now) {
         crowd[crowdCount++] = &a.behavior;
     }
     shareCrowd(crowd, crowdCount);  // they walk around each other
+    makeWayForBall(crowd, crowdCount);  // and out of the way of one running for the ball (D124)
     const bool night = isNight(now);
     const DayBlend light = dayBlend(now);
     denSocial(app.social, crowd, who, crowdCount, night, light.weight(kLightDay) + 0.4f * light.weight(kLightEvening),

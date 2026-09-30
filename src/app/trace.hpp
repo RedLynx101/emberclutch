@@ -18,6 +18,9 @@ void mark(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 // the first frames after it changes (run 21: writing them all slowed the game to a crawl), with
 // a line every 5 seconds in between.
 void frame(unsigned long n, int view);
+// After the scene's update: a view it switched to is checked from this, its first frame (take 4:
+// the Wanderers' Trailhead froze the 3DS on the frame its door switched to, unchecked).
+void view(unsigned long n, int view);
 // Just before the frame waits on the GPU: the marks so far go to the card.
 void sync();
 

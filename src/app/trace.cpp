@@ -160,31 +160,43 @@ void start() {
     }
     std::remove(kPrev);
     std::rename(kTrace, kPrev);  // (the session before, whole)
-    note("trace on (0.9.11: marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the probes)", kChecked);
+    note("trace on (0.9.12: marks and GPU checkpoints for %lu frames a view; the blip and depth watches, the probes)", kChecked);
     if (part[0]) note("the last session froze in: %s", part);
     for (int i = 0; i < g_hangCount; ++i) note("drawn the safe way (hangs.txt): %s", g_hangs[i]);
     write();
 }
 
+int g_viewLast = -1;
+unsigned long g_viewFrom = 0, g_frameNo = 0;
+int g_parityHoles[2] = {}, g_parityFrames[2] = {};  // (holes by the drawn frame's number, even and odd)
+
 void frame(unsigned long n, int view) {
-    static int last = -1;
-    static unsigned long from = 0;
-    if (view != last) {
-        last = view;
-        from = n;
+    g_frameNo = n;
+    if (view != g_viewLast) {
+        g_viewLast = view;
+        g_viewFrom = n;
     }
-    g_live = n < from + kChecked;
+    g_live = n < g_viewFrom + kChecked;
     ++g_frames;
     if (g_on && osGetTime() - g_lastBeat >= kBeatMs) {
         char ways[96];
         int at = 0;
         for (int m = 0; m < kModes; ++m)
             at += std::snprintf(ways + at, sizeof(ways) - static_cast<std::size_t>(at), "%s%d/%d", m ? " " : "", g_modeHoles[m], g_modeFrames[m]);
-        note("f%lu view %x: %lu frames in %.1f s, blips %d, holes %d of %d (by way %s)", n, static_cast<unsigned>(view), g_frames,
-             (osGetTime() - g_lastBeat) / 1000.0, g_blips, g_holes, g_depthFrames, ways);
+        note("f%lu view %x: %lu frames in %.1f s, blips %d, holes %d of %d (by way %s; even frames %d/%d, odd %d/%d)", n,
+             static_cast<unsigned>(view), g_frames, (osGetTime() - g_lastBeat) / 1000.0, g_blips, g_holes, g_depthFrames, ways,
+             g_parityHoles[0], g_parityFrames[0], g_parityHoles[1], g_parityFrames[1]);
         g_lastBeat = osGetTime();
         g_frames = 0;
     }
+}
+
+void view(unsigned long n, int view) {
+    if (!g_on || view == g_viewLast) return;
+    g_viewLast = view;
+    g_viewFrom = n;
+    g_live = true;
+    mark("f%lu view %x (from the update)", n, static_cast<unsigned>(view));
 }
 
 bool on() { return g_on; }
@@ -375,6 +387,9 @@ void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
         ++g_modeFrames[mode];
         g_modeHoles[mode] += hole;
     }
+    const int odd = static_cast<int>((g_frameNo - 1) & 1);  // (the frame drawn: the one before this)
+    ++g_parityFrames[odd];
+    g_parityHoles[odd] += hole;
     if (g_factLutDone) ++g_lutFrames, g_lutHoles += hole;
     if (g_factBuiltDone) ++g_builtFrames, g_builtHoles += hole;
     if (g_depthFrames <= 3 || (g_depthFrames % 1500) == 0)
@@ -388,7 +403,7 @@ void watchDepth(C3D_RenderTarget_tag* top, int valleyScene) {
     }
     if (hole) {
         if (++g_holes <= 40)
-            note("depth hole %d (fix %d): %u triangles %u draws; lower half %.0f%% empty, upper %.0f%%; %s", g_holes, mode,
+            note("depth hole %d (fix %d, f%lu): %u triangles %u draws; lower half %.0f%% empty, upper %.0f%%; %s", g_holes, mode, g_frameNo - 1,
                  g_watchNext[0], g_watchNext[1], lower * 100.0f, upper * 100.0f, g_noteDone);
         if (g_maps < 4) {
             char what[32];

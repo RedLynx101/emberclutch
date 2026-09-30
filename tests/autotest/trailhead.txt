@@ -1,0 +1,34 @@
+# Through the Wanderers' Trailhead's door from the valley (take 4: 0.9.11 froze the 3DS going in):
+# travel there, A at the door, the Wanderings' first frames, then back out.
+overlay on
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+tips seen
+valley
+hour 11
+wait 3
+travel 5
+wait 3
+keyhold UP 0.7
+wait 0.5
+shot t1-trailhead
+key A
+wait 0.3
+shot t2-going-in
+wait 3
+shot t3-wanderings
+key B
+wait 3
+shot t4-back
+quit

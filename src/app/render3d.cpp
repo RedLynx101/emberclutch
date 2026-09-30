@@ -1359,6 +1359,15 @@ void end3D() {
     for (int i = 0; i < 6; ++i) C3D_TexEnvInit(C3D_GetTexEnv(i));
     C2D_Prepare();
     prepare2D();
+    // Two throwaway draws, a see-through pixel each (D118: the valley's ground lost its depth
+    // setting on the first draw after a batch of state; the battle's bars and cards flashed over
+    // the 3D the same way). The first takes the hand-over's batch; the second goes with the depth
+    // setting alone, which holds for what citro2d draws after.
+    C2D_DrawRectSolid(0, 0, 0, 1, 1, 0);
+    C2D_Flush();
+    prepare2D();
+    C2D_DrawRectSolid(0, 0, 0, 1, 1, 0);
+    C2D_Flush();
 }
 
 // The hearth's flicker: two uneven waves.
@@ -3890,6 +3899,19 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     streamPlaces(v, view.eye);
     groundDetail(true);
     trace::commands(true);
+    // The first draw after the ground's state is set takes that batch on its own (D118). On the 3DS
+    // the first tile after it (the depth setting, then the texture, the haze's table, the colour
+    // stages and the shader's numbers) drew in runs of frames without writing depth, the horizon's
+    // setting kept, while every tile after it, sent the depth setting alone, wrote it. So the
+    // smallest tile goes first as a throwaway (drawn again in its turn), and each tile then goes
+    // with the depth setting alone.
+    if (fix && !picks.empty()) {
+        const Pick* least = &picks[0];
+        for (const Pick& p : picks)
+            if (p.g->ground < least->g->ground) least = &p;
+        C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+        drawValleyGpu(app, *least->g, false);
+    }
     int drawnTiles = 0;
     for (const Pick& p : picks) {
         const int tx = p.tile % t, ty = p.tile / t;
@@ -4083,7 +4105,7 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     drawValleyGpu(app, g_vwater);
     C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
     C3D_FogGasMode(GPU_NO_FOG, GPU_PLAIN_DENSITY, false);
-    trace::frameNote("haze pull %.2f, eye %.0f %.0f %.0f, %d tiles (%d built)", static_cast<double>(g_fogPull),
+    trace::frameNote("haze pull %.2f, flip %d, eye %.0f %.0f %.0f, %d tiles (%d built)", static_cast<double>(g_fogPull), g_horizonFlip,
                      static_cast<double>(view.eye.x), static_cast<double>(view.eye.y), static_cast<double>(view.eye.z),
                      g_valleyStats.tiles, g_valleyStats.built);
     end3D();

@@ -175,6 +175,7 @@ int main() {
             trace::mark("f%lu update", static_cast<unsigned long>(frame));
             scene.update(app, in);
         }
+        trace::view(frame, static_cast<int>(app.scene) | (static_cast<int>(app.menu) << 8));  // (a door or a menu, just now)
         trace::mark("f%lu music", static_cast<unsigned long>(frame));
         {
             perf::Scope timed(perf::Audio);

@@ -119,14 +119,16 @@ enum FlagId : u16 {
     kFOnceSeraphine821d5a16 = 53,
     kFOnceSolenne0408fd81 = 54,
     kFMigrated = 55,
+    kFBeatPrimrose = 62,
     kFPageantExplained = 56,
     kFDressedUp = 57,
     kFLookWon = 58,
     kFOnceCelestine55d01822 = 59,
     kFOnceLinnet9f3765cc = 60,
     kFOncePrimrose009622b5 = 61,
+    kFOncePrimrose6a5adfd8 = 63,
 };
-constexpr int kFlagIdCount = 62;
+constexpr int kFlagIdCount = 64;
 
 enum VarId : u8 {
     kVPagesFound = 0,
@@ -163,11 +165,12 @@ enum LetterId : u8 {
     kLCelestineFlame = 21,
     kLCelestineBlaze = 22,
     kLPrimroseChallenge = 23,
-    kLLinnetStock = 24,
-    kLTamWhiskers = 25,
-    kLRowanAfter = 26,
+    kLPrimroseTruce = 24,
+    kLLinnetStock = 25,
+    kLTamWhiskers = 26,
+    kLRowanAfter = 27,
 };
-constexpr int kLetterIdCount = 27;
+constexpr int kLetterIdCount = 28;
 
 constexpr int kPickupCount = 10;
 constexpr int kGroupCount = 1;

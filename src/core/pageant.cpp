@@ -33,9 +33,9 @@ constexpr ThemeInfo kThemeInfo[kThemes] = {
 };
 
 const char* const kTrainers[] = {"Posy", "Bram", "Juniper", "Tamsin", "Oren", "Marlow", "Ivy", "Cobb",
-                                 "Elsie", "Rook", "Hazel", "Fenn", "Lark", "Nell", "Quill", "Briar"};
-const char* const kDragonNames[] = {"Biscuit", "Sable", "Pip", "Clover", "Nimbus", "Pebble", "Saffron", "Mistral",
-                                    "Duchess", "Sprocket", "Velvet", "Tinder", "Opal", "Fable", "Juno", "Rumble",
+                                 "Elsie", "Petra", "Hazel", "Fenn", "Lark", "Nell", "Quill", "Briar"};
+const char* const kDragonNames[] = {"Biscuit", "Sorrel", "Puddle", "Clover", "Nimbus", "Pebble", "Saffron", "Mistral",
+                                    "Truffle", "Sprocket", "Velvet", "Tinder", "Opal", "Fable", "Juno", "Rumble",
                                     "Kestrel", "Marzipan", "Solstice", "Thistle"};
 constexpr int kTrainerCount = sizeof(kTrainers) / sizeof(kTrainers[0]);
 constexpr int kDragonNameCount = sizeof(kDragonNames) / sizeof(kDragonNames[0]);
@@ -212,7 +212,10 @@ void makeRivals(const SaveData& s, int league, int slot, s32 day, Rival out[kRiv
     int favoured[kMaxKinds], nf = 0;
     for (int k = 0; k < kindCount(); ++k)
         if (themeFavours(theme, k) == 2) favoured[nf++] = k;
-    const int guest = nf ? favoured[rng.below(static_cast<u32>(nf))] : static_cast<int>(rng.below(static_cast<u32>(kindCount())));
+    int guest = nf ? favoured[rng.below(static_cast<u32>(nf))] : static_cast<int>(rng.below(static_cast<u32>(kindCount())));
+    // The league's last show: the guest kind is Duchess's (so she's still the only kind that's new).
+    const int duchess = slot == kPrimroseSlot ? findKind("crestwing") : -1;
+    if (duchess >= 0) guest = duchess;
     // One of your own dragons' kinds (already loaded), if you have a hatched one.
     int own[kMaxKinds], no = 0;
     for (int i = 0; i < s.dragonCount; ++i) {
@@ -265,6 +268,29 @@ void makeRivals(const SaveData& s, int league, int slot, s32 day, Rival out[kRiv
         }
         if (league >= 3 && rng.chance(1, 3)) d.dye = static_cast<u8>(1 + rng.below(kDyeCount - 1));
         r.strength = kRivalStrength[league - 1] + static_cast<float>(rng.range(-6, 6)) + (themeFavours(theme, kind) ? 3.0f : 0.0f);
+    }
+    // Primrose Pembrook and Duchess (D138): the same dragon at every league's last show, a pale
+    // crestwing (the rare colouring for the Starfire shows) in her bow, a tiara from the Blaze shows.
+    if (duchess >= 0) {
+        Rival& r = out[0];
+        r.trainer = "Primrose";
+        r.primrose = true;
+        Dragon& d = r.dragon;
+        std::memset(d.name, 0, sizeof(d.name));
+        std::strncpy(d.name, "Duchess", sizeof(d.name) - 1);
+        d.variant = static_cast<u8>(league >= 4 ? kKindVariants - 1 : 2);
+        d.genome.size = 190;
+        d.genome.build = 1;
+        d.manner = 0;
+        d.dye = 0;
+        for (u8& w : d.wear) w = kNone;
+        auto wear = [&](const char* name) {
+            for (int a = 0; a < accessoryCount(); ++a)
+                if (std::strcmp(accessoryInfo(a).name, name) == 0) d.wear[static_cast<int>(accessoryInfo(a).slot)] = static_cast<u8>(a);
+        };
+        wear("Ribbon bow");
+        if (league >= 3) wear("Frost tiara");
+        r.strength = kRivalStrength[league - 1] + 5.0f + (themeFavours(theme, duchess) ? 3.0f : 0.0f);
     }
 }
 

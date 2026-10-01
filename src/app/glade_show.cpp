@@ -74,9 +74,11 @@ struct Show {
     // The camera, eased toward where the phase wants it.
     Vec3 eye, target;
     bool camSet = false;
-    // The host's lines (the dialogue box keeps the pointers).
+    // The host's lines (the dialogue box keeps the pointers), and who else says one (Primrose, D138).
     char lines[5][160] = {};
+    s8 speaker[5] = {-1, -1, -1, -1, -1};
     int attempt = 0;
+    bool primrose = false;  // Primrose and Duchess are on (the league's last show)
 };
 
 Show& sh() {
@@ -108,7 +110,11 @@ Speaker host() {
 void hostSays(App& app, int count) {
     if (g_autoplay) return;  // (scripted runs: the show goes on without waiting for A)
     Talk t;
-    for (int i = 0; i < count && i < 5; ++i) t.lines[t.count++] = sh().lines[i];
+    for (int i = 0; i < count && i < 5; ++i) {
+        t.speaker[t.count] = sh().speaker[i];
+        t.lines[t.count++] = sh().lines[i];
+    }
+    for (s8& p : sh().speaker) p = -1;
     startSpeech(app, host(), t);
 }
 
@@ -345,6 +351,19 @@ void finish(App& app) {
         if (s.reward.dye > 0) std::snprintf(s.lines[n++], sizeof(s.lines[0]), str::kShowDyePrize, dyeInfo(s.reward.dye).name);
     }
     if (s.place == 0 && !s.reward.paid && n < 5) std::snprintf(s.lines[n++], sizeof(s.lines[0]), "%s", str::kShowPaidAlready);
+    // Primrose has a word, win or lose (D138); beating her moves her story on.
+    if (s.primrose && n < 5) {
+        int hers = 0;
+        for (int k = 0; k < kEntrants; ++k)
+            if (s.order[k] == 1) hers = k;
+        const bool beat = s.place < hers;
+        if (beat && !story::flag(app.game, story::kFBeatPrimrose)) {
+            story::setFlag(app.game, story::kFBeatPrimrose);
+            storyUpdate(app);
+        }
+        std::snprintf(s.lines[n], sizeof(s.lines[0]), "%s", beat ? str::kPrimroseLost[s.attempt % 3] : str::kPrimroseWon[s.attempt % 3]);
+        s.speaker[n++] = story::kPPrimrose;
+    }
     hostSays(app, n);
     audio::playSfx(s.place == 0 ? audio::Sfx::Victory : audio::Sfx::Ribbon);
     if (s.place == 0) audio::playSfx(audio::Sfx::Ribbon, 1.1f, 0.8f);
@@ -424,6 +443,13 @@ void beginShow(App& app, vext::Stage& stage, int league, int slot) {
     std::snprintf(s.lines[0], sizeof(s.lines[0]), str::kShowWelcome, t.name);
     std::snprintf(s.lines[1], sizeof(s.lines[1]), str::kShowRivals, s.rivals[0].trainer, s.rivals[0].dragon.name,
                   s.rivals[1].trainer, s.rivals[1].dragon.name);
+    s.primrose = s.rivals[0].primrose;
+    if (s.primrose) {  // (the league's last show: Primrose and Duchess, D138)
+        std::snprintf(s.lines[1], sizeof(s.lines[1]), str::kShowRivalsPrimrose, s.rivals[1].trainer, s.rivals[1].dragon.name);
+        const bool friends = app.game.progress.showLeague >= 3;
+        std::snprintf(s.lines[2], sizeof(s.lines[2]), "%s", friends ? str::kPrimroseHelloFriend : str::kPrimroseHello);
+        s.speaker[2] = story::kPPrimrose;
+    }
     g_on = true;
     audio::playSfx(audio::Sfx::Notice);
     (void)stage;
@@ -458,7 +484,7 @@ bool updateShow(App& app, const Input& in, vext::Stage& stage) {
         case Phase::Intro:
             if (!s.said) {
                 s.said = true;
-                hostSays(app, 2);
+                hostSays(app, s.primrose ? 3 : 2);
                 break;
             }
             s.phase = Phase::Look;

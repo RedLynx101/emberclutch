@@ -15,6 +15,8 @@
 #include "app/ui_draw.hpp"
 #include "core/genetics.hpp"
 #include "core/kinds.hpp"
+#include "core/league.hpp"
+#include "core/story.hpp"
 #include "core/trainer.hpp"
 #include "core/world.hpp"
 
@@ -45,6 +47,56 @@ void rosette(float cx, float cy, float r, u32 c) {
     C2D_DrawTriangle(cx + r * 0.1f, cy, c, cx + r * 0.7f, cy, c, cx + r * 0.6f, cy + r * 1.7f, c, 0.5f);
     C2D_DrawCircleSolid(cx, cy, 0.5f, r, c);
     C2D_DrawCircleSolid(cx, cy, 0.5f, r * 0.55f, withAlpha(theme::kShell, 0.85f));
+}
+
+// A badge (D138): a medallion on two ribbon tails with its league's mark (a spark, a flame, two
+// flames, a star; the Champion's a crown); a faint ring until it's won.
+void flame(float cx, float cy, float h, u32 c) {
+    C2D_DrawCircleSolid(cx, cy + h * 0.18f, 0.5f, h * 0.3f, c);
+    C2D_DrawTriangle(cx - h * 0.29f, cy + h * 0.12f, c, cx + h * 0.29f, cy + h * 0.12f, c, cx, cy - h * 0.5f, c, 0.5f);
+}
+
+void badge(float cx, float cy, float r, int which, bool won) {
+    if (!won) {
+        C2D_DrawCircleSolid(cx, cy, 0.5f, r, withAlpha(theme::kShell, 0.16f));
+        C2D_DrawCircleSolid(cx, cy, 0.5f, r * 0.72f, theme::kDenPlum);
+        return;
+    }
+    const u32 c = theme::kBadge[which], face = withAlpha(theme::kShell, 0.92f);
+    C2D_DrawTriangle(cx - r * 0.75f, cy, c, cx - r * 0.05f, cy, c, cx - r * 0.65f, cy + r * 1.6f, c, 0.5f);
+    C2D_DrawTriangle(cx + r * 0.05f, cy, c, cx + r * 0.75f, cy, c, cx + r * 0.65f, cy + r * 1.6f, c, 0.5f);
+    C2D_DrawCircleSolid(cx, cy, 0.5f, r, c);
+    C2D_DrawCircleSolid(cx, cy, 0.5f, r * 0.74f, face);
+    const float h = r * 1.15f;
+    switch (which) {
+        case 0: flame(cx, cy + r * 0.1f, h * 0.7f, c); break;
+        case 1: flame(cx, cy, h, c); break;
+        case 2:
+            flame(cx - r * 0.24f, cy + r * 0.08f, h * 0.8f, c);
+            flame(cx + r * 0.24f, cy + r * 0.08f, h * 0.8f, c);
+            break;
+        case 3: {  // a five-pointed star
+            const float ro = r * 0.6f, ri = r * 0.25f;
+            for (int i = 0; i < 5; ++i) {
+                const float a0 = -1.5708f + i * 1.2566f, a1 = a0 + 0.6283f, a2 = a0 + 1.2566f;
+                const float ox = cx + ro * std::cos(a0), oy = cy + ro * std::sin(a0);
+                const float ix = cx + ri * std::cos(a1), iy = cy + ri * std::sin(a1);
+                const float nx = cx + ro * std::cos(a2), ny = cy + ro * std::sin(a2);
+                C2D_DrawTriangle(cx, cy, c, ox, oy, c, ix, iy, c, 0.5f);
+                C2D_DrawTriangle(cx, cy, c, ix, iy, c, nx, ny, c, 0.5f);
+            }
+            break;
+        }
+        default: {  // the Champion's crown
+            const float w = r * 1.1f, b = cy + r * 0.32f;
+            C2D_DrawRectSolid(cx - w * 0.5f, b - r * 0.28f, 0.5f, w, r * 0.28f, c);
+            for (int i = 0; i < 3; ++i) {
+                const float x = cx - w * 0.5f + w * 0.5f * i;
+                C2D_DrawTriangle(x - r * 0.2f, b - r * 0.26f, c, x + r * 0.2f, b - r * 0.26f, c, x, b - r * 0.78f, c, 0.5f);
+            }
+            break;
+        }
+    }
 }
 
 void heading(App& app, const char* s, float x, float y) {
@@ -161,25 +213,34 @@ void profileTraining(App& app, const Input& in, Dragon& d) {
 }
 
 void profileRecord(App& app, const Input& in, const Dragon& d) {
-    (void)in;
     char line[80];
     // Its titles, from the leagues it has won (core/trainer).
     heading(app, str::kTitles, 14, 66);
     if (d.battleTitle || d.showTitle) {
         std::snprintf(line, sizeof(line), "%s%s%s", trainer::battleTitleName(d.battleTitle),
                       d.battleTitle && d.showTitle ? "  -  " : "", trainer::showTitleName(d.showTitle));
-        text(app, line, 64, 66, 0.4f, theme::kShell, C2D_AlignLeft, 160);
+        text(app, line, 64, 66, 0.4f, theme::kShell, C2D_AlignLeft, 140);
     } else {
-        text(app, str::kNoTitles, 64, 66, 0.4f, withAlpha(theme::kShell, 0.5f), C2D_AlignLeft, 160);
+        text(app, str::kNoTitles, 64, 66, 0.4f, withAlpha(theme::kShell, 0.5f), C2D_AlignLeft, 140);
     }
-    // Your friendly duels won with the roaming trainers (all your dragons', workstream D).
-    std::snprintf(line, sizeof(line), str::kDuelsWon, static_cast<int>(app.game.progress.duelsWon));
-    text(app, line, 308, 68, 0.32f, withAlpha(theme::kShell, app.game.progress.duelsWon ? 0.8f : 0.45f), C2D_AlignRight, 90);
-    // Its wins, and the Hollow's deepest floor.
-    const int values[4] = {d.battleWins, d.showWins, d.wildWins, d.frostDeepest};
-    const char* const labels[4] = {str::kBattleWins, str::kShowWins, str::kWildWins, str::kHollowDeepest};
-    for (int k = 0; k < 4; ++k) {
-        const Rect r{12.0f + k * 75.0f, 84, 71, 36};
+    // Your badge case (all your dragons', D138): a league's badge once it's won, the Champion's from
+    // Wren once Solenne is beaten; a tap names one.
+    for (int b = 0; b < 5; ++b) {
+        const bool won = b < kLeagues ? league::leagueWon(app.game, b) : story::questDone(app.game, story::kQLeagueStarfire);
+        const float cx = 226.0f + b * 20.0f, cy = 71.0f;
+        badge(cx, cy, 7.0f, b, won);
+        if (in.released && Rect{cx - 10, cy - 9, 20, 22}.contains(in.rx, in.ry)) {
+            if (won) showToastf(app, "%s", b == kLeagues ? str::kBadgeChampion : str::kBadgeNames[b]);
+            else showToastf(app, str::kBadgeNotYet, str::kBadgeNames[b]);
+            audio::playSfx(audio::Sfx::Tap);
+        }
+    }
+    // Its wins, the Hollow's deepest floor, and your friendly duels with the roaming trainers (all
+    // your dragons', workstream D).
+    const int values[5] = {d.battleWins, d.showWins, d.wildWins, d.frostDeepest, app.game.progress.duelsWon};
+    const char* const labels[5] = {str::kBattleWins, str::kShowWins, str::kWildWins, str::kHollowDeepest, str::kYourDuels};
+    for (int k = 0; k < 5; ++k) {
+        const Rect r{12.0f + k * 60.0f, 86, 56, 34};
         panel(r, withAlpha(theme::kShell, 0.12f));
         std::snprintf(line, sizeof(line), "%d", values[k]);
         textCentered(app, line, r.x + r.w / 2, r.y + 12, 0.6f, values[k] ? theme::kClutchGold : withAlpha(theme::kShell, 0.4f));

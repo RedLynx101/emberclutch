@@ -569,6 +569,11 @@ inline constexpr const char* kTitles = "Titles";
 inline constexpr const char* kNoTitles = "No titles yet";
 inline constexpr const char* kBattleWins = "Battles won";
 inline constexpr const char* kShowWins = "Shows won";
+inline constexpr const char* kYourDuels = "Your duels";
+inline constexpr const char* kBadgeNames[5] = {"The Ember badge", "The Flame badge", "The Blaze badge", "The Starfire badge",
+                                                "The Champion badge"};
+inline constexpr const char* kBadgeChampion = "The Champion badge: one of the five champions of Skyreach!";
+inline constexpr const char* kBadgeNotYet = "%s: not won yet";
 inline constexpr const char* kWildWins = "Wild dragons";
 inline constexpr const char* kCupsWon = "Cups";
 inline constexpr const char* kRibbons = "Ribbons";
@@ -666,6 +671,20 @@ inline constexpr const char* kBoardYourLook = "Look %d  Poise %d";
 // The show
 inline constexpr const char* kShowWelcome = "Welcome, one and all, to the %s!";
 inline constexpr const char* kShowRivals = "Tonight: %.15s and %.15s, %.15s and %.15s, and {P} with {D}!";
+inline constexpr const char* kShowRivalsPrimrose = "Tonight: Primrose and Duchess, of course! %.15s and %.15s, and {P} with {D}!";
+// Primrose Pembrook, the rival at a league's last show (D138): snooty, and secretly lovely.
+inline constexpr const char* kPrimroseHello = "[proud] Duchess and I always save the last show for ourselves. Do try to keep up, darling.";
+inline constexpr const char* kPrimroseHelloFriend = "[shy] Good luck, {P}. I mean it. Don't tell anyone I meant it.";
+inline constexpr const char* kPrimroseLost[3] = {
+    "[huff] Duchess had something in her eye. A sequin. It was a sequin. Next time!",
+    "[shock] Second?! We don't DO second! ...Well shown, {P}. Hmph.",
+    "[shy] Fine. {D} was wonderful. Duchess thinks so too. She told me. Loudly.",
+};
+inline constexpr const char* kPrimroseWon[3] = {
+    "[proud] Better luck next time, darling. Truly. I mean that in the most superior way.",
+    "[cool] Duchess thanks you for the competition. She enjoyed winning it.",
+    "[happy] That was close! Not THAT close. But close. Come back stronger!",
+};
 inline constexpr const char* kShowLookLine = "First, the Look! How do they suit the %s?";
 inline constexpr const char* kShowPoiseLine = "Now, Poise: how they carry themselves.";
 inline constexpr const char* kShowPerfLine = "And the Performance! {P}, cue {D}'s tricks in time with the music.";

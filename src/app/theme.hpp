@@ -17,6 +17,8 @@ inline const u32 kTrack = rgba(0x1C, 0x11, 0x22);  // an empty gauge: dark again
 inline const u32 kSkyTeal = rgba(0x3F, 0xA7, 0xA8);
 inline const u32 kAsh = rgba(0x8C, 0x7A, 0x86);
 inline const u32 kRose = rgba(0xD9, 0x54, 0x6A);
+// The badge case (D138): Ember, Flame, Blaze, Starfire and the Skyreach Champion's.
+inline const u32 kBadge[5] = {kEmber, kRose, rgba(0xF0, 0x9A, 0x3E), kSkyTeal, kClutchGold};
 
 }  // namespace ec::theme
 

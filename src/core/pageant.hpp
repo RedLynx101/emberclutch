@@ -88,11 +88,15 @@ float performanceScore(const Hit* hits, int count);
 // ---- The rivals, picked for the league (the same for a show all day). Their kinds come from the
 // theme's favourites and your own dragons' kinds (at most one kind you don't have a show, so a
 // show loads little that's new).
+// The league's last show (its fourth slot) always has Primrose Pembrook and Duchess, her crestwing,
+// as the first rival (D138): a little stronger than the rest, dressed for every show.
 struct Rival {
     const char* trainer = "";
     Dragon dragon;          // a grown dragon of its kind, named, dressed (not in the save)
     float strength = 0;     // its rounds' middle
+    bool primrose = false;  // Primrose and Duchess
 };
+constexpr int kPrimroseSlot = kShowSlots - 1;
 void makeRivals(const SaveData& s, int league, int slot, s32 day, Rival out[kRivals]);
 // A rival's round, with a little of the day's luck.
 float rivalRound(const Rival& r, int round, int theme, Rng& rng);

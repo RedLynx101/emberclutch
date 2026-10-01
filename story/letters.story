@@ -131,6 +131,12 @@ letter primrose_challenge from primrose "A word of warning"
   when showwon 0 and met primrose
   A word of warning: beginner's luck runs out. Duchess and I will see you at the next show. Do bring a better ribbon. - P. Pembrook
 
+letter primrose_truce from primrose "(lavender paper, perfumed)"
+  when shows 4 and flag beat_primrose
+  {P}. Star of the Glade. Congratulations. I've drafted this letter nine times and the first eight were rude.
+  --
+  Duchess has been sulking since the Gala, so I let her sleep on my good cushion. I think she misses losing to you. I think I might too. Tea at the glade, some afternoon? Bring {D}. - Primrose (not P. Pembrook)
+
 letter linnet_stock from linnet "New stock!"
   when done pageant_dazzle
   Darling keeper! New ribbons at Linnet's Finery, soft as a sigh and bright as a secret. Come and see! - Linnet

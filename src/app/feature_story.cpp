@@ -9,6 +9,7 @@
 #include <cstring>
 
 #include "app/dialogue.hpp"
+#include "app/glade_show.hpp"
 #include "app/scenes.hpp"
 #include "app/story_app.hpp"
 #include "app/strings.hpp"
@@ -76,6 +77,7 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
     for (const Look& l : kLooks) {
         story::Spot sp;
         if (n >= cap || !story::spotOf(s, l.person, now, sp)) continue;
+        if (l.person == story::kPPrimrose && glade::showOn()) continue;  // (on the stage with Duchess, D138)
         vext::Folk& f = out[n];
         f = vext::Folk{};
         dress(l, f.look);

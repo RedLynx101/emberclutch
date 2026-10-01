@@ -166,6 +166,10 @@ talk primrose
     [proud] Primrose Pembrook. And this is Duchess, the finest dragon ever to grace Moonpetal Glade.
     [huff] You must be the new keeper. How... rustic. Is that grass on its claws?
     [cool] Beginner's luck is a lovely thing. It runs out. Duchess and I will see you at the shows.
+  rule once if flag beat_primrose
+    [huff] You beat Duchess. At a SHOW. In front of PEOPLE. My mother was in the second row.
+    [thinking] She clapped for you. My own mother. Duchess clapped too, with her tail. Traitors, both of them.
+    [shy] ...It was a good show. There. I said it. Now go away before I say something nice.
   rule chat if shows 3
     vary
       [shy] Fine. FINE. You're good. You're very good. Duchess likes you. I suppose I do too. A bit.

@@ -404,6 +404,18 @@ TEST(pageant_rivals_judges_and_placings) {
         CHECK(newKinds.size() <= 1);  // at most one kind you don't have
         CHECK(mid > lastMid);
         lastMid = mid;
+        CHECK(!a[0].primrose && !a[1].primrose);
+        // The league's last show: Primrose and Duchess (D138), still at most one new kind.
+        pageant::Rival p[kRivals];
+        pageant::makeRivals(s, l, pageant::kPrimroseSlot, kDay0, p);
+        CHECK(p[0].primrose && !p[1].primrose && std::strcmp(p[0].trainer, "Primrose") == 0);
+        CHECK(std::strcmp(p[0].dragon.name, "Duchess") == 0 && p[0].dragon.kind == findKind("crestwing"));
+        CHECK(std::strcmp(p[1].dragon.name, "Duchess") != 0 && std::strcmp(p[1].trainer, "Primrose") != 0);
+        CHECK(p[0].dragon.id != p[1].dragon.id && acc::wornCount(p[0].dragon) == (l >= 3 ? 2 : 1));
+        std::set<int> pk;
+        for (const auto& r : p)
+            if (r.dragon.kind != 2) pk.insert(r.dragon.kind);
+        CHECK(pk.size() <= 1);
         Rng rng(4);
         for (int round = 0; round < kRounds; ++round) {
             const float v = pageant::rivalRound(a[0], round, 0, rng);

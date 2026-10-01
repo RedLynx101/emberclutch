@@ -58,12 +58,16 @@ REGION = {}
 # checked on every kind on the plan (tools/blender/dragonkit/curl.py).
 CURL = merge(WINGS_FOLDED, {
     "hips": (10, 0, 0),
-    "arm_up*": (60, 0, 0), "arm_lo*": (-145, 0, 0), "hand*": (-5, 0, 0),
-    "leg_up*": (62, 12, 0), "leg_lo*": (-115, 0, 0), "foot*": (55, 0, 0),
+    "arm_up*": (74, 0, 0), "arm_lo*": (-160, 0, 0), "hand*": (2, 0, 0),
+    "leg_up*": (86, 14, 0), "leg_lo*": (-150, 0, 0), "foot*": (72, 0, 0),
     "belly": (-18, 13, 1), "chest": (-8, 12, -7),
     "neck1": (-72, 11, -7), "neck2": (-14, 2, -2), "neck3": (18, 2, -2), "head": (68, -9, 14),
     "tail1": (4, -33, 7), "tail2": (7, -87, 9), "tail3": (14, -68, 6), "tail4": (4, -51, -6),
 })
+# Grown bodies have long forelegs: folded as above, the forearms lie flat under the chest and the
+# body rests on its belly (run 22, Noah: Cinder lay propped on a paw with his hind legs in the air).
+# A hatchling's short forearms fold the old way (flatter, they'd sink into its round chest).
+CURL_H = merge(CURL, {"arm_up*": (60 - 74, 0, 0), "arm_lo*": (-145 + 160, 0, 0), "hand*": (-5 - 2, 0, 0)})
 # Settling: the head going down and round, the tail starting to wrap.
 _SHIFT = merge(WINGS_FOLDED, {
     "hips": (5, 0, 0), "arm_up*": (68, 0, 0), "arm_lo*": (-122, 0, 0), "hand*": (32, 0, 0),
@@ -74,10 +78,18 @@ _SHIFT = merge(WINGS_FOLDED, {
 
 
 def rest_clips():
-    """curl_up, sleep and wake on the cat's curl (the rest of the classic rest clips stay)."""
-    curl_up = clipkit.Clip("curl_up", 1.6).pose(0.0, LIE).pose(0.75, _SHIFT).pose(1.6, CURL).event(1.35, "thump")
-    sleep = clipkit.Clip("sleep", 4.8, loop=True).pose(0.0, CURL).wave(breathe(1.8, 4.8))
-    wake = (clipkit.Clip("wake", 2.8).pose(0.0, CURL).pose(0.45, _SHIFT).pose(0.9, LIE)
+    """curl_up, sleep and wake on the cat's curl (the rest of the classic rest clips stay); the
+    hatchling's own (_h) on its curl."""
+    out = []
+    for suffix, curl in (("", CURL), ("_h", CURL_H)):
+        out += curl_clips(suffix, curl)
+    return out
+
+
+def curl_clips(suffix, curl):
+    curl_up = clipkit.Clip("curl_up" + suffix, 1.6).pose(0.0, LIE).pose(0.75, _SHIFT).pose(1.6, curl).event(1.35, "thump")
+    sleep = clipkit.Clip("sleep" + suffix, 4.8, loop=True).pose(0.0, curl).wave(breathe(1.8, 4.8))
+    wake = (clipkit.Clip("wake" + suffix, 2.8).pose(0.0, curl).pose(0.45, _SHIFT).pose(0.9, LIE)
             .pose(1.5, merge(LIE, {"arm_up*": (20, 0, 0), "arm_lo*": (-20, 0, 0), "hips": (-14, 0, 0),
                                    "leg_up*": (30, 0, 0), "leg_lo*": (-50, 0, 0), "neck1": (18, 0, 0),
                                    "head": (24, 0, 0), "snout": (6, 0, 0), "jaw": (-32, 0, 0),

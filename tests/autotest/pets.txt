@@ -20,9 +20,21 @@ tips seen
 wait 8
 travel 8
 wait 5
-view 8 -4.2 10.6 1.4 -4.2 6.6 0.5
+view 8 -4.2 12.6 1.6 -4.2 6.6 0.6
 wait 1.5
 shot 01-cinder-asleep
+view 8 1.5 9.0 1.2 -4.2 6.6 0.6
+wait 0.5
+shot 01b-cinder-front
+view 8 -10.0 9.0 1.2 -4.2 6.6 0.6
+wait 0.5
+shot 01c-cinder-back
+view 8 -4.0 7.2 6.5 -4.2 6.6 0.3
+wait 0.5
+shot 01d-cinder-top
+view 8 -4.2 9.6 0.5 -4.2 6.6 0.6
+wait 0.5
+shot 01e-cinder-low
 story talk cinder
 wait 1.5
 shot 02-cinder-talk

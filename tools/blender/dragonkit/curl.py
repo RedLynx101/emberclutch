@@ -39,7 +39,7 @@ from dragonkit import review as rv  # noqa: E402
 argv = km.argv
 arg = km.arg
 STAGES = (("hatchling", "hatchling", 0.75), ("adult", "grown", 1.0))
-VIEWS = ("three_quarter", "top", "back_quarter", "front_low")
+VIEWS = tuple(arg("--views", "three_quarter,top,back_quarter,front_low").split(","))  # (--views side,...: any of km.VIEWS)
 km.VIEWS["front_low"] = Vector((0.35, -1.0, 0.15))
 FLOOR_LIMIT = 0.02    # body lengths below the floor, past the idle pose's
 WING_LIMIT = 0.04     # body lengths inside the body, past the idle pose's

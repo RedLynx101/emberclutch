@@ -44,6 +44,7 @@ Dragon g_cinder;
 DenActor g_cinderActor;
 bool g_cinderMade = false;
 ClipId g_cinderClip = ClipId::Count;
+int g_cinderLook = -1;  // (the clip library his clip came from: replayed when his own kind loads)
 float g_dogClock = 0;
 
 void makeCinder() {
@@ -54,7 +55,7 @@ void makeCinder() {
     g_cinder.id = 0xC1D00001u;  // (never a save's)
     g_cinder.stage = Stage::Adult;
     g_cinder.genome.size = 235;  // a big old fellow
-    g_cinder.genome.build = 0;
+    g_cinder.genome.build = 1;
     std::snprintf(g_cinder.name, sizeof(g_cinder.name), "Cinder");
     g_cinderMade = true;
 }
@@ -171,6 +172,14 @@ void tick(App& app, const vext::Stage& st) {
     const Vec3 at = where(*st.valley, sp.place, sp.at);
     if (std::hypot(at.x - st.you.x, at.y - st.you.y) > 80.0f) return;
     if (!g_cinderMade) makeCinder();
+    if (!r3d::kindReady(g_cinder.kind)) {  // (his own model first: a clip index means another clip in another library)
+        r3d::wantKind(g_cinder.kind);
+        return;
+    }
+    if (r3d::lookFor(g_cinder) != g_cinderLook) {
+        g_cinderLook = r3d::lookFor(g_cinder);
+        g_cinderClip = ClipId::Count;
+    }
     const AnimLibrary* lib = r3d::animsFor(g_cinder);
     if (!lib) return;
     const int* clips = r3d::clipIndexFor(g_cinder, kFormGrown);

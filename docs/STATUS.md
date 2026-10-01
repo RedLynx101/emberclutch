@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, the Living Valley pass (D135-D139), run 22 (0.9.14) next** ([plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). 0.9.13's run (take 4) came back reviewed; this pass is Noah's planning message and storyboard answers built: the player build, growing up in about a week, the story engine and Act 1 rebuilt, the Storybook look on everyone with a feelings kit, the badge case, Primrose, Custard and Cinder. Run 22's page: see below. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, the Living Valley pass (D135-D140), run 23 (0.9.15) on the 3DS** ([plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). 0.9.13's run (take 4) came back reviewed; this pass is Noah's planning message and storyboard answers built: the player build, growing up in about a week, the story engine and Act 1 rebuilt, the Storybook look on everyone with a feelings kit, the badge case, Primrose, Custard and Cinder. Run 22's page: see below. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Tooling: headless emulator checks (2026-09-30)
@@ -15,6 +15,21 @@
   Performance is still signed off on the 3DS: no emulator models its timing.
 - Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
   running it in UTC), and the async file reads and presentation made animations drift (off).
+
+## Now: run 23 (0.9.15), run 22's fixes (2026-10-01)
+- **Run 22's notes** (the review page, collections `run22`, `looks`): the banner's title cut off by the
+  HOME Menu's rounded corners; a mailbox sound; the Trailhead froze again (watchdog: the Wanderings' first
+  frame, its top screen sent and never drawn, the music going); no stutter otherwise; six looks failed
+  (Rowan's see-through forehead; gaps between hat and head on Bram, Fig, Tam; Fig's hat and hair; Tam's
+  brow-to-beard band; Tove's hair through her hat; Solenne after Emilia, an elf).
+- **0.9.15** (D140): the trail painting's NaN corners (the freeze's likely cause: Azahar skips them, the
+  3DS's GPU can hang on them) held to the trail's end; the banner's wordmark redone (Emberclutch back at
+  7.9 on its own top half, Skyreach Valley under it, the hatchling and egg at 84%); `mailbox-chime`; the six
+  people fixed (heads closed under hats, hands on two rings, Solenne after Emilia); portraits. Tests
+  377,419 checks, 0 failures; the trailhead, storybook and pets autotests clean.
+- **Sent** to .59 (CIA 75 MB, 0.9.15; the save backed up to `build/3ds-backup/2026-10-01_1839/`); run 23's
+  steps (`docs/plan/hardware-check-8.md`) on the review page (collection `run23`; the looks re-markable).
+- **Next:** Noah: the Trailhead several times, the banner, the chime, the six looks.
 
 ## Now: the Living Valley pass, ready for run 22 (0.9.14) (2026-09-30)
 - **Built** (D135-D139, commits 69ada27 on): the player build (`tools\build.ps1 -Player`, kept building,

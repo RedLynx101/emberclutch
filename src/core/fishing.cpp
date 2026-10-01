@@ -66,6 +66,7 @@ const CatchInfo& catchInfo(Catch c) {
         {"a Frostmelon", Food::Frostmelon, 1, 0, 0.9f, false},  // cooling in the shallows
         {"a shell", Food::Count, 0, 20, 0.6f, false},         // tangled on the hook (20: D128)
         {"a pearl!", Food::Count, 0, 120, 0.7f, false},
+        {"Old Whiskers", Food::Count, 0, 50, 1.75f, true},     // the one that got away (D137): let go again
     };
     return kInfo[c < Catch::Count ? static_cast<int>(c) : 0];
 }
@@ -74,8 +75,8 @@ bool goldenHour(int hour) { return (hour >= 5 && hour <= 7) || (hour >= 17 && ho
 
 Catch rollCatch(Rng& rng, int hour) {
     // River, big, honeyroot, skyberry, frostmelon, shell, pearl (a hundred each).
-    static constexpr int kDay[static_cast<int>(Catch::Count)] = {58, 12, 7, 6, 5, 10, 2};
-    static constexpr int kGolden[static_cast<int>(Catch::Count)] = {51, 20, 7, 5, 5, 10, 2};
+    static constexpr int kDay[static_cast<int>(Catch::Count)] = {58, 12, 7, 6, 5, 10, 2, 0};
+    static constexpr int kGolden[static_cast<int>(Catch::Count)] = {51, 20, 7, 5, 5, 10, 2, 0};
     const int* w = goldenHour(hour) ? kGolden : kDay;
     int r = static_cast<int>(rng.below(100));
     for (int k = 0; k < static_cast<int>(Catch::Count); ++k) {
@@ -89,7 +90,7 @@ Catch rollCatch(Rng& rng, int hour) {
 Bite rollBite(Rng& rng, int hour, Catch c) {
     Bite b;
     b.wait = goldenHour(hour) ? 1.6f + 3.0f * unit(rng) : 2.6f + 4.4f * unit(rng);
-    const bool big = c == Catch::BigFish;
+    const bool big = c == Catch::BigFish || c == Catch::Whiskers;
     b.nibbles = static_cast<int>(rng.below(big ? 4u : 3u));  // a big one teases more
     if (b.nibbles > kMaxNibbles) b.nibbles = kMaxNibbles;
     // The nibbles spread before the bite, well apart and clear of the plop and the bite.

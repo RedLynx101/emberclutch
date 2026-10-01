@@ -2,6 +2,7 @@
 // judges, the two stall keepers), the board (the leagues and today's shows: enter one, or dress
 // up first), the stalls (a thing tried on your dragon before you buy it) and the show itself
 // (app/glade_show.cpp). See app/glade.hpp.
+#include "app/story_app.hpp"
 #include "app/glade.hpp"
 
 #include <cmath>
@@ -129,6 +130,8 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
         f.reach = reach;
         f.voice = kNpcs[who].voice;
         f.pitch = kNpcs[who].pitch;
+        f.person = static_cast<s8>(who == kHost ? story::kPCelestine : who == kMilliner ? story::kPLinnet
+                                   : who == kDyer ? story::kPMadder : -1);
     };
     const Vec3 middle = gladePoint(v, {0, 3});
     Vec3 host;
@@ -176,14 +179,18 @@ void openStall(int stall) {
 void act(App& app, const vext::Folk& who, vext::Stage& stage) {
     (void)stage;
     Glade& g = gs();
+    const s64 now = nowLocal(app);
     if (who.id == kHost) {
-        if (!g.heard[0]) say(app, kHost, str::kHostHello, 3);
+        if (story::hasImportantTalk(app.game, story::kPCelestine, now)) startStoryTalk(app, story::kPCelestine);  // (D137)
+        else if (!g.heard[0]) say(app, kHost, str::kHostHello, 3);
         else say(app, kHost, &str::kHostAgain, 1);
         g.heard[0] = true;
         openBoard(app);
     } else if (who.id == kMilliner || who.id == kDyer) {
         const int stall = who.id == kDyer ? 1 : 0;
-        if (!g.heard[1 + stall]) say(app, who.id, stall ? &str::kDyerHello : &str::kMillinerHello, 1);
+        const int person = stall ? story::kPMadder : story::kPLinnet;
+        if (story::hasImportantTalk(app.game, person, now)) startStoryTalk(app, person);  // (D137)
+        else if (!g.heard[1 + stall]) say(app, who.id, stall ? &str::kDyerHello : &str::kMillinerHello, 1);
         g.heard[1 + stall] = true;
         openStall(stall);
         audio::playSfx(audio::Sfx::VillageBell);
@@ -402,7 +409,15 @@ void boardBottom(App& app, const Input& in, const vext::Stage& stage) {
         g.toWardrobe = true;
         audio::playSfx(audio::Sfx::Confirm);
     }
-    if (button(app, {110, 212, 100, 26}, str::kBack, in)) {
+    if (button(app, {6, 212, 100, 26}, str::kHowItWorks, in)) {  // (D137: the basics, in Celestine's words)
+        say(app, kHost, str::kHowLines, sizeof(str::kHowLines) / sizeof(str::kHowLines[0]));
+        if (!story::flag(app.game, story::kFPageantExplained)) {
+            story::setFlag(app.game, story::kFPageantExplained);
+            storyUpdate(app);
+        }
+        audio::playSfx(audio::Sfx::Tap);
+    }
+    if (button(app, {214, 212, 100, 26}, str::kBack, in)) {
         g.mode = Mode::None;
         audio::playSfx(audio::Sfx::Back);
     }

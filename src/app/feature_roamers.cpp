@@ -826,7 +826,7 @@ void roamerCommand(App& app, const char* args) {
         s.forceDay = a;  // (refreshed on the next frame)
         s.day = INT_MIN;
     } else if (std::strcmp(word, "level") == 0) {
-        s.forceLevel = a > 0 ? (a > kMaxLevel ? kMaxLevel : a) : 0;
+        s.forceLevel = a > 0 ? (a > kLevelCap ? kLevelCap : a) : 0;
     } else if (std::strcmp(word, "list") == 0) {
         for (int k = 0; k < s.count; ++k) {
             const Out& o = s.out[k];

@@ -289,7 +289,7 @@ const C2D_Image* valleyMap(const Valley& v);
 // ---- The challenges (Beta WP8-WP11, app/scene_challenge.cpp): their things (core/challenge_mesh),
 // drawn after drawValley with its camera, fog and depth. (The den's shelf of trophies and ribbons
 // is drawn with the den's things, from the save.)
-enum class PropKind : u8 { Ring, Crystal, Fruit, Basket, Board, Trophy, Shell, Bobber, Fish };  // (Shell ..: Driftwood Cove, workstream C)
+enum class PropKind : u8 { Ring, Crystal, Fruit, Basket, Board, Trophy, Shell, Bobber, Fish, Mailbox, Sign };  // (Shell ..: Driftwood Cove, workstream C; Mailbox, Sign: the story, D137)
 struct ChallengeProp {
     PropKind kind = PropKind::Ring;
     u8 variant = 0;            // the fruit's kind, the trophy's challenge

@@ -105,13 +105,21 @@ inline constexpr const char* kDenHint = "New things turn up at the Market's stal
 inline constexpr const char* kFoundPlace = "Found: %s";
 inline constexpr const char* kStarEgg = "A star-born %s egg is yours!";
 inline constexpr const char* kPromptTalk = "A: talk to %s";
+inline constexpr const char* kPromptMail = "A: check the mailbox";
+inline constexpr const char* kPromptMailNew = "A: a letter in the mailbox!";
+inline constexpr const char* kMailbox = "Mailbox";
+inline constexpr const char* kMailFrom = "From %s";
+inline constexpr const char* kMailEmpty = "No letters yet.";
+inline constexpr const char* kMailClose = "Close";
+inline constexpr const char* kMailFold = "Fold it away";
+inline constexpr const char* kMailNextPage = "Next page";
 inline constexpr const char* kFindGleam = "Found %u Gleam!";
 inline constexpr const char* kFindTrinket = "Found a %s for the hoard!";
 inline constexpr const char* kFindsFound = "Finds: %d of %d";
 inline constexpr const char* kFindEgg = "Found a wild egg! It's waiting at home.";
 inline constexpr const char* kPromptEggStand = "A: the egg of the day";
 inline constexpr const char* kPromptGoods = "A: see the goods";
-inline constexpr const char* kFoundStray = "%s sniffed out the stray! She's safe.";
+inline constexpr const char* kFoundStray = "%s found the little one, and Custard with her!";
 inline constexpr const char* kStrayScent = "%s has caught a scent... keep going!";
 inline constexpr const char* kStallEmpty = "Sold for today";
 inline constexpr const char* kStallTomorrow = "New things on the stall tomorrow.";
@@ -291,6 +299,7 @@ inline constexpr const char* kCalm = "Calm";
 
 // Driftwood Cove (workstream C, D90): Tam the fisher, fishing off the shore, shells on the beach.
 inline constexpr const char* kFisherName = "Tam";
+inline constexpr const char* kWhiskersLanded = "You let him go. Tam has to hear about this!";
 inline constexpr const char* kFisherTitle = "The fisher";
 inline constexpr const char* kPromptFish = "A: fish here";
 inline constexpr const char* kPromptShell = "A: pick up the shell";
@@ -624,11 +633,21 @@ inline constexpr const char* kJudgeNames[3] = {"Plume", "Wick", "Tansy"};
 inline constexpr const char* kPromptPageant = "The pageant: talk to %s";
 inline constexpr const char* kPromptStall = "Browse %s's stall";
 inline constexpr const char* kHostHello[3] = {
-    "Welcome to Moonpetal Glade, {P}! I'm Celestine, and this is where dragons shine.",
-    "Every show has a theme. Dress {D} to suit it: the judges score Look, Poise and Performance.",
-    "Win all four shows of a league for its title. The themes change every day!",
+    "[excited] Welcome to Moonpetal Glade, {P}! I'm Celestine, and this is where dragons SHINE.",
+    "[proud] Every show has a theme. Dress {D} to suit it: the judges score Look, Poise and Performance.",
+    "[love] Win all four shows of a league for its title. The themes change every DAY, darling!",
 };
-inline constexpr const char* kHostAgain = "Which show will you and {D} enter tonight?";
+inline constexpr const char* kHostAgain = "[excited] Which show will you and {D} dazzle tonight, darling?";
+// The board's How it works (D137): the basics, in Celestine's words.
+inline constexpr const char* kHowItWorks = "How it works";
+inline constexpr const char* kHowLines[6] = {
+    "[excited] The basics, darling! Every show has a THEME. Read it. Breathe it. LIVE it.",
+    "[proud] Round one, Look: dress {D} to suit the theme. Colours, style, a CLEAN dragon. Mud is not a style.",
+    "[thinking] Round two, Poise: a happy, well-loved dragon carries itself like royalty. Care for it!",
+    "[love] Round three, Performance: tap the tricks in time with the music. A strong bond widens the window.",
+    "[happy] Three judges hold up their cards each round. The most points wins. Win all four shows: a TITLE.",
+    "[excited] Now go. Enter. SHINE. Sparkle is a DISCIPLINE!",
+};
 inline constexpr const char* kMillinerHello = "Hats, bows, capes and charms! Tap one to see it on {D}.";
 inline constexpr const char* kDyerHello = "A dip in my dyes and {D} will be the talk of the glade.";
 // The board
@@ -714,6 +733,7 @@ inline constexpr const char* kBattleContinue = "Continue";
 inline constexpr const char* kBattleWantsTo = "%s wants to battle!";
 inline constexpr const char* kBattleWildAppears = "A wild %s comes out!";
 inline constexpr const char* kBattleGuardian = "The Hollow's guardian!";
+inline constexpr const char* kBattleWarden = "The Frost Warden rises from the ice!";
 inline constexpr const char* kBattleWildName = "the wild %s";
 inline constexpr const char* kBattleNeedsBreather = "Needs a breather";
 inline constexpr const char* kBattleUsedUp = "Used";

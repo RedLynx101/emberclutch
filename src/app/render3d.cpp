@@ -4186,6 +4186,7 @@ namespace {
 GpuMesh g_ringMesh, g_crystalMesh, g_fruitMeshes[static_cast<int>(challenge::Fruit::Count)], g_basketMesh, g_boardMesh,
     g_trophyMeshes[kChallenges];
 GpuMesh g_shellMeshes[kShellKinds], g_bobberMesh, g_fishMesh;  // Driftwood Cove (workstream C)
+GpuMesh g_mailboxMeshes[2], g_signMesh;  // the story's props (D137)
 // The den's shelf: rebuilt when what's been won changes.
 GpuMesh g_shelfMesh;
 u8 g_shelfCups[kChallenges] = {};
@@ -4237,6 +4238,14 @@ GpuMesh* challengeMesh(PropKind kind, int variant) {
         case PropKind::Fish:
             g = &g_fishMesh;
             if (!g->vbo) m = fishMesh();
+            break;
+        case PropKind::Mailbox:
+            g = &g_mailboxMeshes[variant ? 1 : 0];
+            if (!g->vbo) m = mailboxMesh(variant != 0);
+            break;
+        case PropKind::Sign:
+            g = &g_signMesh;
+            if (!g->vbo) m = signMesh();
             break;
     }
     if (g && !g->vbo && (m.idx.empty() || !uploadProp(*g, m))) return nullptr;

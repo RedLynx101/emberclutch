@@ -10,7 +10,7 @@ float clamp100(float v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }
 }  // namespace
 
 // A gentle curve: level 5 after a few battles, 10 in a couple of days' play, 30 for the leagues'
-// finals, 50 for the devoted.
+// finals, 42 (Skyreach's cap, kLevelCap) for the devoted; the curve runs on to 50 for later valleys.
 u32 xpForLevel(int level) {
     if (level <= 1) return 0;
     if (level > kMaxLevel) level = kMaxLevel;
@@ -20,7 +20,7 @@ u32 xpForLevel(int level) {
 
 int levelOf(u32 xp) {
     int level = 1;
-    while (level < kMaxLevel && xp >= xpForLevel(level + 1)) ++level;
+    while (level < kLevelCap && xp >= xpForLevel(level + 1)) ++level;
     return level;
 }
 
@@ -28,7 +28,7 @@ int levelOf(const Dragon& d) { return levelOf(d.xp); }
 
 void levelProgress(const Dragon& d, u32& into, u32& span) {
     const int level = levelOf(d.xp);
-    if (level >= kMaxLevel) {
+    if (level >= kLevelCap) {
         into = span = 0;
         return;
     }
@@ -38,7 +38,7 @@ void levelProgress(const Dragon& d, u32& into, u32& span) {
 
 int gainXp(Dragon& d, u32 amount) {
     const int before = levelOf(d.xp);
-    const u32 cap = xpForLevel(kMaxLevel);
+    const u32 cap = xpForLevel(kLevelCap);
     d.xp = d.xp + amount > cap || d.xp + amount < d.xp ? cap : d.xp + amount;
     return levelOf(d.xp) - before;
 }

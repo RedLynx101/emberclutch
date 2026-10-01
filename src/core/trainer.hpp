@@ -13,6 +13,7 @@ struct SaveData;
 
 constexpr int kLeagues = 4;         // Ember, Flame, Blaze, Starfire (as the cups)
 constexpr int kMaxLevel = 50;
+constexpr int kLevelCap = 42;      // Skyreach's ceiling (D138): the last 8 levels wait for the next valley
 constexpr int kAccessoryBytes = 8;  // room for 64 accessories (core/accessories)
 constexpr int kRecordCounts = 8;
 constexpr int kMaxTrained = 30;     // stat points training can add to one stat

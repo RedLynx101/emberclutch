@@ -8,6 +8,7 @@ quest keepers_apprentice "The keeper's apprentice"
   line main
   giver rowan
   gleam 60
+  when hatched
   rumour "Old Rowan would like to meet the new keeper. He lives at the Keeper's Lodge by the falls."
   step "Visit Old Rowan at the Keeper's Lodge" talk rowan where person rowan
   step "Light the lantern by your den" until lantern den where lantern den

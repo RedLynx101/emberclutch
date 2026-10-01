@@ -157,6 +157,16 @@ struct ValleyScene {
     float starHeading = 0, starT = 0;
 };
 
+// Where the story stands a villager now, instead of their own spot (D137: Rowan by the Nesting
+// Stone for his story, everyone at the arena on the festival night), refreshed each frame.
+struct StorySpot {
+    bool on = false;
+    Vec3 at;
+    float heading = 0;
+    const char* clip = nullptr;
+};
+StorySpot g_storySpots[kVillagers];
+
 ValleyScene& vs() {
     static ValleyScene s;
     return s;
@@ -583,12 +593,13 @@ void animatePeople(App& app, ValleyScene& s) {
         const Villager who = static_cast<Villager>(k);
         const Vec3 at = villagerAt(s.valley, who);
         const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(villagerInfo(who).place));
-        const float rest = (p ? p->heading : 0.0f) + villagerInfo(who).facing;
+        const StorySpot& spot = g_storySpots[k];
+        const float rest = spot.on ? spot.heading : (p ? p->heading : 0.0f) + villagerInfo(who).facing;
         const float d = std::hypot(here.x - at.x, here.y - at.y);
         if (d > 90.0f) continue;  // far off: left as they were
         // Turning to you when you're near (and while you talk), else back to their place's way.
         const bool mine = listening && !app.talk.custom && app.talk.who == who;
-        const bool still = !mine && acts::villagerStill(app, k);  // (sat down or dozing: they stay put)
+        const bool still = !mine && !spot.on && acts::villagerStill(app, k);  // (sat down or dozing: they stay put)
         const float want = d < 6.0f && !still ? std::atan2(here.x - at.x, -(here.y - at.y)) : rest;
         float err = std::remainder(want - f.heading, 6.2831853f);
         f.heading += clampf(err, -3.0f * app.dt, 3.0f * app.dt);
@@ -600,7 +611,10 @@ void animatePeople(App& app, ValleyScene& s) {
             f.waved = true;
             playClip(f, "wave", 1.0f, 0.2f);
         } else if (!(playing(f, "wave") || playing(f, "nod")) || f.anim.finished(*lib)) {
-            acts::villagerRest(app, k, f.anim, d);  // their doings by the hour (app/people_acts, workstream D)
+            if (spot.on)  // where the story has them: its clip, or standing at ease
+                playClip(f, spot.clip ? spot.clip : "idle", 1.0f, 0.3f);
+            else
+                acts::villagerRest(app, k, f.anim, d);  // their doings by the hour (app/people_acts, workstream D)
         }
         if (d > 15.0f) f.waved = false;  // a new visit: another hello
         f.anim.update(*lib, app.dt, events, 4);
@@ -634,8 +648,26 @@ void animatePeople(App& app, ValleyScene& s) {
     }
 }
 
-// Where a villager stands in the valley.
+void refreshStorySpots(App& app, const Valley& v) {
+    const s64 now = nowLocal(app);
+    for (int k = 0; k < kVillagers; ++k) {
+        StorySpot& sp = g_storySpots[k];
+        sp = StorySpot{};
+        const int person = story::personOfVillager(static_cast<Villager>(k));
+        story::Spot spot;
+        if (person < 0 || !story::spotOf(app.game, person, now, spot)) continue;
+        const ValleyPlaceInfo* p = v.place(static_cast<u8>(spot.place));
+        if (!p) continue;
+        sp.on = true;
+        sp.at = placeToWorld3(v, *p, {spot.at.x, spot.at.y, 0});
+        sp.heading = p->heading + spot.facing;
+        sp.clip = spot.clip[0] ? spot.clip : nullptr;
+    }
+}
+
+// Where a villager stands in the valley (their own spot, or the story's).
 Vec3 villagerAt(const Valley& v, Villager who) {
+    if (g_storySpots[static_cast<int>(who)].on) return g_storySpots[static_cast<int>(who)].at;
     const VillagerInfo& info = villagerInfo(who);
     const ValleyPlaceInfo* p = v.place(static_cast<u8>(info.place));
     return p ? placeToWorld3(v, *p, {info.at.x, info.at.y, 0}) : Vec3{};
@@ -919,6 +951,7 @@ void getOff(App& app, ValleyScene& s) {
 }
 
 void update(App& app, const Input& in) {
+    refreshStorySpots(app, vs().valley);  // (D137: where the story stands the villagers this frame)
     ValleyScene& s = vs();
     app.simAccum += app.dt;
     if (app.simAccum >= 1.0f) {
@@ -1474,6 +1507,7 @@ void drawTop(App& app) {
     if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
     if (r3d::ready()) cove::drawCoveThings(app, s.valley, now);  // Driftwood Cove's shells, bobber and catch (workstream C)
     if (r3d::ready()) drawLeagueBoards(app, s.valley, now);  // 1.0 battles: the league's boards (workstream B)
+    if (r3d::ready()) drawStoryProps(app, s.valley, now);  // the mailbox and the signs (D137)
     for (int f = 0; f < vext::featureCount() && feat < 0 && r3d::ready(); ++f)  // (a walker's hello: workstream D)
         if (vext::feature(f).drawOver) vext::feature(f).drawOver(app, s.walkers);
     if (feat >= 0) {

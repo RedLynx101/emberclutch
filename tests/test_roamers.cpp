@@ -282,9 +282,9 @@ TEST(roamers_duels) {
     // A fair fight: their dragon about your partner's level.
     for (int id = 0; id < roam::kRoamers; ++id) {
         const roam::Roamer& r = roam::roamer(id);
-        for (int level : {1, 5, 20, kMaxLevel}) {
+        for (int level : {1, 5, 20, kLevelCap}) {
             const int l = roam::duelLevel(level, id);
-            CHECK(l >= 1 && l <= kMaxLevel && std::abs(l - level) <= 1);
+            CHECK(l >= 1 && l <= kLevelCap && std::abs(l - level) <= 1);
             const Dragon d = roam::dragonOf(id, l);
             CHECK(d.stage == Stage::Adult && trainer::levelOf(d) == l && std::strcmp(d.name, r.dragonName) == 0);
             CHECK(d.id >= 0xB1000000u && d.id < 0xB2000000u && d.kind == findKind(r.kind));

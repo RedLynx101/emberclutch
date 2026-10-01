@@ -9,6 +9,7 @@
 // another food) or is worth Gleam (a shell tangled on the hook, a rare pearl); your partner gets a
 // nibble of any food (Love up). B puts the rod away. The fish are plentiful but not endless (the
 // day's stock), and shells wash up along the beach each day (A beside one picks it up).
+#include "app/story_app.hpp"
 #include "app/cove.hpp"
 
 #include <sys/stat.h>
@@ -220,6 +221,9 @@ void cast(App& app, State& f, vext::Stage& stage) {
     }
     const int hour = hourOfDay(nowLocal(app));
     f.on = fishing::rollCatch(f.rng, hour);
+    // Old Whiskers (D137): at dusk, while Tam's quest is after him, now and then it's him on the line.
+    if (story::questStep(app.game, story::kQCoveWhiskers) == 1 && hour >= 17 && hour < 21 && f.rng.below(3) == 0)
+        f.on = Catch::Whiskers;
     f.bite = fishing::rollBite(f.rng, hour, f.on);
     f.nibbles = 0;
     f.twitch = f.dip = 0;
@@ -261,6 +265,14 @@ void land(App& app, State& f) {
     }
     if (info.fish) trainer::count(app.game, kCountFish);
     if (f.on == Catch::Shell || f.on == Catch::Pearl) trainer::count(app.game, kCountShells);
+    if (f.on == Catch::Whiskers) {  // (D137: landed at last; let go again, and Tam must hear of it)
+        std::snprintf(f.landedLine2, sizeof(f.landedLine2), "%s", str::kWhiskersLanded);
+        audio::playStinger("place-found");
+        if (!story::flag(app.game, story::kFCaughtWhiskers)) {
+            story::setFlag(app.game, story::kFCaughtWhiskers);
+            storyUpdate(app);
+        }
+    }
     audio::playSfx(f.on == Catch::BigFish ? audio::Sfx::SplashBig : audio::Sfx::Splash);
     audio::playSfx(audio::Sfx::Chirp, 1.1f, 0.7f);
     if (f.on == Catch::Pearl) audio::playStinger("place-found");
@@ -369,6 +381,7 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
         f.id = 0;
         f.voice = 0;
         f.pitch = 1.25f;
+        f.person = story::kPTam;
         f.clip = tamFishing(s, near) ? "fish" : nullptr;  // his rod out till you come near (drawOver draws it; workstream D)
     }
     if (n < cap && !active(app)) {  // the water's edge: fishing
@@ -400,7 +413,15 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
 
 void act(App& app, const vext::Folk& who, vext::Stage& stage) {
     if (who.id == 0) {
-        talkToFisher(app);
+        if (story::hasImportantTalk(app.game, story::kPTam, nowLocal(app))) {  // the story's Tam first (D137)
+            if (!hasRod(app)) {
+                today(app).rod = 1;  // (he lends you the rod as he always did)
+                saveNow(app);
+            }
+            startStoryTalk(app, story::kPTam);
+        } else {
+            talkToFisher(app);
+        }
     } else if (who.id == 1) {
         if (!hasRod(app)) {
             showToast(app, str::kNoRod);
@@ -609,6 +630,14 @@ void drawCoveThings(App& app, const Valley& v, s64 now) {
                     c.roll = 0.35f * std::sin(app.t * 14.0f) * (f.t < 1.2f ? 1.0f : 0.3f);  // a wriggle
                     c.scale = catchSize(f.on);
                     c.look = fishLook(f.on == Catch::BigFish);
+                    break;
+                case Catch::Whiskers:  // Old Whiskers (D137): a great dark catfish, half again a big one's size
+                    c.kind = r3d::PropKind::Fish;
+                    c.roll = 0.25f * std::sin(app.t * 9.0f) * (f.t < 1.2f ? 1.0f : 0.3f);
+                    c.scale = catchSize(Catch::BigFish) * 1.6f;
+                    c.look = fishLook(true);
+                    c.look.colour[0] = {82, 92, 66};
+                    c.look.colour[1] = {204, 198, 168};
                     break;
                 case Catch::Shell:
                 case Catch::Pearl:

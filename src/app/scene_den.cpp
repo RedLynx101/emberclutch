@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "app/story_app.hpp"
 #include "app/audio.hpp"
 #include "app/autotest.hpp"
 #include "app/care_ui.hpp"
@@ -385,6 +386,10 @@ void pop(App& app, Dragon& d, s64 now) {
         r3d::setBurst(&h.burst, &d);  // its egg's colours
     }
     tryHatch(d, now, app.rng);  // incubation is complete: it hatches
+    if (d.origin == Origin::Bred && !story::flag(app.game, story::kFNestHatched)) {  // (Two by two, D137)
+        story::setFlag(app.game, story::kFNestHatched);
+        storyUpdate(app);
+    }
     h.dex = dexSee(app.game, d);  // into the Dragondex (told once it's named)
     d.denSlot = static_cast<u8>(bed >= 0 ? bed : 0);
     markVisit(d, now);

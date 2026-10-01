@@ -4,6 +4,7 @@
 // a sit) and the three judges hold up their cards. The Performance: you cue your dragon's tricks
 // in time (buttons, and a tap on the stars) on the bottom screen while it performs them on the
 // stage; then the rivals'. Last the placings, with the ribbon, Gleam and prizes (core/pageant).
+#include "app/story_app.hpp"
 #include "app/glade_show.hpp"
 
 #include <cmath>
@@ -327,6 +328,10 @@ void finish(App& app) {
         if (s.order[k] == 0) s.place = k;
     Dragon& mine = app.game.dragons[s.partner];
     s.reward = pageant::finishShow(app.game, mine, s.league, s.slot, s.theme, s.place, dayIndex(nowLocal(app)));
+    bool lookBest = true;  // (the pageant's quest: the Look round won, D137)
+    for (int e = 1; e < kEntrants; ++e) lookBest = lookBest && s.score[0][kRoundLook] >= s.score[e][kRoundLook];
+    if (lookBest) story::setFlag(app.game, story::kFLookWon);
+    storyUpdate(app);
     saveNow(app);
     // What the host says: the winner, then you, then your prizes.
     const ThemeInfo& t = themeInfo(s.theme);

@@ -1,0 +1,79 @@
+# The story's first steps (D137): a new game, the egg hatched, Rowan's letter in the mailbox, out to
+# the valley by the den's door (the mailbox with its flag up), the letter read, Rowan met (his talk
+# with its feelings), then Market day with Maple and Fig asleep in the Whisperwood.
+overlay off
+wait 3
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 3
+key SELECT
+wait 0.4
+tap 238 81
+key SELECT
+wait 5
+name Ember
+wait 9
+shot 01-hatched
+story log
+valley
+wait 6
+shot 02-den-door
+story mail
+wait 1.5
+shot 03-mailbox-letter
+key A
+wait 0.6
+shot 04-letter-page2
+key A
+wait 0.6
+key B
+wait 0.5
+story log
+story talk rowan
+wait 1.2
+shot 05-rowan-1
+key A
+wait 0.8
+key A
+wait 1.0
+shot 06-rowan-2
+key A
+wait 0.8
+key A
+wait 0.8
+key A
+wait 1.0
+shot 07-rowan-3
+key A
+wait 0.6
+key A
+wait 0.6
+key A
+wait 0.6
+key A
+wait 0.6
+key A
+wait 0.6
+story log
+story step market_day 2
+story talk fig
+wait 1.2
+shot 08-fig-asleep
+key A
+wait 0.8
+key A
+wait 1.0
+shot 09-fig-shock
+key A
+key A
+key A
+key A
+key A
+key A
+key A
+key A
+wait 1
+story log
+quit

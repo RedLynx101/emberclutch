@@ -6,6 +6,7 @@ quest cove_meet "Tam's Tall Tales"
   giver tam
   gleam 60
   after market_day
+  when flag fig_told_tam
   rumour "Fig says Tam at Driftwood Cove once caught a fish the size of a (small) house."
   step "Meet Tam at Driftwood Cove" talk tam where place cove
   step "Catch three fish off the shore" until count fish 3 where place cove

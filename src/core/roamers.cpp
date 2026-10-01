@@ -640,7 +640,7 @@ Pose walkAt(const PathNet& net, Walk& w, float t) {
 // ---------------------------------------------------------------------------- a duel
 int duelLevel(int partnerLevel, int id) {
     const int l = partnerLevel + roamer(id).edge;
-    return l < 1 ? 1 : (l > kMaxLevel ? kMaxLevel : l);
+    return l < 1 ? 1 : (l > kLevelCap ? kLevelCap : l);
 }
 
 Dragon dragonOf(int id, int level) {

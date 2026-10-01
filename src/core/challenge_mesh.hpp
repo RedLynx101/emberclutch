@@ -58,6 +58,14 @@ PropLook boardLook();
 PropLook trophyLook(Challenge c, int cup);
 PropLook rosetteLook(Challenge c, int cup);
 PropLook shellLook(int kind, int tint);  // tint: which of a few sandy colourings
+
+// The story's props (D137): the mailbox by the den's door, a round-topped box on a post, its door to
+// +Y: the post (slot 0), the box (1), the flag (2, up when a letter waits), the door's latch (3).
+PropMesh mailboxMesh(bool flagUp);
+PropLook mailboxLook();
+// A signboard on a post, its face to +Y: wood (slot 0), the board (1), its words' scribbles (2).
+PropMesh signMesh();
+PropLook signLook();
 PropLook bobberLook();
 PropLook fishLook(bool big);
 

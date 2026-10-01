@@ -36,7 +36,9 @@ struct CoveSpots {
 CoveSpots coveSpots(const Valley& v);
 
 // ------------------------------------------------------------------------------ what bites
-enum class Catch : u8 { RiverFish, BigFish, Honeyroot, Skyberry, Frostmelon, Shell, Pearl, Count };
+// (Whiskers: Old Whiskers, the cove's legendary catfish, never rolled: he bites at dusk while Tam's quest
+// is after him, D137; app/cove)
+enum class Catch : u8 { RiverFish, BigFish, Honeyroot, Skyberry, Frostmelon, Shell, Pearl, Whiskers, Count };
 struct CatchInfo {
     const char* name;   // "a River Fish"
     Food food;          // into the pouch (Count: none)

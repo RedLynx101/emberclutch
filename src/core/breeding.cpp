@@ -3,6 +3,7 @@
 #include "core/clock.hpp"
 #include "core/den_roster.hpp"
 #include "core/kinds.hpp"
+#include "core/story.hpp"
 
 namespace ec {
 namespace {
@@ -49,6 +50,7 @@ bool settleToNest(SaveData& s, int a, int b, s64 now) {
     s.nestA = s.dragons[a].id;
     s.nestB = s.dragons[b].id;
     s.nestDay = dayIndex(now);
+    story::setFlag(s, story::kFNestSettled);  // (Two by two, D137)
     return true;
 }
 

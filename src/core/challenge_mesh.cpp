@@ -547,6 +547,59 @@ PropLook basketLook() {
 
 PropLook boardLook() { return look({150, 104, 66}, {200, 88, 70}, {250, 240, 220}, {70, 56, 86}); }
 
+namespace {
+void boxAt(Shaper& b, Vec3 c, Vec3 h) {  // a box, its six faces
+    const float x0 = c.x - h.x, x1 = c.x + h.x, y0 = c.y - h.y, y1 = c.y + h.y, z0 = c.z - h.z, z1 = c.z + h.z;
+    b.quad({x1, y1, z0}, {x0, y1, z0}, {x0, y1, z1}, {x1, y1, z1}, {0, 1, 0});
+    b.quad({x0, y0, z0}, {x1, y0, z0}, {x1, y0, z1}, {x0, y0, z1}, {0, -1, 0});
+    b.quad({x1, y0, z0}, {x1, y1, z0}, {x1, y1, z1}, {x1, y0, z1}, {1, 0, 0});
+    b.quad({x0, y1, z0}, {x0, y0, z0}, {x0, y0, z1}, {x0, y1, z1}, {-1, 0, 0});
+    b.quad({x0, y0, z1}, {x1, y0, z1}, {x1, y1, z1}, {x0, y1, z1}, {0, 0, 1});
+    b.quad({x0, y1, z0}, {x1, y1, z0}, {x1, y0, z0}, {x0, y0, z0}, {0, 0, -1});
+}
+}  // namespace
+
+PropMesh mailboxMesh(bool flagUp) {
+    PropMesh m;
+    Shaper b{m};
+    b.slot = 0;  // the post
+    b.frustum({0, 0, 0}, {0, 0, 1.02f}, 0.06f, 0.05f, 4, false, true, kPi / 4);
+    b.slot = 1;  // the box and its round top, long front to back
+    boxAt(b, {0, 0, 1.12f}, {0.15f, 0.25f, 0.1f});
+    b.frustum({0, -0.25f, 1.22f}, {0, 0.25f, 1.22f}, 0.15f, 0.15f, 8, true, true);
+    b.slot = 3;  // the door's latch, on its front
+    b.ellipsoid({0, 0.27f, 1.2f}, {0.035f, 0.02f, 0.035f}, 5, 3);
+    b.slot = 2;  // the flag on its side: an arm, and the pennant at its end (raised: a letter waits)
+    const float fx = 0.17f;
+    if (flagUp) {
+        boxAt(b, {fx, -0.05f, 1.36f}, {0.012f, 0.012f, 0.16f});
+        b.quad({fx + 0.005f, -0.05f, 1.42f}, {fx + 0.005f, -0.19f, 1.42f}, {fx + 0.005f, -0.19f, 1.52f}, {fx + 0.005f, -0.05f, 1.52f}, {1, 0, 0}, true);
+    } else {
+        boxAt(b, {fx, -0.05f, 1.12f}, {0.012f, 0.16f, 0.012f});
+        b.quad({fx + 0.005f, -0.21f, 1.06f}, {fx + 0.005f, -0.21f, 1.16f}, {fx + 0.005f, -0.12f, 1.16f}, {fx + 0.005f, -0.12f, 1.06f}, {1, 0, 0}, true);
+    }
+    return m;
+}
+
+PropLook mailboxLook() { return look({126, 88, 60}, {70, 150, 150}, {220, 60, 60}, {236, 196, 96}); }
+
+PropMesh signMesh() {
+    PropMesh m;
+    Shaper b{m};
+    b.slot = 0;  // the post
+    b.frustum({0, 0, 0}, {0, 0, 1.25f}, 0.06f, 0.05f, 4, false, true, kPi / 4);
+    b.slot = 1;  // the board
+    boxAt(b, {0, 0, 1.15f}, {0.42f, 0.04f, 0.26f});
+    b.slot = 2;  // three lines of scribbled words on its face
+    for (int k = 0; k < 3; ++k) {
+        const float z = 1.28f - 0.12f * k, w = k == 2 ? 0.2f : 0.3f;
+        b.quad({w, 0.045f, z - 0.02f}, {-w, 0.045f, z - 0.02f}, {-w, 0.045f, z + 0.02f}, {w, 0.045f, z + 0.02f}, {0, 1, 0});
+    }
+    return m;
+}
+
+PropLook signLook() { return look({126, 88, 60}, {226, 196, 140}, {86, 60, 44}, {0, 0, 0}); }
+
 PropLook trophyLook(Challenge c, int cup) {
     return look(challenge::cupColour(cup), {110, 72, 52}, signColour(c), {0, 0, 0}, 0.3f);
 }

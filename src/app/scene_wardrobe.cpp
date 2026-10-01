@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "app/story_app.hpp"
 #include "app/audio.hpp"
 #include "app/tips_ui.hpp"
 #include "app/render3d.hpp"
@@ -152,6 +153,10 @@ void drawBottom(App& app, const Input& in) {
         for (int i = 0; i < n && i + 1 < kCols * kRows; ++i) {
             const int a = owned[i];
             if (cell(app, in, i + 1, wearing == a, r) && wearing != a && acc::putOn(app.game, *d, a)) {
+                if (!story::flag(app.game, story::kFDressedUp)) {  // (the pageant's quest: dressed from the Finery, D137)
+                    story::setFlag(app.game, story::kFDressedUp);
+                    storyUpdate(app);
+                }
                 s.picked = a;
                 s.hop = 0.9f;
                 audio::playSfx(audio::Sfx::Equip);

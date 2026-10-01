@@ -4,6 +4,7 @@
 #pragma once
 
 #include "app/app.hpp"
+#include "app/valley_ext.hpp"
 #include "core/story.hpp"
 
 namespace ec {
@@ -25,5 +26,10 @@ bool mailboxOpen(const App& app);
 // While open: A, B and taps; returns true while it's open.
 bool updateMailbox(App& app, const Input& in);
 void drawMailbox(App& app, const Input& in);
+
+// The story in the valley (app/feature_story.cpp): its people, pickups, signs and the mailbox.
+extern const vext::Feature kStoryFeature;
+// The mailbox and the signs, drawn after the valley (its camera, fog and depth).
+void drawStoryProps(App& app, const Valley& v, s64 now);
 
 }  // namespace ec

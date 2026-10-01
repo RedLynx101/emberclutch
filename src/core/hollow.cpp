@@ -1,6 +1,7 @@
 #include "core/hollow.hpp"
 
 #include <cmath>
+#include <cstdio>
 
 #include "core/battle_spots.hpp"
 #include "core/accessories.hpp"
@@ -77,6 +78,15 @@ Dragon wildOf(int floor, s32 day) {
     const int trained = floor / 4 + (guardian(floor) ? 2 : 0);  // the deep ones are hardened
     for (u8& t : d.trained) t = static_cast<u8>(trained);
     d.needs = Needs{};
+    // The bottom floor's guardian is always the Frost Warden (D137): the oldest wild dragon in the
+    // Hollow, a Frostcurl in its rare colouring, full grown and a little more hardened still.
+    if (floor == kFloors) {
+        const int frost = findKind("frostcurl");
+        if (frost >= 0) rollKind(d, frost, kindInfo(frost).rareVariant, rng);
+        d.genome.size = 255;
+        for (u8& t : d.trained) t = static_cast<u8>(trained + 2);
+        std::snprintf(d.name, sizeof(d.name), "Frost Warden");
+    }
     return d;
 }
 

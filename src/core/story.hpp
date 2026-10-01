@@ -163,6 +163,11 @@ struct TermView {
 };
 int stepTerms(const SaveData& s, int quest, TermView* out, int cap);
 int pickupCount();
+// By their names in the scripts (-1: none): for scripted runs and the dev menu.
+int findQuest(const char* id);
+int findLetter(const char* id);
+int findFlag(const char* name);
+int findVar(const char* name);
 
 }  // namespace story
 }  // namespace ec

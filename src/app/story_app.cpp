@@ -1,7 +1,10 @@
 #include "app/story_app.hpp"
 
 #include "app/audio.hpp"
+#include "app/scenes.hpp"
 #include "app/strings.hpp"
+#include "core/finds.hpp"
+#include "core/valley.hpp"
 
 namespace ec {
 
@@ -28,6 +31,11 @@ void storyNews(App& app, const story::News& n, bool queue) {
         audio::playSfx(audio::Sfx::Notice);
     }
     if (n.starEgg) giveStarEgg(app);
+    // Fig's map, whole again: the map's fog lifts round the places its pages were found (D137).
+    if (n.finished == story::kQFigMap)
+        if (const Valley* v = loadedValley())
+            for (int place : {kPlaceMill, kPlaceOrchard, kPlaceLake, kPlaceKeeper})
+                if (const ValleyPlaceInfo* p = v->place(static_cast<u8>(place))) explore(app.game, *v, {p->at.x, p->at.y}, 130.0f);
     // The end of Act 1: the festival night's talk done, the credits roll (the system menu's page).
     if (n.finished == story::kQLanternFestival) app.menu = MenuPage::Credits;
     if (n.finished >= 0 || n.stepped >= 0 || n.started >= 0 || n.mail > 0) saveNow(app);

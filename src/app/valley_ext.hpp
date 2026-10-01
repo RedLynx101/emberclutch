@@ -25,6 +25,7 @@ struct Folk {
     // by the feature with its own clip (the scene neither moves nor animates them); null: `look`.
     const r3d::PersonView* live = nullptr;
     const char* clip = nullptr;  // their clip while standing about (null: idle)
+    s8 person = -1;              // who they are to the story (core/story PersonId), for their feelings (-1: nobody it knows)
 };
 constexpr int kMaxFolk = 24;   // all features together, per frame
 

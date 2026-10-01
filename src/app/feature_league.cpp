@@ -10,6 +10,7 @@
 #include <cstring>
 #include <vector>
 
+#include "app/story_app.hpp"
 #include "app/audio.hpp"
 #include "app/battle_feature.hpp"
 #include "app/battle_view.hpp"
@@ -313,13 +314,21 @@ void battleDone(App& app, battle::Outcome o) {
 }
 
 // ---------------------------------------------------------------------------- the feature
+// The story's name for each league's champion (D137).
+int championPerson(int league) {
+    static const int kPeople[kLeagues] = {story::kPMarigold, story::kPRook, story::kPSeraphine, story::kPSolenne};
+    return kPeople[league >= 0 && league < kLeagues ? league : 0];
+}
+
 int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* out, int cap) {
     const League& s = lg();
     int n = 0;
+    const s64 now = nowLocal(app);
     const int league = league::currentLeague(app.game);
     for (int slot = 0; slot < league::kSlots && n < cap; ++slot) {
         const int id = league::idOf(league, slot);
         if (s.mode == Mode::Battle && s.id == id) continue;  // (the battle draws them)
+        if (league::isChampion(id) && league::leagueWon(app.game, league)) continue;  // (out in the valley now: below)
         const league::Challenger& c = league::challenger(id);
         if (!v.place(c.place)) continue;
         vext::Folk& f = out[n];
@@ -334,6 +343,35 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
         f.voice = c.voice;
         f.pitch = c.pitch;
         f.reach = 2.6f;
+        f.person = league::isChampion(id) ? static_cast<s8>(championPerson(league)) : -1;
+        ++n;
+    }
+    // The champions of the leagues you've won, out in the valley where the story has them (D137, Noah:
+    // "Put the main champions in the world after beating them"): Marigold at the orchard, Rook on the
+    // bridge at dusk, Seraphine at the Glade, Solenne at the ruins by night. Talk, or a rematch.
+    for (int l = 0; l < kLeagues && n < cap; ++l) {
+        if (!league::leagueWon(app.game, l)) continue;
+        const int id = league::idOf(l, league::kChampion);
+        if (s.mode == Mode::Battle && s.id == id) continue;
+        story::Spot sp;
+        const ValleyPlaceInfo* p = nullptr;
+        if (!story::spotOf(app.game, championPerson(l), now, sp) || !(p = v.place(static_cast<u8>(sp.place)))) continue;
+        const league::Challenger& c = league::challenger(id);
+        vext::Folk& f = out[n];
+        f = vext::Folk{};
+        f.look = lookOf(v, id);
+        f.look.at = placeToWorld3(v, *p, {sp.at.x, sp.at.y, 0});
+        f.look.heading = p->heading + sp.facing;
+        if (std::hypot(f.look.at.x - near.x, f.look.at.y - near.y) > radius) continue;
+        f.shown = true;
+        f.name = c.name;
+        f.prompt = str::kPromptTalk;
+        f.id = static_cast<u8>(id);
+        f.voice = c.voice;
+        f.pitch = c.pitch;
+        f.reach = 2.6f;
+        f.person = static_cast<s8>(championPerson(l));
+        f.clip = sp.clip[0] ? sp.clip : nullptr;
         ++n;
     }
     for (int b = 0; b < league::boardCount() && n < cap; ++b) {  // the boards: spots, drawn as props
@@ -365,6 +403,10 @@ void act(App& app, const vext::Folk& who, vext::Stage& st) {
     const int id = who.id;
     const league::Challenger& c = league::challenger(id);
     const int league = league::leagueOf(id);
+    if (league::isChampion(id) && story::hasImportantTalk(app.game, championPerson(league), nowLocal(app))) {
+        startStoryTalk(app, championPerson(league));  // the story's piece first (D137); the rematch next time
+        return;
+    }
     if (league::isChampion(id) && !league::championOpen(app.game, league)) {
         say(app, id, str::kChampionWaits);  // (their league's name comes from the board)
         return;

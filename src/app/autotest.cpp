@@ -19,6 +19,7 @@
 #include "app/wildlife.hpp"  // the valley's critters (workstream L)
 #include "app/roamers_feature.hpp"  // roaming trainers (workstream D)
 #include "app/scenes.hpp"
+#include "app/story_app.hpp"
 #include "core/story.hpp"
 #include "core/trainer.hpp"
 #include "core/clock.hpp"
@@ -39,7 +40,7 @@ enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Nam
                      Energy, Cove,  // (workstream C)
                      Pageant, Ground,
                      Battle /* 1.0 battles (workstream B) */, Critters /* workstream L */,
-                     Roamer /* roaming trainers (workstream D) */ };  // the pageant's own commands (app/glade.hpp pageantCommand)
+                     Roamer /* roaming trainers (workstream D) */, Story /* the story (D137) */ };  // the pageant's own commands (app/glade.hpp pageantCommand)
 
 struct Cmd {
     Op op = Op::Wait;
@@ -159,8 +160,58 @@ u32 keyNamed(const char* s) {
     else if (w == "battle") { c.op = Op::Battle; c.text = rest; }  // 1.0 battles (workstream B)
     else if (w == "critters") { c.op = Op::Critters; c.text = rest; }  // the valley's critters (app/wildlife.hpp command)
     else if (w == "roamer") { c.op = Op::Roamer; c.text = rest; }  // roaming trainers (workstream D)
+    else if (w == "story") { c.op = Op::Story; c.text = rest; }    // the story (D137): story start|finish|step|talk|mail|letter|flag|var|log
     else return false;
     return true;
+}
+
+// `story ...` (D137): quests begun, finished or put on a step by their script names; a talk with
+// someone (as if A beside them); the mailbox opened; a letter delivered or read; a flag or var set;
+// every begun quest's step logged.
+void storyCommand(App& app, const char* rest) {
+    char w[16] = {}, a1[40] = {}, a2[16] = {};
+    std::sscanf(rest, "%15s %39s %15s", w, a1, a2);
+    const s64 now = nowLocal(app);
+    SaveData& s = app.game;
+    const std::string cmd = w;
+    if (cmd == "start" || cmd == "finish" || cmd == "step") {
+        const int q = story::findQuest(a1);
+        if (q < 0) { log("story: no quest %s", a1); return; }
+        if (cmd == "start") story::startQuest(s, q);
+        else if (cmd == "finish") story::finishQuest(s, q, now);
+        else { story::startQuest(s, q); s.story.quest[q] = static_cast<u8>(std::atoi(a2)); }
+        story::update(s, now);
+    } else if (cmd == "talk") {
+        const int p = story::findPerson(a1);
+        if (p >= 0) startStoryTalk(app, p);
+        else log("story: no person %s", a1);
+    } else if (cmd == "mail") {
+        openMailbox(app);
+    } else if (cmd == "letter" || cmd == "read") {
+        const int l = story::findLetter(a1);
+        if (l < 0) { log("story: no letter %s", a1); return; }
+        story::deliver(s, l);
+        if (cmd == "read") story::readLetter(s, l, now);
+    } else if (cmd == "flag") {
+        const int f = story::findFlag(a1);
+        if (f >= 0) story::setFlag(s, f, std::strcmp(a2, "off") != 0);
+        else log("story: no flag %s", a1);
+        story::update(s, now);
+    } else if (cmd == "var") {
+        const int v = story::findVar(a1);
+        if (v >= 0) story::setVar(s, v, static_cast<u8>(std::atoi(a2)));
+        story::update(s, now);
+    } else if (cmd == "log") {
+        for (int q = 0; q < story::questCount(); ++q) {
+            const story::QuestView v = story::view(s, q, now);
+            if (v.started || v.open) log("story: %s %s step %d/%d: %s", v.id, v.done ? "done" : v.started ? "begun" : "open",
+                                         v.stepIndex + 1, v.stepCount, v.step);
+        }
+        int box[64];
+        log("story: %d letters, %d unread", story::mailbox(s, box, 64), story::unreadMail(s));
+    } else {
+        log("story: what's '%s'?", rest);
+    }
 }
 
 // The framebuffers hold each screen turned a quarter (240 tall columns, bottom to top), BGR:
@@ -337,6 +388,7 @@ Input next(App& app) {
             case Op::Battle: battleCommand(app, c.text.c_str()); done = true; break;  // 1.0 battles (workstream B)
             case Op::Critters: wildlife::command(app, c.text.c_str()); done = true; break;  // (workstream L)
             case Op::Roamer: roamerCommand(app, c.text.c_str()); done = true; break;  // (workstream D)
+            case Op::Story: storyCommand(app, c.text.c_str()); done = true; break;  // (D137)
             case Op::Cups:  // each challenge's highest cup won (its ribbons with it)
                 app.game.world.ribbons = 0;
                 for (int k = 0; k < kChallenges; ++k) {

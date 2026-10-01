@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdio>
 
+#include "app/story_app.hpp"
 #include "app/audio.hpp"
 #include "app/tips_ui.hpp"
 #include "app/battle_feature.hpp"
@@ -101,10 +102,12 @@ bool startFloor(App& app, vext::Stage& st, int floor) {
     setup.foe = s.wild;
     const char* kind = kindInfo(s.wild.kind).title;
     std::snprintf(setup.foeName, sizeof(setup.foeName), str::kBattleWildName, kind);
-    if (hollow::guardian(s.floor)) std::snprintf(setup.intro, sizeof(setup.intro), "%s", str::kBattleGuardian);
+    if (s.wild.name[0]) std::snprintf(setup.foeName, sizeof(setup.foeName), "%.23s", s.wild.name);  // (the Frost Warden, D137)
+    if (s.floor == hollow::kFloors) std::snprintf(setup.intro, sizeof(setup.intro), "%s", str::kBattleWarden);
+    else if (hollow::guardian(s.floor)) std::snprintf(setup.intro, sizeof(setup.intro), "%s", str::kBattleGuardian);
     else std::snprintf(setup.intro, sizeof(setup.intro), str::kBattleWildAppears, kind);
     setup.skill = hollow::skillAt(s.floor);
-    setup.foeScale = hollow::guardian(s.floor) ? 1.15f : 1.0f;
+    setup.foeScale = s.floor == hollow::kFloors ? 1.35f : hollow::guardian(s.floor) ? 1.15f : 1.0f;
     const Dragon& mine = app.game.dragons[st.partner];
     const float sizeYou = bview::dragonSize(mine), sizeFoe = bview::dragonSize(s.wild) * setup.foeScale;
     Vec2 arena = hollow::arenaSpot();
@@ -214,8 +217,9 @@ bool deeper(App& app, vext::Stage& st, int floor) {
 
 // ---------------------------------------------------------------------------- the feature
 int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* out, int cap) {
-    (void)app;
     if (cap < 1 || !v.place(kPlaceHollow)) return 0;
+    story::Spot away;  // (the story has her elsewhere: at the Vault after your first glide, D137)
+    if (story::spotOf(app.game, story::kPTove, nowLocal(app), away)) return 0;
     vext::Folk& f = out[0];
     f.look = keeperLook(v);
     if (std::hypot(f.look.at.x - near.x, f.look.at.y - near.y) > radius) return 0;
@@ -225,6 +229,7 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
     f.id = 0;
     f.voice = 1;
     f.pitch = 1.4f;
+    f.person = story::kPTove;
     f.reach = 2.6f;
     f.clip = "sit_ground";  // (sat by her camp, getting up to wave as you come: workstream D)
     return 1;
@@ -234,13 +239,17 @@ void act(App& app, const vext::Folk& who, vext::Stage& st) {
     showTip(app, tips::kTipHollow);
     Hollow& s = ho();
     (void)who;
-    Talk t;
-    if (app.game.progress.hollowDeepest == 0) {
-        for (const char* line : str::kHollowFirst) t.lines[t.count++] = line;
+    if (story::hasImportantTalk(app.game, story::kPTove, nowLocal(app))) {  // the story's Tove first (D137)
+        startStoryTalk(app, story::kPTove);
     } else {
-        t.lines[t.count++] = str::kHollowAgain[app.rng.below(3)];
+        Talk t;
+        if (app.game.progress.hollowDeepest == 0) {
+            for (const char* line : str::kHollowFirst) t.lines[t.count++] = line;
+        } else {
+            t.lines[t.count++] = str::kHollowAgain[app.rng.below(3)];
+        }
+        startSpeech(app, keeperSpeaker(), t);
     }
-    startSpeech(app, keeperSpeaker(), t);
     if (st.partner < 0) return;  // (out alone: just her words)
     s.nextKind = hollow::wildOf(1, dayIndex(nowLocal(app))).kind;
     s.mode = Mode::Gate;

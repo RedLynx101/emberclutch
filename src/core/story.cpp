@@ -645,6 +645,30 @@ int stepTerms(const SaveData& s, int q, TermView* out, int cap) {
 
 int pickupCount() { return kPickupCount; }
 
+int findQuest(const char* id) {
+    for (int q = 0; q < kQuestTotal; ++q)
+        if (std::strcmp(kQuests[q].id, id) == 0) return q;
+    return -1;
+}
+
+int findLetter(const char* id) {
+    for (int l = 0; l < kLetterTotal; ++l)
+        if (std::strcmp(kLetters[l].id, id) == 0) return l;
+    return -1;
+}
+
+int findFlag(const char* name) {
+    for (int f = 0; f < static_cast<int>(sizeof(kFlagNames) / sizeof(kFlagNames[0])); ++f)
+        if (kFlagNames[f][0] && std::strcmp(kFlagNames[f], name) == 0) return f;
+    return -1;
+}
+
+int findVar(const char* name) {
+    for (int v = 0; v < static_cast<int>(sizeof(kVarNames) / sizeof(kVarNames[0])); ++v)
+        if (kVarNames[v][0] && std::strcmp(kVarNames[v], name) == 0) return v;
+    return -1;
+}
+
 void migrate(SaveData& s, s64 now) {
     // Beta's eight quests (core/campaign's order, WorldState::quest) as their new selves: done stays
     // done (a week ago, so what follows them comes along); begun starts over at the first step, and

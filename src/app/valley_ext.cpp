@@ -5,6 +5,7 @@
 #include "app/battle_feature.hpp"  // 1.0 battles (workstream B)
 #include "app/wildlife.hpp"  // the valley's critters (workstream L)
 #include "app/roamers_feature.hpp"  // roaming trainers and duels (workstream D)
+#include "app/story_app.hpp"  // the story (D137)
 
 namespace ec::vext {
 namespace {
@@ -18,6 +19,7 @@ const Feature kFeatures[] = {
     kHollowFeature,  // 1.0 battles: Frostspire Hollow's keeper and floors (workstream B)
     wildlife::kFeature,  // the valley's critters: your partner's part in a moment (workstream L)
     kRoamerFeature,  // roaming trainers walking the paths, and their friendly duels (workstream D)
+    kStoryFeature,  // the story's people, pickups, signs and the mailbox (D137)
 };
 
 }  // namespace

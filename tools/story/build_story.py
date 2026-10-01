@@ -906,6 +906,15 @@ class Story:
                      f"{p['pitch']:.3f}f, {p['villager']}, {self.cpp_str(p['body'])}, {self.cpp_str(p['portrait'])}, "
                      f"{{{t[0]}, {t[1]}, {t[2]}}}, kF{camel('met_' + p['id'])}}},")
         o.append("};")
+        # the flags' and vars' names by slot (the dev menu and scripted runs name them)
+        for kind, table in (("flag", "kFlagNames"), ("var", "kVarNames")):
+            slots = self.slot[kind]
+            names = [""] * (max(slots.values()) + 1 if slots else 1)
+            current = set(self.flags if kind == "flag" else self.vars)
+            for n, i in slots.items():
+                if n in current:
+                    names[i] = n
+            o.append(f"const char* const {table}[] = {{" + ", ".join(self.cpp_str(n) for n in names) + "};")
         o.append(f"constexpr int kCondCount = {max(1, len(self.conds))}, kEffectCount = {max(1, len(self.effects))}, "
                  f"kLineCount = {len(self.lines)}, kRuleCount = {len(self.rules)}, kStepCount = {len(steps)}, "
                  f"kSpotCount = {len(self.spots)};")

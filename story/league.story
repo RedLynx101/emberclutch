@@ -6,6 +6,7 @@ quest league_signup "The Road to Champion"
   line league
   giver wren
   gleam 50
+  when place arena
   rumour "Wren keeps the battle league's board at the arena. Challengers stand all about the valley."
   step "Sign up at the league board with Wren" talk wren where place arena
   step "Win a battle against an Ember challenger" until beaten 0 0 where place market
@@ -143,13 +144,14 @@ talk solenne
       --
       [thinking] Starlight wants a rematch. She's very polite about it. She's also very strong.
 
+# (the festival night's first: a person's first spot that holds is where they stand)
+spot marigold arena -7 14 facing 0.8 when step lantern_festival 3 and hour 18 6 and league 1
+spot rook arena 8 13 facing -1.0 when step lantern_festival 3 and hour 18 6 and league 2
+spot seraphine arena -8 16 facing 1.0 when step lantern_festival 3 and hour 18 6 and league 3
+spot solenne arena 9 16 facing -1.2 when step lantern_festival 3 and hour 18 6 and league 4
 spot marigold orchard -6 6 facing 0.9 clip tidy when league 1
 spot rook mill -6 1 facing 1.6 clip look_around when league 2 and hour 16 23
 spot rook lake -3 6 facing 0.5 when league 2
 spot seraphine glade 7 -5 facing -0.9 clip stretch when league 3
 spot solenne ruins 2 3 facing 0 clip look_around when league 4 and hour 19 5
 spot solenne caldera 0 6 facing 3.14 when league 4
-spot marigold arena -7 14 facing 0.8 when step lantern_festival 3 and hour 18 6 and league 1
-spot rook arena 8 13 facing -1.0 when step lantern_festival 3 and hour 18 6 and league 2
-spot seraphine arena -8 16 facing 1.0 when step lantern_festival 3 and hour 18 6 and league 3
-spot solenne arena 9 16 facing -1.2 when step lantern_festival 3 and hour 18 6 and league 4

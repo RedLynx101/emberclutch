@@ -6,6 +6,7 @@ quest hollow_count "The Long Count"
   line hollow
   giver tove
   gleam 80
+  when place hollow
   rumour "Tove keeps count of the wild dragons at Frostspire Hollow, up in the cold heights."
   step "Meet Tove at Frostspire Hollow" talk tove where place hollow
   step "Clear the Hollow's first floor" until hollow 1 where place hollow

@@ -28,7 +28,7 @@ TEST(trainer_levels) {
     CHECK(trainer::xpForLevel(1) == 0 && trainer::xpForLevel(2) == 50);
     for (int l = 2; l <= kMaxLevel; ++l) CHECK(trainer::xpForLevel(l) > trainer::xpForLevel(l - 1));
     CHECK(trainer::levelOf(0u) == 1 && trainer::levelOf(49u) == 1 && trainer::levelOf(50u) == 2);
-    CHECK(trainer::levelOf(trainer::xpForLevel(kMaxLevel) + 99999) == kMaxLevel);
+    CHECK(trainer::levelOf(trainer::xpForLevel(kMaxLevel) + 99999) == kLevelCap);  // Skyreach's ceiling
     Dragon d = hatched(1);
     CHECK(trainer::levelOf(d) == 1);
     CHECK(trainer::gainXp(d, 49) == 0 && trainer::gainXp(d, 1) == 1 && trainer::levelOf(d) == 2);
@@ -38,7 +38,7 @@ TEST(trainer_levels) {
     trainer::levelProgress(d, into, span);
     CHECK(into == 0 && span == trainer::xpForLevel(11) - trainer::xpForLevel(10));
     trainer::gainXp(d, 0xFFFFFFF0u);  // never wraps
-    CHECK(trainer::levelOf(d) == kMaxLevel);
+    CHECK(trainer::levelOf(d) == kLevelCap && d.xp == trainer::xpForLevel(kLevelCap));
     trainer::levelProgress(d, into, span);
     CHECK(span == 0);
     std::printf("  level 5 at %u xp, 10 at %u, 30 at %u, 50 at %u\n", trainer::xpForLevel(5), trainer::xpForLevel(10),

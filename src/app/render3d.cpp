@@ -3247,8 +3247,10 @@ void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_M
     // The face (D138): the feeling's eyes, mouth and brows (an empty variant: the calm one's).
     const int e = p.face.eyes < kEyeKinds && f->eyes[p.face.eyes].indexCount ? p.face.eyes : 0;
     drawMesh(app, f->eyes[e], skin);
-    if (p.face.mouth < kMouthKinds) drawMesh(app, f->mouths[p.face.mouth], skin);
-    if (p.face.brows < kBrowKinds) drawMesh(app, f->brows[p.face.brows], skin);
+    // (the mouth and brows only near enough to read: two draws a person fewer in a crowd)
+    const bool near = -apply(viewM, p.at).z < 12.0f || frame;
+    if (near && p.face.mouth < kMouthKinds) drawMesh(app, f->mouths[p.face.mouth], skin);
+    if (near && p.face.brows < kBrowKinds) drawMesh(app, f->brows[p.face.brows], skin);
     if (p.hair >= 0 && p.hair < kHairStyles) drawMesh(app, f->hair[p.hair], skin);
     C3D_FVec key = FVec4_New(-0.45f, 0.8f, 0.4f, 0.0f);  // the dragons' own (init)
     C3D_LightPosition(&g_light, &key);

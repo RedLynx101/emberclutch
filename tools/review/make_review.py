@@ -30,11 +30,11 @@ OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
 RUN_READY = True  # the run's checklist on the page (once the build is ready for the 3DS)
-RUN_DOC = "docs/plan/hardware-check-6.md"  # the run's steps
-RUN_KEY = "run21d"      # its database collection (each run its own: run 20's notes stay under `run`)
+RUN_DOC = "docs/plan/hardware-check-7.md"  # the run's steps
+RUN_KEY = "run22"       # its database collection (each run its own: run 21's notes stay under `run21d`)
 LABS = []              # banner labs to mark Held/Froze this run (none in run 21)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch: Skyreach Valley, run 21 take 4 (0.9.13)"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch: Skyreach Valley, run 22 (0.9.14): the Living Valley"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -211,7 +211,7 @@ def run_list(path: str = RUN_DOC) -> dict:
 # them with comments"): every kind as a hatchling and grown, from tests/autotest/dragons_*.txt's shots
 # (build/autotest/dragons_hatchling|grown/dNN-<slug>_top.png), cropped to the dragon. Collection
 # `dragons`: a document per kind ({mark: "pass"|"fail", note}).
-DRAGONS = True
+DRAGONS = False  # (run 21's list, marked; run 22 marks the people instead)
 
 
 def dragons() -> list[dict]:
@@ -272,6 +272,54 @@ def people_cands() -> dict:
     return {"lineup": jpg("lineup"), "ride": jpg("ride"), "sets": sets}
 
 
+# The people in the Storybook look (D138): every body, front and three-quarter (people_model.py
+# --sheets models into build/people_sb/tiles), its five portraits (assets/sprites/portraits) and its
+# face in all twenty feelings (--sheets feelings), each to PASS or FAIL with a note. Collection
+# `looks`: a document per body ({mark: "pass"|"fail", note}).
+LOOK_SHOTS = ROOT / "build" / "people_sb"
+LOOK_NAMES = {"player_a": "You: the tunic", "player_b": "You: the dress", "keeper": "Old Rowan", "market": "Maple",
+              "sanctuary": "Bram", "steward": "Wren", "child": "Pip", "traveller": "Sable", "rook": "Captain Rook"}
+PORTRAIT_OF = {"keeper": "rowan", "market": "maple", "sanctuary": "bram", "steward": "wren", "child": "pip",
+               "traveller": "sable"}
+
+
+def looks() -> dict:
+    import sys
+    sys.path.insert(0, str(ROOT / "tools" / "people"))
+    import people  # noqa: E402 (the bodies' own descriptions)
+    if not (LOOK_SHOTS / "tiles").exists():
+        return {}
+    (OUT / "looks").mkdir(parents=True, exist_ok=True)
+
+    def ff(args, dst):
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error"] + args + [str(dst)], check=True)
+        return f"looks/{dst.name}"
+
+    out = []
+    for pid, build in people.PEOPLE.items():
+        front, quarter = (LOOK_SHOTS / "tiles" / f"model_{pid}_{v}.png" for v in ("front", "three_quarter"))
+        if not front.exists():
+            continue
+        item = {"slug": pid, "name": LOOK_NAMES.get(pid, pid.capitalize()),
+                "blurb": " ".join((build.__doc__ or "").split()),
+                "model": ff(["-i", str(front), "-i", str(quarter), "-filter_complex", "hstack", "-q:v", "3"],
+                            OUT / "looks" / f"{pid}.jpg")}
+        pname = PORTRAIT_OF.get(pid, pid)
+        frames = [ROOT / "assets" / "sprites" / "portraits" / f"{pname}_{k}.png" for k in range(5)]
+        if all(f.exists() for f in frames):
+            args = []
+            for f in frames:
+                args += ["-i", str(f)]
+            item["faces"] = ff(args + ["-filter_complex", "hstack=inputs=5,scale=iw*2:ih*2:flags=neighbor"],
+                               OUT / "looks" / f"{pid}_portraits.png")
+        feel = LOOK_SHOTS / f"feelings_{pid}.png"
+        if feel.exists():
+            item["feelings"] = ff(["-i", str(feel), "-vf", "scale=iw/2:ih/2", "-q:v", "4"], OUT / "looks" / f"{pid}_feelings.jpg")
+        out.append(item)
+    lineup = LOOK_SHOTS / "lineup.png"
+    return {"people": out, "lineup": ff(["-i", str(lineup), "-q:v", "3"], OUT / "looks" / "lineup.jpg") if lineup.exists() else ""}
+
+
 def fragments() -> str:
     d = ROOT / "docs" / "review"
     return "\n".join(p.read_text(encoding="utf-8") for p in sorted(d.glob("*.html"))) if d.exists() else ""
@@ -282,7 +330,7 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)  # (a shell may be sitting in it)
     data = {"sounds": sounds() + made_sounds() if SHOW_SOUNDS else [], "music": music() if SHOW_SOUNDS else [],
             "run": run_list() if RUN_READY else {}, "dragons": dragons() if DRAGONS else [],
-            "people": people_cands()}
+            "people": {}, "looks": looks()}
     page = (Path(__file__).with_name("review_template.html").read_text(encoding="utf-8")
             .replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
             .replace("/*TITLE*/", PAGE_TITLE)

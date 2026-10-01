@@ -1,0 +1,50 @@
+# The Living Valley's pageant rival and badge case (D138): an Ember league's last show, Primrose and
+# Duchess on the stage; then the leagues won and the Record page's five badges.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+pg grown
+pg give
+pg wear 2 11 16 24
+pg bond 600
+pg clean
+valley
+wait 4
+tips seen
+travel 15
+wait 4
+pg autoplay on
+pg show 1 3
+wait 2.5
+shot r01-intro
+wait 4
+shot r02-look
+wait 40
+shot r03-results
+wait 6
+shot r04-after
+pg autoplay off
+battle league 4
+story finish league_starfire
+open den
+wait 3
+tap 298 16
+wait 0.6
+tap 204 50
+wait 0.6
+shot r05-record
+tap 266 72
+wait 0.4
+shot r06-champion-badge
+quit

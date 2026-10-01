@@ -2,24 +2,42 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, run 21 take 4 (0.9.13) on the 3DS** ([plan](plan/v1.md), D89-D134). The game is now **Emberclutch: Skyreach Valley** (D120). The flicker held in 0.9.12 (3 flashing frames in 32,819); 0.9.13 is Noah's list of fixes and features, a watchdog for the Trailhead freeze, and the review page's PASS/FAIL list of every dragon before 1.0. Review page: https://claude.ai/artifact/NK9fcBRD7NpQepnUfMfcJZ (db `run21d`, `dragons`). Before it: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, the Living Valley pass (D135-D139), run 22 (0.9.14) next** ([plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). 0.9.13's run (take 4) came back reviewed; this pass is Noah's planning message and storyboard answers built: the player build, growing up in about a week, the story engine and Act 1 rebuilt, the Storybook look on everyone with a feelings kit, the badge case, Primrose, Custard and Cinder. Run 22's page: see below. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
-## Now: planning the Living Valley pass (2026-09-30)
-- **Noah's notes** (two pages on the quests, plus: a separate player build; the chosen people set for
-  everyone; grown in 5.5 days and eggs in 1.6; Celestine fiery and funny, personalities dug in; feelings
-  on faces, bodies, emotes, voices and synthesized sounds, Animal Crossing style). Planning only: no code yet.
-- **The story bible**: `docs/design/story.md` (the lore, including why the lanterns went dark; the cast;
-  Act 1 rebuilt with the mailbox, Fig the friend, Custard, Cinder; the pageant, league, Hollow and cove
-  lines; the letters; the feelings table; the future threads).
-- **The plan**: `docs/plan/living-valley.md` (the player build, growing up faster, the looks, the feelings
-  kit, the story engine with story scripts, save v2 and its migration, the world changes, testing and
-  run 22, the order of work, ten questions for Noah).
-- **The storyboard page** (Keep / Change per card, the questions' answers, in collections `board` and
-  `answers`): https://claude.ai/artifact/49LAdA7jCCQmaFfZtQHfhg
-- **Next:** read Noah's marks and answers (above all, which look: he wrote "set for"), turn the approved
-  parts into decisions D135 on, then build the pass in the plan's order. The 0.9.13 run (below) is
-  still on his 3DS.
+## Tooling: headless emulator checks (2026-09-30)
+- `tools\autotest.ps1 <script> -Headless` runs autotests in Azahar 2126.1.1 inside a WSL distro
+  of their own (`emberclutch-test`, set up by `tools\wsl\install.ps1`): no window on Noah's
+  desktop, no lock (three tours side by side in 44 s), full speed (the tour in about 33 s, 65 s
+  at real time), the old 3DS, the 3DS clock at 2026-06-01 10:00 every run, the DSP firmware
+  copied in. Runs repeat (under 0.02% of pixels between two tours); `tools\shotdiff.ps1` saves
+  a baseline and lists the pictures that changed. Guide: `docs/tech/headless-emulator.md`.
+  Performance is still signed off on the 3DS: no emulator models its timing.
+- Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
+  running it in UTC), and the async file reads and presentation made animations drift (off).
+
+## Now: the Living Valley pass, ready for run 22 (0.9.14) (2026-09-30)
+- **Built** (D135-D139, commits 69ada27 on): the player build (`tools\build.ps1 -Player`, kept building,
+  not handed out); growth in hours (egg 36 h, Adult at 132 h and 12 stars); **the story engine** (story
+  scripts in `story/*.story`, compiled by `tools/story/build_story.py`; quests that follow the world;
+  talks as rules; the mailbox and 28 letters; save v2 with the v1 campaign migrated; the guide anywhere;
+  Act 1 rebuilt with Fig, Custard and Cinder; the pageant, league, Hollow and cove lines; Old Whiskers; the
+  Frost Warden); **the Storybook look on all 19 people** with **the feelings kit** (10 eyes, 10 mouths, 4
+  brows; a face per feeling; 16 feeling clips; the speaker's feeling on their face, in their body and over
+  their head; five portraits each in `romfs/portraits`); the level cap at 42; the badge case (five on the
+  Record page); Primrose and Duchess at each league's last show; Custard in the meadow, Cinder on the porch;
+  the grown cats' curl lies down (D139, Noah's note on Cinder).
+- **Checks:** host tests 377,419 checks, 0 failures (the story bot plays all 28 quests; every story spot
+  and pickup on dry land clear of walls); headless autotests: `tour`, `story1`, `storybook` (everyone,
+  faces, emotes), `pets` (Cinder, Custard), `rival` (Primrose's show, the badges), `creator`, `battle`,
+  `glade`, `cove`, `hollowfloor`, all without unmapped accesses.
+- **Tools:** `tools/people/people.py` + `faces.py` (the bodies and faces), `gen_looks.py` (the people's
+  tables from the builders), `make_portraits.py` (romfs portraits), `people_model.py --sheets
+  lineup,feelings,portraits`; `dragonkit/curl.py --views`.
+- **Romfs gotcha:** `make` only re-packs romfs when the program re-links; after changing only romfs files,
+  delete `emberclutch.3dsx` first (or touch a source).
+- **Next:** Noah: install 0.9.14 and play run 22 (`docs/plan/hardware-check-7.md`, the review page). Then
+  his notes, the people's looks he fails, and Act 2 threads (docs/design/story.md section 10).
 
 ## Now: run 21, take 4 with 0.9.13 (2026-09-30)
 - **0.9.12 on the 3DS:** the flicker gone (3 flashing frames in 32,819); 3D flicker on every door and

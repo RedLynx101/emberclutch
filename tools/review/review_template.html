@@ -138,6 +138,7 @@
     <a href="#music">Music</a>
     <a href="#dragons" hidden>Dragons</a>
     <a href="#people" hidden>People</a>
+    <a href="#looks" hidden>The people's looks</a>
     <span class="tally" id="tally"></span>
   </nav>
 
@@ -208,16 +209,32 @@
     </div>
     <div id="people-body" class="people-set"></div>
   </section>
+
+  <section id="looks" hidden>
+    <div class="section-head">
+      <div class="kicker">Set 2, on everyone</div>
+      <h2>The people's looks</h2>
+      <p class="muted">Everyone in the Storybook look, front and three-quarter, the five portraits the dialogue box shows (calm,
+        happy, sad, angry, surprised) and their face in all twenty feelings. Pass the ones that are right; fail the ones to change
+        and say what (the clothes, the colours, the hair, the face, a feeling).</p>
+      <div class="legend">
+        <span><i class="dot" style="background: var(--pass)"></i>Pass: keep it</span>
+        <span><i class="dot" style="background: var(--fail)"></i>Fail: change it (say what)</span>
+      </div>
+    </div>
+    <figure class="people-fig" id="looks-lineup" hidden></figure>
+    <div id="look-list" class="grid-2"></div>
+  </section>
 </div>
 
 <script>
 const DATA = /*DATA*/null;
 let db = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const state = { sounds: {}, music: {}, run: {}, labs: {}, dragons: {}, people: {} };
-const LS = "emberclutch-review-run21d";  // (each round its own: run 21 take 4)
+const state = { sounds: {}, music: {}, run: {}, labs: {}, dragons: {}, people: {}, looks: {} };
+const LS = "emberclutch-review-run22";  // (each round its own: run 22)
 try { Object.assign(state, JSON.parse(localStorage.getItem(LS) || "{}")); } catch (_) {}
-state.run ||= {}; state.labs ||= {}; state.dragons ||= {}; state.people ||= {};
+state.run ||= {}; state.labs ||= {}; state.dragons ||= {}; state.people ||= {}; state.looks ||= {};
 function keepLocal() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (_) {} }
 
 function copyButton(text) {
@@ -400,6 +417,35 @@ function dragonCard(k) {
   return el;
 }
 
+function lookCard(k) {
+  const st = (state.looks[k.slug] ||= { mark: "", note: "" });
+  const el = document.createElement("article");
+  el.className = "card dragon";
+  el.dataset.mark = st.mark;
+  el.innerHTML = `<div class="card-head"><h3>${esc(k.name)}</h3></div>
+    <p class="muted">${esc(k.blurb)}</p>
+    <figure class="people-fig"><img src="${esc(k.model)}" alt="${esc(k.name)}, front and three-quarter" loading="lazy"><figcaption>Front and three-quarter</figcaption></figure>
+    ${k.faces ? `<figure class="people-fig"><img src="${esc(k.faces)}" alt="${esc(k.name)}'s portraits" loading="lazy" style="image-rendering: pixelated"><figcaption>Portraits: calm, happy, sad, angry, surprised</figcaption></figure>` : ""}
+    ${k.feelings ? `<details><summary class="muted" style="cursor:pointer;font-size:13px">All twenty feelings</summary><figure class="people-fig"><img src="${esc(k.feelings)}" alt="${esc(k.name)}'s faces" loading="lazy"><figcaption>calm, happy, laugh, excited, surprised · shock, sad, crying, angry, huff · worried, scared, sleepy, love, proud · cool, shy, thinking, wistful, dizzy</figcaption></figure></details>` : ""}
+    <div class="mark" role="group" aria-label="${esc(k.name)}"><button type="button" data-v="pass">Pass</button><button type="button" data-v="fail">Fail</button></div>
+    <label class="muted" for="lnote-${esc(k.slug)}" style="font-size:13px;font-weight:700">Comments</label>
+    <textarea id="lnote-${esc(k.slug)}" placeholder="What's good, what to change"></textarea>
+    <div class="saved" aria-live="polite"></div>`;
+  el.querySelectorAll(".mark button").forEach((b) => {
+    b.setAttribute("aria-pressed", String(st.mark === b.dataset.v));
+    b.addEventListener("click", () => {
+      st.mark = st.mark === b.dataset.v ? "" : b.dataset.v;
+      el.dataset.mark = st.mark;
+      el.querySelectorAll(".mark button").forEach((x) => x.setAttribute("aria-pressed", String(st.mark === x.dataset.v)));
+      save("looks", k.slug, el);
+    });
+  });
+  const ta = el.querySelector("textarea");
+  ta.value = st.note || "";
+  ta.addEventListener("change", () => { st.note = ta.value; save("looks", k.slug, el); });
+  return el;
+}
+
 function fig(src, cap) {
   const f = document.createElement("figure");
   f.className = "people-fig";
@@ -457,7 +503,9 @@ function tally() {
   const soundText = takes ? ` · ${marked} of ${takes} takes marked` : "", musicText = DATA.music.length ? ` · ${made} of ${DATA.music.length} tracks done` : "";
   const drags = (DATA.dragons || []).length, dragMarked = (DATA.dragons || []).filter((k) => (state.dragons[k.slug] || {}).mark).length;
   const dragText = drags ? ` · ${dragMarked} of ${drags} dragons marked` : "";
-  document.getElementById("tally").textContent = `${runText.replace(/ · $/, "")}${soundText}${musicText}${dragText}`;
+  const lk = ((DATA.looks || {}).people || []), lkMarked = lk.filter((k) => (state.looks[k.slug] || {}).mark).length;
+  const lookText = lk.length ? ` · ${lkMarked} of ${lk.length} looks marked` : "";
+  document.getElementById("tally").textContent = `${runText.replace(/ · $/, "")}${soundText}${musicText}${dragText}${lookText}`;
 }
 
 function render() {
@@ -481,6 +529,16 @@ function render() {
     document.querySelectorAll('nav a[href="#dragons"]').forEach((a) => (a.hidden = false));
     document.getElementById("dragon-list").replaceChildren(...DATA.dragons.map(dragonCard));
   }
+  if (DATA.looks && (DATA.looks.people || []).length) {
+    document.getElementById("looks").hidden = false;
+    document.querySelectorAll('nav a[href="#looks"]').forEach((a) => (a.hidden = false));
+    if (DATA.looks.lineup) {
+      const f = document.getElementById("looks-lineup");
+      f.hidden = false;
+      f.innerHTML = `<img src="${esc(DATA.looks.lineup)}" alt="Everyone in a row" loading="lazy"><figcaption>Everyone in a row: your two bodies, the villagers, the story's people and the champions</figcaption>`;
+    }
+    document.getElementById("look-list").replaceChildren(...DATA.looks.people.map(lookCard));
+  }
   if (DATA.people && DATA.people.sets) {
     document.getElementById("people").hidden = false;
     document.querySelectorAll('nav a[href="#people"]').forEach((a) => (a.hidden = false));
@@ -498,7 +556,8 @@ render();
     const runSecs = (DATA.run.sections || []).map((x) => ({ slug: x.id }));
     const labs = (DATA.run.labs || []).map((x) => ({ slug: x }));
     for (const [kind, list] of [["sounds2", DATA.sounds], ["music", DATA.music], [DATA.run.key || "run", runSecs], ["labs", labs],
-                                ["dragons", DATA.dragons || []], ["people", DATA.people && DATA.people.sets ? [{ slug: "choice" }] : []]]) {
+                                ["dragons", DATA.dragons || []], ["people", DATA.people && DATA.people.sets ? [{ slug: "choice" }] : []],
+                                ["looks", (DATA.looks || {}).people || []]]) {
       for (const it of list) {
         const snap = await db.doc(`${kind}/${it.slug}`).get();
         const into = kind === "sounds2" ? "sounds" : kind === DATA.run.key ? "run" : kind;

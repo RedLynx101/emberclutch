@@ -265,7 +265,8 @@ def arm(p, side, sleeve_mat="outfit", sleeve_r=0.058, sleeve_len=0.62, forearm_m
 def hand(p, side, mat="skin", r=0.048):
     wr, tip = p.joints[f"hand_{side}"]
     c = lerp(wr, tip, 0.35)
-    ellipsoid(p.body, c, (r * 0.95, r * 0.98, r * 1.08), 5, 3, mat, rigid(f"hand_{side}"))
+    # (two rings, not three: a hand is a few pixels across, and the 20 triangles close heads, run 22)
+    ellipsoid(p.body, c, (r * 0.95, r * 0.98, r * 1.08), 6, 2, mat, rigid(f"hand_{side}"))
 
 
 def leg(p, side, mat="leather_dark", r=0.056, top=0.06, bottom_z=0.1, seg=6, knee_r=None):

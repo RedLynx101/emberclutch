@@ -81,11 +81,15 @@ void drawTrail(float x, float y, float w, float h, float t, u32 marker) {
 // back home, its finds lie on a picnic blanket.
 
 // A point on the painted trail (0 at your feet .. 1 far off) and how wide it is there.
+// (t is held to 0..1: past the far end the root went negative, and the trail's last triangles had
+// NaN corners every frame. Azahar skips those; the 3DS's GPU can hang on them: run 22's freeze
+// going into the Trailhead, and 0.9.11-0.9.13's, D140.)
 Vec2 paintedTrail(float t) {
+    t = t < 0 ? 0 : (t > 1 ? 1 : t);
     const float near = 1.0f - t;
     return {70 + 228 * t + 58 * std::sin(t * 5.4f) * near, 252 - 134 * (1.0f - near * near * std::sqrt(near))};
 }
-float trailWidth(float t) { return 3 + 38 * std::pow(1.0f - t, 1.4f); }
+float trailWidth(float t) { return 3 + 38 * std::pow(1.0f - (t < 0 ? 0 : (t > 1 ? 1 : t)), 1.4f); }
 
 void drawTrailScene(App& app, const paint::Light& l) {
     namespace pal = theme::paint;
@@ -106,8 +110,9 @@ void drawTrailScene(App& app, const paint::Light& l) {
         Vec2 prevL{}, prevR{};
         for (int i = 0; i <= kSteps; ++i) {
             const float t = i / static_cast<float>(kSteps) * (band ? 0.9f : 1.0f);
-            const Vec2 p = paintedTrail(t), q = paintedTrail(t + 0.01f);
-            const float dx = q.x - p.x, dy = (q.y - p.y) * 3.0f;  // (flattened: the ground lies away from you)
+            // (its way here: ahead along the trail, or from just behind at the far end)
+            const Vec2 p = paintedTrail(t), a = paintedTrail(t > 0.99f ? t - 0.01f : t), q = paintedTrail(t > 0.99f ? t : t + 0.01f);
+            const float dx = q.x - a.x, dy = (q.y - a.y) * 3.0f;  // (flattened: the ground lies away from you)
             const float len = std::fmax(1e-3f, std::sqrt(dx * dx + dy * dy));
             const float w = trailWidth(t) * k, shift = r3d::eyeShift(1.0f + 1.6f * t);
             const Vec2 L{p.x + shift - dy / len * w, p.y + dx / len * w * 0.35f};

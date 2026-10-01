@@ -150,9 +150,10 @@ STORY = {
     # Seraphine: a wine bodice, a dark plum wrap skirt, black hair
     "seraphine": dict(_EYES, base=(212, 158, 112), accent=(120, 40, 70), pattern=(70, 34, 74), horn=(30, 24, 36),
                       membrane=(40, 30, 40), iris=(118, 110, 124), glow=(230, 180, 90)),
-    # Solenne: a midnight cloak of stars over a white dress, silver hair, a pale blue circlet, gold eyes
-    "solenne": dict(_EYES, base=(164, 108, 72), accent=(40, 48, 96), pattern=(196, 222, 250), horn=(236, 236, 244),
-                    membrane=(200, 190, 170), iris=(240, 196, 72), glow=(196, 222, 250)),
+    # Solenne (run 22, Noah: after Emilia): fair, violet eyes, silver hair with a lavender tint, a lavender
+    # capelet trimmed in purple over a white dress
+    "solenne": dict(_EYES, base=(255, 234, 224), accent=(226, 214, 244), pattern=(140, 96, 190), horn=(238, 234, 248),
+                    membrane=(200, 190, 210), iris=(152, 104, 200), glow=(196, 222, 250)),
 }
 
 

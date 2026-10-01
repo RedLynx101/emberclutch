@@ -43,6 +43,7 @@ enum class Sfx : u8 {
     EmoteHappy, EmoteLaugh, EmoteExcited, EmoteSurprised, EmoteShock, EmoteSad, EmoteCrying, EmoteAngry, EmoteHuff,
     EmoteWorried, EmoteScared, EmoteSleepy, EmoteLove, EmoteProud, EmoteCool, EmoteShy, EmoteThinking, EmoteWistful,
     EmoteDizzy, MailArrive, Bark,
+    MailboxChime,  // mail waiting, as you walk up to the mailbox (run 22: "like Animal Crossing")
     Count
 };
 // True once a sound's own file is loaded (not a stand-in).

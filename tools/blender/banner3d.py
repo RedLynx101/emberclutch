@@ -524,7 +524,7 @@ def apply_modifiers(o):
         bpy.ops.object.modifier_apply(modifier=m.name)
 
 
-def wordmark_texture(path, width=256, height=64):
+def wordmark_texture(path, width=256, height=128):
     """The wordmark rendered on its own (gold letters, a dark edge, clear around them): the
     banner shows it on a single quad, far lighter than the letters as geometry."""
     main = bpy.context.window.scene if bpy.context.window else bpy.context.scene
@@ -572,9 +572,11 @@ def wordmark_texture(path, width=256, height=64):
         scene.collection.objects.link(g)
         made.extend((o, g))
 
-    # 1.0 (D120): Emberclutch, and Skyreach Valley small under it
-    line("Emberclutch", 0.82, 0.44, "wordmark_text")
-    line("Skyreach Valley", 0.36, -0.3, "wordmark_sub")
+    # 1.0 (D120): Emberclutch in the top half exactly as it was alone (run 22, Noah: 0.9.13 squeezed
+    # it up into the HOME Menu's rounded corners), Skyreach Valley small under it in the lower half
+    # (the hatchling and its egg a little smaller below them, build()).
+    line("Emberclutch", 1.0, 0.95, "wordmark_text")
+    line("Skyreach Valley", 0.42, 0.1, "wordmark_sub")
     ecur = edge.node_tree.nodes["Principled BSDF"]
     ecur.inputs["Roughness"].default_value = 1.0
     cam = bpy.data.objects.new("wordmark_cam", bpy.data.cameras.new("wordmark_cam"))
@@ -600,7 +602,7 @@ def wordmark(width):
     img = wordmark_texture(os.path.join(OUT, "wordmark.png"))
     bm = bmesh.new()
     uv = bm.loops.layers.uv.new("UVMap")
-    h = width / 4.0
+    h = width / 2.0  # (the texture's 256 x 128: Emberclutch on its top half, as the old 256 x 64 one)
     vs = [bm.verts.new(p) for p in ((-width / 2, 0, -h / 2), (width / 2, 0, -h / 2), (width / 2, 0, h / 2), (-width / 2, 0, h / 2))]
     f = bm.faces.new(vs)
     for loop, (u, v) in zip(f.loops, ((0, 0), (1, 0), (1, 1), (0, 1))):
@@ -792,7 +794,7 @@ def build():
     if KIND != "classic" and "tail" in pieces:  # ...and the tail through its whole wag
         clip_to_egg(pieces["tail"], egg_h, 0.42 * h, rim / egg_h, lo - drop * h, yaws=(-24.0, 0.0, 24.0))
 
-    s = TALL / (hi - lo + 2 * drop * h)
+    s = 0.84 * TALL / (hi - lo + 2 * drop * h)  # (run 22: a little smaller, room for the subtitle)
     world_objs = list(pieces.values()) + [egg, cap]
     for o in world_objs:
         o.location = (o.location - Vector((0, 0, lo))) * s
@@ -800,11 +802,13 @@ def build():
     # In the frame: the pair just left of centre and low; the wordmark across the top, behind.
     # Nothing else: the HOME Menu's own background shows round them (Noah took the wall out;
     # the flat 2D banner keeps its backdrop, see main()).
-    shift = Vector((0.0, 0.0, -11.3))  # centred (run 10: the wordmark sat off centre); 1.0 a little lower, clear of the subtitle
+    shift = Vector((0.0, 0.0, -11.3))  # centred (run 10: the wordmark sat off centre); 1.0 a little lower
     for o in world_objs:
         o.location += shift
     word = wordmark(30.0)
-    word.location = (0.0, 5.0, 8.4)  # (run 11: 7.9, 5 px lower on the 3DS than 8.4; 1.0: two lines, the subtitle clear of the head)
+    # Emberclutch where it was (run 11: its middle at 7.9, 5 px lower on the 3DS than 8.4): the quad
+    # is twice as tall now, its top half the old one, so its middle sits a quarter lower.
+    word.location = (0.0, 5.0, 7.9 - 30.0 / 2.0 / 4.0)
     # Banner-lab variants (run 3: the new scene froze the HOME Menu, 0.1.1's didn't).
     if "--keep-glow" in sys.argv:
         glow_disc(9.8, (0.55, 0.22, 0.12), (0.0, 16.0, -1.0))

@@ -81,7 +81,8 @@ def hat_brim(p, z, r_in, r_out, mat, crown_h, crown_r, seg=10, tilt=0.0, cy=0.0,
     """A brimmed hat on the head: a crown from z up crown_h, a flat brim from r_in out to r_out."""
     m, h = p.body, p.head
     cyh = h.c[1] + cy
-    lathe(m, [(z + crown_h, crown_r * 0.86, crown_r * 0.86, crown_r * 0.86, cyh), (z, crown_r, crown_r, crown_r, cyh)],
+    skirt = 0.012 + abs(tilt) * crown_r  # (the crown reaches under the brim: a tilted brim leaves no gap, run 22)
+    lathe(m, [(z + crown_h, crown_r * 0.86, crown_r * 0.86, crown_r * 0.86, cyh), (z - skirt, crown_r, crown_r, crown_r, cyh)],
           seg, top_mat or mat, HEAD, cap_top=z + crown_h + 0.012)
     annulus(m, (0.0, cyh, z), norm((0.0, -tilt, 1.0)), (0.0, -1.0, 0.0), r_out, r_in, seg, mat, HEAD, both=True)
 
@@ -151,7 +152,7 @@ def keeper():
     p = sb("keeper", leg=0.38, torso=1.04, stoop=0.05, head_scale=0.82, eyes_at=(21.0, -8.0))
     h, m = p.head, p.body
     sb_face(p, eye=(0.029, 0.04), nose=False, brows=dict(el=13.0, width=0.054, thick=0.016, arch=0.01, n=3),
-            mouth=dict(el=-23.5, width=0.03, curve=0.008))
+            mouth=dict(el=-23.5, width=0.03, curve=0.008), open_top=1)  # (run 22: his forehead was see-through)
     decal(m, h, 0, -17, 0.021, 0.017, 0.016, 6, "nose", HEAD)
     shell(m, h, lambda az: angle_blend(az, {0: 58, 40: 46, 80: 8, 100: -8, 150: -34, 180: -40}),
           lambda az, f: 0.014 + 0.014 * (1 - f) + (0.034 if 70 < abs(az) < 140 else 0.01) * f,
@@ -211,7 +212,8 @@ def sanctuary():
     a tin bucket of feed."""
     p = sb("sanctuary", leg=0.46, torso=1.2, width=1.14, arm=1.16, head_scale=0.8, eyes_at=(21.0, -7.0))
     h, m = p.head, p.body
-    sb_face(p, eye=(0.032, 0.045), ears="pointed", brows=dict(el=11.0, width=0.04, thick=0.01, arch=0.006))
+    sb_face(p, eye=(0.032, 0.045), ears="pointed", brows=dict(el=11.0, width=0.04, thick=0.01, arch=0.006),
+            open_top=0)  # (run 22: you saw through his head between the hat and his hair)
     shell(m, h, lambda az: angle_blend(az, {0: 20, 40: 16, 80: 4, 110: -14, 150: -34, 180: -38}),
           lambda az, f: 0.02 + 0.016 * (1 - f), n_az=10, rows=1, locks=lambda k, az: 9 if k % 2 == 0 else 0)
     top, cyh = h.c[2] + h.azt, h.c[1]
@@ -232,8 +234,8 @@ def sanctuary():
     c = hand_c(p, "L")  # the bucket hangs from the right hand
     bx, by, rim, bot = c[0] - 0.028, c[1], c[2] - 0.085, c[2] - 0.19
     hw = rigid("hand_L")
-    lathe(m, [(rim, 0.064, 0.064, 0.064, by), (bot, 0.054, 0.054, 0.054, by)], 8, "metal", hw, cap_bottom=bot, cx=bx)
-    lathe(m, [(rim - 0.008, 0.06, 0.06, 0.06, by)], 8, "sole", hw, cap_top=rim - 0.012, cx=bx)
+    lathe(m, [(rim, 0.064, 0.064, 0.064, by), (bot, 0.054, 0.054, 0.054, by)], 7, "metal", hw, cap_bottom=bot, cx=bx)
+    lathe(m, [(rim - 0.008, 0.06, 0.06, 0.06, by)], 7, "sole", hw, cap_top=rim - 0.012, cx=bx)
     tube(m, [(bx - 0.064, by, rim + 0.004), (bx, by, c[2] + 0.01), (bx + 0.064, by, rim + 0.004)], [0.006] * 3, 3,
          "metal", hw)
     return finish(p, zhip + 0.012)
@@ -362,11 +364,14 @@ def fig():
     tunic with a gold scarf, a brass telescope at his hip, boots he hasn't grown into."""
     p = sb("fig", leg=0.48, torso=1.12, width=0.88, arm=1.2, eyes_at=(22.0, -8.0))
     h, m = p.head, p.body
-    sb_face(p, eye=(0.034, 0.05), brows=dict(el=13.0, width=0.04, thick=0.008, arch=0.012))
-    shell(m, h, lambda az: angle_blend(az, {0: 16, 40: 10, 90: -4, 130: -22, 180: -26}),
-          lambda az, f: 0.022 + 0.012 * (1 - f), n_az=10, rows=1, locks=lambda k, az: 12 if k % 2 == 0 else 0, phase=0.5)
+    sb_face(p, eye=(0.034, 0.05), brows=dict(el=13.0, width=0.04, thick=0.008, arch=0.012), open_top=0)
+    # (run 22: one ring of hair cut a jagged band across his face; two rows hug the head, a soft fringe
+    # above his eyes, the tufts at his ears and nape)
+    shell(m, h, lambda az: angle_blend(az, {0: 24, 40: 16, 90: -6, 130: -22, 180: -26}),
+          lambda az, f: 0.016 + 0.006 * (1 - f), n_az=9, rows=2,  # (thin under the hat: none through its brim)
+          locks=lambda k, az: (5 if abs(az) < 50 else 10) if k % 2 == 0 else 0, phase=0.5)
     top = h.c[2] + h.azt
-    hat_brim(p, top - 0.06, 0.15, 0.3, "trim", 0.12, 0.18, seg=8, tilt=0.12)  # far too big
+    hat_brim(p, top - 0.06, 0.15, 0.3, "trim", 0.12, 0.18, seg=7, tilt=0.12)  # far too big
     q = (0.12, h.c[1] + 0.06, top + 0.02)  # the feather, swept back
     tube(m, [q, add(q, (0.05, 0.1, 0.14)), add(q, (0.03, 0.24, 0.2))], [(0.03, 0.008), (0.04, 0.008), (0.02, 0.006)], 4,
          "extra", HEAD, tip1=0.06, up_hint=(1.0, 0.0, 0.0))
@@ -376,10 +381,8 @@ def fig():
     lathe(m, tunic, 8, "outfit", sw)
     hug(p, tunic, zh + 0.02, zh - 0.01, 0.006, "leather")
     lathe(m, [(zn + 0.03, 0.066, 0.062, 0.062), (zn - 0.035, 0.1, 0.084, 0.088)], 8, "trim", torso_weights(p))
-    tube(m, [(-0.02, -0.07, zn - 0.03), (-0.035, -0.09, zc - 0.08)], [(0.026, 0.01), (0.022, 0.008)], 4, "trim",
-         torso_weights(p), tip1=0.02)  # the scarf's end
     hw = rigid("hips")
-    tube(m, [(0.13, -0.02, zh + 0.02), (0.15, 0.0, zh - 0.12)], [0.02, 0.026], 5, "brass", hw, cap0=True, cap1=True)
+    tube(m, [(0.13, -0.02, zh + 0.02), (0.15, 0.0, zh - 0.12)], [0.02, 0.026], 4, "brass", hw, cap0=True, cap1=True)
     limbs(p, leg_r=0.042, boot=(0.12, 0.05, "leather"), shoe_size=(0.054, 0.086, 0.05))
     return finish(p, zhip + 0.012)
 
@@ -389,11 +392,13 @@ def tam():
     to the chest on braces."""
     p = sb("tam", leg=0.4, torso=1.1, width=1.08, eyes_at=(21.0, -8.0))
     h, m = p.head, p.body
-    sb_face(p, eye=(0.031, 0.042), brows=dict(el=11.5, width=0.042, thick=0.011, arch=0.004))
+    sb_face(p, eye=(0.031, 0.042), brows=dict(el=11.5, width=0.038, thick=0.011, arch=0.006), open_top=0)
     beard(m, h, lambda az: angle_blend(az, {0: -34, 40: -24, 80: -8, 100: -4}), lambda az, f: 0.008 + 0.006 * (1 - f),
           0.01, n=6, rows=2)
-    shell(m, h, lambda az: angle_blend(az, {0: 14, 60: 6, 100: -16, 180: -30}),
-          lambda az, f: 0.02, n_az=10, rows=1, locks=lambda k, az: 8 if k % 2 == 0 else 0)
+    # (run 22: a hairline across his forehead under the hat read as one long brow down to his beard;
+    # his hair now shows only at the sides and back, under the sou'wester's brim)
+    shell(m, h, lambda az: angle_blend(az, {0: 52, 45: 40, 80: 6, 100: -14, 180: -30}),
+          lambda az, f: 0.02, n_az=10, rows=1, locks=lambda k, az: 8 if (k % 2 == 0 and abs(az) > 70) else 0)
     top, cyh = h.c[2] + h.azt, h.c[1]  # the sou'wester: a round crown, a brim longer at the back
     lathe(m, [(top + 0.03, 0.09, 0.09, 0.09, cyh), (top - 0.05, 0.19, 0.19, 0.19, cyh)], 9, "extra", HEAD,
           cap_top=top + 0.045)
@@ -419,11 +424,11 @@ def tove():
     and hem, a knitted hat with a pompom, mittens, a short pale bob."""
     p = sb("tove", leg=0.42, torso=1.12, width=1.02, eyes_at=(22.0, -8.0))
     h, m = p.head, p.body
-    sb_face(p, eye=(0.031, 0.044), lashes=True, brows=dict(el=11.5, width=0.04, thick=0.008, arch=0.003))
+    sb_face(p, eye=(0.031, 0.044), lashes=True, brows=dict(el=11.5, width=0.04, thick=0.008, arch=0.003), open_top=1)
     shell(m, h, lambda az: angle_blend(az, {0: 18, 38: 16, 55: -40, 100: -46, 180: -42}),
           lambda az, f: 0.02 + 0.02 * (1 - f) ** 1.2, n_az=12, rows=3, curtain=-12, flare=0.1, phase=0.5)
     hat = lambda az: angle_blend(az, {0: 34, 60: 26, 90: 18, 180: 12})  # noqa: E731
-    shell(m, h, hat, lambda az, f: 0.034 + 0.01 * (1 - f), n_az=10, rows=2, mat="trim")
+    shell(m, h, hat, lambda az, f: 0.05 + 0.008 * (1 - f), n_az=10, rows=2, mat="trim")  # (over her hair: run 22)
     ellipsoid(m, h.at(0, 90, 0.07), (0.05, 0.05, 0.05), 6, 2, "white", HEAD)
     zn, zc, zsp, zh, zhip, zk = heights(p)
     coat = [(zn + 0.03, 0.06, 0.056, 0.056), (zn - 0.04, 0.14, 0.108, 0.114), (zsp, 0.14, 0.118, 0.124),
@@ -655,32 +660,35 @@ def seraphine():
 
 
 def solenne():
-    """Solenne, the Starfire champion: serene, long silver hair, a circlet with a pale gem, a long
-    dress under a midnight cloak scattered with stars."""
+    """Solenne, the Starfire champion: serene, an elf with long silver hair, violet eyes and a white
+    flower behind her ear, a white dress under a lavender capelet trimmed in purple (run 22, Noah:
+    after Emilia)."""
     p = sb("solenne", leg=0.44, torso=1.12, width=0.96, eyes_at=(22.0, -8.0))
     h, m = p.head, p.body
-    sb_face(p, eye=(0.034, 0.05), lashes=True, brows=dict(el=12.5, width=0.038, thick=0.007, arch=0.008))
+    sb_face(p, eye=(0.035, 0.052), lashes=True, ears="pointed",
+            brows=dict(el=12.5, width=0.036, thick=0.006, arch=0.009))
 
     def edge(az):
         return angle_blend(az, {0: 18, 24: 12, 46: -2, 62: -80, 180: -86})
     shell(m, h, edge, lambda az, f: 0.02 + 0.026 * (1 - f) ** 1.2, n_az=12, rows=4,
           locks=lambda k, az: (18 if k % 2 == 0 else 0) if abs(az) > 45 else 0, curtain=-10, flare=-0.22, phase=0.5,
           row_bias=0.75)
-    band = lambda az: angle_blend(az, {0: 26, 90: 22, 180: 20})  # noqa: E731 (the circlet, round the brow)
-    ribbon(m, [h.at(az, band(az), 0.016) for az in range(-90, 91, 30)], 0.012, lambda q: norm(
-        (q[0] - h.c[0], q[1] - h.c[1], q[2] - h.c[2])), "brass", HEAD)
-    ellipsoid(m, h.at(0, 27, 0.02), (0.016, 0.008, 0.02), 4, 2, "extra", HEAD)
+    fl = h.at(-62, 30, 0.035)  # the flower behind her right ear (-X), five petals round a purple heart
+    for k in range(5):
+        a = k * 1.2566
+        ellipsoid(m, add(fl, (0.026 * math.cos(a) * 0.5, -0.004, 0.026 * math.sin(a))), (0.016, 0.008, 0.016), 3, 2,
+                  "white", HEAD)
+    ellipsoid(m, add(fl, (0.0, -0.01, 0.0)), (0.01, 0.006, 0.01), 3, 2, "trim", HEAD)
     zn, zc, zsp, zh, zhip, zk = heights(p)
     sw = skirt_weights(p, zh, 0.1, follow=0.55)
     dress = [(zn + 0.012, 0.046, 0.042, 0.042), (zn - 0.04, 0.106, 0.084, 0.088), (zh, 0.104, 0.09, 0.092),
              (0.06, 0.2, 0.18, 0.19)]
     lathe(m, dress, 8, "white", sw)
-    cloak = [(zn + 0.04, 0.06, 0.056, 0.056), (zn - 0.04, 0.15, 0.116, 0.126), (zsp, 0.152, 0.128, 0.14),
-             (0.08, 0.21, 0.19, 0.22)]
-    lathe_arc(m, cloak, 60, 300, 7, "outfit", skirt_weights(p, zhip + 0.06, 0.08, follow=0.5))
-    for z, az in ((zc - 0.05, 120), (zsp - 0.06, 200), (zhip - 0.1, 150), (zk, 240), (zk - 0.12, 175), (zc - 0.1, 250)):
-        q = garment_point(cloak, z, az, 0.004)
-        ellipsoid(m, q, (0.012, 0.012, 0.012), 4, 2, "glint", torso_weights(p))  # its stars
+    tw = torso_weights(p)
+    cape = [(zn + 0.03, 0.058, 0.054, 0.054), (zn - 0.035, 0.13, 0.104, 0.116), (zc - 0.07, 0.16, 0.13, 0.15)]
+    lathe(m, cape, 7, "outfit", tw)  # a lavender capelet over her shoulders
+    hug(p, cape, zc - 0.05, zc - 0.07, 0.006, "trim", w=tw)  # its purple hem
+    hug(p, dress, zh + 0.012, zh - 0.012, 0.006, "trim", w=sw)  # a purple sash
     for side, s in SIDES:
         arm(p, side, sleeve_mat="white", long_sleeve=True, sleeve_r=0.048, hand_r=0.04, seg=5)
         shoe(p, side, "trim", size=(0.044, 0.072, 0.04), seg=5)

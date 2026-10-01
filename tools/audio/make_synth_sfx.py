@@ -989,6 +989,17 @@ def mail_arrive(rng, take):
     return x
 
 
+def mailbox_chime(rng, take):
+    """Mail waiting (run 22, Noah: "like Animal Crossing"): a music box's little rising flourish,
+    four notes and a sparkle on top, as you walk up to the mailbox with its flag up."""
+    x = []
+    for i, (n, at, g) in enumerate((("E6", 0.0, 0.55), ("G#6", 0.075, 0.55), ("B6", 0.15, 0.6), ("E7", 0.24, 0.75))):
+        add(x, kalimba(note(n), 0.6, decay=0.22 + 0.06 * i), at, g)
+        add(x, chime(note(n) * 2.0, 0.3, decay=0.05, bright=0.3), at, 0.12)
+    add(x, chime(note("B7"), 0.5, decay=0.12, bright=0.5), 0.33, 0.22)
+    return x
+
+
 def bark(rng, take):
     """Custard's 'wuff!': a round, friendly bark (a quick pitched swell with a breathy edge)."""
     sc = (1.0, 1.08)[take]
@@ -1067,6 +1078,7 @@ EFFECTS = {
     "emote-dizzy": ("ui", 1, emote_dizzy, -4.0),
     "mail-arrive": ("ui", 1, mail_arrive, 0.0),
     "bark": ("voice", 2, bark, -2.0),
+    "mailbox-chime": ("ui", 1, mailbox_chime, -1.0),
 }
 
 

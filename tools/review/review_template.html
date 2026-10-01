@@ -232,7 +232,7 @@ const DATA = /*DATA*/null;
 let db = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const state = { sounds: {}, music: {}, run: {}, labs: {}, dragons: {}, people: {}, looks: {} };
-const LS = "emberclutch-review-run22";  // (each round its own: run 22)
+const LS = "emberclutch-review-run23";  // (each round its own: run 23)
 try { Object.assign(state, JSON.parse(localStorage.getItem(LS) || "{}")); } catch (_) {}
 state.run ||= {}; state.labs ||= {}; state.dragons ||= {}; state.people ||= {}; state.looks ||= {};
 function keepLocal() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (_) {} }

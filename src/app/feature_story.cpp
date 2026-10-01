@@ -164,9 +164,22 @@ void act(App& app, const vext::Folk& who, vext::Stage& st) {
     }
 }
 
-// Every frame: Cinder's breathing and waking, Custard's tail.
+// Every frame: the mailbox's chime as you walk up to it with a letter waiting (run 22, Noah: "like
+// Animal Crossing"; once an approach), Cinder's breathing and waking, Custard's tail.
+bool g_mailNear = false;
+
 void tick(App& app, const vext::Stage& st) {
     g_dogClock += app.dt;
+    if (st.valley) {
+        const Vec3 box = mailboxAt(*st.valley);
+        const float d = std::hypot(box.x - st.you.x, box.y - st.you.y);
+        if (!g_mailNear && d < 6.0f) {
+            g_mailNear = true;
+            if (story::unreadMail(app.game) > 0) audio::playSfx(audio::Sfx::MailboxChime, 1.0f, 0.85f);
+        } else if (g_mailNear && d > 10.0f) {
+            g_mailNear = false;
+        }
+    }
     story::Spot sp;
     if (!st.valley || !story::spotOf(app.game, story::kPCinder, nowLocal(app), sp)) return;
     const Vec3 at = where(*st.valley, sp.place, sp.at);

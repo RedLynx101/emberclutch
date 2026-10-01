@@ -29,7 +29,7 @@ void storyNews(App& app, const story::News& n, bool queue) {
     if (n.mail > 0) {
         int box[1];
         if (story::mailbox(app.game, box, 1) == 1) queueToastf(app, str::kMailArrived, story::letter(app.game, box[0]).subject);
-        audio::playSfx(audio::Sfx::Notice);
+        audio::playSfx(audio::Sfx::MailArrive);
     }
     if (n.starEgg) giveStarEgg(app);
     // Fig's map, whole again: the map's fog lifts round the places its pages were found (D137).

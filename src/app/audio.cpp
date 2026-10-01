@@ -60,7 +60,8 @@ const char* const kSfxFiles[] = {
     // (D137: the feelings' pops, the mailbox, Custard; make_synth_sfx.py)
     "emote-happy", "emote-laugh", "emote-excited", "emote-surprised", "emote-shock", "emote-sad", "emote-crying",
     "emote-angry", "emote-huff", "emote-worried", "emote-scared", "emote-sleepy", "emote-love", "emote-proud",
-    "emote-cool", "emote-shy", "emote-thinking", "emote-wistful", "emote-dizzy", "mail-arrive", "bark"};
+    "emote-cool", "emote-shy", "emote-thinking", "emote-wistful", "emote-dizzy", "mail-arrive", "bark",
+    "mailbox-chime"};
 static_assert(sizeof(kSfxFiles) / sizeof(kSfxFiles[0]) == static_cast<int>(Sfx::Count), "one file per Sfx");
 // Stand-ins (D35) for sound brief 2, in Sfx order from BallRoll: what plays until the sound's
 // own file arrives, and how it's retuned. They match what these moments played before.
@@ -109,6 +110,7 @@ constexpr StandIn kStandIns[] = {
     {Sfx::Sparkle, 1.0f, 0.6f},  {Sfx::Confirm, 1.0f, 0.7f}, {Sfx::Tap, 0.7f, 0.6f},     {Sfx::Tap, 1.4f, 0.4f},
     {Sfx::Tap, 0.9f, 0.5f},      {Sfx::Sparkle, 0.8f, 0.4f}, {Sfx::Chirp, 0.8f, 0.4f},   {Sfx::Notice, 1.3f, 0.8f},
     {Sfx::Chirp, 0.7f, 0.6f},
+    {Sfx::Sparkle, 1.2f, 0.6f},  // (run 22: the mailbox's chime)
 };
 static_assert(sizeof(kStandIns) / sizeof(kStandIns[0]) == static_cast<int>(Sfx::Count) - kFirstBrief2,
               "a stand-in for every brief 2 sound");

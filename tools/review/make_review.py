@@ -30,11 +30,11 @@ OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
 RUN_READY = True  # the run's checklist on the page (once the build is ready for the 3DS)
-RUN_DOC = "docs/plan/hardware-check-7.md"  # the run's steps
-RUN_KEY = "run22"       # its database collection (each run its own: run 21's notes stay under `run21d`)
+RUN_DOC = "docs/plan/hardware-check-8.md"  # the run's steps
+RUN_KEY = "run23"       # its database collection (each run its own: run 22's notes stay under `run22`)
 LABS = []              # banner labs to mark Held/Froze this run (none in run 21)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch: Skyreach Valley, run 22 (0.9.14): the Living Valley"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch: Skyreach Valley, run 23 (0.9.15): run 22's fixes"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.

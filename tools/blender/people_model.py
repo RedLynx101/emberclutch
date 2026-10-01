@@ -317,11 +317,12 @@ def sheet_models(cam, ids):
         p = people.build(pid)
         sh = Shown(p, palette_for(pid), hair=0)
         sh.pose(person_clips.by_name("idle"), 0.0)
-        for view in ("front", "three_quarter"):
+        views = arg("--views", "front,three_quarter").split(",")  # (any of VIEWS: high, back, side ...)
+        for view in views:
             frame(cam, (0, 0, 0.74), 1.7, view)
             files.append(render(os.path.join(TILES, f"model_{pid}_{view}.png")))
         sh.remove()
-    sheet(files, 4, os.path.join(OUT, "models.png"))
+    sheet(files, len(arg("--views", "front,three_quarter").split(",")) * 2, os.path.join(OUT, "models.png"))
 
 
 def sheet_faces(cam, ids):

@@ -1,0 +1,54 @@
+# Cinder asleep on Rowan's porch, then spoken to (awake); Custard about the meadow once the stray's
+# found, his tail going as you come near (D138).
+overlay off
+wait 3
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 3
+key SELECT
+wait 0.4
+tap 238 81
+key SELECT
+wait 5
+name Ember
+wait 9
+valley
+wait 5
+tips seen
+wait 8
+travel 8
+wait 5
+view 8 -4.2 10.6 1.4 -4.2 6.6 0.5
+wait 1.5
+shot 01-cinder-asleep
+story talk cinder
+wait 1.5
+shot 02-cinder-talk
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 1
+story world found_stray
+travel 3
+wait 5
+view 3 -11.0 9.5 1.6 -14.0 12.0 0.4
+wait 1.5
+shot 03-custard
+story talk custard
+wait 1.0
+shot 04-custard-talk
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 1
+quit

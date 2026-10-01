@@ -240,6 +240,11 @@ void fillView(App& app, r3d::ValleyView& view) {
     view.critterVerts = s.mesh.verts;
 }
 
+critters::Mesh* frameMesh() {
+    State& s = st();
+    return s.valley ? &s.mesh : nullptr;
+}
+
 bool active(const App& app) {
     (void)app;
     const State& s = st();

@@ -1684,6 +1684,65 @@ void buildFox(Out& o, const Critter& c, float clock) {
     }
 }
 
+// Custard: Bram's fluffy sheepdog, seen up close (he's petted), so rounder than the wild ones: blobs
+// (ellipsoids, lit top to bottom) for his body, a grey saddle, a big shaggy head with a fringe, a
+// muzzle and black nose, ears that flop down, a plume of a tail going like a flag, short legs.
+void blob(Out& o, const Frame& f, Vec3 c, Vec3 r, int seg, int rings, Rgb3 top, Rgb3 bottom) {
+    const Vec3 centre = f(c);
+    auto at = [&](int j, int k) {
+        const float el = kTau * 0.25f - kTau * 0.5f * static_cast<float>(j) / static_cast<float>(rings);
+        const float az = kTau * static_cast<float>(k) / static_cast<float>(seg);
+        return f({c.x + r.x * std::cos(el) * std::sin(az), c.y + r.y * std::cos(el) * std::cos(az), c.z + r.z * std::sin(el)});
+    };
+    for (int j = 0; j < rings; ++j) {
+        const float t = (j + 0.5f) / static_cast<float>(rings);
+        const Rgb3 col{static_cast<u8>(top.r + (bottom.r - top.r) * t), static_cast<u8>(top.g + (bottom.g - top.g) * t),
+                       static_cast<u8>(top.b + (bottom.b - top.b) * t)};
+        for (int k = 0; k < seg; ++k) {
+            const Vec3 a = at(j, k), b = at(j, k + 1), c2 = at(j + 1, k), d = at(j + 1, k + 1);
+            if (j > 0) o.tri(a, b, d, col, centre);
+            if (j < rings - 1) o.tri(a, d, c2, col, centre);
+        }
+    }
+}
+
+void buildDog(Out& o, const DogPose& p) {
+    const Rgb3 fur{252, 242, 214}, under{226, 210, 176}, grey{150, 150, 162}, greyU{118, 118, 132}, dark{54, 46, 48};
+    Frame f;
+    f.set(p.at, p.heading, 1.0f);
+    const float sit = clampf(p.sit, 0.0f, 1.0f);
+    f.tip(0.4f * sit, {0, -0.2f, 0.22f});
+    blob(o, f, {0, 0, 0.36f}, {0.2f, 0.32f, 0.19f}, 7, 4, fur, under);         // the body
+    blob(o, f, {0, -0.1f, 0.45f}, {0.18f, 0.22f, 0.11f}, 6, 2, grey, greyU);  // the saddle
+    blob(o, f, {0, 0.36f, 0.58f}, {0.16f, 0.15f, 0.15f}, 7, 4, fur, under);   // the head
+    blob(o, f, {0, 0.5f, 0.53f}, {0.075f, 0.08f, 0.06f}, 5, 3, fur, under);   // the muzzle
+    const Vec3 mid = f({0, 0.36f, 0.58f});
+    o.tri(f({-0.03f, 0.575f, 0.565f}), f({0.03f, 0.575f, 0.565f}), f({0, 0.585f, 0.53f}), dark, mid, true);  // the nose
+    for (int s = -1; s <= 1; s += 2) {
+        o.tri(f({s * 0.12f, 0.36f, 0.7f}), f({s * 0.16f, 0.3f, 0.66f}), f({s * 0.2f, 0.34f, 0.5f}), grey, mid, true);  // a floppy ear
+        o.tri(f({s * 0.12f, 0.36f, 0.7f}), f({s * 0.2f, 0.34f, 0.5f}), f({s * 0.15f, 0.4f, 0.55f}), grey, mid, true);
+        o.tri(f({s * 0.05f, 0.495f, 0.63f}), f({s * 0.095f, 0.48f, 0.63f}), f({s * 0.07f, 0.497f, 0.6f}), dark, mid, true);  // an eye
+    }
+    o.tri(f({-0.13f, 0.47f, 0.7f}), f({0.13f, 0.47f, 0.7f}), f({0, 0.52f, 0.62f}), fur, mid, true);  // the fringe
+    // The tail, a plume wagging side to side (faster when he's happy).
+    const float swing = (0.3f + 0.5f * p.wag) * std::sin(p.clock * (6.0f + 10.0f * p.wag));
+    Frame t = f;
+    t.set(f({0, -0.3f, 0.44f}), p.heading + swing + kTau * 0.5f, 1.0f);
+    blob(o, t, {0, 0.14f, 0.12f}, {0.07f, 0.15f, 0.07f}, 5, 3, fur, under);
+    // The legs, short and fluffy (not tipped with the body); sat, the back ones fold away.
+    Frame g = f;
+    g.tip(0, {0, 0, 0});
+    const Vec3 lm = g({0, 0, 0.1f});
+    for (int s = -1; s <= 1; s += 2) {
+        o.tri(g({s * 0.1f - 0.045f, 0.2f, 0.26f}), g({s * 0.1f + 0.045f, 0.2f, 0.26f}), g({s * 0.1f, 0.22f, 0}), under, lm, true);
+        o.tri(g({s * 0.1f, 0.18f, 0.26f}), g({s * 0.1f, 0.25f, 0.26f}), g({s * 0.1f, 0.22f, 0}), under, lm, true);
+        if (sit < 0.5f) {
+            o.tri(g({s * 0.1f - 0.045f, -0.2f, 0.26f}), g({s * 0.1f + 0.045f, -0.2f, 0.26f}), g({s * 0.1f, -0.22f, 0}), under, lm, true);
+            o.tri(g({s * 0.1f, -0.17f, 0.26f}), g({s * 0.1f, -0.24f, 0.26f}), g({s * 0.1f, -0.22f, 0}), under, lm, true);
+        }
+    }
+}
+
 void buildRing(Out& o, const Critter& c) {
     const float u = clampf(c.t / 1.2f, 0.0f, 1.0f);
     const float r0 = 0.12f + 0.85f * u, r1 = r0 + 0.03f + 0.07f * (1.0f - u);
@@ -1727,6 +1786,11 @@ int trianglesOf(Kind kind) {
         case Kind::Count: break;
     }
     return 0;
+}
+
+void addDog(Mesh& m, const DogPose& p) {
+    Out o{m, kMaxTris - m.verts / 3};
+    buildDog(o, p);
 }
 
 void buildMesh(const Life& life, Vec3 eye, Vec3 target, Mesh& out) {

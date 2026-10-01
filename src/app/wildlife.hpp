@@ -7,6 +7,7 @@
 #include "app/app.hpp"
 #include "app/render3d.hpp"
 #include "app/valley_ext.hpp"
+#include "core/critters.hpp"
 
 namespace ec {
 struct Valley;
@@ -29,6 +30,9 @@ bool offer(Vec3 you, Vec3 forward, bool hasPal);        // a critter's A moment 
 const char* prompt();                                   // what A does then ("A: whistle to the birds")
 void act(App& app);                                     // A pressed
 void fillView(App& app, r3d::ValleyView& view);         // the critters in view, for drawValley
+// This frame's critter triangles (after fillView), for a feature to add its own (Custard, D138);
+// null outside the valley.
+critters::Mesh* frameMesh();
 void drawJournal(App& app, const Input& in);            // the Journal's page (app/care_pages, tab 4)
 // Scripted runs (autotest `critters <what>`): spawn <kind 0-6>, act [kind], clear, journal,
 // friends (every kind spotted and befriended, for the Journal's shot).

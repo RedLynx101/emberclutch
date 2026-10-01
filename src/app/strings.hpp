@@ -105,6 +105,7 @@ inline constexpr const char* kDenHint = "New things turn up at the Market's stal
 inline constexpr const char* kFoundPlace = "Found: %s";
 inline constexpr const char* kStarEgg = "A star-born %s egg is yours!";
 inline constexpr const char* kPromptTalk = "A: talk to %s";
+inline constexpr const char* kPromptPet = "A: pet %s";
 inline constexpr const char* kPromptMail = "A: check the mailbox";
 inline constexpr const char* kPromptMailNew = "A: a letter in the mailbox!";
 inline constexpr const char* kMailbox = "Mailbox";

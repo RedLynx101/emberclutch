@@ -197,6 +197,18 @@ void storyCommand(App& app, const char* rest) {
         if (f >= 0) story::setFlag(s, f, std::strcmp(a2, "off") != 0);
         else log("story: no flag %s", a1);
         story::update(s, now);
+    } else if (cmd == "world") {  // (story world found_stray: a world flag, as the scripts name them)
+        static const struct { const char* name; u32 bit; } kWorld[] = {
+            {"found_stray", kFlagFoundStray}, {"glided", kFlagGlided},       {"rode", kFlagRode},
+            {"wandered", kFlagWandered},      {"festival", kFlagFestival},   {"met_traveller", kFlagMetTraveller}};
+        bool known = false;
+        for (const auto& w : kWorld)
+            if (std::strcmp(w.name, a1) == 0) {
+                s.world.flags |= w.bit;
+                known = true;
+            }
+        if (!known) log("story: no world flag %s", a1);
+        story::update(s, now);
     } else if (cmd == "var") {
         const int v = story::findVar(a1);
         if (v >= 0) story::setVar(s, v, static_cast<u8>(std::atoi(a2)));

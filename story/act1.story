@@ -553,6 +553,11 @@ spots fig daily market 7 7 facing 1.8 clip doze_stand | mill 10.5 2.5 facing 2.4
 # Rowan waits by the Nesting Stone to tell his story, and everyone gathers at the arena on the festival night.
 spot rowan stone 4 3 facing 3.14 when step hilltop 3 and lantern stone
 spot rowan arena 0 14 facing 0 when step lantern_festival 3 and hour 18 6
+# Cinder, Rowan's old dragon (D138): asleep on the Lodge's porch, but never missing a festival; Custard
+# about the meadow once the stray's found.
+spot cinder arena 0 9 facing 3.14 clip idle when step lantern_festival 3 and hour 18 6
+spot cinder keeper -4.2 6.6 facing -1.57 clip sleep
+spot custard sanctuary -14 12 facing 0.6 when world found_stray
 spot maple arena -4 12 facing -3.0 clip clap when step lantern_festival 3 and hour 18 6
 spot bram arena 4 12 facing 3.0 when step lantern_festival 3 and hour 18 6
 spot pip arena -1.5 11 facing -3.09 clip cheer when step lantern_festival 3 and hour 18 6

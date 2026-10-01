@@ -207,6 +207,14 @@ struct Mesh {
     int tris() const { return verts / 3; }
 };
 void buildMesh(const Life& life, Vec3 eye, Vec3 target, Mesh& out);
+// Custard (D138): Bram's fluffy sheepdog, added to a frame's mesh by the story (app/feature_story):
+// standing with his tail going (wag 0..1 how hard), or flopped down (sit 1); about 130 triangles.
+struct DogPose {
+    Vec3 at;
+    float heading = 0;  // (0 faces -Y, as the critters)
+    float wag = 0.5f, sit = 0, clock = 0;
+};
+void addDog(Mesh& m, const DogPose& p);
 // Triangles one of a kind takes (the budget), and a splash ring's.
 int trianglesOf(Kind kind);
 constexpr int kRingTris = 16;

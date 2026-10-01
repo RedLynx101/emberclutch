@@ -31,6 +31,12 @@ session, and add new decisions to the log.
   The dev save is set aside and restored. `tour.txt` walks the whole Alpha 1 loop (new
   game, egg care, hatching and naming, every care tool, profile, system menu). The dev
   menu's bottom line shows the activity/step, position and speed of your dragon.
+- **Add `-Headless` to autotest runs by default** (docs/tech/headless-emulator.md): the same
+  script in the `emberclutch-test` WSL distro, with no window on Noah's desktop, no lock (runs
+  in parallel), at full speed, on an old 3DS whose clock reads 2026-06-01 10:00 every run.
+  Then `tools\shotdiff.ps1 <script> -Save` before a change and `tools\shotdiff.ps1 <script>`
+  after it lists only the pictures that changed (diffs in `build/autotest/<script>/diff/`).
+  Setup or repair: `tools\wsl\install.ps1`. Never for performance: sign that off on the 3DS.
 - Push to 3DS: `tools\run.ps1 -Address <ip>` (Homebrew Launcher, press Y) or
   `tools\deploy_ftp.ps1 -FtpHost <ip>` (ftpd, port 5000)
 - Azahar keeps a stale touch map if its window is resized, maximized or fullscreened while

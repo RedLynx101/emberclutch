@@ -65,7 +65,10 @@ in dev builds. **Y** saves a screenshot of both screens anywhere, to
 skips 1 hour, **R+X** skips 1 day.
 
 Unattended checks: `tools\autotest.ps1 tests\autotest\tour.txt -ResetSave` plays a scripted
-session in Azahar and saves screenshots of each step to `build/autotest/`.
+session in Azahar and saves screenshots of each step to `build/autotest/`. Add `-Headless`
+to run it out of sight, in a WSL distro of its own at full speed, and `tools\shotdiff.ps1` to
+compare with a baseline ([headless emulator checks](tech/headless-emulator.md); set up with
+`tools\wsl\install.ps1`).
 
 ## Layout
 

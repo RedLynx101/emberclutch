@@ -21,7 +21,7 @@ quest market_day "Market day"
   after keepers_apprentice
   rumour "Rowan says Maple at the Market will set you up."
   step "Find the Market village and meet Maple" talk maple where person maple
-  step "Find Fig. Maple thinks he's asleep in the Whisperwood" talk fig where area market 58 -34 26
+  step "Find Fig. Maple thinks he's asleep in the Whisperwood" talk fig where area market -82 70 26
   step "Win a Fruit Catch at the orchard (Fig will cheer)" until cup fruit where cup fruit
   step "Light the Market's lantern with Fig" until lantern market where lantern market
   step "Tell Maple you found Fig" talk maple where person maple
@@ -543,25 +543,25 @@ talk wren
 # ------------------------------------------------------------------------------------------ where they stand
 
 # Fig: asleep in the Whisperwood, then with you through Market day, then somewhere new each day.
-spot fig market 58 -34 facing 2.4 clip doze when step market_day 2
+spot fig market -82 70 facing -2.28 clip doze when step market_day 2
 spot fig orchard -2 9 facing 3.0 clip clap when step market_day 3
 spot fig market 6 1 facing 0.4 clip wave when step market_day 4
 spot fig market 5 -2.5 facing -0.6 when step market_day 5
-spot fig arena -3 16 facing 3.14 clip cheer when step lantern_festival 3 and hour 18 6
-spots fig daily market 9 6 facing 1.8 clip doze_stand | mill 5 3 facing 2.4 | orchard 6 4 facing 0.5 clip doze | lake 4 5 facing 1.0 | stone 5 6 facing 2.0 clip doze when done market_day
+spot fig arena -6.5 10.5 facing -2.9 clip cheer when step lantern_festival 3 and hour 18 6
+spots fig daily market 7 7 facing 1.8 clip doze_stand | mill 10.5 2.5 facing 2.4 | orchard 6 4 facing 0.5 clip doze | lake 4 5 facing 1.0 | stone 5 6 facing 2.0 clip doze when done market_day
 
 # Rowan waits by the Nesting Stone to tell his story, and everyone gathers at the arena on the festival night.
 spot rowan stone 4 3 facing 3.14 when step hilltop 3 and lantern stone
 spot rowan arena 0 14 facing 0 when step lantern_festival 3 and hour 18 6
-spot maple arena -4 12 facing 0.4 clip clap when step lantern_festival 3 and hour 18 6
-spot bram arena 4 12 facing -0.4 when step lantern_festival 3 and hour 18 6
-spot pip arena -1.5 11 facing 0.2 clip cheer when step lantern_festival 3 and hour 18 6
-spot sable arena 6 15 facing -0.8 when step lantern_festival 3 and hour 18 6
-spot wren arena 2 16 facing -0.2 clip clap when step lantern_festival 3 and hour 18 6
+spot maple arena -4 12 facing -3.0 clip clap when step lantern_festival 3 and hour 18 6
+spot bram arena 4 12 facing 3.0 when step lantern_festival 3 and hour 18 6
+spot pip arena -1.5 11 facing -3.09 clip cheer when step lantern_festival 3 and hour 18 6
+spot sable arena 6 11 facing 2.92 when step lantern_festival 3 and hour 18 6
+spot wren arena 2 12.5 facing 3.07 clip clap when step lantern_festival 3 and hour 18 6
 
 # ------------------------------------------------------------------------------------------ pickups and signs
 
-pickup page_mill mill 7 2 "Pick up the map page" group page glint when active fig_map and not bit pages 0
+pickup page_mill mill 6 1.2 "Pick up the map page" group page glint when active fig_map and not bit pages 0
   do bit pages 0, add pages_found 1
   * A page of Fig's map, snagged on the bridge's rail. In his scrawl: "The Mill. Turns. Good."
 pickup page_orchard orchard 9 -3 "Pick up the map page" group page glint when active fig_map and not bit pages 1

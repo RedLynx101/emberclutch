@@ -13,16 +13,19 @@ SIDES = (("L", -1.0), ("R", 1.0))
 
 
 class Person:
-    """A built person: skeleton, the body mesh (one skinned draw), the eyes (part group 0,
-    variant 0 calm, 1 surprised) and, for the player, six hair meshes (part group 10)."""
+    """A built person: skeleton, the body mesh (one skinned draw), the face's variants (faces.py:
+    eyes part group 0, mouths 11, brows 12) and, for the player, six hair meshes (part group 10)."""
 
-    def __init__(self, pid, joints, head):
+    def __init__(self, pid, joints, head, head_k=1.0):
         self.id = pid
         self.joints = joints
         self.skel = Skeleton(joints)
         self.head = head
+        self.head_k = head_k  # the head's size against the old standard one (faces scale with it)
         self.body = Mesh()
-        self.eyes = [Mesh(), Mesh()]
+        self.eyes = [Mesh() for _ in range(10)]
+        self.mouths = [Mesh() for _ in range(10)]
+        self.brows = [Mesh() for _ in range(4)]
         self.hair = []
         self.notes = {}
 
@@ -90,7 +93,7 @@ def finish_eyes_bone(joints, head, at):
 def person(pid, eyes_at=(21.0, -7.0), **kw):
     joints, head = layout(**kw)
     finish_eyes_bone(joints, head, eyes_at)
-    p = Person(pid, joints, head)
+    p = Person(pid, joints, head, kw.get("head_scale", 1.0))
     p.eyes_at = eyes_at
     # where a rider sits: under the hips joint, at the bottom of the seat (set per body)
     p.notes["seat"] = (0.0, 0.02, joints["leg_up_R"][0][2] + 0.015)

@@ -55,14 +55,10 @@ Vec3 at3(const Valley& v, Vec2 local, float up = 0) {
     return p ? placeToWorld3(v, *p, {local.x, local.y, up}) : Vec3{};
 }
 
-// Tove: a player body in her winter things.
+// Tove in her own winter things (D138).
 r3d::PersonView keeperLook(const Valley& v) {
     r3d::PersonView p;
-    p.form = static_cast<u8>(Person::PlayerB);
-    static constexpr Rgb kPal[kPalCount] = {{240, 200, 168}, {84, 116, 160}, {240, 240, 250}, {214, 216, 228}, {86, 72, 70},
-                                            {118, 110, 124}, {32, 24, 30},   {255, 255, 255}, {255, 206, 120}, {236, 124, 124}};
-    for (int k = 0; k < kPalCount; ++k) p.pal[k] = kPal[k];
-    p.hair = 2;  // a ponytail under her hood (well, in the wind)
+    dressAs(story::kPTove, p);
     p.at = at3(v, hollow::keeperSpot());
     const ValleyPlaceInfo* place = v.place(kPlaceHollow);
     p.heading = (place ? place->heading : 0.0f) + hollow::keeperFacing();
@@ -82,6 +78,7 @@ Speaker keeperSpeaker() {
 void keeperSays(App& app, const char* line) {
     Talk t;
     t.lines[t.count++] = line;
+    t.person = story::kPTove;
     startSpeech(app, keeperSpeaker(), t);
 }
 
@@ -248,6 +245,7 @@ void act(App& app, const vext::Folk& who, vext::Stage& st) {
         } else {
             t.lines[t.count++] = str::kHollowAgain[app.rng.below(3)];
         }
+        t.person = story::kPTove;  // (her story self: face, portrait, D138)
         startSpeech(app, keeperSpeaker(), t);
     }
     if (st.partner < 0) return;  // (out alone: just her words)

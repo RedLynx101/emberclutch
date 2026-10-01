@@ -3,13 +3,16 @@ pure-Python kit builds, posed with the game's own maths (tools/people/rig.py) an
 their palettes, in a toon look close to the game's.
 
   blender -b -P tools/blender/people_model.py -- --out C:/abs/build/people
-          [--sheets models,hair,clips,portraits] [--only player_a,keeper] [--res 360]
-          [--portrait-dir C:/abs/assets/sprites/people]
+          [--sheets models,lineup,feelings,hair,clips,portraits] [--only player_a,keeper] [--res 360]
 
-Sheets (PNG, in --out): models.png (each person front and three-quarter), hair_<body>.png (the
+Sheets (PNG, in --out): models.png (each person front and three-quarter), lineup.png (everyone in
+a row), feelings_<person>.png (their face for each of the twenty feelings), hair_<body>.png (the
 six hair styles, front and three-quarter), clips_<person>.png (key frames of the main clips),
 ride.png (the riding clips on a stand-in dragon's back), looks.png (the creator's colours).
-Portraits: 64 x 64 transparent PNGs of each villager's head and shoulders, smiling.
+Portraits (D138): each story person's head and shoulders in five feelings (calm, happy, sad,
+angry, surprised), 64 x 64 transparent PNGs in assets/sprites/portraits/<portrait>_<k>.png (then
+`python tools/people/make_portraits.py` packs romfs/portraits/<portrait>.t3x), and the villagers'
+calm one in assets/sprites/people/<id>.png (the old sheet, for the challenges' hosts).
 """
 import math
 import os
@@ -24,6 +27,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 for _p in (os.path.join(ROOT, "tools", "anim"), os.path.join(ROOT, "tools", "people")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+import faces  # noqa: E402
 import looks  # noqa: E402
 import people  # noqa: E402
 import person_clips  # noqa: E402
@@ -161,11 +165,14 @@ def setup_scene():
 
 # ------------------------------------------------------------------------------ people in Blender
 class Shown:
-    """A person's meshes in the scene (body + eyes + one hair style), posable."""
+    """A person's meshes in the scene (body, a face: eyes, mouth and brows, one hair style), posable;
+    feel names the face (faces.FEELS)."""
 
-    def __init__(self, p, palette, hair=0, eyes=0):
+    def __init__(self, p, palette, hair=0, feel="calm"):
         self.p = p
-        self.parts = [p.body, p.eyes[eyes]] + ([p.hair[hair]] if p.hair else [])
+        e, mo, b = faces.face_of(feel)
+        face = [m for m in (p.eyes[e], p.mouths[mo], p.brows[b]) if m.tris]
+        self.parts = [p.body] + face + ([p.hair[hair]] if p.hair else [])
         self.objs = [make_object(f"{p.id}_{i}", m, palette) for i, m in enumerate(self.parts)]
         self.offset = Vector((0, 0, 0))
         self.yaw = 0.0
@@ -210,7 +217,6 @@ class Shown:
 
 
 MATERIAL = None
-CANDIDATES = None  # tools/people/candidates.py, with --candidates
 
 
 def make_object(name, m, palette):
@@ -294,11 +300,14 @@ def sheet(files, cols, out, labels=None):
 
 
 def palette_for(pid, look=(0, 0, 0)):
-    if CANDIDATES and pid in CANDIDATES.PALETTES:
-        return CANDIDATES.PALETTES[pid]
     if pid in people.PLAYERS:
         return looks.player_palette(*look)
-    return looks.VILLAGERS[pid]
+    return looks.VILLAGERS[pid] if pid in looks.VILLAGERS else looks.STORY[pid]
+
+
+# The portraits' names (story/people.story's `portrait`): the villagers by their story names.
+PORTRAIT_NAMES = {"keeper": "rowan", "market": "maple", "sanctuary": "bram", "steward": "wren", "child": "pip",
+                  "traveller": "sable"}
 
 
 # ------------------------------------------------------------------------------ the sheets
@@ -330,6 +339,48 @@ def sheet_faces(cam, ids):
     sheet(files, 4, os.path.join(OUT, "faces.png"))
 
 
+def sheet_lineup(cam, ids):
+    """Everyone in a row, three-quarter from the front (the players with two hair styles)."""
+    scene = bpy.context.scene
+    n = len(ids)
+    scene.render.resolution_x, scene.render.resolution_y = int(RES * min(4.0, n / 3.0)), RES
+    floor = bpy.data.objects["floor"]
+    floor.scale = (0.4 * n, 2.0, 1)
+    shown = []
+    for k, pid in enumerate(ids):
+        sh = Shown(people.build(pid), palette_for(pid, (k % 5, k % 6, k % 3)), hair=(k * 5) % 6)
+        sh.offset = Vector(((k - (n - 1) / 2) * 0.6, 0.0, 0.0))
+        sh.pose(person_clips.by_name("idle"), 0.0)
+        shown.append(sh)
+    d = Vector((-0.12, -1.0, 0.14)).normalized()
+    cam.data.lens = 70.0
+    fov_h = 2 * math.atan(18.0 / 70.0)
+    width = n * 0.6 + 0.3
+    dist = (width * 0.5) / math.tan(fov_h / 2)
+    center = Vector((0.0, 0.0, 0.75))
+    cam.location = center + d * dist
+    cam.rotation_euler = (center - cam.location).to_track_quat("-Z", "Y").to_euler()
+    render(os.path.join(OUT, "lineup.png"))
+    for sh in shown:
+        sh.remove()
+    floor.scale = (1.4, 1.4, 1)
+    scene.render.resolution_x = scene.render.resolution_y = RES
+
+
+def sheet_feelings(cam, pid):
+    """One face in each of the twenty feelings (faces.FEELS), close up, three-quarter."""
+    p = people.build(pid)
+    files = []
+    span = (p.head.azt + p.head.azb) * 1.45
+    for f in faces.FEELS:
+        sh = Shown(p, palette_for(pid), hair=0, feel=f[0])
+        sh.pose(None)
+        frame(cam, (0, p.head.c[1], p.head.c[2] - 0.01), span, "portrait", lens=85)
+        files.append(render(os.path.join(TILES, f"feel_{pid}_{f[0]}.png")))
+        sh.remove()
+    sheet(files, 5, os.path.join(OUT, f"feelings_{pid}.png"))
+
+
 def sheet_hair(cam, body):
     p = people.build(body)
     files = []
@@ -356,6 +407,12 @@ CLIP_PAGES = [  # (clip, view): the gaits from the side, gestures from the front
      ("fish", "side")],
     [("cast", "side"), ("scatter", "three_quarter"), ("write", "three_quarter"), ("tidy", "three_quarter"),
      ("fly_toy", "front"), ("clap", "front")],
+    # feelings (D138)
+    [("laugh", "three_quarter"), ("huff", "three_quarter"), ("stomp", "side"), ("think", "three_quarter"),
+     ("shy", "three_quarter"), ("proud", "front")],
+    [("cry", "three_quarter"), ("love", "three_quarter"), ("swoon", "side"), ("cool", "three_quarter"),
+     ("bounce", "front"), ("shrug", "front")],
+    [("sigh", "side"), ("yawn", "three_quarter"), ("dizzy", "front"), ("facepalm", "three_quarter")],
 ]
 
 
@@ -439,89 +496,9 @@ def sheet_looks(cam):
     sheet(files, 7, os.path.join(OUT, "looks.png"))
 
 
-def sheet_candidates(cam):
-    """The candidate looks (tools/people/candidates.py): each person front, three-quarter, side and
-    back; the faces; a line-up with today's players; a walk, a wave and the ride."""
-    C = CANDIDATES
-    for title, ids in C.SETS:
-        key = ids[0].split("_")[0]
-        files = []
-        for pid in ids:
-            sh = Shown(people.build(pid), palette_for(pid))
-            sh.pose(person_clips.by_name("idle"), 0.0)
-            for view in ("front", "three_quarter", "side", "back"):
-                frame(cam, (0, 0, 0.7), 1.62, view)
-                files.append(render(os.path.join(TILES, f"cand_{pid}_{view}.png")))
-            sh.remove()
-        sheet(files, 4, os.path.join(OUT, f"cand_{key}_turn.png"))
-        files = []
-        for pid in ids:
-            p = people.build(pid)
-            sh = Shown(p, palette_for(pid))
-            sh.pose(None)
-            span = (p.head.azt + p.head.azb) * 1.5
-            for view in ("front", "three_quarter"):
-                frame(cam, (0, p.head.c[1], p.head.c[2] - 0.02), span, view, lens=85)
-                files.append(render(os.path.join(TILES, f"cand_{pid}_face_{view}.png")))
-            sh.remove()
-        sheet(files, 4, os.path.join(OUT, f"cand_{key}_faces.png"))
-        for pid in ids:  # a walk and a wave, five frames each
-            p = people.build(pid)
-            sh = Shown(p, palette_for(pid))
-            files = []
-            for name, view in (("walk", "three_quarter"), ("wave", "front")):
-                c = person_clips.by_name(name)
-                n = c.frame_count()
-                picks = [round(k * n / 5) for k in range(5)] if c.loop else [round(k * (n - 1) / 4) for k in range(5)]
-                for k, f in enumerate(picks):
-                    sh.pose(c, f / FPS)
-                    frame(cam, (0, -c.sample_root(f / FPS)[0], 0.7), 1.62, view)
-                    files.append(render(os.path.join(TILES, f"cand_{pid}_{name}_{k}.png")))
-            sh.remove()
-            sheet(files, 5, os.path.join(OUT, f"cand_{pid}_moves.png"))
-    # the line-up: today's two, then each set, in a row (three-quarter from the front)
-    scene = bpy.context.scene
-    scene.render.resolution_x, scene.render.resolution_y = RES * 3, RES
-    floor = bpy.data.objects["floor"]
-    floor.scale = (4.4, 2.0, 1)
-    order = ["player_a", "player_b"] + [pid for _, ids in C.SETS for pid in ids]
-    shown = []
-    for k, pid in enumerate(order):
-        sh = Shown(people.build(pid), palette_for(pid), hair=0)
-        sh.offset = Vector(((k - (len(order) - 1) / 2) * 0.62, 0.0, 0.0))
-        sh.pose(person_clips.by_name("idle"), 0.0)
-        shown.append(sh)
-    d = Vector((-0.18, -1.0, 0.16)).normalized()
-    cam.data.lens = 70.0
-    fov_h = 2 * math.atan(18.0 / 70.0)
-    width = len(order) * 0.62 + 0.3
-    dist = (width * 0.5) / math.tan(fov_h / 2)
-    center = Vector((0.0, 0.0, 0.72))
-    cam.location = center + d * dist
-    cam.rotation_euler = (center - cam.location).to_track_quat("-Z", "Y").to_euler()
-    render(os.path.join(OUT, "cand_lineup.png"))
-    for sh in shown:
-        sh.remove()
-    floor.scale = (1.4, 1.4, 1)
-    scene.render.resolution_x = scene.render.resolution_y = RES
-    # riding: each on the stand-in back
-    back, seat = stand_in_back()
-    floor.hide_render = True
-    files = []
-    for pid in order[2:]:
-        sh = Shown(people.build(pid), palette_for(pid))
-        for name, t, view in (("ride", 0.0, "three_quarter"), ("ride", 0.0, "chase")):
-            sh.pose(person_clips.by_name(name), t, seat=seat)
-            frame(cam, (0.0, 0.0, 1.55), 1.4, view)
-            files.append(render(os.path.join(TILES, f"cand_{pid}_ride_{view}.png")))
-        sh.remove()
-    bpy.data.objects.remove(back, do_unlink=True)
-    floor.hide_render = False
-    sheet(files, 4, os.path.join(OUT, "cand_ride.png"))
-
-
-def portraits(cam, ids, out_dir):
-    """64 x 64 transparent: head and shoulders, front three-quarter, smiling (the idle pose)."""
+def portraits(cam, ids, out_dir, old_dir):
+    """64 x 64 transparent: head and shoulders, front three-quarter, a frame per feeling
+    (faces.PORTRAIT_FEELS) as <portrait>_<k>.png; a villager's calm one also as old_dir/<id>.png."""
     scene = bpy.context.scene
     floor = bpy.data.objects["floor"]
     floor.hide_render = True
@@ -529,9 +506,10 @@ def portraits(cam, ids, out_dir):
     scene.render.resolution_x = scene.render.resolution_y = 256
     os.makedirs(out_dir, exist_ok=True)
     files = []
-    for pid in ids:
+    for pid, feel in [(pid, f) for pid in ids for f in faces.PORTRAIT_FEELS]:
+        k = faces.PORTRAIT_FEELS.index(feel)
         p = people.build(pid)
-        sh = Shown(p, palette_for(pid))
+        sh = Shown(p, palette_for(pid), feel=feel)
         sh.pose(None)
         # frame the head (hair, hat, beard: everything on the head bone) down to the chest; props
         # such as a staff or a lantern pole may run out of the picture
@@ -541,9 +519,10 @@ def portraits(cam, ids, out_dir):
         low = p.joints["chest"][0][2] + 0.02
         span = max(top - low, 0.8 * width) * 1.06
         frame(cam, (0.0, p.head.c[1], top - span / 2 + 0.01), span, "portrait", lens=85)
-        big = render(os.path.join(TILES, f"portrait_{pid}_256.png"))
-        small = os.path.join(out_dir, f"{pid}.png")
-        downsample(big, small, 4)
+        big = render(os.path.join(TILES, f"portrait_{pid}_{k}_256.png"))
+        downsample(big, os.path.join(out_dir, f"{PORTRAIT_NAMES.get(pid, pid)}_{k}.png"), 4)
+        if k == 0 and pid in people.VILLAGER_IDS:
+            downsample(big, os.path.join(old_dir, f"{pid}.png"), 4)
         files.append(big)
         sh.remove()
     scene.render.film_transparent = False
@@ -572,21 +551,19 @@ def downsample(src, dst, k):
 
 
 def main():
-    global CANDIDATES
     os.makedirs(TILES, exist_ok=True)
-    if "--candidates" in argv:
-        import candidates
-        CANDIDATES = candidates
-        people.PEOPLE.update(candidates.PEOPLE)
     scene, cam = setup_scene()
     only = arg("--only")
-    ids = only.split(",") if only else list(people.PLAYERS) + list(people.VILLAGER_IDS)
+    ids = only.split(",") if only else list(people.PEOPLE)
     ids = [i for i in ids if i in people.PEOPLE]
-    sheets = arg("--sheets", "models,hair,clips,ride,looks,portraits").split(",")
-    if "candidates" in sheets:
-        sheet_candidates(cam)
+    sheets = arg("--sheets", "models,lineup,hair,clips,ride,looks,portraits").split(",")
     if "models" in sheets:
         sheet_models(cam, ids)
+    if "lineup" in sheets:
+        sheet_lineup(cam, ids)
+    if "feelings" in sheets:
+        for pid in ids:
+            sheet_feelings(cam, pid)
     if "faces" in sheets:
         sheet_faces(cam, ids)
     if "hair" in sheets:
@@ -602,10 +579,11 @@ def main():
     if "looks" in sheets:
         sheet_looks(cam)
     if "portraits" in sheets:
-        vill = [i for i in ids if i in people.VILLAGER_IDS]
-        files = portraits(cam, vill, arg("--portrait-dir", os.path.join(ROOT, "assets", "sprites", "people")))
+        who = [i for i in ids if i not in people.PLAYERS]
+        files = portraits(cam, who, os.path.join(ROOT, "assets", "sprites", "portraits"),
+                          os.path.join(ROOT, "assets", "sprites", "people"))
         if files:
-            sheet(files, len(files), os.path.join(OUT, "portraits.png"))
+            sheet(files, len(faces.PORTRAIT_FEELS), os.path.join(OUT, "portraits.png"))
 
 
 main()

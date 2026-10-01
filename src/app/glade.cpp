@@ -73,6 +73,9 @@ constexpr Npc kNpcs[kWhoCount] = {
 };
 
 void npcView(int who, r3d::PersonView& p) {
+    // Celestine, Linnet and Madder in their own bodies (D138); the judges dressed from the keepers' two.
+    const int person = who == kHost ? story::kPCelestine : who == kMilliner ? story::kPLinnet : who == kDyer ? story::kPMadder : -1;
+    if (person >= 0 && dressAs(person, p)) return;
     const Npc& n = kNpcs[who];
     const u8 look[kLookParts] = {static_cast<u8>(n.body == Person::PlayerB), n.hair, n.hairColour, n.skin, 0, n.eyes};
     p.form = static_cast<u8>(n.body);
@@ -95,6 +98,8 @@ Speaker speakerOf(int who) {
 
 void say(App& app, int who, const char* const* lines, int count) {
     Talk t;
+    t.person = static_cast<s8>(who == kHost ? story::kPCelestine : who == kMilliner ? story::kPLinnet
+                               : who == kDyer ? story::kPMadder : -1);  // (their story selves: faces, portraits, D138)
     for (int i = 0; i < count && i < kMaxLines; ++i) t.lines[t.count++] = lines[i];
     startSpeech(app, speakerOf(who), t);
 }

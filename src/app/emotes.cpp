@@ -3,12 +3,87 @@
 #include <citro2d.h>
 
 #include <cmath>
+#include <cstring>
 
 #include "app/audio.hpp"
+#include "app/dialogue.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
+#include "core/people.hpp"
 
 namespace ec::emote {
+
+bool speakingFigure(const App& app, int person, r3d::PersonView& p) {
+    if (person < 0 || talkSpeaker(app) != person) return false;
+    const DialogueState& d = app.talk;
+    const story::Feel f = static_cast<story::Feel>(d.feel);
+    p.face = faceFor(d.feel);
+    // The mouth moving while the letters come (Animal Crossing's way): the feeling's own mouth, then
+    // another a little more open (core/people's mouths: smile open wide o frown flat pout smirk wobble yawn).
+    static constexpr u8 kTalkMouth[kMouthKinds] = {1, 0, 1, 5, 3, 3, 3, 1, 3, 3};
+    if (d.shown < static_cast<float>(std::strlen(d.text)) && std::fmod(app.t * 8.0f, 1.0f) < 0.5f && p.face.mouth < kMouthKinds)
+        p.face.mouth = kTalkMouth[p.face.mouth];
+    const float t = d.emoteT < 0 ? 9.0f : d.emoteT;
+    switch (f) {
+        case story::Feel::Surprised:
+        case story::Feel::Shock: p.eyeScale = 1.0f + 0.3f * std::fmax(0.0f, 1.0f - t / 0.35f); break;  // a pop
+        case story::Feel::Love: p.eyeScale = 1.0f + 0.08f * std::sin(app.t * 8.0f); break;            // hearts pulsing
+        case story::Feel::Angry:
+        case story::Feel::Huff: p.eyeScale = t < 0.18f ? 0.85f : 1.0f; break;                          // a twitch
+        case story::Feel::Happy:
+        case story::Feel::Laugh: p.eyeScale = 0.96f + 0.04f * std::sin(app.t * 10.0f); break;           // a squint
+        case story::Feel::Dizzy: p.eyeScale = 1.0f + 0.06f * std::sin(app.t * 11.0f); break;
+        case story::Feel::Sleepy: {                                                                     // slow blinks
+            const float s = std::sin(app.t * 1.3f);
+            p.blink = std::fmax(p.blink, s > 0.6f ? (s - 0.6f) / 0.4f : 0.0f);
+            break;
+        }
+        default: break;
+    }
+    p.speaking = true;
+    return true;
+}
+
+const char* clipFor(story::Feel f, int person) {
+    using F = story::Feel;
+    const bool drama = person == story::kPCelestine;  // (she swoons: D137's "Dramatic swoons")
+    switch (f) {
+        case F::Happy: return "nod";
+        case F::Laugh: return "laugh";
+        case F::Excited: return "bounce";
+        case F::Surprised: return "surprised";
+        case F::Shock: return drama ? "swoon" : "surprised";
+        case F::Sad:
+        case F::Wistful: return "sigh";
+        case F::Crying: return "cry";
+        case F::Angry: return "stomp";
+        case F::Huff: return "huff";
+        case F::Worried:
+        case F::Scared: return "worried";
+        case F::Sleepy: return "yawn";
+        case F::Love: return drama ? "swoon" : "love";
+        case F::Proud: return "proud";
+        case F::Cool: return "cool";
+        case F::Shy: return "shy";
+        case F::Thinking: return "think";
+        case F::Dizzy: return "dizzy";
+        default: return nullptr;
+    }
+}
+
+void drawOverSpeaker(App& app) {
+    Vec3 head;
+    const DialogueState& d = app.talk;
+    if (!d.active || d.emoteT < 0 || !r3d::speakerHead(head)) return;
+    const story::Feel f = static_cast<story::Feel>(d.feel);
+    if (!hasIcon(f)) return;
+    float x, y, ppu;
+    if (!r3d::project(head, x, y, ppu) || x < -20 || x > 420 || y < -20 || y > 260) return;
+    const float size = std::fmin(30.0f, std::fmax(14.0f, ppu * 0.32f));
+    r3d::reset2D();  // (the valley leaves its fog, alpha and stencil tests on)
+    draw(app, f, x + size * 0.45f, y - size * 0.4f, size, d.emoteT);
+}
+
 namespace {
 
 using story::Feel;

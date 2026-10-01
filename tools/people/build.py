@@ -1,6 +1,6 @@
 """Build the people's game files (pure Python, no Blender):
 
-  python tools/people/build.py            romfs/people/<id>.ecm for all eight, romfs/anims/person.eca
+  python tools/people/build.py            romfs/people/<id>.ecm for everyone, romfs/anims/person.eca
   python tools/people/build.py --only keeper,player_a
   python tools/people/build.py --anims    just the clip library
 
@@ -15,7 +15,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "tools", "anim"))
 import person_clips  # noqa: E402
 import people  # noqa: E402
-from ecm import GROUP_BODY, GROUP_EYES, GROUP_HAIR, KIND_BODY, KIND_PART, OutMesh, write_ecm  # noqa: E402
+from ecm import GROUP_BODY, GROUP_BROWS, GROUP_EYES, GROUP_HAIR, GROUP_MOUTH, KIND_BODY, KIND_PART, OutMesh,     write_ecm  # noqa: E402
 from eca import write_eca  # noqa: E402
 from rig import BONE_ORDER  # noqa: E402
 
@@ -24,18 +24,25 @@ ANIMS = os.path.join(ROOT, "romfs", "anims", "person.eca")
 
 
 def meshes_of(p):
-    out = [OutMesh("body", KIND_BODY, GROUP_BODY, 0, p.body),
-           OutMesh("eyes_0", KIND_PART, GROUP_EYES, 0, p.eyes[0]),
-           OutMesh("eyes_1", KIND_PART, GROUP_EYES, 1, p.eyes[1])]
+    """The body, every face variant (faces.py: eyes, mouths, brows; an empty one left out) and hair."""
+    out = [OutMesh("body", KIND_BODY, GROUP_BODY, 0, p.body)]
+    for name, group, parts in (("eyes", GROUP_EYES, p.eyes), ("mouth", GROUP_MOUTH, p.mouths),
+                               ("brows", GROUP_BROWS, p.brows)):
+        for k, m in enumerate(parts):
+            if m.tris:
+                out.append(OutMesh(f"{name}_{k}", KIND_PART, group, k, m))
     for k, h in enumerate(p.hair):
         out.append(OutMesh(f"hair_{k}", KIND_PART, GROUP_HAIR, k, h))
     return out
 
 
 def stats(p, meshes):
+    """Triangles drawn at most: the body, the largest of each face part and of the hair."""
+    def most(group):
+        return max([m.tris for m in meshes if m.group == group] or [0])
     body = meshes[0].tris
-    eyes = meshes[1].tris
-    hair = [m.tris for m in meshes[3:]]
+    eyes = most(GROUP_EYES) + most(GROUP_MOUTH) + most(GROUP_BROWS)
+    hair = [m.tris for m in meshes if m.group == GROUP_HAIR]
     total = body + eyes + (max(hair) if hair else 0)
     return body, eyes, hair, total
 
@@ -50,7 +57,7 @@ def build_person(pid):
     hz = p.joints["leg_up_R"][0][2]
     top = max(q[2] for m in [p.body] + p.hair for q in m.pos)
     print(f"[people] {path}: {size} bytes, {len(BONE_ORDER)} bones, body palette {len(meshes[0].palette)}, "
-          f"tris body {body} + eyes {eyes}" + (f" + hair {min(hair)}-{max(hair)}" if hair else "") +
+          f"tris body {body} + face {eyes}" + (f" + hair {min(hair)}-{max(hair)}" if hair else "") +
           f" = {total} max; height {top:.3f} m, hips {hz:.3f} m")
     if "--verbose" in sys.argv:
         by = {}

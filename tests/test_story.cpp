@@ -1,6 +1,8 @@
 // The story engine (core/story, D137): the scripts' tables, a new game's first quests (and their
 // branches when things are done early), the save's story block and the migration of a Beta save,
 // the feelings on lines, and a story bot that plays every quest in the game through to its end.
+#include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -8,6 +10,7 @@
 #include "check.hpp"
 #include "core/care.hpp"
 #include "core/clock.hpp"
+#include "core/place_layout.hpp"
 #include "core/save.hpp"
 #include "core/story.hpp"
 #include "core/trainer.hpp"
@@ -287,10 +290,56 @@ TEST(the_story_bot_plays_everything) {
                 heard, longest);
 }
 
+// Where the story stands people and leaves things (D138): every spot and pickup on dry ground in
+// the real valley, clear of the places' walls (a person in the lake or inside a house can't be met).
+TEST(the_story_stands_on_land) {
+    static Valley v;
+    static bool loaded = false;
+    if (!loaded) {
+        std::vector<u8> bytes;
+        if (FILE* f = std::fopen("../romfs/valley/skyreach.evl", "rb")) {
+            std::fseek(f, 0, SEEK_END);
+            bytes.resize(static_cast<std::size_t>(std::ftell(f)));
+            std::fseek(f, 0, SEEK_SET);
+            if (std::fread(bytes.data(), 1, bytes.size(), f) != bytes.size()) bytes.clear();
+            std::fclose(f);
+        }
+        loaded = !bytes.empty() && loadValley(bytes.data(), bytes.size(), v);
+        if (loaded) addPlaceDecks(v);
+    }
+    CHECK(loaded);
+    if (!loaded) return;
+    const std::vector<Solid> walls = worldSolids(v);
+    auto check = [&](const char* what, const char* who, int place, Vec2 at) {
+        const ValleyPlaceInfo* p = v.place(static_cast<u8>(place));
+        CHECK(p != nullptr);
+        if (!p) return;
+        const Vec2 w = placeToWorld(*p, at);
+        const float ground = v.heightAt(w.x, w.y);
+        bool dry = ground > v.water + 0.15f;
+        // (a deck over the water counts: the mill's bridge, the cove's jetty)
+        dry = dry || v.deckAt(w.x, w.y, v.water + 3.0f) >= 0 || v.islandAt(w.x, w.y, 999.0f) >= 0;
+        bool clear = true;
+        for (const Solid& s : walls) clear = clear && std::hypot(w.x - s.at.x, w.y - s.at.y) > s.radius + 0.3f;
+        if (!dry || !clear)
+            std::printf("  %s %s at place %d (%.1f %.1f): %s\n", what, who, place, at.x, at.y, !dry ? "in the water" : "inside a wall");
+        CHECK(dry && clear);
+    };
+    for (int k = 0; k < story::spotDefCount(); ++k) {
+        const story::Spot sp = story::spotDef(k);
+        check("spot", story::person(sp.person).id, sp.place, sp.at);
+    }
+    for (int k = 0; k < story::pickupDefCount(); ++k) {
+        const story::Pickup pk = story::pickupDef(k);
+        if (pk.id[0]) check("pickup", pk.id, pk.place, pk.at);
+    }
+}
+
 void runStoryTests() {
     RUN(the_story_tables);
     RUN(the_keepers_apprentice);
     RUN(the_story_follows_what_is_done);
     RUN(the_story_saves_and_migrates);
     RUN(the_story_bot_plays_everything);
+    RUN(the_story_stands_on_land);
 }

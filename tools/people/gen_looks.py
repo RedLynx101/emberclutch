@@ -9,6 +9,8 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import looks  # noqa: E402
+import faces  # noqa: E402
+import people  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 VILLAGER_ORDER = ["keeper", "market", "sanctuary", "steward", "child", "traveller"]  # core/villagers Villager
@@ -34,6 +36,25 @@ def main():
     for vid in VILLAGER_ORDER:
         p = looks.VILLAGERS[vid]
         out.append("    {%s},  // %s" % (", ".join(rgb(p[s]) for s in looks.SLOTS), vid))
+    out.append("};")
+    out.append("const Rgb kStoryPalettes[][10] = {  // core/people Person, from Fig")
+    for pid in people.STORY_IDS:
+        p = looks.STORY[pid]
+        out.append("    {%s},  // %s" % (", ".join(rgb(p[s]) for s in looks.SLOTS), pid))
+    out.append("};")
+    out.append("// Each feeling's face (tools/people/faces.py FEELS, core/story Feel order): eyes, mouth, brows.")
+    out.append("const u8 kFeelFaces[][3] = {%s};" % ", ".join("{%d, %d, %d}" % faces.face_of(f[0]) for f in faces.FEELS))
+    # Each body's file, the hips' height and the seat (built here, so they follow the builders).
+    out.append("struct PersonRow {")
+    out.append("    const char* file;")
+    out.append("    const char* id;")
+    out.append("    float hips;")
+    out.append("    float seatZ;")
+    out.append("};")
+    out.append("const PersonRow kRows[] = {")
+    for pid in list(people.PEOPLE):
+        b = people.build(pid)
+        out.append('    {"romfs:/people/%s.ecm", "%s", %.3ff, %.3ff},' % (pid, pid, b.joints["leg_up_R"][0][2], b.notes["seat"][2]))
     out.append("};")
     out.append("")
     path = os.path.join(ROOT, "src", "core", "people_looks.inc")

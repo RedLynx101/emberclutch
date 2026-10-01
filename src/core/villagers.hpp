@@ -61,6 +61,7 @@ struct DialogueState {
     s8 speaker = -1;
     float emoteT = -1;
     u8 voiceLoaded = 0xFF;
+    u16 serial = 0;  // counts the lines begun (a figure shows each line's feeling in its body once, D138)
 };
 
 // A line with {D} (your partner's name) and {P} (yours) filled in.

@@ -114,6 +114,9 @@ struct Spot {
     const char* clip = "";
 };
 bool spotOf(const SaveData& s, int person, s64 now, Spot& out);
+// Every spot as written, whatever holds (tests: each stands on dry land, D138).
+int spotDefCount();
+Spot spotDef(int k);
 
 // ---- Things to pick up, and signs to read
 struct Pickup {
@@ -126,6 +129,8 @@ struct Pickup {
     int group = -1;
 };
 int pickups(const SaveData& s, s64 now, Pickup* out, int cap);
+int pickupDefCount();     // (every pickup and sign as written, whatever holds: tests)
+Pickup pickupDef(int k);
 Talk pickupTalk(const SaveData& s, int pickup, s64 now);
 
 // ---- Where a quest's step points (core/guide makes it a spot in the valley)

@@ -8,6 +8,7 @@
 #include "app/strings.hpp"
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
+#include "core/place_layout.hpp"
 #include "core/story.hpp"
 #include "core/villagers.hpp"
 #include "core/valley.hpp"
@@ -65,6 +66,16 @@ void trackFlag(float x, float y, float size, float t, bool on) {
 }
 
 void drawTrackedOnMap(App& app, const Valley& v, float mapX, float mapY, float mapSize) {
+    // The story's named spots off the places (D138): the Whisperwood, in the trees past the Market
+    // (Fig's nap, the fox's den), once the Market is found.
+    if (const ValleyPlaceInfo* m = v.place(kPlaceMarket); m && world::placeFound(app.game, kPlaceMarket) && v.size() > 0) {
+        const Vec2 w = placeToWorld(*m, {-78.0f, 58.0f});
+        const float lx = mapX + (w.x - v.x0) / v.size() * mapSize, ly = mapY + (1.0f - (w.y - v.y0) / v.size()) * mapSize;
+        for (int i = 0; i < 3; ++i)  // three little trees, and the name under them
+            C2D_DrawTriangle(lx - 6 + i * 6, ly - 7, withAlpha(theme::kDenPlum, 0.55f), lx - 9 + i * 6, ly - 1,
+                             withAlpha(theme::kDenPlum, 0.55f), lx - 3 + i * 6, ly - 1, withAlpha(theme::kDenPlum, 0.55f), 0.5f);
+        textCentered(app, str::kWhisperwood, lx, ly + 4, 0.3f, withAlpha(theme::kDenPlum, 0.7f), 60);
+    }
     const guide::Goal g = guide::current(app.game);
     if (g.kind == Tracked::None || v.size() <= 0) return;
     const guide::Target t = guide::target(app.game, v, g, {app.game.world.x, app.game.world.y}, nowLocal(app));

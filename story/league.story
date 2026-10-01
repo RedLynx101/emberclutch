@@ -145,10 +145,10 @@ talk solenne
       [thinking] Starlight wants a rematch. She's very polite about it. She's also very strong.
 
 # (the festival night's first: a person's first spot that holds is where they stand)
-spot marigold arena -7 14 facing 0.8 when step lantern_festival 3 and hour 18 6 and league 1
-spot rook arena 8 13 facing -1.0 when step lantern_festival 3 and hour 18 6 and league 2
-spot seraphine arena -8 16 facing 1.0 when step lantern_festival 3 and hour 18 6 and league 3
-spot solenne arena 9 16 facing -1.2 when step lantern_festival 3 and hour 18 6 and league 4
+spot marigold arena -8.5 9 facing -2.81 when step lantern_festival 3 and hour 18 6 and league 1
+spot rook arena 8.5 9 facing 2.81 when step lantern_festival 3 and hour 18 6 and league 2
+spot seraphine arena -10.5 6 facing -2.69 when step lantern_festival 3 and hour 18 6 and league 3
+spot solenne arena 10.5 6 facing 2.69 when step lantern_festival 3 and hour 18 6 and league 4
 spot marigold orchard -6 6 facing 0.9 clip tidy when league 1
 spot rook mill -6 1 facing 1.6 clip look_around when league 2 and hour 16 23
 spot rook lake -3 6 facing 0.5 when league 2

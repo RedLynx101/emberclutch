@@ -10,6 +10,7 @@
 #include "core/items.hpp"
 #include "core/kinds.hpp"
 #include "core/particles.hpp"
+#include "core/people.hpp"
 #include "core/prop_mesh.hpp"
 #include "core/props.hpp"
 #include "core/shell_burst.hpp"
@@ -165,6 +166,8 @@ void setDenClose(bool close);
 // Projects a den-space point with the last den camera: top-screen pixels and pixels per
 // den unit at that depth. False before the first drawDen or behind the camera.
 bool project(Vec3 p, float& x, float& y, float& pixelsPerUnit);
+// The top of the speaking person's head as drawn this frame (D138); false if nobody speaking was.
+bool speakerHead(Vec3& out);
 bool youGrip(Vec3& out);  // your hands' middle as drawn this valley frame (a rod's grip, D134); false if you weren't
 // Den dragon i's head (den space) in the last drawDen; false if it was not drawn.
 bool headOf(int i, Vec3& out);
@@ -197,7 +200,10 @@ struct PersonView {
     const Animator* anim = nullptr;
     Rgb pal[kPalCount];
     s8 hair = -1;               // the player's style (-1: none)
+    FaceLook face;              // the feeling on their face (core/people faceFor, D138)
+    float eyeScale = 1.0f;      // a pop, a pulse, a squint (the eyes bone's scale)
     float blink = 0;            // 0 open .. 1 shut
+    bool speaking = false;      // saying the line now (its feeling pops over their head: app/emotes)
     float scale = 1.0f;
     bool seated = false;        // riding: drawn on the flown dragon's seat
 };

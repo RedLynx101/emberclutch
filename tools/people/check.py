@@ -6,9 +6,11 @@ The readers mirror src/core/model.cpp loadModel and src/core/anim.cpp loadAnims 
 (magic and version, bone count <= 40 with parents first, palette <= 25 bones and in range, 1-4
 keys, whole triangles, skin bones inside the palette, indices inside the mesh, regions <= 8,
 v4 pieces; clip fps, frames, speed, bone modes, events inside the clip; no bytes left over).
-Then the contract: the skeleton is rig.BONE_ORDER, the body mesh and eyes (variants 0 and 1) are
-there, a player has hair group 10 variants 0-5, at most about 600 triangles drawn (body + eyes +
-the largest hair), every clip the brief lists, footsteps on walk and run, 64 x 64 RGBA portraits.
+Then the contract: the skeleton is rig.BONE_ORDER, the body mesh and every face variant are there
+(D138: eyes group 0 variants 0-9, mouths group 11 variants 0-9, brows group 12 variants 0-3), a
+player has hair group 10 variants 0-5, at most 600 triangles drawn (the body, the largest eyes, mouth
+and brows, the largest hair), every clip the brief lists, footsteps on walk and run, the villagers'
+64 x 64 RGBA portraits and every story person's romfs/portraits/<name>.t3x.
 Exit code 1 on any problem.
 """
 import math
@@ -27,6 +29,8 @@ MAX_BONES, MAX_PALETTE, PALETTE_FIELD, MAX_KEYS, REGION_CLEAN = 40, 25, 32, 4, 8
 TRI_BUDGET = 600
 PLAYERS = ("player_a", "player_b")
 VILLAGERS = ("keeper", "market", "sanctuary", "steward", "child", "traveller")
+STORY = ("fig", "tam", "tove", "linnet", "madder", "celestine", "primrose", "marigold", "rook", "seraphine", "solenne")
+PORTRAITS = ("rowan", "maple", "bram", "wren", "pip", "sable") + STORY
 EVENT_FOOTSTEP = 1
 
 
@@ -178,7 +182,7 @@ def check_person(pid, problems):
     if abs(er[8] - 0.0) > 1e-6 or abs(er[10] - 1.0) > 1e-4:  # rows: (r00 r01 r02 tx) (r10..) (r20 r21 r22 tz)
         problems.append(f"{pid}: the eyes bone's Z isn't world up (blinks would squash the wrong way)")
     have = {(m["kind"], m["group"], m["variant"]): m for m in meshes}
-    for need in ((0, 255, 0), (2, 0, 0), (2, 0, 1)):
+    for need in [(0, 255, 0)] + [(2, 0, v) for v in range(10)] + [(2, 11, v) for v in range(10)] +             [(2, 12, v) for v in range(4)]:
         if need not in have:
             problems.append(f"{pid}: missing mesh kind {need[0]} group {need[1]} variant {need[2]}")
     hair = [have[(2, 10, v)]["tris"] for v in range(6) if (2, 10, v) in have]
@@ -190,12 +194,16 @@ def check_person(pid, problems):
     if (2, 0, 0) in have and set(have[(2, 0, 0)]["palette"]) != {eyes}:
         problems.append(f"{pid}: the eyes aren't on the eyes bone")
     body = have.get((0, 255, 0), {}).get("tris", 0)
-    total = body + have.get((2, 0, 0), {}).get("tris", 0) + (max(hair) if hair else 0)
+
+    def most(group):
+        return max([m["tris"] for m in meshes if m["kind"] == 2 and m["group"] == group] or [0])
+    face = most(0) + most(11) + most(12)
+    total = body + face + (max(hair) if hair else 0)
     if total > TRI_BUDGET:
         problems.append(f"{pid}: {total} triangles (budget {TRI_BUDGET})")
     low = min(have[(0, 255, 0)]["pos"][2::3]) if (0, 255, 0) in have else 0
     print(f"  {pid:10s} {len(bones)} bones, body draw {len(have.get((0, 255, 0), {}).get('palette', []))} bones, "
-          f"triangles body {body} + eyes {have.get((2, 0, 0), {}).get('tris', 0)}"
+          f"triangles body {body} + face {face}"
           + (f" + hair {min(hair)}-{max(hair)}" if hair else "") + f" = {total} (lowest point z {low:+.3f}), "
           f"{os.path.getsize(path) // 1024} KB")
 
@@ -203,7 +211,7 @@ def check_person(pid, problems):
 def main():
     problems = []
     print("[check] people")
-    for pid in PLAYERS + VILLAGERS:
+    for pid in PLAYERS + VILLAGERS + STORY:
         check_person(pid, problems)
     try:
         names, clips = load_anims(os.path.join(ROOT, "romfs", "anims", "person.eca"))
@@ -229,6 +237,10 @@ def main():
                 problems.append(f"{pid}.png: {w}x{h} colour type {colour} (want 64x64 RGBA)")
         except (ValueError, OSError) as e:
             problems.append(f"{pid}.png: {e}")
+    for name in PORTRAITS:
+        path = os.path.join(ROOT, "romfs", "portraits", f"{name}.t3x")
+        if not os.path.exists(path) or os.path.getsize(path) < 64:
+            problems.append(f"romfs/portraits/{name}.t3x missing (tools/people/make_portraits.py)")
     print("[check] " + ("OK" if not problems else "PROBLEMS"))
     for p in problems:
         print(f"  PROBLEM {p}")

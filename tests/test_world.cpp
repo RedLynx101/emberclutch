@@ -13,6 +13,7 @@
 #include "core/anim.hpp"
 #include "core/model.hpp"
 #include "core/people.hpp"
+#include "core/story.hpp"
 #include "core/finds.hpp"
 #include "core/save.hpp"
 #include "core/valley.hpp"
@@ -138,6 +139,13 @@ TEST(the_people) {
         m = ModelData{};
         CHECK(!bytes.empty() && loadModel(bytes.data(), bytes.size(), m));
         CHECK(m.findMesh(kMeshBody, kGroupBody, 0) && m.findMesh(kMeshPart, kGroupEyes, 0));
+        // Every feeling's face (D138): each eyes, mouth and brows variant a feeling can ask for.
+        for (int f = 0; f < story::kFeels; ++f) {
+            const FaceLook face = faceFor(f);
+            CHECK(face.eyes < kEyeKinds && face.mouth < kMouthKinds && face.brows < kBrowKinds);
+            CHECK(m.findMesh(kMeshPart, kGroupEyes, face.eyes) && m.findMesh(kMeshPart, kGroupPersonMouth, face.mouth) &&
+                  m.findMesh(kMeshPart, kGroupBrows, face.brows));
+        }
         CHECK(m.skel.find("eyes") >= 0 && m.skel.find("head") >= 0);
         AnimBinding bind;
         bindAnims(lib, m.skel, bind);
@@ -160,6 +168,18 @@ TEST(the_people) {
     CHECK(a[kPalGlow].r == 255);  // the lantern's flame
     CHECK(std::strcmp(lookChoiceName(kLookHair, 2), "Ponytail") == 0 && lookChoiceName(kLookHair, 9)[0] == 0);
     CHECK(personFor(Villager::Child) == Person::Child && personHips(Person::Child) < personHips(Person::PlayerA));
+    // The story's people in their own bodies (D138): each `body` names one, with colours of its own.
+    for (int p = 0; p < story::personCount(); ++p) {
+        const story::PersonInfo& info = story::person(p);
+        if (!info.body[0]) continue;
+        const Person body = personByName(info.body);
+        CHECK(body != Person::Count && static_cast<int>(body) >= static_cast<int>(Person::Fig));
+        personPalette(body, a);
+        CHECK(a[kPalBase].r > 0 || a[kPalBase].g > 0);
+    }
+    CHECK(personByName("keeper") == Person::Keeper && personByName("nobody") == Person::Count && personByName("") == Person::Count);
+    CHECK(faceFor(static_cast<int>(story::Feel::Love)).eyes == 7 && faceFor(99).eyes == 0);  // hearts; out of range: calm
+    CHECK(std::strcmp(lookChoiceName(kLookHair, 0), "Swept") == 0 && std::strcmp(lookChoiceName(kLookHair, 5), "Braid") == 0);
 }
 
 // The finds: each taken once, what it held into the save (an egg into a nest or the Vault),

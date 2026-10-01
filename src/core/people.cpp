@@ -1,5 +1,7 @@
 #include "core/people.hpp"
 
+#include <cstring>
+
 namespace ec {
 namespace {
 
@@ -7,20 +9,13 @@ namespace {
 
 constexpr Rgb kEyes[kEyeColours] = {{86, 56, 40}, {70, 118, 176}, {76, 128, 78}, {118, 110, 124}};
 constexpr const char* kEyeNames[kEyeColours] = {"Brown", "Blue", "Green", "Grey"};
-constexpr const char* kHairNames[kHairStyles] = {"Tousled", "Bob", "Ponytail", "Buns", "Spiky", "Long"};
+constexpr const char* kHairNames[kHairStyles] = {"Swept", "Bob", "Ponytail", "Buns", "Spiky", "Braid"};
 constexpr const char* kBodyNames[2] = {"Tunic", "Dress"};
 
-struct PersonRow {
-    const char* file;
-    float hips;
-    float seatZ;
-};
-constexpr PersonRow kRows[kPeople] = {
-    {"romfs:/people/player_a.ecm", 0.315f, 0.33f},  {"romfs:/people/player_b.ecm", 0.315f, 0.33f},
-    {"romfs:/people/keeper.ecm", 0.30f, 0.305f},    {"romfs:/people/market.ecm", 0.29f, 0.29f},
-    {"romfs:/people/sanctuary.ecm", 0.315f, 0.335f}, {"romfs:/people/steward.ecm", 0.315f, 0.33f},
-    {"romfs:/people/child.ecm", 0.21f, 0.215f},     {"romfs:/people/traveller.ecm", 0.33f, 0.355f},
-};
+static_assert(sizeof(kRows) / sizeof(kRows[0]) == kPeople, "a row per body (tools/people/gen_looks.py)");
+static_assert(sizeof(kStoryPalettes) / sizeof(kStoryPalettes[0]) == kPeople - static_cast<int>(Person::Fig),
+              "a palette per story body");
+static_assert(sizeof(kFeelFaces) / sizeof(kFeelFaces[0]) == 20, "a face per feeling (core/story Feel)");
 constexpr float kWalkClip = 0.69f, kRunClip = 1.708f, kClipHips = 0.315f;  // tools/people/person_clips.py
 
 u8 pick(const u8 look[kLookParts], int part) { return look[part] < kLookChoices[part] ? look[part] : 0; }
@@ -29,6 +24,18 @@ const PersonRow& row(Person p) { return kRows[static_cast<int>(p) < kPeople ? st
 }  // namespace
 
 const char* personFile(Person p) { return row(p).file; }
+
+Person personByName(const char* id) {
+    if (!id || !id[0]) return Person::Count;
+    for (int k = 0; k < kPeople; ++k)
+        if (std::strcmp(kRows[k].id, id) == 0) return static_cast<Person>(k);
+    return Person::Count;
+}
+
+FaceLook faceFor(int feel) {
+    const u8* f = kFeelFaces[feel >= 0 && feel < 20 ? feel : 0];
+    return {f[0], f[1], f[2]};
+}
 
 Person personFor(Villager v) {
     switch (v) {
@@ -56,6 +63,26 @@ void playerPalette(const u8 look[kLookParts], Rgb out[kPalCount]) {
 void villagerPalette(Villager v, Rgb out[kPalCount]) {
     const int i = static_cast<int>(v) < kVillagers ? static_cast<int>(v) : 0;
     for (int k = 0; k < kPalCount; ++k) out[k] = kVillagerPalettes[i][k];
+}
+
+void personPalette(Person p, Rgb out[kPalCount]) {
+    const int k = static_cast<int>(p);
+    if (k >= static_cast<int>(Person::Fig) && k < kPeople) {
+        for (int i = 0; i < kPalCount; ++i) out[i] = kStoryPalettes[k - static_cast<int>(Person::Fig)][i];
+        return;
+    }
+    switch (p) {
+        case Person::Keeper: villagerPalette(Villager::Keeper, out); return;
+        case Person::Market: villagerPalette(Villager::Market, out); return;
+        case Person::Sanctuary: villagerPalette(Villager::Sanctuary, out); return;
+        case Person::Steward: villagerPalette(Villager::Steward, out); return;
+        case Person::Child: villagerPalette(Villager::Child, out); return;
+        case Person::Traveller: villagerPalette(Villager::Traveller, out); return;
+        default: {
+            const u8 look[kLookParts] = {};
+            playerPalette(look, out);
+        }
+    }
 }
 
 const char* lookChoiceName(int part, int choice) {

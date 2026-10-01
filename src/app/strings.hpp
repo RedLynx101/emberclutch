@@ -299,6 +299,7 @@ inline constexpr const char* kCalm = "Calm";
 
 // Driftwood Cove (workstream C, D90): Tam the fisher, fishing off the shore, shells on the beach.
 inline constexpr const char* kFisherName = "Tam";
+inline constexpr const char* kWhisperwood = "Whisperwood";  // (the map's label, D138)
 inline constexpr const char* kWhiskersLanded = "You let him go. Tam has to hear about this!";
 inline constexpr const char* kFisherTitle = "The fisher";
 inline constexpr const char* kPromptFish = "A: fish here";

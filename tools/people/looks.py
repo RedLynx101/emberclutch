@@ -45,6 +45,8 @@ PAINT = {
     "iris": (IRIS, IRIS, 0, 0),
     "pupil": (PUPIL, PUPIL, 0, 0),
     "glint": (GLINT, GLINT, 0, 200),
+    "heart": (TONGUE, TONGUE, 0, 90),         # heart eyes (faces.py)
+    "tongue": (TONGUE, PUPIL, 25, 0),         # inside an open mouth
 }
 
 # ---------------------------------------------------------------------------- the creator
@@ -73,7 +75,7 @@ PLAYER_FIXED = {
     "iris": (86, 56, 40),
     "pupil": (32, 24, 30),
     "glint": (255, 255, 255),
-    "glow": (255, 206, 120),     # unused by the player
+    "glow": (250, 238, 210),     # body B's egg in its pouch
     "tongue": (236, 124, 124),
 }
 
@@ -114,6 +116,43 @@ VILLAGERS = {
     "traveller": dict(_EYES, base=(206, 150, 112), accent=(82, 112, 78), pattern=(216, 198, 162),
                       horn=(88, 62, 48), membrane=(130, 90, 58), iris=(76, 96, 60),
                       glow=(255, 196, 96)),      # glow: the lantern's flame
+}
+
+# ---------------------------------------------------------------------------- the story's people (D138)
+STORY = {
+    # Fig: a moss tunic, a rust-red hat and scarf far too big for him, a pale gold feather, sandy hair
+    "fig": dict(_EYES, base=(246, 206, 170), accent=(104, 142, 76), pattern=(176, 70, 60), horn=(176, 108, 58),
+                membrane=(120, 82, 52), iris=(90, 130, 70), glow=(250, 236, 150)),
+    # Tam: dark green waders, a cream knit jumper, a yellow sou'wester, greying hair
+    "tam": dict(_EYES, base=(222, 170, 128), accent=(60, 84, 74), pattern=(236, 224, 196), horn=(150, 140, 130),
+                membrane=(110, 80, 56), iris=(80, 110, 140), glow=(246, 200, 70)),
+    # Tove: a winter-blue coat with white fur, a cranberry knit hat and mittens, a pale blonde bob
+    "tove": dict(_EYES, base=(238, 214, 200), accent=(84, 116, 160), pattern=(176, 60, 70), horn=(226, 214, 180),
+                 membrane=(90, 70, 60), iris=(110, 150, 190), glow=(240, 240, 250)),
+    # Linnet: a plum jacket and hat, a blush-pink skirt and hatband, a yellow tape measure and flower
+    "linnet": dict(_EYES, base=(250, 214, 190), accent=(150, 86, 150), pattern=(240, 214, 226), horn=(100, 60, 44),
+                   membrane=(110, 74, 60), iris=(110, 80, 60), glow=(246, 214, 90)),
+    # Madder: a madder-red apron, an indigo bandana, black curls, hands dyed purple
+    "madder": dict(_EYES, base=(180, 120, 86), accent=(190, 80, 70), pattern=(90, 70, 150), horn=(40, 32, 36),
+                   membrane=(100, 70, 50), iris=(70, 50, 40), glow=(130, 80, 170)),
+    # Celestine: a magenta gown, a pink boa, a fiery red updo, a gold star pin
+    "celestine": dict(_EYES, base=(236, 190, 160), accent=(200, 70, 130), pattern=(246, 200, 224),
+                      horn=(210, 70, 50), membrane=(120, 80, 60), iris=(120, 80, 160), glow=(255, 224, 120)),
+    # Primrose: pink and cream, deep pink bows, blonde ringlets
+    "primrose": dict(_EYES, base=(255, 226, 210), accent=(240, 150, 180), pattern=(220, 90, 130),
+                     horn=(250, 226, 150), membrane=(130, 90, 70), iris=(90, 140, 190), glow=(255, 240, 246)),
+    # The champions keep their league colours (core/league): Marigold's ember dress and gold, a straw hat
+    "marigold": dict(_EYES, base=(255, 222, 196), accent=(214, 90, 56), pattern=(245, 196, 81), horn=(220, 120, 40),
+                     membrane=(232, 198, 118), iris=(118, 110, 124), glow=(255, 226, 110)),
+    # Rook: a navy coat with gold (brass) trim, black hair, dark boots
+    "rook": dict(_EYES, base=(164, 108, 72), accent=(60, 70, 110), pattern=(245, 196, 81), horn=(46, 40, 46),
+                 membrane=(52, 40, 40), iris=(86, 56, 40), glow=(240, 236, 230)),
+    # Seraphine: a wine bodice, a dark plum wrap skirt, black hair
+    "seraphine": dict(_EYES, base=(212, 158, 112), accent=(120, 40, 70), pattern=(70, 34, 74), horn=(30, 24, 36),
+                      membrane=(40, 30, 40), iris=(118, 110, 124), glow=(230, 180, 90)),
+    # Solenne: a midnight cloak of stars over a white dress, silver hair, a pale blue circlet, gold eyes
+    "solenne": dict(_EYES, base=(164, 108, 72), accent=(40, 48, 96), pattern=(196, 222, 250), horn=(236, 236, 244),
+                    membrane=(200, 190, 170), iris=(240, 196, 72), glow=(196, 222, 250)),
 }
 
 

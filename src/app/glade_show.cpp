@@ -110,6 +110,7 @@ Speaker host() {
 void hostSays(App& app, int count) {
     if (g_autoplay) return;  // (scripted runs: the show goes on without waiting for A)
     Talk t;
+    t.person = story::kPCelestine;  // (her face and swoons follow her lines: D138)
     for (int i = 0; i < count && i < 5; ++i) {
         t.speaker[t.count] = sh().speaker[i];
         t.lines[t.count++] = sh().lines[i];

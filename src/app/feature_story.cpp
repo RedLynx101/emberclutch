@@ -28,28 +28,8 @@ constexpr float kPi = 3.14159265f;
 constexpr u8 kPickupId = 100;  // Folk ids: a person's own (story PersonId), 100 + a pickup, the mailbox
 constexpr u8 kMailboxId = 250;
 
-// How the story's own people look until their bodies are in (the people kit's player bodies, dressed
-// their way), and whether they're the story feature's to stand about at all.
-struct Look {
-    int person;
-    Person body;
-    u8 hair, hairColour, skin, eyes;
-    Rgb outfit[2];
-};
-constexpr Look kLooks[] = {
-    {story::kPFig, Person::PlayerA, 4, 0, 1, 0, {{104, 142, 76}, {236, 196, 96}}},      // Fig: a moss tunic, a gold scarf
-    {story::kPPrimrose, Person::PlayerB, 1, 4, 0, 1, {{240, 150, 180}, {255, 236, 244}}},  // Primrose: pink and cream
-    {story::kPTove, Person::PlayerB, 2, 5, 0, 3, {{84, 116, 160}, {240, 240, 250}}},     // Tove: her winter blues
-};
-
-void dress(const Look& l, r3d::PersonView& p) {
-    const u8 look[kLookParts] = {static_cast<u8>(l.body == Person::PlayerB), l.hair, l.hairColour, l.skin, 0, l.eyes};
-    p.form = static_cast<u8>(l.body);
-    playerPalette(look, p.pal);
-    p.pal[kPalAccent] = l.outfit[0];
-    p.pal[kPalPattern] = l.outfit[1];
-    p.hair = static_cast<s8>(l.hair);
-}
+// The story's own people this feature stands about (their bodies: dressAs, D138).
+constexpr int kOwnPeople[] = {story::kPFig, story::kPPrimrose, story::kPTove};
 
 Vec3 where(const Valley& v, int place, Vec2 local) {
     const ValleyPlaceInfo* p = v.place(static_cast<u8>(place));
@@ -74,23 +54,23 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
     int n = 0;
     auto nearby = [&](Vec3 at) { return std::hypot(at.x - near.x, at.y - near.y) <= radius; };
     // The story's own people, where their spots put them.
-    for (const Look& l : kLooks) {
+    for (const int who : kOwnPeople) {
         story::Spot sp;
-        if (n >= cap || !story::spotOf(s, l.person, now, sp)) continue;
-        if (l.person == story::kPPrimrose && glade::showOn()) continue;  // (on the stage with Duchess, D138)
+        if (n >= cap || !story::spotOf(s, who, now, sp)) continue;
+        if (who == story::kPPrimrose && glade::showOn()) continue;  // (on the stage with Duchess, D138)
         vext::Folk& f = out[n];
         f = vext::Folk{};
-        dress(l, f.look);
+        dressAs(who, f.look);
         f.look.at = where(v, sp.place, sp.at);
         f.look.heading = headingAt(v, sp.place, sp.facing);
         if (!nearby(f.look.at)) continue;
         f.shown = true;
-        f.name = story::person(l.person).name;
+        f.name = story::person(who).name;
         f.prompt = str::kPromptTalk;
-        f.id = static_cast<u8>(l.person);
-        f.person = static_cast<s8>(l.person);
-        f.voice = story::person(l.person).voice;
-        f.pitch = story::person(l.person).pitch;
+        f.id = static_cast<u8>(who);
+        f.person = static_cast<s8>(who);
+        f.voice = story::person(who).voice;
+        f.pitch = story::person(who).pitch;
         f.reach = 2.6f;
         f.clip = sp.clip[0] ? sp.clip : nullptr;
         ++n;

@@ -5,6 +5,7 @@
 #pragma once
 
 #include "app/app.hpp"
+#include "app/render3d.hpp"
 #include "core/story.hpp"
 
 namespace ec::emote {
@@ -24,6 +25,15 @@ struct Voice {
     float volume = 0.8f;
 };
 Voice voiceOf(story::Feel f);
+
+// The story person saying the line now, on their figure (D138): the face takes the line's feeling
+// (the mouth moving while its letters come; the eyes popping, pulsing, squinting or blinking slow by
+// the feeling) and it's marked speaking. False (nothing changed) if they aren't the one speaking.
+bool speakingFigure(const App& app, int person, r3d::PersonView& p);
+// The line's feeling in the body: a clip to play once as the line starts (null: none, just talking).
+const char* clipFor(story::Feel f, int person);
+// The feeling over the speaking figure's head (top screen, after the 3D; nothing if none was drawn).
+void drawOverSpeaker(App& app);
 
 // The portrait a feeling shows (romfs/portraits/<id>.t3x frames): 0 calm, 1 happy, 2 sad, 3 angry, 4 surprised.
 int portraitFrame(story::Feel f);

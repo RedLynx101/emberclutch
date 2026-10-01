@@ -114,21 +114,23 @@ def angle_blend(az, table):
 
 
 # ------------------------------------------------------------------------------ the styles
-def style_tousled(m, h, mat="hair", w=W):
-    """0: short and tousled, a fringe of chunky points swept to one side, a cowlick on top,
-    the ears showing (the concept's)."""
-    edge = lambda az: angle_blend(az, {0: 21, 30: 19, 60: 12, 80: 8, 96: 6, 118: -20, 150: -36, 180: -40})
-    thick = lambda az, f: 0.026 + 0.036 * (1 - f) ** 1.4
-    locks = lambda k, az: (12 if k % 2 == 0 else 0) if abs(az) < 75 else (8 if k % 2 == 0 else 0)
-    shell(m, h, edge, thick, n_az=14, rows=3, locks=locks, mat=mat, w=w, phase=0.5, crown=(-0.02, 0.02))
-    top = h.at(-24, 60, 0.035)
-    tube(m, [top, add(top, (-0.006, 0.014, 0.03))], [(0.034, 0.022), (0.026, 0.016)], 4, mat, w, tip1=0.055)
+# (Set 2, the Storybook look, D138: the swept fringe and the braid are its own two; the rest are
+# sized to its smaller head, k = the head against the old standard one.)
+def _k(h):
+    return h.azt / 0.265
+
+
+def style_swept(m, h, mat="hair", w=W):
+    """0: a swept-up fringe of chunky points, the ears showing (Set 2's keeper)."""
+    shell(m, h, lambda az: angle_blend(az, {0: 22, 25: 18, 60: 10, 88: 4, 100: -10, 150: -30, 180: -34}),
+          lambda az, f: 0.026 + 0.04 * (1 - f) ** 1.4, n_az=12, rows=3, phase=0.5, crown=(0.025, 0.01), mat=mat, w=w,
+          locks=lambda k, az: (13 if az < 40 else 8) if k % 2 == 0 else 0)
 
 
 def style_bob(m, h, mat="hair", w=W):
     """1: a rounded bob to the chin, a full straight fringe."""
     edge = lambda az: angle_blend(az, {0: 19, 38: 17, 55: -62, 100: -66, 180: -62})
-    thick = lambda az, f: 0.024 + 0.034 * (1 - f) ** 1.2
+    thick = lambda az, f: 0.022 + 0.03 * (1 - f) ** 1.2
     locks = lambda k, az: (4 if k % 2 == 0 else 0) if abs(az) < 45 else 0
     shell(m, h, edge, thick, n_az=12, rows=4, locks=locks, curtain=-12, flare=0.12, mat=mat, w=w,
           phase=0.5, row_bias=0.8)
@@ -136,58 +138,68 @@ def style_bob(m, h, mat="hair", w=W):
 
 def style_ponytail(m, h, mat="hair", w=W, tie="trim"):
     """2: swept back into a high, bouncy ponytail, a side-swept fringe."""
+    k = _k(h)
     edge = lambda az: angle_blend(az, {0: 24, 25: 18, 50: 15, 80: 7, 96: 5, 125: -22, 180: -34})
-    thick = lambda az, f: 0.02 + 0.026 * (1 - f) ** 1.3
-    locks = lambda k, az: (11 if (k % 2 == 0 and -40 < az < 70) else 0)
-    shell(m, h, edge, thick, n_az=12, rows=3, locks=locks, mat=mat, w=w, phase=0.5, crown=(0.02, 0.0))
-    knot = h.at(180, 40, 0.03)
-    base = h.at(180, 40, -0.03)
-    p1 = add(knot, (0.0, 0.075, 0.0))  # out from the tie, then hanging close down the back of the head,
-    p2 = add(knot, (0.0, 0.1, -0.27))  # its end over the nape (it must read from behind: the camera's view)
-    tube(m, [base, p1, p2], [0.05, 0.068, 0.056], 5, mat, w, tip1=0.1)
-    tube(m, [add(knot, (0, -0.02, -0.004)), add(knot, (0, 0.022, 0.002))], [0.05, 0.052], 5, tie, w)
+    thick = lambda az, f: 0.02 + 0.024 * (1 - f) ** 1.3
+    locks = lambda n, az: (11 if (n % 2 == 0 and -40 < az < 70) else 0)
+    shell(m, h, edge, thick, n_az=10, rows=3, locks=locks, mat=mat, w=w, phase=0.5, crown=(0.02, 0.0))
+    knot = h.at(180, 40, 0.03 * k)
+    base = h.at(180, 40, -0.03 * k)
+    p1 = add(knot, (0.0, 0.075 * k, 0.0))  # out from the tie, then hanging close down the back of the head
+    p2 = add(knot, (0.0, 0.1 * k, -0.27 * k))
+    tube(m, [base, p1, p2], [0.05 * k, 0.068 * k, 0.056 * k], 5, mat, w, tip1=0.1 * k)
+    tube(m, [add(knot, (0, -0.02 * k, -0.004)), add(knot, (0, 0.022 * k, 0.002))], [0.05 * k, 0.052 * k], 5, tie, w)
 
 
 def style_buns(m, h, mat="hair", w=W):
     """3: two round buns up top, a soft fringe parted in the middle."""
+    k = _k(h)
     edge = lambda az: angle_blend(az, {0: 25, 20: 18, 45: 14, 80: 6, 96: 3, 125: -24, 180: -36})
-    thick = lambda az, f: 0.02 + 0.022 * (1 - f) ** 1.5
-    locks = lambda k, az: (7 if k % 2 == 1 else 0) if abs(az) < 60 else 0
-    shell(m, h, edge, thick, n_az=12, rows=3, locks=locks, mat=mat, w=w, phase=0.0)
+    thick = lambda az, f: 0.02 + 0.02 * (1 - f) ** 1.5
+    locks = lambda n, az: (7 if n % 2 == 1 else 0) if abs(az) < 60 else 0
+    shell(m, h, edge, thick, n_az=10, rows=3, locks=locks, mat=mat, w=w, phase=0.0)
     for s in (-1, 1):
-        c = h.at(s * 62, 46, 0.055)
-        ellipsoid(m, c, (0.074, 0.072, 0.07), 5, 3, mat, w)
+        c = h.at(s * 62, 46, 0.05 * k)
+        ellipsoid(m, c, (0.074 * k, 0.072 * k, 0.07 * k), 5, 3, mat, w)
 
 
 def style_spiky(m, h, mat="hair", w=W):
     """4: big chunky spikes swept up and back, a hero's quiff."""
+    k = _k(h)
     edge = lambda az: angle_blend(az, {0: 24, 30: 20, 70: 12, 100: -10, 150: -30, 180: -34})
-    thick = lambda az, f: 0.03 + 0.036 * (1 - f) ** 1.4
-    locks = lambda k, az: 15 if k % 2 == 0 else 0
-    shell(m, h, edge, thick, n_az=12, rows=3, locks=locks, mat=mat, w=w, phase=0.5)
+    thick = lambda az, f: 0.028 + 0.032 * (1 - f) ** 1.4
+    locks = lambda n, az: 15 if n % 2 == 0 else 0
+    shell(m, h, edge, thick, n_az=10, rows=3, locks=locks, mat=mat, w=w, phase=0.5)
     for az, el, l, r in ((-8, 46, 0.14, 0.09), (150, 44, 0.13, 0.085), (-150, 40, 0.12, 0.08)):
-        base = h.at(az, el, -0.02)
+        l, r = l * k, r * k
+        base = h.at(az, el, -0.02 * k)
         d = norm(sub(h.at(az, el), h.c))
         up = add(mul(d, 0.6), (0.0, 0.6, 0.45))  # up and swept back
-        mid = add(base, mul(norm(up), 0.055))
+        mid = add(base, mul(norm(up), 0.055 * k))
         tube(m, [base, mid], [(r, r * 0.55), (r * 0.8, r * 0.45)], 4, mat, w, tip1=l, up_hint=d)
 
 
-def style_long(m, h, mat="hair", w=W):
-    """5: long and flowing to the shoulders, parted to one side, the ends in soft points; it
-    falls in behind the shoulders instead of standing out like a hood."""
-    def edge(az):  # a side-swept fringe: longer over the +X brow
-        if az >= 0:
-            return angle_blend(az, {0: 17, 28: 9, 46: 0, 60: -78, 180: -84})
-        return angle_blend(az, {0: 17, 18: 22, 44: 8, 62: -78, 180: -84})
-    thick = lambda az, f: 0.022 + 0.03 * (1 - f) ** 1.2
-    locks = lambda k, az: (20 if k % 2 == 0 else 0) if abs(az) > 45 else (7 if k % 2 == 0 else 0)
-    shell(m, h, edge, thick, n_az=12, rows=4, locks=locks, curtain=-10, flare=-0.22, mat=mat, w=w,
-          phase=0.5, crown=(-0.04, 0.0), row_bias=0.75)
+def style_braid(m, h, mat="hair", w=W, tie="trim"):
+    """5: a long braid down the back with a ribbon near its end, a soft parted fringe and two locks
+    framing the face (Set 2's keeper)."""
+    k = _k(h)
+    shell(m, h, lambda az: angle_blend(az, {0: 16, 20: 20, 45: 10, 70: -12, 100: -28, 150: -38, 180: -40}),
+          lambda az, f: 0.018 + 0.028 * (1 - f) ** 1.3, n_az=10, rows=3, phase=0.0, mat=mat, w=w,
+          locks=lambda n, az: (7 if n % 2 == 1 else 0) if abs(az) < 60 else 0)
+    for s in (-1, 1):
+        base = h.at(s * 60, 2, 0.018)
+        tube(m, [base, add(base, (s * 0.004, -0.012, -0.14 * k / 0.8))], [(0.03, 0.02), (0.02, 0.013)], 3, mat, w,
+             tip1=0.03, up_hint=(s * 1.0, 0.0, 0.0))
+    nape = h.at(180, -30, 0.01)
+    f = k / 0.8
+    pts = [nape, add(nape, (0.0, 0.07 * f, -0.2 * f)), add(nape, (0.0, 0.07 * f, -0.42 * f))]
+    tube(m, pts, [0.05 * f, 0.044 * f, 0.03 * f], 4, mat, w, tip1=0.05 * f)
+    t = add(nape, (0.0, 0.072 * f, -0.35 * f))
+    tube(m, [add(t, (0.0, 0.0, 0.02 * f)), add(t, (0.0, 0.0, -0.02 * f))], [0.04 * f, 0.038 * f], 3, tie, w)
 
 
-STYLES = [style_tousled, style_bob, style_ponytail, style_buns, style_spiky, style_long]
-STYLE_NAMES = ["Tousled", "Bob", "Ponytail", "Buns", "Spiky", "Long"]
+STYLES = [style_swept, style_bob, style_ponytail, style_buns, style_spiky, style_braid]
+STYLE_NAMES = ["Swept", "Bob", "Ponytail", "Buns", "Spiky", "Braid"]
 
 
 def player_hair(head):

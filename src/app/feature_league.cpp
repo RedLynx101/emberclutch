@@ -67,12 +67,17 @@ Vec3 at3(const Valley& v, int place, Vec2 local) {
     return p ? placeToWorld3(v, *p, {local.x, local.y, 0}) : Vec3{};
 }
 
+int championPerson(int league);
+
 r3d::PersonView lookOf(const Valley& v, int id) {
     const league::Challenger& c = league::challenger(id);
     r3d::PersonView p;
-    p.form = static_cast<u8>(c.look.body ? Person::PlayerB : Person::PlayerA);
-    league::palette(c.look, p.pal);
-    p.hair = static_cast<s8>(c.look.hair);
+    // The champions in their own bodies (D138); the challengers in the keepers' two, their own colours.
+    if (!league::isChampion(id) || !dressAs(championPerson(league::leagueOf(id)), p)) {
+        p.form = static_cast<u8>(c.look.body ? Person::PlayerB : Person::PlayerA);
+        league::palette(c.look, p.pal);
+        p.hair = static_cast<s8>(c.look.hair);
+    }
     p.at = at3(v, c.place, league::spotOf(id));
     const ValleyPlaceInfo* place = v.place(c.place);
     p.heading = (place ? place->heading : 0.0f) + league::facingOf(id);
@@ -90,8 +95,11 @@ Speaker speakerOf(int id) {
     return sp;
 }
 
+int championPerson(int league);
+
 void say(App& app, int id, const char* a, const char* b = nullptr) {
     Talk t;
+    t.person = league::isChampion(id) ? static_cast<s8>(championPerson(league::leagueOf(id))) : -1;  // (their face: D138)
     t.lines[t.count++] = a;
     if (b) t.lines[t.count++] = b;
     startSpeech(app, speakerOf(id), t);

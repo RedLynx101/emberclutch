@@ -127,6 +127,7 @@ void loadLine(App& app) {
     const story::Feel tagged = story::splitFeel(line, &rest);  // (a "[tag]" on the game's own lines)
     if (rest != line) d.feel = static_cast<u8>(tagged);
     d.speaker = d.talk.speaker[d.line];
+    ++d.serial;
     fillLine(rest, app.game, d.text, sizeof(d.text));
     const Who w = whoNow(app);
     wrapLine(app, d.text, w.narration ? kTextWidth + 56 : kTextWidth);

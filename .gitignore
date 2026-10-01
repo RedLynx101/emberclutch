@@ -12,6 +12,7 @@ dist/
 !romfs/models/*.t3x
 !romfs/models/*/*.t3x
 !romfs/dragons/*/*.t3x
+!romfs/portraits/*.t3x
 *.shbin
 
 # PC tests

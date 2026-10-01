@@ -1280,7 +1280,18 @@ bool init() {
     return g_ready;
 }
 
-void frameBegun() { bury(); }
+bool g_speakerSeen = false;  // (the speaking person's head this frame: speakerHead)
+Vec3 g_speakerHead;
+
+void frameBegun() {
+    bury();
+    g_speakerSeen = false;
+}
+
+bool speakerHead(Vec3& out) {
+    if (g_speakerSeen) out = g_speakerHead;
+    return g_speakerSeen;
+}
 
 void shutdown() {
     releaseValley();
@@ -3121,13 +3132,15 @@ void drawPlaces(App& app, const Valley& v, const ValleyView& view, const C3D_Mtx
 // program on the skin's clean corner (vertex paint only).
 struct PersonForm {
     ModelData model;
-    GpuMesh body, eyes, hair[kHairStyles];
+    GpuMesh body, eyes[kEyeKinds], mouths[kMouthKinds], brows[kBrowKinds], hair[kHairStyles];
     AnimBinding bind;
     int eyesBone = -1;
     bool ok = false, tried = false;
     void release() {
         body.release();
-        eyes.release();
+        for (GpuMesh& m : eyes) m.release();
+        for (GpuMesh& m : mouths) m.release();
+        for (GpuMesh& m : brows) m.release();
         for (GpuMesh& h : hair) h.release();
         ok = tried = false;
     }
@@ -3155,7 +3168,14 @@ PersonForm* personForm(int who) {
         const MeshData* eyes = nullptr;
         if (readFile(personFile(static_cast<Person>(who)), bytes) && loadModel(bytes.data(), bytes.size(), f.model) &&
             (body = f.model.findMesh(kMeshBody, kGroupBody, 0)) && (eyes = f.model.findMesh(kMeshPart, kGroupEyes, 0)) &&
-            fillStatic(f.body, *body) && fillStatic(f.eyes, *eyes)) {
+            fillStatic(f.body, *body) && fillStatic(f.eyes[0], *eyes)) {
+            // The face's variants (D138): every feeling's eyes, mouth and brows (a missing one draws nothing).
+            for (int k = 1; k < kEyeKinds; ++k)
+                if (const MeshData* m = f.model.findMesh(kMeshPart, kGroupEyes, static_cast<u8>(k))) fillStatic(f.eyes[k], *m);
+            for (int k = 0; k < kMouthKinds; ++k)
+                if (const MeshData* m = f.model.findMesh(kMeshPart, kGroupPersonMouth, static_cast<u8>(k))) fillStatic(f.mouths[k], *m);
+            for (int k = 0; k < kBrowKinds; ++k)
+                if (const MeshData* m = f.model.findMesh(kMeshPart, kGroupBrows, static_cast<u8>(k))) fillStatic(f.brows[k], *m);
             for (int h = 0; h < kHairStyles; ++h)
                 if (const MeshData* m = f.model.findMesh(kMeshPart, kGroupHair, static_cast<u8>(h))) fillStatic(f.hair[h], *m);
             bindAnims(g_personLib, f.model.skel, f.bind);
@@ -3181,7 +3201,10 @@ void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_M
         p.anim->sample(g_personLib, f->bind, f->model.skel.count, delta, root);
         applyDeltas(bones, delta, f->model.skel.count);
     }
-    if (f->eyesBone >= 0) bones[f->eyesBone].scale.z *= 1.0f - kBlinkSquash * p.blink;
+    if (f->eyesBone >= 0) {
+        bones[f->eyesBone].scale.z *= (1.0f - kBlinkSquash * p.blink) * p.eyeScale;
+        bones[f->eyesBone].scale.x *= p.eyeScale;
+    }
     static Mat34 poseMat[kMaxBones], skin[kMaxBones];
     evaluatePose(f->model.skel, bones, poseMat, skin);
     C3D_Mtx model, mv;
@@ -3204,6 +3227,13 @@ void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_M
         g_grip = other >= 0 ? (*handOut + apply(model, poseMat[other].translation())) * 0.5f : *handOut;
         g_gripFresh = true;
     }
+    if (p.speaking) {  // (their feeling pops over the head: app/emotes drawOverSpeaker)
+        const int head = f->model.skel.find("head");
+        if (head >= 0) {
+            g_speakerHead = apply(model, poseMat[head].translation()) + Vec3{0, 0, 0.5f * p.scale};
+            g_speakerSeen = true;
+        }
+    }
     lookShading(kLookCount);  // the storybook look, as the kinds (D75): soft bands, a face never in shadow
     for (int i = 0; i < kPalCount; ++i)
         C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locPalette + i, p.pal[i].r / 255.0f, p.pal[i].g / 255.0f, p.pal[i].b / 255.0f, 1.0f);
@@ -3214,7 +3244,11 @@ void drawPerson(App& app, const PersonView& p, const C3D_Mtx& viewM, const C3D_M
     C3D_FVec front = FVec4_New(-0.35f, 0.4f, 0.85f, 0.0f);
     C3D_LightPosition(&g_light, &front);
     drawMesh(app, f->body, skin);
-    drawMesh(app, f->eyes, skin);
+    // The face (D138): the feeling's eyes, mouth and brows (an empty variant: the calm one's).
+    const int e = p.face.eyes < kEyeKinds && f->eyes[p.face.eyes].indexCount ? p.face.eyes : 0;
+    drawMesh(app, f->eyes[e], skin);
+    if (p.face.mouth < kMouthKinds) drawMesh(app, f->mouths[p.face.mouth], skin);
+    if (p.face.brows < kBrowKinds) drawMesh(app, f->brows[p.face.brows], skin);
     if (p.hair >= 0 && p.hair < kHairStyles) drawMesh(app, f->hair[p.hair], skin);
     C3D_FVec key = FVec4_New(-0.45f, 0.8f, 0.4f, 0.0f);  // the dragons' own (init)
     C3D_LightPosition(&g_light, &key);

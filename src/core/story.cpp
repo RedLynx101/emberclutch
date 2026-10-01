@@ -547,6 +547,37 @@ bool spotOf(const SaveData& s, int person, s64 now, Spot& out) {
     return false;
 }
 
+int spotDefCount() { return kSpotCount; }
+
+Spot spotDef(int k) {
+    Spot out;
+    if (k < 0 || k >= kSpotCount) return out;
+    const SpotDef& d = kSpots[k];
+    out.person = d.person;
+    out.place = d.place;
+    out.at = {d.x / 10.0f, d.y / 10.0f};
+    out.facing = d.facing / 100.0f;
+    out.clip = d.clip;
+    return out;
+}
+
+int pickupDefCount() { return kPickupCount; }
+
+Pickup pickupDef(int k) {
+    Pickup p;
+    if (k < 0 || k >= kPickupCount) return p;
+    const PickupDef& d = kPickups[k];
+    p.index = k;
+    p.id = d.id;
+    p.place = d.place;
+    p.at = {d.x / 10.0f, d.y / 10.0f};
+    p.prompt = d.prompt;
+    p.sign = d.sign != 0;
+    p.glint = d.glint != 0;
+    p.group = d.group;
+    return p;
+}
+
 int pickups(const SaveData& s, s64 now, Pickup* out, int cap) {
     int n = 0;
     for (int k = 0; k < kPickupCount && n < cap; ++k) {

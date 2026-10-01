@@ -316,6 +316,7 @@ void talkToFisher(App& app) {
     who.voice = 0;  // (a man's: Noah's voice)
     who.pitch = 1.25f;
     who.tint = {226, 184, 70};
+    t.person = story::kPTam;  // (his story self: face, portrait, D138)
     startSpeech(app, who, t);
 }
 
@@ -368,12 +369,7 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
     {  // Tam, by the water in his yellow oilskin
         vext::Folk& f = out[n++];
         f = vext::Folk{};
-        static const u8 kLook[kLookParts] = {0, 0, 5, 2, 1, 3};  // a tunic, tousled silver hair, sand skin, grey eyes
-        f.look.form = static_cast<u8>(playerBody(kLook));
-        playerPalette(kLook, f.look.pal);
-        f.look.pal[kPalAccent] = {226, 184, 70};  // the oilskin
-        f.look.pal[kPalPattern] = {64, 84, 112};  // navy trousers
-        f.look.hair = 0;
+        dressAs(story::kPTam, f.look);  // (his own body: the sou'wester, the jumper and waders, D138)
         f.look.at = s.fisher;
         f.look.heading = s.fisherHeading;
         f.name = str::kFisherName;

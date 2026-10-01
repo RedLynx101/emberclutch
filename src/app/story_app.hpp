@@ -4,6 +4,7 @@
 #pragma once
 
 #include "app/app.hpp"
+#include "app/render3d.hpp"
 #include "app/valley_ext.hpp"
 #include "core/story.hpp"
 
@@ -13,6 +14,10 @@ namespace ec {
 void storyNews(App& app, const story::News& n, bool queue = true);
 // story::update now, and its news told. Call after anything changes the world.
 story::News storyUpdate(App& app);
+
+// A story person's own body and colours on a figure (D138: the Storybook look); false if they
+// have none (a dog, a dragon, the narrator). Their hair is their body's own (hair -1).
+bool dressAs(int person, r3d::PersonView& p);
 
 // A talk with a story person (the dialogue box: their name, portrait, voice, and every line's feeling).
 // False if they have nothing to say.

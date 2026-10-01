@@ -4,6 +4,7 @@
 #include "app/scenes.hpp"
 #include "app/strings.hpp"
 #include "core/finds.hpp"
+#include "core/people.hpp"
 #include "core/valley.hpp"
 
 namespace ec {
@@ -39,6 +40,17 @@ void storyNews(App& app, const story::News& n, bool queue) {
     // The end of Act 1: the festival night's talk done, the credits roll (the system menu's page).
     if (n.finished == story::kQLanternFestival) app.menu = MenuPage::Credits;
     if (n.finished >= 0 || n.stepped >= 0 || n.started >= 0 || n.mail > 0) saveNow(app);
+}
+
+bool dressAs(int person, r3d::PersonView& p) {
+    if (person < 0 || person >= story::personCount()) return false;
+    const story::PersonInfo& info = story::person(person);
+    const Person body = info.villager >= 0 ? personFor(static_cast<Villager>(info.villager)) : personByName(info.body);
+    if (body == Person::Count) return false;
+    p.form = static_cast<u8>(body);
+    personPalette(body, p.pal);
+    p.hair = -1;
+    return true;
 }
 
 story::News storyUpdate(App& app) {

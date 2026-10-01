@@ -461,6 +461,115 @@ tread.wave(lambda t: {"arm_up_R": (32 + 6 * sin01(t, 0.8), 0, 40 + 12 * sin01(t,
 tread.root(0.0).root(0.8, 0.0, 0.025)
 
 
+# ------------------------------------------------------------------------------ feelings (D138)
+# A line's feeling in the body (app/emotes clipFor): played once as the line starts, then back to
+# talking. Each starts and ends standing at ease.
+def window(t0, t1, fn):
+    """A layer only between t0 and t1 (eased in and out over a tenth of a second)."""
+    def f(t):
+        if t <= t0 or t >= t1:
+            return {}
+        k = min(1.0, (t - t0) / 0.1, (t1 - t) / 0.1)
+        return {b: tuple(x * k for x in v) for b, v in fn(t).items()}
+    return f
+
+
+def gesture(name, length, keys, waves=(), roots=None, events=()):
+    """A one-shot from STAND through `keys` [(t, pose)] back to STAND at `length`."""
+    c = clip(name, length).pose(0.0, STAND)
+    for t, pose in keys:
+        c.pose(t, pose)
+    c.pose(length, STAND)
+    for w in waves:
+        c.wave(w)
+    if roots:
+        for r in roots:
+            c.root(*r)
+    for t, e in events:
+        c.event(t, e)
+    return c
+
+
+CROSS = {"arm_up*": (34, 0, -18), "arm_lo*": (108, 0, -62), "hand*": (0, 0, -8)}  # arms folded
+
+LAUGH = {"spine": (8, 0, 0), "chest": (3, 0, 0), "head": (14, 0, 0), "arm_up_R": (30, 0, -18), "arm_lo_R": (84, 0, -30),
+         "arm_up_L": (12, 0, -10), "arm_lo_L": (40, 0, 0)}
+gesture("laugh", 1.6, [(0.2, LAUGH), (1.3, LAUGH)],
+        waves=[window(0.2, 1.3, lambda t: {"chest": (3.5 * sin01(t, 0.16), 0, 0), "spine": (2.0 * sin01(t, 0.16), 0, 0),
+                                           "head": (3.0 * sin01(t, 0.16, 0.2), 0, 0)})])
+
+HUFF = merge(CROSS, {"head": (8, 26, -4), "neck": (2, 8, 0), "spine": (3, 0, 0)})
+gesture("huff", 1.6, [(0.25, HUFF), (1.25, HUFF)], roots=[(0.0,), (0.25, 0.0, 0.015), (0.35,), (1.6,)])
+
+STOMP_UP = {"leg_up_R": (34, 0, 0), "leg_lo_R": (-46, 0, 0), "arm_up*": (-12, 0, 14), "arm_lo*": (34, 0, 0),
+            "spine": (-6, 0, 0), "head": (-8, 0, 0)}
+STOMP_DOWN = {"leg_up_R": (2, 0, 0), "leg_lo_R": (-4, 0, 0), "arm_up*": (-16, 0, 18), "arm_lo*": (40, 0, 0),
+              "spine": (-8, 0, 0), "head": (-10, 0, 0)}
+gesture("stomp", 1.3, [(0.25, STOMP_UP), (0.4, STOMP_DOWN), (0.6, STOMP_UP), (0.75, STOMP_DOWN), (1.0, STOMP_DOWN)],
+        events=[(0.4, "thump"), (0.75, "thump")])
+
+THINK = {"arm_up_R": (30, 0, -20), "arm_lo_R": (124, 0, -34), "hand_R": (-14, 0, 0), "arm_up_L": (20, 0, -12),
+         "arm_lo_L": (72, 0, -44), "head": (7, -8, 8), "spine": (2, 0, 0)}
+gesture("think", 2.2, [(0.35, THINK), (1.8, merge(THINK, {"head": (2, 16, -2)}))],
+        waves=[window(0.35, 1.8, lambda t: {"arm_lo_R": (3 * sin01(t, 0.6), 0, 0)})])
+
+SHY = {"arm_up*": (-22, 0, -6), "arm_lo*": (34, 0, -22), "head": (-12, -6, 9), "neck": (-3, 0, 0), "spine": (-2, 0, 0),
+       "foot_R": (12, 0, 0), "leg_up_R": (6, 0, -4)}
+gesture("shy", 2.2, [(0.3, SHY), (1.8, SHY)],
+        waves=[window(0.3, 1.8, lambda t: {"hips": (0, 0, 3.0 * sin01(t, 1.0)), "chest": (0, 0, -2.0 * sin01(t, 1.0)),
+                                           "foot_R": (6 * max(0.0, sin01(t, 0.5)), 0, 0)})])
+
+PROUD = {"arm_up*": (-6, 0, 40), "arm_lo*": (86, 0, -54), "hand*": (0, 0, -10), "spine": (7, 0, 0), "chest": (4, 0, 0),
+         "head": (10, 0, 0)}
+gesture("proud", 1.8, [(0.3, PROUD), (1.4, PROUD)], roots=[(0.0,), (0.3, 0.0, 0.012), (1.4, 0.0, 0.012), (1.8,)])
+
+CRY = {"arm_up*": (42, 0, 26), "arm_lo*": (150, 0, 30), "hand*": (-10, 0, 0), "head": (-14, 0, 0), "neck": (-4, 0, 0),
+       "spine": (-6, 0, 0), "chest": (-3, 0, 0)}
+gesture("cry", 1.8, [(0.25, CRY), (1.45, CRY)],
+        waves=[window(0.25, 1.45, lambda t: {"chest": (2.5 * sin01(t, 0.22), 0, 0), "head": (0, 0, 3 * sin01(t, 0.44))})])
+
+LOVE = {"arm_up*": (30, 0, -14), "arm_lo*": (104, 0, -52), "hand*": (-6, 0, -10), "head": (4, 0, 10), "spine": (3, 0, 0)}
+gesture("love", 2.0, [(0.25, LOVE), (1.6, LOVE)],
+        waves=[window(0.25, 1.6, lambda t: {"hips": (0, 0, 4.0 * sin01(t, 0.9)), "head": (0, 0, 6.0 * sin01(t, 0.9)),
+                                            "chest": (0, 0, -2.5 * sin01(t, 0.9))})],
+        roots=[(0.0,), (0.15, 0.0, 0.04), (0.3,), (2.0,)])
+
+SWOON = {"arm_up_R": (64, 0, 42), "arm_lo_R": (128, 0, 22), "hand_R": (-20, 0, 0), "arm_up_L": (6, 0, -56),
+         "arm_lo_L": (22, 0, 0), "spine": (9, 0, 0), "chest": (4, 0, 0), "head": (12, 0, 8),
+         "leg_up*": (10, 0, 0), "leg_lo*": (-18, 0, 0), "foot*": (8, 0, 0)}
+gesture("swoon", 2.2, [(0.35, SWOON), (1.7, merge(SWOON, {"spine": (3, 0, 0), "head": (4, 0, 2)}))],
+        roots=[(0.0,), (0.35, 0.03, -0.02), (1.7, 0.03, -0.02), (2.2,)])
+
+COOL = merge(CROSS, {"hips": (0, 0, 6), "spine": (0, 0, -6), "head": (-4, -10, -6), "leg_up_L": (10, 0, -4),
+                     "leg_lo_L": (-10, 0, 0)})
+gesture("cool", 2.2, [(0.35, COOL), (1.8, merge(COOL, {"head": (-2, -4, -2)}))])
+
+BOUNCE = {"arm_up*": (22, 0, 38), "arm_lo*": (112, 0, 0), "hand*": (-10, 0, 0), "spine": (4, 0, 0), "head": (6, 0, 0)}
+gesture("bounce", 1.2, [(0.15, BOUNCE), (0.45, BOUNCE), (0.75, BOUNCE), (0.95, BOUNCE)],
+        roots=[(0.0,), (0.15,), (0.3, 0.0, 0.06), (0.45,), (0.6, 0.0, 0.06), (0.75,), (1.2,)],
+        events=[(0.45, "land"), (0.75, "land")])
+
+SHRUG = {"arm_up*": (10, 0, 26), "arm_lo*": (72, 0, 40), "hand*": (-20, 0, 0), "head": (2, 0, 12), "chest": (3, 0, 0)}
+gesture("shrug", 1.3, [(0.3, SHRUG), (0.9, SHRUG)])
+
+gesture("sigh", 1.8, [(0.45, {"chest": (7, 0, 0), "head": (8, 0, 0), "arm_up*": (0, 0, 8)}),
+                      (1.1, {"spine": (-6, 0, 0), "chest": (-4, 0, 0), "head": (-11, 0, 0), "arm_up*": (4, 0, -4)}),
+                      (1.4, {"spine": (-5, 0, 0), "head": (-9, 0, 0)})])
+
+YAWN = {"arm_up_R": (40, 0, -14), "arm_lo_R": (132, 0, -30), "hand_R": (-10, 0, 0), "arm_up_L": (-8, 0, 60),
+        "arm_lo_L": (30, 0, 30), "head": (12, 0, 0), "spine": (5, 0, 0), "chest": (3, 0, 0)}
+gesture("yawn", 2.0, [(0.4, YAWN), (1.4, merge(YAWN, {"head": (3, 0, 0)}))])
+
+gesture("dizzy", 2.2, [(0.2, {"arm_up*": (6, 0, 26), "arm_lo*": (20, 0, 0)}), (2.0, {"arm_up*": (6, 0, 26), "arm_lo*": (20, 0, 0)})],
+        waves=[window(0.2, 2.0, lambda t: {"spine": (3 * sin01(t, 0.9, 0.25), 0, 8 * sin01(t, 0.9)),
+                                           "head": (6 * sin01(t, 0.9, 0.25), 0, 12 * sin01(t, 0.9)),
+                                           "hips": (0, 0, -3 * sin01(t, 0.9))})])
+
+FACEPALM = {"arm_up_R": (52, 0, -18), "arm_lo_R": (142, 0, -22), "hand_R": (-24, 0, 0), "head": (-14, 0, 0),
+            "neck": (-4, 0, 0), "spine": (-4, 0, 0)}
+gesture("facepalm", 1.6, [(0.3, FACEPALM), (1.2, merge(FACEPALM, {"head": (-2, 6, 0)}))])
+
+
 def by_name(name):
     for c in CLIPS:
         if c.name == name:
@@ -509,8 +618,27 @@ PURPOSE = {
     # 1.0 (D121)
     "swim": "a breaststroke, leaning into the water, head up, legs kicking (loop; footstep on the pull)",
     "tread": "treading water upright, arms sculling, legs cycling (loop; root bob)",
+    # feelings (D138): once as a line with the feeling starts, then back to talking
+    "laugh": "head back, a hand to the belly, shoulders shaking",
+    "huff": "arms folded, chin up, head turned away",
+    "stomp": "fists down, two stamps of a foot (thump markers)",
+    "think": "a hand to the chin, the other under the elbow, head tilting",
+    "shy": "hands behind the back, head down and tilted, a sway, a toe scuffing",
+    "proud": "hands on the hips, chest out, chin up",
+    "cry": "hands to the eyes, head down, shoulders shaking",
+    "love": "hands clasped at the chest, a little hop, a sway",
+    "swoon": "the back of a hand to the forehead, a dramatic lean back (Celestine)",
+    "cool": "arms folded, weight on one hip, head tilted away (Rook)",
+    "bounce": "two little hops, fists up (land markers)",
+    "shrug": "arms out, palms up, head tilted",
+    "sigh": "a breath in, then shoulders and head down",
+    "yawn": "a hand to the mouth, the other arm stretched up, head back",
+    "dizzy": "a wobbly sway in circles",
+    "facepalm": "a hand to the face, head down",
 }
 REQUIRED = ["idle", "look_around", "walk", "run", "wave", "talk", "nod", "cheer", "crouch_pet", "mount", "ride",
             "ride_lean_left", "ride_lean_right", "dismount", "sit", "surprised", "pick_up",
             "clap", "sit_clap", "sit_ground", "doze", "doze_stand", "stretch", "fist_pump", "point", "worried", "slump",
-            "bow", "fish", "cast", "scatter", "write", "tidy", "fly_toy", "swim", "tread"]
+            "bow", "fish", "cast", "scatter", "write", "tidy", "fly_toy", "swim", "tread",
+            "laugh", "huff", "stomp", "think", "shy", "proud", "cry", "love", "swoon", "cool", "bounce", "shrug", "sigh",
+            "yawn", "dizzy", "facepalm"]

@@ -7,6 +7,7 @@
 // on with the world. The bottom screen is the painted map: where you are, the places found
 // (tap one to travel there), what A does here, and the buttons.
 #include <cmath>
+#include <cstring>
 #include <cstdio>
 #include <utility>
 #include <vector>
@@ -19,6 +20,7 @@
 #include "app/battle_view.hpp"
 #include "app/glade_show.hpp"
 #include "app/dialogue.hpp"
+#include "app/emotes.hpp"
 #include "app/people_acts.hpp"  // the villagers' doings by the hour (workstream D)
 #include "app/photo.hpp"
 #include "app/render3d.hpp"
@@ -111,6 +113,7 @@ struct ValleyScene {
         float heading = 0;
         float blinkIn = 2, blink = 0;
         bool waved = false;
+        u16 heardLine = 0;  // the dialogue's line it last showed a feeling for (D138)
     };
     Figure youFig;
     Figure folk[kVillagers];
@@ -554,6 +557,22 @@ void gatherExtras(App& app, ValleyScene& s) {
     }
 }
 
+// Talking (D138): the line's feeling in the body once as it starts (app/emotes clipFor), then talking.
+void talkClip(App& app, ValleyScene::Figure& f, int person) {
+    const AnimLibrary* lib = r3d::personAnims();
+    const char* felt = emote::clipFor(static_cast<story::Feel>(app.talk.feel), person);
+    if (f.heardLine != app.talk.serial) {
+        f.heardLine = app.talk.serial;
+        if (felt) {
+            playClip(f, felt, 1.0f, 0.15f);
+            f.anim.time = 0;
+            return;
+        }
+    }
+    if (felt && playing(f, felt) && lib && !f.anim.finished(*lib)) return;  // (the gesture plays out)
+    playClip(f, "talk", 1.0f, 0.25f);
+}
+
 // You and the villagers move with what's happening: you walk, jog, run, ride, stand and listen;
 // they idle at their places, turn to you as you come near, wave hello once a visit, talk and nod.
 void animatePeople(App& app, ValleyScene& s) {
@@ -598,13 +617,15 @@ void animatePeople(App& app, ValleyScene& s) {
         const float d = std::hypot(here.x - at.x, here.y - at.y);
         if (d > 90.0f) continue;  // far off: left as they were
         // Turning to you when you're near (and while you talk), else back to their place's way.
-        const bool mine = listening && !app.talk.custom && app.talk.who == who;
+        const int person = story::personOfVillager(who);
+        const bool mine = listening && ((!app.talk.custom && app.talk.who == who && app.talk.speaker < 0) ||
+                                        (person >= 0 && talkSpeaker(app) == person));
         const bool still = !mine && !spot.on && acts::villagerStill(app, k);  // (sat down or dozing: they stay put)
         const float want = d < 6.0f && !still ? std::atan2(here.x - at.x, -(here.y - at.y)) : rest;
         float err = std::remainder(want - f.heading, 6.2831853f);
         f.heading += clampf(err, -3.0f * app.dt, 3.0f * app.dt);
         if (mine) {
-            playClip(f, "talk", 1.0f, 0.25f);
+            talkClip(app, f, person);
         } else if (playing(f, "talk")) {
             playClip(f, "nod", 1.0f, 0.2f);
         } else if (!f.waved && d < 7.0f && !still) {
@@ -635,7 +656,12 @@ void animatePeople(App& app, ValleyScene& s) {
         }
         const float want = d < 6.0f ? std::atan2(s.you.pos.x - at.x, -(s.you.pos.y - at.y)) : who.look.heading;
         f.heading += clampf(std::remainder(want - f.heading, 6.2831853f), -3.0f * app.dt, 3.0f * app.dt);
-        if (!f.waved && d < 7.0f) {
+        const bool speaking = who.person >= 0 && talkSpeaker(app) == who.person;
+        if (speaking) {
+            talkClip(app, f, who.person);
+        } else if (playing(f, "talk")) {
+            playClip(f, "nod", 1.0f, 0.2f);
+        } else if (!f.waved && d < 7.0f) {
             f.waved = true;
             playClip(f, "wave", 1.0f, 0.2f);
         } else if (((playing(f, "wave") || playing(f, "nod")) && f.anim.finished(*lib)) ||
@@ -1406,6 +1432,7 @@ void drawTop(App& app) {
                 p.anim = &s.folk[k].anim;
                 villagerPalette(who, p.pal);
                 p.blink = s.folk[k].blink;
+                emote::speakingFigure(app, story::personOfVillager(who), p);  // (their feeling on their face: D138)
             } else if (s.extra[k - kVillagers].live) {
                 p = *s.extra[k - kVillagers].live;  // (a walker, as its feature keeps it)
             } else {
@@ -1414,6 +1441,9 @@ void drawTop(App& app) {
                 p.heading = f.heading;
                 p.anim = &f.anim;
                 p.blink = f.blink;
+                const char* clip = s.extra[k - kVillagers].clip;
+                if (clip && std::strncmp(clip, "doze", 4) == 0) p.blink = 1.0f;  // (asleep: eyes shut)
+                emote::speakingFigure(app, s.extra[k - kVillagers].person, p);
             }
         }
     }
@@ -1504,6 +1534,7 @@ void drawTop(App& app) {
                       s.you.pos.x, s.you.pos.y, s.you.pos.z, s.pal.pos.x, s.pal.pos.y, s.pal.pos.z, static_cast<int>(s.mode), s.you.speed,
                       s.you.heading, s.you.blocked ? 1 : 0, s.you.swimming ? 1 : 0, s.wcam.yaw);
     if (s.breath.count() > 0) bview::drawBreath(s.breath);  // (a lantern being breathed alight)
+    if (r3d::ready()) emote::drawOverSpeaker(app);  // (the speaker's feeling over their head: D138)
     if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
     if (r3d::ready()) cove::drawCoveThings(app, s.valley, now);  // Driftwood Cove's shells, bobber and catch (workstream C)
     if (r3d::ready()) drawLeagueBoards(app, s.valley, now);  // 1.0 battles: the league's boards (workstream B)

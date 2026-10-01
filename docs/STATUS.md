@@ -36,6 +36,10 @@
   lineup,feelings,portraits`; `dragonkit/curl.py --views`.
 - **Romfs gotcha:** `make` only re-packs romfs when the program re-links; after changing only romfs files,
   delete `emberclutch.3dsx` first (or touch a source).
+- **Sent (2026-10-01):** 0.9.14 to the 3DS at **192.168.68.59** (`/cias/emberclutch.cia` 75 MB and the
+  3DSX, sizes checked; trace.on kept). Its save backed up first to `build/3ds-backup/2026-10-01_1708/`
+  (v1, 2,200 bytes: Red, 7 dragons, 6 lanterns); decoded and migrated on the PC first: market_day and
+  hilltop done, cold_heights and trailhead active, 5 letters waiting.
 - **Next:** Noah: install 0.9.14 and play run 22 (`docs/plan/hardware-check-7.md`, the review page). Then
   his notes, the people's looks he fails, and Act 2 threads (docs/design/story.md section 10).
 

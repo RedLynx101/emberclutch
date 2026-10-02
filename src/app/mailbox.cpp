@@ -209,7 +209,7 @@ void drawMailbox(App& app, const Input& in) {
     if (n > kRowsShown) {
         char at[48];
         std::snprintf(at, sizeof(at), "%d-%d / %d", m.first + 1, m.first + kRowsShown < n ? m.first + kRowsShown : n, n);
-        text(app, at, 300, 196, 0.36f, withAlpha(theme::kShell, 0.6f), C2D_AlignRight);
+        text(app, at, 148, 210, 0.36f, withAlpha(theme::kShell, 0.6f), C2D_AlignCenter);  // (between the arrows and Close: run 23, it hid under Close)
         if (m.first > 0 && button(app, {10, 200, 40, 34}, "^", in)) --m.first;
         if (m.first + kRowsShown < n && button(app, {56, 200, 40, 34}, "v", in)) ++m.first;
     }

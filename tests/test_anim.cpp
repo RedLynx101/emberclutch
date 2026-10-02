@@ -318,6 +318,13 @@ TEST(look_at_turns_the_head_within_limits) {
     // Right behind it: the turn stops at the limit instead of wrapping the neck around.
     const float behind = yawOf(lookAt(headPos + Vec3{0.3f, 5, 0}, 1.0f)) - yawOf(rest);
     CHECK(std::fabs(behind) < 60.0f * 3.14159f / 180.0f);
+    // Run 23: a target behind it, a little either side, turns the head (nearly) the same way, not
+    // from one limit to the other; and right behind, it hardly turns at all.
+    const Vec3 left = lookAt(headPos + Vec3{0.2f, 5, 1}, 1.0f), right = lookAt(headPos + Vec3{-0.2f, 5, 1}, 1.0f);
+    CHECK(std::fabs(yawOf(left) - yawOf(right)) < 2.0f * 3.14159f / 180.0f);
+    CHECK(std::fabs(yawOf(left) - yawOf(rest)) < 2.0f * 3.14159f / 180.0f);
+    // Off to the side and a bit behind, it still looks round as far as it can.
+    CHECK(yawOf(lookAt(headPos + Vec3{5, 0.5f, 0}, 1.0f)) > yawOf(rest) + 0.5f);
 }
 
 // The floor contact (the lowest body point, which the renderer puts on the floor) stays

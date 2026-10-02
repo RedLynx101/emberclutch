@@ -1,0 +1,443 @@
+# Head things on every kind, hatchling (run 23's floating hats): written by tools/autotest_gen/hats_fit.py
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+pg give
+pg hatchling
+pg bare
+pg wardrobe
+wait 2
+pg spin 0.9
+pg tab 0
+pg kind 0 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h01-pouncer-sunhat
+pg spin 0.15
+wait 0.5
+shot h01-pouncer-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h01-pouncer-tophat
+pg spin 0.15
+wait 0.5
+shot h01-pouncer-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h01-pouncer-crown
+pg spin 0.15
+wait 0.5
+shot h01-pouncer-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h01-pouncer-party
+pg spin 0.15
+wait 0.5
+shot h01-pouncer-partyF
+pg kind 1 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h02-puffback-sunhat
+pg spin 0.15
+wait 0.5
+shot h02-puffback-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h02-puffback-tophat
+pg spin 0.15
+wait 0.5
+shot h02-puffback-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h02-puffback-crown
+pg spin 0.15
+wait 0.5
+shot h02-puffback-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h02-puffback-party
+pg spin 0.15
+wait 0.5
+shot h02-puffback-partyF
+pg kind 2 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h03-curlstone-sunhat
+pg spin 0.15
+wait 0.5
+shot h03-curlstone-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h03-curlstone-tophat
+pg spin 0.15
+wait 0.5
+shot h03-curlstone-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h03-curlstone-crown
+pg spin 0.15
+wait 0.5
+shot h03-curlstone-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h03-curlstone-party
+pg spin 0.15
+wait 0.5
+shot h03-curlstone-partyF
+pg kind 3 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h04-crestwing-sunhat
+pg spin 0.15
+wait 0.5
+shot h04-crestwing-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h04-crestwing-tophat
+pg spin 0.15
+wait 0.5
+shot h04-crestwing-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h04-crestwing-crown
+pg spin 0.15
+wait 0.5
+shot h04-crestwing-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h04-crestwing-party
+pg spin 0.15
+wait 0.5
+shot h04-crestwing-partyF
+pg kind 4 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h05-ribbontail-sunhat
+pg spin 0.15
+wait 0.5
+shot h05-ribbontail-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h05-ribbontail-tophat
+pg spin 0.15
+wait 0.5
+shot h05-ribbontail-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h05-ribbontail-crown
+pg spin 0.15
+wait 0.5
+shot h05-ribbontail-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h05-ribbontail-party
+pg spin 0.15
+wait 0.5
+shot h05-ribbontail-partyF
+pg kind 5 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h06-flurrytail-sunhat
+pg spin 0.15
+wait 0.5
+shot h06-flurrytail-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h06-flurrytail-tophat
+pg spin 0.15
+wait 0.5
+shot h06-flurrytail-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h06-flurrytail-crown
+pg spin 0.15
+wait 0.5
+shot h06-flurrytail-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h06-flurrytail-party
+pg spin 0.15
+wait 0.5
+shot h06-flurrytail-partyF
+pg kind 6 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h07-glimmermoth-sunhat
+pg spin 0.15
+wait 0.5
+shot h07-glimmermoth-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h07-glimmermoth-tophat
+pg spin 0.15
+wait 0.5
+shot h07-glimmermoth-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h07-glimmermoth-crown
+pg spin 0.15
+wait 0.5
+shot h07-glimmermoth-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h07-glimmermoth-party
+pg spin 0.15
+wait 0.5
+shot h07-glimmermoth-partyF
+pg kind 7 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h08-duskwing-sunhat
+pg spin 0.15
+wait 0.5
+shot h08-duskwing-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h08-duskwing-tophat
+pg spin 0.15
+wait 0.5
+shot h08-duskwing-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h08-duskwing-crown
+pg spin 0.15
+wait 0.5
+shot h08-duskwing-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h08-duskwing-party
+pg spin 0.15
+wait 0.5
+shot h08-duskwing-partyF
+pg kind 8 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h09-blazeplume-sunhat
+pg spin 0.15
+wait 0.5
+shot h09-blazeplume-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h09-blazeplume-tophat
+pg spin 0.15
+wait 0.5
+shot h09-blazeplume-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h09-blazeplume-crown
+pg spin 0.15
+wait 0.5
+shot h09-blazeplume-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h09-blazeplume-party
+pg spin 0.15
+wait 0.5
+shot h09-blazeplume-partyF
+pg kind 9 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h10-kindlemoss-sunhat
+pg spin 0.15
+wait 0.5
+shot h10-kindlemoss-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h10-kindlemoss-tophat
+pg spin 0.15
+wait 0.5
+shot h10-kindlemoss-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h10-kindlemoss-crown
+pg spin 0.15
+wait 0.5
+shot h10-kindlemoss-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h10-kindlemoss-party
+pg spin 0.15
+wait 0.5
+shot h10-kindlemoss-partyF
+pg kind 10 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h11-cindershell-sunhat
+pg spin 0.15
+wait 0.5
+shot h11-cindershell-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h11-cindershell-tophat
+pg spin 0.15
+wait 0.5
+shot h11-cindershell-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h11-cindershell-crown
+pg spin 0.15
+wait 0.5
+shot h11-cindershell-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h11-cindershell-party
+pg spin 0.15
+wait 0.5
+shot h11-cindershell-partyF
+pg kind 11 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h12-bloomstone-sunhat
+pg spin 0.15
+wait 0.5
+shot h12-bloomstone-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h12-bloomstone-tophat
+pg spin 0.15
+wait 0.5
+shot h12-bloomstone-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h12-bloomstone-crown
+pg spin 0.15
+wait 0.5
+shot h12-bloomstone-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h12-bloomstone-party
+pg spin 0.15
+wait 0.5
+shot h12-bloomstone-partyF
+pg kind 12 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h13-lilyfin-sunhat
+pg spin 0.15
+wait 0.5
+shot h13-lilyfin-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h13-lilyfin-tophat
+pg spin 0.15
+wait 0.5
+shot h13-lilyfin-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h13-lilyfin-crown
+pg spin 0.15
+wait 0.5
+shot h13-lilyfin-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h13-lilyfin-party
+pg spin 0.15
+wait 0.5
+shot h13-lilyfin-partyF
+pg kind 13 0
+wait 1.6
+pg wear 0
+pg spin 0.9
+wait 0.7
+shot h14-frostcurl-sunhat
+pg spin 0.15
+wait 0.5
+shot h14-frostcurl-sunhatF
+pg wear 1
+pg spin 0.9
+wait 0.7
+shot h14-frostcurl-tophat
+pg spin 0.15
+wait 0.5
+shot h14-frostcurl-tophatF
+pg wear 4
+pg spin 0.9
+wait 0.7
+shot h14-frostcurl-crown
+pg spin 0.15
+wait 0.5
+shot h14-frostcurl-crownF
+pg wear 6
+pg spin 0.9
+wait 0.7
+shot h14-frostcurl-party
+pg spin 0.15
+wait 0.5
+shot h14-frostcurl-partyF
+quit

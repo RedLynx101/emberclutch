@@ -30,11 +30,11 @@ OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
 RUN_READY = True  # the run's checklist on the page (once the build is ready for the 3DS)
-RUN_DOC = "docs/plan/hardware-check-8.md"  # the run's steps
-RUN_KEY = "run23"       # its database collection (each run its own: run 22's notes stay under `run22`)
+RUN_DOC = "docs/plan/hardware-check-9.md"  # the run's steps
+RUN_KEY = "run24"       # its database collection (each run its own: run 23's notes stay under `run23`)
 LABS = []              # banner labs to mark Held/Froze this run (none in run 21)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch: Skyreach Valley, run 23 (0.9.15): run 22's fixes"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch: Skyreach Valley, run 24 (0.10.0): run 23's fixes and the plans for 1.0"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -320,6 +320,106 @@ def looks() -> dict:
     return {"people": out, "lineup": ff(["-i", str(lineup), "-q:v", "3"], OUT / "looks" / "lineup.jpg") if lineup.exists() else ""}
 
 
+LOOKS = False  # (run 23: every look passed; their marks stay in `looks`)
+
+
+def md_html(md: str) -> str:
+    """A plan doc's blocks as HTML: paragraphs, bullet and numbered lists, tables, quotes (inline_md inside)."""
+    out, para, items, kind, rows, quote = [], [], [], "", [], []
+
+    def flush():
+        nonlocal para, items, kind, rows, quote
+        if para:
+            out.append(f"<p>{inline_md(' '.join(para))}</p>")
+        if items:
+            out.append(f"<{kind}>" + "".join(f"<li>{inline_md(' '.join(i))}</li>" for i in items) + f"</{kind}>")
+        if rows:
+            head, body = rows[0], [r for r in rows[1:] if not set("".join(r)) <= set("-: ")]
+            out.append("<table><thead><tr>" + "".join(f"<th>{inline_md(c)}</th>" for c in head) + "</tr></thead><tbody>" +
+                       "".join("<tr>" + "".join(f"<td>{inline_md(c)}</td>" for c in r) + "</tr>" for r in body) + "</tbody></table>")
+        if quote:
+            out.append("<blockquote>" + "<br>".join(inline_md(q) if q else "" for q in quote) + "</blockquote>")
+        para, items, kind, rows, quote = [], [], "", [], []
+
+    for line in md.split("\n"):
+        t = line.strip()
+        bullet = re.match(r"- (.*)", t)
+        number = re.match(r"\d+\. (.*)", t)
+        if not t:
+            flush()
+        elif t.startswith("|"):
+            if not rows:
+                flush()
+            rows.append([c.strip() for c in t.strip("|").split("|")])
+        elif t.startswith(">"):
+            if not quote:
+                flush()
+            quote.append(t[1:].strip())
+        elif bullet or number:
+            k = "ul" if bullet else "ol"
+            if kind != k or para:
+                flush()
+                kind = k
+            items.append([(bullet or number).group(1)])
+        elif items and line.startswith(" "):
+            items[-1].append(t)
+        else:
+            if items or rows or quote:
+                flush()
+            para.append(t)
+    flush()
+    return "".join(out)
+
+
+def doc_section(path: str, heading: str) -> str:
+    """The text under a '## heading' (or '**heading**' paragraph lead) of a doc, up to the next '## '."""
+    md = (ROOT / path).read_text(encoding="utf-8")
+    for part in md.split("\n## ")[1:]:
+        head, _, body = part.partition("\n")
+        if head.strip().startswith(heading):
+            return body
+    raise KeyError(f"{path}: no section {heading!r}")
+
+
+# The plans to Keep or Change (D142: the road to 1.0, the guide, the video, YouTube) and the hats' new
+# seats (D141); collection `plans`, a document per card ({mark: "keep"|"change", note}).
+PLANS = True
+
+
+def plans() -> list[dict]:
+    rel, guide, film = "docs/plan/release-1.0.md", "docs/plan/guide.md", "docs/plan/trailer.md"
+    yt = doc_section(film, "YouTube: drafts")
+    cards = [
+        {"slug": "road", "kicker": "D142", "title": "The road to 1.0: the order of work", "body": md_html(doc_section(rel, "The order"))},
+        {"slug": "polish", "kicker": "R1", "title": "What's left for 1.0 (the banner included)", "body": md_html(doc_section(rel, "R1:"))},
+        {"slug": "guide", "kicker": "R3 · the guide", "title": "The guide: what it is and what it won't spoil",
+         "body": md_html(doc_section(guide, "What it is")) + "<h4>Not spoiled</h4>" + md_html(doc_section(guide, "What it won't spoil"))},
+        {"slug": "guide-outline", "kicker": "R3 · the guide", "title": "The guide's outline", "body": md_html(doc_section(guide, "The outline"))},
+        {"slug": "video-stack", "kicker": "R6 · the video", "title": "The video: what it is and how it's made",
+         "body": md_html(doc_section(film, "What it is")) + md_html(doc_section(film, "The stack"))},
+        {"slug": "video-shots", "kicker": "R6 · the video", "title": "The video's shots (a first list)", "body": md_html(doc_section(film, "The shots"))},
+        {"slug": "voices", "kicker": "R6 · the video", "title": "Voices: sampled first, picked by you", "body": md_html(doc_section(film, "Voices"))},
+        {"slug": "youtube", "kicker": "R7 · YouTube", "title": "The title and description", "body": md_html(yt)},
+        {"slug": "hats", "kicker": "D141 · in 0.10.0", "title": "The hats' new seats, every kind",
+         "body": md_html("Each hat now sits on the skull: a little back, a little smaller (to 70%) or tipped back, so the eyes "
+                         "stay clear and nothing floats. As the den's camera sees them: the straw sunhat, the little top hat, the "
+                         "ember crown and the party hat on every kind, grown and as a hatchling. Change: say which kinds."),
+         "images": []},
+        {"slug": "questions", "kicker": "Before anything goes public", "title": "Questions for you", "ask": True,
+         "body": md_html(doc_section(rel, "R2:").split("**Open questions for Noah**", 1)[1].split(":", 1)[1])},
+    ]
+    shots = ROOT / "build" / "hatsfit"
+    (OUT / "plans").mkdir(parents=True, exist_ok=True)
+    for name, cap in (("g1", "Grown: Pouncer to Glimmermoth"), ("g2", "Grown: Duskwing to Frostcurl"),
+                      ("h1", "Hatchlings: Pouncer to Glimmermoth"), ("h2", "Hatchlings: Duskwing to Frostcurl")):
+        src = shots / f"{name}.png"
+        if src.exists():
+            dst = OUT / "plans" / f"hats_{name}.jpg"
+            subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src), "-q:v", "3", str(dst)], check=True)
+            cards[8]["images"].append({"src": f"plans/{dst.name}", "cap": cap})
+    return cards
+
+
 def fragments() -> str:
     d = ROOT / "docs" / "review"
     return "\n".join(p.read_text(encoding="utf-8") for p in sorted(d.glob("*.html"))) if d.exists() else ""
@@ -330,7 +430,7 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)  # (a shell may be sitting in it)
     data = {"sounds": sounds() + made_sounds() if SHOW_SOUNDS else [], "music": music() if SHOW_SOUNDS else [],
             "run": run_list() if RUN_READY else {}, "dragons": dragons() if DRAGONS else [],
-            "people": {}, "looks": looks()}
+            "people": {}, "looks": looks() if LOOKS else {}, "plans": plans() if PLANS else []}
     page = (Path(__file__).with_name("review_template.html").read_text(encoding="utf-8")
             .replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
             .replace("/*TITLE*/", PAGE_TITLE)

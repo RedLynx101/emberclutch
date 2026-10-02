@@ -1,0 +1,34 @@
+# Run 23: a grown Puffback's hat "clipping in the wanderings 3D view" (fine in the den and the
+# valley): in its top hat, then its sun hat, picked by the sign and out on the trail.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+pg give
+pg kind 1 0
+pg grown
+pg wear 1
+wait 1
+open wander
+wait 3
+shot wh01-picked-tophat
+pg wear 0
+wait 1.5
+shot wh02-picked-sunhat
+wander 400
+wait 3
+shot wh03-out-sunhat
+pg wear 1
+wait 1.5
+shot wh04-out-tophat
+quit

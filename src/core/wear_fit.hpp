@@ -19,6 +19,8 @@ struct WearFit {
     s8 boneA[kWearSlots] = {-1, -1, -1, -1};  // blended half and half (the same bone twice: rigid)
     s8 boneB[kWearSlots] = {-1, -1, -1, -1};
     Mat34 frame[kWearSlots];  // the slot's frame (its axes scaled to its unit) in rest armature space
+    Mat34 headNarrow;  // the head slot's frame for the narrow things (a crown, a party hat: no wide brim; run 23)
+    float hatBack = 0, hatLift = 0, hatScale = 1, narrowLift = 0;  // (how far the hat moved back and up off the skull to clear the eyes, in its units, and its size)
 };
 
 // Measures a model (a kind's form); `plan` picks its nudges (core/kinds plan index, -1 none) and
@@ -28,6 +30,13 @@ bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out);
 // Hats clear the eyes (D126): no eye comes up through a brim this wide (in the hat's units, the
 // top hat's 0.72 and the crowns' with a little over), its underside this high.
 constexpr float kHatBrim = 0.8f, kHatBrimZ = -0.08f;
+// The narrow head things (a crown, a tiara, a circlet, a party hat, a feather crest: run 23) clear
+// the eyes over this much (their bands' 0.44-0.62), so they sit down on the skull where a brim can't.
+constexpr float kHatNarrow = 0.62f;
+inline bool narrowOnHead(WearShape s) {
+    return s == WearShape::Crown || s == WearShape::Tiara || s == WearShape::Circlet || s == WearShape::PartyHat ||
+           s == WearShape::FeatherCrest;
+}
 // The eyes' vertices (skinned to the "eyes" bone) in a head frame's units: how high the highest one
 // within `radius` of the frame's middle stands above the brim's underside, plus `margin` (0 or less:
 // clear).

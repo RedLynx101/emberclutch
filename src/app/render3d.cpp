@@ -1164,8 +1164,39 @@ void uploadBones(const GpuMesh& g, const Mat34* skin) {
 }
 
 // Draws a mesh whose dust level is one value for every vertex (wings, parts, the egg).
+GpuMesh g_settleMesh;       // one triangle squashed to a point: settleDepth's throwaway
+bool g_settlePending = false;  // a hand-over from citro2d since the last draw (bindDragons)
+
+// D118 again (run 23: a sign by the Trailhead's gate drew over the dragons in front of it, and the
+// Wanderings' dragon's hat through its head): on the 3DS the first draw after a hand-over's batch
+// of state can lose its depth setting and keep citro2d's (always, colour only: drawn over
+// everything). Just before the first draw after one (all its state set), a throwaway draw of
+// nothing takes the batch, and the depth setting goes again with the real draw alone, as the
+// valley's ground and end3D do.
+void settleDepth() {
+    g_settlePending = false;
+    if (!g_settleMesh.vbo) {
+        const Vec3 pos[3] = {}, nrm[3] = {{0, 0, 1}, {0, 0, 1}, {0, 0, 1}};
+        const u8 skin[12] = {0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 255, 0}, paint[12] = {};
+        const float uv[6] = {};
+        const u16 idx[3] = {0, 1, 2};
+        const u8 palette[1] = {0};
+        if (!fill(g_settleMesh, 3, pos, nrm, skin, paint, uv, idx, 3, palette, 1)) return;
+    }
+    const Mat34 bone[1] = {Mat34::identity()};
+    uploadBones(g_settleMesh, bone);
+    C3D_SetAttrInfo(&g_attrFixed);
+    C3D_FixedAttribSet(g_dustFixed, 0, 0, 0, 0);
+    C3D_BufInfo* buf = C3D_GetBufInfo();
+    BufInfo_Init(buf);
+    BufInfo_Add(buf, g_settleMesh.vbo, sizeof(GpuVertex), 5, 0x43210);
+    C3D_DrawElements(GPU_TRIANGLES, 3, C3D_UNSIGNED_SHORT, g_settleMesh.ibo);
+    C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);  // (marked again: it goes with the next draw)
+}
+
 void drawMesh(App& app, const GpuMesh& g, const Mat34* skin, float dust = 0.0f) {
     if (!g.vbo || g.indexCount == 0) return;
+    if (g_settlePending) settleDepth();
     uploadBones(g, skin);
     C3D_SetAttrInfo(&g_attrFixed);
     C3D_FixedAttribSet(g_dustFixed, dust, 0, 0, 0);
@@ -1181,6 +1212,7 @@ void drawMesh(App& app, const GpuMesh& g, const Mat34* skin, float dust = 0.0f) 
 // Draws a dragon's body with its own dust stream (per-vertex, by region).
 void drawBody(App& app, const GpuMesh& g, const Mat34* skin, const Cache& c) {
     if (!g.vbo || g.indexCount == 0) return;
+    if (g_settlePending) settleDepth();
     if (!c.dust || c.dustCount != g.vertexCount) {  // no stream: clean
         drawMesh(app, g, skin, 0.0f);
         return;
@@ -1362,6 +1394,7 @@ void bindDragons(const C3D_Mtx& projection) {
     C3D_CullFace(GPU_CULL_BACK_CCW);
     C3D_FVUnifMtx4x4(GPU_VERTEX_SHADER, g_locProjection, &projection);
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locBlob, 0, 0, 0, 1);  // no blob: every dragon as it is
+    g_settlePending = true;  // (settleDepth before the first draw: D118)
 }
 
 // Hands the GPU back to citro2d.

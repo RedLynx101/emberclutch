@@ -208,6 +208,12 @@ void applyLookAt(const Skeleton& skel, const AnimBinding& bind, BonePose* pose, 
     while (yaw < -3.14159265f) yaw += 6.2831853f;
     auto clampf = [](float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); };
     float pitch = std::asin(clampf(want.z, -1, 1)) - std::asin(clampf(facing.z, -1, 1));
+    // Behind it, it gives up looking (run 23, Noah: with its back to the screen the head flipped
+    // side to side): the way round to the target wraps at half a turn, so a target behind swung
+    // the head between its limits with every sway of the clip. From 100 to 160 degrees round it
+    // eases back to straight ahead, both ways meeting there.
+    const float away = std::fabs(yaw), t = clampf((away - 100 * kDeg) / (60 * kDeg), 0, 1);
+    weight *= 1.0f - t * t * (3 - 2 * t);
     yaw = clampf(yaw, -55 * kDeg, 55 * kDeg) * weight;
     pitch = clampf(pitch, -30 * kDeg, 25 * kDeg) * weight;
     for (int k = 0; k < 3; ++k) {

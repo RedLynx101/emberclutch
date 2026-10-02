@@ -120,6 +120,11 @@
   .pick button[aria-pressed="true"] { background: var(--pass); border-color: var(--pass); color: var(--panel); }
   .run-progress { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
   @media (max-width: 520px) { .take { grid-template-columns: 1fr; } }
+  .plan-body { font-size: 14px; line-height: 1.5; }
+  .plan-body table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 8px 0; display: block; overflow-x: auto; }
+  .plan-body th, .plan-body td { border-bottom: 1px solid var(--line, rgba(127,127,127,.25)); padding: 4px 6px; text-align: left; vertical-align: top; }
+  .plan-body ul, .plan-body ol { padding-left: 20px; margin: 6px 0; }
+  .plan-body blockquote { margin: 8px 0; padding: 6px 10px; border-left: 3px solid var(--pass); opacity: .9; }
   @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 </style>
 
@@ -128,8 +133,8 @@
     <div class="kicker">Emberclutch · the long run (Beta + 1.0)</div>
     <h1>The long run: review</h1>
     <p class="muted">Tick the steps as you go and leave a note wherever something's off; marks save as you click and I read them from here.
-      <strong>Run 21</strong> is run 20 again with its freeze fixed (0.9.1, already on your 3DS: install <code>cias/emberclutch.cia</code> in FBI).
-      A trace is on for this run: if it freezes anywhere, just restart the 3DS and tell me, and I'll read where it stopped.</p>
+      The build is already on your 3DS: install <code>cias/emberclutch.cia</code> in FBI. If it freezes anywhere, restart the 3DS and tell
+      me, and I'll read the trace.</p>
   </header>
 
   <nav aria-label="Sections">
@@ -139,6 +144,7 @@
     <a href="#dragons" hidden>Dragons</a>
     <a href="#people" hidden>People</a>
     <a href="#looks" hidden>The people's looks</a>
+    <a href="#plans" hidden>Plans for 1.0</a>
     <span class="tally" id="tally"></span>
   </nav>
 
@@ -225,16 +231,31 @@
     <figure class="people-fig" id="looks-lineup" hidden></figure>
     <div id="look-list" class="grid-2"></div>
   </section>
+
+  <section id="plans" hidden>
+    <div class="section-head">
+      <div class="kicker">Not made yet: the plans first</div>
+      <h2>Plans for 1.0</h2>
+      <p class="muted">Your short-term plan, written out: the order of work to 1.0, the guide's outline, the video's stack, shots and
+        voices, the YouTube drafts, and the hats' new seats on every kind. Keep what's right; Change what isn't and say how. Nothing
+        public happens without your word.</p>
+      <div class="legend">
+        <span><i class="dot" style="background: var(--pass)"></i>Keep: go ahead as written</span>
+        <span><i class="dot" style="background: var(--fail)"></i>Change: say what</span>
+      </div>
+    </div>
+    <div id="plan-list" style="display:grid;gap:14px"></div>
+  </section>
 </div>
 
 <script>
 const DATA = /*DATA*/null;
 let db = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const state = { sounds: {}, music: {}, run: {}, labs: {}, dragons: {}, people: {}, looks: {} };
-const LS = "emberclutch-review-run23";  // (each round its own: run 23)
+const state = { sounds: {}, music: {}, run: {}, labs: {}, dragons: {}, people: {}, looks: {}, plans: {} };
+const LS = "emberclutch-review-run24";  // (each round its own: run 24)
 try { Object.assign(state, JSON.parse(localStorage.getItem(LS) || "{}")); } catch (_) {}
-state.run ||= {}; state.labs ||= {}; state.dragons ||= {}; state.people ||= {}; state.looks ||= {};
+state.run ||= {}; state.labs ||= {}; state.dragons ||= {}; state.people ||= {}; state.looks ||= {}; state.plans ||= {};
 function keepLocal() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (_) {} }
 
 function copyButton(text) {
@@ -446,6 +467,35 @@ function lookCard(k) {
   return el;
 }
 
+// A plan to Keep or Change (or, `ask`, a question to answer in its comments), collection `plans`.
+function planCard(k) {
+  const st = (state.plans[k.slug] ||= { mark: "", note: "" });
+  const el = document.createElement("article");
+  el.className = "card dragon";
+  el.dataset.mark = st.mark;
+  const figs = (k.images || []).map((im) => `<figure class="people-fig"><img src="${esc(im.src)}" alt="${esc(im.cap)}" loading="lazy"><figcaption>${esc(im.cap)}</figcaption></figure>`).join("");
+  el.innerHTML = `<div class="card-head"><div><div class="kicker">${esc(k.kicker || "")}</div><h3>${esc(k.title)}</h3></div></div>
+    <div class="plan-body">${k.body}</div>${figs}
+    ${k.ask ? "" : `<div class="mark" role="group" aria-label="${esc(k.title)}"><button type="button" data-v="keep">Keep</button><button type="button" data-v="change">Change</button></div>`}
+    <label class="muted" for="pnote-${esc(k.slug)}" style="font-size:13px;font-weight:700">${k.ask ? "Your answers" : "Comments"}</label>
+    <textarea id="pnote-${esc(k.slug)}" placeholder="${k.ask ? "Answer here" : "What to keep, what to change"}"></textarea>
+    <div class="saved" aria-live="polite"></div>`;
+  el.querySelectorAll(".mark button").forEach((b) => {
+    b.setAttribute("aria-pressed", String(st.mark === b.dataset.v));
+    b.addEventListener("click", () => {
+      st.mark = st.mark === b.dataset.v ? "" : b.dataset.v;
+      el.dataset.mark = st.mark === "keep" ? "pass" : st.mark === "change" ? "fail" : "";
+      el.querySelectorAll(".mark button").forEach((x) => x.setAttribute("aria-pressed", String(st.mark === x.dataset.v)));
+      save("plans", k.slug, el);
+    });
+  });
+  el.dataset.mark = st.mark === "keep" ? "pass" : st.mark === "change" ? "fail" : "";
+  const ta = el.querySelector("textarea");
+  ta.value = st.note || "";
+  ta.addEventListener("change", () => { st.note = ta.value; save("plans", k.slug, el); });
+  return el;
+}
+
 function fig(src, cap) {
   const f = document.createElement("figure");
   f.className = "people-fig";
@@ -505,7 +555,9 @@ function tally() {
   const dragText = drags ? ` · ${dragMarked} of ${drags} dragons marked` : "";
   const lk = ((DATA.looks || {}).people || []), lkMarked = lk.filter((k) => (state.looks[k.slug] || {}).mark).length;
   const lookText = lk.length ? ` · ${lkMarked} of ${lk.length} looks marked` : "";
-  document.getElementById("tally").textContent = `${runText.replace(/ · $/, "")}${soundText}${musicText}${dragText}${lookText}`;
+  const pl = (DATA.plans || []).filter((k) => !k.ask), plMarked = pl.filter((k) => (state.plans[k.slug] || {}).mark).length;
+  const planText = pl.length ? ` · ${plMarked} of ${pl.length} plans marked` : "";
+  document.getElementById("tally").textContent = `${runText.replace(/ · $/, "")}${soundText}${musicText}${dragText}${lookText}${planText}`;
 }
 
 function render() {
@@ -518,6 +570,7 @@ function render() {
   if (DATA.run && DATA.run.sections) {
     document.getElementById("run").hidden = false;
     document.getElementById("nav-run").hidden = false;
+    document.getElementById("nav-run").textContent = DATA.run.title.split(":")[0];  // ("Run 24")
     document.getElementById("run-title").textContent = DATA.run.title;
     document.getElementById("run-intro").innerHTML = DATA.run.intro;
     document.getElementById("run-list").replaceChildren(...DATA.run.sections.map(runCard));
@@ -539,6 +592,11 @@ function render() {
     }
     document.getElementById("look-list").replaceChildren(...DATA.looks.people.map(lookCard));
   }
+  if ((DATA.plans || []).length) {
+    document.getElementById("plans").hidden = false;
+    document.querySelectorAll('nav a[href="#plans"]').forEach((a) => (a.hidden = false));
+    document.getElementById("plan-list").replaceChildren(...DATA.plans.map(planCard));
+  }
   if (DATA.people && DATA.people.sets) {
     document.getElementById("people").hidden = false;
     document.querySelectorAll('nav a[href="#people"]').forEach((a) => (a.hidden = false));
@@ -557,7 +615,7 @@ render();
     const labs = (DATA.run.labs || []).map((x) => ({ slug: x }));
     for (const [kind, list] of [["sounds2", DATA.sounds], ["music", DATA.music], [DATA.run.key || "run", runSecs], ["labs", labs],
                                 ["dragons", DATA.dragons || []], ["people", DATA.people && DATA.people.sets ? [{ slug: "choice" }] : []],
-                                ["looks", (DATA.looks || {}).people || []]]) {
+                                ["looks", (DATA.looks || {}).people || []], ["plans", DATA.plans || []]]) {
       for (const it of list) {
         const snap = await db.doc(`${kind}/${it.slug}`).get();
         const into = kind === "sounds2" ? "sounds" : kind === DATA.run.key ? "run" : kind;

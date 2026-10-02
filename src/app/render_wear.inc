@@ -30,7 +30,11 @@ const WearFit* wearFitFor(const Posed& p) {
     WearFit& fit = g_wearFits[look][form][lod];
     if (!g_wearFitTried[look][form][lod]) {
         g_wearFitTried[look][form][lod] = true;
-        fitWear(p.form->model, isKind(look) ? planOfSlot(look) : -1, form == kFormGrown, fit);
+        // (the far model wears what the near one measured when it's loaded: the same bones, and no
+        // hat jumping as a dragon walks off into the distance, run 23)
+        const Form& near = g_forms[look][form][0];
+        const ModelData& m = lod == 1 && !near.model.meshes.empty() ? near.model : p.form->model;
+        fitWear(m, isKind(look) ? planOfSlot(look) : -1, form == kFormGrown, fit);
     }
     return &fit;
 }
@@ -57,7 +61,8 @@ void drawWorn(App& app, const Posed& p) {
         look.colour[2] = x.trim;
         look.colour[3] = x.gem;
         setLook(look, 0.7f);
-        const Mat34 bones[2] = {mul(p.skin[fit->boneA[s]], fit->frame[s]), mul(p.skin[fit->boneB[s]], fit->frame[s])};
+        const Mat34& frame = s == static_cast<int>(WearSlot::Head) && narrowOnHead(x.shape) ? fit->headNarrow : fit->frame[s];
+        const Mat34 bones[2] = {mul(p.skin[fit->boneA[s]], frame), mul(p.skin[fit->boneB[s]], frame)};
         drawMesh(app, g, bones);
     }
 }

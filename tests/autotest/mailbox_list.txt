@@ -1,0 +1,35 @@
+# Run 23: on the mailbox's list some text hid under the Close button (the "1-4 / 6" count, with
+# more than four letters): six letters delivered and read, the list.
+overlay off
+wait 3
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 3
+key SELECT
+wait 0.4
+tap 238 81
+key SELECT
+wait 5
+name Ember
+wait 9
+story read news_living_valley
+story read rowan_hello
+story read celestine_invite
+story read fig_tam
+story read maple_flyer
+story letter pip_drawing
+valley
+wait 6
+story mail
+wait 1.5
+key B
+wait 0.6
+shot m01-list
+key DOWN
+wait 0.4
+key DOWN
+wait 0.4
+shot m02-list-down
+quit

@@ -36,6 +36,26 @@ beauty shows. Nothing ever dies: a neglected dragon only sulks until you make up
 | ![The den](docs/release/screenshots/den.png) | ![A battle](docs/release/screenshots/battle.png) |
 | ![A beauty show](docs/release/screenshots/show.png) | ![Riding over the valley](docs/release/screenshots/flying.png) |
 
+## Built for the original 3DS
+
+Everything here runs on the first 3DS from 2011: a 268 MHz ARM11 processor, a PICA200 graphics chip with no
+programmable pixel shaders, 64 MB of memory for the game and 6 MB of video memory. Fitting a living 3D world
+into that took some doing:
+
+- **Skinned 3D dragons**, animated on the graphics chip's vertex shader with each bone's matrix packed into
+  its 96 constant registers (25 bones a draw), up to three grown dragons in the den at once, about 3,000
+  triangles each up close.
+- **A 2.3 km valley** streamed in tiles at four levels of detail, with eighteen places, villagers and
+  critters, held to a triangle budget every frame (about 9,600 in the valley: a heavy view
+  draws its distant ground simpler until it's back under), in stereoscopic 3D, which draws the top screen
+  twice.
+- **An animated 3D HOME Menu banner**, a hatchling in its egg, inside the HOME Menu's 512 KB, after tracking
+  down why some banners froze the HOME Menu (where their pictures sat inside the file).
+- **Music streamed** and mixed in small slices, and the ground's and rocks' painted textures generated at
+  start rather than stored.
+- **Tested every step:** more than 387,000 automated checks on a PC, scripted runs in a headless emulator, and
+  over thirty rounds of play-testing on a real old 3DS.
+
 ## Install
 
 You need a 3DS with custom firmware (for example [Luma3DS](https://3ds.hacks.guide/)).

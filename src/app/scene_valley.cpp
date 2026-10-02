@@ -1231,9 +1231,10 @@ void update(App& app, const Input& in) {
         const bool wasGrounded = s.flight.grounded;
         const FlightInput was = s.last;
         s.last = fi;
-        const FlightTuning tune = s.partner >= 0 ? flightTuningFor(challenge::statLevel(app.game.dragons[s.partner], kStatWing),
-                                                                  challenge::statLevel(app.game.dragons[s.partner], kStatStamina))
-                                                : FlightTuning{};  // (its Wing and Stamina: D123)
+        FlightTuning tune = s.partner >= 0 ? flightTuningFor(challenge::statLevel(app.game.dragons[s.partner], kStatWing),
+                                                            challenge::statLevel(app.game.dragons[s.partner], kStatStamina))
+                                          : FlightTuning{};  // (its Wing and Stamina: D123)
+        if (s.partner >= 0) flightTraits(tune, app.game.dragons[s.partner]);  // (and its traits: D150)
         s.flight.update(fi, va, app.dt, tune);
         s.cam.update(s.flight, va, app.dt);
         if (!s.flight.grounded && fi.burst && !fi.brake && !was.burst && s.flight.stamina > 0) audio::playSfx(audio::Sfx::Burst);

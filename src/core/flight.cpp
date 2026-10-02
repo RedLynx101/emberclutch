@@ -2,6 +2,7 @@
 
 #include <cmath>
 
+#include "core/kinds.hpp"
 #include "core/valley.hpp"
 
 namespace ec {
@@ -21,6 +22,23 @@ float wrap(float a) {
 }  // namespace
 
 Vec3 Flight::forward() const { return {std::sin(heading), -std::cos(heading), 0}; }
+
+void flightTraits(FlightTuning& t, const Dragon& d) {
+    if (hasTrait(d, kTraitSwift)) {
+        t.glideSpeed *= 1.06f;
+        t.flapSpeed *= 1.06f;
+        t.diveSpeed *= 1.06f;
+        t.burstSpeed *= 1.06f;
+    }
+    if (hasTrait(d, kTraitSkydancer)) {
+        t.turnRate *= 1.15f;
+        t.sinkRate *= 0.8f;
+    }
+    if (hasTrait(d, kTraitStrongWings)) {
+        t.flapCost *= 0.75f;
+        t.burstCost *= 0.75f;
+    }
+}
 
 FlightTuning flightTuningFor(float wingLevel, float staminaLevel) {
     auto edge = [](float level) {  // (as core/challenges statEdge: 0 average, 1 at 10, up to 1.4 trained)

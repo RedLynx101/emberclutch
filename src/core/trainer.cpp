@@ -1,5 +1,6 @@
 #include "core/trainer.hpp"
 
+#include "core/kinds.hpp"
 #include "core/save.hpp"
 
 namespace ec::trainer {
@@ -36,7 +37,10 @@ void levelProgress(const Dragon& d, u32& into, u32& span) {
     span = xpForLevel(level + 1) - xpForLevel(level);
 }
 
+u32 xpTaken(const Dragon& d, u32 amount) { return hasTrait(d, kTraitQuickLearner) ? amount + amount / 5 : amount; }
+
 int gainXp(Dragon& d, u32 amount) {
+    amount = xpTaken(d, amount);
     const int before = levelOf(d.xp);
     const u32 cap = xpForLevel(kLevelCap);
     d.xp = d.xp + amount > cap || d.xp + amount < d.xp ? cap : d.xp + amount;
@@ -47,7 +51,7 @@ int statPoints(const Dragon& d, int stat) {
     if (stat < 0 || stat >= kDragonStats) return 1;
     const int base = d.stats[stat] < 1 ? 1 : d.stats[stat];
     const int extra = d.trained[stat] > kMaxTrained ? kMaxTrained : d.trained[stat];
-    return base + extra;
+    return base + extra + (hasTrait(d, kTraitStarborn) ? 1 : 0);
 }
 
 bool train(Dragon& d, int stat, int points) {
@@ -57,11 +61,13 @@ bool train(Dragon& d, int stat, int points) {
     return true;
 }
 
-bool canSpend(const Dragon& d, float energy) { return d.needs.energy >= energy; }
+float energyCost(const Dragon& d, float energy) { return hasTrait(d, kTraitSturdy) ? energy * 0.75f : energy; }
+
+bool canSpend(const Dragon& d, float energy) { return d.needs.energy >= energyCost(d, energy); }
 
 bool spendEnergy(Dragon& d, float energy) {
     if (!canSpend(d, energy)) return false;
-    d.needs.energy = clamp100(d.needs.energy - energy);
+    d.needs.energy = clamp100(d.needs.energy - energyCost(d, energy));
     return true;
 }
 
@@ -73,8 +79,9 @@ void walkTogether(Dragon& d, float metres, float& carry) {
     n.love = clamp100(n.love + metres * 0.02f);
     n.belly = clamp100(n.belly - metres * 0.015f);
     carry += metres;
-    while (carry >= 150.0f) {
-        carry -= 150.0f;
+    const float per = hasTrait(d, kTraitChatty) ? 75.0f : 150.0f;  // (Chatty: twice as fast, D150)
+    while (carry >= per) {
+        carry -= per;
         addBond(d, 1);
     }
 }

@@ -51,19 +51,20 @@ bool paidToday(const SaveData& s, int league, int slot, s32 today);  // its win'
 // ---- The rounds, 0..100 each. How it looks in this theme (with its palette: its kind's colours
 // and its dye), and the parts of that for the results.
 struct LookParts {
-    float clean = 0, style = 0, themeColour = 0, suits = 0, rarity = 0, element = 0;
-    float total() const { return clean + style + themeColour + suits + rarity + element; }
+    float clean = 0, style = 0, themeColour = 0, suits = 0, rarity = 0, element = 0, showoff = 0;  // (showoff: the trait)
+    float total() const { return clean + style + themeColour + suits + rarity + element + showoff; }
 };
 LookParts lookParts(const Dragon& d, int theme, const Rgb pal[kPalCount]);
 float lookScore(const Dragon& d, int theme, const Rgb pal[kPalCount]);
 struct PoiseParts {
-    float bond = 0, manner = 0, mood = 0, care = 0;
-    float total() const { return bond + manner + mood + care; }
+    float bond = 0, manner = 0, mood = 0, care = 0, gentle = 0;  // (gentle: Gentle Giant's)
+    float total() const { return bond + manner + mood + care + gentle; }
 };
 PoiseParts poiseParts(const Dragon& d);
 float poiseScore(const Dragon& d);
 // The element a kind shows in this theme: 2 its first favoured, 1 its second, 0 neither.
 int themeFavours(int theme, int kind);
+int themeFavours(int theme, const Dragon& d);  // a dragon's own (Mossback counts as Grove, D150)
 
 // ---- The Performance: tricks cued by buttons or a touch, in time with the music.
 enum class Cue : u8 { A, B, X, Y, Touch, Count };

@@ -114,6 +114,12 @@ int themeFavours(int theme, int kind) {
     return 0;
 }
 
+// A dragon's own: its kind's, and Mossback's (D150): a show favouring Grove counts it as a Grove dragon.
+int themeFavours(int theme, const Dragon& d) {
+    const int fav = themeFavours(theme, d.kind < kindCount() ? d.kind : 0);
+    return fav == 0 && hasTrait(d, kTraitMossback) && ((themeInfo(theme).elements >> kGrove) & 1u) ? 1 : fav;
+}
+
 LookParts lookParts(const Dragon& d, int theme, const Rgb pal[kPalCount]) {
     const ThemeInfo& t = themeInfo(theme);
     LookParts p;
@@ -138,8 +144,9 @@ LookParts lookParts(const Dragon& d, int theme, const Rgb pal[kPalCount]) {
     const KindInfo& k = kindInfo(d.kind < kindCount() ? d.kind : 0);
     p.rarity = std::fmin(12.0f, (k.rarity == Rarity::Rare ? 10.0f : (k.rarity == Rarity::Uncommon ? 7.0f : 4.0f)) +
                                     (d.variant == k.rareVariant ? 2.0f : 0.0f));
-    const int fav = themeFavours(theme, d.kind < kindCount() ? d.kind : 0);
+    const int fav = themeFavours(theme, d);
     p.element = fav == 2 ? 18.0f : (fav == 1 ? 11.0f : 0.0f);
+    p.showoff = hasTrait(d, kTraitShowoff) ? 6.0f : 0.0f;  // (D150)
     return p;
 }
 
@@ -154,6 +161,7 @@ PoiseParts poiseParts(const Dragon& d) {
     static constexpr float kMood[] = {0, 4, 10, 19, 25};  // Upset .. Joyful
     p.mood = kMood[static_cast<int>(moodOf(d))];
     p.care = 25.0f * std::fmin(1.0f, d.careStars / 30.0f);
+    p.gentle = hasTrait(d, kTraitGentleGiant) ? 6.0f : 0.0f;  // (D150)
     return p;
 }
 
@@ -184,8 +192,10 @@ Routine makeRoutine(int league, u32 seed, float beat) {
     return r;
 }
 
-float perfectWindow(const Dragon& d) { return 0.075f * (1.0f + 0.6f * clampf(d.bond / 1000.0f, 0, 1)); }
-float goodWindow(const Dragon& d) { return 0.17f * (1.0f + 0.6f * clampf(d.bond / 1000.0f, 0, 1)); }
+// (Songbird keeps time: its windows a fifth wider, D150)
+float songbird(const Dragon& d) { return hasTrait(d, kTraitSongbird) ? 1.2f : 1.0f; }
+float perfectWindow(const Dragon& d) { return 0.075f * (1.0f + 0.6f * clampf(d.bond / 1000.0f, 0, 1)) * songbird(d); }
+float goodWindow(const Dragon& d) { return 0.17f * (1.0f + 0.6f * clampf(d.bond / 1000.0f, 0, 1)) * songbird(d); }
 
 Hit judgeHit(float error, float perfect, float good) {
     const float e = std::fabs(error);

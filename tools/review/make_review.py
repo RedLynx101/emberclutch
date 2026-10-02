@@ -30,11 +30,11 @@ OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
 RUN_READY = True  # the run's checklist on the page (once the build is ready for the 3DS)
-RUN_DOC = "docs/plan/hardware-check-15.md"  # the run's steps
-RUN_KEY = "run30"       # its database collection (each run its own: run 29's notes stay under `run29`)
+RUN_DOC = "docs/plan/hardware-check-16.md"  # the run's steps
+RUN_KEY = "run31"       # its database collection (each run its own: run 30's notes stay under `run30`)
 LABS = []  # banner labs this run (run 28's eight all held: D147; 28G is the game's banner, D148)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch: Skyreach Valley, run 30 (1.0.0): the 1.0 candidate and the guide"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch: Skyreach Valley, run 31 (1.0.0): the traits work, the guide's almanac"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -489,9 +489,9 @@ def isles() -> list[dict]:
 # Run 30's card (R3): the guide's first draft, its pages as pictures (tools/guide/build_guide.py --pages) and the
 # PDF beside the page (published as guide/Emberclutch-Guide.pdf). Collection `plans` (slug guide-draft).
 GUIDE = True
-GUIDE_HEAD = {"nav": "The guide", "kicker": "R3 · the guide's first draft", "title": "A Keeper's Handbook",
-              "intro": "The guide from the outline you kept: 20 small pages, every number checked against the game "
-                       "(tools/guide/check_guide.py), light on spoilers. Keep, or Change and say what."}
+GUIDE_HEAD = {"nav": "Traits and the guide", "kicker": "D150 · R3 draft 2", "title": "The traits, and the guide's almanac",
+              "intro": "Every trait now does one thing (the proposal first), and the guide has grown an almanac at the "
+                       "back: the numbers behind the game, all checked against its code. Keep, or Change and say what."}
 
 
 def guide() -> list[dict]:
@@ -507,7 +507,10 @@ def guide() -> list[dict]:
         shutil.copy(pdf, OUT / "guide" / pdf.name)
     body = ('<p>The whole guide as a PDF: <a href="guide/Emberclutch-Guide.pdf">Emberclutch-Guide.pdf</a> (A5, prints as a '
             'folded booklet). Its words live in <code>docs/guide/guide.md</code>, which GitHub shows as a page too.</p>')
-    return [{"slug": "guide-draft", "kicker": "R3 · draft 1", "title": "The guide, page by page", "body": body, "images": images}]
+    traits = (ROOT / "docs" / "design" / "traits.md").read_text(encoding="utf-8").split("\n", 1)[1]
+    return [{"slug": "traits", "kicker": "D150 · in this build", "title": "What each trait does", "body": md_html(traits)},
+            {"slug": "guide-draft-2", "kicker": "R3 · draft 2", "title": "The guide, page by page (31 pages now)", "body": body,
+             "images": images}]
 
 
 ANSWERS = """**Max or xhigh for the video?** Not much better for building it: the film build, the capture and the titles

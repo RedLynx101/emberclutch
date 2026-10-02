@@ -88,6 +88,11 @@ float battlePoints(const Dragon& d, int stat);
 
 enum StatStage : u8 { kStageMight, kStageBreath, kStageWit, kStageWing, kStageGuard, kStages };
 constexpr int kMaxStage = 2;
+// The traits a battle counts (D150), a bit each on the battler: Ironhide takes a tenth less damage;
+// Elemental's breath of its own element hits 15% harder; Warm-Blooded takes a quarter less from Frost
+// moves, Cool-Headed from Ember moves; Brave Heart shrugs off half the moves that lower its stats.
+// (Moonlit and Sunkissed raise every battle stat 10% at their hours, in makeBattler.)
+enum BattleTrait : u8 { kBtIronhide = 1, kBtElemental = 2, kBtWarm = 4, kBtCool = 8, kBtBrave = 16 };
 
 struct Battler {
     char name[24] = {};
@@ -100,8 +105,10 @@ struct Battler {
     u8 healsUsed[kMoveSlots] = {};
     s8 tired = -1;      // the slot of the tiring move it used last turn (not usable this turn)
     int strongest = 0;  // its best stat (kStatWing ..): what a wild one teaches when beaten
+    u8 traits = 0;      // BattleTrait bits
 };
-Battler makeBattler(const Dragon& d);
+// `hour`: the time of day (0..23) for Moonlit's and Sunkissed's, -1 none.
+Battler makeBattler(const Dragon& d, int hour = -1);
 bool usable(const Battler& b, int slot);  // a move there (a heal with uses left, not a tiring one again)
 
 // ---------------------------------------------------------------------------- a turn

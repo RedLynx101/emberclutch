@@ -66,15 +66,22 @@ void stepHatched(Dragon& d, s64 t, float hours) {
         else if (n.energy >= 70) d.napping = false;
     }
     const bool asleep = night || d.napping;
-    const float sleepy = d.personality == Personality::Sleepy ? 1.5f : 1.0f;
+    const float sleepy = (d.personality == Personality::Sleepy ? 1.5f : 1.0f) * (hasTrait(d, kTraitDeepSleeper) ? 1.3f : 1.0f);
+    // The traits of the hours (D150): Early Riser's mornings, Night Owl's evenings, Sunbather's midday.
+    const int hour = hourOfDay(t);
+    const bool lively = (hasTrait(d, kTraitEarlyRiser) && hour >= 7 && hour < 12) ||
+                        (hasTrait(d, kTraitNightOwl) && hour >= 17 && hour < 22);
+    const bool sunny = hasTrait(d, kTraitSunbather) && hour >= 10 && hour < 16;
+    const float tidy = hasTrait(d, kTraitTidy) ? 0.6f : 1.0f;
 
     n.belly -= (asleep ? 3.0f : 6.0f) * hours * scale;
-    n.clean -= 1.2f * hours * scale;  // a bath every two days or so (D83)
-    const float playDrain = (asleep ? 1.0f : 4.0f) * (d.personality == Personality::Playful ? 0.75f : 1.0f);
+    n.clean -= 1.2f * tidy * hours * scale;  // a bath every two days or so (D83)
+    const float playDrain = (asleep ? 1.0f : 4.0f) * (d.personality == Personality::Playful ? 0.75f : 1.0f) * (lively ? 0.5f : 1.0f);
     n.play -= playDrain * hours * scale;
     // Love (D89): it misses your hands through the day, less while it sleeps; a Shy one holds on
     // to it longer, a Proud one wants it less.
-    const float loveDrain = (asleep ? 0.8f : 3.0f) * (d.personality == Personality::Shy ? 0.8f : 1.0f);
+    const float loveDrain =
+        (asleep ? 0.8f : 3.0f) * (d.personality == Personality::Shy ? 0.8f : 1.0f) * (lively || sunny ? 0.5f : 1.0f);
     n.love -= loveDrain * hours * scale;
     if (night) {
         n.energy += 12.0f * hours * sleepy;
@@ -93,7 +100,7 @@ void stepHatched(Dragon& d, s64 t, float hours) {
     // Dust settles over a day or two (D46): fastest where a dragon meets the floor, slowest
     // on the wings; the keepers keep Sanctuary dragons tidy.
     static const float kDirtRate[kRegionCount] = {0.8f, 0.8f, 0.9f, 1.3f, 1.1f, 1.1f, 1.2f, 0.6f};
-    for (int r = 0; r < kRegionCount; ++r) d.dirt[r] = clamp100(d.dirt[r] + 2.6f * kDirtRate[r] * hours * scale);
+    for (int r = 0; r < kRegionCount; ++r) d.dirt[r] = clamp100(d.dirt[r] + 2.6f * kDirtRate[r] * tidy * hours * scale);
     for (float& m : d.mud) m = clamp100(m - kMudFlakesPerHour * hours);  // mud flakes off, slowly
 
     if (sanctuary) {
@@ -109,13 +116,14 @@ void stepHatched(Dragon& d, s64 t, float hours) {
     d.dayLowestSum += n.lowest() * hours;
     d.dayHours += hours;
 
+    // (Phoenix Heart: a sulk never turns into being upset; Loyal: your being away never does, D150)
     if (moodOf(d) == Mood::Sulky) {
         d.sulkyHours += hours;
-        if (d.sulkyHours >= 24) d.upset = true;
+        if (d.sulkyHours >= 24 && !hasTrait(d, kTraitPhoenixHeart)) d.upset = true;
     } else if (!d.upset) {
         d.sulkyHours = 0;
     }
-    if (t - d.lastVisitAt >= 3 * kDay) d.upset = true;
+    if (t - d.lastVisitAt >= 3 * kDay && !hasTrait(d, kTraitLoyal)) d.upset = true;
 }
 
 }  // namespace
@@ -229,24 +237,28 @@ void markVisit(Dragon& d, s64 now) {
 }
 
 void feed(Dragon& d, float amount, bool favorite) {
-    d.needs.belly = clamp100(d.needs.belly + amount * (favorite ? 1.5f : 1.0f));
+    d.needs.belly = clamp100(d.needs.belly + amount * (favorite ? 1.5f : 1.0f) * (hasTrait(d, kTraitHeartyEater) ? 1.25f : 1.0f));
     addBond(d, favorite ? 2 : 1);
 }
 
 void pet(Dragon& d, float amount) {
     d.needs.love = clamp100(d.needs.love + amount * 0.6f);
-    addBond(d, d.personality == Personality::Shy ? 2 : 1);
+    addBond(d, (d.personality == Personality::Shy ? 2 : 1) + (hasTrait(d, kTraitCuddly) ? 1 : 0));
 }
 
 void brushed(Dragon& d, float amount) {
     d.needs.love = clamp100(d.needs.love + amount * 0.8f);
-    addBond(d, d.personality == Personality::Shy ? 2 : 1);
+    addBond(d, (d.personality == Personality::Shy ? 2 : 1) + (hasTrait(d, kTraitCuddly) ? 1 : 0));
 }
 
 void bathe(Dragon& d) {
     for (float& dust : d.dirt) dust = 0;
     for (float& m : d.mud) m = 0;
     d.needs.clean = 100;
+    if (hasTrait(d, kTraitWaterLover)) {  // (it loves a splash: D150)
+        d.needs.play = clamp100(d.needs.play + 20);
+        d.needs.love = clamp100(d.needs.love + 10);
+    }
     addBond(d, 1);
 }
 
@@ -284,7 +296,7 @@ Mood moodOf(const Dragon& d) {
     const Needs& n = d.needs;
     // The four cared-for needs and the lowest of them; a tired dragon is only a little glummer.
     const float tired = n.energy < 20 ? (20 - n.energy) * 0.5f : 0.0f;
-    const float score = (n.belly + n.clean + n.play + n.love + n.lowest()) / 5.0f - tired;
+    const float score = (n.belly + n.clean + n.play + n.love + n.lowest()) / 5.0f - tired + (hasTrait(d, kTraitGlowheart) ? 5.0f : 0.0f);
     if (score >= 80) return Mood::Joyful;
     if (score >= 60) return Mood::Content;
     if (score >= 40) return Mood::Restless;

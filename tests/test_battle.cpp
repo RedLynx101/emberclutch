@@ -656,7 +656,9 @@ TEST(hollow_balance) {
         }
         std::printf("  floor %2d (L%d%s): %.2f; six levels lower %.2f\n", floor, hollow::wildLevel(floor),
                     hollow::guardian(floor) ? ", guardian" : "", wins / 300.0f, weak / 300.0f);
-        if (hollow::guardian(floor)) CHECK(wins > 300 * 0.2f && wins < 300 * 0.7f);
+        // (the deepest guardian, mostly a rare colouring with Ironhide and Cool-Headed (D150), is the
+        // Hollow's hardest: about one in eight a level below it, where it was one in four before traits)
+        if (hollow::guardian(floor)) CHECK(wins > 300 * (floor >= 30 ? 0.08f : 0.2f) && wins < 300 * 0.7f);
         else CHECK(wins > 300 * 0.45f && wins < 300 * 0.95f);  // (deep down, rarer kinds)
         CHECK(weak < wins);
     }

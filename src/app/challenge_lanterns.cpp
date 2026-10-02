@@ -99,7 +99,7 @@ Vec2 buttonAt(int lanterns, int k) {
 void begin(App& app, Set& s) {
     Play& p = play();
     p = Play{};
-    p.trial.begin(s.cup, app.rng.next());
+    p.trial.begin(s.cup, app.rng.next(), hasTrait(s.shown, kTraitSureFooted) ? 1 : 0);
     s.youAt = stage::onGround(s, challenge::trialYou());
     s.dragonAt = stage::onGround(s, challenge::trialDragon());
     const Vec3 middle = stage::onGround(s, challenge::trialLantern(p.trial.setup.lanterns, 0)) * 0.5f +

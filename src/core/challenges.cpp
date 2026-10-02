@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstring>
 
+#include "core/kinds.hpp"
 #include "core/place_layout.hpp"
 #include "core/rng.hpp"
 #include "core/trainer.hpp"
@@ -246,7 +247,24 @@ RaceTuning raceTuning(float wing, float stamina) {
     return t;
 }
 
-RaceTuning raceTuning(const Dragon& d) { return raceTuning(statLevel(d, kStatWing), statLevel(d, kStatStamina)); }
+RaceTuning raceTuning(const Dragon& d) {
+    RaceTuning t = raceTuning(statLevel(d, kStatWing), statLevel(d, kStatStamina));
+    // Its traits, as in the valley's flight (D150): Swift, Skydancer, Strong Wings (the meter a quarter longer).
+    if (hasTrait(d, kTraitSwift)) {
+        t.cruise *= 1.06f;
+        t.top *= 1.06f;
+        t.diveTop *= 1.06f;
+    }
+    if (hasTrait(d, kTraitSkydancer)) {
+        t.turnRate *= 1.15f;
+        t.sinkRate *= 0.8f;
+    }
+    if (hasTrait(d, kTraitStrongWings)) {
+        t.flapCost *= 0.75f;
+        t.meter *= 1.25f;
+    }
+    return t;
+}
 
 bool bursting(const Flight& f, const RaceInput& in) { return in.burst && !in.brake && f.stamina > 0.0f; }
 
@@ -724,9 +742,10 @@ float trialPitch(int k) {
     return kSteps[k >= 0 && k < kTrialLanterns ? k : 0];
 }
 
-void Trial::begin(int cup, u32 seed) {
+void Trial::begin(int cup, u32 seed, int extraHearts) {
     *this = Trial{};
     setup = trialSetup(cup);
+    setup.hearts += extraHearts > 0 ? extraHearts : 0;
     hearts = setup.hearts;
     Rng rng(seed ? seed : 1);
     const int longest = std::min(kTrialLongest, setup.first + setup.rounds - 1);

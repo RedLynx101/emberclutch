@@ -205,7 +205,7 @@ bool deeper(App& app, vext::Stage& st, int floor) {
         return false;
     }
     if (!startFloor(app, st, floor)) {
-        d.needs.energy = std::fmin(100.0f, d.needs.energy + trainer::kEnergyBattle);
+        d.needs.energy = std::fmin(100.0f, d.needs.energy + trainer::energyCost(d, trainer::kEnergyBattle));
         s.mode = Mode::None;
         return false;
     }
@@ -381,7 +381,7 @@ void drawGate(App& app, const Input& in, const vext::Stage& st) {
             audio::playSfx(audio::Sfx::Tap);
         }
     }
-    std::snprintf(line, sizeof(line), str::kBattleAskEnergy, static_cast<int>(d.needs.energy + 0.5f), static_cast<int>(trainer::kEnergyBattle));
+    std::snprintf(line, sizeof(line), str::kBattleAskEnergy, static_cast<int>(d.needs.energy + 0.5f), static_cast<int>(trainer::energyCost(d, trainer::kEnergyBattle) + 0.5f));
     textCentered(app, line, 160, 150, 0.4f, trainer::canSpend(d, trainer::kEnergyBattle) ? withAlpha(theme::kShell, 0.75f) : theme::kRose, 300);
     if (button(app, {24, 176, 128, 48}, str::kHollowLeave, in)) {
         s.mode = Mode::None;
@@ -403,7 +403,7 @@ void drawBetween(App& app, const Input& in, const vext::Stage& st) {
     if (st.partner >= 0 && st.partner < app.game.dragonCount) {
         const Dragon& d = app.game.dragons[st.partner];
         std::snprintf(line, sizeof(line), str::kBattleAskEnergy, static_cast<int>(d.needs.energy + 0.5f),
-                      static_cast<int>(trainer::kEnergyBattle));
+                      static_cast<int>(trainer::energyCost(d, trainer::kEnergyBattle) + 0.5f));
         textCentered(app, line, 160, 120, 0.4f,
                      trainer::canSpend(d, trainer::kEnergyBattle) ? withAlpha(theme::kShell, 0.75f) : theme::kRose, 300);
     }

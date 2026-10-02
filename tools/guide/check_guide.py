@@ -56,6 +56,56 @@ CHECKS = [
     ("nesting again", "src/core/breeding.hpp", r"kBreedingRest = (\d) \* 24", lambda v: [f"rests {WORDS[v]} days"]),
     ("the catch-up", "src/core/clock.hpp", r"kMaxCatchUp = (\d+) \* kDay;", lambda v: ["up to two weeks at most"] if v == 14 else ["?"]),
     ("the ring's penalty", "docs/tech/challenges.md", r"each missed ring\s+adds (\d) s", lambda v: [f"every ring missed adds {WORDS[v]} seconds"]),
+    # ---- The almanac (D150): the needs, moods, stars, walks, the Wanderings, breeding, levels, traits.
+    ("Belly awake", "src/core/dragon.cpp", r"n\.belly -= \(asleep \? [\d.]+f : ([\d.]+)f\)", lambda v: [f"| **Belly** | {v:g} |"]),
+    ("Belly asleep", "src/core/dragon.cpp", r"n\.belly -= \(asleep \? ([\d.]+)f", lambda v: [f"| **Belly** | 6 | {v:g} |"]),
+    ("Clean", "src/core/dragon.cpp", r"n\.clean -= ([\d.]+)f \* tidy", lambda v: [f"| **Clean** | {v:g} | {v:g} |"]),
+    ("Play", "src/core/dragon.cpp", r"playDrain = \(asleep \? ([\d.]+)f : [\d.]+f\)", lambda v: [f"| **Play** | 4 | {v:g} |"]),
+    ("Love", "src/core/dragon.cpp", r"\(asleep \? ([\d.]+)f : 3\.0f\) \* \(d\.personality == Personality::Shy", lambda v: [f"| **Love** | 3 | {v:g} |"]),
+    ("sleep's Energy", "src/core/dragon.cpp", r"n\.energy \+= ([\d.]+)f \* hours \* sleepy;\n    \} else if", lambda v: [f"+{v:g} at night"]),
+    ("a nap's Energy", "src/core/dragon.cpp", r"\} else if \(d\.napping\) \{\n\s+n\.energy \+= ([\d.]+)f", lambda v: [f"+{v:g} napping"]),
+    ("a battle's Energy", "src/core/trainer.hpp", r"kEnergyBattle = ([\d.]+)f", lambda v: [f"a battle {v:g}"]),
+    ("a show's Energy", "src/core/trainer.hpp", r"kEnergyShow = ([\d.]+)f", lambda v: [f"a beauty show {v:g}"]),
+    ("a challenge's Energy", "src/core/trainer.hpp", r"kEnergyChallenge = ([\d.]+)f", lambda v: [f"a challenge {v:g}"]),
+    ("joyful", "src/core/dragon.cpp", r"if \(score >= (\d+)\) return Mood::Joyful", lambda v: [f"**Joyful** at {v} and up"]),
+    ("content", "src/core/dragon.cpp", r"if \(score >= (\d+)\) return Mood::Content", lambda v: [f"**Content** {v} and up"]),
+    ("restless", "src/core/dragon.cpp", r"if \(score >= (\d+)\) return Mood::Restless", lambda v: [f"**Restless** {v} and up"]),
+    ("three stars", "src/core/dragon.cpp", r"avg >= (\d+) \? 3", lambda v: [f"{v} and up earns\n  three stars"]),
+    ("a walk's bond", "src/core/trainer.cpp", r"\? 75\.0f : ([\d.]+)f;", lambda v: [f"a bond point every {v:g} m"]),
+    ("trained points", "src/core/trainer.hpp", r"kMaxTrained = (\d+);", lambda v: [f"plus up to {v} trained points"]),
+    ("the rare colouring", "src/core/kinds.cpp", r"\(rareParent \? 10 : (\d+)\)", lambda v: [f"**1 time in {v}**"]),
+    ("a wild egg", "src/core/wanderings.cpp", r"kTraitLucky\) \? (\d) : (?:\d), 100", lambda v: [f"(3%, or {v}% for a Lucky dragon)"]),
+    ("grown wanderers", "src/core/wanderings.cpp", r"Stage::Adult\) chances \*= ([\d.]+)f", lambda v: ["30% more for grown dragons"] if v == 1.3 else ["?"]),
+    ("level 42's experience", "src/core/trainer.cpp", r"return (\d+) \* n \* n \+ 38 \* n;", lambda v: [f"{v} × n² + 38 × n", "| 21,730 |" if v == 12 else "?"]),
+    ("Swift", "src/core/flight.cpp", r"t\.glideSpeed \*= ([\d.]+)f", lambda v: [f"Flies {round((v - 1) * 100)}% faster"]),
+    ("Tidy", "src/core/dragon.cpp", r"kTraitTidy\) \? ([\d.]+)f", lambda v: [f"dust settles, {round((1 - v) * 100)}% slower"]),
+    ("Deep Sleeper", "src/core/dragon.cpp", r"kTraitDeepSleeper\) \? ([\d.]+)f", lambda v: [f"Energy back {round((v - 1) * 100)}% faster"]),
+    ("Ironhide", "src/core/battle.cpp", r"kBtIronhide\) traits \*= ([\d.]+)f", lambda v: ["Takes a tenth less damage"] if v == 0.9 else ["?"]),
+    ("Elemental", "src/core/battle.cpp", r"traits \*= ([\d.]+)f;\n\s+if \(foe\.traits & kBtIronhide", lambda v: [f"hit {round((v - 1) * 100)}% harder"]),
+    ("Showoff", "src/core/pageant.cpp", r"kTraitShowoff\) \? ([\d.]+)f", lambda v: [f"+{v:g} Look in shows"]),
+    ("Gentle Giant", "src/core/pageant.cpp", r"kTraitGentleGiant\) \? ([\d.]+)f", lambda v: [f"+{v:g} Poise in shows"]),
+    ("Sure-Footed", "src/app/challenge_lanterns.cpp", r"kTraitSureFooted\) \? (\d) : 0", lambda v: [f"{WORDS[v].capitalize()} extra heart"]),
+]
+
+
+def array(rel: str, pattern: str) -> list:
+    m = re.search(pattern, (ROOT / rel).read_text(encoding="utf-8"))
+    if not m:
+        sys.exit(f"[guide] couldn't find {pattern!r} in {rel}: the check needs updating")
+    return [int(x) for x in re.findall(r"\d+", m.group(1))]
+
+
+def cups(values) -> str:
+    return " | ".join(f"{v:,}" for v in values) + " |"
+
+
+# (what, the source, the pattern holding an array of four, the row's label in the guide)
+ROWS = [
+    ("a cup's first win", "src/core/challenges.cpp", r"k\[kCups\] = \{(80[\d, ]+)\}", "| **A cup's first win** | "),
+    ("a cup won again", "src/core/challenges.cpp", r"k\[kCups\] = \{(30[\d, ]+)\}", "| **A win again (once a day)** | "),
+    ("placing", "src/core/challenges.cpp", r"k\[kCups\] = \{(10[\d, ]+)\}", "| **Placing (while the day's prize is still to win)** | "),
+    ("a show's first win", "src/core/pageant.cpp", r"kFirstWin\[kLeagues\] = \{([\d, ]+)\}", "| **A show's first win** | "),
+    ("a league's bonus", "src/core/pageant.cpp", r"kLeagueBonus\[kLeagues\] = \{([\d, ]+)\}", "| **Winning the league** | "),
 ]
 
 
@@ -67,7 +117,12 @@ def main() -> None:
             if phrase not in GUIDE:
                 print(f"[guide] {what}: the code says {v} ({rel}), the guide should say \"{phrase}\"")
                 bad += 1
-    print(f"[guide] {len(CHECKS)} numbers checked, {bad} to fix")
+    for what, rel, pattern, label in ROWS:
+        row = label + cups(array(rel, pattern))
+        if row not in GUIDE:
+            print(f"[guide] {what}: the guide's row should read \"{row}\"")
+            bad += 1
+    print(f"[guide] {len(CHECKS) + len(ROWS)} numbers and rows checked, {bad} to fix")
     sys.exit(1 if bad else 0)
 
 

@@ -184,8 +184,15 @@ void rollKind(Dragon& d, int kind, int variant, Rng& rng) {
     d.personality = personalityOf(d.manner);  // (an egg's is set again as it hatches: the same)
 }
 
-int rollVariant(Rng& rng, bool rareParent) {
-    if (rng.chance(1, rareParent ? 10 : 20)) return kKindVariants - 1;
+bool hasTrait(const Dragon& d, int trait) {
+    for (int i = 0; i < d.traitCount && i < kDragonTraits; ++i)
+        if (d.traits[i] == trait) return true;
+    return false;
+}
+
+int rollVariant(Rng& rng, bool rareParent, bool ancientBlood) {
+    const u32 oneIn = (rareParent ? 10 : 20) / (ancientBlood ? 2 : 1);
+    if (rng.chance(1, oneIn)) return kKindVariants - 1;
     return static_cast<int>(rng.below(kKindVariants - 1));
 }
 

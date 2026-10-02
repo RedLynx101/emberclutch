@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-10-02 — Run 30's notes: the traits made real, the guide's almanac (1.0.0)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D150 | **Every trait does one thing** (`docs/design/traits.md`). Found while writing the guide's reference: the 34 traits were rolled and shown and nothing read them. Each now has one effect on a system already in the game, `hasTrait` (core/kinds) at each: the needs and moods (Tidy, Early Riser, Night Owl, Sunbather, Deep Sleeper, Glowheart, Loyal, Phoenix Heart), care (Hearty Eater, Cuddly, Water-Lover), training (Quick Learner, Sturdy through `trainer::energyCost`, Starborn, Chatty's walks), flight and the race (Swift, Skydancer, Strong Wings: `flightTraits`, `raceTuning`), the Wanderings (Keen Nose, Treasure Hunter, Lucky), breeding (Ancient Blood), battles (Ironhide, Elemental, Warm-Blooded, Cool-Headed, Brave Heart as `BattleTrait` bits; Moonlit and Sunkissed by the hour passed to `makeBattler`), shows (Showoff, Gentle Giant, Songbird, Mossback) and the Lantern Trial (Sure-Footed). A test checks all 34 against the same dragon without them. One balance change kept and named: Frostspire Hollow's floor-30 guardian (mostly Ironhide and Cool-Headed) is now its hardest fight (a level below it wins about 1 in 8, was 1 in 4; the test's floor for that guardian lowered to match). Still 1.0.0, the player build, on the 3DS for Noah to check. **The guide's almanac** (R3, draft 2): five reference sections (care by the numbers, manners and traits, battles with the elements' chart and the hit's arithmetic, every move, the cups and the shows' judging), 31 pages; `tools/guide/check_guide.py` checks 60 numbers and rows against the code; bold words in the dusk purple | Noah's run 30: "The only thing I think you should add is info that you cannot see easily in game, like what exactly each trait does and so on. Like an old style game guide"; "Make a quick proposal to map unused traits to real in-game things before we move forward. Then push to my 3ds (still marked as 1.0)... put in the trait stats you will propose" | Approved |
+
 ## 2026-10-02 — Run 29's notes: the 1.0 candidate and the guide's first draft (1.0.0)
 
 | # | Decision | Why | Status |

@@ -12,6 +12,7 @@
 #include "app/theme.hpp"
 #include "app/ui_draw.hpp"
 #include "core/challenges.hpp"
+#include "core/clock.hpp"
 #include "core/kinds.hpp"
 #include "core/people.hpp"
 #include "core/place_layout.hpp"
@@ -664,7 +665,8 @@ void start(App& app, const Setup& setup) {
     s.setup = setup;
     if (setup.partner < 0 || setup.partner >= app.game.dragonCount) return;
     s.pal = app.game.dragons[setup.partner];
-    battle::Battler mine = battle::makeBattler(s.pal), theirs = battle::makeBattler(s.setup.foe);
+    const int hour = hourOfDay(nowLocal(app));  // (Moonlit's nights, Sunkissed's days: D150)
+    battle::Battler mine = battle::makeBattler(s.pal, hour), theirs = battle::makeBattler(s.setup.foe, hour);
     std::snprintf(theirs.name, sizeof(theirs.name), "%s", setup.foeName[0] ? setup.foeName : theirs.name);
     battle::begin(s.bt, mine, theirs);
     for (int k = 0; k < 2 && g_breathOnly; ++k) {  // (a scripted run's look at breath: nothing but)

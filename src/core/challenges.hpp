@@ -263,7 +263,7 @@ struct Trial {
     int hearts = 0;
     int score = 0;
     bool over = false, won = false;
-    void begin(int cup, u32 seed);
+    void begin(int cup, u32 seed, int extraHearts = 0);  // (Sure-Footed's heart: D150)
     int length() const;  // this round's pattern
     enum class Press : u8 { Right, RoundDone, Wrong, Won, Lost };
     Press press(int lantern);

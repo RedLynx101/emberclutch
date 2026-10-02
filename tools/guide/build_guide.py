@@ -26,7 +26,7 @@ BROWSERS = [Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
             Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe")]
 
 CSS = """
-@font-face { font-family: "Nunito"; src: url("fonts/Nunito-SemiBold.ttf"); font-weight: 400 800; }
+@font-face { font-family: "Nunito"; src: url("fonts/Nunito-SemiBold.ttf"); font-weight: 400; }
 @font-face { font-family: "Cinzel Decorative"; src: url("fonts/CinzelDecorative-Bold.ttf"); }
 @page { size: 148mm 210mm; margin: 14mm 13mm 15mm; background: #FFF8EC; }
 @page :first { margin: 0; }
@@ -41,7 +41,7 @@ h3 { font-size: 10.5pt; margin: 4mm 0 1.5mm; break-after: avoid; }
 p { margin: 0 0 2.2mm; }
 ul { margin: 0 0 2.5mm; padding-left: 4.5mm; }
 li { margin-bottom: 1mm; }
-strong { font-weight: 800; color: #2A1A33; }
+strong { font-weight: 800; color: #7A4A8C; }
 code { font-family: Consolas, monospace; font-size: 8.4pt; background: #F1E6D2; padding: 0 0.8mm; border-radius: 1mm; }
 a { color: var(--dusk); }
 hr { display: none; }

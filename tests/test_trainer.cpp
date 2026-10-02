@@ -2,13 +2,20 @@
 // back, Love apart from Play, walking together, the per-dragon record, the day's rewards paid
 // once, and the save keeping it all (older saves and records carry over with defaults).
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <vector>
 
 #include "check.hpp"
+#include "core/battle.hpp"
+#include "core/challenges.hpp"
 #include "core/clock.hpp"
+#include "core/flight.hpp"
+#include "core/kinds.hpp"
+#include "core/pageant.hpp"
 #include "core/save.hpp"
 #include "core/trainer.hpp"
+#include "core/wanderings.hpp"
 
 using namespace ec;
 
@@ -30,6 +37,7 @@ TEST(trainer_levels) {
     CHECK(trainer::levelOf(0u) == 1 && trainer::levelOf(49u) == 1 && trainer::levelOf(50u) == 2);
     CHECK(trainer::levelOf(trainer::xpForLevel(kMaxLevel) + 99999) == kLevelCap);  // Skyreach's ceiling
     Dragon d = hatched(1);
+    d.traitCount = 0;  // (no Quick Learner: the arithmetic below is the plain curve)
     CHECK(trainer::levelOf(d) == 1);
     CHECK(trainer::gainXp(d, 49) == 0 && trainer::gainXp(d, 1) == 1 && trainer::levelOf(d) == 2);
     const int gained = trainer::gainXp(d, trainer::xpForLevel(10) - d.xp);
@@ -195,6 +203,233 @@ TEST(trainer_save_round_trip_and_older_records) {
     CHECK(fresh.progress.findsDay == -1000000 && fresh.progress.claims == 0 && trainer::tracked(fresh) == Tracked::None);
 }
 
+// Every trait does its one thing (D150, docs/design/traits.md), each against the same dragon without it.
+TEST(every_trait_does_its_thing) {
+    CHECK(kTraitIds == traitCount());
+    CHECK(std::strcmp(traitName(kTraitSwift), "Swift") == 0 && std::strcmp(traitName(kTraitChatty), "Chatty") == 0 &&
+          std::strcmp(traitName(kTraitLoyal), "Loyal") == 0 && std::strcmp(traitName(kTraitMossback), "Mossback") == 0 &&
+          std::strcmp(traitName(kTraitSunkissed), "Sunkissed") == 0);
+    Dragon plain = hatched(7);
+    plain.kind = static_cast<u8>(findKind("pouncer"));  // (Ember)
+    plain.variant = 0;
+    plain.traitCount = 0;
+    plain.manner = 0;  // Brave: no manner of its own on the needs
+    plain.personality = Personality::Brave;
+    auto with = [&](int t, int t2 = -1) {
+        Dragon d = plain;
+        d.traits[0] = static_cast<u8>(t);
+        d.traitCount = 1;
+        if (t2 >= 0) {
+            d.traits[1] = static_cast<u8>(t2);
+            d.traitCount = 2;
+        }
+        return d;
+    };
+    int checked = 0;
+    auto mark = [&](int t, bool ok) {
+        CHECK(ok);
+        if (!ok) std::printf("  %s: no effect\n", traitName(t));
+        ++checked;
+    };
+    // ---- The needs and moods: hours lived from a time of day (kT0 is a midnight).
+    auto lived = [&](Dragon d, int fromHour, int hours, float level = 80.0f) {
+        d.needs = Needs{level, level, level, level, level};
+        d.napping = false;
+        d.upset = false;
+        d.sulkyHours = 0;
+        d.lastVisitAt = kT0 + fromHour * kHour;
+        simulate(d, kT0 + fromHour * kHour, kT0 + (fromHour + hours) * kHour, 1.0f);
+        return d;
+    };
+    mark(kTraitTidy, lived(with(kTraitTidy), 10, 4).needs.clean > lived(plain, 10, 4).needs.clean);
+    {
+        const Dragon a = lived(with(kTraitEarlyRiser), 8, 3), p = lived(plain, 8, 3), later = lived(with(kTraitEarlyRiser), 13, 3);
+        mark(kTraitEarlyRiser, a.needs.play > p.needs.play && a.needs.love > p.needs.love &&
+                                   std::fabs(later.needs.play - lived(plain, 13, 3).needs.play) < 0.01f);
+    }
+    {
+        const Dragon a = lived(with(kTraitNightOwl), 18, 3), p = lived(plain, 18, 3);
+        mark(kTraitNightOwl, a.needs.play > p.needs.play && a.needs.love > p.needs.love);
+    }
+    {
+        const Dragon a = lived(with(kTraitSunbather), 11, 3), p = lived(plain, 11, 3);
+        mark(kTraitSunbather, a.needs.love > p.needs.love && std::fabs(a.needs.play - p.needs.play) < 0.01f);
+    }
+    mark(kTraitDeepSleeper, lived(with(kTraitDeepSleeper), 23, 3, 20.0f).needs.energy > lived(plain, 23, 3, 20.0f).needs.energy);
+    // A long sulk (needs low for 30 hours): upset, but not with Phoenix Heart.
+    mark(kTraitPhoenixHeart, lived(plain, 9, 30, 10.0f).upset && !lived(with(kTraitPhoenixHeart), 9, 30, 10.0f).upset);
+    // Four days away: upset (Phoenix Heart keeps the sulk out of it), but not when it's Loyal too.
+    mark(kTraitLoyal, lived(with(kTraitPhoenixHeart), 9, 96).upset && !lived(with(kTraitPhoenixHeart, kTraitLoyal), 9, 96).upset);
+    {
+        Dragon a = with(kTraitGlowheart), p = plain;
+        a.upset = p.upset = false;
+        a.needs = p.needs = Needs{77, 50, 77, 77, 77};
+        mark(kTraitGlowheart, moodOf(a) == Mood::Joyful && moodOf(p) == Mood::Content);
+    }
+    // ---- Care.
+    {
+        Dragon a = with(kTraitHeartyEater), p = plain;
+        a.needs.belly = p.needs.belly = 10;
+        feed(a, 20, false);
+        feed(p, 20, false);
+        mark(kTraitHeartyEater, a.needs.belly > p.needs.belly + 4.9f);
+    }
+    {
+        Dragon a = with(kTraitCuddly), p = plain;
+        a.upset = p.upset = false;
+        a.bond = p.bond = 100;
+        pet(a, 10);
+        pet(p, 10);
+        mark(kTraitCuddly, a.bond == p.bond + 1);
+    }
+    {
+        Dragon a = with(kTraitWaterLover), p = plain;
+        a.needs.play = p.needs.play = a.needs.love = p.needs.love = 40;
+        bathe(a);
+        bathe(p);
+        mark(kTraitWaterLover, a.needs.play == p.needs.play + 20 && a.needs.love == p.needs.love + 10);
+    }
+    // ---- Energy, experience, stats and walks.
+    {
+        Dragon a = with(kTraitSturdy), p = plain;
+        a.needs.energy = p.needs.energy = 50;
+        trainer::spendEnergy(a, 12);
+        trainer::spendEnergy(p, 12);
+        mark(kTraitSturdy, std::fabs(a.needs.energy - 41.0f) < 0.01f && std::fabs(p.needs.energy - 38.0f) < 0.01f);
+    }
+    {
+        Dragon a = with(kTraitQuickLearner), p = plain;
+        a.xp = p.xp = 0;
+        trainer::gainXp(a, 100);
+        trainer::gainXp(p, 100);
+        mark(kTraitQuickLearner, a.xp == 120 && p.xp == 100);
+    }
+    {
+        const Dragon a = with(kTraitStarborn);
+        bool all = true;
+        for (int s = 0; s < kDragonStats; ++s) all &= trainer::statPoints(a, s) == trainer::statPoints(plain, s) + 1;
+        mark(kTraitStarborn, all);
+    }
+    {
+        Dragon a = with(kTraitChatty), p = plain;
+        a.upset = p.upset = false;
+        a.bond = p.bond = 100;
+        float ca = 0, cp = 0;
+        trainer::walkTogether(a, 300, ca);
+        trainer::walkTogether(p, 300, cp);
+        mark(kTraitChatty, a.bond == 104 && p.bond == 102);
+    }
+    // ---- The Wanderings: the same walk, many times.
+    {
+        u32 keen = 0, base = 0, lucky = 0, baseGleam = 0;
+        bool hunter = true;
+        for (u32 i = 0; i < 300; ++i) {
+            Rng r1(500 + i), r2(500 + i), r3(500 + i), r4(500 + i);
+            const WanderFinds p = rollFinds(plain, 4000, r1);
+            const WanderFinds k = rollFinds(with(kTraitKeenNose), 4000, r2);
+            const WanderFinds l = rollFinds(with(kTraitLucky), 4000, r3);
+            const WanderFinds h = rollFinds(with(kTraitTreasureHunter), 4000, r4);
+            for (int t = 0; t < kTrinkets; ++t) {
+                base += p.trinkets[t];
+                keen += k.trinkets[t];
+            }
+            baseGleam += p.gleam;
+            lucky += l.gleam;
+            hunter &= h.gleam == p.gleam + p.gleam / 2;
+        }
+        mark(kTraitKeenNose, keen > base * 1.1f);
+        mark(kTraitLucky, lucky > baseGleam * 1.1f);
+        mark(kTraitTreasureHunter, hunter);
+    }
+    {
+        Rng r(77);
+        int rare = 0, ancient = 0;
+        for (int i = 0; i < 20000; ++i) {
+            rare += rollVariant(r) == kKindVariants - 1;
+            ancient += rollVariant(r, false, true) == kKindVariants - 1;
+        }
+        mark(kTraitAncientBlood, ancient > rare * 1.6f);
+    }
+    // ---- Flight and the race.
+    {
+        const FlightTuning p = flightTuningFor(5, 5);
+        FlightTuning s = p, k = p, w = p;
+        flightTraits(s, with(kTraitSwift));
+        flightTraits(k, with(kTraitSkydancer));
+        flightTraits(w, with(kTraitStrongWings));
+        const challenge::RaceTuning rp = challenge::raceTuning(plain);
+        mark(kTraitSwift, s.glideSpeed > p.glideSpeed && s.burstSpeed > p.burstSpeed &&
+                              challenge::raceTuning(with(kTraitSwift)).top > rp.top);
+        mark(kTraitSkydancer, k.turnRate > p.turnRate && k.sinkRate < p.sinkRate &&
+                                  challenge::raceTuning(with(kTraitSkydancer)).turnRate > rp.turnRate);
+        mark(kTraitStrongWings, w.flapCost < p.flapCost && w.burstCost < p.burstCost &&
+                                    challenge::raceTuning(with(kTraitStrongWings)).meter > rp.meter);
+    }
+    {
+        challenge::Trial t, u;
+        t.begin(1, 9, hasTrait(with(kTraitSureFooted), kTraitSureFooted) ? 1 : 0);
+        u.begin(1, 9, hasTrait(plain, kTraitSureFooted) ? 1 : 0);
+        mark(kTraitSureFooted, t.hearts == u.hearts + 1);
+    }
+    // ---- Shows (the Harvest Fair, theme 1, favours Grove and Stone: not a Pouncer's).
+    {
+        Rgb pal[kPalCount];
+        kindPalette(plain.kind, plain.variant, 0, pal);
+        const float look = pageant::lookScore(plain, 1, pal), poise = pageant::poiseScore(plain);
+        mark(kTraitShowoff, std::fabs(pageant::lookScore(with(kTraitShowoff), 1, pal) - look - 6.0f) < 0.01f);
+        mark(kTraitGentleGiant, std::fabs(pageant::poiseScore(with(kTraitGentleGiant)) - poise - 6.0f) < 0.01f);
+        mark(kTraitSongbird, std::fabs(pageant::perfectWindow(with(kTraitSongbird)) / pageant::perfectWindow(plain) - 1.2f) < 0.001f);
+        mark(kTraitMossback, pageant::themeFavours(1, plain) == 0 && pageant::themeFavours(1, with(kTraitMossback)) == 1);
+    }
+    // ---- Battles.
+    {
+        auto expected = [&](const Dragon& attacker, const Dragon& defender, int element) {
+            battle::Battle b;
+            battle::begin(b, battle::makeBattler(attacker), battle::makeBattler(defender));
+            for (int slot = 0; slot < kMoveSlots; ++slot) {
+                const int m = b.side[0].moves[slot];
+                if (battle::validMove(m) && battle::moveInfo(m).element == element && battle::moveInfo(m).kind != battle::MoveKind::Status)
+                    return battle::expectedDamage(b, 0, slot);
+            }
+            return -1.0f;
+        };
+        const float ember = expected(plain, plain, battle::kEmber), body = expected(plain, plain, battle::kBody);
+        mark(kTraitIronhide, body > 0 && std::fabs(expected(plain, with(kTraitIronhide), battle::kBody) / body - 0.9f) < 0.01f);
+        mark(kTraitElemental, ember > 0 && std::fabs(expected(with(kTraitElemental), plain, battle::kEmber) / ember - 1.15f) < 0.01f);
+        mark(kTraitCoolHeaded, std::fabs(expected(plain, with(kTraitCoolHeaded), battle::kEmber) / ember - 0.75f) < 0.01f);
+        Dragon frosty = plain;
+        frosty.kind = static_cast<u8>(findKind("flurrytail"));  // (Frost)
+        const float frost = expected(frosty, plain, battle::kFrost);
+        mark(kTraitWarmBlooded, frost > 0 && std::fabs(expected(frosty, with(kTraitWarmBlooded), battle::kFrost) / frost - 0.75f) < 0.01f);
+        // Brave Heart: a Roar (lowers Might) lands about half as often.
+        Dragon roarer = plain;
+        trainer::gainXp(roarer, trainer::xpForLevel(5));
+        int roar = -1;
+        for (int m = 0; m < battle::moveCount(); ++m)
+            if (std::strcmp(battle::moveInfo(m).name, "Roar") == 0) roar = m;
+        CHECK(roar >= 0 && battle::equipMove(roarer, 0, roar));
+        auto lowered = [&](const Dragon& target) {
+            Rng r(5);
+            int n = 0;
+            for (int i = 0; i < 400; ++i) {
+                battle::Battle b;
+                battle::begin(b, battle::makeBattler(roarer), battle::makeBattler(target));
+                battle::resolveTurn(b, 0, -1, r);
+                for (int e = 0; e < b.logCount; ++e) n += b.log[e].kind == battle::Ev::StatDown;
+            }
+            return n;
+        };
+        const int plainDown = lowered(plain), braveDown = lowered(with(kTraitBraveHeart));
+        mark(kTraitBraveHeart, plainDown > 300 && braveDown > plainDown * 0.35f && braveDown < plainDown * 0.65f);
+        const battle::Stats night = battle::makeBattler(with(kTraitMoonlit), 23).stats, noon = battle::makeBattler(with(kTraitMoonlit), 12).stats;
+        mark(kTraitMoonlit, night.might > noon.might && night.hp > noon.hp);
+        const battle::Stats sunny = battle::makeBattler(with(kTraitSunkissed), 12).stats, dark = battle::makeBattler(with(kTraitSunkissed), 23).stats;
+        mark(kTraitSunkissed, sunny.wing > dark.wing && sunny.breath > dark.breath);
+    }
+    std::printf("  %d of %d traits checked\n", checked, kTraitIds);
+    CHECK(checked == kTraitIds);
+}
+
 void runTrainerTests() {
     RUN(trainer_levels);
     RUN(trainer_stats_and_training);
@@ -202,4 +437,5 @@ void runTrainerTests() {
     RUN(trainer_record_and_titles);
     RUN(trainer_daily_claims_and_owning);
     RUN(trainer_save_round_trip_and_older_records);
+    RUN(every_trait_does_its_thing);
 }

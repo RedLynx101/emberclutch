@@ -84,9 +84,11 @@ int levelOf(u32 xp);
 int levelOf(const Dragon& d);
 // Experience into the current level and the span of it (for the bar); at the top, span 0.
 void levelProgress(const Dragon& d, u32& into, u32& span);
-// Adds experience; returns the levels gained (0 most of the time).
+// The experience a dragon takes from `amount` (Quick Learner: a fifth more, D150).
+u32 xpTaken(const Dragon& d, u32 amount);
+// Adds experience (as xpTaken); returns the levels gained (0 most of the time).
 int gainXp(Dragon& d, u32 amount);
-// A stat's points: its kind's (with its roll) and what training added (1..40).
+// A stat's points: its kind's (with its roll), what training added and Starborn's point (1..41).
 int statPoints(const Dragon& d, int stat);
 // Training adds to a stat (up to kMaxTrained); false once it's full.
 bool train(Dragon& d, int stat, int points = 1);
@@ -98,6 +100,9 @@ constexpr float kEnergyShow = 10.0f;
 constexpr float kEnergyGame = 6.0f;  // a den game (fetch, tug)
 bool canSpend(const Dragon& d, float energy);
 bool spendEnergy(Dragon& d, float energy);  // false (and nothing spent) if it's too tired
+// What something costing `energy` costs this dragon (Sturdy: a quarter less, D150); canSpend and
+// spendEnergy take it so.
+float energyCost(const Dragon& d, float energy);
 
 // ---- Walking together (D89): out in the valley with you, bond, Love and Play rise slowly and
 // Belly falls a little faster. `carry` keeps the part-metres between calls (the scene holds it).

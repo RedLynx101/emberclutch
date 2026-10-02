@@ -54,6 +54,10 @@ struct FlightTuning {
 // come back sooner; Wing makes it a little faster, stronger in the climb and quicker to turn. Levels as
 // core/challenges statLevel (1..10, more with training); an average dragon (5, 5) flies as the defaults.
 FlightTuning flightTuningFor(float wingLevel, float staminaLevel);
+// Then its traits (D150): Swift flies 6% faster, Skydancer turns 15% tighter and sinks 20% slower on the
+// glide, Strong Wings spends a quarter less stamina on wingbeats and bursts.
+struct Dragon;
+void flightTraits(FlightTuning& t, const Dragon& d);
 
 // The cold heights' glide (D132): leaving the ground up on the heights (within `radius` of the
 // Vault's anchor `vault`, no more than 12 m below it), however you took off, and touching down again

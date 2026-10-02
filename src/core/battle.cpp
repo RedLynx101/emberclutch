@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <initializer_list>
 
 #include "core/trainer.hpp"
 
@@ -154,7 +155,12 @@ float guardOf(const Battler& b) { return 1.0f + kStagePerStep * b.stage[kStageGu
 
 // The damage before its random roll and a critical hit.
 float baseDamage(const Battler& me, const Battler& foe, const MoveInfo& m) {
-    return m.power / 100.0f * attackOf(me, m) * kDamage * effectiveness(m.element, foe.kind) / guardOf(foe);
+    float traits = 1.0f;  // (D150)
+    if ((me.traits & kBtElemental) && m.kind == M::Breath && kindHas(me.kind, m.element)) traits *= 1.15f;
+    if (foe.traits & kBtIronhide) traits *= 0.9f;
+    if ((foe.traits & kBtWarm) && m.element == kFrost) traits *= 0.75f;
+    if ((foe.traits & kBtCool) && m.element == kEmber) traits *= 0.75f;
+    return m.power / 100.0f * attackOf(me, m) * kDamage * effectiveness(m.element, foe.kind) / guardOf(foe) * traits;
 }
 
 float unit(Rng& rng) { return rng.below(10000) / 9999.0f; }
@@ -231,6 +237,11 @@ bool act(Battle& b, int side, int slot, Rng& rng) {
         return true;
     }
     const int dir = self ? 1 : -1;
+    if (!self && (who.traits & kBtBrave) && rng.chance(1, 2)) {  // (Brave Heart stands firm: D150)
+        e.kind = Ev::NoEffect;
+        push(b, e);
+        return true;
+    }
     const int before = who.stage[st];
     int after = before + dir * m.amount;
     if (after > kMaxStage) after = kMaxStage;
@@ -438,13 +449,20 @@ float battlePoints(const Dragon& d, int stat) {
     return trainer::statPoints(d, stat) - (1.0f - kTrainedWeight) * trained;
 }
 
-Battler makeBattler(const Dragon& d) {
+Battler makeBattler(const Dragon& d, int hour) {
     Battler b;
     std::snprintf(b.name, sizeof(b.name), "%s", d.name[0] ? d.name : kindInfo(d.kind).title);
     b.kind = static_cast<u8>(d.kind < kindCount() ? d.kind : 0);
     b.level = static_cast<u8>(trainer::levelOf(d));
     b.stats = battleStats(d);
+    const bool night = hour >= 0 && (hour >= 20 || hour < 6), day = hour >= 9 && hour < 17;
+    if ((hasTrait(d, kTraitMoonlit) && night) || (hasTrait(d, kTraitSunkissed) && day)) {  // (at its best: D150)
+        for (int* v : {&b.stats.hp, &b.stats.might, &b.stats.breath, &b.stats.wit, &b.stats.wing}) *v = (*v * 11 + 5) / 10;
+    }
     b.maxHp = b.hp = b.stats.hp;
+    b.traits = static_cast<u8>((hasTrait(d, kTraitIronhide) ? kBtIronhide : 0) | (hasTrait(d, kTraitElemental) ? kBtElemental : 0) |
+                               (hasTrait(d, kTraitWarmBlooded) ? kBtWarm : 0) | (hasTrait(d, kTraitCoolHeaded) ? kBtCool : 0) |
+                               (hasTrait(d, kTraitBraveHeart) ? kBtBrave : 0));
     equippedMoves(d, b.moves);
     int best = 0;
     for (int s = 1; s < kDragonStats; ++s)
@@ -631,7 +649,7 @@ u32 battleXp(int level, int foeLevel, Outcome o, float factor) {
 
 Growth grow(Dragon& d, u32 xp) {
     Growth g;
-    g.xp = xp;
+    g.xp = trainer::xpTaken(d, xp);  // (what it takes: Quick Learner's fifth more)
     g.levelBefore = trainer::levelOf(d);
     trainer::gainXp(d, xp);
     g.levelAfter = trainer::levelOf(d);

@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 30: the 1.0.0 candidate (the player build) on the 3DS, the guide's first draft, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 31: the 1.0.0 candidate with the traits made real (D150) on the 3DS, the guide's almanac, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Tooling: headless emulator checks (2026-09-30)
@@ -15,6 +15,21 @@
   Performance is still signed off on the 3DS: no emulator models its timing.
 - Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
   running it in UTC), and the async file reads and presentation made animations drift (off).
+
+## Now: run 31 (1.0.0), the traits made real, the guide's almanac (2026-10-02)
+- **Run 30 came back:** the player build tested fine ("we're good, I tested it. Let's send this one"); the
+  handbook "is cool", with one addition: what you can't easily see in the game, "like what exactly each trait
+  does... like an old style game guide". Writing that showed the traits did nothing.
+- **D150:** each of the 34 traits does one thing (`docs/design/traits.md`); a test checks all 34 (387,513 checks,
+  0 failures); the six smoke tours (tour, battle, glade, the Lantern Trial, the race, the Wanderings) run clean
+  headless. The Hollow's floor-30 guardian is now its hardest fight (named in the run's notes).
+- **The guide, draft 2:** the almanac (31 A5 pages), 60 numbers and rows checked against the code.
+- **Sent** to .51: the 1.0.0 player build with the traits (save backed up to `build/3ds-backup/2026-10-02_1036/`).
+  Run 31's steps (`docs/plan/hardware-check-16.md`), the traits card and the guide's pages on the review page
+  (version 25, collections `run31`, `plans` slugs `traits`, `guide-draft-2`).
+- **Next:** Noah checks it runs (and Keep/Change on the traits and the guide). Then release prep up to step 3
+  (the QR code for `releases/latest/download/emberclutch.cia`, the release notes, the PDF into `docs/guide/`,
+  the README's guide link), and Noah makes the repo public; then the tag and the release (as a draft first).
 
 ## Now: run 30 (1.0.0), the 1.0 candidate and the guide's first draft (2026-10-02)
 - **Run 29 came back clean** ("Looks good. What's next? The non-dev build and 1.0?"; "On .51 when ready.
@@ -32,9 +47,7 @@
   `docs/guide/` once the draft is kept.
 - Run 30's steps (`docs/plan/hardware-check-15.md`) and the guide's pages and PDF on the review page (version
   24, collections `run30`, `plans` slug `guide-draft`). Tests 387,475 checks, 0 failures.
-- **Next:** Noah: the player build (anything broken or different), the guide (Keep/Change), and his call on
-  1.0. Then R4 (the tag, the GitHub release: waits for the repo to go public on his word), R5, R6 (stop at the
-  voice samples; tell Noah to switch to max before the edit passes), R7.
+- **Came back** (run 30): see run 31 above.
 
 ## Now: run 29 (0.10.5), the banner in the game, the isles made pretty (2026-10-02)
 - **Run 28's notes** (collections `run28`, `labs`, `plans`): all eight labs held (28E, 28F and 28H froze before:

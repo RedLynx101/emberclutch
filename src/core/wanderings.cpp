@@ -4,6 +4,7 @@
 
 #include "core/den_roster.hpp"
 #include "core/genetics.hpp"
+#include "core/kinds.hpp"
 
 namespace ec {
 namespace {
@@ -99,13 +100,15 @@ WanderFinds rollFinds(const Dragon& d, u32 steps, Rng& rng) {
     float chances = static_cast<float>(steps) / kStepsPerFind;
     if (d.stage == Stage::Adult) chances *= 1.3f;
     if (d.personality == Personality::Curious) chances *= 1.25f;
+    if (hasTrait(d, kTraitKeenNose)) chances *= 1.25f;  // (D150: Keen Nose; Lucky's rare finds, Treasure Hunter's Gleam)
+    const bool lucky = hasTrait(d, kTraitLucky);
     const int rolls = static_cast<int>(chances) + (unit(rng) < chances - static_cast<int>(chances) ? 1 : 0);
     static constexpr float kTrinketWeight[kTrinkets] = {30, 22, 22, 12, 8, 6};
     for (int i = 0; i < rolls; ++i) {
         const float r = unit(rng);
         if (r < 0.55f) {
             f.gleam += 5 + rng.below(21);  // 5..25
-        } else if (r < 0.95f) {
+        } else if (r < (lucky ? 0.9f : 0.95f)) {
             float pick = unit(rng) * 100.0f;
             int t = 0;
             while (t < kTrinkets - 1 && pick >= kTrinketWeight[t]) pick -= kTrinketWeight[t++];
@@ -114,6 +117,7 @@ WanderFinds rollFinds(const Dragon& d, u32 steps, Rng& rng) {
             f.gleam += 30 + rng.below(31);  // a little hoard of someone else's: 30..60
         }
     }
+    if (hasTrait(d, kTraitTreasureHunter)) f.gleam += f.gleam / 2;
     return f;
 }
 
@@ -131,7 +135,7 @@ WanderFinds comeBack(SaveData& s, int index, u32 stepCount, s64 now, Rng& rng) {
     // you can't start with (Grove, Frost, Lumen).
     const u32 eggRolls = f.steps / 2000;
     bool egg = false;
-    for (u32 i = 0; i < eggRolls && !egg; ++i) egg = rng.chance(3, 100);
+    for (u32 i = 0; i < eggRolls && !egg; ++i) egg = rng.chance(hasTrait(d, kTraitLucky) ? 6 : 3, 100);
     if (egg && s.dragonCount < static_cast<int>(kMaxDragons)) {
         const Element e = static_cast<Element>(rng.chance(3, 4) ? 3 + rng.below(3) : rng.below(3));
         const Genome g = makePurebred(e, rng);

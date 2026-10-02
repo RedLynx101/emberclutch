@@ -74,6 +74,20 @@ Personality personalityOf(int manner);
 int traitCount();
 const char* traitName(int trait);
 int traitTier(int trait);  // 0 common .. 3 legendary
+// The traits by id, in kTraitNames' order (tools/dragons/lore.py; a test holds them together). Each
+// does one thing where its system is (D150, docs/design/traits.md): needs and moods (core/dragon),
+// energy, experience and walks (core/trainer), flight and the race, the Wanderings, breeding,
+// battles, shows and the Lantern Trial.
+enum TraitId : u8 {
+    kTraitSwift, kTraitSturdy, kTraitKeenNose, kTraitTidy, kTraitHeartyEater, kTraitEarlyRiser, kTraitNightOwl,
+    kTraitSureFooted, kTraitCuddly, kTraitSunbather, kTraitWaterLover, kTraitChatty,
+    kTraitQuickLearner, kTraitStrongWings, kTraitTreasureHunter, kTraitBraveHeart, kTraitGentleGiant,
+    kTraitWarmBlooded, kTraitCoolHeaded, kTraitDeepSleeper, kTraitShowoff, kTraitLoyal,
+    kTraitSkydancer, kTraitIronhide, kTraitLucky, kTraitSongbird, kTraitElemental, kTraitGlowheart, kTraitMossback,
+    kTraitStarborn, kTraitAncientBlood, kTraitPhoenixHeart, kTraitMoonlit, kTraitSunkissed,
+    kTraitIds
+};
+bool hasTrait(const Dragon& d, int trait);
 
 // ---- DR3: every dragon a kind
 // A new dragon or egg of `kind` in `variant` (0-2 common, 3 rare): its stats (the kind's, a point
@@ -81,8 +95,9 @@ int traitTier(int trait);  // 0 common .. 3 legendary
 // leans to (now and then any), one or two traits it leans to (three on the rare colouring,
 // which alone reaches its rarest; a rare kind reaches one tier higher).
 void rollKind(Dragon& d, int kind, int variant, Rng& rng);
-// The colouring an egg is laid in: the rare one about 1 in 20 (1 in 10 with a rare parent).
-int rollVariant(Rng& rng, bool rareParent = false);
+// The colouring an egg is laid in: the rare one about 1 in 20 (1 in 10 with a rare parent), twice as
+// likely again from an Ancient Blood parent.
+int rollVariant(Rng& rng, bool rareParent = false, bool ancientBlood = false);
 // The crossbreed of two kinds (-1 if there isn't one yet).
 int crossbreedOf(int a, int b);
 // The kind a pair's egg is: the parents' own if they match; else their crossbreed about a third

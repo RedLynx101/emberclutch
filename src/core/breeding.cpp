@@ -81,7 +81,8 @@ Dragon layEgg(u32 id, Dragon& a, Dragon& b, s64 now, Rng& rng) {
     // if a parent has it.
     const bool rareParent = mother.variant == kindInfo(mother.kind).rareVariant ||
                             father.variant == kindInfo(father.kind).rareVariant;
-    rollKind(egg, childKind(mother.kind, father.kind, rng), rollVariant(rng, rareParent), rng);
+    const bool ancient = hasTrait(mother, kTraitAncientBlood) || hasTrait(father, kTraitAncientBlood);  // (D150)
+    rollKind(egg, childKind(mother.kind, father.kind, rng), rollVariant(rng, rareParent, ancient), rng);
     mother.lastBredAt = father.lastBredAt = now;
     return egg;
 }

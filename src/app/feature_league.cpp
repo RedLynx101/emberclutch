@@ -447,7 +447,7 @@ void goBattle(App& app, vext::Stage& st) {
         return;
     }
     if (!beginBattle(app, st, s.id)) {  // (nowhere to stand: rare) its Energy back
-        d.needs.energy = std::fmin(100.0f, d.needs.energy + trainer::kEnergyBattle);
+        d.needs.energy = std::fmin(100.0f, d.needs.energy + trainer::energyCost(d, trainer::kEnergyBattle));
         s.mode = Mode::None;
         showToast(app, str::kBattleNoRoom);
     }
@@ -633,7 +633,7 @@ void drawAsk(App& app, const Input& in, const vext::Stage& st) {
         std::snprintf(line, sizeof(line), str::kBattleAskYours, d.name, trainer::levelOf(d));
         textCentered(app, line, 160, 102, 0.46f, theme::kShell, 300);
         std::snprintf(line, sizeof(line), str::kBattleAskEnergy, static_cast<int>(d.needs.energy + 0.5f),
-                      static_cast<int>(trainer::kEnergyBattle));
+                      static_cast<int>(trainer::energyCost(d, trainer::kEnergyBattle) + 0.5f));
         textCentered(app, line, 160, 122, 0.4f,
                      trainer::canSpend(d, trainer::kEnergyBattle) ? withAlpha(theme::kShell, 0.75f) : theme::kRose, 300);
     }

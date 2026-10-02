@@ -176,3 +176,30 @@ names (`b_horn.001`, `b_membrane.001`, `b_accent_flat.001`) land in paint's mate
 round, when Noah asks for labs again: X plus paint with each dotted name alone (three labs), and
 paint with the names undotted, to find the one pairing. Noah's note: none of the ones that held look
 good (F's tail doesn't read from the front); a new kind's banner will need its own art pass anyway.
+
+## The new banner: kit hatchlings (run 25, 2026-10-02)
+Noah: *"Make a more highly detailed banner, cleaner, and use one of our baby dragons still in the game.
+Then variants of it for a banner test."* (D144.) Each lab is a kit kind's hatchling as the game has it,
+built by `tools\banner_variants.ps1` (`tools/blender/banner3d.py --kind <kind> --variant <n> --outline
+<w> --turn`): the den model's full detail (LOD 0), smooth-shaded, its skin baked at 256, peeking from the
+cracked egg with the wordmark, under X's recipe (rigid pieces, `--turn "body*:1,egg:1"`). What's new for
+the HOME Menu: **no dotted names** anywhere (every node, mesh, material and image tidied: run 20's
+suspect), the solid parts **one-sided** (pycgfx doubles every two-sided material's vertices), texture
+coordinates only where a texture reads them, the faces deep inside the egg dropped, and on four of them
+an **ink outline** (an inverted hull in one unlit material, "ink"). 13-15 materials (X had 16).
+
+| Lab | Kind (colouring) | Outline | CGFX | Title ID |
+|---|---|---|---|---|
+| **25A** | Pouncer (Ember) | ink | 494 KB | 0xEC168 |
+| **25B** | Blazeplume (its first) | ink | 502 KB | 0xEC169 |
+| **25C** | Crestwing (its first) | ink | 509 KB | 0xEC16A |
+| **25D** | Puffback (its first) | ink | 455 KB | 0xEC16B |
+| **25E** | Blazeplume | none | 448 KB | 0xEC16C |
+| **25F** | Pouncer | none | 455 KB | 0xEC16D |
+
+```
+tools\banner_variants.ps1 -Variants "A=pouncer:0:0.012", "B=blazeplume:0:0.012", "C=crestwing:0:0.012", "D=puffback:0:0.012", "E=blazeplume:0:0", "F=pouncer:0:0"
+tools\banner_lab.ps1 -Variants "25A=build\banner_v\A\banner.cgfx;assets\audio\banner.wav", ... "25F=..." -FirstId 0xEC168
+```
+B and E are the Blazeplume that froze in run 15 (lab A), now with its names undotted: if they hold, the
+dotted names were the trouble. The game's own CIA keeps X until Noah picks one.

@@ -60,6 +60,14 @@ ASSETS = os.path.abspath(dm.arg("--assets", os.path.join(ROOT, "assets")))
 REVIEW = os.path.abspath(dm.arg("--review", os.path.join(ROOT, "build", "review")))
 FONT = os.path.join(ROOT, "assets", "fonts", "cinzel-decorative", "CinzelDecorative-Bold.ttf")
 KIND = dm.arg("--kind", "classic")  # "classic": the old baby Ember (X, the banner that holds on the 3DS); or a kit kind (blazeplume: froze the HOME Menu in run 15, D81)
+# Run 25 (Noah: "a more highly detailed banner, cleaner, and use one of our baby dragons still in
+# the game"): a kit kind's hatchling at full detail (its den model's LOD 0), smooth-shaded, its skin
+# at 256, its solid parts drawn one-sided (pycgfx doubles every two-sided material's geometry), and
+# an ink outline round it (an inverted hull, unlit: the storybook's line) if --outline is given.
+VARIANT = int(dm.arg("--variant", "0"))                          # a kit kind's colouring
+DETAIL = int(dm.arg("--lod", "1" if KIND == "classic" else "0"))  # the body's level of detail
+OUTLINE = float(dm.arg("--outline", "0"))                         # the ink's width, of the dragon's height (0: none)
+INK = (0.13, 0.06, 0.15)                                          # the outline: the game's deep plum
 COLLAR = {"head": 0.11, "tail": 0.09}
 TAIL_LIFT = (55.0, 35.0)  # a kind's tail: raised (about X) and swung to its left (about Z), degrees  # each moving piece's collar round its joint (of the dragon's height)
 # A kind's parts coloured per vertex (a feather's bands, "vc" materials): each band takes its
@@ -72,7 +80,7 @@ FPS, FRAMES = 24, 240         # a 10 second loop: one turn of the HOME Menu's ca
 CYCLE = 120                   # the dragon's motions, twice a loop (written on a 96-frame count)
 if "--short-loop" in sys.argv:
     FRAMES = CYCLE = 96       # the old 4 second loop (a lab check)
-SKIN = 128                    # the skin texture (RGBA4 in the CGFX: 32 KB)
+SKIN = int(dm.arg("--skin", "128" if KIND == "classic" else "256"))  # the skin texture (RGBA4 in the CGFX: 32 KB at 128, 128 KB at 256)
 TALL = 18.0                   # the dragon and its egg, in banner units (the view is 40 x 24)
 # The HOME Menu's banner camera (pycgfx banner-camera.gltf): glTF (0, 1, 44.786), looking
 # down -Z, 30 degrees tall, 5:3. In Blender's Z-up axes it stands at -Y looking +Y.
@@ -230,8 +238,8 @@ def build_kind(name):
     from dragonkit import model as km
     km.use_kind(name)
     form, t = km.STAGE["hatchling"]
-    km.set_lod(1)
-    d = km.build_dragon(form, 0)
+    km.set_lod(DETAIL)
+    d = km.build_dragon(form, VARIANT)
     for e in d["groups"]["eyes"]:
         bpy.data.objects.remove(e, do_unlink=True)
     d["groups"]["eyes"].clear()
@@ -240,7 +248,7 @@ def build_kind(name):
     km.set_lod(0)
     for e in km.build_eyes(d["mats"], "round"):
         km.attach(d, "eyes", e, "eyes")
-    km.set_lod(1)
+    km.set_lod(DETAIL)
     km.textured(d)
     km.pose_stage(d, t)
     arm = d["arm"]
@@ -258,8 +266,74 @@ def build_kind(name):
             pb.rotation_quaternion = pb.rotation_quaternion @ Euler((math.radians(x), 0, 0)).to_quaternion()
     bpy.context.view_layer.update()
     d["visible_points"] = km.visible_points
-    d["palette"] = km.variant_colors(0)
+    d["palette"] = km.variant_colors(VARIANT)
     return d
+
+
+def add_outline(o, width, mat, outer_only=False):
+    """An ink line round a piece: its faces again, welded, pushed out along their normals by
+    `width` and turned inside out, in the unlit ink. Drawn one-sided, only its far side shows,
+    just past the piece's silhouette (an inverted hull: no shader needed). `outer_only`: an open
+    shell (the egg) keeps the faces whose normals point away from its middle."""
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    bm.faces.ensure_lookup_table()
+    centre = sum((v.co for v in bm.verts), Vector()) / max(1, len(bm.verts))
+    faces = [f for f in bm.faces if not outer_only or f.normal.dot(f.calc_center_median() - centre) > 0]
+    dup = bmesh.ops.duplicate(bm, geom=faces)
+    new_faces = [g for g in dup["geom"] if isinstance(g, bmesh.types.BMFace)]
+    new_verts = [g for g in dup["geom"] if isinstance(g, bmesh.types.BMVert)]
+    bmesh.ops.remove_doubles(bm, verts=new_verts, dist=1e-4 * TALL)
+    new_faces = [f for f in new_faces if f.is_valid]
+    slot = len(o.data.materials)
+    o.data.materials.append(mat)
+    for f in new_faces:
+        f.material_index = slot
+        f.smooth = True
+    bm.normal_update()
+    moved = {v for f in new_faces for v in f.verts}
+    normals = {v: v.normal.copy() for v in moved}
+    for v in moved:
+        v.co += normals[v] * width
+    bmesh.ops.reverse_faces(bm, faces=new_faces)
+    bm.to_mesh(o.data)
+    bm.free()
+    print(f"[banner] {o.name}: an outline of {len(new_faces)} faces, {width:.2f} wide")
+
+
+def tidy_gltf(path):
+    """The names without dots (the HOME Menu froze on lab A's dotted names with its paint, run
+    20) and the dragon's solid parts one-sided: pycgfx doubles a two-sided material's every
+    vertex. The wings' membranes, the shell, the wordmark and the sparkles stay two-sided."""
+    with open(path, encoding="utf-8") as f:
+        g = json.load(f)
+    seen = set()
+    for key in ("nodes", "meshes", "materials", "images", "textures"):
+        for item in g.get(key, []):
+            if "name" not in item:
+                continue
+            name = item["name"].replace(".", "_").replace("-", "m")
+            while (key, name) in seen:
+                name += "x"
+            seen.add((key, name))
+            item["name"] = name
+    one = []
+    for m in g.get("materials", []):
+        # (the egg's shell is two surfaces, cream outside and glowing inside: one-sided too)
+        if (m["name"].startswith("b_") and "membrane" not in m["name"]) or m["name"] in ("heart_glow", "ink", "shell", "shell_glow"):
+            m["doubleSided"] = False
+            one.append(m["name"])
+    # Texture coordinates only where a texture reads them (the skin, the wordmark): 8 bytes a
+    # vertex fewer on everything else.
+    stripped = 0
+    for me in g.get("meshes", []):
+        for prim in me["primitives"]:
+            mat = g["materials"][prim["material"]] if "material" in prim else {}
+            if "baseColorTexture" not in mat.get("pbrMetallicRoughness", {}) and prim["attributes"].pop("TEXCOORD_0", None) is not None:
+                stripped += 1
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(g, f, indent=1)
+    print(f"[banner] names tidied; one-sided: {', '.join(one) or 'none'}; texture coordinates off {stripped} primitives")
 
 
 def joint(d, bone):
@@ -392,6 +466,9 @@ def dragon_pieces(d, skin):
         bpy.data.objects.remove(o, do_unlink=True)
     for piece, o in merged.items():  # their names back, now the kit's own "body" is gone
         o.name = piece
+        if KIND != "classic":  # smooth, as the game shades it (run 25): creases only where it's sharp
+            o.data.shade_smooth()
+            o.data.set_sharp_from_angle(angle=math.radians(55))
     return merged, heart_mat
 
 
@@ -513,6 +590,24 @@ def clip_to_egg(o, height, width, cut, floor_z, margin=0.01, yaws=(0.0,)):
     bm.to_mesh(o.data)
     bm.free()
     print(f"[banner] {o.name}: {len(gone)} faces through the shell trimmed")
+
+
+def drop_hidden(o, height, cut, floor_z, depth=0.12):
+    """Drop the faces of a piece wholly inside the egg, deeper than `depth` (of the egg's height)
+    under the crack's lowest point: the HOME Menu's camera looks only a little down into the egg,
+    so its feet and belly never show (run 25: room in the 512 KB for the full-detail head)."""
+    bpy.context.view_layer.update()
+    low = min(crack_height(2 * math.pi * k / 64, height, cut) for k in range(64)) - depth * height
+    m = Matrix.LocRotScale(o.location, o.rotation_euler, o.scale)
+    deep = [(m @ v.co).z - floor_z < low for v in o.data.vertices]
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    bm.verts.ensure_lookup_table()
+    gone = [f for f in bm.faces if all(deep[v.index] for v in f.verts)]
+    bmesh.ops.delete(bm, geom=gone, context="FACES")
+    bm.to_mesh(o.data)
+    bm.free()
+    print(f"[banner] {o.name}: {len(gone)} faces hidden deep in the egg dropped")
 
 
 def apply_modifiers(o):
@@ -793,12 +888,24 @@ def build():
         clip_to_egg(pieces["body"], egg_h, 0.42 * h, rim / egg_h, lo - drop * h)
     if KIND != "classic" and "tail" in pieces:  # ...and the tail through its whole wag
         clip_to_egg(pieces["tail"], egg_h, 0.42 * h, rim / egg_h, lo - drop * h, yaws=(-24.0, 0.0, 24.0))
+    if KIND != "classic":  # what's deep in the egg never shows
+        for name in ("body", "tail"):
+            if name in pieces:
+                drop_hidden(pieces[name], egg_h, rim / egg_h, lo - drop * h)
 
     s = 0.84 * TALL / (hi - lo + 2 * drop * h)  # (run 22: a little smaller, room for the subtitle)
     world_objs = list(pieces.values()) + [egg, cap]
     for o in world_objs:
         o.location = (o.location - Vector((0, 0, lo))) * s
         o.data.transform(Matrix.Scale(s, 4))
+    if OUTLINE > 0:  # (run 25: the storybook's ink round the dragon and its egg)
+        ink = principled("ink", INK, 0.9)
+        ink.use_backface_culling = True  # (the hull's near side culled: in the previews too)
+        for name in ("body", "head", "tail"):
+            if name in pieces:
+                add_outline(pieces[name], OUTLINE * TALL, ink)
+        add_outline(egg, 0.7 * OUTLINE * TALL, ink, outer_only=True)
+        add_outline(cap, 0.7 * OUTLINE * TALL, ink, outer_only=True)
     # In the frame: the pair just left of centre and low; the wordmark across the top, behind.
     # Nothing else: the HOME Menu's own background shows round them (Noah took the wall out;
     # the flat 2D banner keeps its backdrop, see main()).
@@ -1076,7 +1183,9 @@ def main():
     gltf = os.path.join(OUT, "banner.gltf")
     export(gltf)
     add_heart_colour(gltf)
-    make_unlit(gltf)
+    make_unlit(gltf, names=("wordmark", "sparkle", "ink"))
+    if KIND != "classic":
+        tidy_gltf(gltf)
     banner_camera()
     scene = bpy.context.scene
     for o in scene.objects:

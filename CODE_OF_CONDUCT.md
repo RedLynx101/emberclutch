@@ -38,9 +38,8 @@ This Code of Conduct applies in all of the project's spaces (the repository, its
 and discussions) and when someone officially represents the project elsewhere.
 
 ## Reporting
-Report behaviour that breaks this code to the maintainer, Noah Hicks
-([@RedLynx101](https://github.com/RedLynx101) on GitHub). If you need a private way to reach him, open an
-issue asking for a private contact, with no details in it, and you'll be given one. All reports are
+Report behaviour that breaks this code to the maintainer, Noah Hicks, by email at
+**NoahHicks101@gmail.com** (or [@RedLynx101](https://github.com/RedLynx101) on GitHub). All reports are
 reviewed promptly and fairly, and the reporter's privacy is respected.
 
 ## Consequences

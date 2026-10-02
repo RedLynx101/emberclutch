@@ -46,7 +46,14 @@ R3 and R6 can be drafted while R1's runs go on; R4 waits for R1, R5 and R7 wait 
   AI-generated art shipped, D74; inbound = outbound licensing), `CODE_OF_CONDUCT.md` (adapted from the
   Contributor Covenant 2.1), `SECURITY.md`, `.github/ISSUE_TEMPLATE/` (bug report and idea forms, and a
   config pointing questions to the guide), `.github/PULL_REQUEST_TEMPLATE.md`.
-- **Open questions for Noah** (in the report and on the review page):
+- **Answered (2026-10-02):** the conduct contact is Noah's email (in `CODE_OF_CONDUCT.md`); Suno's paid
+  plan lets Noah use his songs for anything and every paid ElevenLabs plan (his Starter) carries a
+  commercial license, videos included (`LICENSE-MUSIC.md`, which now also lets videos and streams of
+  the game use its music); the history is clean (all 377 commits: no keys, tokens, passwords or private
+  files; the only addresses are the co-author line, the Cinzel font's designer in its licence, and the
+  commits' author, Noah's email, which GitHub shows on a public repo). Still Noah's to do when it goes
+  public: turn on private vulnerability reporting in the repo's settings.
+- **The questions were** (kept for the record):
   1. A contact for conduct and security reports. GitHub's private vulnerability reporting needs
      turning on in the repo's settings when it goes public; for conduct reports, a contact address
      of your choosing (I haven't put any address in).

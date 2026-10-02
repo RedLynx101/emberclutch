@@ -1,11 +1,12 @@
 # Music License
 
-The Emberclutch soundtrack is generated with Suno on a paid plan, which grants commercial
-use rights for songs made while subscribed. Suno's terms state that users are generally
-not considered the owners of generated songs, so **the music is not covered by the
-project's MIT (code) or CC BY-SA (art) licenses** and cannot be relicensed under them.
+The Emberclutch soundtrack was made by Noah Hicks with Suno on a paid plan, which lets him use
+the songs he made while subscribed for anything, commercially included (confirmed by Noah,
+2026-10-02). **The music is not covered by the project's MIT (code) or CC BY-SA (art)
+licenses**: it stays Noah's.
 
 - You may play and redistribute the music only as part of unmodified Emberclutch builds.
+- Videos, streams and reviews of the game may include its music and sounds as heard in it.
 - Forks and derivative projects should replace the music with their own.
 - Re-check Suno's current terms before each public release.
 
@@ -28,7 +29,10 @@ Tracks (filled in as they are added):
 ## ElevenLabs audio
 
 Some cues and every sound effect are generated with **ElevenLabs** (Sound Effects) on
-Noah's paid plan. The same rules apply as for the Suno music above: they are **not covered
+Noah's paid plan (Starter: every paid ElevenLabs plan carries its commercial license, videos
+included; content made on the free plan would need an "elevenlabs.io" credit, checked
+2026-10-02 at elevenlabs.io/pricing and its help centre). The same rules apply as for the
+Suno music above: they are **not covered
 by the project's MIT or CC BY-SA licenses**, may be redistributed only as part of
 unmodified Emberclutch builds, forks should replace them, and ElevenLabs' current terms
 must be re-checked before each public release.

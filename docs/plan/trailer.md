@@ -27,13 +27,26 @@ Here the hard part is the footage, which comes from the game, so:
 | **ffmpeg 8.1** | Stitches footage and overlays, mixes the sound, encodes | Already installed |
 | **The game's music and sounds** | The soundtrack is Noah's (Suno) and the effects are the game's | Cuts on the music's beat grid (`romfs/music/loops.json` has the BPMs). Check that Suno's terms on your plan allow a YouTube video |
 | **ElevenLabs** (only if a voice helps) | A narrator for a few short lines | Optional: a trailer can carry text cards alone. **No voice is used until you pick one** (below) |
-| Effort | Stock Claude Code, xhigh | No Ultracode or video models needed |
+| Effort | Stock Claude Code: xhigh to build the film build and the pipeline, max for the edit's critique passes | No Ultracode or video models needed (Noah asked whether max would do much better: see below) |
 
 Every pass ends with a contact sheet of the shots on the review page (Keep or Change each), and the
 worst three things are fixed before the next pass. That loop matters more than the tools.
 
+**Max or xhigh?** (Noah, on the plan.) Not much better for building things: the film build, the capture
+and the page are engineering, and xhigh does them as well. Where max earns its cost is the edit: looking
+hard at each pass's frames and fixing the worst of them, over more passes. So: xhigh for V1-V3, max for
+V4-V5's critique passes. A clear reference (the shot list, stills of the look) still matters more than
+either.
+
+**Approved (2026-10-02):** the plan, the stack and the shots (Noah: "you keep creative freedom as needed;
+you're in charge of this"); the voices are pre-approved for sampling (below).
+
 ## Voices: sampled first, approved before anything is made
-1. Once the script is approved, 5 or 6 candidate voices from ElevenLabs' library (warm storyteller,
+Noah, 2026-10-02: "You are preapproved for this. When we begin the video pass, just end early with the
+sample voices for me to approve before you go off and finish the whole thing." So the video pass stops
+after V2 with the samples.
+
+1. Once the script is written, 5 or 6 candidate voices from ElevenLabs' library (warm storyteller,
    gentle young adult, bright and playful, a grandparent-like one like Rowan, one British and one
    American), each reading the same two lines from the script, with `eleven_v4`.
 2. The samples go on the review page: you pick one (or ask for others, or a designed voice).
@@ -76,10 +89,9 @@ No story spoilers past the festival's lanterns; no champions or deep places.
    links work; the title, description and thumbnail are ready below.
 
 ## YouTube: drafts
-**Title options**
-1. Emberclutch: Skyreach Valley | A cozy dragon-raising game for the 3DS (homebrew trailer)
-2. I made a dragon-raising game for the 3DS: Emberclutch: Skyreach Valley
-3. Emberclutch: Skyreach Valley, official trailer (free 3DS homebrew)
+**Title** (Noah picked the third, 2026-10-02): **Emberclutch: Skyreach Valley, official trailer (free 3DS
+homebrew)**. (The others were "... | A cozy dragon-raising game for the 3DS (homebrew trailer)" and "I made a
+dragon-raising game for the 3DS: ...".)
 
 **Description**
 > Hatch an egg, raise a dragon, and explore Skyreach Valley together. Emberclutch: Skyreach Valley is a

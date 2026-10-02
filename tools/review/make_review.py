@@ -30,11 +30,11 @@ OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
 RUN_READY = True  # the run's checklist on the page (once the build is ready for the 3DS)
-RUN_DOC = "docs/plan/hardware-check-9.md"  # the run's steps
-RUN_KEY = "run24"       # its database collection (each run its own: run 23's notes stay under `run23`)
-LABS = []              # banner labs to mark Held/Froze this run (none in run 21)
+RUN_DOC = "docs/plan/hardware-check-10.md"  # the run's steps
+RUN_KEY = "run25"       # its database collection (each run its own: run 24's notes stay under `run24`)
+LABS = ["25A", "25B", "25C", "25D", "25E", "25F"]  # banner labs to mark Held/Froze this run (run 25: the new banner, D144)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch: Skyreach Valley, run 24 (0.10.0): run 23's fixes and the plans for 1.0"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch: Skyreach Valley, run 25 (0.10.1): the new banner, and run 24's fixes"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -420,6 +420,56 @@ def plans() -> list[dict]:
     return cards
 
 
+# Run 25's cards (D144): the six banner labs, each through the HOME Menu's camera (front, and side as
+# the HOME Menu turns it), Keep the ones you like; and the answers to run 24's questions. Collection
+# `plans` (slugs banner-25a ...).
+BANNERS = [("25A", "A", "Pouncer, with the ink outline"), ("25B", "B", "Blazeplume, with the ink outline"),
+           ("25C", "C", "Crestwing, with the ink outline"), ("25D", "D", "Puffback, with the ink outline"),
+           ("25E", "E", "Blazeplume, no outline"), ("25F", "F", "Pouncer, no outline")]
+PLANS_HEAD = {"nav": "The new banner", "kicker": "D144 · six banner labs on your 3DS",
+              "title": "The new banner",
+              "intro": "A real baby dragon from the game in its egg: the den model at full detail, smooth, its own skin, under the "
+                       "wordmark (as Blender draws it; the HOME Menu's light is a little flatter). Keep the ones you like, Change "
+                       "the ones you don't and say why, and name your favourite. Held or froze goes in the run's banner lab step."}
+
+
+def banners() -> list[dict]:
+    (OUT / "plans").mkdir(parents=True, exist_ok=True)
+    cards = []
+    for lab, src, what in BANNERS:
+        d = ROOT / "build" / "banner_v" / src
+        images = []
+        for name, cap in (("banner3d_big", "Through the HOME Menu's camera"), ("banner3d_side", "Side on, as the HOME Menu turns it")):
+            if (d / f"{name}.png").exists():
+                dst = OUT / "plans" / f"banner_{src}_{name}.jpg"
+                subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(d / f"{name}.png"), "-q:v", "3", str(dst)], check=True)
+                images.append({"src": f"plans/{dst.name}", "cap": cap})
+        kb = round((d / "banner.cgfx").stat().st_size / 1024) if (d / "banner.cgfx").exists() else 0
+        cards.append({"slug": f"banner-{lab.lower()}", "kicker": f"Banner lab {lab}", "title": what,
+                      "body": md_html(f"Its banner is {kb} KB of the 512 the HOME Menu allows."), "images": images})
+    cards.append({"slug": "answers-25", "kicker": "Run 24's questions", "title": "Your questions, answered", "ask": True,
+                  "body": md_html(ANSWERS)})
+    return cards
+
+
+ANSWERS = """**Max or xhigh for the video?** Not much better for building it: the film build, the capture and the titles
+page are engineering, and xhigh does those as well. Where max earns its cost is the edit, looking hard at every
+pass's frames and fixing the worst over more passes. So xhigh to build and capture, max for the edit's critique
+passes. A clear reference (the shot list, stills of the look) matters more than either.
+
+- **The contact:** your email is in `CODE_OF_CONDUCT.md` for conduct reports. It'll be public once the repo is;
+  say if you'd rather use another address.
+- **Suno and ElevenLabs:** your Suno plan covers the music for anything; every paid ElevenLabs plan, your Starter
+  included, carries a commercial license, YouTube included (content made on the free plan would need an
+  "elevenlabs.io" credit). `LICENSE-MUSIC.md` says so, and now also lets videos and streams of the game use its
+  music.
+- **The history:** clean. All 377 commits checked: no keys, tokens, passwords, saves or private files. One thing:
+  every commit carries your email as its author, which GitHub shows on a public repo (normal; if you'd rather
+  not, new commits can use GitHub's no-reply address, and old ones would need their history rewritten).
+- **The title:** the third, noted. **The voices:** the video pass will stop at the samples for your pick.
+- **Still yours when the repo goes public:** turn on private vulnerability reporting in its settings."""
+
+
 def fragments() -> str:
     d = ROOT / "docs" / "review"
     return "\n".join(p.read_text(encoding="utf-8") for p in sorted(d.glob("*.html"))) if d.exists() else ""
@@ -430,7 +480,7 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)  # (a shell may be sitting in it)
     data = {"sounds": sounds() + made_sounds() if SHOW_SOUNDS else [], "music": music() if SHOW_SOUNDS else [],
             "run": run_list() if RUN_READY else {}, "dragons": dragons() if DRAGONS else [],
-            "people": {}, "looks": looks() if LOOKS else {}, "plans": plans() if PLANS else []}
+            "people": {}, "looks": looks() if LOOKS else {}, "plans": banners(), "plansHead": PLANS_HEAD}
     page = (Path(__file__).with_name("review_template.html").read_text(encoding="utf-8")
             .replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
             .replace("/*TITLE*/", PAGE_TITLE)

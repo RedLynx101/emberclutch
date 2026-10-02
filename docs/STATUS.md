@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-01 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 24 (0.10.0) on the 3DS, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 23 came back clean but for five fixes (0.10.0, D141); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 25 (0.10.1) and six banner labs on the 3DS, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is on test (D144); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Tooling: headless emulator checks (2026-09-30)
@@ -15,6 +15,32 @@
   Performance is still signed off on the 3DS: no emulator models its timing.
 - Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
   running it in UTC), and the async file reads and presentation made animations drift (off).
+
+## Now: run 25 (0.10.1), the new banner on test, run 24's fixes (2026-10-02)
+- **Run 24's notes** (collections `run24`, `plans`): every plan kept (the road, the polish, the guide and its
+  outline, the video's stack and shots with creative freedom, the voices pre-approved: stop at the samples; the
+  YouTube title the third); fix: Play rising while asleep (wake them instead), the wanderer gliding near the
+  Trailhead, the cast's straight line, Tam fishing on dry land, the Lilyfin's floating legs, hats flat on its
+  pad, the Puffback's straw brim. Answers: the conduct contact is Noah's email; Suno and ElevenLabs (Starter)
+  both allow commercial use; the history check.
+- **0.10.1** (D143): `DenBehavior::wake`/`awake`/`awakeFor` (60 s after the last care at bedtime) and the care
+  screen gated on `awake()`; circling dragons flap then glide; the cast's bobber from the rod's tip; Tam at the
+  water's edge (`fishing::coveSpots`), his line 4.2 m out; the Lilyfin's grown shoulders and hips raised and
+  filled (re-exported); `padSeat` (only the Lilyfin's forms), a head height map so brims rest on the skull,
+  `headWide` for the straw sunhat. Tests 377,652 checks, 0 failures (new: woken at night, Tam's line in the
+  water, only the Lilyfin on a pad); autotests `hatsfit_h/g`, `lilyfin` (new), `tour`, `cove_cast` clean.
+- **The new banner** (D144, `docs/tech/banner-labs.md`): `tools/blender/banner3d.py --kind <kit kind>` at full
+  detail, smooth, 256 skin, one-sided solids, tidy names, the egg's insides dropped, `--outline` (ink);
+  `tools\banner_variants.ps1`. Labs 25A-25F (0xEC168-0xEC16D): Pouncer, Blazeplume, Crestwing, Puffback with
+  ink; Blazeplume, Pouncer without; 448-509 KB. The game keeps X's banner till Noah picks.
+- **The open-source answers:** `CODE_OF_CONDUCT.md` has Noah's email; `LICENSE-MUSIC.md` records the Suno and
+  ElevenLabs terms (and lets videos and streams use the music); the history: 377 commits, clean.
+- **Sent** to **.51** (CIA 75 MB, 0.10.1; the six lab CIAs in `/cias/lab/`; the save backed up to
+  `build/3ds-backup/2026-10-02_0116/`; run 24's logs: no freeze, `hangs.txt`'s "bottom" a session closed
+  mid-frame). Run 25's steps (`docs/plan/hardware-check-10.md`) on the review page (version 19, collection
+  `run25`, the banners' cards in `plans`).
+- **Next:** Noah: the six labs (held or froze, a favourite), night care, the wanderer, the cove, the Lilyfin.
+  Then the banner he picks into the game's CIA (`tools\make_banner.ps1` with its kind), and the 1.0 list.
 
 ## Now: run 24 (0.10.0), run 23's fixes, and the plans for 1.0 (2026-10-01)
 - **Run 23's notes** (collections `run23`, `looks`): the Trailhead held; no stutter; all 19 looks passed
@@ -39,9 +65,7 @@
   with the hats on every kind and the open questions.
 - **Sent** to .59 (CIA 75 MB, 0.10.0; the save backed up to `build/3ds-backup/2026-10-01_2229/`); run 24's steps
   (`docs/plan/hardware-check-9.md`) on the review page (version 18, collection `run24`).
-- **Next:** Noah: run 24 (the hats, the den's heads, the sign, the Puffback in the Wanderings) and the plans'
-  marks; then the banner variants with real skins (R1), and the guide and trailer once their plans are kept.
-  Before anything public: the open questions (a conduct contact, Suno's and ElevenLabs' terms, the history).
+- **Came back** (run 24): the den's heads and the sign held, every plan kept; see run 25 above.
 
 ## Now: run 23 (0.9.15), run 22's fixes (2026-10-01)
 - **Run 22's notes** (the review page, collections `run22`, `looks`): the banner's title cut off by the

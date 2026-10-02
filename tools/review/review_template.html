@@ -234,11 +234,9 @@
 
   <section id="plans" hidden>
     <div class="section-head">
-      <div class="kicker">Not made yet: the plans first</div>
-      <h2>Plans for 1.0</h2>
-      <p class="muted">Your short-term plan, written out: the order of work to 1.0, the guide's outline, the video's stack, shots and
-        voices, the YouTube drafts, and the hats' new seats on every kind. Keep what's right; Change what isn't and say how. Nothing
-        public happens without your word.</p>
+      <div class="kicker" id="plans-kicker">Not made yet: the plans first</div>
+      <h2 id="plans-title">Plans for 1.0</h2>
+      <p class="muted" id="plans-intro">Keep what's right; Change what isn't and say how. Nothing public happens without your word.</p>
       <div class="legend">
         <span><i class="dot" style="background: var(--pass)"></i>Keep: go ahead as written</span>
         <span><i class="dot" style="background: var(--fail)"></i>Change: say what</span>
@@ -253,7 +251,7 @@ const DATA = /*DATA*/null;
 let db = null;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const state = { sounds: {}, music: {}, run: {}, labs: {}, dragons: {}, people: {}, looks: {}, plans: {} };
-const LS = "emberclutch-review-run24";  // (each round its own: run 24)
+const LS = "emberclutch-review-run25";  // (each round its own: run 25)
 try { Object.assign(state, JSON.parse(localStorage.getItem(LS) || "{}")); } catch (_) {}
 state.run ||= {}; state.labs ||= {}; state.dragons ||= {}; state.people ||= {}; state.looks ||= {}; state.plans ||= {};
 function keepLocal() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (_) {} }
@@ -594,7 +592,12 @@ function render() {
   }
   if ((DATA.plans || []).length) {
     document.getElementById("plans").hidden = false;
-    document.querySelectorAll('nav a[href="#plans"]').forEach((a) => (a.hidden = false));
+    document.querySelectorAll('nav a[href="#plans"]').forEach((a) => { a.hidden = false; if (DATA.plansHead) a.textContent = DATA.plansHead.nav; });
+    if (DATA.plansHead) {  // (each round names its own cards: run 25's are the banners)
+      document.getElementById("plans-kicker").textContent = DATA.plansHead.kicker;
+      document.getElementById("plans-title").textContent = DATA.plansHead.title;
+      document.getElementById("plans-intro").textContent = DATA.plansHead.intro;
+    }
     document.getElementById("plan-list").replaceChildren(...DATA.plans.map(planCard));
   }
   if (DATA.people && DATA.people.sets) {

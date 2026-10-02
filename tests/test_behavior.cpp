@@ -132,13 +132,38 @@ TEST(tired_dragons_nap_in_the_nest_and_wake_up) {
     d.napping = true;
     CHECK(run(a, d, false, 40, [](const DenBehavior& b) { return b.activity == Activity::Sleep; }));
     CHECK(dist(a.behavior.pos, den.beds[0]) < 0.4f);
-    a.behavior.care(Care::Feed, d);  // asleep: ignored
-    CHECK(a.behavior.activity == Activity::Sleep);
+    a.behavior.care(Care::Feed, d);  // asleep: your touch wakes it (D143); the food waits till it's up
+    CHECK(a.behavior.activity == Activity::Wake && !a.behavior.awake());
+    CHECK(run(a, d, false, 10, [](const DenBehavior& b) { return b.activity == Activity::Idle; }));
+    CHECK(a.behavior.awake());
+    // Still tired, it stays up the woken minute, then goes back to bed.
+    CHECK(!run(a, d, false, kWokenHold - 15, [](const DenBehavior& b) { return b.activity == Activity::GoNap || b.activity == Activity::Sleep; }));
+    CHECK(run(a, d, false, 40, [](const DenBehavior& b) { return b.activity == Activity::Sleep; }));
     d.napping = false;
     CHECK(run(a, d, false, 2, [](const DenBehavior& b) { return b.activity == Activity::Wake; }));
     CHECK(run(a, d, false, 10, [](const DenBehavior& b) { return b.activity == Activity::Idle; }));
     // Night sends it to bed too.
     CHECK(run(a, d, true, 40, [](const DenBehavior& b) { return b.activity == Activity::Sleep; }));
+}
+
+// Run 24 (Noah: "allow the player to wake them up, then they stay up for a minute or until something
+// else happens. Then after a minute of nighttime and nothing, they sleep again"): woken at night it
+// takes your care, every bit of care keeps it up a minute more, and a minute of nothing sends it to bed.
+TEST(woken_at_night_a_dragon_stays_up_while_you_care_for_it) {
+    DenActor a;
+    const DenLayout den;
+    a.reset(den, 9);
+    Dragon d = contentDragon();
+    CHECK(run(a, d, true, 40, [](const DenBehavior& b) { return b.activity == Activity::Sleep; }));
+    CHECK(a.behavior.wake());
+    CHECK(run(a, d, true, 10, [](const DenBehavior& b) { return b.activity == Activity::Idle; }));
+    a.behavior.care(Care::Feed, d);  // up now: it eats
+    CHECK(a.behavior.activity == Activity::Eat);
+    CHECK(!run(a, d, true, 40, [](const DenBehavior& b) { return b.activity == Activity::GoNap; }));
+    a.behavior.care(Care::Pet, d);  // 40 s on: a pat keeps it up another minute
+    CHECK(!run(a, d, true, 45, [](const DenBehavior& b) { return b.activity == Activity::GoNap; }));
+    CHECK(run(a, d, true, 40, [](const DenBehavior& b) { return b.activity == Activity::Sleep; }));
+    CHECK(a.behavior.wake());  // (asleep again: it can be woken again)
 }
 
 TEST(dragons_blink_and_shut_their_eyes_to_sleep) {

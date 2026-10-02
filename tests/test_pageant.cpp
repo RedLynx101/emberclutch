@@ -256,19 +256,22 @@ TEST(accessories_fit_every_kind) {
                 const float through = eyesThroughBrim(m, fit.frame[0], kHatBrim, 0.0f);
                 CHECK(through <= 1e-4f);
                 CHECK(eyesThroughBrim(m, fit.headNarrow, kHatNarrow, 0.0f) <= 1e-4f);  // (and the narrow things: run 23)
+                CHECK(eyesThroughBrim(m, fit.headWide, kHatBrim, 0.0f) <= 1e-4f);      // (and the wide brim: run 24)
                 // Not floating (up to 0.52 before run 23). (The far model wears the near one's fit in
                 // the game: app/render_wear.inc.)
-                CHECK(lod1 || (fit.hatLift < 0.3f && fit.narrowLift < 0.3f));
+                CHECK(lod1 || (fit.hatLift < 0.3f && fit.narrowLift < 0.3f && fit.wideLift < 0.3f));
                 if (through > 1e-4f) std::printf("  FAIL: %s %s: an eye %.2f through the brim\n", kindInfo(k).name, form ? "grown" : "hatchling", through);
                 const Vec3 hat = fit.frame[0].translation(), back = fit.frame[2].translation();
                 CHECK(lod1 || hat.z > headJoint.z - 0.12f);  // on top of the head (a Curlstone holds its head joint high: run 23)
+                CHECK(lod1 || fit.onPad == (std::strcmp(kindInfo(k).name, "lilyfin") == 0));  // (only the Lilyfin wears a pad: run 24)
                 CHECK(hat.y < m.skel.rest[chest].translation().y);               // well forward of the chest
                 CHECK(back.z > m.skel.rest[hips].translation().z && back.z > m.skel.rest[chest].translation().z - 0.3f);
                 CHECK(column(fit.frame[2], 2).z > 0.3f * length(column(fit.frame[2], 2)));  // the back's up is up (a wyvern hatchling's is steep)
                 CHECK(column(fit.frame[0], 2).z > 0.7f * length(column(fit.frame[0], 2)));  // and the hat's
                 if (!lod1)
-                    std::printf("  %-11s %-9s head %.2f neck %.2f back %.2f tail %.2f; hat back %.2f up %.2f at %.0f%%, narrow up %.2f\n", kindInfo(k).name,
-                                form ? "grown" : "hatchling", unit[0], unit[1], unit[2], unit[3], fit.hatBack, fit.hatLift, fit.hatScale * 100, fit.narrowLift);
+                    std::printf("  %-11s %-9s head %.2f neck %.2f back %.2f tail %.2f; hat back %.2f up %.2f at %.0f%%, narrow up %.2f%s\n", kindInfo(k).name,
+                                form ? "grown" : "hatchling", unit[0], unit[1], unit[2], unit[3], fit.hatBack, fit.hatLift, fit.hatScale * 100,
+                                fit.narrowLift, fit.onPad ? "; on its pad" : "");
             }
         }
     }

@@ -229,6 +229,9 @@ void cast(App& app, State& f, vext::Stage& stage) {
     f.twitch = f.dip = 0;
     f.step = Step::Casting;
     f.t = 0;
+    // From the rod's tip, where it dangled (run 24: the cast's first frame drew the line straight
+    // out to where the bobber was last, or to the valley's middle on the first cast).
+    f.bobber = tipOf(f, app.t) - Vec3{0, 0, 0.3f};
     audio::playSfx(audio::Sfx::Cast);
     (void)stage;
 }
@@ -672,7 +675,7 @@ void drawOver(App& app, const vext::Stage& stage) {
     const Vec3 fwd = forwardOf(s.fisherHeading);
     const Vec3 hand = s.fisher + fwd * 0.3f + rightOf(s.fisherHeading) * 0.1f + Vec3{0, 0, 0.55f};
     const Vec3 tip = hand + fwd * 1.5f + Vec3{0, 0, 1.15f + 0.03f * std::sin(app.t * 1.3f)};
-    Vec3 end = tip + fwd * 1.2f;
+    Vec3 end = tip + fwd * 2.4f;  // (out past the shallows: core/fishing coveSpots, run 24)
     end.z = stage.valley->water;
     float hx, hy, hp, tx, ty, tp, ex, ey, ep;
     if (!r3d::project(hand, hx, hy, hp) || !r3d::project(tip, tx, ty, tp) || !r3d::project(end, ex, ey, ep)) return;

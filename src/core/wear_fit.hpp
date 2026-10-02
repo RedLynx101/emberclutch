@@ -20,7 +20,10 @@ struct WearFit {
     s8 boneB[kWearSlots] = {-1, -1, -1, -1};
     Mat34 frame[kWearSlots];  // the slot's frame (its axes scaled to its unit) in rest armature space
     Mat34 headNarrow;  // the head slot's frame for the narrow things (a crown, a party hat: no wide brim; run 23)
-    float hatBack = 0, hatLift = 0, hatScale = 1, narrowLift = 0;  // (how far the hat moved back and up off the skull to clear the eyes, in its units, and its size)
+    Mat34 headWide;    // ...and for the straw sunhat's wide brim (run 24)
+    // (how far the hat moved back and up off the skull to clear the eyes, in its units, and its size)
+    float hatBack = 0, hatLift = 0, hatScale = 1, narrowLift = 0, wideLift = 0;
+    bool onPad = false;  // (a pad on its head, the Lilyfin's: the hats sit on it, run 24)
 };
 
 // Measures a model (a kind's form); `plan` picks its nudges (core/kinds plan index, -1 none) and

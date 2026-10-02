@@ -78,6 +78,7 @@ struct CareState {
     bool reported = false;       // a rough stroke / a call was reported this contact
     TouchHit lastHit;            // (render3d) the last spot touched
     bool hadHit = false;
+    bool wakeStroke = false;  // this stroke woke it (D143): nothing else it does counts
     float sweetTime = 0, sweetCooldown = 0, stillTime = 0;
     float soundWait = 0, heartWait = 0, petTick = 0;
     bool sweetFound = false;     // this visit

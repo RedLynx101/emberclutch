@@ -693,12 +693,22 @@ void DenBehavior::chooseAmbient(const Dragon& d, float moveScale) {
     start(next);
 }
 
+bool DenBehavior::wake() {
+    awakeFor = kWokenHold;
+    if (!asleep(*this)) return false;
+    start(Activity::Wake);
+    return true;
+}
+
+bool DenBehavior::awake() const { return !asleep(*this) && activity != Activity::Wake; }
+
 void DenBehavior::update(const Dragon& d, bool night, float moveScale, float dt) {
     speed = 0;
     size = moveScale;
     if (activity != Activity::Fly && air > 0) air = std::fmax(0.0f, air - 1.6f * dt);  // interrupted: down it comes
     if (petTimer > 0) petTimer -= dt;
-    const bool bedtime = d.napping || night;
+    if (awakeFor > 0) awakeFor -= dt;
+    const bool bedtime = (d.napping || night) && awakeFor <= 0;  // (woken: up a while yet, D143)
 
     // Priorities that interrupt everyday life.
     if (d.upset && !sulking(activity)) {
@@ -1562,7 +1572,12 @@ float DenBehavior::groomAngle() const {
 }
 
 void DenBehavior::care(Care c, const Dragon& d, PetZone zone) {
-    if (asleep(*this) || activity == Activity::Wake) return;
+    if (asleep(*this)) {  // your touch wakes it (D143); the care itself waits till it's up
+        wake();
+        return;
+    }
+    if (activity == Activity::Wake) return;
+    awakeFor = kWokenHold;  // (cared for: at bedtime it stays up a minute more)
     if (d.upset || sulking(activity)) {
         if (c == Care::MakeUp) start(Activity::MakeUp);
         return;  // an upset dragon turns away from everything else

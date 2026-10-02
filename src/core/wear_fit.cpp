@@ -230,6 +230,73 @@ float piercing(const std::vector<Vec3>& pts, float radius, float lift) {
     return worst;
 }
 
+// A pad worn on the head (the Lilyfin's lily pad: run 24, Noah: "Have the hats on Lilyfin (baby
+// and adult) lay flat on top of their pad"): a wide part (horns) over the skull whose rim fits a
+// plane. If there is one, `out` is a hat's frame sitting on it, level with it, in its middle.
+bool padSeat(const ModelData& m, int head, bool grown, const Mat34& base, Mat34& out) {
+    std::vector<Vec3> pts;  // the horns' points in the base frame's units (x across, y back, z up)
+    const Vec3 bx{base.m[0][0], base.m[1][0], base.m[2][0]}, by{base.m[0][1], base.m[1][1], base.m[2][1]},
+        bz{base.m[0][2], base.m[1][2], base.m[2][2]}, o = base.translation();
+    const float uu = dot(bx, bx);
+    if (uu < 1e-9f) return false;
+    for (const MeshData& md : m.meshes) {
+        if (md.kind != kMeshPart || md.group != kGroupHorns || md.variant != 0) continue;
+        const int key = md.keyCount > 1 ? (grown ? md.keyCount - 1 : 0) : 0;
+        for (int v = 0; v < md.vertexCount; ++v) {
+            const u8* sk = &md.skin[std::size_t(v) * 4];
+            if (!descends(m.skel, md.palette[sk[2] >= sk[3] ? sk[0] : sk[1]], head)) continue;
+            const Vec3 d = md.pos[std::size_t(key) * md.vertexCount + v] - o;
+            pts.push_back({dot(d, bx) / uu, dot(d, by) / uu, dot(d, bz) / uu});
+        }
+    }
+    if (pts.size() < 12) return false;
+    float cx = 0, cy = 0;
+    for (const Vec3& p : pts) cx += p.x, cy += p.y;
+    cx /= pts.size(), cy /= pts.size();
+    float reach = 0;
+    for (const Vec3& p : pts) reach = std::fmax(reach, std::hypot(p.x - cx, p.y - cy));
+    if (reach < 0.45f) return false;  // (horns, a crest: nothing wide)
+    // The rim (away from the middle, where a flower may stand): z = a x + b y + c, least squares.
+    double s[3][4] = {};
+    int n = 0;
+    for (const Vec3& p : pts) {
+        if (std::hypot(p.x - cx, p.y - cy) < 0.6f * reach) continue;
+        const double r[3] = {p.x, p.y, 1.0};
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) s[i][j] += r[i] * r[j];
+            s[i][3] += r[i] * p.z;
+        }
+        ++n;
+    }
+    if (n < 8) return false;
+    for (int i = 0; i < 3; ++i) {  // (Gauss-Jordan, pivoting on the diagonal: a plane's sums are well posed)
+        if (std::fabs(s[i][i]) < 1e-9) return false;
+        for (int k = 0; k < 3; ++k) {
+            if (k == i) continue;
+            const double f = s[k][i] / s[i][i];
+            for (int j = i; j < 4; ++j) s[k][j] -= f * s[i][j];
+        }
+    }
+    const float a = static_cast<float>(s[0][3] / s[0][0]), b = static_cast<float>(s[1][3] / s[1][1]),
+                c = static_cast<float>(s[2][3] / s[2][2]);
+    double err = 0;
+    for (const Vec3& p : pts)
+        if (std::hypot(p.x - cx, p.y - cy) >= 0.6f * reach) err += (p.z - (a * p.x + b * p.y + c)) * (p.z - (a * p.x + b * p.y + c));
+    const Vec3 up = normalize(Vec3{-a, -b, 1.0f});
+    const float zc = a * cx + b * cy + c;
+    if (std::sqrt(err / n) > 0.07f * reach || up.z < 0.8f || zc < -0.1f) return false;  // flat, level enough, over the skull
+    // Its top there: the highest rim point's height over the plane, so the hat rests on the pad.
+    float rise = 0;
+    for (const Vec3& p : pts)
+        if (std::hypot(p.x - cx, p.y - cy) >= 0.6f * reach) rise = std::fmax(rise, p.z - (a * p.x + b * p.y + c));
+    const Vec3 at = o + bx * cx + by * cy + bz * (zc + std::fmin(rise, 0.08f) + 0.03f);
+    const float unit = std::sqrt(uu);
+    Vec3 ex, ey, ez;
+    axes(normalize(bx * up.x + by * up.y + bz * up.z), by, ex, ey, ez);
+    out = makeFrame(at, ex, ey, ez, unit, unit, unit);
+    return true;
+}
+
 float highestThrough(const std::vector<Vec3>& pts, float backBy, float radius, float margin) {
     float worst = -1e9f;
     for (const Vec3& p : pts) {
@@ -449,7 +516,45 @@ bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out) {
         std::vector<Vec3> eyesAt, partsAt;
         constexpr float kMargin = 0.05f, kCrownR = 0.42f;
         // (once for the brimmed hats, once for the narrow things: a crown, a party hat, a circlet)
-        auto seat = [&](float brim, float& outBack, float& outLift, float& outScale) {
+        // The head's top under a hat, in the base frame's units (x across, y back, z up), from a
+        // grid of rays down it once: a brim mustn't cut into the skull (run 24: the Puffback's
+        // straw hat did, its wide brim through its domed forehead). Every spot below reads it.
+        constexpr int kGrid = 20;
+        constexpr float kSpan = 1.4f, kNone = -1e9f;
+        const Vec3 ex = normalize(Vec3{base.m[0][0], base.m[1][0], base.m[2][0]}), o = base.translation();
+        float top[kGrid][kGrid];
+        for (int i = 0; i < kGrid; ++i)
+            for (int j = 0; j < kGrid; ++j) {
+                const float x = -kSpan + 2 * kSpan * i / (kGrid - 1), y = -kSpan + 2 * kSpan * j / (kGrid - 1);
+                const Vec3 w = o + ex * (x * unit) + ey * (y * unit);
+                const float t = body.cast(w + ez * kFar, ez * -1.0f, inHead);
+                top[i][j] = t < 0 ? kNone : (kFar - t) / unit;
+            }
+        auto topAt = [&](float x, float y) {  // the highest of the cell's corners (kNone off the head)
+            const float fi = (x + kSpan) / (2 * kSpan) * (kGrid - 1), fj = (y + kSpan) / (2 * kSpan) * (kGrid - 1);
+            const int i = static_cast<int>(std::floor(fi)), j = static_cast<int>(std::floor(fj));
+            float h = kNone;
+            for (int a = 0; a < 2; ++a)
+                for (int b = 0; b < 2; ++b)
+                    if (i + a >= 0 && j + b >= 0 && i + a < kGrid && j + b < kGrid) h = std::fmax(h, top[i + a][j + b]);
+            return h;
+        };
+        // How far up a candidate must go (its units) for its brim's underside, out to `reach`, to
+        // clear the skull: there it rests on the head, touching it (not floating).
+        auto brimRest = [&](const Mat34& f, float scale, float reach) {
+            float need = 0;
+            const Vec3 c0{f.m[0][0], f.m[1][0], f.m[2][0]}, c1{f.m[0][1], f.m[1][1], f.m[2][1]}, c2{f.m[0][2], f.m[1][2], f.m[2][2]};
+            for (float r : {0.45f, 0.72f, 1.0f})
+                for (int k = 0; k < 12; ++k) {
+                    const float a = k * 0.5235988f;
+                    const Vec3 w = f.translation() + c0 * (r * reach * std::cos(a)) + c1 * (r * reach * std::sin(a)) + c2 * kHatBrimZ;
+                    const Vec3 d = w - o;
+                    const float h = topAt(dot(d, ex) / unit, dot(d, ey) / unit);
+                    if (h > kNone * 0.5f) need = std::fmax(need, (h - dot(d, ez) / unit) / scale);
+                }
+            return need;
+        };
+        auto seat = [&](float brim, float reach, float& outBack, float& outLift, float& outScale) {
             float bestCost = 1e9f;
             Mat34 best = base;
             for (int step = -6; step <= 9; ++step) {
@@ -475,16 +580,17 @@ bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out) {
                     eyePoints(m, f, eyesAt);
                     headPartPoints(m, head, grown, f, partsAt);
                     const float clear = std::fmax(0.0f, highestThrough(eyesAt, 0.0f, brim, kMargin));
+                    const float rest = brimRest(f, scale, reach);  // (its brim on the forehead: resting, not floating)
                     for (int up = 0; up <= 0; ++up) {  // (never higher than the eyes need: up on a crest is floating too)
-                        const float lift = clear + 0.05f * up;
-                        const float cost = lift + 0.3f * std::fabs(back) + 0.5f * (1.0f - scale) + 0.4f * ta +
-                                           0.5f * piercing(partsAt, kCrownR, 0.0f);  // (as seated: lifting off a crest is no cure)
+                        const float lift = std::fmax(clear, rest) + 0.05f * up;
+                        const float cost = clear + 0.5f * std::fmax(0.0f, rest - clear) + 0.3f * std::fabs(back) + 0.5f * (1.0f - scale) +
+                                           0.4f * ta + 0.5f * piercing(partsAt, kCrownR, 0.0f);  // (as seated: lifting off a crest is no cure)
                         if (cost < bestCost - 1e-4f) {
                             bestCost = cost;
                             best = f;
                             best.setTranslation(at + normalize(Vec3{f.m[0][2], f.m[1][2], f.m[2][2]}) * (lift * unit * scale));
                             outBack = back;
-                            outLift = lift;
+                            outLift = clear;  // (what floats: the eyes' lift; a brim's rest touches)
                             outScale = scale;
                         }
                     }
@@ -493,9 +599,19 @@ bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out) {
             return best;
         };
         float back = 0, lift = 0, scale = 1;
-        out.headNarrow = seat(kHatNarrow, back, lift, scale);
+        out.headNarrow = seat(kHatNarrow, 0.56f, back, lift, scale);  // (the crown's band)
         out.narrowLift = lift;
-        out.frame[0] = seat(kHatBrim, out.hatBack, out.hatLift, out.hatScale);
+        out.headWide = seat(kHatBrim, 1.0f, back, lift, scale);       // (the straw sunhat's wide brim, drooping at its edge)
+        out.wideLift = lift;
+        out.frame[0] = seat(kHatBrim, 0.72f, out.hatBack, out.hatLift, out.hatScale);  // (the top hat's brim)
+        Mat34 pad;
+        if (padSeat(m, head, grown, base, pad)) {  // a pad on its head: every hat sits on that, level with it
+            out.frame[0] = out.headNarrow = out.headWide = pad;
+            out.wideLift = 0;
+            out.hatBack = out.hatLift = out.narrowLift = 0;
+            out.hatScale = 1;
+            out.onPad = true;
+        }
     }
 
     // The plan's nudges.
@@ -507,12 +623,12 @@ bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out) {
         f.setTranslation(f.translation() + ex * nd->dx + ey * nd->dy + ez * nd->dz);
         for (int r = 0; r < 3; ++r)
             for (int c = 0; c < 3; ++c) f.m[r][c] *= nd->scale;
-        if (k == 0) {  // (the narrow things' seat with it)
-            Mat34& g = out.headNarrow;
-            g.setTranslation(g.translation() + ex * nd->dx + ey * nd->dy + ez * nd->dz);
-            for (int r = 0; r < 3; ++r)
-                for (int c = 0; c < 3; ++c) g.m[r][c] *= nd->scale;
-        }
+        if (k == 0)  // (the narrow things' and the wide brim's seats with it)
+            for (Mat34* g : {&out.headNarrow, &out.headWide}) {
+                g->setTranslation(g->translation() + ex * nd->dx + ey * nd->dy + ez * nd->dz);
+                for (int r = 0; r < 3; ++r)
+                    for (int c = 0; c < 3; ++c) g->m[r][c] *= nd->scale;
+            }
     }
     return out.ok[0] || out.ok[1] || out.ok[2] || out.ok[3];
 }

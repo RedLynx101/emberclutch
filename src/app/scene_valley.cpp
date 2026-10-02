@@ -306,8 +306,13 @@ void windOnTail(App& app, ValleyScene& s, bool flying, bool diving) {
     s.flyer.tailStraight += (wantStraight - s.flyer.tailStraight) * std::fmin(1.0f, dt * 3.0f);
 }
 
+// A dragon circling the sky on its own: a few wingbeats, then a glide, and again (run 24, Noah:
+// the wanderer "should at least be animated (flapping wings)"; it held the glide all the way round).
+ClipId cruising(float t) { return std::fmod(t, 5.0f) < 3.2f ? ClipId::FlyFlap : ClipId::FlyGlide; }
+
 // The wanderer out on its loop (D69): walking round its spot as it goes, or (grown) flying
-// wide circles over it; the trip moves on as you walk with the 3DS closed.
+// wide circles over it; the trip moves on as you walk with the 3DS closed. (Its loop starts and
+// ends at the Wanderers' Trailhead: a trip a few steps old circles near it.)
 void animateWanderer(App& app, ValleyScene& s) {
     const int w = wandererIndex(app.game);
     if (w < 0) return;
@@ -331,7 +336,7 @@ void animateWanderer(App& app, ValleyScene& s) {
     if (!lib) return;
     const int form = d.stage == Stage::Hatchling ? kFormHatchling : kFormGrown;
     const int* clips = r3d::clipIndexFor(d, form);
-    const ClipId want = flies ? ClipId::FlyGlide : ClipId::Walk;
+    const ClipId want = flies ? cruising(s.wanderT) : ClipId::Walk;
     if (s.wanderClip != want && clips[static_cast<int>(want)] >= 0) {
         s.wanderActor.anim.play(clips[static_cast<int>(want)], 0.3f, true);
         s.wanderClip = want;
@@ -377,8 +382,8 @@ void animateStar(App& app, ValleyScene& s) {
     const AnimLibrary* lib = r3d::animsFor(s.star);
     if (!lib) return;
     const int* clips = r3d::clipIndexFor(s.star, kFormGrown);
-    if (s.starActor.anim.clip < 0 && clips[static_cast<int>(ClipId::FlyGlide)] >= 0)
-        s.starActor.anim.play(clips[static_cast<int>(ClipId::FlyGlide)], 0.0f, true);
+    const int cruise = clips[static_cast<int>(cruising(s.starT + 1.7f))];  // (out of step with the wanderer)
+    if (cruise >= 0 && s.starActor.anim.clip != cruise) s.starActor.anim.play(cruise, s.starActor.anim.clip < 0 ? 0.0f : 0.4f, true);
     s.starActor.anim.update(*lib, app.dt, nullptr, 0);
     s.starShown = true;
 }

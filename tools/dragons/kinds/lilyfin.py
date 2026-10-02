@@ -120,12 +120,15 @@ GROWN_NODES = _mirrored({
     "muzzle": (_h(0, -1.81, 1.47), (0.37, 0.21)),
     "snout": (_h(0, -1.97, 1.41), (0.21, 0.125)),
 }, {
-    "shoulder": ((0.38, -0.50, 0.62), (0.25, 0.27)),
-    "elbow": ((0.55, -0.58, 0.38), (0.16, 0.16)),
+    # (run 24, Noah: "The Lillyfins legs are floating off of their body": the shoulder and hip sat
+    # low under the plump belly, the legs pegs touching its underside; now each comes out of the
+    # flank, higher and fuller, with a fuller upper leg)
+    "shoulder": ((0.41, -0.50, 0.72), (0.31, 0.33)),
+    "elbow": ((0.56, -0.58, 0.40), (0.185, 0.18)),
     "wrist": ((0.58, -0.64, 0.14), (0.13, 0.125)),
     "toe_f": ((0.62, -0.85, 0.065), (0.18, 0.065)),
-    "hipj": ((0.38, 0.98, 0.62), (0.29, 0.31)),
-    "knee": ((0.55, 0.80, 0.38), (0.17, 0.17)),
+    "hipj": ((0.41, 0.98, 0.72), (0.34, 0.36)),
+    "knee": ((0.56, 0.80, 0.40), (0.195, 0.19)),
     "ankle": ((0.58, 1.04, 0.14), (0.135, 0.13)),
     "toe_b": ((0.62, 0.84, 0.065), (0.19, 0.065)),
 })

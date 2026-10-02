@@ -37,9 +37,13 @@ CoveSpots coveSpots(const Valley& v) {
         s.fishSpot = {spot.at(0).x, spot.at(0).y};
         s.castTo = {s.fishSpot.x + 0.4f, s.fishSpot.y + 9.0f};
         s.partner = {s.fishSpot.x - 0.85f, s.fishSpot.y - 0.9f};  // at your side on the narrow jetty (in the camera's view)
+        // Tam fishes at the water's edge straight out from his shack's anchor, looking out over the
+        // lake (run 24, Noah: "Tam has his pole out fishing, but he's nowhere near the water": he
+        // stood by the shack, 30 m up the beach, his line down onto the sand).
         const PlaceAnchor tam = placeAnchor(kPlaceCove, "fisher");
-        s.fisher = tam ? Vec2{tam.at(0).x, tam.at(0).y} : Vec2{-5.2f, shore - 3.4f};
-        s.fisherFacing = 0.55f;
+        const float tamX = tam ? tam.at(0).x : -5.2f;
+        s.fisher = {tamX, shoreAt(tamX) - 1.2f};
+        s.fisherFacing = 0.0f;
         const PlaceAnchor shells = placeAnchor(kPlaceCove, "shells");
         for (int k = 0; k < kShellSpots; ++k)
             s.shells[k] = k < shells.count ? Vec2{shells.at(k).x, shells.at(k).y} : Vec2{-18.0f + 8.0f * k, shore - 0.9f};

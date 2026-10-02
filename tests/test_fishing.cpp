@@ -58,6 +58,15 @@ TEST(fishing_cove_spots) {
     CHECK(above(s.fisher) > 0.0f && above(s.partner) > 0.0f);
     CHECK(s.castTo.y > s.fishSpot.y + 5);
     CHECK(std::hypot(s.fisher.x - s.fishSpot.x, s.fisher.y - s.fishSpot.y) > 2.5f);
+    {  // Tam's line (app/cove.cpp drawOver: 4.2 m out along his facing) lands in the water (run 24)
+        const Vec2 tam = placeToWorld(*p, s.fisher);
+        const float h = p->heading + s.fisherFacing;
+        const Vec2 end{tam.x + std::sin(h) * 4.2f, tam.y - std::cos(h) * 4.2f};
+        std::printf("  Tam at (%.1f %.1f) %.2f m above the water, his line's end %.2f m\n", s.fisher.x, s.fisher.y, above(s.fisher),
+                    v.heightAt(end.x, end.y) - v.water);
+        CHECK(v.heightAt(end.x, end.y) < v.water - 0.2f);
+        for (int k = 0; k < kShellSpots; ++k) CHECK(std::hypot(s.shells[k].x - s.fisher.x, s.shells[k].y - s.fisher.y) > 1.5f);
+    }
     CHECK(std::hypot(s.partner.x - s.fishSpot.x, s.partner.y - s.fishSpot.y) > 1.2f);
     for (int k = 0; k < kShellSpots; ++k) {
         CHECK(above(s.shells[k]) > -0.05f && above(s.shells[k]) < 1.5f);  // on the beach, by the water

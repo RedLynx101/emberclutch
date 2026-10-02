@@ -83,7 +83,7 @@ inline constexpr const char* kEggStays = "An egg stays warm in its nest.";
 inline constexpr const char* kEggStaysHome = "It's dangerous to go alone! Eggs stay warm at home: hatch a dragon to take along.";
 inline constexpr const char* kDangerousAlone = "It's dangerous to go alone! Take a dragon with you.";
 // Reaching for a sleeping dragon (run 21: it just didn't answer); one %s, its name.
-inline constexpr const char* kAsleep[3] = {"%s is fast asleep.", "%s is sleeping soundly.", "%s is snoozing. Let it rest."};
+inline constexpr const char* kWakesUp[3] = {"%s wakes up.", "%s blinks awake.", "%s yawns and wakes up."};  // (D143)
 inline constexpr const char* kOutingRide = "%s is grown: ride it, fly, land and walk about.";
 inline constexpr const char* kOutingLead = "%s walks beside you on its lead, and follows you anywhere.";
 inline constexpr const char* kMakePartner = "Make %s your partner";

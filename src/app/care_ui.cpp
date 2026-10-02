@@ -963,7 +963,10 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
         panel(rinseR, withAlpha(theme::kSkyTeal, 0.75f));
         sprite(care_ladle_idx, rinseR.x + 14, rinseR.y + 14, 0.38f);
         text(app, str::kRinse, rinseR.x + 42, rinseR.y + 8, 0.42f, theme::kShell);
-        if (in.released && !c.stroke.down && rinseR.contains(in.rx, in.ry)) rinse(app, d);
+        if (in.released && !c.stroke.down && rinseR.contains(in.rx, in.ry)) {
+            if (b.awake()) rinse(app, d);
+            else if (b.wake()) showToastf(app, str::kWakesUp[0], d.name);  // (asleep: the rinse wakes it first)
+        }
         onUi = onUi || rinseR.contains(in.tx, in.ty);
     }
     // Making up with an upset dragon comes first.
@@ -996,9 +999,13 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
             c.reported = false;
             c.stillTime = 0;
             c.onDragon = r3d::pickCloseUp(touch, h);
-            if (b.activity == Activity::Sleep) {  // care waits till it wakes (behavior): say so (run 21)
+            // Asleep (or waking): your touch wakes it, and care starts once it's up (D143, run 24:
+            // the ball had raised Play while it slept). It stays up a minute after your last care.
+            c.wakeStroke = !b.awake();
+            if (b.wake()) {  // (awake already: at bedtime it stays up a minute more)
                 static int said = 0;
-                showToastf(app, str::kAsleep[said++ % 3], d.name);
+                showToastf(app, str::kWakesUp[said++ % 3], d.name);
+                audio::playSfx(audio::Sfx::Purr, 0.7f);
             }
         }
         const Vec2 before = c.stroke.last;
@@ -1008,7 +1015,7 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
         hit = r3d::pickCloseUp(touch, h);
         if (hit) c.lastHit = h;
         c.hadHit = hit;
-        if (!d.upset) {
+        if (!d.upset && !c.wakeStroke) {
             switch (c.tool) {
                 case Tool::Hand: useHand(app, in, d, hit, h, kind); break;
                 case Tool::Food: useFood(app, in, d); break;
@@ -1035,17 +1042,18 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
         }
         if (c.orbHeld && std::hypot(c.orbVel.x, c.orbVel.y) > 120) audio::playSfx(audio::Sfx::OrbRattle);  // off it rolls
         c.orbHeld = false;
-        if (!d.upset && c.tool == Tool::Rope) {  // let go: off it trots, proud
+        const bool cared = !d.upset && !c.wakeStroke;  // (a stroke that woke it does nothing else)
+        if (cared && c.tool == Tool::Rope) {  // let go: off it trots, proud
             b.care(Care::TugLetGo, d);
             play(d, 6);
             emit(app, kFxHeart, {in.rx, in.ry - 10}, 2);
         }
-        if (!d.upset && c.tool == Tool::Feather && c.featherNear && b.activity == Activity::Bat) {  // pounce!
+        if (cared && c.tool == Tool::Feather && c.featherNear && b.activity == Activity::Bat) {  // pounce!
             b.care(Care::Play, d);
             play(d, 6);
             emit(app, kFxHeart, {in.rx, in.ry - 10}, 3);
         }
-        if (!d.upset) {
+        if (cared) {
             if (c.tool == Tool::Hand && end == Stroke::Poke && c.hadHit &&
                 (c.lastHit.zone == PetZone::Head || c.lastHit.zone == PetZone::Cheek))
                 b.care(Care::Poke, d);
@@ -1053,6 +1061,7 @@ void drawBottom(App& app, const Input& in, Dragon& d, s64 now) {
         }
         c.holdingFood = false;  // a food let go goes back in the tray
         c.hadHit = false;
+        c.wakeStroke = false;
     }
 
     // The tool in hand, at the stylus.

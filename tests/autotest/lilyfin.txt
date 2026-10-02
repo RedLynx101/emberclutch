@@ -1,0 +1,61 @@
+# Run 24: "The Lillyfins legs are floating off of their body": the Lilyfin grown and as a hatchling in
+# the wardrobe, its whole body from four sides, and its hats on its lily pad.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 160 120
+tap 160 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Rill
+wait 12
+pg give
+pg grown
+pg bare
+pg kind 12 0
+pg wardrobe
+wait 2.5
+pg tab 4
+pg spin 0.15
+wait 1.5
+shot g-front
+pg spin 0.9
+wait 0.8
+shot g-side
+pg spin 2.4
+wait 0.8
+shot g-back
+pg spin -0.9
+wait 0.8
+shot g-otherside
+pg tab 0
+pg wear 0
+pg spin 0.9
+wait 1.2
+shot g-sunhat
+pg wear 4
+wait 0.8
+shot g-crown
+pg hatchling
+wait 2.5
+pg bare
+pg tab 4
+pg spin 0.15
+wait 1.5
+shot h-front
+pg spin 0.9
+wait 0.8
+shot h-side
+pg tab 0
+pg wear 0
+wait 1.2
+shot h-sunhat
+pg wear 4
+wait 0.8
+shot h-crown
+quit

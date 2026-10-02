@@ -146,6 +146,9 @@ enum class Care : u8 {
 // tests: quicker, they circled their beds.)
 inline float walkHaste(bool baby) { return baby ? 1.25f : 1.45f; }
 
+// Woken at bedtime, a dragon stays up this long after the last thing you did with it (D143).
+constexpr float kWokenHold = 60.0f;
+
 struct DenBehavior {
     Vec2 pos;
     float heading = 0;  // radians about Z; 0 faces -Y (toward the camera)
@@ -158,6 +161,10 @@ struct DenBehavior {
     float blend = 0.25f;  // suggested crossfade into `clip`, seconds
     float speed = 0;      // ground speed this frame (adult units per second x moveScale)
     float petTimer = 0;   // keeps a petting reaction alive between strokes
+    // Woken up (run 24, Noah: "allow the player to wake them up, then they stay up for a minute
+    // or until something else happens"): seconds it stays up at bedtime (night, or a tired nap)
+    // after you woke it or last cared for it; then off to bed again (D143).
+    float awakeFor = 0;
     PetZone petZone = PetZone::Head;
     bool clipDone = false;  // set by the caller when a one-shot clip has finished
     bool trot = false;      // the current walk is a trot
@@ -238,8 +245,13 @@ struct DenBehavior {
     // Advances by dt seconds. moveScale: the dragon's size relative to an adult (leaps and
     // arrival distances scale with it; walking uses walkSpeed / trotSpeed).
     void update(const Dragon& d, bool night, float moveScale, float dt);
-    // The player's care. Ignored while asleep; only MakeUp reaches an upset dragon.
+    // The player's care. A sleeping dragon only wakes at it (care reaches it once it's up, and
+    // keeps it up kWokenHold seconds at bedtime); only MakeUp reaches an upset dragon.
     void care(Care c, const Dragon& d, PetZone zone = PetZone::Head);
+    // Wakes it if it's asleep or drifting off (true if it was), up for kWokenHold seconds.
+    bool wake();
+    // Up and about: neither asleep nor still waking (what care needs: app/care_ui gates on it).
+    bool awake() const;
     // A bite of hand-fed food reached its mouth. `disliked`: it won't have it; `last`: that
     // was the last bite (a favourite gets the happy wiggle).
     void feedBite(bool disliked, bool last, bool favourite);

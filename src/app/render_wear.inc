@@ -61,7 +61,8 @@ void drawWorn(App& app, const Posed& p) {
         look.colour[2] = x.trim;
         look.colour[3] = x.gem;
         setLook(look, 0.7f);
-        const Mat34& frame = s == static_cast<int>(WearSlot::Head) && narrowOnHead(x.shape) ? fit->headNarrow : fit->frame[s];
+        const bool head = s == static_cast<int>(WearSlot::Head);
+        const Mat34& frame = head && narrowOnHead(x.shape) ? fit->headNarrow : head && x.shape == WearShape::SunHat ? fit->headWide : fit->frame[s];
         const Mat34 bones[2] = {mul(p.skin[fit->boneA[s]], frame), mul(p.skin[fit->boneB[s]], frame)};
         drawMesh(app, g, bones);
     }

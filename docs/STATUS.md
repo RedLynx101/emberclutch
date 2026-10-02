@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 31: the 1.0.0 candidate with the traits made real (D150) on the 3DS, the guide's almanac, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): 1.0 called (D151): the release ready, waiting for the repo to go public, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Tooling: headless emulator checks (2026-09-30)
@@ -16,6 +16,19 @@
 - Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
   running it in UTC), and the async file reads and presentation made animations drift (off).
 
+## Now: 1.0, called; the release ready to go public (2026-10-02)
+- **Run 31 came back:** "It all runs great, get the rest ready for me to make this public." The traits and the
+  guide kept.
+- **Ready (D151):** the files (`dist\player\`: `emberclutch.cia` sha256 `84feca64...`, `emberclutch.3dsx`
+  `b453fea9...`, `emberclutch-1.0.0.zip` `7bf73091...`; `docs/guide/Emberclutch-Guide.pdf` `c22571d2...`), the
+  notes (`docs/release/notes-v1.0.0.md`), FBI's QR code (`docs/release/fbi-qr.png`, the latest release's CIA),
+  the README (the guide, the QR code), `tools/release/release.ps1` (a draft, then `-Publish`; refuses while
+  private). History scanned again: clean.
+- **Next (Noah):** make the repo public (and turn on private vulnerability reporting). **Then (on his word):**
+  `tools\release\release.ps1` for the draft, a look, `-Publish`; the QR scanned with FBI once; the Universal-DB
+  request (R5); the video (R6: stop at the voice samples; tell Noah to switch to max before the edit passes);
+  YouTube (R7).
+
 ## Now: run 31 (1.0.0), the traits made real, the guide's almanac (2026-10-02)
 - **Run 30 came back:** the player build tested fine ("we're good, I tested it. Let's send this one"); the
   handbook "is cool", with one addition: what you can't easily see in the game, "like what exactly each trait
@@ -27,9 +40,7 @@
 - **Sent** to .51: the 1.0.0 player build with the traits (save backed up to `build/3ds-backup/2026-10-02_1036/`).
   Run 31's steps (`docs/plan/hardware-check-16.md`), the traits card and the guide's pages on the review page
   (version 25, collections `run31`, `plans` slugs `traits`, `guide-draft-2`).
-- **Next:** Noah checks it runs (and Keep/Change on the traits and the guide). Then release prep up to step 3
-  (the QR code for `releases/latest/download/emberclutch.cia`, the release notes, the PDF into `docs/guide/`,
-  the README's guide link), and Noah makes the repo public; then the tag and the release (as a draft first).
+- **Came back** (run 31): see 1.0 above.
 
 ## Now: run 30 (1.0.0), the 1.0 candidate and the guide's first draft (2026-10-02)
 - **Run 29 came back clean** ("Looks good. What's next? The non-dev build and 1.0?"; "On .51 when ready.

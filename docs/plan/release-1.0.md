@@ -66,19 +66,23 @@ What's left is Noah's run 30 and his call on 1.0.*
      clean; old commits carry Noah's notes and the review pages' text).
 
 ## R4: the release checklist (when Noah says)
-1. Version 1.0.0 in the Makefile; `tools\build.ps1 -Player` (or `make DEV=0`) and the CIA packaged.
-2. The player build installed over a dev save on the 3DS once (the save carries over).
-3. `git tag v1.0.0`; a GitHub Release with `emberclutch.cia`, `emberclutch.3dsx`,
-   `Emberclutch-Guide.pdf`, the release notes (what's in it, how to install, the DSP firmware note)
-   and FBI's QR code for the CIA's download link (`docs/release/qr-v1.0.0.png`, remade for the real
-   link).
-4. The README's install section checked against the live release.
+1. ~~Version 1.0.0 in the Makefile; `tools\package_cia.ps1 -Player` (the CIA, the 3DSX and the zip in
+   `dist\player\`).~~ Done (D149, D150).
+2. ~~The player build installed over a dev save on the 3DS once (the save carries over).~~ Runs 30 and 31:
+   "It all runs great" (2026-10-02).
+3. Ready (D151): the notes `docs/release/notes-v1.0.0.md`; FBI's QR code `docs/release/fbi-qr.png` for
+   `releases/latest/download/emberclutch.cia` (so it always fetches the newest; `tools/release/make_qr.py`,
+   read back by OpenCV); the guide's PDF in `docs/guide/`. **Noah makes the repo public** (and turns on private
+   vulnerability reporting in its settings); then `tools\release\release.ps1` tags `v1.0.0` on main and makes
+   the release as a draft with its four files (it refuses while the repo is private), and after a look,
+   `tools\release\release.ps1 -Publish` publishes it and checks the QR link answers with the CIA.
+4. The README's install section checked against the live release; Noah scans the QR code with FBI once.
 
 ## R5: Universal Updater
 `docs/release/universal-db.json` holds the entry (repo, title, author, descriptions, licence, icon,
 image, screenshots). It goes to [Universal-DB](https://github.com/Universal-Team/db) through its app
-request form once the repo is public and v1.0.0 is released (Universal-DB reads the releases). Update
-its descriptions to *Emberclutch: Skyreach Valley* and the screenshots to the refreshed ones first.
+request form once the repo is public and v1.0.0 is released (Universal-DB reads the releases). Its title is
+*Emberclutch: Skyreach Valley* and its screenshots are the refreshed ones (D149). On Noah's word.
 
 ## R6-R7: the video and YouTube
 See [trailer.md](trailer.md): the stack, the capture build, the shot list, the voices to sample (none

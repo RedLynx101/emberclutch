@@ -40,17 +40,28 @@ beauty shows. Nothing ever dies: a neglected dragon only sulks until you make up
 
 You need a 3DS with custom firmware (for example [Luma3DS](https://3ds.hacks.guide/)).
 
-- **Universal Updater:** search for *Emberclutch* and install it.
-- **FBI (QR code):** open FBI, choose *Remote Install → Scan QR Code*, and scan the code on
-  the [latest release](https://github.com/RedLynx101/emberclutch/releases/latest).
+- **FBI (QR code):** open FBI, choose *Remote Install → Scan QR Code*, and scan this. It always
+  fetches the [latest release](https://github.com/RedLynx101/emberclutch/releases/latest).
+
+  ![QR code for FBI's remote install of the latest release](docs/release/fbi-qr.png)
+
 - **By hand:** download `emberclutch.cia` from the
   [latest release](https://github.com/RedLynx101/emberclutch/releases/latest), copy it to the
   SD card and install it with FBI. Or copy `emberclutch.3dsx` to `sdmc:/3ds/` and start it
   from the Homebrew Launcher.
+- **Universal Updater:** search for *Emberclutch*, once it's listed there.
 
 Sound needs the 3DS's DSP firmware (`sdmc:/3ds/dspfirm.cdc`, made by
 [DSP1](https://github.com/zoogie/DSP1)); without it the game runs silently. Your save lives
 in `sdmc:/3ds/emberclutch/` (two copies, so an interrupted save never loses both).
+
+## The guide
+
+New to the valley? ***A Keeper's Handbook*** is the player's guide: the world, caring for your
+dragon, riding, battles, shows and challenges, with the Keeper's Almanac at the back for the
+numbers behind it all (what each trait does, the elements' chart, every move). Read it
+[here](docs/guide/guide.md), or download the [PDF](docs/guide/Emberclutch-Guide.pdf) (also on each
+release), light on spoilers.
 
 ## Controls
 

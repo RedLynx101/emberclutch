@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-10-02 — 1.0, called: the release made ready
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D151 | **1.0 is done; the release is ready, short of going public.** Run 31 ran clean with the traits; the traits and the guide kept. The release carries the tested player build as built (`dist\player\`: the CIA, the 3DSX, `emberclutch-1.0.0.zip`; its source unchanged since) and the guide's PDF, now in `docs/guide/`. FBI's QR code (`docs/release/fbi-qr.png`) points at `releases/latest/download/emberclutch.cia`, so one code serves every later release; it's made by the project's own `tools/release/make_qr.py` and read back by OpenCV; the old v1.0.0-only code is retired. The notes (`docs/release/notes-v1.0.0.md`), and the README with the guide's link, the QR code and an honest Universal Updater line ("once it's listed"). `tools/release/release.ps1`: the tag and a draft release with the four files, then `-Publish` and a check that the QR link answers with the CIA; it refuses while the repo is private. The history scanned again (385 commits): no keys, tokens, passwords, saves or private files | Noah, run 31: "Yep! It all runs great, get the rest ready for me to make this public." | Approved |
+
 ## 2026-10-02 — Run 30's notes: the traits made real, the guide's almanac (1.0.0)
 
 | # | Decision | Why | Status |

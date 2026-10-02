@@ -1,0 +1,42 @@
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips
+# Grown (dev menu: Next stage three times), its needs full
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 238 56
+wait 0.3
+key SELECT
+wait 0.5
+# Shot 14: the valley's lanterns lit, at night over Market Village.
+light
+hour 20.5
+valley
+wait 3
+film clean on
+travel 1
+wait 3
+# (close on the Market's lit festival lantern at dusk, pushing in slowly)
+view 1 -9 22 3.2 1.5 9.9 2.4
+wait 1.5
+film start s14_lanterns
+camera 6 1 -4 16 2.6 1.5 9.9 2.3
+film stop
+quit

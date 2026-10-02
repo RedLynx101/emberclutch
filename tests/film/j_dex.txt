@@ -1,0 +1,32 @@
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips
+# Shot 15: the Dragondex (two more dragons met first, so its pages have more in them).
+key SELECT
+wait 0.3
+tap 238 131
+wait 0.3
+tap 238 131
+wait 0.3
+key SELECT
+wait 2.5
+film clean on
+key START
+wait 0.5
+tap 160 136
+wait 1
+film start s15_dex both
+wait 3.5
+film stop
+quit

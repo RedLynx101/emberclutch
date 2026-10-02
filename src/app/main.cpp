@@ -149,6 +149,7 @@ int main() {
         }
         hitch::endFrame(ms, static_cast<int>(app.scene));  // a long frame: what happened in it (run 17's stall)
         app.dt = ms > 100.0f ? 0.1f : ms / 1000.0f;     // clamp after suspend
+        if (autotest::filming()) app.dt = 1.0f / 60.0f;  // (the trailer's footage: every frame a fixed step)
         if (saveWriteFailed()) {  // (the save thread's news)
             showToast(app, "Couldn't save to the SD card.");
             audio::playSfx(audio::Sfx::Error);
@@ -230,7 +231,7 @@ int main() {
             trace::checkpoint("top scene");
             r3d::reset2D();
             trace::mark("f%lu top overlays", static_cast<unsigned long>(frame));
-            if (!app.photo.snap) {  // the photo's picture has nothing over it
+            if (!app.photo.snap && !app.film) {  // the photo's picture (and the trailer's footage) has nothing over it
                 drawToast(app);
                 drawTipCard(app);  // U: the tutorial's tip card
                 drawSaveIcon(app);

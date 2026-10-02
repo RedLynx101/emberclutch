@@ -1,0 +1,56 @@
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips
+# Grown (dev menu: Next stage three times), its needs full
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 238 56
+wait 0.3
+key SELECT
+wait 0.5
+# Shots 8-9: climbing on and taking off by Mirror Lake at golden hour, then climbing toward the floating
+# isles above it.
+hour 18.5
+valley
+wait 3
+film clean on
+travel 7
+wait 3
+pad -1 0 0.3
+wait 0.8
+film start s08_takeoff
+key A
+wait 1.2
+keyhold A 2.5
+film stop
+keyhold A 3
+film start s09_flight
+keyhold A 2.5
+pad 0.3 0 2
+keyhold A 2
+film stop
+# (and a glide past the big floating island in the golden light)
+hour 19
+view 9 -70 120 30 -10 0 -12
+wait 1.5
+film start s09b_isles
+camera 5 9 30 110 18 0 0 -14
+film stop
+quit

@@ -1,0 +1,61 @@
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips
+# Shot 13: fishing at Driftwood Cove: the cast, the bite, the catch.
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+hour 9
+valley
+wait 4
+film clean on
+travel 16
+wait 3
+# (Tam lends you his rod; then the cast, the wait, the bite and the catch, played by the autopilot)
+cove 0
+wait 1.5
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+key A
+wait 0.4
+wait 1
+cove 1
+autoplay on
+wait 0.8
+film start s13_fish both
+wait 14
+film stop
+quit

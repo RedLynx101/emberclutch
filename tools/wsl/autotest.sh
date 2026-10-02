@@ -14,7 +14,7 @@
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
-game="" script="" out="" save_in="" dsp="" gpu="" timeout=180 speed=0 clock=fixed new3ds=false scale=1 dump=""
+game="" script="" out="" save_in="" dsp="" gpu="" timeout=180 speed=0 clock=fixed new3ds=false scale=1 dump="" dump_format=matroska dump_encoder=libx264 dump_options="crf:12,preset:veryfast"
 fixed_time=1780308000  # 2026-06-01 10:00 on the 3DS clock: the same morning every run
 while (($#)); do
     case $1 in
@@ -30,6 +30,7 @@ while (($#)); do
         --new3ds) new3ds=true ;;
         --scale) scale=$2; shift ;;
         --dump) dump=$2; shift ;;
+        --dump-encoder) dump_format=$2 dump_encoder=$3 dump_options=$4; shift 3 ;;
         *) echo "unknown option $1" >&2; exit 64 ;;
     esac
     shift
@@ -82,7 +83,7 @@ if [[ $clock == fixed ]]; then
     export TZ=UTC
 fi
 sed -e "s/@FRAME_LIMIT@/$speed/" -e "s/@NEW_3DS@/$new3ds/" \
-    -e "s/@INIT_CLOCK@/$init_clock/" -e "s/@INIT_TIME@/$fixed_time/" -e "s/@SCALE@/$scale/" \
+    -e "s/@INIT_CLOCK@/$init_clock/" -e "s/@INIT_TIME@/$fixed_time/" -e "s/@SCALE@/$scale/" -e "s|@DUMP_FORMAT@|$dump_format|" -e "s|@DUMP_ENCODER@|$dump_encoder|" -e "s|@DUMP_OPTIONS@|$dump_options|" \
     "$here/qt-config.ini" > "$user/config/qt-config.ini"
 
 # WSLg hands every distro a Wayland display (and an X one) that show up on the Windows
@@ -127,6 +128,8 @@ elapsed=$(printf "%d.%01d" $((ms / 1000)) $((ms % 1000 / 100)))
 mkdir -p "$out"
 rm -rf "$out/shots" "$out/save"
 [[ -d $sd/shots ]] && cp -r "$sd/shots" "$out/shots"
+rm -rf "$out/film"
+[[ -d $sd/film ]] && cp -r "$sd/film" "$out/film"  # (the trailer's reels: autotest film start)
 mkdir -p "$out/save"
 for f in save.a save.b; do [[ -f $sd/$f ]] && cp "$sd/$f" "$out/save/"; done
 [[ -f $user/log/azahar_log.txt ]] && cp "$user/log/azahar_log.txt" "$out/"

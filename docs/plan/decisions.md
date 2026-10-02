@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-10-02 — The trailer, V1-V3: the footage and the voices
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D153 | **The trailer's footage is the game's own frames.** Azahar's video dump (`-d`) waits on "FFmpeg could not be loaded" in the headless Linux build (its bundle lacks libavfilter 10; Ubuntu 24.04's FFmpeg is 6.1), and fixing that is a download, so the game records itself: autotest `film start <name> [both]` appends every frame of the top screen (and the bottom) raw to the SD card at a fixed 1/60 s a frame (copied through the CPU first: written straight from the framebuffer, the emulator's file service read memory without the GPU's latest drawing and moving shots came out shredded); `film clean on` (`app.film`) hides the top screen's names, hints, prompts, toasts and tip cards; `camera` eases the free camera between views. `tools/film/capture.ps1` runs `tests/film/*.txt` in parallel and makes each reel a 4x MP4 of sharp 3DS pixels, a still and a contact sheet. 22 reels for the plan's 16 shots (one added: a golden-hour glide past the big floating island), each fixed by eye over five passes (the den's crane, the Market's push-in, the take-off and flight moved to Mirror Lake at 6:30 pm, the lanterns close at dusk, the nap after the clock's catch-up, Tam's rod and the autopilot's catch). The script and captions (`docs/plan/trailer-script.md`); seven voice samples (`tools/film/eleven.py`, `voice_samples.py`: six from the library and Noah's own clone) for Noah's pick at V3. The 4x emulator look stays possible: the same scripts recapture it if the FFmpeg library is allowed in | Noah: "Sure, go with your suggestions, you're the creative director, you have creative control"; "Finish V3, which is where I should review the voice samples, then switch you to max after those are settled and let you finish"; the Universal Updater issue sent | Approved |
+
 ## 2026-10-02 — 1.0 released
 
 | # | Decision | Why | Status |

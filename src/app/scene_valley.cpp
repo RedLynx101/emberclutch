@@ -1585,12 +1585,12 @@ void drawTop(App& app) {
         case Action::None: break;
     }
     if (s.action == Action::Enter && s.mode == Mode::Riding) hint = str::kPromptHome;
-    if (hint && (s.mode == Mode::OnFoot || s.mode == Mode::Riding) && !talking(app) && !app.photo.snap) {
+    if (hint && (s.mode == Mode::OnFoot || s.mode == Mode::Riding) && !talking(app) && !app.photo.snap && !app.film) {
         const float w = textWidth(app, hint, 0.5f) + 24;
         panel({200 - w / 2, 200, w, 24}, withAlpha(theme::kDenPlum, 0.8f));
         textCentered(app, hint, 200, 212, 0.5f, theme::kShell, w);
     }
-    if (s.mode == Mode::FreeCam || app.photo.flash > 0) {  // the free camera's photo: framed with where it is
+    if ((s.mode == Mode::FreeCam || app.photo.flash > 0) && !app.film) {  // the free camera's photo: framed with where it is
         const Vec3 eye = s.freeEye;
         const char* where = str::kValleyPhoto;
         float nearest = 140.0f;

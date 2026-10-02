@@ -76,6 +76,22 @@ after V2 with the samples.
 
 No story spoilers past the festival's lanterns; no champions or deep places.
 
+## Progress (2026-10-02)
+- **The capture (V1, D153):** Azahar's own video dump (`-d`) needs FFmpeg's libavfilter 10, which its Linux
+  build doesn't bundle (it waits on an "FFmpeg could not be loaded" dialog); getting it means a download, so
+  the plan's fallback: **the game records its own frames.** The autotest's `film start <name> [both]` appends
+  every frame of the top screen (and the bottom) raw to the SD card, the game stepped a fixed 1/60 s a frame;
+  `film clean on` hides the top screen's interface; `camera` eases the free camera between views. A
+  4-second test: 240 frames, smooth, in a 53-second run. `tools\film\capture.ps1` runs the shot scripts
+  (`tests/film/*.txt`) in parallel and turns each reel into a 4x MP4 (the 3DS's own pixels, sharp) and a
+  still; `tools/film/contact.py` the contact sheet.
+- **Noah (2026-10-02):** "you're the creative director, you have creative control"; the old-3DS line on
+  the end card; the Universal Updater line held back until it's listed (his request sent). **The voice
+  samples move to V3's review** ("Finish V3, which is where I should review the voice samples, then switch
+  you to max after those are settled").
+- **V2:** the script and captions (`docs/plan/trailer-script.md`); seven voice samples
+  (`tools/film/voice_samples.py`: six from the library and Noah's own cloned voice).
+
 ## Steps and gates
 1. **V0, this plan.** Keep or Change it on the review page.
 2. **V1, the capture spike.** The film build with one shot (the flight, shot 9) captured headless at 4x;

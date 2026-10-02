@@ -1,0 +1,60 @@
+# Shots 1-4: the egg by firelight, the hatching, petting, feeding, brushing and the bath.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+tips
+hour 21
+wait 1.5
+film clean on
+film start s01_egg
+drag 130 100 190 115 0.8
+drag 190 115 130 100 0.8
+drag 130 100 190 115 0.8
+wait 0.6
+film stop
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+film start s02_hatch
+wait 6.5
+film stop
+name Cinder
+wait 4
+hour 10
+wait 2
+film start s03_pet both
+drag 110 80 210 95 1.4
+drag 210 95 110 85 1.4
+wait 0.4
+film stop
+tap 82 221
+wait 0.6
+film start s04a_feed both
+drag 20 182 162 118 1.2 1.6
+wait 0.6
+film stop
+tap 30 221
+wait 0.3
+tap 30 221
+wait 0.3
+tap 66 182
+wait 1.2
+film start s04b_brush both
+drag 90 110 230 110 1.2
+drag 230 110 90 110 1.2
+film stop
+tap 30 221
+wait 0.3
+tap 108 182
+wait 5
+film start s04c_bath both
+drag 120 90 200 110 1.2
+drag 200 110 120 90 1.0
+film stop
+wait 0.5
+quit

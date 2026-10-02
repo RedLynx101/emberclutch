@@ -40,11 +40,12 @@ enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Nam
                      Energy, Cove,  // (workstream C)
                      Pageant, Ground,
                      Battle /* 1.0 battles (workstream B) */, Critters /* workstream L */,
-                     Roamer /* roaming trainers (workstream D) */, Story /* the story (D137) */ };  // the pageant's own commands (app/glade.hpp pageantCommand)
+                     Roamer /* roaming trainers (workstream D) */, Story /* the story (D137) */,
+                     Film, Camera /* the trailer's footage (docs/plan/trailer.md) */ };  // the pageant's own commands (app/glade.hpp pageantCommand)
 
 struct Cmd {
     Op op = Op::Wait;
-    float a[7] = {};
+    float a[9] = {};
     u32 key = 0;
     std::string text;
 };
@@ -63,6 +64,44 @@ float g_laterAt = -1;
 float g_bedHold[static_cast<int>(audio::Bed::Count)] = {};  // sounds (1.0): beds held every frame by `bed`
 u8* g_fbTop = nullptr;
 u8* g_fbBottom = nullptr;
+// The trailer's footage (docs/plan/trailer.md): every frame of the top screen (and the bottom, with
+// "both") appended raw to sdmc:/3ds/emberclutch/film/<name>_top.raw (the framebuffer as it lies: 240-tall
+// columns, bottom to top, BGR), at a fixed 1/60 s a frame (main.cpp) so the footage plays at its own pace.
+FILE* g_filmTop = nullptr;
+FILE* g_filmBottom = nullptr;
+bool g_filmArmed = false, g_filmStopping = false;
+u8* g_filmFbTop = nullptr;
+u8* g_filmFbBottom = nullptr;
+float g_view[7] = {-1};      // the free camera's last pose set by view or camera (place, eye, target)
+float g_camFrom[7] = {-1};   // a camera move's start
+
+void filmClose() {
+    if (g_filmTop) std::fclose(g_filmTop);
+    if (g_filmBottom) std::fclose(g_filmBottom);
+    g_filmTop = g_filmBottom = nullptr;
+    g_filmArmed = g_filmStopping = false;
+}
+
+// film start <name> [both] | film stop | film clean on|off (the top screen's interface hidden: app.film)
+void filmCommand(App& app, const char* rest) {
+    char word[16] = {}, name[48] = {}, more[16] = {};
+    std::sscanf(rest, "%15s %47s %15s", word, name, more);
+    if (std::strcmp(word, "start") == 0 && name[0]) {
+        filmClose();
+        mkdir("sdmc:/3ds/emberclutch/film", 0777);
+        char path[128];
+        std::snprintf(path, sizeof(path), "sdmc:/3ds/emberclutch/film/%s_top.raw", name);
+        g_filmTop = std::fopen(path, "wb");
+        if (std::strcmp(more, "both") == 0) {
+            std::snprintf(path, sizeof(path), "sdmc:/3ds/emberclutch/film/%s_bottom.raw", name);
+            g_filmBottom = std::fopen(path, "wb");
+        }
+    } else if (std::strcmp(word, "stop") == 0) {
+        g_filmStopping = true;
+    } else if (std::strcmp(word, "clean") == 0) {
+        app.film = std::strcmp(name, "off") != 0;
+    }
+}
 
 u32 keyNamed(const char* s) {
     static const struct {
@@ -126,6 +165,8 @@ u32 keyNamed(const char* s) {
     else if (w == "light") { c.op = Op::Light; }
     else if (w == "trialfix") { c.op = Op::TrialFix; nums(1); }  // trialfix <n>: the flicker trial's fix held (-1: its turns)
     else if (w == "view") { c.op = Op::View; nums(7); }
+    else if (w == "film") { c.op = Op::Film; c.text = rest; }       // (the trailer: film start <name> [both] | stop | clean on|off)
+    else if (w == "camera") { c.op = Op::Camera; nums(8); }         // (camera <s> <place> <ex ey ez tx ty tz>: an eased move)
     else if (w == "creator") { c.op = Op::Creator; }
     else if (w == "wander") { c.op = Op::Wander; nums(1); }
     else if (w == "festival") { c.op = Op::Festival; }
@@ -372,9 +413,20 @@ Input next(App& app) {
                 done = true;
                 break;
             case Op::View:
-                for (int k = 0; k < 7; ++k) app.autoView[k] = c.a[k];
+                for (int k = 0; k < 7; ++k) app.autoView[k] = g_view[k] = c.a[k];
                 done = true;
                 break;
+            case Op::Film: filmCommand(app, c.text.c_str()); done = true; break;
+            case Op::Camera: {  // from the last pose to this one over a[0] seconds, eased in and out
+                if (g_frame == 0) std::memcpy(g_camFrom, g_view, sizeof(g_view));
+                const float k = c.a[0] > 0 ? std::min(1.0f, g_time / c.a[0]) : 1.0f, e = k * k * (3.0f - 2.0f * k);
+                const bool same = static_cast<int>(g_camFrom[0]) == static_cast<int>(c.a[1]);
+                app.autoView[0] = c.a[1];
+                for (int i = 1; i < 7; ++i) app.autoView[i] = same ? g_camFrom[i] + (c.a[i + 1] - g_camFrom[i]) * e : c.a[i + 1];
+                done = k >= 1.0f;
+                if (done) std::memcpy(g_view, app.autoView, sizeof(g_view));
+                break;
+            }
             case Op::TrialFix:
                 trace::holdFix(static_cast<int>(c.a[0]));
                 done = true;
@@ -520,6 +572,11 @@ Input next(App& app) {
 }
 
 void beforeFrameEnd() {
+    if (g_filmTop && !g_filmStopping) {
+        g_filmFbTop = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, nullptr, nullptr);
+        g_filmFbBottom = g_filmBottom ? gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, nullptr, nullptr) : nullptr;
+        g_filmArmed = true;
+    }
     if (g_pending.empty()) return;
     g_fbTop = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, nullptr, nullptr);
     g_fbBottom = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, nullptr, nullptr);
@@ -528,6 +585,21 @@ void beforeFrameEnd() {
 }
 
 void afterFrameBegin() {
+    if (g_filmArmed) {  // last frame, finished now: onto the reel
+        // (copied through the CPU first: written straight from the framebuffer, the emulator's file
+        // service read its memory without the GPU's latest drawing, and moving shots came out shredded)
+        static std::vector<u8> copy(400 * 240 * 3);
+        if (g_filmTop && g_filmFbTop) {
+            std::memcpy(copy.data(), g_filmFbTop, 400 * 240 * 3);
+            std::fwrite(copy.data(), 1, 400 * 240 * 3, g_filmTop);
+        }
+        if (g_filmBottom && g_filmFbBottom) {
+            std::memcpy(copy.data(), g_filmFbBottom, 320 * 240 * 3);
+            std::fwrite(copy.data(), 1, 320 * 240 * 3, g_filmBottom);
+        }
+        g_filmArmed = false;
+    }
+    if (g_filmStopping) filmClose();
     if (g_armed.empty()) return;
     char path[128];
     std::snprintf(path, sizeof(path), "%s/%s_top.bmp", kShots, g_armed.c_str());
@@ -538,6 +610,8 @@ void afterFrameBegin() {
 }
 
 bool shooting() { return g_active && !g_pending.empty(); }
+
+bool filming() { return g_active && g_filmTop != nullptr; }
 
 void log(const char* fmt, ...) {
     if (!g_active) return;

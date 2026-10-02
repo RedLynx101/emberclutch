@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): **1.0 released** (D152): v1.0.0 public on GitHub; next the Universal-DB request (Noah's, by hand) and the video (R6), the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): **1.0 released** (D152); the Universal-DB request sent (Noah); **the trailer at V3** (D153): the footage and seven voices on the review page for Noah's pick, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Tooling: headless emulator checks (2026-09-30)
@@ -15,6 +15,21 @@
   Performance is still signed off on the 3DS: no emulator models its timing.
 - Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
   running it in UTC), and the async file reads and presentation made animations drift (off).
+
+## Now: the trailer, V3 done: the footage and the voices (2026-10-02)
+- **Noah:** "go with your suggestions, you're the creative director"; the Universal Updater issue sent;
+  "Finish V3, which is where I should review the voice samples, then switch you to max".
+- **The footage (D153):** the game's own 400x240 frames (Azahar's high-resolution dump needs a download):
+  autotest `film start/stop/clean`, `camera`; `tools\film\capture.ps1` (`tests/film/*.txt`, 11 scripts, 22
+  reels, about 2 minutes each in parallel) into `build/film/reels/` (4x MP4s, stills) and
+  `build/film/contact.png`.
+- **The words:** `docs/plan/trailer-script.md` (about 860 characters of narration, the captions, the end
+  card's old-3DS line). **The voices:** seven samples in `build/film/voices/` (George, Ana-Rita, Jessica,
+  Grandpa Spuds Oxley, Lily, Brian, and Noah's own clone); 210 of 190,317 credits used.
+- On the review page (version 26, collection `video1`, `plans` slugs `trailer-voice`, `trailer-footage`;
+  `docs/plan/video-check-1.md`).
+- **Next:** Noah picks a voice (and any footage notes), then switches the session to **max** for V4 (the rough
+  cut to music, captions) and V5 (the mix, the end card, thumbnails, the vertical cut).
 
 ## Now: 1.0 released; the video next (2026-10-02)
 - **v1.0.0 is public:** https://github.com/RedLynx101/emberclutch/releases/tag/v1.0.0 (the CIA, the 3DSX, the
@@ -29,9 +44,7 @@
   by default; normal runs checked). The first try (the isles script at 4x, H.264 in Matroska) stalled to its
   400 s timeout with no frames: not yet known whether the encoder, the 4x drawing on llvmpipe or the dump's
   start holds it. V1 resumes there on Noah's word.
-- **Next:** Noah's go on the video (R6, `docs/plan/trailer.md`): V1 the capture spike and the film build; V2
-  the storyboard, script and voice samples, then stop for his pick. xhigh for V1-V3; tell him to switch to max
-  before V4.
+- **Then:** see the trailer above.
 
 ## Now: 1.0, called; the release ready to go public (2026-10-02)
 - **Run 31 came back:** "It all runs great, get the rest ready for me to make this public." The traits and the

@@ -1,0 +1,49 @@
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips
+# Grown (dev menu: Next stage three times), its needs full
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 238 56
+wait 0.3
+key SELECT
+wait 0.5
+# Shot 10: a battle at the Market.
+hour 10
+battle level 12
+battle energy 100
+valley
+wait 3
+film clean on
+travel 1
+wait 3
+battle talk 0 0
+wait 2.5
+key A
+wait 2.5
+key A
+wait 1
+battle auto on
+key A
+wait 1.5
+film start s10_battle
+wait 9
+film stop
+quit

@@ -35,6 +35,12 @@
 //   roamer <what> ...           roaming trainers (app/roamers_feature.hpp roamerCommand): list, near <n>,
 //                               talk <n>, duel <n>, watch <n> [s], level <n> (0: fair); they walk 8:00-20:00
 //   quit                        leave (writes shots/done.txt)
+// The trailer's footage (docs/plan/trailer.md):
+//   film start <name> [both]    every frame of the top screen (both: the bottom too) appended raw to
+//                               sdmc:/3ds/emberclutch/film/<name>_top.raw, the game stepped 1/60 s a frame
+//   film stop                   the reel closed
+//   film clean on|off           the top screen's interface hidden (app.film): names, hints, prompts, toasts
+//   camera <s> <place> <ex ey ez tx ty tz>   the free camera eased from its last view to this one in s seconds
 // The interface (1.0, workstream U):
 //   open <market|wander|sanctuary|vault|den|valley|stone>   straight into that scene
 //   xp <n>                      experience for the dragon cared for
@@ -67,6 +73,9 @@ void afterFrameBegin();
 // queued, take the suggestion).
 bool typedName(char* out, std::size_t cap);
 void finish();  // writes shots/done.txt
+// The trailer's footage (film start/stop): every frame recorded, so main.cpp steps the game a fixed
+// 1/60 s a frame while it's on.
+bool filming();
 // True on a frame whose picture will be saved; log() then adds a line to shots/log.txt
 // (for numbers behind a picture: camera framing, positions).
 bool shooting();

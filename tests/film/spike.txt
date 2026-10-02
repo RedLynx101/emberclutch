@@ -1,0 +1,29 @@
+# The trailer's capture spike (V1, docs/plan/trailer.md): a 4-second glide past the big floating island at
+# golden hour, every frame recorded raw (film start), the interface hidden.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+tips seen
+light
+valley
+hour 17
+wait 3
+film clean on
+view 9 -70 120 30 -10 0 -12
+wait 1
+film start spike
+camera 4 9 30 110 18 0 0 -14
+film stop
+wait 0.5
+quit

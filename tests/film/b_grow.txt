@@ -1,0 +1,52 @@
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips
+# Shot 5: time passing in the den: the hatchling by day, then each stage as the light turns.
+film clean on
+hour 11
+wait 2
+film start s05a_day
+wait 1.6
+film stop
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+hour 20
+wait 2
+film start s05b_evening
+wait 1.6
+film stop
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+hour 23
+wait 2
+film start s05c_night
+wait 1.6
+film stop
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+hour 7
+wait 2
+film start s05d_morning
+wait 1.8
+film stop
+quit

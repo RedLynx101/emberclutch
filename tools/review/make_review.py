@@ -22,6 +22,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import wave
 from pathlib import Path
 
@@ -30,11 +31,11 @@ OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
 RUN_READY = True  # the run's checklist on the page (once the build is ready for the 3DS)
-RUN_DOC = "docs/plan/hardware-check-16.md"  # the run's steps
-RUN_KEY = "run31"       # its database collection (each run its own: run 30's notes stay under `run30`)
+RUN_DOC = "docs/plan/video-check-1.md"  # the run's steps
+RUN_KEY = "video1"      # its database collection (each run its own: run 31's notes stay under `run31`)
 LABS = []  # banner labs this run (run 28's eight all held: D147; 28G is the game's banner, D148)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch: Skyreach Valley, run 31 (1.0.0): the traits work, the guide's almanac"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch: Skyreach Valley, the trailer (V3): the footage and the voices"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -488,7 +489,7 @@ def isles() -> list[dict]:
 
 # Run 30's card (R3): the guide's first draft, its pages as pictures (tools/guide/build_guide.py --pages) and the
 # PDF beside the page (published as guide/Emberclutch-Guide.pdf). Collection `plans` (slug guide-draft).
-GUIDE = True
+GUIDE = False
 GUIDE_HEAD = {"nav": "Traits and the guide", "kicker": "D150 · R3 draft 2", "title": "The traits, and the guide's almanac",
               "intro": "Every trait now does one thing (the proposal first), and the guide has grown an almanac at the "
                        "back: the numbers behind the game, all checked against its code. Keep, or Change and say what."}
@@ -510,6 +511,51 @@ def guide() -> list[dict]:
     traits = (ROOT / "docs" / "design" / "traits.md").read_text(encoding="utf-8").split("\n", 1)[1]
     return [{"slug": "traits", "kicker": "D150 · in this build", "title": "What each trait does", "body": md_html(traits)},
             {"slug": "guide-draft-2", "kicker": "R3 · draft 2", "title": "The guide, page by page (31 pages now)", "body": body,
+             "images": images}]
+
+
+# The trailer's V3 check (docs/plan/trailer.md): the voice samples (tools/film/voice_samples.py) to pick from,
+# and every reel's middle frame and a small preview (tools/film/capture.ps1). Collection `plans` (slugs
+# trailer-voice, trailer-footage).
+VIDEO = True
+VIDEO_HEAD = {"nav": "The trailer", "kicker": "R6 · V3", "title": "The trailer's footage, and its voice",
+              "intro": "Every shot captured from the game itself, and seven voices reading the same two lines. "
+                       "Pick a voice; mark the footage Keep or Change."}
+
+
+def video() -> list[dict]:
+    import html as _html
+    sys.path.insert(0, str(ROOT / "tools" / "film"))
+    from voice_samples import VOICES
+    vdir, rdir = OUT / "video" / "voices", OUT / "video" / "reels"
+    vdir.mkdir(parents=True, exist_ok=True)
+    rdir.mkdir(parents=True, exist_ok=True)
+    voices = ['<p>Each reads the opening and the close of the script. <em>The seventh is your own cloned voice.</em></p>']
+    for slug, _, what in VOICES:
+        src = ROOT / "build" / "film" / "voices" / f"{slug}.mp3"
+        if not src.exists():
+            continue
+        shutil.copy(src, vdir / src.name)
+        voices.append(f'<p><strong>{_html.escape(what.split(":")[0])}</strong>: {_html.escape(what.split(":", 1)[1].strip())}<br>'
+                      f'<audio controls preload="none" src="video/voices/{src.name}" style="width:100%"></audio></p>')
+    reels = sorted((ROOT / "build" / "film" / "reels").glob("*_top.mp4"))
+    images, clips = [], []
+    for mp4 in reels:
+        name = mp4.stem[:-4]
+        still = mp4.with_suffix(".png")
+        if still.exists():
+            dst = rdir / f"{name}.jpg"
+            subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(still), "-vf", "scale=800:-1:flags=neighbor", "-q:v", "3",
+                            str(dst)], check=True)
+            images.append({"src": f"video/reels/{dst.name}", "cap": name})
+        small = rdir / f"{name}.mp4"
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(mp4), "-vf", "scale=800:480:flags=neighbor", "-c:v", "libx264",
+                        "-crf", "26", "-preset", "veryfast", "-an", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(small)], check=True)
+        clips.append(f'<p><strong>{name}</strong><br><video controls muted preload="none" playsinline src="video/reels/{small.name}" '
+                     f'style="width:100%;border-radius:6px"></video></p>')
+    return [{"slug": "trailer-voice", "kicker": "R6 · pick one", "title": "The narrator", "body": "".join(voices)},
+            {"slug": "trailer-footage", "kicker": "R6 · V3", "title": "The footage, shot by shot",
+             "body": "<p>Each reel's middle frame below; the previews (silent, the 3DS's own pixels doubled) here.</p>" + "".join(clips),
              "images": images}]
 
 
@@ -542,8 +588,8 @@ def main() -> None:
     data = {"sounds": sounds() + made_sounds() if SHOW_SOUNDS else [], "music": music() if SHOW_SOUNDS else [],
             "run": run_list() if RUN_READY else {}, "dragons": dragons() if DRAGONS else [],
             "people": {}, "looks": looks() if LOOKS else {},
-            "plans": guide() if GUIDE else (isles() if ISLES else banners()),
-            "plansHead": GUIDE_HEAD if GUIDE else (ISLES_HEAD if ISLES else PLANS_HEAD)}
+            "plans": video() if VIDEO else (guide() if GUIDE else (isles() if ISLES else banners())),
+            "plansHead": VIDEO_HEAD if VIDEO else (GUIDE_HEAD if GUIDE else (ISLES_HEAD if ISLES else PLANS_HEAD))}
     page = (Path(__file__).with_name("review_template.html").read_text(encoding="utf-8")
             .replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
             .replace("/*TITLE*/", PAGE_TITLE)

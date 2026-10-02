@@ -1,0 +1,42 @@
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips
+# Shots 6-7: out of the den into Skyreach Valley (the camera rising over the meadow), then walking
+# the lead through Market Village.
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+hour 10
+valley
+wait 4
+film clean on
+# (a crane up and out from the den's door: low by the door looking out, then high over the meadow)
+view 0 0 10 2.5 0 60 3
+wait 1.5
+film start s06_valley
+camera 6 0 0 50 30 0 170 0
+film stop
+key X
+wait 0.5
+travel 1
+wait 3
+# (a slow drift across the square: you and your dragon on its lead in front, the stalls and villagers behind)
+view 1 -6 -9 2.6 0 4 1.5
+wait 1
+film start s07_market
+camera 5 1 -5 -7.6 2.5 0 4 1.5
+film stop
+quit

@@ -1,0 +1,39 @@
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips
+# Grown (dev menu: Next stage three times), its needs full
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 238 56
+wait 0.3
+key SELECT
+wait 0.5
+# Shot 12: the Sky Rings race, flown by the autopilot.
+hour 16
+valley
+wait 3
+film clean on
+autoplay on
+challenge 1 1
+wait 9
+film start s12_rings
+wait 6
+film stop
+quit

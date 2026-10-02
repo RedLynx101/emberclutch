@@ -743,14 +743,14 @@ void drawTop(App& app) {
         // With company in the den, a little heart floats over the one you're caring for.
         Vec3 head;
         float hx, hy, ppu;
-        if (count > 1 && !photo::active(app) && r3d::headOf(0, head) && r3d::project({head.x, head.y, head.z + 0.35f}, hx, hy, ppu)) {
+        if (count > 1 && !photo::active(app) && !app.film && r3d::headOf(0, head) && r3d::project({head.x, head.y, head.z + 0.35f}, hx, hy, ppu)) {
             const float bob = 2.0f * std::sin(app.t * 3.0f);
             heart(hx, hy - 6 + bob, 9, withAlpha(theme::kClutchGold, 0.9f));
         }
     }
 
-    if (photo::active(app)) {  // no names or hints: the frame, when it's the picture
-        photo::drawTop(app, d, now);
+    if (photo::active(app) || app.film) {  // no names or hints: the frame, when it's the picture (none for the trailer)
+        if (!app.film) photo::drawTop(app, d, now);
         return;
     }
     char line[96];

@@ -255,6 +255,7 @@ struct App {
 
     // Debug
     bool overlay = EC_DEV;
+    bool film = false;  // the trailer's footage (autotest `film clean on`): the top screen's interface hidden
     int autoTravel = -1;  // autotest: the valley's place to go to next (-1: none)
     float autoGoto[6] = {0, 0, 0, 0, 0, 0};  // autotest: somewhere in the valley to stand (x, y; [2] set; [3] [4] a point to face, [5] set)
     float autoView[7] = {-1};  // autotest: a free-camera view (place, eye x y z, target x y z; -1: none)

@@ -19,11 +19,11 @@ bool active(const App& app);
 void update(App& app, const Input& in, vext::Stage& stage);
 void drawTop(App& app, const vext::Stage& stage);
 void drawBottom(App& app, const Input& in, const vext::Stage& stage);
-void drawOver(App& app, const vext::Stage& stage);  // (Tam's rod while he fishes: workstream D)
 
 // The cove's things in 3D, after drawValley (scene_valley calls it every frame, fishing or not):
-// the day's shells on the beach, and while fishing the bobber and the catch.
-void drawCoveThings(App& app, const Valley& v, s64 now);
+// the day's shells on the beach, Tam's rod while he fishes (you, away from him: `you`), and while
+// you fish the bobber and the catch.
+void drawCoveThings(App& app, const Valley& v, s64 now, Vec3 you);
 
 // Scripted runs (autotest `cove <what>`: 0 talk to Tam, 1 start fishing at the water's edge, 2
 // pick up the first shell left today); `autoplay on` fishes by itself (strikes at the bite,

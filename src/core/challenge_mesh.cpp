@@ -483,6 +483,20 @@ PropMesh bobberMesh() {
     return m;
 }
 
+PropMesh rodMesh(float drop) {
+    PropMesh m;
+    Shaper b{m};
+    const Vec3 tip{0, -1.5f, 1.15f}, end{0, -3.9f, -drop};
+    b.slot = 0;
+    b.frustum({0, 0, 0}, tip, 0.024f, 0.013f, 4, true, true);
+    b.frustum({0, 0.08f, -0.04f}, {0, -0.05f, 0.04f}, 0.035f, 0.035f, 4, true, true);  // (the reel at his hand)
+    b.slot = 1;  // (thin, but thick enough not to break up into dots on the 3DS)
+    b.frustum(tip, end, 0.016f, 0.016f, 3, false, false);
+    return m;
+}
+
+PropLook rodLook() { return look({120, 82, 50}, {236, 228, 210}, {0, 0, 0}, {0, 0, 0}); }
+
 PropMesh fishMesh() {
     PropMesh m;
     Shaper b{m};

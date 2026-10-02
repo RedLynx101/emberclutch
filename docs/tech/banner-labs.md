@@ -203,3 +203,33 @@ tools\banner_lab.ps1 -Variants "25A=build\banner_v\A\banner.cgfx;assets\audio\ba
 ```
 B and E are the Blazeplume that froze in run 15 (lab A), now with its names undotted: if they hold, the
 dotted names were the trouble. The game's own CIA keeps X until Noah picks one.
+
+### Results (run 25, 2026-10-02)
+| Lab | | CGFX | Result |
+|---|---|---|---|
+| 25A | Pouncer, ink | 494 KB | held |
+| **25B** | Blazeplume, ink | 502 KB | **froze** (a first frame, then stuck) |
+| **25C** | Crestwing, ink | 509 KB | **froze** |
+| 25D | Puffback, ink | 455 KB | held ("ugly") |
+| 25E | Blazeplume, no ink | 448 KB | held |
+| 25F | Pouncer, no ink | 455 KB | held: **Noah's pick** ("probably the best") |
+
+So **the size**, not the kind or the names: the two over 500 KB froze, everything at 494 KB or under held,
+the Blazeplume included (25E: run 15's freeze was the dotted names, or its size then). Whatever the HOME
+Menu's real ceiling is, it's under 502 KB of CGFX: `tools\banner_variants.ps1` now warns over 480 KB.
+Noah also saw the joints split open as the head and tail moved (rigid pieces turning, each open where it
+was cut, one-sided: the hollow inside showed).
+
+## Round 26 (run 26): 25F with its joints closed
+`banner3d.py` now closes each piece's openings by its joints with skin (`cap_openings`), the collars wider
+(a kind's head 0.15 of its height, tail 0.13) and the motion gentler (the head's roll 8 degrees, its nod 4,
+the tail's wag 16); the previews draw one-sided as the 3DS does, so a hole would show there (`--seams`
+renders the joints mid-motion).
+
+| Lab | | CGFX | Title ID |
+|---|---|---|---|
+| **26A** | Pouncer, no ink (25F, joints closed) | 456 KB | 0xEC16E |
+| **26B** | Blazeplume, no ink (25E, joints closed) | 448 KB | 0xEC16F |
+
+If 26A holds and its joints stay shut, it becomes the game's banner (`tools\make_banner.ps1` with
+`--kind pouncer`).

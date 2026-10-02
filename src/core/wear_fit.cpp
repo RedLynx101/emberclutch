@@ -502,7 +502,7 @@ bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out) {
     // and on the skull (run 23, Noah: "many are floating quite far off of their heads"). On most
     // grown kinds the eyes' tops stand above the skull's top where the hat sits, and lifting it over
     // them left it floating (up to half its size). So it may also move back toward the crown of the
-    // head (or forward), seated again on the skull there, come smaller (to 70%) or tip back (its
+    // head (or forward), seated again on the skull there, come smaller (to 50%: run 25, Noah) or tip back (its
     // brim's front up over the eyes). Of those, the one that floats least while no eye comes up
     // through its brim: moving, shrinking and tipping cost a little, floating most, and a crest or
     // horn through its crown where it sits counts against a spot (never lifted off it: that's
@@ -567,7 +567,7 @@ bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out) {
                     at = c + ez * (kFar - t);
                 }
                 for (int tilt = 0; tilt < 4; ++tilt)  // (tipped back: the brim's front up over the eyes)
-                for (float scale : {1.0f, 0.9f, 0.8f, 0.7f}) {
+                for (float scale : {1.0f, 0.9f, 0.8f, 0.7f, 0.6f, 0.5f}) {  // (smaller still rather than float: run 25, Noah)
                     const float ta = 0.17f * tilt, ct = std::cos(ta), st = std::sin(ta);
                     Mat34 f = base;
                     for (int r = 0; r < 3; ++r) {
@@ -583,7 +583,7 @@ bool fitWear(const ModelData& m, int plan, bool grown, WearFit& out) {
                     const float rest = brimRest(f, scale, reach);  // (its brim on the forehead: resting, not floating)
                     for (int up = 0; up <= 0; ++up) {  // (never higher than the eyes need: up on a crest is floating too)
                         const float lift = std::fmax(clear, rest) + 0.05f * up;
-                        const float cost = clear + 0.5f * std::fmax(0.0f, rest - clear) + 0.3f * std::fabs(back) + 0.5f * (1.0f - scale) +
+                        const float cost = 1.5f * clear + 0.5f * std::fmax(0.0f, rest - clear) + 0.3f * std::fabs(back) + 0.5f * (1.0f - scale) +
                                            0.4f * ta + 0.5f * piercing(partsAt, kCrownR, 0.0f);  // (as seated: lifting off a crest is no cure)
                         if (cost < bestCost - 1e-4f) {
                             bestCost = cost;

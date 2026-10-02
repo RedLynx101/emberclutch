@@ -30,11 +30,11 @@ OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
 RUN_READY = True  # the run's checklist on the page (once the build is ready for the 3DS)
-RUN_DOC = "docs/plan/hardware-check-10.md"  # the run's steps
-RUN_KEY = "run25"       # its database collection (each run its own: run 24's notes stay under `run24`)
-LABS = ["25A", "25B", "25C", "25D", "25E", "25F"]  # banner labs to mark Held/Froze this run (run 25: the new banner, D144)
+RUN_DOC = "docs/plan/hardware-check-11.md"  # the run's steps
+RUN_KEY = "run26"       # its database collection (each run its own: run 25's notes stay under `run25`)
+LABS = ["26A", "26B"]  # banner labs to mark Held/Froze this run (run 26: 25F's joints closed, D145)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch: Skyreach Valley, run 25 (0.10.1): the new banner, and run 24's fixes"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch: Skyreach Valley, run 26 (0.10.2): the banner's joints, Tam's rod, smaller hats"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -423,32 +423,43 @@ def plans() -> list[dict]:
 # Run 25's cards (D144): the six banner labs, each through the HOME Menu's camera (front, and side as
 # the HOME Menu turns it), Keep the ones you like; and the answers to run 24's questions. Collection
 # `plans` (slugs banner-25a ...).
-BANNERS = [("25A", "A", "Pouncer, with the ink outline"), ("25B", "B", "Blazeplume, with the ink outline"),
-           ("25C", "C", "Crestwing, with the ink outline"), ("25D", "D", "Puffback, with the ink outline"),
-           ("25E", "E", "Blazeplume, no outline"), ("25F", "F", "Pouncer, no outline")]
-PLANS_HEAD = {"nav": "The new banner", "kicker": "D144 · six banner labs on your 3DS",
-              "title": "The new banner",
-              "intro": "A real baby dragon from the game in its egg: the den model at full detail, smooth, its own skin, under the "
-                       "wordmark (as Blender draws it; the HOME Menu's light is a little flatter). Keep the ones you like, Change "
-                       "the ones you don't and say why, and name your favourite. Held or froze goes in the run's banner lab step."}
+BANNERS = [("26A", "H", "Pouncer (your 25F), its joints closed", "G1s"), ("26B", "I", "Blazeplume (25E), its joints closed", "")]
+PLANS_HEAD = {"nav": "The banner", "kicker": "D145 · two banner labs on your 3DS",
+              "title": "The banner, its joints closed",
+              "intro": "Your pick, 25F, with each moving piece closed with skin where it was cut, overlapping further and moving "
+                       "a little more gently; the pictures mid-motion are drawn one-sided as the 3DS draws them, so a hole would "
+                       "show. Keep 26A if it's the one (it becomes the game's banner), and the hats if they're right."}
 
 
 def banners() -> list[dict]:
     (OUT / "plans").mkdir(parents=True, exist_ok=True)
     cards = []
-    for lab, src, what in BANNERS:
+    for lab, src, what, seams in BANNERS:
         d = ROOT / "build" / "banner_v" / src
         images = []
-        for name, cap in (("banner3d_big", "Through the HOME Menu's camera"), ("banner3d_side", "Side on, as the HOME Menu turns it")):
-            if (d / f"{name}.png").exists():
+        shots = [(d, "banner3d_big", "Through the HOME Menu's camera"), (d, "banner3d_side", "Side on, as the HOME Menu turns it")]
+        if seams:  # (the joints mid-motion: the tail's wag, the head's tilt, its nod)
+            sd = ROOT / "build" / "banner_v" / seams
+            shots += [(sd, f"banner3d_seams_{f}", c) for f, c in ((10, "Mid-wag"), (22, "Its head tilted"), (68, "Nodding, tilted the other way"))]
+        for folder, name, cap in shots:
+            if (folder / f"{name}.png").exists():
                 dst = OUT / "plans" / f"banner_{src}_{name}.jpg"
-                subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(d / f"{name}.png"), "-q:v", "3", str(dst)], check=True)
+                subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(folder / f"{name}.png"), "-q:v", "3", str(dst)], check=True)
                 images.append({"src": f"plans/{dst.name}", "cap": cap})
         kb = round((d / "banner.cgfx").stat().st_size / 1024) if (d / "banner.cgfx").exists() else 0
         cards.append({"slug": f"banner-{lab.lower()}", "kicker": f"Banner lab {lab}", "title": what,
                       "body": md_html(f"Its banner is {kb} KB of the 512 the HOME Menu allows."), "images": images})
-    cards.append({"slug": "answers-25", "kicker": "Run 24's questions", "title": "Your questions, answered", "ask": True,
-                  "body": md_html(ANSWERS)})
+    hats = []
+    for name, cap in (("g1", "Grown: Pouncer to Glimmermoth"), ("g2", "Grown: Duskwing to Frostcurl")):
+        src = ROOT / "build" / "hatsfit" / f"{name}.png"
+        if src.exists():
+            dst = OUT / "plans" / f"hats26_{name}.jpg"
+            subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src), "-q:v", "3", str(dst)], check=True)
+            hats.append({"src": f"plans/{dst.name}", "cap": cap})
+    cards.append({"slug": "hats-26", "kicker": "D145", "title": "Smaller hats where they'd float",
+                  "body": md_html("Hats can come down to half size now, rather than float: the Crestwing's and the Curlstone's sit on "
+                                  "their heads at 50%, the Cindershell's at 60%. Every grown kind as the den's camera sees it."),
+                  "images": hats})
     return cards
 
 

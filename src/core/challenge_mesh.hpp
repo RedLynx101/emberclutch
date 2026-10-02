@@ -67,6 +67,11 @@ PropLook mailboxLook();
 PropMesh signMesh();
 PropLook signLook();
 PropLook bobberLook();
+// Tam's rod while he fishes (run 25: drawn in 2D it showed in front of you and your dragons): from his
+// hand at the origin out along -Y (his facing) and up to the tip, then the line straight down and out
+// to the water `drop` metres below his hand: the rod (slot 0), the line (1).
+PropMesh rodMesh(float drop);
+PropLook rodLook();
 PropLook fishLook(bool big);
 
 // Where the trophies stand and the ribbons hang in the den: on and along its two shelves

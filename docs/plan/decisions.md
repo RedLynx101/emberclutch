@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-10-02 — Run 25's notes: the banner's size and joints, Tam's rod, smaller hats (0.10.2)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D145 | **Run 25's notes (0.10.2).** **The banner:** the labs over 500 KB froze (25B 502, 25C 509), all at 494 KB or less held, the Blazeplume too: the HOME Menu's ceiling is the size, so banners stay under 480 KB (`tools\banner_variants.ps1` warns). Noah picked **25F** (the Pouncer, no outline). Its joints split as the head and tail turned: each rigid piece's openings by its joints are now closed with skin (`cap_openings`), the collars wider (head 0.15, tail 0.13 of its height), the head's roll 8 degrees and the tail's wag 16 (from 12 and 24); the previews one-sided as on the 3DS (`--seams`). Labs 26A (that Pouncer) and 26B (the Blazeplume) try it; the game's CIA keeps X till 26A holds. **Tam's rod** is a 3D prop now (`rodMesh`, drawn with the cove's shells and bobber, depth-tested): drawn as 2D lines over the picture it showed in front of you and your dragons. **Hats** may come down to 50% (from 70%), and floating costs half again more: the grown Crestwing's and Curlstone's sit on their heads at 50%, the Cindershell's at 60%, none floats. **The video's effort:** xhigh for V1-V3, and I tell Noah to switch to max before V4 (the edit's critique passes) | Noah's run 25 (0.10.1): "25 B actually showed a first frame and then froze. c same as b. d held but was ugly. All of them pretty much have solid shell bodies and any movement means their bodies split open at the triangles, if you can fix that. 25F was probably the best tho."; "The guys fishing pole is being rendered in front of me and my dragons. For dragons like the crestwing, feel free to make the hats even much smaller if you can then fit the hats on their heads properly."; "Plan on the xhigh to max change during the video build. Just let me know when to switch to max." | Approved |
+
 ## 2026-10-02 — Run 24's notes and the new banner (0.10.1)
 
 | # | Decision | Why | Status |

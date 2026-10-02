@@ -4256,6 +4256,8 @@ GpuMesh g_ringMesh, g_crystalMesh, g_fruitMeshes[static_cast<int>(challenge::Fru
     g_trophyMeshes[kChallenges];
 GpuMesh g_shellMeshes[kShellKinds], g_bobberMesh, g_fishMesh;  // Driftwood Cove (workstream C)
 GpuMesh g_mailboxMeshes[2], g_signMesh;  // the story's props (D137)
+GpuMesh g_rodMesh;                         // Tam's rod (run 25), built for the drop to the water
+int g_rodDrop = -1;
 // The den's shelf: rebuilt when what's been won changes.
 GpuMesh g_shelfMesh;
 u8 g_shelfCups[kChallenges] = {};
@@ -4315,6 +4317,14 @@ GpuMesh* challengeMesh(PropKind kind, int variant) {
         case PropKind::Sign:
             g = &g_signMesh;
             if (!g->vbo) m = signMesh();
+            break;
+        case PropKind::Rod:  // (variant: the drop to the water in 2 cm steps; made again if it changes)
+            g = &g_rodMesh;
+            if (g_rodDrop != variant) g->release();
+            if (!g->vbo) {
+                m = rodMesh(variant * 0.02f);
+                g_rodDrop = variant;
+            }
             break;
     }
     if (g && !g->vbo && (m.idx.empty() || !uploadProp(*g, m))) return nullptr;

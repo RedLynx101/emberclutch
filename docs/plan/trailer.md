@@ -83,7 +83,9 @@ No story spoilers past the festival's lanterns; no champions or deep places.
 3. **V2, the storyboard.** A still of every shot from the film build, the captions and the narration
    script, the voice samples. You approve the shots, words and voice.
 4. **V3, the capture.** All shots captured; a contact sheet.
-5. **V4, the rough cut.** The edit to music, with captions; review.
+5. **V4, the rough cut.** The edit to music, with captions; review. **Before V4 starts, tell Noah to switch
+   the session's effort to max** (Noah, 2026-10-02: "Plan on the xhigh to max change during the video
+   build. Just let me know when to switch to max."); V1-V3 run at xhigh.
 6. **V5, the final.** Sound mixed, the end card, thumbnails (three to pick from); the MP4 and the vertical cut.
 7. **V6, YouTube.** You upload it (it's public, so it's yours to do) after the release is public, so the
    links work; the title, description and thumbnail are ready below.

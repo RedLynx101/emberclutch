@@ -381,7 +381,7 @@ int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* o
         f.voice = 0;
         f.pitch = 1.25f;
         f.person = story::kPTam;
-        f.clip = tamFishing(s, near) ? "fish" : nullptr;  // his rod out till you come near (drawOver draws it; workstream D)
+        f.clip = tamFishing(s, near) ? "fish" : nullptr;  // his rod out till you come near (drawCoveThings draws it: run 25)
     }
     if (n < cap && !active(app)) {  // the water's edge: fishing
         vext::Folk& f = out[n++];
@@ -587,11 +587,27 @@ void update(App& app, const Input& in, vext::Stage& stage) {
     }
 }
 
-void drawCoveThings(App& app, const Valley& v, s64 now) {
+void drawCoveThings(App& app, const Valley& v, s64 now, Vec3 you) {
     const Spots& s = spots(v);
     if (!s.ok || !r3d::ready()) return;
-    r3d::ChallengeProp props[fishing::kShellSpots + 2];
+    r3d::ChallengeProp props[fishing::kShellSpots + 3];
     int n = 0;
+    // Tam's rod while he fishes, in 3D among the rest (run 25: drawn over the picture, it showed in front
+    // of you and your dragons): from his hand out over the lake, its line down into the water.
+    if (!active(app) && tamFishing(s, you)) {
+        const Vec3 fwd = forwardOf(s.fisherHeading);
+        const Vec3 hand = s.fisher + fwd * 0.3f + rightOf(s.fisherHeading) * 0.1f + Vec3{0, 0, 0.55f};
+        float x, y, ppu;
+        if (r3d::project(hand, x, y, ppu) && ppu > 2.0f) {
+            r3d::ChallengeProp& p = props[n++];
+            p.kind = r3d::PropKind::Rod;
+            p.variant = static_cast<u8>(std::fmin(255.0f, std::fmax(0.0f, (hand.z - v.water) / 0.02f)));
+            p.at = hand;
+            p.yaw = s.fisherHeading;
+            p.pitch = 0.03f * std::sin(app.t * 1.3f);  // (a slow bob)
+            p.look = rodLook();
+        }
+    }
     // The day's shells on the wet sand (near enough to see).
     const Day d = today(app);
     const u8 lying = static_cast<u8>(fishing::shellsToday(d.day) & ~d.shells);
@@ -667,22 +683,6 @@ void drawCoveThings(App& app, const Valley& v, s64 now) {
     r3d::drawChallengeProps(app, props, n, horizon, now);
 }
 
-// Tam's rod while he fishes (workstream D): from his hands out over the lake, the line down to it.
-void drawOver(App& app, const vext::Stage& stage) {
-    if (!stage.valley || active(app)) return;
-    const Spots& s = spots(*stage.valley);
-    if (!tamFishing(s, stage.you) || std::hypot(stage.you.x - s.fisher.x, stage.you.y - s.fisher.y) > 70.0f) return;
-    const Vec3 fwd = forwardOf(s.fisherHeading);
-    const Vec3 hand = s.fisher + fwd * 0.3f + rightOf(s.fisherHeading) * 0.1f + Vec3{0, 0, 0.55f};
-    const Vec3 tip = hand + fwd * 1.5f + Vec3{0, 0, 1.15f + 0.03f * std::sin(app.t * 1.3f)};
-    Vec3 end = tip + fwd * 2.4f;  // (out past the shallows: core/fishing coveSpots, run 24)
-    end.z = stage.valley->water;
-    float hx, hy, hp, tx, ty, tp, ex, ey, ep;
-    if (!r3d::project(hand, hx, hy, hp) || !r3d::project(tip, tx, ty, tp) || !r3d::project(end, ex, ey, ep)) return;
-    const u32 rod = theme::rgba(120, 82, 50);
-    C2D_DrawLine(hx, hy, rod, tx, ty, rod, std::fmax(1.2f, 0.035f * hp), 0);
-    C2D_DrawLine(tx, ty, withAlpha(theme::kShell, 0.7f), ex, ey, withAlpha(theme::kShell, 0.7f), 1.0f, 0);
-}
 
 void drawTop(App& app, const vext::Stage& stage) {
     State& f = st();

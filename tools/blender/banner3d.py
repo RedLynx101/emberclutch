@@ -68,7 +68,8 @@ VARIANT = int(dm.arg("--variant", "0"))                          # a kit kind's 
 DETAIL = int(dm.arg("--lod", "1" if KIND == "classic" else "0"))  # the body's level of detail
 OUTLINE = float(dm.arg("--outline", "0"))                         # the ink's width, of the dragon's height (0: none)
 INK = (0.13, 0.06, 0.15)                                          # the outline: the game's deep plum
-COLLAR = {"head": 0.11, "tail": 0.09}
+COLLAR = {"head": 0.11, "tail": 0.09} if KIND == "classic" else {"head": 0.15, "tail": 0.13}  # (a kind's wider: run 25)
+WAG = 24.0 if KIND == "classic" else 16.0  # the tail's wag either way, degrees (a kind's gentler: run 25)
 TAIL_LIFT = (55.0, 35.0)  # a kind's tail: raised (about X) and swung to its left (about Z), degrees  # each moving piece's collar round its joint (of the dragon's height)
 # A kind's parts coloured per vertex (a feather's bands, "vc" materials): each band takes its
 # palette slot's colour in the colouring, as the exporter paints it in the game.
@@ -469,7 +470,47 @@ def dragon_pieces(d, skin):
         if KIND != "classic":  # smooth, as the game shades it (run 25): creases only where it's sharp
             o.data.shade_smooth()
             o.data.set_sharp_from_angle(angle=math.radians(55))
+    if KIND != "classic":  # (run 25: turning, a piece opened onto its hollow inside: closed with skin)
+        bpy.context.view_layer.update()
+        skin_mat = mats.get(d["mats"]["body"].name)
+        for piece in ("body", "head", "tail"):
+            if piece in merged:
+                cap_openings(merged[piece], [pivots["head"], pivots["tail"]], 0.3 * tall, skin_mat)
     return merged, heart_mat
+
+
+def cap_openings(o, near, radius, skin_mat):
+    """Closes a piece's openings round its joints (the body's at the neck and tail, the head's and
+    the tail's where they were cut) with faces in the skin, so when the head or tail turns and the
+    joint parts a little you see skin, not the hollow inside (run 25, Noah: "any movement means their
+    bodies split open"). Openings elsewhere (trimmed inside the egg) stay open."""
+    me = o.data
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    uv = bm.loops.layers.uv.active
+    uv_of = {}
+    for f in bm.faces:
+        for lp in f.loops:
+            if uv is not None and lp.vert not in uv_of:
+                uv_of[lp.vert] = lp[uv].uv.copy()
+    rim = [e for e in bm.edges if e.is_boundary]
+    made = bmesh.ops.holes_fill(bm, edges=rim, sides=0)["faces"]
+    world = o.matrix_world
+    far = [f for f in made if min((world @ f.calc_center_median() - p).length for p in near) > radius]
+    bmesh.ops.delete(bm, geom=far, context="FACES_ONLY")
+    kept = [f for f in made if f.is_valid]
+    slot = next((i for i, m in enumerate(me.materials) if m is skin_mat), 0)
+    for f in kept:
+        f.material_index = slot
+        f.smooth = True
+        if uv is not None:
+            for lp in f.loops:
+                if lp.vert in uv_of:
+                    lp[uv].uv = uv_of[lp.vert]
+    bmesh.ops.triangulate(bm, faces=kept)
+    bm.to_mesh(me)
+    bm.free()
+    print(f"[banner] {o.name}: {len(kept)} openings by its joints capped")
 
 
 # ------------------------------------------------------------------------------ the egg
@@ -881,13 +922,13 @@ def build():
     cap.location = (head_top.x, head_top.y + 0.08 * h, head_top.z - 0.12 * h)
     cap.rotation_euler = (math.radians(-16), math.radians(10), 0)
     cap.scale = (0.5, 0.5, 0.5)
-    dy = fit_in_egg(pieces, egg_h, 0.42 * h, rim / egg_h, lo - drop * h) if "--no-fit" not in sys.argv else 0.0
+    dy = fit_in_egg(pieces, egg_h, 0.42 * h, rim / egg_h, lo - drop * h, wag=WAG) if "--no-fit" not in sys.argv else 0.0
     for o in list(pieces.values()) + [cap]:
         o.location.y += dy
     if KIND != "classic" and "body" in pieces:  # its paws forward in the sit: trimmed where they'd show
         clip_to_egg(pieces["body"], egg_h, 0.42 * h, rim / egg_h, lo - drop * h)
     if KIND != "classic" and "tail" in pieces:  # ...and the tail through its whole wag
-        clip_to_egg(pieces["tail"], egg_h, 0.42 * h, rim / egg_h, lo - drop * h, yaws=(-24.0, 0.0, 24.0))
+        clip_to_egg(pieces["tail"], egg_h, 0.42 * h, rim / egg_h, lo - drop * h, yaws=(-WAG, 0.0, WAG))
     if KIND != "classic":  # what's deep in the egg never shows
         for name in ("body", "tail"):
             if name in pieces:
@@ -1036,12 +1077,14 @@ def animate_dragon(pieces, cap):
 
     # The head tilts one way, then nods and tilts the other (roll is about the facing axis, Y).
     h0 = tuple(math.degrees(a) for a in head.rotation_euler)
-    for f, (x, y, z) in cycles(((0, (0, 0, 0)), (18, (0, 12, 0)), (36, (0, 0, 0)), (54, (-6, -10, 0)),
+    # (a kind's a little gentler, so its joints stay closed: run 25)
+    roll, nod = (12, -6) if KIND == "classic" else (8, -4)
+    for f, (x, y, z) in cycles(((0, (0, 0, 0)), (18, (0, roll, 0)), (36, (0, 0, 0)), (54, (nod, -roll * 5 / 6, 0)),
                                 (72, (0, 0, 0)), (96, (0, 0, 0)))):
         key(head, f, rot=(h0[0] + x, h0[1] + y, h0[2] + z))
     # The tail wags, then rests.
     t0 = tuple(math.degrees(a) for a in tail.rotation_euler)
-    for f, yaw in cycles(((0, 0), (8, 24), (16, -24), (24, 24), (32, -24), (40, 24), (48, 0), (96, 0))):
+    for f, yaw in cycles(((0, 0), (8, WAG), (16, -WAG), (24, WAG), (32, -WAG), (40, WAG), (48, 0), (96, 0))):
         key(tail, f, rot=(t0[0], t0[1], t0[2] + yaw))
     # Two blinks: the eyes squash flat and open again.
     if "eyes" in pieces:
@@ -1180,6 +1223,10 @@ def main():
             tris += sum(len(p.vertices) - 2 for p in o.data.polygons)
     print(f"[banner] {len(pieces)} dragon pieces, {tris} triangles in all")
     os.makedirs(OUT, exist_ok=True)
+    if KIND != "classic":  # the previews one-sided where the 3DS is (tidy_gltf), so a hole shows here too
+        for m in bpy.data.materials:
+            if (m.name.startswith("b_") and "membrane" not in m.name) or m.name.split(".")[0] in ("heart_glow", "ink", "shell", "shell_glow"):
+                m.use_backface_culling = True
     gltf = os.path.join(OUT, "banner.gltf")
     export(gltf)
     add_heart_colour(gltf)
@@ -1198,6 +1245,9 @@ def main():
     for k, f in enumerate((0, 18, 38, 54)):  # the 3D banner through the HOME Menu's camera
         render(os.path.join(REVIEW, f"banner3d_{k}.png"), 400, 240, f)
     render(os.path.join(REVIEW, "banner3d_big.png"), 1000, 600, 0)
+    if "--seams" in sys.argv:  # the joints mid-motion, big (run 25: they split open as the head and tail moved)
+        for f in (round(8 * CYCLE / 96), round(18 * CYCLE / 96), round(54 * CYCLE / 96)):
+            render(os.path.join(REVIEW, f"banner3d_seams_{f}.png"), 1400, 840, f)
     # The HOME Menu turns the banner round as it swaps titles: the back and the side must hold up too.
     cam = scene.camera
     for name, yaw in (("banner3d_back.png", 180.0), ("banner3d_side.png", 90.0)):

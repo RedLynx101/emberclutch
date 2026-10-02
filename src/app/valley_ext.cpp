@@ -13,7 +13,7 @@ namespace {
 // Each 1.0 feature adds one line here (its functions live in its own files).
 const Feature kFeatures[] = {
     {"none", nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},  // (keeps the table non-empty)
-    {"cove", cove::folk, cove::act, cove::active, cove::update, nullptr, cove::drawTop, cove::drawBottom, nullptr, nullptr, cove::drawOver},  // Driftwood Cove (workstream C)
+    {"cove", cove::folk, cove::act, cove::active, cove::update, nullptr, cove::drawTop, cove::drawBottom, nullptr, nullptr, nullptr},  // Driftwood Cove (workstream C; Tam's rod in 3D now: run 25)
     glade::kFeature,  // the pageant at Moonpetal Glade (app/glade.cpp)
     kLeagueFeature,  // 1.0 battles: the league's challengers, champions and boards (workstream B)
     kHollowFeature,  // 1.0 battles: Frostspire Hollow's keeper and floors (workstream B)

@@ -1541,7 +1541,7 @@ void drawTop(App& app) {
     if (s.breath.count() > 0) bview::drawBreath(s.breath);  // (a lantern being breathed alight)
     if (r3d::ready()) emote::drawOverSpeaker(app);  // (the speaker's feeling over their head: D138)
     if (r3d::ready()) drawChallengeBoards(app, s.valley, now);
-    if (r3d::ready()) cove::drawCoveThings(app, s.valley, now);  // Driftwood Cove's shells, bobber and catch (workstream C)
+    if (r3d::ready()) cove::drawCoveThings(app, s.valley, now, s.you.pos);  // Driftwood Cove's shells, Tam's rod, the bobber and catch (workstream C)
     if (r3d::ready()) drawLeagueBoards(app, s.valley, now);  // 1.0 battles: the league's boards (workstream B)
     if (r3d::ready()) drawStoryProps(app, s.valley, now);  // the mailbox and the signs (D137)
     for (int f = 0; f < vext::featureCount() && feat < 0 && r3d::ready(); ++f)  // (a walker's hello: workstream D)

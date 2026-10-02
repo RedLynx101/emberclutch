@@ -30,11 +30,11 @@ OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
 RUN_READY = True  # the run's checklist on the page (once the build is ready for the 3DS)
-RUN_DOC = "docs/plan/hardware-check-13.md"  # the run's steps
-RUN_KEY = "run28"       # its database collection (each run its own: run 27's notes stay under `run27`)
-LABS = ["28A", "28B", "28C", "28D", "28E", "28F", "28G", "28H"]  # banner labs this run (run 28: aligned, D147)
+RUN_DOC = "docs/plan/hardware-check-14.md"  # the run's steps
+RUN_KEY = "run29"       # its database collection (each run its own: run 28's notes stay under `run28`)
+LABS = []  # banner labs this run (run 28's eight all held: D147; 28G is the game's banner, D148)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch: Skyreach Valley, run 28 (0.10.4): the banner settled, the isles"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch: Skyreach Valley, run 29 (0.10.5): the isles made pretty, the banner in the game"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -455,6 +455,37 @@ def banners() -> list[dict]:
     return cards
 
 
+# Run 29's card (D148): the floating islands before and after (tests/autotest/isles.txt, headless: the old
+# islands' pictures kept in build/autotest/isles-before), Keep or Change. Collection `plans` (slug isles-29).
+ISLES = True
+ISLE_SHOTS = [("i05-three-quarter", "From above"), ("i02-side", "From the side"), ("i03-from-below", "From underneath"),
+              ("i06-ne-island", "A north-east island")]
+ISLES_HEAD = {"nav": "The isles", "kicker": "D148 · run 28's notes", "title": "The floating islands",
+              "intro": "Textured and reshaped (\"Make them pretty\"): before and now, from the same cameras. Keep, or Change "
+                       "and say what."}
+
+
+def isles() -> list[dict]:
+    (OUT / "plans").mkdir(parents=True, exist_ok=True)
+    now, before = ROOT / "build" / "autotest" / "isles", ROOT / "build" / "autotest" / "isles-before"
+    images = []
+    for name, cap in ISLE_SHOTS + [("i04-the-top", "On top, by the lantern"), ("i08-dusk", "At dusk")]:
+        for folder, when in ((before, "Before"), (now, "Now")):
+            src = folder / f"{name}_top.png"
+            if not src.exists() or (when == "Before" and (name, cap) not in ISLE_SHOTS):
+                continue
+            dst = OUT / "plans" / f"isles_{when.lower()}_{name}.jpg"
+            subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src), "-vf", "scale=800:-1:flags=neighbor", "-q:v", "3",
+                            str(dst)], check=True)
+            images.append({"src": f"plans/{dst.name}", "cap": f"{when}: {cap[0].lower() + cap[1:]}"})
+    body = ("The grass on top painted like the valley's; the turf rolling over the edge, vines hanging from it; a band of "
+            "earth, then lilac rock in layers stepping in, down to a hanging point, two smaller points and a few pale "
+            "crystals beside it; trees, pines, bushes, a rock and flowers on every top. About 480 to 720 triangles an island, "
+            "their trees and flowers only within the land's reach. Pictures from the emulator at the 3DS's size.")
+    return [{"slug": "isles-29", "kicker": "D148 · 0.10.5", "title": "The floating islands, before and now", "body": md_html(body),
+             "images": images}]
+
+
 ANSWERS = """**Max or xhigh for the video?** Not much better for building it: the film build, the capture and the titles
 page are engineering, and xhigh does those as well. Where max earns its cost is the edit, looking hard at every
 pass's frames and fixing the worst over more passes. So xhigh to build and capture, max for the edit's critique
@@ -483,7 +514,8 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)  # (a shell may be sitting in it)
     data = {"sounds": sounds() + made_sounds() if SHOW_SOUNDS else [], "music": music() if SHOW_SOUNDS else [],
             "run": run_list() if RUN_READY else {}, "dragons": dragons() if DRAGONS else [],
-            "people": {}, "looks": looks() if LOOKS else {}, "plans": banners(), "plansHead": PLANS_HEAD}
+            "people": {}, "looks": looks() if LOOKS else {}, "plans": isles() if ISLES else banners(),
+            "plansHead": ISLES_HEAD if ISLES else PLANS_HEAD}
     page = (Path(__file__).with_name("review_template.html").read_text(encoding="utf-8")
             .replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
             .replace("/*TITLE*/", PAGE_TITLE)

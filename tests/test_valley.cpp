@@ -125,7 +125,28 @@ TEST(valley_tiles_join_and_fit_the_budget) {
     buildValleyExtras(v, extras);
     buildValleyWater(v, water, {0, 0}, 360.0f);
     std::printf("  extras %d, water %d triangles\n", extras.triangles(), water.triangles());
-    CHECK(extras.triangles() > 50 && extras.triangles() < 1400 && water.triangles() >= 2);
+    CHECK(extras.triangles() > 50 && extras.triangles() < 3600 && water.triangles() >= 2);
+    // The islands (run 28, made pretty): each in its runs, within its budget and the bounds render3d
+    // culls it by (and the sky rings keep clear of), its top flat at its height out past where it's
+    // stood on, trees on it.
+    CHECK(extras.parts.size() == v.islands.size() * kIslandRuns + 1);
+    for (std::size_t k = 0; k + 1 < extras.parts.size(); ++k) CHECK(extras.parts[k] <= extras.parts[k + 1]);
+    for (std::size_t n = 0; n < v.islands.size(); ++n) {
+        const ValleyIsland& isl = v.islands[n];
+        const u32* run = &extras.parts[n * kIslandRuns];
+        const int tris = static_cast<int>(run[kIslandRuns] - run[0]) / 3;
+        std::printf("  island %d (radius %.0f): %d triangles, %d of them its props\n", static_cast<int>(n), isl.radius, tris,
+                    static_cast<int>(run[kIsleProps + 1] - run[kIsleProps]) / 3);
+        CHECK(tris > 200 && tris < 720 && run[kIsleProps + 1] > run[kIsleProps]);
+        float rim = isl.radius * 2;
+        for (u32 i = run[0]; i < run[kIslandRuns]; ++i) {
+            const Vec3 p = extras.pos[extras.idx[i]];
+            const float out = std::hypot(p.x - isl.at.x, p.y - isl.at.y);
+            CHECK(out < isl.radius * 1.3f && p.z < isl.at.z + 14.0f && p.z > isl.at.z - isl.radius * 1.9f);
+            if (i < run[kIsleProps] && std::fabs(p.z - isl.at.z) < 1e-4f && out > isl.radius * 0.7f) rim = std::fmin(rim, out);
+        }
+        CHECK(rim > isl.radius * 0.88f && rim < isl.radius);
+    }
 }
 
 TEST(flying_over_the_valley) {

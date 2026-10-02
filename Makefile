@@ -44,7 +44,7 @@ TARGET		:=	emberclutch
 BUILD		:=	build
 endif
 # The version, shown on the title screen and packed in the CIA (tools/package_cia.ps1 reads it here).
-VERSION		:=	0.10.4
+VERSION		:=	0.10.5
 # A new VERSION recompiles the files that show it: make can't see a -D change (run 27: the trace still said
 # 0.9.14 in 0.10.3, and the title screen could have lagged the same way).
 ifneq ($(BUILD),$(notdir $(CURDIR)))

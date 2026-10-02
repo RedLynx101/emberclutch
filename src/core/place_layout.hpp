@@ -51,6 +51,10 @@ Vec2 placeToWorld(const ValleyPlaceInfo& p, Vec2 local);
 Vec3 placeToWorld3(const Valley& v, const ValleyPlaceInfo& p, Vec3 local);
 // A point in a place's frame, its z a height in the frame (above the place's anchor), in the valley.
 Vec3 placeFrameToWorld(const ValleyPlaceInfo& p, Vec3 local);
+// Where a trip on the map sets you down: its arrive spot, or out of its door (far enough that the
+// camera behind you is outside too), standing on what's there at the place's own height (the
+// isles: the island's top; run 28 set you down on the land under it).
+Vec3 placeArrival(const Valley& v, const ValleyPlaceInfo& p, bool outward);
 // The places' decks into the valley (1.0: the mill's bridge, the cove's jetty), after it loads.
 void addPlaceDecks(Valley& v);
 // Every place's walls in the valley, for walking round.

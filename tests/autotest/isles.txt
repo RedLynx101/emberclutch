@@ -1,0 +1,52 @@
+# The floating islands (run 28: "the floating islands need to be textured. Make them pretty"; a
+# trip to the isles set Noah down on the land under the island). A trip there on foot, then the
+# free camera round the big island (the isles' anchor, heading 0: its frame is the world turned
+# half round, z above its top) and out to the north-east pair.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+skip 9
+tips seen
+light
+valley
+hour 11
+wait 4
+travel 9
+wait 4
+shot i01-arrived-on-the-isles
+goto 162 196 220 196
+wait 2
+shot i01b-at-the-edge
+view 9 0 95 -6 0 0 -18
+wait 3
+shot i02-side
+view 9 50 70 -75 0 0 -40
+wait 3
+shot i03-from-below
+view 9 18 34 14 0 0 0
+wait 3
+shot i04-the-top
+view 9 -60 120 40 -10 0 -10
+wait 3
+shot i05-three-quarter
+view 9 -360 -30 30 -360 -100 5
+wait 3
+shot i06-ne-island
+view 9 -470 120 10 -470 -60 -10
+wait 3
+shot i07-ne-pair
+hour 19
+view 9 -60 120 40 -10 0 -10
+wait 3
+shot i08-dusk
+quit

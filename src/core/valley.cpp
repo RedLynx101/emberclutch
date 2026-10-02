@@ -133,9 +133,10 @@ int crownAt(const Valley& v, Vec3 p) {
 
 namespace {
 
-// One prop at a detail level (0 near, 1 further, 2 far: trees only, as cones; nothing beyond).
-void prop(ValleyMesh& m, const Valley& v, const ValleyTree& p, int lod) {
-    const float z = v.heightAt(p.x, p.y);
+// One prop at a detail level (0 near, 1 further, 2 far: trees only, as cones; nothing beyond), on
+// the land, or on a flat top at `top` (a floating island's).
+void prop(ValleyMesh& m, const Valley& v, const ValleyTree& p, int lod, const float* top = nullptr) {
+    const float z = top ? *top : v.heightAt(p.x, p.y);
     const float h = p.height, turn = p.yaw * (2 * kPi / 256.0f);
     const u8 k = p.shade;
     if (lod >= 2) {  // far off: a three-sided cone in its leaves' colour, the same size (no pop as it nears)
@@ -207,7 +208,7 @@ void prop(ValleyMesh& m, const Valley& v, const ValleyTree& p, int lod) {
             const u8* c = kBloom[k % 4];
             for (int f = 0; f < 5; ++f) {
                 const float a = turn + f * 1.3f, r = h * (0.2f + 0.16f * f);
-                const float fx = p.x + std::cos(a) * r, fy = p.y + std::sin(a) * r, fz = v.heightAt(fx, fy) + 0.18f;
+                const float fx = p.x + std::cos(a) * r, fy = p.y + std::sin(a) * r, fz = (top ? *top : v.heightAt(fx, fy)) + 0.18f;
                 const float s = 0.32f;
                 tri(m, addVertex(m, {fx - s, fy - s * 0.5f, fz}, c[0], c[1], c[2]),
                     addVertex(m, {fx + s, fy - s * 0.5f, fz}, c[0], c[1], c[2]),
@@ -500,60 +501,183 @@ u8 surfaceWeight(u8 r, u8 g, u8 b) {
 
 void buildValleyExtras(const Valley& v, ValleyMesh& out) {
     out.clear();
-    constexpr int kSides = 9;
-    for (const ValleyIsland& isl : v.islands) {
-        out.parts.push_back(static_cast<u32>(out.idx.size()));  // (each island its own range: culled apart)
+    for (std::size_t n = 0; n < v.islands.size(); ++n) {
+        const ValleyIsland& isl = v.islands[n];
         const Vec3 c = isl.at;
-        const float r = isl.radius;
-        const u8 grass[3] = {104, 156, 78};
-        const u16 top = addVertex(out, c, grass[0], grass[1], grass[2]);
-        u16 rim[kSides];
-        for (int s = 0; s < kSides; ++s) {
-            const float a = 2 * kPi * s / kSides, wob = 1.0f + 0.12f * std::sin(a * 3 + c.x);
-            rim[s] = addVertex(out, {c.x + std::cos(a) * r * wob, c.y + std::sin(a) * r * wob, c.z}, grass[0], grass[1],
-                               grass[2]);
+        const float r = isl.radius, seed = c.x * 0.013f + c.y * 0.007f + static_cast<float>(n) * 1.7f;
+        const int sides = static_cast<int>(clampf(r / 3.0f, 12.0f, 18.0f));
+        // The rim wobbles no further in than 0.89 of the radius (islandAt stands within 0.86).
+        auto rimAt = [&](float a) { return r * (1.0f + 0.07f * std::sin(a * 3 + seed) + 0.04f * std::sin(a * 5 + seed * 2.3f)); };
+        auto dir = [](float a) { return Vec2{std::cos(a), std::sin(a)}; };
+        const std::size_t firstVertex = out.pos.size();
+
+        // The top, flat (walked on at its height), dappled lighter and darker; its turf rolling over
+        // the edge, a little out and down, then back under (soft: shared vertices, not faceted).
+        out.parts.push_back(static_cast<u32>(out.idx.size()));
+        const u8 grass[3] = {112, 164, 80};
+        auto green = [&](Vec3 p, float k) {
+            u8 g[3];
+            tinted(grass, k * (0.9f + 0.16f * dapple(p * 0.37f)), 0.0f, g);
+            return addVertex(out, p, g[0], g[1], g[2]);
+        };
+        const u16 middle = green(c, 1.04f);
+        std::vector<u16> mid(sides), rim(sides), lip(sides), hang(sides);
+        std::vector<Vec3> hangAt(sides);
+        for (int s = 0; s < sides; ++s) {
+            const float a = 2 * kPi * s / sides, R = rimAt(a);
+            const Vec2 d = dir(a);
+            const float m = r * 0.55f * (1.0f + 0.06f * std::sin(a * 4 + seed));
+            mid[s] = green({c.x + d.x * m, c.y + d.y * m, c.z}, 1.0f);
+            rim[s] = green({c.x + d.x * R, c.y + d.y * R, c.z}, 0.97f);
+            lip[s] = green({c.x + d.x * (R + 0.7f), c.y + d.y * (R + 0.7f), c.z - 0.6f}, 0.86f);
+            hangAt[s] = {c.x + d.x * (R + 0.35f), c.y + d.y * (R + 0.35f), c.z - 1.7f};
+            u8 under[3];
+            tinted(grass, 0.64f, 0.0f, under);
+            hang[s] = addVertex(out, hangAt[s], under[0], under[1], under[2]);
         }
-        for (int s = 0; s < kSides; ++s) tri(out, top, rim[s], rim[(s + 1) % kSides]);
-        // The rocky underside, a storybook turnip: a mossy lip under the grass, then banded lilac
-        // rock bulging and narrowing in four rings down to a point, faceted.
-        constexpr int kRings = 4;
-        constexpr float kDown[kRings] = {0.26f, 0.62f, 1.02f, 1.42f}, kWide[kRings] = {0.94f, 0.82f, 0.56f, 0.26f};
-        const u8 bands[kRings][3] = {{96, 132, 84}, {150, 134, 160}, {126, 110, 124}, {140, 124, 150}};  // moss, then rock
-        Vec3 ring[kRings + 1][kSides];
-        for (int s = 0; s < kSides; ++s) ring[0][s] = out.pos[rim[s]];
-        for (int k = 0; k < kRings; ++k)
-            for (int s = 0; s < kSides; ++s) {
-                const float a = 2 * kPi * s / kSides, wob = 1.0f + 0.1f * std::sin(a * 2 + k * 1.7f + c.y);
-                ring[k + 1][s] = {c.x + std::cos(a) * r * kWide[k] * wob + r * 0.05f * k, c.y + std::sin(a) * r * kWide[k] * wob,
-                                  c.z - r * kDown[k]};
+        for (int s = 0; s < sides; ++s) {
+            const int e = (s + 1) % sides;
+            tri(out, middle, mid[s], mid[e]);
+            tri(out, mid[s], rim[s], rim[e]);
+            tri(out, mid[s], rim[e], mid[e]);
+            tri(out, rim[s], lip[s], lip[e]);
+            tri(out, rim[s], lip[e], rim[e]);
+            tri(out, lip[s], hang[s], hang[e]);
+            tri(out, lip[s], hang[e], lip[e]);
+        }
+        // Vines down from the turf, two segments each, swaying out a little.
+        const int vines = 3 + static_cast<int>(r / 9.0f);
+        for (int k = 0; k < vines; ++k) {
+            const float a = k * (2 * kPi / vines) + 0.4f * std::sin(k * 2.7f + seed), len = 3.5f + 4.0f * dapple({a, seed, 1});
+            const Vec2 d = dir(a), side{-d.y * 0.32f, d.x * 0.32f};
+            const float R = rimAt(a) + 0.3f;
+            const Vec3 top{c.x + d.x * R, c.y + d.y * R, c.z - 1.5f};
+            const Vec3 knee{top.x + d.x * 0.5f, top.y + d.y * 0.5f, top.z - len * 0.55f}, tip{top.x + d.x * 0.3f, top.y + d.y * 0.3f, top.z - len};
+            const u16 t0 = addVertex(out, {top.x - side.x, top.y - side.y, top.z}, 66, 104, 58);
+            const u16 t1 = addVertex(out, {top.x + side.x, top.y + side.y, top.z}, 66, 104, 58);
+            const u16 k0 = addVertex(out, {knee.x - side.x * 0.8f, knee.y - side.y * 0.8f, knee.z}, 80, 124, 64);
+            const u16 k1 = addVertex(out, {knee.x + side.x * 0.8f, knee.y + side.y * 0.8f, knee.z}, 80, 124, 64);
+            const u16 tp = addVertex(out, tip, 104, 150, 76);
+            tri(out, t0, k0, t1);
+            tri(out, t1, k0, k1);
+            tri(out, k0, tp, k1);
+        }
+
+        // On top, as on the land: round trees and pines, bushes, a rock or two, flowers; clear of
+        // the middle, where a place may stand (the isles' lantern and its stepping stones).
+        out.parts.push_back(static_cast<u32>(out.idx.size()));
+        const int trees = 2 + static_cast<int>(r / 12.0f), bushes = 1 + static_cast<int>(r / 14.0f);
+        const int count = trees + bushes + 2 + static_cast<int>(r / 10.0f);
+        for (int k = 0; k < count; ++k) {
+            const float a = k * 2.39996f + seed, u = dapple({static_cast<float>(k), seed, 3});
+            const float d = r * (0.4f + 0.38f * u);
+            ValleyTree t;
+            t.x = c.x + std::cos(a) * d;
+            t.y = c.y + std::sin(a) * d;
+            t.shade = static_cast<u8>(dapple({a, d, 5}) * 255.0f);
+            t.yaw = static_cast<u8>(dapple({d, a, 7}) * 255.0f);
+            if (k < trees) {
+                t.kind = k % 3 == 2 ? kPropPine : kPropTree;
+                t.height = (t.kind == kPropPine ? 7.0f : 6.0f) + 3.0f * dapple({a, 1, d}) + (r - 26.0f) * 0.06f;  // (bigger isles, bigger trees)
+            } else if (k < trees + bushes) {
+                t.kind = kPropBush, t.height = 1.4f + 0.8f * u;
+            } else if (k == trees + bushes) {
+                t.kind = kPropRock, t.height = 1.6f + 1.2f * u;
+            } else {
+                t.kind = kPropFlowers, t.height = 1.8f + 1.4f * u;
             }
-        const Vec3 apex{c.x + r * 0.22f, c.y - r * 0.06f, c.z - r * 1.8f};
-        for (int k = 0; k <= kRings; ++k)
-            for (int s = 0; s < kSides; ++s) {
-                const int e = (s + 1) % kSides;
-                const Vec3 a0 = ring[k][s], a1 = ring[k][e];
-                const Vec3 b0 = k < kRings ? ring[k + 1][s] : apex, b1 = k < kRings ? ring[k + 1][e] : apex;
-                u8 col[3];
-                shaded(bands[k < kRings ? k : kRings - 1], cross(a1 - a0, b0 - a0) * -1.0f, col);
-                const u16 i0 = addVertex(out, a0, col[0], col[1], col[2]), i1 = addVertex(out, a1, col[0], col[1], col[2]);
-                const u16 j0 = addVertex(out, b0, col[0], col[1], col[2]);
-                tri(out, i0, j0, i1);
-                if (k < kRings) {
-                    const u16 j1 = addVertex(out, b1, col[0], col[1], col[2]);
-                    tri(out, i1, j0, j1);
-                }
+            prop(out, v, t, 0, &c.z);
+        }
+        // The painted texture's mix for the top, turf, vines and props, by colour (as the land's).
+        for (std::size_t i = firstVertex * 4; i + 3 < out.color.size(); i += 4)
+            out.color[i + 3] = surfaceWeight(out.color[i], out.color[i + 1], out.color[i + 2]);
+
+        // Underneath: a band of earth (a little moss in its top), then the rock in strata stepping in
+        // as it goes down, each step's underside in shade, to a hanging point; two smaller points
+        // beside it and a few pale crystals. Faceted, each face its own shade; the vertex's alpha
+        // the texture's mix (255: rock, lower: moss). Three runs by the way each face looks: east or
+        // west, north or south, down (render3d lays the strata on across each run from its side).
+        struct Ring {
+            float down, wide;  // of the radius
+            u8 col[3];
+            u8 mix;
+        };
+        static const Ring kRings[] = {
+            {0.00f, 1.00f, {108, 98, 70}, 120},   // under the turf: earth, moss in it
+            {0.05f, 0.99f, {126, 96, 72}, 160},
+            {0.15f, 0.96f, {116, 88, 68}, 200},   // its foot
+            {0.17f, 0.91f, {150, 132, 156}, 255}, // in: the first stratum, pale lilac
+            {0.34f, 0.88f, {168, 150, 174}, 255},
+            {0.40f, 0.78f, {132, 114, 140}, 255}, // in again (sloped: edge-on, a flat step was a dashed line)
+            {0.58f, 0.72f, {156, 138, 164}, 255},
+            {0.66f, 0.60f, {124, 106, 134}, 255},
+            {0.84f, 0.50f, {146, 128, 156}, 255},
+            {1.08f, 0.30f, {130, 114, 146}, 255},
+        };
+        constexpr int kRingCount = static_cast<int>(sizeof(kRings) / sizeof(kRings[0]));
+        std::vector<u16> facing[3];  // east or west, north or south, down
+        auto face = [&](Vec3 a, Vec3 b, Vec3 d, const u8 col[3], u8 mix, Vec3 inside) {
+            Vec3 nrm = cross(b - a, d - a);
+            if (dot(nrm, (a + b + d) * (1.0f / 3.0f) - inside) < 0) nrm = nrm * -1.0f;  // (lit from outside)
+            u8 shade[3], painted[3];
+            shaded(col, nrm, shade);
+            tinted(shade, 0.94f + 0.12f * dapple((a + b + d) * 0.11f), 0.0f, painted);
+            const Vec3 nn = normalize(nrm);
+            const int run = std::fabs(nn.z) > 0.72f ? 2 : (std::fabs(nn.x) >= std::fabs(nn.y) ? 0 : 1);
+            for (const Vec3& p : {a, b, d}) facing[run].push_back(addVertex(out, p, painted[0], painted[1], painted[2], mix));
+        };
+        std::vector<Vec3> ring((kRingCount + 1) * static_cast<std::size_t>(sides));
+        auto at = [&](int k, int s) -> Vec3& { return ring[std::size_t(k) * sides + std::size_t((s + sides) % sides)]; };
+        for (int s = 0; s < sides; ++s) at(0, s) = hangAt[s];
+        for (int k = 1; k < kRingCount; ++k)
+            for (int s = 0; s < sides; ++s) {
+                // (the wobble alike ring to ring, so each step goes in; the earth flush under the turf;
+                // the rock leaning a little as it goes down)
+                const float a = 2 * kPi * s / sides, wob = 1.0f + (k <= 2 ? 0.015f : 0.08f) * std::sin(a * 2 + k * 0.35f + seed);
+                const float R = rimAt(a) * kRings[k].wide * wob, lean = k > 3 ? r * 0.035f * (k - 3) : 0.0f;
+                const Vec2 d = dir(a);
+                at(k, s) = {c.x + d.x * R + lean, c.y + d.y * R, c.z - std::fmax(r * kRings[k].down, 1.7f + 0.6f * k)};
             }
-        // Round storybook trees round the top (Beta 1 review), clear of the middle where a place
-        // may stand (the isles' lantern).
-        const u8 bark[3] = {118, 84, 58};
+        for (int k = 0; k + 1 < kRingCount; ++k)
+            for (int s = 0; s < sides; ++s) {
+                const Vec3 a0 = at(k, s), a1 = at(k, s + 1), b0 = at(k + 1, s), b1 = at(k + 1, s + 1);
+                const Vec3 axis{c.x, c.y, (a0.z + b0.z) * 0.5f};
+                face(a0, b0, a1, kRings[k + 1].col, kRings[k + 1].mix, axis);
+                face(a1, b0, b1, kRings[k + 1].col, kRings[k + 1].mix, axis);
+            }
+        const Vec3 apex{c.x + r * 0.22f, c.y - r * 0.06f, c.z - r * 1.75f};
+        Vec3 last{0, 0, 0};
+        for (int s = 0; s < sides; ++s) last = last + at(kRingCount - 1, s) * (1.0f / sides);
+        const u8 deep[3] = {136, 120, 152};
+        for (int s = 0; s < sides; ++s) face(at(kRingCount - 1, s), apex, at(kRingCount - 1, s + 1), deep, 255, (last + apex) * 0.5f);
+        // Two smaller points hanging from the last steps, and the crystals (sky-stone, pale aqua).
+        for (int k = 0; k < 2; ++k) {
+            const int s0 = (k == 0 ? sides / 3 : (2 * sides) / 3) + static_cast<int>(n % 2);
+            const Vec3 base0 = at(kRingCount - 3, s0), base1 = at(kRingCount - 3, s0 + 1), base2 = at(kRingCount - 2, s0);
+            const Vec3 mid = (base0 + base1 + base2) * (1.0f / 3.0f);
+            const Vec3 tip{mid.x, mid.y, mid.z - r * (0.38f + 0.1f * k)};
+            const Vec3 inner = (mid + tip) * 0.5f;
+            face(base0, tip, base1, deep, 255, inner);
+            face(base1, tip, base2, deep, 255, inner);
+            face(base2, tip, base0, deep, 255, inner);
+        }
+        const u8 crystal[3] = {168, 226, 232};
         for (int k = 0; k < 3; ++k) {
-            const float a = k * 2.1f + c.y * 0.01f, d = r * (0.42f + 0.12f * (k % 2));
-            const Vec3 base{c.x + std::cos(a) * d, c.y + std::sin(a) * d, c.z - 0.3f};
-            const float h = 6.5f + 1.5f * (k % 3);
-            const u8 leaf[3] = {static_cast<u8>(70 + 10 * (k % 3)), static_cast<u8>(136 + 8 * k), static_cast<u8>(62 + 6 * (k % 2))};
-            trunk(out, base, h * 0.45f, h * 0.07f, 3, bark);
-            blob(out, {base.x, base.y, base.z + h * 0.55f}, h * 0.38f, h * 0.26f, h * 0.2f, 5, a, leaf);
-            blob(out, {base.x + h * 0.12f, base.y - h * 0.08f, base.z + h * 0.78f}, h * 0.24f, h * 0.18f, h * 0.1f, 5, a + 0.8f, leaf);
+            const Vec3 p = at(kRingCount - 1 - k % 2, k * sides / 3 + 1);
+            const Vec3 q{p.x + (c.x - p.x) * 0.12f, p.y + (c.y - p.y) * 0.12f, p.z - 0.4f};
+            const float s = 0.9f + 0.5f * k;
+            const Vec3 tip{q.x, q.y, q.z - s * 2.4f}, cap{q.x, q.y, q.z + s * 0.6f};
+            for (int f = 0; f < 4; ++f) {
+                const float a0 = f * (kPi / 2) + k, a1 = a0 + kPi / 2;
+                const Vec3 w0{q.x + std::cos(a0) * s * 0.6f, q.y + std::sin(a0) * s * 0.6f, q.z};
+                const Vec3 w1{q.x + std::cos(a1) * s * 0.6f, q.y + std::sin(a1) * s * 0.6f, q.z};
+                face(w0, tip, w1, crystal, 255, q);
+                face(w1, cap, w0, crystal, 255, q);
+            }
+        }
+        for (int run = 0; run < 3; ++run) {
+            out.parts.push_back(static_cast<u32>(out.idx.size()));
+            out.idx.insert(out.idx.end(), facing[run].begin(), facing[run].end());
         }
     }
     out.parts.push_back(static_cast<u32>(out.idx.size()));

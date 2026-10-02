@@ -223,10 +223,29 @@ TEST(the_camera_is_kept_clear_of_the_places) {
     CHECK(fromMiddle < 6.4f);
 }
 
+// A trip on the map sets you down on what's there (run 28: to the Floating Isles it set Noah down on
+// the land far under the island): the isles' arrival on its island's top, every other on its ground.
+TEST(a_trip_sets_you_down_on_the_place) {
+    const Valley& v = valley();
+    CHECK(!v.places.empty());
+    for (const ValleyPlaceInfo& p : v.places)
+        for (int out = 0; out < 2; ++out) {
+            const Vec3 a = placeArrival(v, p, out == 1);
+            const int isl = v.islandAt(a.x, a.y, a.z);
+            if (p.id == kPlaceIsles) {
+                CHECK(isl >= 0 && std::fabs(a.z - p.at.z) < 0.5f);
+                if (isl >= 0) CHECK(std::fabs(a.z - v.islands[std::size_t(isl)].at.z) < 1e-3f);
+            } else {
+                CHECK(isl < 0 && std::fabs(a.z - v.heightAt(a.x, a.y)) < 1e-3f);
+            }
+        }
+}
+
 void runPlaceTests() {
     RUN(every_place_loads_within_its_budget);
     RUN(the_new_places_name_their_spots);
     RUN(the_new_places_spots_are_where_they_belong);
     RUN(frame_heights_stay_in_the_frame);
     RUN(the_camera_is_kept_clear_of_the_places);
+    RUN(a_trip_sets_you_down_on_the_place);
 }

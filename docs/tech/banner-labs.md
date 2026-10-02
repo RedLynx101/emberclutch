@@ -294,3 +294,9 @@ note ("You can add a bit of a border, that look wasn't bad"): the ink outline th
 | **28H** | 26A unchanged but aligned (its head moving, the joints capped) | 461 KB | 0xEC17A |
 
 28E, 28F and 28H froze before unaligned: if they hold now, the alignment was it.
+
+**Run 28: all eight held**, 28E, 28F and 28H too: the alignment was it (D147). Noah picked **28G**, now the
+game's banner (D148): `tools\make_banner.ps1` builds its look (`--kind pouncer --variant 1 --outline 0.010
+--still-head --turn`), and 0.10.5's CIA carries the exact file that held (`build\banner_v\T1\banner.cgfx`;
+Blender joins the mesh with its vertices in another order each run, the same mesh in other bytes, every build
+aligned all the same). The lab titles 0xEC173-0xEC17A can be deleted; their CIAs are off the SD.

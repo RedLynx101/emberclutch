@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-10-02 — Run 28's notes: the banner in the game, the isles made pretty (0.10.5)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D148 | **Run 28's notes (0.10.5).** **The banner:** all eight labs of round 28 held, 28E, 28F and 28H among them (they froze before, unaligned): D147's alignment was the cause. Noah's pick, **28G** (the Pouncer hatchling in its Tabby colouring, a thin ink border at 0.010 of its height, its head and tail held still), is the game's own banner: `tools\make_banner.ps1` builds that look (its flat render to `build\banner`, leaving `assets\`), and 0.10.5's CIA carries the exact file that held (Blender orders the joined mesh's vertices differently run to run: the same mesh, other bytes). **The trip to the Floating Isles** set Noah down on the land under the island (`travelTo` took the land's height); `core/place_layout` `placeArrival` stands a trip's arrival on what's there at the place's own height, tested for every place. **The floating islands, textured and reshaped** (`buildValleyExtras`): a flat top (walked as before) dappled and painted with the ground's texture, the turf rolling over the edge with vines from it, the land's trees, pines, bushes, a rock and flowers on top (bigger isles, bigger trees); underneath a band of earth, then lilac rock in strata stepping in to a hanging point, two smaller points and a few pale crystals. The rock has its own painted texture (`makeIsleTexture`: layered tones with dark feet, sediment lines, grit, cracks; moss for the earth), laid on in three runs by the way each face looks (east-west faces by y, north-south by x, both up the strata, tilted a little; the faces looking down from below). 475-716 triangles an island, the props only within 180 m; each run with D118's guard. The north-east stutter: none in run 28 (no long frames after loading in the 3DS's own log, against 2-6 s stalls in run 27's with the tracer on) | Noah's run 28 (0.10.4): "Use 28G"; "No stuttering, but when I fast travelled to it, it put me underneath it. Fix this. Also, the floating islands need to be textured. Make them pretty." | Approved |
+
 ## 2026-10-02 — Run 27's notes: the banner freezes found, the isles, the lamp (0.10.4)
 
 | # | Decision | Why | Status |

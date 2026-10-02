@@ -2,9 +2,13 @@
 # (assets/icon.png), the flat 2D banner (assets/banner.png) and the animated 3D banner
 # (build/banner/banner.cgfx), built by Blender and converted by pycgfx.
 #   tools\make_banner.ps1 [-SkipIcon] [-SkipBanner] [-Mode still|turn|spin]
+# The 3D banner is Noah's pick of run 28 (lab 28G, D148): the Pouncer hatchling in its Tabby colouring,
+# a thin ink border (0.010 of its height), its head and tail held still (run 26), the textures aligned
+# (tools/banner_cgfx.py, D147). Its flat render goes to build\banner, not assets\ (the flat banner there
+# is the 2D fallback's, replaced only on Noah's word).
 # -Mode: how the 3D banner copes with the HOME Menu turning every banner (tools/blender/banner3d.py):
 #   turn   the dragon keeps all its motion; its body and egg turn it back against the HOME
-#          Menu's turn (the default: lab 8's X held still on the 3DS, run 12)
+#          Menu's turn (the default: lab 8's X held still on the 3DS, run 12; the picked look)
 #   still  one still piece facing the camera, only the heart's glow moving (lab 6's T, run 10)
 #   spin   the old banner, turning with the HOME Menu
 # pycgfx is a build tool, never committed: git clone --depth 1 https://github.com/skyfloogle/pycgfx build\tools\pycgfx
@@ -35,7 +39,8 @@ if (-not $SkipIcon) {
     if ($LASTEXITCODE -ne 0) { throw "emblem.py failed" }
 }
 if (-not $SkipBanner) {
-    $blenderArgs = @{ still = @("--", "--still"); turn = @("--", "--turn"); spin = @() }[$Mode]
+    $look = @("--kind", "pouncer", "--variant", "1", "--outline", "0.010", "--still-head", "--assets", (Join-Path $root "build\banner"))
+    $blenderArgs = @{ still = @("--", "--still"); turn = @("--", "--turn") + $look; spin = @() }[$Mode]
     $cgfxArgs = @{ still = @("--billboard", "world"); turn = @("--turn", "body*:1,egg:1"); spin = @() }[$Mode]
     Invoke-Blender (Join-Path $root "tools\blender\banner3d.py") $blenderArgs "\[banner\]"
     if ($LASTEXITCODE -ne 0) { throw "banner3d.py failed" }

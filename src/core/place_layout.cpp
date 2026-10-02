@@ -75,6 +75,12 @@ Vec3 placeFrameToWorld(const ValleyPlaceInfo& p, Vec3 local) {
     return {w.x, w.y, p.at.z + local.z};
 }
 
+Vec3 placeArrival(const Valley& v, const ValleyPlaceInfo& p, bool outward) {
+    const PlaceLayout& l = placeLayout(p.id);
+    const Vec2 w = placeToWorld(p, outward && l.hasDoor ? Vec2{l.door.x, l.door.y + 11.0f} : l.arrive);
+    return {w.x, w.y, v.groundAt(w.x, w.y, p.at.z + 2.0f)};
+}
+
 void addPlaceDecks(Valley& v) {
     v.decks.clear();
     // The mill's bridge (tools/blender/valley_places.py build_mill): across the river along its

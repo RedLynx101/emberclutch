@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 28 (0.10.4) and eight banner labs on the 3DS, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is on test (D144-D147: the freezes were the textures' alignment, now fixed; eight looks in labs 28A-28H); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 29 (0.10.5) on the 3DS, the isles made pretty, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Tooling: headless emulator checks (2026-09-30)
@@ -15,6 +15,25 @@
   Performance is still signed off on the 3DS: no emulator models its timing.
 - Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
   running it in UTC), and the async file reads and presentation made animations drift (off).
+
+## Now: run 29 (0.10.5), the banner in the game, the isles made pretty (2026-10-02)
+- **Run 28's notes** (collections `run28`, `labs`, `plans`): all eight labs held (28E, 28F and 28H froze before:
+  the alignment was it); "Use 28G"; no stutter on the isles and the lamp lit right, but a trip to the Floating
+  Isles set him down under the island; "the floating islands need to be textured. Make them pretty."
+- **0.10.5** (D148): **28G is the game's banner** (`tools\make_banner.ps1` builds its look; the CIA carries the
+  exact file that held). `core/place_layout` `placeArrival`: a trip stands you on what's at the place's height
+  (the isles: the island's top), tested for every place; the autotests' `goto` stands on an island's top too.
+  **The floating islands** (`buildValleyExtras`, `makeIsleTexture`, render3d's island passes): dappled tops
+  painted like the land, the turf rolling over the edge, vines, trees and flowers on top; earth, then lilac rock
+  in strata to a hanging point, smaller points, crystals; the rock's own texture laid on run by run (east-west,
+  north-south, down). 475-716 triangles an island (the props within 180 m); the valley views of
+  `tests/autotest/isles.txt` 1,000-4,100 triangles (the budget ~9,600). Tests 387,475 checks, 0 failures.
+- **Run 28's 3DS log:** no long frames after loading (run 27's, with the tracer on, had 2-6 s stalls).
+- **Sent** to .51 (CIA 75 MB, 0.10.5; the save backed up to `build/3ds-backup/2026-10-02_0808/`; `/cias/lab/`
+  emptied). Run 29's steps (`docs/plan/hardware-check-14.md`) and the islands' before-and-now card on the review
+  page (version 23, collections `run29`, `plans` slug `isles-29`).
+- **Next:** Noah: the banner on the HOME Menu, the trip, the islands (Keep or Change), any flicker or slowdown.
+  Then R1's remaining polish, the guide, the video (stop at the voice samples), the release, all per D142.
 
 ## Now: run 28 (0.10.4), the banner freezes found, the isles' stutter, the lamp (2026-10-02)
 - **Run 27's notes** (collections `run27`, `labs`): 27A and 27B froze, 27C (25F unchanged) held again; flicker
@@ -34,8 +53,7 @@
 - **Sent** to .51 (CIA 75 MB, 0.10.4; save backed up to `build/3ds-backup/2026-10-02_0631/`, run 27's
   screenshots in `build/3ds-shots/2026-10-02_0631/`; `/cias/lab/` holds 28A-28H). Run 28's steps
   (`docs/plan/hardware-check-13.md`) on the review page (version 22, collection `run28`).
-- **Next:** Noah: the eight labs (held or froze, a pick), the isles, the lamp. Then the pick into the game's
-  CIA (`tools\make_banner.ps1` with its kind, colouring, border and `--still-head`).
+- **Came back** (run 28): see run 29 above.
 
 ## Now: run 27 (0.10.3), the banner's head held still, gliding off the isles (2026-10-02)
 - **Run 26's notes** (collections `run26`, `labs`): 26A froze (456 KB, where 25F at 455 held: not the size

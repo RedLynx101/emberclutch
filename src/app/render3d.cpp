@@ -264,6 +264,8 @@ shaderProgram_s g_groundProgram;
 int g_locSDetailU = -1, g_locSDetailV = -1;
 C3D_Tex g_groundTex;  // the valley ground's detail (run 19), made at start, mipmapped (no shimmer far off)
 bool g_groundTexOk = false;
+C3D_Tex g_isleTex;  // the floating islands' rock (run 28): strata and moss, made at start like the ground's
+bool g_isleTexOk = false;
 int g_groundLook = 0;  // the look lab: 0 smooth + texture, 1 faceted, 2 faceted + texture
 bool g_groundPlain = false;  // a session froze drawing the painted ground (trace, hangs.txt): plain
 C3D_AttrInfo g_staticAttr;
@@ -564,6 +566,116 @@ bool makeGroundTexture() {
     C3D_TexSetFilter(&g_groundTex, GPU_LINEAR, GPU_LINEAR);
     C3D_TexSetFilterMipmap(&g_groundTex, GPU_LINEAR);
     C3D_TexSetWrap(&g_groundTex, GPU_REPEAT, GPU_REPEAT);
+    return true;
+}
+
+// The floating islands' rock (run 28: "the floating islands need to be textured. Make them pretty"):
+// greys round the middle as the ground's, mixed the same way by the vertex's alpha. Its alpha is the
+// rock: layers of different tones with wavy edges and a dark line under each, fine sediment lines,
+// grit and pebbles, cracks running down. Its luminance is moss, for the earth under the turf: soft
+// clumps, lighter tufts, a few drips. Both pulled to an even grey on average (no tint) and mipmapped.
+bool makeIsleTexture() {
+    constexpr int kSize = 128;
+    if (!C3D_TexInitMipmap(&g_isleTex, kSize, kSize, GPU_LA8)) return false;
+    static float rock[kSize * kSize], moss[kSize * kSize];
+    auto hash = [](int x, int y, int seed) {
+        u32 h = static_cast<u32>(x) * 374761393u + static_cast<u32>(y) * 668265263u + static_cast<u32>(seed) * 2147483647u;
+        h = (h ^ (h >> 13)) * 1274126177u;
+        return ((h ^ (h >> 16)) & 0xFFFF) / 65535.0f;
+    };
+    auto smoothNoise = [&](float x, float y, int cell, int seed) {  // tileable value noise
+        const int n = kSize / cell;
+        const float fx = x / cell, fy = y / cell;
+        const int x0 = static_cast<int>(fx), y0 = static_cast<int>(fy);
+        const float tx = fx - x0, ty = fy - y0, sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+        auto at = [&](int i, int j) { return hash((i % n + n) % n, (j % n + n) % n, seed); };
+        const float a = at(x0, y0) + (at(x0 + 1, y0) - at(x0, y0)) * sx;
+        const float b = at(x0, y0 + 1) + (at(x0 + 1, y0 + 1) - at(x0, y0 + 1)) * sx;
+        return a + (b - a) * sy;
+    };
+    constexpr float kTau = 6.2831853f;
+    static const int kEdge[] = {0, 20, 26, 50, 56, 82, 90, 112, 128};  // where each layer starts (rows)
+    static const float kTone[] = {0.52f, 0.40f, 0.58f, 0.46f, 0.62f, 0.38f, 0.54f, 0.44f};
+    for (int y = 0; y < kSize; ++y)
+        for (int x = 0; x < kSize; ++x) {
+            const float wave = 2.5f * std::sin(kTau * x / kSize + 0.7f) + 1.2f * std::sin(kTau * 3 * x / kSize + 2.1f);
+            const float yy = std::fmod(y + wave + kSize, static_cast<float>(kSize));
+            int b = 0;
+            while (b < 7 && yy >= kEdge[b + 1]) ++b;
+            float v = kTone[b];
+            if (kEdge[b + 1] - yy < 1.6f) v -= 0.06f;  // (the dark line at a layer's foot)
+            v += 0.025f * std::sin(kTau * 11 * yy / kSize);
+            v += 0.06f * (smoothNoise(x, y, 16, 31) - 0.5f) * 2 + 0.04f * (smoothNoise(x, y, 4, 33) - 0.5f) * 2;
+            v += 0.05f * (hash(x, y, 32) - 0.5f) * 2;
+            rock[y * kSize + x] = v;
+            float m = 0.5f + 0.12f * (smoothNoise(x, y, 16, 41) - 0.5f) * 2 + 0.07f * (smoothNoise(x, y, 8, 42) - 0.5f) * 2;
+            const float clump = smoothNoise(x, y, 32, 43);
+            if (clump > 0.56f) m += (clump - 0.56f) * 0.6f;  // lighter tufts
+            m += 0.05f * (hash(x, y, 44) - 0.5f) * 2;
+            moss[y * kSize + x] = m;
+        }
+    for (int k = 0; k < 360; ++k) {  // grit and pebbles in the rock: dark or light, the top edge lit
+        const int cx = static_cast<int>(hash(k, 0, 51) * kSize), cy = static_cast<int>(hash(k, 1, 51) * kSize);
+        const float r = 0.7f + hash(k, 2, 51) * 1.4f, shade = hash(k, 3, 51) < 0.6f ? -0.14f : 0.11f;
+        for (int dy = -2; dy <= 2; ++dy)
+            for (int dx = -2; dx <= 2; ++dx) {
+                const float d = std::sqrt(static_cast<float>(dx * dx + dy * dy));
+                if (d > r) continue;
+                rock[((cy + dy + kSize) % kSize) * kSize + (cx + dx + kSize) % kSize] +=
+                    shade * (1.0f - 0.5f * d / r) + (dy < 0 && d > r - 1.1f ? 0.05f : 0.0f);
+            }
+    }
+    for (int k = 0; k < 16; ++k) {  // cracks running down, wandering a little; their right edge lit
+        float x = hash(k, 0, 61) * kSize, y = hash(k, 1, 61) * kSize, a = kTau / 4 + (hash(k, 2, 61) - 0.5f) * 0.8f;
+        const int len = 10 + static_cast<int>(hash(k, 3, 61) * 14);
+        for (int t = 0; t < len; ++t) {
+            const int px = (static_cast<int>(x) % kSize + kSize) % kSize, py = (static_cast<int>(y) % kSize + kSize) % kSize;
+            rock[py * kSize + px] -= 0.1f;
+            rock[py * kSize + (px + 1) % kSize] += 0.04f;
+            a += (hash(k, t, 62) - 0.5f) * 0.7f;
+            x += std::cos(a);
+            y += std::sin(a);
+        }
+    }
+    for (int k = 0; k < 40; ++k) {  // drips in the moss
+        const int x = static_cast<int>(hash(k, 0, 71) * kSize), y0 = static_cast<int>(hash(k, 1, 71) * kSize);
+        const int len = 3 + static_cast<int>(hash(k, 2, 71) * 6);
+        for (int t = 0; t < len; ++t) moss[((y0 + t) % kSize) * kSize + x] -= 0.08f * (1.0f - static_cast<float>(t) / len);
+    }
+    for (float* img : {rock, moss}) {  // an even grey on average: the vertex's colour as it is
+        float sum = 0;
+        for (int i = 0; i < kSize * kSize; ++i) sum += img[i];
+        const float shift = 0.5f - sum / (kSize * kSize);
+        for (int i = 0; i < kSize * kSize; ++i) img[i] += shift;
+    }
+    int size = kSize;
+    static float half[kSize * kSize], halfMoss[kSize * kSize];
+    auto byte = [](float v) { return static_cast<u8>(std::fmax(0.0f, std::fmin(1.0f, v)) * 255.0f + 0.5f); };
+    for (int level = 0; level <= g_isleTex.maxLevel; ++level) {
+        u32 bytes = 0;
+        u8* out = static_cast<u8*>(C3D_Tex2DGetImagePtr(&g_isleTex, level, &bytes));
+        for (int y = 0; y < size; ++y)
+            for (int x = 0; x < size; ++x) {
+                const u32 at = tiledIndex(x, y, size) * 2;  // (LA8: the alpha byte first, then the luminance)
+                out[at] = byte(rock[y * size + x]);
+                out[at + 1] = byte(moss[y * size + x]);
+            }
+        if (size <= 8) break;
+        const int next = size / 2;  // the next level: each texel the average of four, pulled toward grey
+        for (int y = 0; y < next; ++y)
+            for (int x = 0; x < next; ++x) {
+                const int i = (2 * y) * size + 2 * x;
+                half[y * next + x] = 0.5f + ((rock[i] + rock[i + 1] + rock[i + size] + rock[i + size + 1]) * 0.25f - 0.5f) * 0.85f;
+                halfMoss[y * next + x] = 0.5f + ((moss[i] + moss[i + 1] + moss[i + size] + moss[i + size + 1]) * 0.25f - 0.5f) * 0.85f;
+            }
+        std::memcpy(rock, half, sizeof(float) * next * next);
+        std::memcpy(moss, halfMoss, sizeof(float) * next * next);
+        size = next;
+    }
+    C3D_TexFlush(&g_isleTex);
+    C3D_TexSetFilter(&g_isleTex, GPU_LINEAR, GPU_LINEAR);
+    C3D_TexSetFilterMipmap(&g_isleTex, GPU_LINEAR);
+    C3D_TexSetWrap(&g_isleTex, GPU_REPEAT, GPU_REPEAT);
     return true;
 }
 
@@ -1253,6 +1365,7 @@ bool init() {
     g_dustFixed = AttrInfo_AddFixed(&g_attrFixed, 5);
     g_texOk = makeTextures();
     g_groundTexOk = makeGroundTexture();
+    g_isleTexOk = makeIsleTexture();
 
     g_staticDvlb = DVLB_ParseFile(reinterpret_cast<u32*>(const_cast<u8*>(static_shbin)), static_shbin_size);
     shaderProgramInit(&g_staticProgram);
@@ -2892,6 +3005,23 @@ void groundDetail(bool on, bool texture = true) {
     C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, k, 0.7f * k, 0);
 }
 
+// The floating islands' rock (run 28), after groundDetail(true) (the same mix): its own texture, laid
+// on from the side the run faces (core IslandRun). Up the rock its strata, tilted a little, 22 m a
+// repeat; across it 14 m, by y on the faces looking east or west and by x on those looking north or
+// south; the faces looking down, from below. With the ground plain, the colours alone.
+void isleRock(int run) {
+    if (!g_groundTexOk || g_groundLook == 1 || g_groundPlain) return;
+    C3D_TexBind(0, g_isleTexOk ? &g_isleTex : &g_groundTex);
+    constexpr float ku = 1.0f / 14.0f, kz = 1.0f / 22.0f;
+    if (run == kIsleRockDown) {
+        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, ku, 0, 0, 0);
+        C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0, ku, 0, 0);
+        return;
+    }
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailU, run == kIsleRockEW ? 0 : ku, run == kIsleRockEW ? ku : 0, 0, 0);
+    C3D_FVUnifSet(GPU_VERTEX_SHADER, g_locSDetailV, 0.12f * kz, 0.05f * kz, kz, 0);
+}
+
 // True if a box can't be seen: every corner is beyond the same side of the view.
 bool outsideView(const C3D_Mtx& clip, Vec3 lo, Vec3 hi) {
     int out[5] = {};
@@ -4035,8 +4165,10 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         C3D_CullFace(GPU_CULL_BACK_CCW);
         if (autotest::shooting()) autotest::log("picnic: %d triangles drawn (letter %d)", g_vpicnic.count / 3, view.letter ? 1 : 0);
     }
-    // The islands (built once), both faces drawn.
-    static std::vector<u32> islandParts;  // where each island's indices start
+    // The islands (built once), both faces drawn, each only when it's in view (they were a thousand
+    // triangles, always), its trees and flowers only as near as the land's. Painted as the land is
+    // (run 28): the top, turf and props on the ground's texture, then the rock on its own, run by run.
+    static std::vector<u32> islandParts;  // where each island's runs of indices start (core IslandRun)
     if (!g_vextras.count) {
         ValleyMesh m;
         buildValleyExtras(v, m);
@@ -4045,7 +4177,17 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
     }
     mark();
     C3D_CullFace(GPU_CULL_NONE);
-    if (g_vextras.count) {  // each island only when it's in view (they were a thousand triangles, always)
+    int seen[16], seenCount = 0;
+    bool seenNear[16];
+    for (std::size_t k = 0; g_vextras.count && k < v.islands.size() && k < 16 && (k + 1) * kIslandRuns < islandParts.size(); ++k) {
+        const ValleyIsland& isl = v.islands[k];
+        const float r = isl.radius * 1.3f, d = std::hypot(isl.at.x - view.eye.x, isl.at.y - view.eye.y);
+        const Vec3 lo{isl.at.x - r, isl.at.y - r, isl.at.z - isl.radius * 1.9f}, hi{isl.at.x + r, isl.at.y + r, isl.at.z + 14.0f};
+        if (outsideView(clip, lo, hi) || d > kValleyFar * g_reachScale) continue;
+        seenNear[seenCount] = d < 180.0f * g_reachScale + isl.radius;
+        seen[seenCount++] = static_cast<int>(k);
+    }
+    if (seenCount) {
         C3D_BufInfo* buf = C3D_GetBufInfo();
         BufInfo_Init(buf);
         BufInfo_Add(buf, g_vextras.pos, sizeof(Vec3), 1, 0x0);
@@ -4053,25 +4195,33 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         BufInfo_Add(buf, g_vextras.col, 4, 1, 0x2);
         // D118 again (run 27: standing on the islands in the north-east they flickered darker, their rocky
         // undersides over their tops, as if drawn without writing depth): a throwaway triangle of nothing
-        // takes the batch of state before them, and each island goes with the depth setting sent again.
+        // takes each batch of state before them, and each run goes with the depth setting sent again.
         static u16* none = nullptr;
         if (!none && (none = static_cast<u16*>(linearAlloc(3 * sizeof(u16))))) {
             none[0] = none[1] = none[2] = 0;
             GSPGPU_FlushDataCache(none, 3 * sizeof(u16));
         }
-        C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
-        if (none) C3D_DrawElements(GPU_TRIANGLES, 3, C3D_UNSIGNED_SHORT, none);
-        for (std::size_t k = 0; k + 1 < islandParts.size() && k < v.islands.size(); ++k) {
-            const ValleyIsland& isl = v.islands[k];
-            const float r = isl.radius * 1.3f;
-            const Vec3 lo{isl.at.x - r, isl.at.y - r, isl.at.z - isl.radius * 1.9f}, hi{isl.at.x + r, isl.at.y + r, isl.at.z + 12.0f};
-            if (outsideView(clip, lo, hi) || std::hypot(isl.at.x - view.eye.x, isl.at.y - view.eye.y) > kValleyFar * g_reachScale) continue;
-            const int count = static_cast<int>(islandParts[k + 1] - islandParts[k]);
-            C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);  // (with each island alone: D118)
-            C3D_DrawElements(GPU_TRIANGLES, count, C3D_UNSIGNED_SHORT, g_vextras.idx + islandParts[k]);
-            app.stats.tris += count / 3;
+        auto settle = [&] {
+            C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+            if (none) C3D_DrawElements(GPU_TRIANGLES, 3, C3D_UNSIGNED_SHORT, none);
+        };
+        auto drawRuns = [&](int k, int from, int to) {
+            const u32 a = islandParts[std::size_t(k) * kIslandRuns + from], b = islandParts[std::size_t(k) * kIslandRuns + to];
+            if (b <= a) return;
+            C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);  // (with each run alone: D118)
+            C3D_DrawElements(GPU_TRIANGLES, static_cast<int>(b - a), C3D_UNSIGNED_SHORT, g_vextras.idx + a);
+            app.stats.tris += (b - a) / 3;
             app.stats.draws += 1;
+        };
+        groundDetail(true);
+        settle();
+        for (int i = 0; i < seenCount; ++i) drawRuns(seen[i], kIsleTop, seenNear[i] ? kIsleRockEW : kIsleProps);
+        for (int run = kIsleRockEW; run <= kIsleRockDown; ++run) {
+            isleRock(run);
+            settle();
+            for (int i = 0; i < seenCount; ++i) drawRuns(seen[i], run, run + 1);
         }
+        groundDetail(false);
     }
     drawValleyShadow(app, v, view);
     mark();

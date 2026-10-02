@@ -94,7 +94,7 @@ struct ValleyMesh {
     std::vector<u8> color;  // 4 per vertex
     std::vector<u16> idx;
     std::size_t skirtFrom = 0;  // a tile's skirts are its last indices, from here (drawn only beside another level)
-    std::vector<u32> parts;     // the islands: where each one's indices start (and, last, the end)
+    std::vector<u32> parts;     // the islands: where each one's runs of indices start (and, last, the end)
     int triangles() const { return static_cast<int>(idx.size() / 3); }
     void clear();
 };
@@ -107,8 +107,16 @@ void buildValleyTile(const Valley& v, int tx, int ty, int lod, ValleyMesh& out);
 // (D122: a rustle as you fly through a treetop).
 int crownAt(const Valley& v, Vec3 p);
 
-// What isn't ground: the floating islands (grassy tops, rocky undersides, a few trees) and
-// the den's cave mouth in its cliff.
+// What isn't ground: the floating islands (run 28: "the floating islands need to be textured. Make
+// them pretty"). Each a flat grassy top (walked on at its height: the rim never wobbles inside 0.89
+// of the radius, islandAt stands within 0.86), its turf rolling over the edge with vines hanging
+// from it, the land's trees, bushes, rocks and flowers on top; underneath a band of earth, then
+// the rock in strata stepping in to a hanging point, two smaller points and a few crystals beside
+// it. Each island's indices in kIslandRuns runs (out.parts: kIslandRuns starts an island, then the
+// end): its top, turf and vines; its props; its rock facing east or west, north or south, and down
+// (render3d lays the rock's strata texture on across each run from the side it faces).
+constexpr int kIslandRuns = 5;
+enum IslandRun { kIsleTop, kIsleProps, kIsleRockEW, kIsleRockNS, kIsleRockDown };
 void buildValleyExtras(const Valley& v, ValleyMesh& out);
 // The ring of mountains as a far silhouette (Beta: the fog hides the valley's edges from
 // inside it): the highest ground along each of 96 rays from the middle, a band from the water's

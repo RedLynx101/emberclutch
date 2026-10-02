@@ -1034,7 +1034,7 @@ void update(App& app, const Input& in) {
     if (app.autoGoto[2] != 0) {  // an autotest's spot
         app.autoGoto[2] = 0;
         s.mode = Mode::OnFoot;
-        s.you.pos = {app.autoGoto[0], app.autoGoto[1], s.valley.heightAt(app.autoGoto[0], app.autoGoto[1])};
+        s.you.pos = {app.autoGoto[0], app.autoGoto[1], s.valley.groundAt(app.autoGoto[0], app.autoGoto[1], s.you.pos.z + 2.0f)};  // (on an island: its top)
         if (app.autoGoto[5] != 0) s.you.heading = std::atan2(app.autoGoto[3] - s.you.pos.x, -(app.autoGoto[4] - s.you.pos.y));
         s.you.speed = 0;
         if (s.partner >= 0) s.pal.call(s.you, s.valley);
@@ -1615,11 +1615,9 @@ Vec2 mapPoint(const Valley& v, float x, float y) {
 void travelTo(App& app, ValleyScene& s, int place, bool outward) {
     const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(place));
     if (!p) return;
-    const PlaceLayout& l = placeLayout(place);
-    // (Out of a door: far enough that the camera behind you is outside too, not in the den's arch.)
-    const Vec2 front = placeToWorld(*p, outward && l.hasDoor ? Vec2{l.door.x, l.door.y + 11.0f} : l.arrive);
+    const Vec3 front = placeArrival(s.valley, *p, outward);  // (on the isles, the island's top)
     s.mode = Mode::OnFoot;
-    s.you.pos = {front.x, front.y, s.valley.heightAt(front.x, front.y)};
+    s.you.pos = front;
     // Out of its door, its way; or (travelling) looking at it.
     s.you.heading = outward ? p->heading : std::atan2(p->at.x - front.x, -(p->at.y - front.y));
     s.you.speed = 0;

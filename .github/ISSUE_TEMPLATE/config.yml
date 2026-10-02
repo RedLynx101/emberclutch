@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: How to install and play
+    url: https://github.com/RedLynx101/emberclutch#install
+    about: Installing with Universal Updater or FBI, sound (the DSP firmware), the controls.
+  - name: Security problem
+    url: https://github.com/RedLynx101/emberclutch/security/advisories/new
+    about: Report it privately instead of in a public issue.

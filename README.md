@@ -74,6 +74,12 @@ See [docs/DEVELOPING.md](docs/DEVELOPING.md): devkitPro with the `3ds-dev` group
 screenshots); `make DEV=0` builds the player build that the releases carry.
 PC unit tests and scripted emulator runs are described there too.
 
+## Contributing
+
+Bug reports and ideas are welcome: open an issue with its form. To send a fix or a feature, see
+[CONTRIBUTING.md](CONTRIBUTING.md) (building, tests, the house style, licensing) and the
+[Code of Conduct](CODE_OF_CONDUCT.md). Security problems: [SECURITY.md](SECURITY.md).
+
 ## Credits and licences
 
 Made by Noah Hicks, with Claude (Anthropic) writing much of the code and tools. See

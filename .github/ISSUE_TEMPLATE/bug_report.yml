@@ -1,0 +1,74 @@
+name: Bug report
+description: Something in the game is broken, looks wrong or is confusing.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! One problem per issue, please. For a security problem, see SECURITY.md instead.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown on the title screen (for example 1.0.0).
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: console
+    attributes:
+      label: Console
+      options:
+        - Old 3DS / 3DS XL
+        - Old 2DS
+        - New 3DS / New 3DS XL
+        - New 2DS XL
+        - Emulator (say which below)
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How it's installed
+      options:
+        - CIA (FBI or Universal Updater)
+        - 3DSX (Homebrew Launcher)
+        - Built from source
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what happened, and what you expected instead.
+      placeholder: |
+        1. Went into the Wanderers' Trailhead from the valley
+        2. The screen stopped, the music kept playing
+        3. Expected the Wanderings to open
+    validations:
+      required: true
+  - type: dropdown
+    id: often
+    attributes:
+      label: How often
+      options:
+        - Every time
+        - Sometimes
+        - Once so far
+  - type: textarea
+    id: pictures
+    attributes:
+      label: Screenshots or a photo
+      description: Drag images here. A photo of the 3DS works too.
+  - type: textarea
+    id: files
+    attributes:
+      label: Files (optional)
+      description: |
+        If the game froze, attach `sdmc:/3ds/emberclutch/watchdog.txt`.
+        For a save problem, your save (`save.a` and `save.b` from the same folder) helps, if you're happy to share it.
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: Your dragon's kind and age, where you were, other homebrew or plugins running.

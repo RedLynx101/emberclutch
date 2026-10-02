@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-09-30 · **Milestone:** **the long run: Beta and 1.0, the Living Valley pass (D135-D140), run 23 (0.9.15) on the 3DS** ([plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). 0.9.13's run (take 4) came back reviewed; this pass is Noah's planning message and storyboard answers built: the player build, growing up in about a week, the story engine and Act 1 rebuilt, the Storybook look on everyone with a feelings kit, the badge case, Primrose, Custard and Cinder. Run 22's page: see below. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-01 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 24 (0.10.0) on the 3DS, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 23 came back clean but for five fixes (0.10.0, D141); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Tooling: headless emulator checks (2026-09-30)
@@ -15,6 +15,33 @@
   Performance is still signed off on the 3DS: no emulator models its timing.
 - Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
   running it in UTC), and the async file reads and presentation made animations drift (off).
+
+## Now: run 24 (0.10.0), run 23's fixes, and the plans for 1.0 (2026-10-01)
+- **Run 23's notes** (collections `run23`, `looks`): the Trailhead held; no stutter; all 19 looks passed
+  (Solenne as is). Fix: text under the mailbox list's Close; the sign by the Trailhead's gate drawn over the
+  dragons; the Puffback's hat clipping in the Wanderings (fine in the den and valley); the den's heads flipping
+  when a dragon faces away; the hats floating off the heads. Its hitch log: 24 long frames in ~20 minutes, all at
+  scene loads; the watchdog's entries are 0.9.14's (run 22).
+- **0.10.0** (D141; a CIA's micro version stops at 15, so not 0.9.16): hats seated on the skull
+  (`core/wear_fit.cpp`: spots forward to back, re-seated, 100-70%, tipped back to 30 degrees; a narrow-things
+  seat `headNarrow` for crowns, tiaras, circlets, party hats and feather crests; the far model wears the near
+  model's fit; lifts now 0-0.27, most 0, from up to 0.52); `applyLookAt` eases back to straight ahead from 100 to
+  160 degrees round; `settleDepth` (a throwaway draw before the first draw after each `bindDragons`, D118's
+  fault) for the signs, mailbox, boards, shells and showcases; the mailbox list's count moved. Tests 377,534
+  checks, 0 failures; autotests `hatsfit_h`, `hatsfit_g` (new, `tools/autotest_gen/hats_fit.py`), `wander_hat`,
+  `mailbox_list`, `tour`, `story1` clean.
+- **Open source** (D142, R2): `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `.github/ISSUE_TEMPLATE/`
+  (bug report, idea, config), `.github/PULL_REQUEST_TEMPLATE.md`; the README's Contributing section.
+- **The plans** (D142): `docs/plan/release-1.0.md` (R1-R7, gates), `docs/plan/guide.md` (A5 handbook, outline,
+  spoiler rules, Markdown to PDF by headless Chrome), `docs/plan/trailer.md` (a film build captured in headless
+  Azahar, a `seek(t)` page for titles, ffmpeg, the game's music, voices sampled and approved before any narration,
+  17 shots, the YouTube title and description). All on the review page to Keep or Change (collection `plans`),
+  with the hats on every kind and the open questions.
+- **Sent** to .59 (CIA 75 MB, 0.10.0; the save backed up to `build/3ds-backup/2026-10-01_2229/`); run 24's steps
+  (`docs/plan/hardware-check-9.md`) on the review page (version 18, collection `run24`).
+- **Next:** Noah: run 24 (the hats, the den's heads, the sign, the Puffback in the Wanderings) and the plans'
+  marks; then the banner variants with real skins (R1), and the guide and trailer once their plans are kept.
+  Before anything public: the open questions (a conduct contact, Suno's and ElevenLabs' terms, the history).
 
 ## Now: run 23 (0.9.15), run 22's fixes (2026-10-01)
 - **Run 22's notes** (the review page, collections `run22`, `looks`): the banner's title cut off by the
@@ -29,7 +56,7 @@
   377,419 checks, 0 failures; the trailhead, storybook and pets autotests clean.
 - **Sent** to .59 (CIA 75 MB, 0.9.15; the save backed up to `build/3ds-backup/2026-10-01_1839/`); run 23's
   steps (`docs/plan/hardware-check-8.md`) on the review page (collection `run23`; the looks re-markable).
-- **Next:** Noah: the Trailhead several times, the banner, the chime, the six looks.
+- **Came back** (run 23): the Trailhead held, the six looks passed; see run 24 above.
 
 ## Now: the Living Valley pass, ready for run 22 (0.9.14) (2026-09-30)
 - **Built** (D135-D139, commits 69ada27 on): the player build (`tools\build.ps1 -Player`, kept building,

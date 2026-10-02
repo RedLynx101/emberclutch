@@ -1,0 +1,27 @@
+name: Idea
+description: Something you'd like to do in the game, or a way to make it better.
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome! The game runs on the original 3DS, stays cozy (nothing ever dies), and keeps its storybook look, so ideas that fit those go furthest.
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What you'd like to do, and when in the game.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it would be fun
+      description: What it adds for you, or what problem it solves.
+    validations:
+      required: true
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: Sketches, other games that do it well, how it might work.

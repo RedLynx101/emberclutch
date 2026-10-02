@@ -4,6 +4,9 @@
 #   autotest.sh --game <3dsx> --script <txt> --out <dir> [--save-in <dir>] [--timeout <s>]
 #               [--speed <percent, 0 = as fast as it goes>] [--clock fixed|system] [--new3ds]
 #               [--dsp <dspfirm.cdc>] [--gpu <adapter name, e.g. NVIDIA>]
+#               [--scale <internal resolution factor, 1..10>] [--dump <video.mkv>]
+# --scale and --dump are for the trailer's footage (docs/plan/trailer.md): Azahar's own video dump,
+# every emulated frame at the internal resolution (both screens, the top above the bottom).
 # Every run gets its own emulator folder (config, SD card, log) under /tmp, so runs never share
 # a save and several can go at once. The game plays the script and writes shots/done.txt; this
 # copies the SD card's shots folder, the emulator's log and the save to --out.
@@ -11,7 +14,7 @@
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
-game="" script="" out="" save_in="" dsp="" gpu="" timeout=180 speed=0 clock=fixed new3ds=false
+game="" script="" out="" save_in="" dsp="" gpu="" timeout=180 speed=0 clock=fixed new3ds=false scale=1 dump=""
 fixed_time=1780308000  # 2026-06-01 10:00 on the 3DS clock: the same morning every run
 while (($#)); do
     case $1 in
@@ -25,6 +28,8 @@ while (($#)); do
         --speed) speed=$2; shift ;;
         --clock) clock=$2; shift ;;
         --new3ds) new3ds=true ;;
+        --scale) scale=$2; shift ;;
+        --dump) dump=$2; shift ;;
         *) echo "unknown option $1" >&2; exit 64 ;;
     esac
     shift
@@ -77,7 +82,7 @@ if [[ $clock == fixed ]]; then
     export TZ=UTC
 fi
 sed -e "s/@FRAME_LIMIT@/$speed/" -e "s/@NEW_3DS@/$new3ds/" \
-    -e "s/@INIT_CLOCK@/$init_clock/" -e "s/@INIT_TIME@/$fixed_time/" \
+    -e "s/@INIT_CLOCK@/$init_clock/" -e "s/@INIT_TIME@/$fixed_time/" -e "s/@SCALE@/$scale/" \
     "$here/qt-config.ini" > "$user/config/qt-config.ini"
 
 # WSLg hands every distro a Wayland display (and an X one) that show up on the Windows
@@ -102,10 +107,10 @@ start_ms=$(date +%s%3N)
         sleep 0.3
         if kill -0 $! 2>/dev/null; then
             export DISPLAY=":$n"
-            exec "$2" "$1/game.3dsx"
+            if [[ -n $3 ]]; then exec "$2" -d "$3" "$1/game.3dsx"; else exec "$2" "$1/game.3dsx"; fi
         fi
     done
-    echo "Xvfb did not start"; cat "$1/xvfb.txt"; exit 1' _ "$run" "$app" > "$run/stdout.txt" 2>&1) &
+    echo "Xvfb did not start"; cat "$1/xvfb.txt"; exit 1' _ "$run" "$app" "${dump:+$run/dump.mkv}" > "$run/stdout.txt" 2>&1) &
 emu_pid=$!
 
 status=2
@@ -126,6 +131,12 @@ mkdir -p "$out/save"
 for f in save.a save.b; do [[ -f $sd/$f ]] && cp "$sd/$f" "$out/save/"; done
 [[ -f $user/log/azahar_log.txt ]] && cp "$user/log/azahar_log.txt" "$out/"
 cp "$run/stdout.txt" "$out/emulator_stdout.txt"
+if [[ -n $dump ]]; then
+    # (the emulator first: the dump's last frames are written as it closes)
+    kill -TERM -- -"$emu_pid" 2>/dev/null || true
+    sleep 2
+    [[ -f $run/dump.mkv ]] && cp "$run/dump.mkv" "$dump"
+fi
 echo "$status $elapsed" > "$out/result.txt"
 case $status in
     0) echo "finished in ${elapsed}s" ;;

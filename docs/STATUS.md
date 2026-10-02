@@ -23,8 +23,15 @@
 - **Universal-DB:** Noah's to send by hand (their rules: declare the LLM use as *yes*; no LLM-written request
   text): the form at https://db.universal-team.net/app-request, then an *App request* issue with the JSON
   and his own sentence or two (`docs/plan/release-1.0.md` R5).
-- **Next:** the video (R6, `docs/plan/trailer.md`): V1, the film build and the capture spike; V2, the
-  storyboard, script and voice samples, then stop for Noah's pick. Tell Noah to switch to max before V4.
+- **The video, paused for Noah's check-in** (he asked: the plan's readiness and the Universal-DB steps first,
+  and a reminder of the effort levels). Found for V1: this Azahar takes `-d/--dump-video <file>` (every
+  emulated frame at the internal resolution); `tools/wsl/autotest.sh` has `--scale` and `--dump` for it (off
+  by default; normal runs checked). The first try (the isles script at 4x, H.264 in Matroska) stalled to its
+  400 s timeout with no frames: not yet known whether the encoder, the 4x drawing on llvmpipe or the dump's
+  start holds it. V1 resumes there on Noah's word.
+- **Next:** Noah's go on the video (R6, `docs/plan/trailer.md`): V1 the capture spike and the film build; V2
+  the storyboard, script and voice samples, then stop for his pick. xhigh for V1-V3; tell him to switch to max
+  before V4.
 
 ## Now: 1.0, called; the release ready to go public (2026-10-02)
 - **Run 31 came back:** "It all runs great, get the rest ready for me to make this public." The traits and the

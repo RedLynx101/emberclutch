@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 26 (0.10.2) and two banner labs on the 3DS, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is on test (D144, D145: Noah picked the Pouncer; its joints closed in labs 26A-26B); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 27 (0.10.3) and three banner labs on the 3DS, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is on test (D144-D146: Noah picked the Pouncer; its head now held still, labs 27A-27C); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Tooling: headless emulator checks (2026-09-30)
@@ -15,6 +15,23 @@
   Performance is still signed off on the 3DS: no emulator models its timing.
 - Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
   running it in UTC), and the async file reads and presentation made animations drift (off).
+
+## Now: run 27 (0.10.3), the banner's head held still, gliding off the isles (2026-10-02)
+- **Run 26's notes** (collections `run26`, `labs`): 26A froze (456 KB, where 25F at 455 held: not the size
+  alone), 26B held but its head still parted from the neck as it twisted ("If you cannot fix this, we should
+  stop the dragon from moving its head"); the cap should sit to one side of the head; Tam's rod and the hats
+  fine; walking off the floating island over the lake dropped him to the water instead of gliding.
+- **0.10.3** (D146): `banner3d.py --still-head` (the head and tail joined into the body by hand with bmesh, no
+  collars; eyes, heart and the bob still move; the cap on the right side of the head);
+  `tools\banner_variants.ps1` takes a `:still` field. Labs **27A** (Pouncer, 419 KB, 0xEC170), **27B**
+  (Blazeplume, 426 KB, 0xEC171), **27C** (25F unchanged, the control, 0xEC172). `core/flight.cpp`: off an
+  edge over water the drop glides (the deep-water check had come first); a test walks a rider off every
+  island four ways (it fails four ways on the old code). Two new tests (run 24's woken-at-night, the isles)
+  registered with `RUN`: they hadn't been running. Tests 377,709 checks, 0 failures.
+- **Sent** to .51 (CIA 75 MB, 0.10.3; the save backed up to `build/3ds-backup/2026-10-02_0601/`; `/cias/lab/`
+  now holds 27A-27C). Run 27's steps (`docs/plan/hardware-check-12.md`) on the review page (version 21,
+  collection `run27`).
+- **Next:** Noah: 27A-27C (held or froze, which one), the isles. Then the chosen banner into the game's CIA.
 
 ## Now: run 26 (0.10.2), the picked banner's joints closed, Tam's rod in 3D (2026-10-02)
 - **Run 25's notes** (collections `run25`, `labs`): labs 25B (502 KB) and 25C (509 KB) froze, the rest (448-494 KB)
@@ -33,8 +50,7 @@
 - **Sent** to .51 (CIA 75 MB, 0.10.2; the save backed up to `build/3ds-backup/2026-10-02_0217/`; `/cias/lab/`
   now holds only 26A and 26B). Run 26's steps (`docs/plan/hardware-check-11.md`) on the review page (version 20,
   collection `run26`; the banner and hat cards in `plans`).
-- **Next:** Noah: 26A and 26B (held, joints shut, is 26A the one), Tam's rod, the hats. If 26A is right, it becomes
-  the game's banner (`tools/make_banner.ps1` with `--kind pouncer`, the CIA's banner), then the rest of the 1.0 list.
+- **Came back** (run 26): see run 27 above.
 
 ## Now: run 25 (0.10.1), the new banner on test, run 24's fixes (2026-10-02)
 - **Run 24's notes** (collections `run24`, `plans`): every plan kept (the road, the polish, the guide and its

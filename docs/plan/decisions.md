@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-10-02 — Run 26's notes: the banner's head held still, gliding off the isles (0.10.3)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D146 | **Run 26's notes (0.10.3).** **The banner:** 26A (the Pouncer with capped joints, 456 KB) froze where 25F held, so the size alone isn't the trigger (D145's ceiling stays as a margin); 26B held but its head still parted from the neck as it twisted. As Noah offered, **the head no longer moves**: `--still-head` joins the head and tail into the body (no collars, no joints), the eyes blink, the heart beats, it bobs; the cap sits on the right side of its head. Labs 27A (the Pouncer), 27B (the Blazeplume) and 27C (25F unchanged, a control for whether freezes come and go). **Off a floating island:** riding, walking off an island's edge over the lake dropped you to the water to swim (the deep-water check came before the edge's); now the water far below is a drop like land's, so it glides, off every island (a test walks off each four ways). Two of run 24's and run 26's new tests hadn't been registered (`RUN`); they are now | Noah's run 26 (0.10.2): "26B, the head still graphically comes off of the jagged neck ... If you cannot fix this, we should stop the dragon from moving it's head. But eh eye animation works. And bobbing up and down is fine. But the twist of the head looks especially bad. And the egg needs to be moves to one side of the head"; "When I walked off of the sky island above the lake, it auto teleported me to the ground, rather than putting me into flight mode. Fix this for all sky islands as needed." | Approved |
+
 ## 2026-10-02 — Run 25's notes: the banner's size and joints, Tam's rod, smaller hats (0.10.2)
 
 | # | Decision | Why | Status |

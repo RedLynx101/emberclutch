@@ -3,7 +3,8 @@
 # a kit kind's hatchling (full detail, its 256 skin) in its egg, into build/banner_v/<name>/
 # (banner.gltf, banner.cgfx, the review renders and its flat banner.png; assets/ is never touched).
 #   tools\banner_variants.ps1 -Variants "A=pouncer:0:0.012", "B=pouncer:0:0", "C=blazeplume:0:0.012"
-# Each is <name>=<kind>:<colouring>:<outline width, of the dragon's height; 0 none>. Then try them on
+# Each is <name>=<kind>:<colouring>:<outline width, of the dragon's height; 0 none>[:still] (still: the
+# head and tail joined into the body, nothing at the joints to part). Then try them on
 # the 3DS's HOME Menu as banner-lab titles (tools\banner_lab.ps1, fresh IDs: docs/tech/banner-labs.md).
 param([Parameter(Mandatory = $true)][string[]]$Variants)
 
@@ -14,11 +15,13 @@ $blender = "C:\Program Files (x86)\Steam\steamapps\common\Blender\blender.exe"
 
 foreach ($v in $Variants) {
     $name, $spec = $v -split "=", 2
-    $kind, $colour, $ink = $spec -split ":"
+    $kind, $colour, $ink, $still = $spec -split ":"
+    $extra = @()
+    if ($still -eq "still") { $extra += "--still-head" }  # (run 26: the head and tail joined, no joints)
     $out = Join-Path $root "build\banner_v\$name"
     New-Item -ItemType Directory -Force $out | Out-Null
     $ErrorActionPreference = "Continue"  # (Blender's deprecation warnings go to stderr)
-    & $blender -b -P (Join-Path $root "tools\blender\banner3d.py") -- --kind $kind --variant $colour --outline $ink --turn `
+    & $blender -b -P (Join-Path $root "tools\blender\banner3d.py") -- --kind $kind --variant $colour --outline $ink --turn $extra `
         --out $out --review $out --assets $out 2>&1 | ForEach-Object { "$_" } | Select-String "\[banner\] (dragon|5 dragon|names)|Error|Traceback" | ForEach-Object { "  $name $_" }
     $ErrorActionPreference = "Stop"
     $gltf = Join-Path $out "banner.gltf"

@@ -68,7 +68,14 @@ VARIANT = int(dm.arg("--variant", "0"))                          # a kit kind's 
 DETAIL = int(dm.arg("--lod", "1" if KIND == "classic" else "0"))  # the body's level of detail
 OUTLINE = float(dm.arg("--outline", "0"))                         # the ink's width, of the dragon's height (0: none)
 INK = (0.13, 0.06, 0.15)                                          # the outline: the game's deep plum
+# Run 26 (Noah: "the head still graphically comes off of the jagged neck ... If you cannot fix this, we
+# should stop the dragon from moving its head. But the eye animation works. And bobbing up and down is
+# fine"): --still-head joins the head and tail into the body, one piece with no joint to part; the
+# eyes still blink, the heart beats and the whole dragon bobs. The cap sits to one side of the head.
+STILL_HEAD = "--still-head" in sys.argv
 COLLAR = {"head": 0.11, "tail": 0.09} if KIND == "classic" else {"head": 0.15, "tail": 0.13}  # (a kind's wider: run 25)
+if STILL_HEAD:
+    COLLAR = {}  # (joined, a collar's copy of the neck would lie on the body's own faces and flicker)
 WAG = 24.0 if KIND == "classic" else 16.0  # the tail's wag either way, degrees (a kind's gentler: run 25)
 TAIL_LIFT = (55.0, 35.0)  # a kind's tail: raised (about X) and swung to its left (about Z), degrees  # each moving piece's collar round its joint (of the dragon's height)
 # A kind's parts coloured per vertex (a feather's bands, "vc" materials): each band takes its
@@ -470,7 +477,7 @@ def dragon_pieces(d, skin):
         if KIND != "classic":  # smooth, as the game shades it (run 25): creases only where it's sharp
             o.data.shade_smooth()
             o.data.set_sharp_from_angle(angle=math.radians(55))
-    if KIND != "classic":  # (run 25: turning, a piece opened onto its hollow inside: closed with skin)
+    if KIND != "classic" and not STILL_HEAD:  # (run 25: turning, a piece opened onto its hollow inside: closed with skin)
         bpy.context.view_layer.update()
         skin_mat = mats.get(d["mats"]["body"].name)
         for piece in ("body", "head", "tail"):
@@ -631,6 +638,30 @@ def clip_to_egg(o, height, width, cut, floor_z, margin=0.01, yaws=(0.0,)):
     bm.to_mesh(o.data)
     bm.free()
     print(f"[banner] {o.name}: {len(gone)} faces through the shell trimmed")
+
+
+def join_into(target, others):
+    """Joins pieces' meshes into `target` (their materials mapped onto its slots) and removes them. By
+    hand with bmesh: bpy's join crashed in Blender 5.2 on the frozen pieces' leftover vertex groups."""
+    bpy.context.view_layer.update()
+    inv = target.matrix_world.inverted()
+    bm = bmesh.new()
+    bm.from_mesh(target.data)
+    for o in others:
+        me = o.data.copy()
+        me.transform(inv @ o.matrix_world)
+        remap = []
+        for m in me.materials:
+            if m not in list(target.data.materials):
+                target.data.materials.append(m)
+            remap.append(list(target.data.materials).index(m))
+        for p in me.polygons:
+            p.material_index = remap[p.material_index] if p.material_index < len(remap) else 0
+        bm.from_mesh(me)  # (appends: several calls join several meshes)
+        bpy.data.meshes.remove(me)
+        bpy.data.objects.remove(o, do_unlink=True)
+    bm.to_mesh(target.data)
+    bm.free()
 
 
 def drop_hidden(o, height, cut, floor_z, depth=0.12):
@@ -919,8 +950,12 @@ def build():
     # The cap sits on its head, tipped back a little.
     cap_bottom = min(v.co.z for v in cap.data.vertices)
     cap.data.transform(Matrix.Translation((0, 0, -cap_bottom)))
-    cap.location = (head_top.x, head_top.y + 0.08 * h, head_top.z - 0.12 * h)
-    cap.rotation_euler = (math.radians(-16), math.radians(10), 0)
+    if STILL_HEAD:  # (Noah, run 26: "the egg needs to be moved to one side of the head", not right on top)
+        cap.location = (head_top.x + 0.27 * h, head_top.y - 0.04 * h, head_top.z - 0.16 * h)
+        cap.rotation_euler = (math.radians(-8), math.radians(38), 0)
+    else:
+        cap.location = (head_top.x, head_top.y + 0.08 * h, head_top.z - 0.12 * h)
+        cap.rotation_euler = (math.radians(-16), math.radians(10), 0)
     cap.scale = (0.5, 0.5, 0.5)
     dy = fit_in_egg(pieces, egg_h, 0.42 * h, rim / egg_h, lo - drop * h, wag=WAG) if "--no-fit" not in sys.argv else 0.0
     for o in list(pieces.values()) + [cap]:
@@ -933,6 +968,9 @@ def build():
         for name in ("body", "tail"):
             if name in pieces:
                 drop_hidden(pieces[name], egg_h, rim / egg_h, lo - drop * h)
+    if STILL_HEAD:  # one piece: the head and tail joined into the body (no joint to part)
+        join_into(pieces["body"], [pieces.pop(n) for n in ("head", "tail") if n in pieces])
+        print("[banner] still head: the head and tail joined into the body")
 
     s = 0.84 * TALL / (hi - lo + 2 * drop * h)  # (run 22: a little smaller, room for the subtitle)
     world_objs = list(pieces.values()) + [egg, cap]
@@ -1055,13 +1093,13 @@ def animate(pieces, cap, heart_mat, stars=()):
 
 
 def animate_dragon(pieces, cap):
-    body, head, tail = pieces["body"], pieces["head"], pieces["tail"]
+    body, head, tail = pieces["body"], pieces.get("head"), pieces.get("tail")
     for p in ("head", "tail", "heart"):
         if p in pieces:
             parent(pieces[p], body)
     if "eyes" in pieces:
-        parent(pieces["eyes"], head)
-    parent(cap, head)
+        parent(pieces["eyes"], head or body)
+    parent(cap, head or body)
     bpy.context.view_layer.update()
 
     def key(o, frame, rot=None, scale=None, loc=None):
@@ -1076,15 +1114,15 @@ def animate_dragon(pieces, cap):
             o.keyframe_insert("location", frame=frame)
 
     # The head tilts one way, then nods and tilts the other (roll is about the facing axis, Y).
-    h0 = tuple(math.degrees(a) for a in head.rotation_euler)
+    h0 = tuple(math.degrees(a) for a in head.rotation_euler) if head else (0, 0, 0)
     # (a kind's a little gentler, so its joints stay closed: run 25)
     roll, nod = (12, -6) if KIND == "classic" else (8, -4)
     for f, (x, y, z) in cycles(((0, (0, 0, 0)), (18, (0, roll, 0)), (36, (0, 0, 0)), (54, (nod, -roll * 5 / 6, 0)),
-                                (72, (0, 0, 0)), (96, (0, 0, 0)))):
+                                (72, (0, 0, 0)), (96, (0, 0, 0)))) if head else ():
         key(head, f, rot=(h0[0] + x, h0[1] + y, h0[2] + z))
     # The tail wags, then rests.
-    t0 = tuple(math.degrees(a) for a in tail.rotation_euler)
-    for f, yaw in cycles(((0, 0), (8, WAG), (16, -WAG), (24, WAG), (32, -WAG), (40, WAG), (48, 0), (96, 0))):
+    t0 = tuple(math.degrees(a) for a in tail.rotation_euler) if tail else (0, 0, 0)
+    for f, yaw in cycles(((0, 0), (8, WAG), (16, -WAG), (24, WAG), (32, -WAG), (40, WAG), (48, 0), (96, 0))) if tail else ():
         key(tail, f, rot=(t0[0], t0[1], t0[2] + yaw))
     # Two blinks: the eyes squash flat and open again.
     if "eyes" in pieces:

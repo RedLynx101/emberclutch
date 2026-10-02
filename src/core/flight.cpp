@@ -76,8 +76,18 @@ void Flight::update(const FlightInput& in, const Valley& v, float dt, const Flig
             const bool deep = g < v.water - tune.wadeDepth;
             const bool steep = !deep && g > ground + 0.02f && v.islandAt(next.x, next.y, pos.z) < 0 &&
                                v.normalAt(next.x, next.y).z < tune.steepest;
+            // Off an edge high over water (a floating island over the lake, run 26: "it auto teleported me
+            // to the ground, rather than putting me into flight mode"): the water's surface far below is a
+            // drop like any other, so it glides; only stepping in at the water's level is a swim.
+            const bool overWater = deep && !swimming && floatAt < ground - tune.drop;
             if (outside || steep) {
                 speed = 0;  // a cliff face, the valley's edge: it stops
+            } else if (overWater) {
+                pos = next;  // over the edge: gliding down to the water
+                grounded = false;
+                speed = std::fmax(speed, 6.0f);
+                sinceFlap = 9;
+                return;
             } else if (deep) {  // in, or on, the water: it swims
                 if (!swimming) splashed = true;
                 pos = next;

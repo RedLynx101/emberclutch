@@ -44,7 +44,7 @@ TARGET		:=	emberclutch
 BUILD		:=	build
 endif
 # The version, shown on the title screen and packed in the CIA (tools/package_cia.ps1 reads it here).
-VERSION		:=	0.10.2
+VERSION		:=	0.10.3
 SOURCES		:=	src/app src/core
 DATA		:=	data
 INCLUDES	:=	src

@@ -233,3 +233,28 @@ renders the joints mid-motion).
 
 If 26A holds and its joints stay shut, it becomes the game's banner (`tools\make_banner.ps1` with
 `--kind pouncer`).
+
+### Results (run 26, 2026-10-02)
+| Lab | | CGFX | Result |
+|---|---|---|---|
+| **26A** | Pouncer, joints capped | 456 KB | **froze** |
+| 26B | Blazeplume, joints capped | 448 KB | held, but the head still parted from the jagged neck as it twisted |
+
+26A froze at 456 KB where 25F (455 KB, the same banner without the caps, wider collars and gentler
+motion) held, and 25A held at 494 KB: so the size alone isn't the trigger after all. Every glTF checked
+(no NaN, no zero normals; 26A has no degenerate triangles, and 26B, which held, has 20), the same materials,
+nodes and animation channels as 25F. What differs is only the geometry's detail and the motion's values.
+Noah: "If you cannot fix this, we should stop the dragon from moving its head. But the eye animation works.
+And bobbing up and down is fine." So:
+
+## Round 27 (run 27): the head held still, and a control
+`banner3d.py --still-head` joins the head and tail into the body (by hand with bmesh: `bpy.ops.object.join`
+crashed Blender 5.2 on the pieces' leftover vertex groups), no collars; the eyes blink, the heart beats,
+the dragon bobs; nothing turns but the body and egg against the HOME Menu's own turn. The cap sits on the
+right side of the head (Noah: "the egg needs to be moved to one side of the head"). Five nodes fewer.
+
+| Lab | | CGFX | Title ID |
+|---|---|---|---|
+| **27A** | Pouncer, still head | 419 KB | 0xEC170 |
+| **27B** | Blazeplume, still head | 426 KB | 0xEC171 |
+| **27C** | 25F again, unchanged (the control: if it freezes now, the freezes come and go) | 455 KB | 0xEC172 |

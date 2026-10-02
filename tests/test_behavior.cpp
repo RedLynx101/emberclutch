@@ -929,6 +929,7 @@ void runBehaviorTests() {
     RUN(a_content_dragon_leads_a_varied_life_on_the_floor);
     RUN(an_upset_dragon_sulks_in_the_nook_until_you_make_up);
     RUN(tired_dragons_nap_in_the_nest_and_wake_up);
+    RUN(woken_at_night_a_dragon_stays_up_while_you_care_for_it);
     RUN(dragons_blink_and_shut_their_eyes_to_sleep);
     RUN(care_interrupts_everyday_life);
     RUN(dragons_fetch_the_ball_and_bring_it_back);

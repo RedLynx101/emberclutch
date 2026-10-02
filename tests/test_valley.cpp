@@ -201,6 +201,43 @@ TEST(flying_over_the_valley) {
     CHECK(dot(cam.target - cam.eye, f.forward()) > 0);
 }
 
+// Run 26 (Noah: "When I walked off of the sky island above the lake, it auto teleported me to the ground,
+// rather than putting me into flight mode. Fix this for all sky islands"): riding, walking off the edge of
+// every floating island takes off into a glide (over the lake or over land), never dropping to the water.
+TEST(walking_off_a_floating_island_glides) {
+    const Valley& v = valley();
+    int tried = 0;
+    for (const ValleyIsland& isl : v.islands) {
+        if (isl.radius < 3.0f) continue;
+        for (float a : {0.0f, 1.57f, 3.14f, 4.71f}) {  // walking out from its middle four ways
+            Flight f;
+            f.pos = isl.at;
+            f.pos.z = v.groundAt(isl.at.x, isl.at.y, isl.at.z + 1.0f);
+            if (v.islandAt(f.pos.x, f.pos.y, f.pos.z) < 0) continue;
+            f.heading = a;
+            FlightInput walk;
+            walk.pitch = 1;
+            walk.dive = true;  // (running)
+            const float top = f.pos.z;
+            bool glided = false;
+            for (int k = 0; k < 30 * 20 && f.grounded; ++k) {
+                f.update(walk, v, 1.0f / 30);
+                if (!f.grounded) glided = true;
+                if (f.speed == 0) break;  // (stopped at the valley's edge or a wall)
+            }
+            if (f.speed == 0 && f.grounded) continue;
+            ++tried;
+            CHECK(glided);
+            CHECK(f.pos.z > top - 3.0f);  // (it left at the island's height: no drop to the water or ground)
+            if (!glided || f.pos.z <= top - 3.0f)
+                std::printf("  FAIL: off the island at (%.0f %.0f %.0f) heading %.2f: z %.1f, grounded %d\n", isl.at.x, isl.at.y,
+                            isl.at.z, a, f.pos.z, f.grounded ? 1 : 0);
+        }
+    }
+    std::printf("  walked off the floating islands %d ways\n", tried);
+    CHECK(tried >= 4);
+}
+
 TEST(walking_in_the_valley) {
     const Valley& v = valley();
     const ValleyPlaceInfo& den = *v.place(kPlaceDen);
@@ -623,6 +660,7 @@ void runValleyTests() {
     RUN(the_valley_loads);
     RUN(valley_tiles_join_and_fit_the_budget);
     RUN(flying_over_the_valley);
+    RUN(walking_off_a_floating_island_glides);
     RUN(walking_in_the_valley);
     RUN(on_foot_with_your_partner);
     RUN(you_swim_in_deep_water);

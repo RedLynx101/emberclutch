@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-10-02 — 1.0 released
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D152 | **v1.0.0 is out.** Noah made the repo public; its description, homepage (the latest release) and topics set; `tools/release/release.ps1` made the draft with the tested player build's files and the guide, then published it (the tag on main) and found the QR link answering with the CIA. The README and notes gained *Built for the original 3DS*. **Universal-DB:** its rules let apps made with LLM tools in if declared, and forbid LLM-written request text or content for the database itself, so the request is Noah's to send by hand, declaring the LLM use as *yes* (`docs/plan/release-1.0.md` R5); nothing was submitted for him. Next, the video (R6) from V1 | Noah: "you work on the desc and topics. And push everything else so we can move on to the updater request and get you started on the video after that"; "note the technical achievement/marvel of getting this working on an old3ds hardware" | Approved |
+
 ## 2026-10-02 — 1.0, called: the release made ready
 
 | # | Decision | Why | Status |

@@ -78,11 +78,24 @@ What's left is Noah's run 30 and his call on 1.0.*
    `tools\release\release.ps1 -Publish` publishes it and checks the QR link answers with the CIA.
 4. The README's install section checked against the live release; Noah scans the QR code with FBI once.
 
+**Released (2026-10-02, D152):** the repo public (Noah), its description, homepage and topics set; v1.0.0
+published (https://github.com/RedLynx101/emberclutch/releases/tag/v1.0.0) with its four files, the tag on
+main; the QR link checked (HTTP 200, the CIA's exact size). The README and the notes carry *Built for the
+original 3DS* (Noah: "note the technical achievement/marvel of getting this working on an old3ds").
+
 ## R5: Universal Updater
 `docs/release/universal-db.json` holds the entry (repo, title, author, descriptions, licence, icon,
 image, screenshots). It goes to [Universal-DB](https://github.com/Universal-Team/db) through its app
 request form once the repo is public and v1.0.0 is released (Universal-DB reads the releases). Its title is
 *Emberclutch: Skyreach Valley* and its screenshots are the refreshed ones (D149). On Noah's word.
+
+**Noah's to send, by hand (D152):** Universal-DB's guidelines (`CONTRIBUTING.md`, read 2026-10-02) allow apps
+made with LLM tools **if declared**, and prohibit using LLM tools to write the request's issue or pull-request
+text or anything for Universal-DB itself. So this file is a reference only, not to be submitted: Noah fills in
+the form at https://db.universal-team.net/app-request (it makes the JSON), declares the LLM use as **yes**
+(Claude is co-author on the commits and wrote much of the code; the music is Suno's, the sound effects
+ElevenLabs'), then opens an *App request* issue at https://github.com/Universal-Team/db/issues/new/choose with
+the JSON and a sentence or two of his own.
 
 ## R6-R7: the video and YouTube
 See [trailer.md](trailer.md): the stack, the capture build, the shot list, the voices to sample (none

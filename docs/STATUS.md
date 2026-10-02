@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): 1.0 called (D151): the release ready, waiting for the repo to go public, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): **1.0 released** (D152): v1.0.0 public on GitHub; next the Universal-DB request (Noah's, by hand) and the video (R6), the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Tooling: headless emulator checks (2026-09-30)
@@ -15,6 +15,16 @@
   Performance is still signed off on the 3DS: no emulator models its timing.
 - Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
   running it in UTC), and the async file reads and presentation made animations drift (off).
+
+## Now: 1.0 released; the video next (2026-10-02)
+- **v1.0.0 is public:** https://github.com/RedLynx101/emberclutch/releases/tag/v1.0.0 (the CIA, the 3DSX, the
+  zip, the guide); the QR link checked; the repo's description, homepage and topics set; *Built for the
+  original 3DS* in the README and the notes (D152).
+- **Universal-DB:** Noah's to send by hand (their rules: declare the LLM use as *yes*; no LLM-written request
+  text): the form at https://db.universal-team.net/app-request, then an *App request* issue with the JSON
+  and his own sentence or two (`docs/plan/release-1.0.md` R5).
+- **Next:** the video (R6, `docs/plan/trailer.md`): V1, the film build and the capture spike; V2, the
+  storyboard, script and voice samples, then stop for Noah's pick. Tell Noah to switch to max before V4.
 
 ## Now: 1.0, called; the release ready to go public (2026-10-02)
 - **Run 31 came back:** "It all runs great, get the rest ready for me to make this public." The traits and the

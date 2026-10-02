@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 27 (0.10.3) and three banner labs on the 3DS, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is on test (D144-D146: Noah picked the Pouncer; its head now held still, labs 27A-27C); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 28 (0.10.4) and eight banner labs on the 3DS, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is on test (D144-D147: the freezes were the textures' alignment, now fixed; eight looks in labs 28A-28H); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Tooling: headless emulator checks (2026-09-30)
@@ -15,6 +15,27 @@
   Performance is still signed off on the 3DS: no emulator models its timing.
 - Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
   running it in UTC), and the async file reads and presentation made animations drift (off).
+
+## Now: run 28 (0.10.4), the banner freezes found, the isles' stutter, the lamp (2026-10-02)
+- **Run 27's notes** (collections `run27`, `labs`): 27A and 27B froze, 27C (25F unchanged) held again; flicker
+  and stutter (the music stopping) standing on the two NE islands; a Crestwing's breath at the middle island's
+  lamp went off in another direction. Noah: "create slight variants enough for me to just settle on a good
+  solution ... You can add a bit of a border".
+- **The freezes** (D147, `docs/tech/banner-labs.md`): the textures' offset in the CGFX, 0 or 16 past a 64-byte
+  boundary held and 32 or 48 froze, in all ten labs. `tools/banner_cgfx.py` `write_aligned` puts every IMAG blob
+  on a 128-byte boundary and refuses otherwise. Round 28, all aligned: **28A-28D** Pouncer and Blazeplume with a
+  thin (0.008) or bold (0.016) ink border, **28E/28F** no border (27A/27B aligned), **28G** the Tabby Pouncer,
+  **28H** 26A aligned (0xEC173-0xEC17A, 423-489 KB).
+- **0.10.4:** the islands drawn after a throwaway triangle, the depth setting before each (D118); the lantern's
+  breath aimed at the ground at the place's height (`groundAt`, not the land below the island); the Makefile's
+  `build/.version` stamp recompiles the title screen and tracer when VERSION changes. The stutter was the
+  tracer's probes and SD writes answering the flicker: **trace.on deleted** on the 3DS. Tests 377,709, 0
+  failures.
+- **Sent** to .51 (CIA 75 MB, 0.10.4; save backed up to `build/3ds-backup/2026-10-02_0631/`, run 27's
+  screenshots in `build/3ds-shots/2026-10-02_0631/`; `/cias/lab/` holds 28A-28H). Run 28's steps
+  (`docs/plan/hardware-check-13.md`) on the review page (version 22, collection `run28`).
+- **Next:** Noah: the eight labs (held or froze, a pick), the isles, the lamp. Then the pick into the game's
+  CIA (`tools\make_banner.ps1` with its kind, colouring, border and `--still-head`).
 
 ## Now: run 27 (0.10.3), the banner's head held still, gliding off the isles (2026-10-02)
 - **Run 26's notes** (collections `run26`, `labs`): 26A froze (456 KB, where 25F at 455 held: not the size
@@ -31,7 +52,7 @@
 - **Sent** to .51 (CIA 75 MB, 0.10.3; the save backed up to `build/3ds-backup/2026-10-02_0601/`; `/cias/lab/`
   now holds 27A-27C). Run 27's steps (`docs/plan/hardware-check-12.md`) on the review page (version 21,
   collection `run27`).
-- **Next:** Noah: 27A-27C (held or froze, which one), the isles. Then the chosen banner into the game's CIA.
+- **Came back** (run 27): see run 28 above.
 
 ## Now: run 26 (0.10.2), the picked banner's joints closed, Tam's rod in 3D (2026-10-02)
 - **Run 25's notes** (collections `run25`, `labs`): labs 25B (502 KB) and 25C (509 KB) froze, the rest (448-494 KB)

@@ -31,7 +31,8 @@ foreach ($v in $Variants) {
     & py -3.12 (Join-Path $root "tools\check_3ds.py") --quiet $gltf $cgfx
     if ($LASTEXITCODE -ne 0) { throw "$name`: failed its checks (tools\check_3ds.py)" }
     $kb = [math]::Round((Get-Item $cgfx).Length / 1KB)
-    # (run 25: the labs at 502 and 509 KB froze the HOME Menu, every one at 494 KB or less held)
-    $ok = if ((Get-Item $cgfx).Length -le 480KB) { "ok" } elseif ((Get-Item $cgfx).Length -le 512KB) { "TOO BIG for the HOME Menu (over 480 KB)" } else { "TOO BIG" }
-    "$name ($kind, colouring $colour, outline $ink): $kb KB (keep under 480), $ok"
+    # (512 KB is the HOME Menu's limit; under 500 for a margin. The freezes of runs 25-27 were the textures'
+    # alignment, not the size: tools/banner_cgfx.py puts them on 128-byte boundaries now)
+    $ok = if ((Get-Item $cgfx).Length -le 500KB) { "ok" } else { "TOO BIG (keep under 500 KB)" }
+    "$name ($kind, colouring $colour, outline $ink$(if ($still) { ', still head' })): $kb KB, $ok"
 }

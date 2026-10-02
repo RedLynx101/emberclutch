@@ -4051,12 +4051,23 @@ void drawValley(App& app, const ValleyView& view, s64 now) {
         BufInfo_Add(buf, g_vextras.pos, sizeof(Vec3), 1, 0x0);
         BufInfo_Add(buf, g_vextras.col, 4, 1, 0x1);
         BufInfo_Add(buf, g_vextras.col, 4, 1, 0x2);
+        // D118 again (run 27: standing on the islands in the north-east they flickered darker, their rocky
+        // undersides over their tops, as if drawn without writing depth): a throwaway triangle of nothing
+        // takes the batch of state before them, and each island goes with the depth setting sent again.
+        static u16* none = nullptr;
+        if (!none && (none = static_cast<u16*>(linearAlloc(3 * sizeof(u16))))) {
+            none[0] = none[1] = none[2] = 0;
+            GSPGPU_FlushDataCache(none, 3 * sizeof(u16));
+        }
+        C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);
+        if (none) C3D_DrawElements(GPU_TRIANGLES, 3, C3D_UNSIGNED_SHORT, none);
         for (std::size_t k = 0; k + 1 < islandParts.size() && k < v.islands.size(); ++k) {
             const ValleyIsland& isl = v.islands[k];
             const float r = isl.radius * 1.3f;
             const Vec3 lo{isl.at.x - r, isl.at.y - r, isl.at.z - isl.radius * 1.9f}, hi{isl.at.x + r, isl.at.y + r, isl.at.z + 12.0f};
             if (outsideView(clip, lo, hi) || std::hypot(isl.at.x - view.eye.x, isl.at.y - view.eye.y) > kValleyFar * g_reachScale) continue;
             const int count = static_cast<int>(islandParts[k + 1] - islandParts[k]);
+            C3D_DepthTest(true, GPU_GREATER, GPU_WRITE_ALL);  // (with each island alone: D118)
             C3D_DrawElements(GPU_TRIANGLES, count, C3D_UNSIGNED_SHORT, g_vextras.idx + islandParts[k]);
             app.stats.tris += count / 3;
             app.stats.draws += 1;

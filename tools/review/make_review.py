@@ -30,11 +30,11 @@ OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
 RUN_READY = True  # the run's checklist on the page (once the build is ready for the 3DS)
-RUN_DOC = "docs/plan/hardware-check-12.md"  # the run's steps
-RUN_KEY = "run27"       # its database collection (each run its own: run 26's notes stay under `run26`)
-LABS = ["27A", "27B", "27C"]  # banner labs to mark Held/Froze this run (run 27: the head held still, and 25F again; D146)
+RUN_DOC = "docs/plan/hardware-check-13.md"  # the run's steps
+RUN_KEY = "run28"       # its database collection (each run its own: run 27's notes stay under `run27`)
+LABS = ["28A", "28B", "28C", "28D", "28E", "28F", "28G", "28H"]  # banner labs this run (run 28: aligned, D147)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch: Skyreach Valley, run 27 (0.10.3): the banner's head held still, gliding off the isles"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch: Skyreach Valley, run 28 (0.10.4): the banner settled, the isles"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -423,13 +423,15 @@ def plans() -> list[dict]:
 # Run 25's cards (D144): the six banner labs, each through the HOME Menu's camera (front, and side as
 # the HOME Menu turns it), Keep the ones you like; and the answers to run 24's questions. Collection
 # `plans` (slugs banner-25a ...).
-BANNERS = [("27A", "J", "Pouncer, its head held still", ""), ("27B", "K", "Blazeplume, its head held still", ""),
-           ("27C", "F", "25F again, unchanged (the control)", "")]
-PLANS_HEAD = {"nav": "The banner", "kicker": "D146 · three banner labs on your 3DS",
-              "title": "The banner, its head held still",
-              "intro": "The head and tail are one piece with the body now, so nothing can part: the eyes blink, the heart beats and "
-                       "it bobs. The egg's cap sits on the side of its head. 27C is 25F exactly as it was, to tell whether the "
-                       "freezes come and go. Keep the one you want as the game's banner."}
+BANNERS = [("28A", "P1", "Pouncer, a thin ink border", ""), ("28B", "P2", "Pouncer, a bold ink border", ""),
+           ("28C", "B1", "Blazeplume, a thin ink border", ""), ("28D", "B2", "Blazeplume, a bold ink border", ""),
+           ("28E", "P0", "Pouncer, no border (27A, now aligned)", ""), ("28F", "B0", "Blazeplume, no border (27B, now aligned)", ""),
+           ("28G", "T1", "Pouncer in its Tabby colouring, a border", ""), ("28H", "H", "26A, its head moving (now aligned)", "G1s")]
+PLANS_HEAD = {"nav": "The banners", "kicker": "D147 · eight banner labs on your 3DS",
+              "title": "Settle the banner",
+              "intro": "The freezes came from where the banner's pictures landed inside the file; every banner now puts them on a "
+                       "safe spot. All have the head held still and the cap on its side (but 28H, 26A as it was). Keep the ones "
+                       "you like, and say which becomes the game's banner."}
 
 
 def banners() -> list[dict]:

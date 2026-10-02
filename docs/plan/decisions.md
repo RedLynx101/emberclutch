@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-10-02 — Run 27's notes: the banner freezes found, the isles, the lamp (0.10.4)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D147 | **Run 27's notes (0.10.4).** **The banner freezes were the textures' alignment:** where the skin and wordmark textures landed in the CGFX (pycgfx aligns them to 16 bytes) split all ten labs of runs 25-27, 0 or 16 past a 64-byte boundary holding, 32 or 48 freezing, whatever else changed (`docs/tech/banner-labs.md`). `tools/banner_cgfx.py` writes the CGFX itself now with every IMAG blob on a 128-byte boundary and refuses a misaligned one; the size ceiling of D145 was a coincidence (512 KB stays the limit). Round 28: eight labs of looks with the head held still (thin or bold ink, Pouncer or Blazeplume, the Tabby colouring) plus 26A, 27A and 27B aligned as the proof. **The NE isles' stutter and flicker:** the tracer (trace.on, kept since run 21) answered every flicker it saw with probes that split the frame and seconds of writing to the SD: the lag and the music stopping. trace.on deleted on the 3DS (the Trailhead has held since run 23); and the islands now draw after a throwaway triangle with the depth setting sent again before each (D118's fault: their undersides painted over their tops in single frames). **The lamp on an island:** the breath aimed at the lantern's head on the land far below the island (`heightAt`); now the ground at the place's own height. **The version on screen:** `make` didn't recompile the title screen or the tracer when VERSION changed (the trace said 0.9.14 in 0.10.3); the Makefile now stamps `build/.version` and touches them | Noah's run 27 (0.10.3): "You may have to create slight variants enough for me to just settle on a good solution. Make the banners crefully and make them look good. You can add a bit of a border"; "I was having tons of flickering issues ad stuttering of the game (lagging, music stopping, etc when I was on top of the tw islands near each other in the northeast of the map"; "When I tried to light the lamp with a crestwing on the floating island in the middle ... it had fire go in some other rnaomd dircetion." | Approved |
+
 ## 2026-10-02 — Run 26's notes: the banner's head held still, gliding off the isles (0.10.3)
 
 | # | Decision | Why | Status |

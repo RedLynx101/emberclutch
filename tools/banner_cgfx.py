@@ -30,7 +30,50 @@ import gltflib  # noqa: E402
 import main as pycgfx  # noqa: E402  (pycgfx's main.py: convert_gltf, write)
 from cgfx.canm import FloatAnimationCurve, StepLinear64Key  # noqa: E402
 from cgfx.primitives import VertexAttributeUsage  # noqa: E402
+from cgfx.shared import StringTable  # noqa: E402
 from cgfx.sobj import BillboardMode  # noqa: E402
+
+# The IMAG section's blobs (the textures, the vertex streams) on 128-byte boundaries (run 27). pycgfx
+# aligns them to 16; whether a banner froze the HOME Menu followed where its textures landed: every lab
+# whose textures sat at 32 or 48 past a 64-byte boundary froze (25B, 25C, 26A, 27A, 27B), every one at
+# 0 or 16 held (25A, 25D, 25E, 25F twice, 26B), whatever else changed. So a few vertices more or a
+# renamed material could freeze a banner that held (run 20's "names + paint" too).
+ALIGN = 128
+
+
+class AlignedTable(StringTable):
+    @staticmethod
+    def correct(s):
+        if isinstance(s, str):
+            return s.encode() + b"\0"
+        return s + b"\0" * (-len(s) % ALIGN)
+
+
+def write_aligned(cgfx):
+    """pycgfx's write(), with the IMAG content starting on an ALIGN boundary and each blob padded to it."""
+    strings, imag = StringTable(), AlignedTable()
+    offset = cgfx.prepare(0, strings, imag)
+    offset = strings.prepare(offset)
+    if not imag.empty():
+        extra = -(offset + 8) % ALIGN  # (more padding at the strings' end: the IMAG content after its header)
+        strings.padding += extra
+        strings.total += extra
+        offset += extra
+    cgfx.data.section_size = offset - cgfx.data.offset
+    if not imag.empty():
+        cgfx.header.nr_blocks = 2
+        offset += 8  # IMAG header
+    offset = imag.prepare(offset)
+    cgfx.header.file_size = offset
+    data = cgfx.write(strings, imag)
+    data += strings.write()
+    if not imag.empty():
+        data += b"IMAG" + imag.size().to_bytes(4, "little") + imag.write()
+    bad = [o for o in (imag.offset + off for off in imag.table.values()) if o % ALIGN]
+    if bad:
+        sys.exit(f"banner_cgfx: {len(bad)} IMAG blobs off the {ALIGN}-byte boundary (first at {bad[0]})")
+    textures = sorted(imag.offset + off for k, off in imag.table.items() if len(k) >= 16384)
+    return data, textures
 
 UNLIT = "KHR_materials_unlit"
 PREVIOUS, REPLACE = 0xFFF, 0  # a combiner stage that hands on the stage before it unchanged
@@ -96,11 +139,14 @@ def convert(src, dst, billboards=(), turn=None):
             made.append(n)
     turned = set_turns(cgfx, turn) if turn else "none"
     refuse_skinning(model)
-    data = pycgfx.write(cgfx)
+    data, textures = write_aligned(cgfx)
+    if len(data) > 0x80000:
+        sys.exit(f"banner_cgfx: {len(data)} bytes: the HOME Menu takes at most 512 KB")
     with open(dst, "wb") as f:
         f.write(data)
     print(f"banner_cgfx: {dst} ({len(data) // 1024} KB), unlit: {', '.join(unlit) or 'none'}; "
-          f"Y-axis billboards: {', '.join(made) or 'none'}; turning: {turned}")
+          f"Y-axis billboards: {', '.join(made) or 'none'}; turning: {turned}; "
+          f"textures at {', '.join(str(t) for t in textures)} (all on {ALIGN}-byte boundaries)")
 
 
 if __name__ == "__main__":

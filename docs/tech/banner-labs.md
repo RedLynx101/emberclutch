@@ -258,3 +258,39 @@ right side of the head (Noah: "the egg needs to be moved to one side of the head
 | **27A** | Pouncer, still head | 419 KB | 0xEC170 |
 | **27B** | Blazeplume, still head | 426 KB | 0xEC171 |
 | **27C** | 25F again, unchanged (the control: if it freezes now, the freezes come and go) | 455 KB | 0xEC172 |
+
+### Results (run 27, 2026-10-02)
+27A (still Pouncer) **froze**, 27B (still Blazeplume) **froze**, 27C (25F unchanged) **held** again: the
+freezes are the content's, every time.
+
+## What froze them: the textures' alignment (2026-10-02)
+pycgfx puts each blob in the CGFX's IMAG section (the textures, the vertex streams) on a 16-byte boundary.
+Where the two textures (the 256 skin, the wordmark) landed, modulo 64, split all ten labs of runs 25-27:
+
+| Lab | Result | Texture offset % 128 |
+|---|---|---|
+| 25A, 25D, 25E, 25F (twice), 26B | held | 64, 80, 0, 0, 16 |
+| 25B, 25C, 26A, 27A, 27B | froze | 96, 32, 112, 48, 96 |
+
+At 0 or 16 past a 64-byte boundary they held, at 32 or 48 they froze, whatever else was different: a few
+vertices more (26A against 25F), the head joined (27A), names or paint (run 20's H). So
+`tools/banner_cgfx.py` now writes the CGFX itself (`write_aligned`): the IMAG content starts on a 128-byte
+boundary and every blob is padded to one; it refuses a file that isn't, and prints where the textures sit.
+The size cost: about 4 KB. The size ceiling (D145) was a coincidence; 512 KB is the only limit.
+
+## Round 28 (run 28): the looks, all aligned
+The head held still (Noah's run 26 note), the cap on its side, and a choice of looks, with Noah's run 27
+note ("You can add a bit of a border, that look wasn't bad"): the ink outline thin or bold.
+
+| Lab | | CGFX | Title ID |
+|---|---|---|---|
+| **28A** | Pouncer, thin ink (0.008) | 481 KB | 0xEC173 |
+| **28B** | Pouncer, bold ink (0.016) | 481 KB | 0xEC174 |
+| **28C** | Blazeplume, thin ink | 489 KB | 0xEC175 |
+| **28D** | Blazeplume, bold ink | 489 KB | 0xEC176 |
+| **28E** | Pouncer, no ink (27A, aligned) | 423 KB | 0xEC177 |
+| **28F** | Blazeplume, no ink (27B, aligned) | 430 KB | 0xEC178 |
+| **28G** | Pouncer in its Tabby colouring, ink (0.010) | 481 KB | 0xEC179 |
+| **28H** | 26A unchanged but aligned (its head moving, the joints capped) | 461 KB | 0xEC17A |
+
+28E, 28F and 28H froze before unaligned: if they hold now, the alignment was it.

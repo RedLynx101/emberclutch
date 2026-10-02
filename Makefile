@@ -44,7 +44,14 @@ TARGET		:=	emberclutch
 BUILD		:=	build
 endif
 # The version, shown on the title screen and packed in the CIA (tools/package_cia.ps1 reads it here).
-VERSION		:=	0.10.3
+VERSION		:=	0.10.4
+# A new VERSION recompiles the files that show it: make can't see a -D change (run 27: the trace still said
+# 0.9.14 in 0.10.3, and the title screen could have lagged the same way).
+ifneq ($(BUILD),$(notdir $(CURDIR)))
+ifneq ($(shell cat $(BUILD)/.version 2>/dev/null),$(VERSION))
+$(shell mkdir -p $(BUILD) && echo $(VERSION) > $(BUILD)/.version && touch src/app/scene_title.cpp src/app/trace.cpp)
+endif
+endif
 SOURCES		:=	src/app src/core
 DATA		:=	data
 INCLUDES	:=	src

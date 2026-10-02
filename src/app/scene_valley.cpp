@@ -894,7 +894,9 @@ void doAction(App& app, ValleyScene& s) {
             if (const ValleyPlaceInfo* p = s.valley.place(static_cast<u8>(s.actionPlace))) {
                 const PlaceLayout& l = placeLayout(s.actionPlace);
                 const Vec2 lan = placeToWorld(*p, {l.lantern.x, l.lantern.y});
-                s.breathTo = {lan.x, lan.y, s.valley.heightAt(lan.x, lan.y) + 1.7f};  // (the lantern's head)
+                // (the lantern's head, on the ground at the place's own height: on a floating island the land far
+                // below had sent the breath down toward the lake, run 27)
+                s.breathTo = {lan.x, lan.y, s.valley.groundAt(lan.x, lan.y, p->at.z + 2.0f) + 1.7f};
                 s.pal.heading = std::atan2(lan.x - s.pal.pos.x, -(lan.y - s.pal.pos.y));  // it turns to it
             }
             s.breath.look = challenge::breathFor(kindInfo(s.shown.kind < kindCount() ? s.shown.kind : 0).elements[0]);

@@ -216,6 +216,7 @@ int main() {
             // (cleared by drawing, in the frame's own command list: citro2d's fill could land late on
             // the 3DS and wipe the valley's depth, D112)
             C2D_SceneBegin(target);
+            textScreen(kTopW);
             if (!r3d::clearScreen(topClear)) C2D_TargetClear(target, topClear);
             trace::target(target);
             perf::Scope timed(perf::Top);
@@ -243,6 +244,7 @@ int main() {
         const u32 topTris = app.stats.tris;
         trace::mark("f%lu bottom", static_cast<unsigned long>(frame));
         C2D_SceneBegin(app.bottom);
+        textScreen(kBotW);
         if (!r3d::clearScreen(theme::kDenPlum)) C2D_TargetClear(app.bottom, theme::kDenPlum);
         trace::target(app.bottom);
         r3d::reset2D();

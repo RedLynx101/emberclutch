@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-10-02 — Run 29's notes: the 1.0 candidate and the guide's first draft (1.0.0)
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D149 | **The 1.0 candidate (1.0.0, the player build), R1's last items and R3's draft.** Run 29 came back clean. **The player build** (`make DEV=0`: no dev menu, overlay, tracer or Y screenshots; the watchdog kept, D138) goes on the 3DS once as the candidate (R4's step 2), through `tools\deploy_ftp.ps1 -Player` (its own 3DSX as `emberclutch.3dsx`, `dist\player\emberclutch.cia`); the same save folder, so the save carries over. **The pass for clipped words** (R1): dev builds log any text off its screen, or squeezed under 75% to fit, on an autotest's shot frames (`ui_draw` `checkFit`, `textScreen`); 38 tours found two: a Journal rumour at 68% and a speaker's caption at 74%, both now split into two smaller lines by `textFit` when one line would shrink past 87% (the map tip card sliding in and a rhythm cue entering are movement, not clipping). **The release shots** retaken (`release_shots.txt`: the needs filled after the clock's catch-up, so it's joyful; the critters' Journal filled first, so no toast); the README's growth (about a week, D136) and flying keys (D112) corrected; Universal-DB's title *Emberclutch: Skyreach Valley*. **The guide, draft 1** (R3, outline kept): `docs/guide/guide.md`, *A Keeper's Handbook*, 20 A5 pages from `tools/guide/build_guide.py` (its own small Markdown reader, Nunito and Cinzel Decorative, headless Edge to PDF, `pdftoppm` for the review's pages); every number checked by `tools/guide/check_guide.py` (27 against the code); the starters only, no champions, nothing below the Hollow's first floors, breeding in outline; screenshots from the tours and the 28G banner's render on the cover (no AI art). The PDF joins `docs/guide/` when the draft is kept | Noah's run 29: "Looks good. What's next? The non-dev build and 1.0?"; "On .51 when ready. Continue" | Approved |
+
 ## 2026-10-02 — Run 28's notes: the banner in the game, the isles made pretty (0.10.5)
 
 | # | Decision | Why | Status |

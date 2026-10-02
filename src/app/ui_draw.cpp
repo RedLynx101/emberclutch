@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 
 #include "app/audio.hpp"
+#include "app/autotest.hpp"
 #include "app/perf.hpp"
 #include "app/theme.hpp"
 #include "core/clock.hpp"
@@ -171,7 +173,23 @@ float prepare(App& app, C2D_Text& t, const char* s, float scale, Face face, floa
     return k;
 }
 
+float g_screenW = kTopW;  // (textScreen)
+
+// Dev builds, on an autotest's shot frames: text off its screen, or squeezed hard to fit its width.
+void checkFit(const C2D_Text& t, const char* s, float left, float top, float k, float scale, Face face) {
+    if (!EC_DEV || !autotest::shooting()) return;
+    float w = 0, h = 0;
+    C2D_TextGetDimensions(&t, k, k, &w, &h);
+    if (left < -1 || left + w > g_screenW + 1 || top < -1 || top + h > kScreenH + 1)
+        autotest::log("text off the %s screen (x %.0f-%.0f, y %.0f-%.0f): \"%.70s\"", g_screenW > kBotW ? "top" : "bottom", left,
+                      left + w, top, top + h, s);
+    const float asked = scale * g_norm[static_cast<int>(face)];
+    if (k < asked * 0.75f) autotest::log("text squeezed to %.0f%%: \"%.70s\"", 100.0f * k / asked, s);
+}
+
 }  // namespace
+
+void textScreen(float width) { g_screenW = width; }
 
 void loadFonts() {
     if (!g_cacheBuf) g_cacheBuf = C2D_TextBufNew(kCacheGlyphs);
@@ -206,6 +224,12 @@ void text(App& app, const char* s, float x, float y, float scale, u32 color, u32
     perf::Scope timed(perf::Text);
     C2D_Text t;
     const float k = prepare(app, t, s, scale, face, maxWidth);
+    if (EC_DEV && autotest::shooting()) {  // (measured only on a shot frame)
+        float w = 0;
+        C2D_TextGetDimensions(&t, k, k, &w, nullptr);
+        const u32 align = flags & (C2D_AlignCenter | C2D_AlignRight);
+        checkFit(t, s, align == C2D_AlignCenter ? x - w / 2 : (align == C2D_AlignRight ? x - w : x), y, k, scale, face);
+    }
     if (roomFor(t)) C2D_DrawText(&t, C2D_WithColor | flags, x, y, 0.5f, k, k, color);
 }
 
@@ -215,6 +239,11 @@ void textCentered(App& app, const char* s, float cx, float cy, float scale, u32 
     const float k = prepare(app, t, s, scale, face, maxWidth);
     float h = 0;
     C2D_TextGetDimensions(&t, k, k, nullptr, &h);
+    if (EC_DEV && autotest::shooting()) {  // (measured only on a shot frame)
+        float w = 0;
+        C2D_TextGetDimensions(&t, k, k, &w, nullptr);
+        checkFit(t, s, cx - w / 2, cy - h * 0.46f, k, scale, face);
+    }
     if (roomFor(t)) C2D_DrawText(&t, C2D_WithColor | C2D_AlignCenter, cx, cy - h * 0.46f, 0.5f, k, k, color);  // letters sit a touch high
 }
 
@@ -224,6 +253,32 @@ float textWidth(App& app, const char* s, float scale, Face face) {
     float w = 0;
     C2D_TextGetDimensions(&t, k, k, &w, nullptr);
     return w;
+}
+
+bool textFit(App& app, const char* s, float x, float y, float scale, float small, float gap, u32 color, u32 flags,
+             float maxWidth) {
+    const int n = static_cast<int>(std::strlen(s));
+    int cut = -1;
+    if (textWidth(app, s, scale) > maxWidth / 0.87f)
+        for (int i = 0; i < n; ++i)
+            if (s[i] == ' ' && (cut < 0 || std::abs(i - n / 2) < std::abs(cut - n / 2))) cut = i;
+    if (cut < 0 || cut >= 159) {
+        text(app, s, x, y, scale, color, flags, maxWidth);
+        return false;
+    }
+    char first[160];
+    std::memcpy(first, s, static_cast<std::size_t>(cut));
+    first[cut] = 0;
+    C2D_Text t;  // (the pair centred on the one line's middle)
+    float one = 0, each = 0;
+    float k = prepare(app, t, s, scale, Face::Ui, 0);
+    C2D_TextGetDimensions(&t, k, k, nullptr, &one);
+    k = prepare(app, t, first, small, Face::Ui, 0);
+    C2D_TextGetDimensions(&t, k, k, nullptr, &each);
+    const float top = y + one / 2 - (gap + each) / 2;
+    text(app, first, x, top, small, color, flags, maxWidth);
+    text(app, s + cut + 1, x, top + gap, small, color, flags, maxWidth);
+    return true;
 }
 
 void verticalGradient(float x, float y, float w, float h, u32 top, u32 bottom) {

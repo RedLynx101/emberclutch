@@ -26,6 +26,9 @@ upload.
 R3 and R6 can be drafted while R1's runs go on; R4 waits for R1, R5 and R7 wait for R4.
 
 ## R1: what's left for 1.0
+*Run 30 (2026-10-02, D149): the banner is settled (28G, D148), the trace is off, the player build is on the
+3DS as the 1.0.0 candidate, the release shots are retaken and the pass for clipped words found and fixed two.
+What's left is Noah's run 30 and his call on 1.0.*
 - **Hardware runs** until the notes are clean (run 24 is 0.10.0: run 23's fixes).
 - **The 3D banner, nailed down.** Run 23 passed the layout (title clear of the corners, the hatchling
   and egg smaller). Next, per Noah ("we'll test other banners later with actual in-game hatchling

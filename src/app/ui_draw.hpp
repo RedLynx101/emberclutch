@@ -52,6 +52,15 @@ void text(App& app, const char* s, float x, float y, float scale, u32 color, u32
 void textCentered(App& app, const char* s, float cx, float cy, float scale, u32 color, float maxWidth = 0,
                   Face face = Face::Ui);
 float textWidth(App& app, const char* s, float scale, Face face = Face::Ui);
+// A line that may need two (1.0's pass for clipped words: a rumour shrunk to 68% to fit its row): as
+// text() at `scale` while that shrinks it no further than 87%, else split at the space nearest its
+// middle into two lines at `small`, `gap` apart, centred on where the one line's middle would be.
+// Returns true if it took two.
+bool textFit(App& app, const char* s, float x, float y, float scale, float small, float gap, u32 color, u32 flags,
+             float maxWidth);
+// Dev builds (1.0's last pass for clipped words): the screen being drawn, by its width, so text running
+// off it, or squeezed under three quarters of its size to fit, is logged on an autotest's shot frames.
+void textScreen(float width);
 void verticalGradient(float x, float y, float w, float h, u32 top, u32 bottom);
 void glow(float x, float y, float radius, u32 color, float strength);
 void heart(float cx, float cy, float size, u32 color);

@@ -307,7 +307,7 @@ void drawTalk(App& app) {
             }
         }
         if (d.emoteT >= 0) emote::draw(app, feel, box.x + 50, box.y + 6, 18.0f, d.emoteT);
-        text(app, w.title, box.x + 30, box.y + 60, 0.32f, withAlpha(theme::kDenPlum, 0.7f), C2D_AlignCenter, 56);
+        textFit(app, w.title, box.x + 30, box.y + 60, 0.32f, 0.29f, 8.0f, withAlpha(theme::kDenPlum, 0.7f), C2D_AlignCenter, 56);
         text(app, shown, box.x + 66, box.y + 10, kTextScale, theme::kDenPlum, C2D_AlignLeft);
     }
     if (n >= static_cast<int>(std::strlen(d.text))) {  // a little arrow: A for more

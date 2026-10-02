@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 29 (0.10.5) on the 3DS, the isles made pretty, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): run 30: the 1.0.0 candidate (the player build) on the 3DS, the guide's first draft, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Tooling: headless emulator checks (2026-09-30)
@@ -15,6 +15,26 @@
   Performance is still signed off on the 3DS: no emulator models its timing.
 - Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
   running it in UTC), and the async file reads and presentation made animations drift (off).
+
+## Now: run 30 (1.0.0), the 1.0 candidate and the guide's first draft (2026-10-02)
+- **Run 29 came back clean** ("Looks good. What's next? The non-dev build and 1.0?"; "On .51 when ready.
+  Continue").
+- **1.0.0, the player build** (D149) on the 3DS as the candidate: `tools\package_cia.ps1 -Player` (75 MB,
+  `dist\player\`: the CIA, the 3DSX and `emberclutch-1.0.0.zip`), sent with `tools\deploy_ftp.ps1 -Player`. The
+  same save folder: the save carries over (backed up to `build/3ds-backup/2026-10-02_0924/`; run 29's log: no
+  long frames after loading, so the new islands cost nothing).
+- **The pass for clipped words** (dev builds log text off its screen or squeezed under 75% on shot frames;
+  38 tours): the Journal's long lines and a speaker's caption now take two smaller lines (`textFit`).
+- **The release shots** retaken (`docs/release/screenshots/`); README's growth time and flying keys fixed;
+  Universal-DB's title.
+- **The guide, draft 1** (`docs/guide/guide.md`, 20 A5 pages; `py -3.12 tools/guide/build_guide.py --pages`
+  writes `build/guide/`; `tools/guide/check_guide.py` checks its 27 numbers against the code). The PDF goes in
+  `docs/guide/` once the draft is kept.
+- Run 30's steps (`docs/plan/hardware-check-15.md`) and the guide's pages and PDF on the review page (version
+  24, collections `run30`, `plans` slug `guide-draft`). Tests 387,475 checks, 0 failures.
+- **Next:** Noah: the player build (anything broken or different), the guide (Keep/Change), and his call on
+  1.0. Then R4 (the tag, the GitHub release: waits for the repo to go public on his word), R5, R6 (stop at the
+  voice samples; tell Noah to switch to max before the edit passes), R7.
 
 ## Now: run 29 (0.10.5), the banner in the game, the isles made pretty (2026-10-02)
 - **Run 28's notes** (collections `run28`, `labs`, `plans`): all eight labs held (28E, 28F and 28H froze before:
@@ -32,8 +52,9 @@
 - **Sent** to .51 (CIA 75 MB, 0.10.5; the save backed up to `build/3ds-backup/2026-10-02_0808/`; `/cias/lab/`
   emptied). Run 29's steps (`docs/plan/hardware-check-14.md`) and the islands' before-and-now card on the review
   page (version 23, collections `run29`, `plans` slug `isles-29`).
-- **Next:** Noah: the banner on the HOME Menu, the trip, the islands (Keep or Change), any flicker or slowdown.
-  Then R1's remaining polish, the guide, the video (stop at the voice samples), the release, all per D142.
+- **Came back** (run 29, collection `run29`): every step ticked, nothing broken; "Looks good. What's next? The
+  non-dev build and 1.0?" (the isles card left unmarked: taken as Keep).
+- **Then:** see run 30 above.
 
 ## Now: run 28 (0.10.4), the banner freezes found, the isles' stutter, the lamp (2026-10-02)
 - **Run 27's notes** (collections `run27`, `labs`): 27A and 27B froze, 27C (25F unchanged) held again; flicker

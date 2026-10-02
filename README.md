@@ -8,7 +8,7 @@ Made by Noah Hicks. Inspired by Emi, who makes every day feel like hatching day.
 
 Emberclutch is a free, open-source dragon life game for the 3DS family (it runs on the
 original old 3DS). Hatch an egg, care for a tiny hatchling with the stylus, and watch it grow
-into a grown dragon over about two weeks of real days. Walk it through Skyreach Valley on its
+into a grown dragon over about a week of real days. Walk it through Skyreach Valley on its
 lead, ride it into the sky when it's grown, and train it into a champion of battles and
 beauty shows. Nothing ever dies: a neglected dragon only sulks until you make up.
 
@@ -60,7 +60,7 @@ in `sdmc:/3ds/emberclutch/` (two copies, so an interrupted save never loses both
 | **Circle pad** | Walk; in the den, look around |
 | **A** | What's near (talk, go in, light a lantern, ride); flap when flying |
 | **B** | Run; dive when flying |
-| **L / R** | Turn the view; bank when flying |
+| **L / R** | Turn the view; when flying, R bursts ahead and L brakes |
 | **X** | The Journal in the valley, the outing in the den |
 | **START** | The system menu: settings, the Dragondex, save and quit |
 

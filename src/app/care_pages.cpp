@@ -141,14 +141,17 @@ void journalGoals(App& app, const Input& in) {
         } else {
             goalWords(s, row.goal, title, sizeof(title), step, sizeof(step));
         }
-        text(app, title, r.x + 7, r.y + 1, 0.46f,
+        // (a step too long for one line takes two smaller ones, the title a touch smaller above them)
+        const float stepW = done ? 290 : 236;
+        const bool twoLines = textWidth(app, step, 0.41f) > stepW / 0.87f;
+        text(app, title, r.x + 7, r.y + (twoLines ? 0 : 1), twoLines ? 0.42f : 0.46f,
              done ? withAlpha(theme::kShell, 0.65f) : rumour ? withAlpha(theme::kShell, 0.85f) : theme::kClutchGold, C2D_AlignLeft, 200);
         if (row.goal.kind == Tracked::Quest && !rumour) {  // its line of the story, small at the right
             const story::QuestView v = story::view(s, row.goal.id, now);
             text(app, story::lineName(v.line), r.x + r.w - (done ? 6 : 68), r.y + 3, 0.3f, withAlpha(theme::kShell, 0.55f),
                  C2D_AlignRight, 70);
         }
-        text(app, step, r.x + 7, r.y + 16, 0.41f, withAlpha(theme::kShell, done ? 0.6f : 0.88f), C2D_AlignLeft, done ? 290 : 236);
+        textFit(app, step, r.x + 7, r.y + 16, 0.41f, 0.33f, 9.5f, withAlpha(theme::kShell, done ? 0.6f : 0.88f), C2D_AlignLeft, stepW);
         if (row.kind != Kind::Goal) continue;
         // The flag: gold on the one tracked (its word under it), faint on the others.
         trackFlag(r.x + r.w - 58, r.y + 22, 13, app.t, on);

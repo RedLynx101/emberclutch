@@ -31,9 +31,14 @@ wear 2 9 255 24 0
 battle level 12
 battle energy 100
 wait 2
+# (needs full after the clock's catch-up, so it's joyful, not sulky)
+needs 100 100 100 100 100
+wait 1
 shot r01-den
 valley
 wait 4
+# (every critter in the Journal already: no toast over the picture)
+critters friends
 critters spawn 0
 wait 1.5
 critters spawn 3

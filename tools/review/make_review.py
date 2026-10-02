@@ -30,11 +30,11 @@ OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
 RUN_READY = True  # the run's checklist on the page (once the build is ready for the 3DS)
-RUN_DOC = "docs/plan/hardware-check-14.md"  # the run's steps
-RUN_KEY = "run29"       # its database collection (each run its own: run 28's notes stay under `run28`)
+RUN_DOC = "docs/plan/hardware-check-15.md"  # the run's steps
+RUN_KEY = "run30"       # its database collection (each run its own: run 29's notes stay under `run29`)
 LABS = []  # banner labs this run (run 28's eight all held: D147; 28G is the game's banner, D148)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch: Skyreach Valley, run 29 (0.10.5): the isles made pretty, the banner in the game"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch: Skyreach Valley, run 30 (1.0.0): the 1.0 candidate and the guide"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -457,7 +457,7 @@ def banners() -> list[dict]:
 
 # Run 29's card (D148): the floating islands before and after (tests/autotest/isles.txt, headless: the old
 # islands' pictures kept in build/autotest/isles-before), Keep or Change. Collection `plans` (slug isles-29).
-ISLES = True
+ISLES = False
 ISLE_SHOTS = [("i05-three-quarter", "From above"), ("i02-side", "From the side"), ("i03-from-below", "From underneath"),
               ("i06-ne-island", "A north-east island")]
 ISLES_HEAD = {"nav": "The isles", "kicker": "D148 · run 28's notes", "title": "The floating islands",
@@ -484,6 +484,30 @@ def isles() -> list[dict]:
             "their trees and flowers only within the land's reach. Pictures from the emulator at the 3DS's size.")
     return [{"slug": "isles-29", "kicker": "D148 · 0.10.5", "title": "The floating islands, before and now", "body": md_html(body),
              "images": images}]
+
+
+# Run 30's card (R3): the guide's first draft, its pages as pictures (tools/guide/build_guide.py --pages) and the
+# PDF beside the page (published as guide/Emberclutch-Guide.pdf). Collection `plans` (slug guide-draft).
+GUIDE = True
+GUIDE_HEAD = {"nav": "The guide", "kicker": "R3 · the guide's first draft", "title": "A Keeper's Handbook",
+              "intro": "The guide from the outline you kept: 20 small pages, every number checked against the game "
+                       "(tools/guide/check_guide.py), light on spoilers. Keep, or Change and say what."}
+
+
+def guide() -> list[dict]:
+    (OUT / "guide").mkdir(parents=True, exist_ok=True)
+    pages = sorted((ROOT / "build" / "guide" / "pages").glob("page-*.png"))
+    images = []
+    for n, src in enumerate(pages, 1):
+        dst = OUT / "guide" / f"page-{n:02d}.jpg"
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src), "-q:v", "3", str(dst)], check=True)
+        images.append({"src": f"guide/{dst.name}", "cap": f"Page {n}"})
+    pdf = ROOT / "build" / "guide" / "Emberclutch-Guide.pdf"
+    if pdf.exists():
+        shutil.copy(pdf, OUT / "guide" / pdf.name)
+    body = ('<p>The whole guide as a PDF: <a href="guide/Emberclutch-Guide.pdf">Emberclutch-Guide.pdf</a> (A5, prints as a '
+            'folded booklet). Its words live in <code>docs/guide/guide.md</code>, which GitHub shows as a page too.</p>')
+    return [{"slug": "guide-draft", "kicker": "R3 · draft 1", "title": "The guide, page by page", "body": body, "images": images}]
 
 
 ANSWERS = """**Max or xhigh for the video?** Not much better for building it: the film build, the capture and the titles
@@ -514,8 +538,9 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)  # (a shell may be sitting in it)
     data = {"sounds": sounds() + made_sounds() if SHOW_SOUNDS else [], "music": music() if SHOW_SOUNDS else [],
             "run": run_list() if RUN_READY else {}, "dragons": dragons() if DRAGONS else [],
-            "people": {}, "looks": looks() if LOOKS else {}, "plans": isles() if ISLES else banners(),
-            "plansHead": ISLES_HEAD if ISLES else PLANS_HEAD}
+            "people": {}, "looks": looks() if LOOKS else {},
+            "plans": guide() if GUIDE else (isles() if ISLES else banners()),
+            "plansHead": GUIDE_HEAD if GUIDE else (ISLES_HEAD if ISLES else PLANS_HEAD)}
     page = (Path(__file__).with_name("review_template.html").read_text(encoding="utf-8")
             .replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
             .replace("/*TITLE*/", PAGE_TITLE)

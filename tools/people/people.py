@@ -405,10 +405,13 @@ def tam():
     # the scalp kept under it the back of his head was cut off at a slant.)
     shell(m, h, lambda az: angle_blend(az, {0: 52, 45: 40, 80: 6, 100: -14, 180: -30}),
           lambda az, f: 0.02, n_az=10, rows=3, locks=lambda k, az: 8 if (k % 2 == 0 and abs(az) > 70) else 0)
-    top, cyh = h.c[2] + h.azt, h.c[1]  # the sou'wester: a round crown, a brim longer at the back
-    lathe(m, [(top + 0.03, 0.09, 0.09, 0.09, cyh), (top - 0.05, 0.19, 0.19, 0.19, cyh)], 9, "extra", HEAD,
+    # The rain hat: a round crown in the middle of a round brim. (1.0.1, Noah: "Tam's hat is off center". It was
+    # a sou'wester, its brim 13 cm longer at the back and nine-sided, a corner in front and a flat behind: seen
+    # from behind and above, as the game mostly sees him, the crown sat well forward of the brim's middle.)
+    top, cyh = h.c[2] + h.azt, h.c[1]
+    lathe(m, [(top + 0.03, 0.09, 0.09, 0.09, cyh), (top - 0.05, 0.19, 0.19, 0.19, cyh)], 8, "extra", HEAD,
           cap_top=top + 0.045)
-    lathe(m, [(top - 0.05, 0.19, 0.19, 0.19, cyh), (top - 0.08, 0.27, 0.25, 0.32, cyh + 0.03)], 9, "extra", HEAD)
+    lathe(m, [(top - 0.05, 0.19, 0.19, 0.19, cyh), (top - 0.08, 0.275, 0.275, 0.275, cyh)], 8, "extra", HEAD)
     zn, zc, zsp, zh, zhip, zk = heights(p)
     tw = torso_weights(p)
     jumper = [(zn + 0.018, 0.058, 0.054, 0.054), (zn - 0.045, 0.14, 0.11, 0.114), (zsp, 0.14, 0.12, 0.122),

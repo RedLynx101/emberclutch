@@ -2,15 +2,17 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-03 · **Milestone:** **1.0.1 in hand (D155): fixes from Noah's play, unreleased until he says.** Before: **the road to 1.0 (D142, [plan](plan/release-1.0.md)): **1.0 released** (D152); the Universal-DB request sent (Noah); **the trailer cut, V5** (D154): 1:27 from 6x footage with the game's own sounds, Lily narrating, the vertical cut and three thumbnails, on the review page for Noah, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
-· **Branch:** `main` (private `RedLynx101/emberclutch`)
+**Updated:** 2026-10-03 · **Milestone:** **1.0.1 released (D155, D156): the first fixes from Noah's play after 1.0.** Before: **the road to 1.0 (D142, [plan](plan/release-1.0.md)): **1.0 released** (D152); the Universal-DB request sent (Noah); **the trailer cut, V5** (D154): 1:27 from 6x footage with the game's own sounds, Lily narrating, the vertical cut and three thumbnails, on the review page for Noah, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+· **Branch:** `main` (public `RedLynx101/emberclutch`)
 
-## Now: 1.0.1, the first bundle of fixes after the release (D155, 2026-10-03). **Not released: Noah says when.**
+## Now: 1.0.1 released (D156, 2026-10-03): the first bundle of fixes after 1.0 (D155)
 
 Noah's notes from his own play after 1.0. All built, tested (387,524 checks, 0 failures) and looked at in the
 headless emulator (`tests/autotest/fix101a.txt`, `fix101b.txt`: `-Headless -TimeoutSec 420`). The game says
-`1.0.1` (the Makefile's `VERSION`); `docs/release/notes-v1.0.1.md` is the notes' draft. **No tag, no GitHub
-release yet**: more fixes may join the bundle first. **On Noah's 3DS** (2026-10-03, the player build: `tools/package_cia.ps1 -Player`, then `tools/deploy_ftp.ps1 -FtpHost 192.168.68.55 -Player`; the 3DSX in place and the CIA in `/cias` for FBI. `dist/player/` holds them locally, unpublished).
+`1.0.1` (the Makefile's `VERSION`); `docs/release/notes-v1.0.1.md` are its notes. **Released on Noah's word**
+("Push it as the new release", after Tam's hat on the 3DS): `tools/release/release.ps1` (the draft, from
+`dist/player/`: the build he played), then `-Publish` (the tag `v1.0.1` on main; FBI's QR link answers with the new
+CIA). **On Noah's 3DS** (2026-10-03, the player build: `tools/package_cia.ps1 -Player`, then `tools/deploy_ftp.ps1 -FtpHost 192.168.68.55 -Player`; the 3DSX in place and the CIA in `/cias` for FBI. `dist/player/` holds the release's files).
 
 - **Mirror Lake** was under its beach in 1.0: the place's anchor sat at its path's end, 14 m from the water,
   where the sand is 2 m higher, so the jetty, boat and bench were buried (only the rod and lamp showed) and the
@@ -38,8 +40,8 @@ release yet**: more fixes may join the bundle first. **On Noah's 3DS** (2026-10-
 - **README:** the trailer's picture and link (https://youtu.be/GZZhfeaHGZA).
 - The autotest gained `stand <place> <x> <y> <fx> <fy>` and `challenge <id> <cup> [<board's place>]`.
 
-**Next:** Noah plays it (the 3DS was at 192.168.68.55:5000 this time; FTP only when he says); more fixes into the bundle as he finds them;
-the release (tag, CIA, notes, QR still points at latest) only on his word.
+**Next:** Noah plays on (the 3DS was at 192.168.68.55:5000 this time; FTP only when he says); what he finds goes
+into a 1.0.2 bundle, released on his word as this one was. Universal-DB stays his to handle by hand.
 
 ## Tooling: headless emulator checks (2026-09-30)
 - `tools\autotest.ps1 <script> -Headless` runs autotests in Azahar 2126.1.1 inside a WSL distro

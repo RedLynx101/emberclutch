@@ -10,7 +10,7 @@
 Noah's notes from his own play after 1.0. All built, tested (387,524 checks, 0 failures) and looked at in the
 headless emulator (`tests/autotest/fix101a.txt`, `fix101b.txt`: `-Headless -TimeoutSec 420`). The game says
 `1.0.1` (the Makefile's `VERSION`); `docs/release/notes-v1.0.1.md` is the notes' draft. **No tag, no GitHub
-release, no CIA yet**: more fixes may join the bundle first. Not yet on the 3DS (push when Noah says).
+release yet**: more fixes may join the bundle first. **On Noah's 3DS** (2026-10-03, the player build: `tools/package_cia.ps1 -Player`, then `tools/deploy_ftp.ps1 -FtpHost 192.168.68.55 -Player`; the 3DSX in place and the CIA in `/cias` for FBI. `dist/player/` holds them locally, unpublished).
 
 - **Mirror Lake** was under its beach in 1.0: the place's anchor sat at its path's end, 14 m from the water,
   where the sand is 2 m higher, so the jetty, boat and bench were buried (only the rod and lamp showed) and the
@@ -33,7 +33,7 @@ release, no CIA yet**: more fixes may join the bundle first. Not yet on the 3DS 
 - **README:** the trailer's picture and link (https://youtu.be/GZZhfeaHGZA).
 - The autotest gained `stand <place> <x> <y> <fx> <fy>` and `challenge <id> <cup> [<board's place>]`.
 
-**Next:** Noah plays it (FTP when he says: 192.168.68.51:5000); more fixes into the bundle as he finds them;
+**Next:** Noah plays it (the 3DS was at 192.168.68.55:5000 this time; FTP only when he says); more fixes into the bundle as he finds them;
 the release (tag, CIA, notes, QR still points at latest) only on his word.
 
 ## Tooling: headless emulator checks (2026-09-30)

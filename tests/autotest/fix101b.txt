@@ -1,0 +1,98 @@
+# 1.0.1 (D155), part 2: Noah's bug bundle after 1.0, each fix looked at in the game.
+#  k: the den's cliff, wandering away north and south
+#  h: Frostspire Hollow with Tove home, and A at the cave door
+#  j: the Journal's places on the festival's eve (seven lanterns lit, the great one left)
+#  t: Sky Rings picked at the orchard's board: the trophy, and back at the orchard
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+hour 11
+tips
+valley
+wait 5
+# The cliff: straight at the den and the falls, wandering and easing away past them.
+view 0 -330 150 70 -420 -10 25
+wait 4
+shot k01-cliff-north
+view 0 -480 160 80 -560 -30 20
+wait 4
+shot k02-cliff-north-end
+view 0 240 150 70 330 -10 25
+wait 4
+shot k03-cliff-south
+view 0 420 160 80 500 -30 20
+wait 4
+shot k04-cliff-south-end
+view 0 -80 120 40 -80 0 10
+wait 4
+shot k05-cliff-den-falls
+# Frostspire Hollow after the first glide, Tove not yet met: she's home, and the cave door answers.
+story world glided
+travel 17
+wait 4
+view 17 6 9 4 -3 -1 1
+wait 3
+shot h01-hollow-room
+stand 17 0 -5.6 0 -8.2
+wait 1.5
+shot h02-cave-door
+key A
+wait 4
+shot h03-tove
+key A
+wait 4
+key A
+wait 4
+key A
+wait 3
+shot h04-gate
+key B
+wait 2
+# The festival's eve: every place found, seven lanterns lit, the great one left.
+festival
+wait 1
+key X
+wait 0.8
+tap 198 44
+wait 0.6
+shot j04-places-festival
+key B
+wait 0.8
+shot j05-map-dots
+# Sky Rings' Ember cup picked at the orchard's board: the trophy at the end, then the orchard's board again.
+travel 10
+wait 3
+autoplay on
+challenge 1 1 10
+wait 58
+shot t01-rings-late
+wait 4
+shot t02-near-the-end
+wait 4
+shot t03-results
+wait 1.5
+shot t04-trophy
+wait 7
+shot t05-back-at-the-board
+quit

@@ -1823,11 +1823,23 @@ def build_arena(pl):
 LAKE_WATER = -0.6
 
 
-def lake_terrain(x, y):
-    z = -2.6 * smooth01(0.6, -3.5, y) + 0.3 * noise(Vector((x * 0.2, y * 0.2, 0)))
-    c = mixc(GRASS, SAND, smooth01(2.5, 0.5, y))
-    c = mixc(c, (0.46, 0.56, 0.50), smooth01(-0.8, -2.2, y))
+def lake_terrain(x, y):  # (the stand-in: the landscape's beach is this gentle, about 1 in 6)
+    z = max(-3.0, (0.19 if y < 0 else 0.14) * y)
+    c = mixc(GRASS, SAND, smooth01(14.0, 6.0, y))
+    c = mixc(c, (0.46, 0.56, 0.50), smooth01(-3.5, -6.0, y))
     return z, c
+
+
+def lake_edge(pl, x, depth, y0=0.0):
+    """Down the lake's beach from y0 at x: the y where the water is `depth` deep (the landscape's ground;
+    without its file, the stand-in's slope)."""
+    y = y0
+    for _ in range(200):
+        z = pl.gz(x, y) if pl.anchor else lake_terrain(x, y)[0]
+        if z <= LAKE_WATER - depth:
+            break
+        y -= 0.1
+    return round(y, 2)
 
 
 @place("lake", "Mirror Lake")
@@ -1868,13 +1880,18 @@ def build_lake(pl):
         face(s, [(-0.12, -1.3, 0), (0.12, -1.3, 0), (0.1, -1.9, 0), (-0.1, -1.9, 0)], (0, 0, 1), WOOD, O, double=True)
     ribbon(s, [B @ Vector((0, 1.85, 0.62)), Vector((1.4, -8.2, 0.1)), Vector((1.1, -8.4, 0.62))], 0.03,
            (0.86, 0.80, 0.62), I4, normal_hint=(0, 0, 1))
-    pl.solid(B, 0, 0, 1.3)
+    for by in (-1.15, 0.0, 1.15):  # (three along its hull: one round it all stood 0.6 m out from its sides)
+        pl.solid(B, 0, by, 0.75)
     pl.mark("boat")
-    for k, (x, y) in enumerate(((-3.2, -0.5), (-5.0, 0.1), (-6.9, -0.7), (3.6, -0.6), (5.4, 0.0), (7.2, -0.9))):
-        reeds(pl, T(0, 0, LAKE_WATER + 0.1 if y < -0.3 else -0.1), x, y, 5, 1.4, seed=k)
+    # The reeds at the water's edge and the lily pads past it, on the landscape's own beach (1.0.1: it's far
+    # gentler than the model was built for, the water's edge 3 m further out).
+    for k, (x, deep) in enumerate(((-3.2, 0.12), (-5.0, 0.02), (-6.9, 0.2), (3.6, 0.16), (5.4, 0.04), (7.2, 0.22))):
+        y = lake_edge(pl, x, deep)
+        reeds(pl, T(0, 0, LAKE_WATER - deep - 0.05), x, y, 5, 1.4, seed=k)
     pl.mark("reeds")
-    for k, (x, y, r) in enumerate(((-2.6, -3.4, 0.5), (-4.2, -4.6, 0.62), (-3.4, -6.4, 0.45), (-5.6, -2.6, 0.4),
-                                   (4.4, -3.2, 0.55), (5.8, -4.8, 0.5), (4.0, -9.4, 0.6), (-1.8, -10.2, 0.5))):
+    for k, (x, out, r) in enumerate(((-2.6, 0.5, 0.5), (-4.2, 1.7, 0.62), (-3.4, 3.5, 0.45), (-5.6, 0.3, 0.4),
+                                     (4.6, 0.4, 0.55), (5.8, 1.9, 0.5), (4.0, 5.6, 0.6), (-1.8, 6.6, 0.5))):
+        y = lake_edge(pl, x, 0.2) - out
         a0 = k * 1.3
         pts = [(x, y, LAKE_WATER + 0.02)] + [(x + math.cos(a0 + 0.35 + (2 * math.pi - 0.7) * j / 5) * r,
                                                y + math.sin(a0 + 0.35 + (2 * math.pi - 0.7) * j / 5) * r,
@@ -1883,9 +1900,9 @@ def build_lake(pl):
         if k % 3 == 0:
             puff(s, (x + 0.1, y + 0.1, LAKE_WATER + 0.03), 0.18, CLOTH_PINK, M, segs=5, h=0.16)
     for k, (x, y, r) in enumerate(((-1.9, 0.6, 0.55), (2.1, 0.9, 0.7), (-8.6, 0.8, 0.8), (8.4, 0.4, 0.65))):
-        rock(pl, M, x, y, r, STONE, seed=k, segs=6, rings=3, moss=MOSS)
+        rock(pl, T(0, 0, pl.gz(x, y) - 0.06), x, y, r, STONE, seed=k, segs=6, rings=3, moss=MOSS)
         pl.solid(M, x, y, r)
-    bench(pl, M, -3.0, 2.8, math.pi)
+    bench(pl, T(0, 0, pl.gz(-3.0, 2.8) - 0.03), -3.0, 2.8, math.pi)
     fr = [Vector((0.8, -8.3, 0.35)), Vector((1.4, -9.2, 1.6)), Vector((1.9, -10.4, 2.3))]
     sweep(s, fr, 0.03, 3, DARKWOOD, M, smooth=False)
     ribbon(s, [fr[-1], Vector((2.2, -11.0, LAKE_WATER))], 0.015, (0.9, 0.9, 0.9), M, normal_hint=(1, 0, 0))
@@ -1893,6 +1910,8 @@ def build_lake(pl):
              smooth=False)
     pl.mark("props")
     pl.extra["water_z"] = LAKE_WATER
+    # Its deck, end to end (the game walks you along it: core/place_layout addPlaceDecks).
+    pl.extra["anchors"] = {"jetty": [[0.0, 0.9, top], [0.0, -8.6, top]]}
     pl.flat = 6.0
     pl.ground = [((-150, 0, 0), (150, 0, 0), (150, 150, 0), (-150, 150, 0)),
                  ((-150, -150, LAKE_WATER), (150, -150, LAKE_WATER), (150, 0, LAKE_WATER), (-150, 0, LAKE_WATER))]
@@ -2585,13 +2604,15 @@ def board_sign(pl, M, w, h_top, col, emblem, emblem_col, paper=CLOTH_CREAM, post
     s = pl.s
     sign_posts(pl, M, w / 2, h_top + 0.25, post)
     box(s, (-w / 2, -0.07, h_top - 1.2), (w / 2, 0.07, h_top), col, M, skip=())
-    face(s, [(-w / 2 + 0.12, 0.075, h_top - 1.08), (w / 2 - 0.12, 0.075, h_top - 1.08), (w / 2 - 0.12, 0.075, h_top - 0.12),
-             (-w / 2 + 0.12, 0.075, h_top - 0.12)], (0, 1, 0), paper, M)
+    # (The paper 3 cm proud of the board and its marks as far again: at 5 mm they flickered through each other
+    # from the path, 25 m off, 1.0.1.)
+    face(s, [(-w / 2 + 0.12, 0.10, h_top - 1.08), (w / 2 - 0.12, 0.10, h_top - 1.08), (w / 2 - 0.12, 0.10, h_top - 0.12),
+             (-w / 2 + 0.12, 0.10, h_top - 0.12)], (0, 1, 0), paper, M)
     for k in range(4):  # the four leagues' marks, Ember to Starfire
         c = ((0.96, 0.56, 0.26), (0.92, 0.36, 0.26), (0.80, 0.26, 0.40), (0.98, 0.84, 0.36))[k]
         x = -w / 2 + 0.36 + (w - 0.72) * k / 3
-        face(s, [(x - 0.1, 0.08, h_top - 0.95), (x + 0.1, 0.08, h_top - 0.95), (x + 0.1, 0.08, h_top - 0.75),
-                 (x - 0.1, 0.08, h_top - 0.75)], (0, 1, 0), c, M)
+        face(s, [(x - 0.1, 0.13, h_top - 0.95), (x + 0.1, 0.13, h_top - 0.95), (x + 0.1, 0.13, h_top - 0.75),
+                 (x - 0.1, 0.13, h_top - 0.75)], (0, 1, 0), c, M)
     prism(s, emblem, 0.1, emblem_col, M @ T(0, -0.05, h_top - 0.05), back=True, sides=False)
     pl.solid(M, 0, 0, w * 0.55)
 

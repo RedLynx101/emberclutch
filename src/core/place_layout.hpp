@@ -32,7 +32,8 @@ const PlaceLayout& placeLayout(int place);
 
 // A place's named spots (1.0, places.json "anchors"): the caldera's "ring", "sides" and "board";
 // the glade's "stage", "rivals", "judges", "stalls" and "board"; the cove's "fish_spot", "jetty",
-// "fisher" and "shells"; the hollow's "arena", "wild_door" and "keeper" (docs/tech/places.md).
+// "fisher" and "shells"; the hollow's "arena", "wild_door" and "keeper"; the lake's "jetty" (its deck's two
+// ends) (docs/tech/places.md).
 // Each is one or more points in the place's frame (x, y); the third value is a height in the
 // frame (above the anchor, as the model is drawn: the ring's and stage's tops, the jetty's deck;
 // place them with placeFrameToWorld), or for the glade's "stalls" the way the stall faces
@@ -55,7 +56,7 @@ Vec3 placeFrameToWorld(const ValleyPlaceInfo& p, Vec3 local);
 // camera behind you is outside too), standing on what's there at the place's own height (the
 // isles: the island's top; run 28 set you down on the land under it).
 Vec3 placeArrival(const Valley& v, const ValleyPlaceInfo& p, bool outward);
-// The places' decks into the valley (1.0: the mill's bridge, the cove's jetty), after it loads.
+// The places' decks into the valley (1.0: the mill's bridge, the cove's jetty; 1.0.1: the lake's), after it loads.
 void addPlaceDecks(Valley& v);
 // Every place's walls in the valley, for walking round.
 std::vector<Solid> worldSolids(const Valley& v);

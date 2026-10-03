@@ -97,6 +97,11 @@ inline constexpr const char* kQuestDone = "Done!";
 inline constexpr const char* kNoQuests = "No quests yet. Care for your egg: someone will write when it hatches.";
 inline constexpr const char* kRumourTitle = "Rumour: %s";
 inline constexpr const char* kPlacesFound = "Places found: %d of %d";
+// (1.0.1: a place not found yet has its slot on the Places page too, to track by; and each lantern is marked)
+inline constexpr const char* kPlaceUnknown = "???";
+inline constexpr const char* kLanternsLit = "Lanterns: %d of %d";
+inline constexpr const char* kLanternGreat = "The great lantern lights on festival night.";
+inline constexpr const char* kLanternDark = "A grey dot marks each one still dark.";
 inline constexpr const char* kDenTitle = "Your den";
 inline constexpr const char* kDecorSpotNames[5] = {"Rug", "Lantern", "Perch", "Plant", "Banner"};
 inline constexpr const char* kDecorNone = "(bare)";
@@ -588,7 +593,7 @@ inline constexpr const char* kTrack = "Track";
 inline constexpr const char* kTracking = "Tracking";
 inline constexpr const char* kNowTracking = "Now tracking: %s";
 inline constexpr const char* kTrackHint = "Tap a goal to track it:\nthe map shows the way.";
-inline constexpr const char* kTrackPlaceHint = "Tap a place to track it on the map.";
+inline constexpr const char* kTrackPlaceHint = "Tap a place, even ???, to track it on the map.";
 inline constexpr const char* kGoalBattle = "The battle league";
 inline constexpr const char* kGoalShow = "The pageant";
 inline constexpr const char* kGoalHollow = "Frostspire Hollow";
@@ -597,6 +602,7 @@ inline constexpr const char* kGoalShowStep = "%s league: win its shows at the gl
 inline constexpr const char* kGoalHollowStep = "Deepest floor so far: %d";
 inline constexpr const char* kGoalHollowNew = "Wild dragons wait, floor after floor";
 inline constexpr const char* kGoalPlaceStep = "Head for %s";
+inline constexpr const char* kGoalPlaceUnknownStep = "Somewhere in the circle on the map";
 // The Market's top screen
 inline constexpr const char* kHoardCount = "%d trinkets in the hoard";
 inline constexpr const char* kStallFoodCap = "Fresh food for the pouch";
@@ -798,6 +804,7 @@ inline constexpr const char* kBoardTitles = "Won: %d of 4 leagues";
 inline constexpr const char* kHollowKeeper = "Tove";
 inline constexpr const char* kHollowKeeperTitle = "keeps Frostspire Hollow";
 inline constexpr const char* kPromptHollow = "A: talk to %s";
+inline constexpr const char* kPromptHollowDoor = "A: go down into %s";  // (at the cave door, 1.0.1)
 inline constexpr const char* kHollowFirst[3] = {
     "Welcome to Frostspire Hollow, keeper. I'm Tove. Wild dragons live in the caves behind me.",
     "Each floor, one comes out to test you. The deeper you go, the stronger they are.",

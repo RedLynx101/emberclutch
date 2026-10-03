@@ -1,0 +1,117 @@
+# 1.0.1 (D155), part 1: Noah's bug bundle after 1.0, each fix looked at in the game.
+#  j: the Journal's places (every slot, ??? till found, a tap tracks one; the lanterns' dots)
+#  w: Wren's first talk opens the board, and she says nothing more in it
+#  b: the backs of Wren's and Fig's heads
+#  c: the caldera's one league board
+#  l: Mirror Lake on its shore (the jetty, the boat, the bench), and a walk out along the jetty
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+skip 9
+hour 11
+tips
+valley
+wait 5
+# The Journal's places, new to the valley: the den and seventeen ???.
+key X
+wait 0.8
+tap 198 44
+wait 0.6
+shot j01-places-new
+tap 56 105
+wait 0.8
+shot j02-unknown-tracked
+key B
+wait 0.8
+shot j03-map-circle
+# Wren, met for the first time: her three lines, then the board with nothing more said.
+travel 6
+wait 3
+stand 6 4 26 4 24
+wait 1.5
+shot w01-beside-wren
+key A
+wait 4
+shot w02-wren-talks
+key A
+wait 4
+key A
+wait 4
+key A
+wait 3
+shot w03-board
+wait 2.5
+shot w04-board-later
+key B
+wait 2.5
+# The backs of their heads: Wren at the arena, Fig waving at the Market.
+view 6 4 21.8 1.75 4 24 1.3
+wait 3
+shot b01-wren-back
+view 6 5.2 22.2 2.3 4 24 1.35
+wait 2
+shot b02-wren-back-above
+story step market_day 4
+travel 1
+wait 3
+view 1 6.93 -1.21 1.75 6 1 1.3
+wait 3
+shot b03-fig-back
+view 1 7.4 -0.2 2.3 6 1 1.35
+wait 2
+shot b04-fig-back-above
+# The caldera's league board: one, not two through each other.
+view 14 -3.5 26 2.2 -7.2 20.8 1.3
+wait 4
+shot c01-caldera-board
+view 14 -9.5 15.5 2.0 -7.2 20.8 1.3
+wait 2
+shot c02-caldera-board-behind
+view 14 0 44 9 0 20 1
+wait 3
+shot c03-caldera-way-in
+# Mirror Lake, on its shore.
+view 7 0 9 3.2 0.5 -6 0
+wait 4
+shot l01-lake-shore
+view 7 7 -1 4.5 0.8 -6 0
+wait 3
+shot l02-lake-side
+view 7 0.5 -4.5 16 0.5 -4.6 0
+wait 3
+shot l03-lake-top
+view 7 -7 -2 3.5 1 -7 0
+wait 3
+shot l04-lake-left
+travel 7
+wait 3
+stand 7 0 6 0 0
+wait 1
+shot l05-before-jetty
+pad 0 1 4.2
+wait 0.5
+shot l06-on-jetty
+pad 0 1 1.5
+wait 1
+shot l07-jetty-end
+quit

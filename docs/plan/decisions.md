@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-10-03 — 1.0.1: the first bundle of fixes after the release
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D155 | **1.0.1 is a bundle of fixes from Noah's own play after 1.0, kept unreleased until he says** (more may join it). In it: **Mirror Lake stands on its shore** (1.0 had its anchor at its path's end, 14 m up the beach where the sand is 2 m higher: the jetty, the boat and the bench lay under it, only the rod and the lamp showing, and the boat's wall stood in the way unseen; `make_valley.py` now finds the shore, the jetty is a deck you walk, and Sky Rings' two points there moved back by as much so the courses run where they did); **the den's cliff is straight only at the den and the falls** and wanders and eases into hillside north and south (the props are scattered on 1.0's ground first, so no tree elsewhere moves); **every place has its slot on the Journal's Places page**, `???` until found and trackable either way (a search circle on the map), and **each festival lantern has a dot, gold lit and grey dark**, there and on the map's pins, with `Lanterns: n of 8` and a line saying the great lantern lights on festival night (7 of 8 looked like one was lost); **Frostspire Hollow always has its keeper once it's found** (Tove waited at the Vault after the first glide until met, and the only way in is A beside her) and **A at its cave door** takes you to her; Wren says her piece once; Sky Rings picked at the orchard's board returns there; the first win's trophy sits at the 3D's focus and two thirds the size; hair covers the back of every head (`tools/people/check_hair.py` finds a bald one); the caldera's doubled league board is gone and the modelled boards' paper stands 3 cm proud; villagers' walls go with them when the story moves them | Noah's notes after the release and the trailer, 2026-10-02/03: each one found at its cause rather than patched over (three of them, the lake, the Hollow and the lanterns, were the game being unclear or broken for every player, not his save) | Approved (Noah's notes) |
+
 ## 2026-10-02 — The trailer, V4-V5: the cut
 
 | # | Decision | Why | Status |

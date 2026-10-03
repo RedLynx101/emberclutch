@@ -15,6 +15,8 @@ void goalWords(const SaveData& s, const guide::Goal& g, char* title, int titleCa
 
 // The tracking flag (the Journal's rows, the map's marker): its pole's foot at (x, y).
 void trackFlag(float x, float y, float size, float t, bool on);
+// A place's festival lantern (the map's pins, the Journal's places): a gold dot once lit, a grey one while dark.
+void lanternDot(float x, float y, float r, bool lit);
 
 // For the lead, from the valley's map (scene_valley drawBottom, after the pins, before your
 // heart): the tracked goal's flag, or its search area, on a map of the whole valley drawn at

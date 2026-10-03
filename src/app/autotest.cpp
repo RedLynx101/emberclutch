@@ -24,6 +24,7 @@
 #include "core/story.hpp"
 #include "core/trainer.hpp"
 #include "core/clock.hpp"
+#include "core/place_layout.hpp"
 #include "core/valley.hpp"
 #include "core/wanderings.hpp"
 #include "core/world.hpp"
@@ -35,7 +36,7 @@ constexpr const char* kScript = "sdmc:/3ds/emberclutch/autotest.txt";
 constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 
 enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
-                     Creator, Wander, Festival, Goto, Challenge, Autoplay, Cups, Valley, Hour, Quit, TrialFix,
+                     Creator, Wander, Festival, Goto, Stand, Challenge, Autoplay, Cups, Valley, Hour, Quit, TrialFix,
                      Sound,  // (sounds, 1.0: bed, sfx, sfxcheck)
                      Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard, Wear,  // (U: Open .. Wear)
                      Energy, Cove,  // (workstream C)
@@ -245,7 +246,9 @@ u32 keyNamed(const char* s) {
         nums(4);
         c.a[4] = std::strchr(rest, ' ') && std::strchr(std::strchr(rest, ' ') + 1, ' ') ? 1.0f : 0.0f;
     }
-    else if (w == "challenge") { c.op = Op::Challenge; nums(2); }
+    // stand <place> <x> <y> <fx> <fy>: on foot at a spot of a place's frame, facing another (goto: valley metres)
+    else if (w == "stand") { c.op = Op::Stand; nums(5); }
+    else if (w == "challenge") { c.op = Op::Challenge; nums(3); }  // challenge <id> <cup> [the board's place: 10 the orchard's]
     else if (w == "autoplay") { c.op = Op::Autoplay; c.a[0] = std::strcmp(rest, "on") == 0; }
     else if (w == "cups") { c.op = Op::Cups; nums(3); }
     else if (w == "valley") { c.op = Op::Valley; }
@@ -463,6 +466,19 @@ Input next(App& app) {
                 app.autoGoto[5] = c.a[4];
                 done = true;
                 break;
+            case Op::Stand:
+                if (const Valley* v = loadedValley())
+                    if (const ValleyPlaceInfo* p = v->place(static_cast<u8>(c.a[0]))) {
+                        const Vec2 at = placeToWorld(*p, {c.a[1], c.a[2]}), face = placeToWorld(*p, {c.a[3], c.a[4]});
+                        app.autoGoto[0] = at.x;
+                        app.autoGoto[1] = at.y;
+                        app.autoGoto[2] = 1;
+                        app.autoGoto[3] = face.x;
+                        app.autoGoto[4] = face.y;
+                        app.autoGoto[5] = 1;
+                    }
+                done = true;
+                break;
             case Op::Festival: {  // the Lantern Festival's eve: the main story's other quests done, every lantern but the arena's lit
                 const s64 now = nowLocal(app);
                 for (int q : {story::kQKeepersApprentice, story::kQMarketDay, story::kQHilltop, story::kQMeadow, story::kQColdHeights,
@@ -510,7 +526,7 @@ Input next(App& app) {
                 done = true;
                 break;
             case Op::Challenge:  // (from the valley: it lends the challenges its landscape)
-                openChallengeCup(app, static_cast<int>(c.a[0]), static_cast<int>(c.a[1]));
+                openChallengeCup(app, static_cast<int>(c.a[0]), static_cast<int>(c.a[1]), c.a[2] > 0 ? static_cast<int>(c.a[2]) : -1);
                 done = true;
                 break;
             case Op::Autoplay:

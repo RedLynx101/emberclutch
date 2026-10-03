@@ -39,7 +39,10 @@ void goalWords(const SaveData& s, const guide::Goal& g, char* title, int titleCa
             else std::snprintf(step, stepCap, "%s", str::kGoalHollowNew);
             break;
         case Tracked::Place:
-            if (g.id >= 0 && g.id < world::placeCount()) {
+            if (g.id >= 0 && g.id < world::placeCount() && !world::placeFound(s, g.id)) {  // (not named till found)
+                std::snprintf(title, titleCap, "%s", str::kPlaceUnknown);
+                std::snprintf(step, stepCap, "%s", str::kGoalPlaceUnknownStep);
+            } else if (g.id >= 0 && g.id < world::placeCount()) {
                 std::snprintf(title, titleCap, "%s", world::placeInfo(g.id).name);
                 std::snprintf(step, stepCap, str::kGoalPlaceStep, world::placeInfo(g.id).name);
             }
@@ -63,6 +66,11 @@ void trackFlag(float x, float y, float size, float t, bool on) {
         const u32 c = withAlpha(theme::kShell, 0.3f);
         C2D_DrawTriangle(x + 0.8f, top, c, x + size * 0.7f, top + size * 0.24f, c, x + 0.8f, top + size * 0.48f, c, 0.5f);
     }
+}
+
+void lanternDot(float x, float y, float r, bool lit) {
+    C2D_DrawCircleSolid(x, y, 0.5f, r + 0.9f, theme::kDenPlum);  // (a plum edge: it reads on the pale map too)
+    C2D_DrawCircleSolid(x, y, 0.5f, r, lit ? theme::kClutchGold : withAlpha(theme::kShell, 0.5f));
 }
 
 void drawTrackedOnMap(App& app, const Valley& v, float mapX, float mapY, float mapSize) {

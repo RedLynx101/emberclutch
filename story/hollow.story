@@ -39,7 +39,8 @@ quest hollow_warden "The Frost Warden"
 talk tove
   rule first if step lantern_festival 3 and hour 18 6
     [calm] Three hundred and twelve lanterns in the crowd. I counted. Also the big one.
-  rule once if not met tove and world glided
+  # (at the Vault, where she watched your glide; met first at her Hollow, she says the next instead)
+  rule once if not met tove and world glided and not place hollow
     do start hollow_count
     [cool] Not bad. Most drop like a stone. Twenty-eight metres. I counted.
     [calm] I'm Tove. I keep Frostspire Hollow, up past the Vault. Wild dragons come there to grow strong.
@@ -89,4 +90,6 @@ talk tove
       --
       [thinking] Solenne visits sometimes. She brings tea. It's always cold by the time it gets up here.
 
-spot tove vault 4 5 facing 3.3 when world glided and not met tove
+# (At the Vault after your first glide, until you meet her; but home at her Hollow once you've found it. 1.0.1:
+# away at the Vault, she left the Hollow with nobody at its door, and no way in.)
+spot tove vault 4 5 facing 3.3 when world glided and not met tove and not place hollow

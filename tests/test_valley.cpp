@@ -500,15 +500,24 @@ TEST(on_foot_with_your_partner) {
     runner.pos = market.at + Vec3{0, 20, 0};
     for (int k = 0; k < 60; ++k) runner.update(run, camYaw, v, {}, dt);
     CHECK(runner.speed > 5.0f && runner.speed > walked);  // a chibi's run (D86)
-    // Into the lake: it stops at the water's edge.
+    // Into the lake: it stops at the water's edge (beside the jetty: straight down the middle walks out along it).
     const ValleyPlaceInfo& lake = *v.place(kPlaceLake);
     Walker wader;
-    wader.pos = lake.at + Vec3{0, 30, 0};
+    wader.pos = lake.at + Vec3{20, 30, 0};
     wader.pos.z = v.heightAt(wader.pos.x, wader.pos.y);
     WalkInput south;
     south.y = 1;  // the camera looking south (yaw 0): pad up walks south, into the lake
     for (int k = 0; k < 400; ++k) wader.update(south, 0.0f, v, {}, dt);
     CHECK(v.heightAt(wader.pos.x, wader.pos.y) > v.water - 0.61f);
+    // The lake's jetty (1.0.1): from the beach behind it you walk up onto its deck and out to its end, dry.
+    Walker stroller;
+    stroller.pos = lake.at + Vec3{0, 12, 0};
+    stroller.pos.z = v.heightAt(stroller.pos.x, stroller.pos.y);
+    for (int k = 0; k < 400; ++k) stroller.update(south, 0.0f, v, {}, dt);
+    CHECK(stroller.pos.y < lake.at.y - 8.0f && stroller.pos.y > lake.at.y - 8.7f);  // its far end, and no further
+    CHECK(v.deckAt(stroller.pos.x, stroller.pos.y, stroller.pos.z) >= 0);
+    CHECK(std::fabs(stroller.pos.z - (lake.at.z + 0.3f)) < 0.02f);
+    CHECK(v.heightAt(stroller.pos.x, stroller.pos.y) < v.water - 0.8f);  // (deep water under it)
     // The partner: at your side after a walk, facing your way.
     Follower pal;
     pal.pos = market.at + Vec3{-6, 4, 0};
@@ -675,6 +684,32 @@ TEST(the_hollow_floor_meets_its_place) {
     CHECK(worst < 0.05f);
 }
 
+// 1.0.1: Mirror Lake stands on its shore. (1.0 had its anchor at its path's end, 14 m up the beach where the sand
+// is 2 m higher: the jetty, the boat and the bench lay under it, and the boat's wall stood in the way unseen.)
+TEST(the_lake_stands_on_its_shore) {
+    const Valley& v = valley();
+    const ValleyPlaceInfo& lake = *v.place(kPlaceLake);
+    CHECK(std::fabs(v.heightAt(lake.at.x, lake.at.y) - lake.at.z) < 0.25f);  // the sand at its anchor, at its height
+    CHECK(std::fabs(lake.at.z + placeLayout(kPlaceLake).waterZ - v.water) < 0.01f);
+    // Nothing of it under the ground: the sand at every wall of its (rocks, bench, boat, lamp) is no higher than
+    // half a metre over the place's own floor, and where the boat floats and the jetty ends there's water.
+    float highest = -1e9f;
+    for (const Solid& s : placeLayout(kPlaceLake).solids) {
+        const Vec2 w = placeToWorld(lake, s.at);
+        highest = std::fmax(highest, v.heightAt(w.x, w.y) - lake.at.z);
+    }
+    std::printf("  the lake's things: the sand at most %.2f m over its floor\n", highest);
+    CHECK(highest < 0.5f);
+    const PlaceAnchor ends = placeAnchor(kPlaceLake, "jetty");
+    CHECK(ends.count == 2);
+    if (ends.count != 2) return;
+    const Vec2 shore = placeToWorld(lake, {ends.at(0).x, ends.at(0).y}), out = placeToWorld(lake, {ends.at(1).x, ends.at(1).y});
+    const float top = lake.at.z + ends.at(0).z;
+    CHECK(top - v.heightAt(shore.x, shore.y) > 0.0f && top - v.heightAt(shore.x, shore.y) < 0.4f);  // a step up from the sand
+    CHECK(v.heightAt(out.x, out.y) < v.water - 0.8f);
+    CHECK(v.deckAt(out.x, out.y, top) >= 0 && std::fabs(v.groundAt(out.x, out.y, top) - top) < 0.01f);
+}
+
 void runValleyTests() {
     RUN(islands_and_mountainsides);
     RUN(every_path_walks);
@@ -691,4 +726,5 @@ void runValleyTests() {
     RUN(the_picnic_and_its_letter);
     RUN(the_den_floor_stays_over_the_ground);
     RUN(the_hollow_floor_meets_its_place);
+    RUN(the_lake_stands_on_its_shore);
 }

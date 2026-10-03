@@ -572,9 +572,10 @@ pickup page_mill mill 6 1.2 "Pick up the map page" group page glint when active 
 pickup page_orchard orchard 9 -3 "Pick up the map page" group page glint when active fig_map and not bit pages 1
   do bit pages 1, add pages_found 1
   * A page of Fig's map, stuck in an apple tree. "The Orchard. Apples. Possibly pears. Unclear."
-pickup page_lake lake 6 -4 "Pick up the map page" group page glint when active fig_map and not bit pages 2
+# (1.0.1: the lake's place moved down its beach onto the shore: at 6 -4 the page lay under the water.)
+pickup page_lake lake 6 -1 "Pick up the map page" group page glint when active fig_map and not bit pages 2
   do bit pages 2, add pages_found 1
-  * A page of Fig's map, floating by the shore. "Here be ducks. Possibly dangerous."
+  * A page of Fig's map, washed up on the shore. "Here be ducks. Possibly dangerous."
 pickup page_bridge mill -9 4 "Pick up the map page" group page glint when active fig_map and not bit pages 3
   do bit pages 3, add pages_found 1
   * A page of Fig's map, weighed down by a stone. "The bridge. Do not fall off. (I fell off.)"

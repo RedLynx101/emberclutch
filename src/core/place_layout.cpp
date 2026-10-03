@@ -117,6 +117,19 @@ void addPlaceDecks(Valley& v) {
         out.z0 = out.z1 = level;
         v.decks.push_back(out);
     }
+    // The lake's jetty (build_lake; 1.0.1: 1.0's lay under the sand with the rest of the place): level, from the
+    // shore out over the water between its "jetty" anchor's two ends, 1.1 m either side.
+    if (const ValleyPlaceInfo* l = v.place(kPlaceLake)) {
+        const PlaceAnchor ends = placeAnchor(kPlaceLake, "jetty");
+        if (ends.count >= 2) {
+            ValleyDeck d;
+            d.a = placeToWorld(*l, {ends.at(0).x, ends.at(0).y});
+            d.b = placeToWorld(*l, {ends.at(1).x, ends.at(1).y});
+            d.halfWidth = 1.1f;
+            d.z0 = d.z1 = l->at.z + ends.at(0).z;
+            v.decks.push_back(d);
+        }
+    }
 }
 
 std::vector<CameraWall> cameraWalls(const Valley& v) {

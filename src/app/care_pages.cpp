@@ -215,38 +215,51 @@ void drawJournal(App& app, const Input& in, Dragon& d, s64 now) {
         }
     } else if (c.journalTab == 4) {  // the valley's critters (workstream L)
         wildlife::drawJournal(app, in);
-    } else {  // places found (a tap tracks one) and finds
-        int shown = 0;
+    } else {  // the places (a tap tracks one) and finds
+        // Every place has its slot, "???" till it's found (1.0.1): tracking one not found yet puts a search
+        // circle on the map (core/guide). Each festival lantern has its dot, gold once lit and grey while dark
+        // (as on the map's pins), so the ones left show.
+        int found = 0, dark = 0;
         for (int p = 0; p < world::placeCount(); ++p) {  // three columns: all eighteen fit
-            if (!world::placeFound(s, p)) continue;
-            const float y = 62 + (shown / 3) * 18;
-            if (y > 160) break;
-            const float x = 6 + (shown % 3) * 103;
+            const world::PlaceInfo& info = world::placeInfo(p);
+            const bool known = world::placeFound(s, p), lit = world::lanternLit(s, p);
+            found += known;
+            dark += info.lantern && !lit;
+            const float x = 6 + (p % 3) * 103, y = 62 + (p / 3) * 18;
             const guide::Goal g{Tracked::Place, p};
             const bool on = guide::picked(s, g);
             const Rect r{x, y - 1, 101, 17};
+            const char* name = known ? info.name : str::kPlaceUnknown;
             if (on) panel(r, withAlpha(theme::kClutchGold, 0.3f));
-            C2D_DrawCircleSolid(x + 7, y + 7, 0.5f, 3.5f, fromRgb(world::placeInfo(p).pin));
-            text(app, world::placeInfo(p).name, x + 14, y, 0.36f, theme::kShell, C2D_AlignLeft, on ? 74 : 85);
+            if (known) C2D_DrawCircleSolid(x + 7, y + 7, 0.5f, 3.5f, fromRgb(info.pin));  // (no pin till it's found: a grey one read as a dark lantern)
+            if (info.lantern) lanternDot(x + (on ? 85 : 95), y + 7.5f, 2.8f, lit);
+            text(app, name, x + 14, y, 0.36f, known ? theme::kShell : withAlpha(theme::kShell, 0.6f), C2D_AlignLeft,
+                 (on ? 74 : 85) - (info.lantern ? 10 : 0));
             if (on) trackFlag(x + 92, y + 14, 11, app.t, true);
             if (in.released && r.contains(in.rx, in.ry)) {
                 guide::toggle(s, g);
                 audio::playSfx(on ? audio::Sfx::Back : audio::Sfx::Confirm);
                 if (!on) {
-                    showToastf(app, str::kNowTracking, world::placeInfo(p).name);
+                    showToastf(app, str::kNowTracking, name);
                     showTip(app, tips::kTipTracked);
                 }
                 saveNow(app);
             }
-            ++shown;
         }
         text(app, str::kTrackPlaceHint, 14, 170, 0.34f, withAlpha(theme::kShell, 0.55f), C2D_AlignLeft, 290);
-        std::snprintf(line, sizeof(line), str::kPlacesFound, shown, world::placeCount());
-        text(app, line, 14, 184, 0.4f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, 150);
+        std::snprintf(line, sizeof(line), str::kPlacesFound, found, world::placeCount());
+        text(app, line, 8, 185, 0.36f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, 106);
+        // The lanterns: how many are lit, and what's left (the arena's great lantern is lit by the festival itself).
+        lanternDot(124, 192.5f, 2.8f, true);
+        std::snprintf(line, sizeof(line), str::kLanternsLit, world::lanternsLit(s), world::lanternCount());
+        text(app, line, 132, 185, 0.36f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, 82);
+        if (dark)
+            textTwoLines(app, dark == 1 && !world::lanternLit(s, kPlaceArena) ? str::kLanternGreat : str::kLanternDark, 120, 207,
+                         0.3f, withAlpha(theme::kShell, 0.6f), 90, 11);
         int finds = 0;
         for (int i = 0; i < kFindSpots; ++i) finds += findDone(s, i);
         std::snprintf(line, sizeof(line), str::kFindsFound, finds, kFindSpots);  // the finds (WP7)
-        text(app, line, 170, 184, 0.4f, withAlpha(theme::kClutchGold, 0.85f), C2D_AlignLeft, 140);
+        text(app, line, 222, 185, 0.36f, withAlpha(theme::kClutchGold, 0.85f), C2D_AlignLeft, 92);
         if (button(app, {6, 202, 110, 34}, str::kCrittersButton, in)) {  // the valley's critters (workstream L)
             c.journalTab = 4;
             audio::playSfx(audio::Sfx::Tap);

@@ -4,7 +4,9 @@
 
 Made by Noah Hicks. Inspired by Emi, who makes every day feel like hatching day.
 
-![Your dragon and you at the den's door in Skyreach Valley](docs/release/screenshots/valley.png)
+[![Watch the Emberclutch trailer on YouTube](docs/release/trailer.jpg)](https://youtu.be/GZZhfeaHGZA)
+
+**[Watch the trailer on YouTube](https://youtu.be/GZZhfeaHGZA)** (1:27, filmed in the game itself)
 
 Emberclutch is a free, open-source dragon life game for the 3DS family (it runs on the
 original old 3DS). Hatch an egg, care for a tiny hatchling with the stylus, and watch it grow

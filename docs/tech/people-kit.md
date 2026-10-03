@@ -11,6 +11,7 @@ Everything is plain Python except the previews (no Blender needed for the game f
 python tools/people/build.py [--only keeper,player_a] [--anims] [--verbose]
         -> romfs/people/<id>.ecm (eight), romfs/anims/person.eca
 python tools/people/check.py        # reads them back as model.cpp / anim.cpp do; budgets; exit 1 on a problem
+python tools/people/check_hair.py [--only steward,fig] [--map]   # bald patches: skin outside hair anywhere round a head; exit 1 on one
 blender -b -P tools/blender/people_model.py -- --out C:/abs/build/people [--only ids] [--sheets models,faces,hair,clips,ride,looks,portraits]
         -> build/people/*.png previews; portraits -> assets/sprites/people/<id>.png (64 x 64, transparent)
 ```
@@ -19,7 +20,7 @@ blender -b -P tools/blender/people_model.py -- --out C:/abs/build/people [--only
 | `tools/people/rig.py` | the skeleton, Blender-convention rest matrices, the game's pose and skinning maths |
 | `tools/people/geom.py` | low-poly primitives (lathe, tube, ellipsoid, decals on the head, ribbons ...) |
 | `tools/people/body.py` | shared parts: layout, head and face, eyes, arms, legs, shoes, skirt weights |
-| `tools/people/hair.py` | hair shells, the six player styles, fringes, beards |
+| `tools/people/hair.py` | hair shells, the six player styles, fringes, beards; `sink_scalp` and `lift_over` keep the scalp under every shell (1.0.1: a flat hair face across the head's curve let the skin through at the back) |
 | `tools/people/people.py` | the eight people |
 | `tools/people/looks.py` | palette slot use, the creator's colours, each villager's palette (sRGB bytes) |
 | `tools/people/person_clips.py` | the clip library |

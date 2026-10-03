@@ -95,6 +95,7 @@ At most 1,500 a place, the Market 2,500 (checked by the script and by `tests/tes
 | glade | `judges` [x, y] | the judges' table (modelled, turned to the stage; three stools behind it) |
 | glade | `stalls` 2 x [x, y, facing] | accessories (left, -X), dyes (right): 1.2 m in front of each counter's middle, and the way it faces (its keeper stands behind the counter) |
 | glade | `board` [x, y] | the pageant's board (modelled) by the way in |
+| lake | `jetty` 2 x [x, y, z] | its deck's two ends (the shore's, then the water's), z its top (0.3 m over the anchor): `addPlaceDecks` makes it a walkway 1.1 m either side (1.0.1) |
 | cove | `fish_spot` [x, y, z] | where you stand at the jetty's end, z its deck (0.9 m over the water; the lake's bed ~2.5 m under it) |
 | cove | `jetty` [x, y] | the jetty's foot on the beach (walls keep walkers off the jetty: they'd pass under its deck) |
 | cove | `fisher` [x, y] | before the fisher's shack |
@@ -114,6 +115,16 @@ At most 1,500 a place, the Market 2,500 (checked by the script and by `tests/tes
 - **Caldera:** on the crater's flat floor (flat to ~29 m; the walls rise to ~23 m by ~45 m out);
   the terraces reach from 21 to 29.5 m at the back (-Y); the way in (+Y) is the rim's gap.
 - **Glade:** its ground is flattened to ~30 m (+-0.2 m; the model follows it).
+- **Lake (1.0.1):** its anchor is **on the shore**, where the beach is 0.6 m over the water (`make_valley.py`
+  `lake_shore` walks down the beach from its path's end to find it, 14.25 m), not at the path's end as in 1.0:
+  there the sand is 2 m higher and the whole place lay under it. The beach is gentle (about 1 in 6), so the
+  water's edge is ~3.3 m out from the anchor: the reeds and lily pads are set by the landscape's own ground
+  (`lake_edge`), the rocks and the bench stand on it (`pl.gz`), and the boat has three walls along its hull.
+  `tests/test_valley.cpp` `the_lake_stands_on_its_shore` holds it there. Rebuild the lake when the lake's bowl
+  or its beach changes.
+- **Boards:** a modelled board's paper stands 3 cm proud of its wood and the marks 3 cm again (at 5 mm they
+  flickered through each other from 25 m). The caldera's league board is the model's: the game draws no
+  second one there (`drawLeagueBoards`).
 - **Cove:** the water's edge is ~43 m out at x = 0 (not 18-30 m as planned), past a low dune
   (+0.5 m) at ~28-32 m, so the jetty runs from 33.5 m (the dune's far side) to 53 m and the camp
   (shack, campfire, boat) sits at 14-29 m. A shore nearer the anchor would need the cove's flat

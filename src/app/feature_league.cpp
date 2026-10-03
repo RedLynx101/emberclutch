@@ -672,6 +672,9 @@ void drawLeagueBoards(App& app, const Valley& v, s64 now) {
         const league::BoardSpot spot = league::board(b);
         const ValleyPlaceInfo* p = v.place(spot.place);
         if (!p) continue;
+        // (The caldera's own model has the league's board built in at this spot, turned to the path
+        // (tools/blender/valley_places.py): a second one drawn here stood through it. 1.0.1)
+        if (spot.place == kPlaceCaldera) continue;
         r3d::ChallengeProp& prop = props[n++];
         prop.kind = r3d::PropKind::Board;
         prop.at = placeToWorld3(v, *p, {spot.at.x, spot.at.y, 0});

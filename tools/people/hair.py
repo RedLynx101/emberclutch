@@ -9,7 +9,7 @@ head's middle). Everything sits outside the head's surface, so nothing pokes thr
 import math
 
 from geom import Mesh, away_from, ellipsoid, lathe, rigid, tube
-from rig import add, mul, norm, sub
+from rig import add, cross, dot, length, mul, norm, sub
 
 W = rigid("head")
 
@@ -37,10 +37,10 @@ def shell(m, head, edge, thick, n_az=12, rows=4, locks=None, curtain=None, flare
 
     top = add(head.at(0, 90, thick(0, 0.0)), (crown[0], crown[1], 0.0))
     ids_top = m.vert(top, w(top), mat)
-    grid = []
+    grid, pos = [], []
     for j in range(1, rows + 1):
         f = (j / rows) ** row_bias
-        row = []
+        row, prow = [], []
         for k in range(n_az):
             az = 360.0 * (k + phase) / n_az
             az = (az + 180.0) % 360.0 - 180.0
@@ -50,14 +50,111 @@ def shell(m, head, edge, thick, n_az=12, rows=4, locks=None, curtain=None, flare
                 el -= locks(k, az)
             p = point(az, el, f)
             row.append(m.vert(p, w(p), mat))
+            prow.append(p)
         grid.append(row)
+        pos.append(prow)
     out = away_from(cz)
     for k in range(n_az):
         k1 = (k + 1) % n_az
         m.tri(ids_top, grid[0][k], grid[0][k1], out)
         for a, b in zip(grid, grid[1:]):
             m.quad(a[k], b[k], b[k1], a[k1], out)
+    # The scalp under it, sunk beneath its faces (1.0.1: Wren's and Fig's two rows cut inside the back of the head,
+    # a 60-degree band's flat faces sagging 3 cm under a 20 cm head's curve, and the scalp showed through: "bald").
+    faces = []
+    for k in range(n_az):
+        k1 = (k + 1) % n_az
+        faces.append((ids_top, grid[0][k], grid[0][k1]))
+        for a, b in zip(grid, grid[1:]):
+            faces += [(a[k], b[k], b[k1]), (a[k], b[k1], a[k1])]  # (as quad() cuts them)
+    sink_scalp(m, head, [tuple(m.pos[i] for i in f) for f in faces])
+    lift_over(m, head, faces)
     return grid
+
+
+_SAMPLES = ((1 / 3, 1 / 3, 1 / 3), (0.5, 0.5, 0.0), (0.5, 0.0, 0.5), (0.0, 0.5, 0.5), (0.7, 0.15, 0.15), (0.15, 0.7, 0.15),
+            (0.15, 0.15, 0.7))
+
+
+def lift_over(m, head, faces, clear=0.005):
+    """After sink_scalp: where a skin facet still stands above the covering (it's anchored on a vertex the
+    covering doesn't reach, by an ear or at the hairline, and the covering's long face sags behind it), that
+    face's own corners are moved out until it clears. `faces`: the covering's triangles, as vertex indices."""
+    c = head.c
+    scalp = set()
+    for i, p in enumerate(m.pos):
+        if m.mat[i] == "skin":
+            d = sub(p, c)
+            r = length(d)
+            if 1e-6 < r <= head.radius(mul(d, 1.0 / r)) + 0.003:
+                scalp.add(i)
+    skin = [t for t in m.tris if t[0] in scalp and t[1] in scalp and t[2] in scalp]
+    for _ in range(10):
+        moved = False
+        for a, b, cc in skin:
+            pa, pb, pc = m.pos[a], m.pos[b], m.pos[cc]
+            for wa, wb, wc in _SAMPLES:
+                q = tuple(wa * pa[i] + wb * pb[i] + wc * pc[i] for i in range(3))
+                d = sub(q, c)
+                r = length(d)
+                dn = mul(d, 1.0 / r)
+                near = None
+                for f in faces:
+                    t = _ray(c, dn, m.pos[f[0]], m.pos[f[1]], m.pos[f[2]])
+                    if t is not None and (near is None or t < near[0]):
+                        near = (t, f)
+                if near is not None and near[0] < r + clear:
+                    up = (r + clear - near[0]) * 1.2 + 0.001
+                    for vi in near[1]:
+                        dv = sub(m.pos[vi], c)
+                        rv = length(dv)
+                        m.pos[vi] = add(c, mul(dv, (rv + up) / rv))
+                    moved = True
+        if not moved:
+            break
+
+
+def _ray(o, d, a, b, c):
+    """How far along d from o the triangle abc is met (Moller-Trumbore), or None."""
+    e1, e2 = sub(b, a), sub(c, a)
+    pv = cross(d, e2)
+    det = dot(e1, pv)
+    if abs(det) < 1e-12:
+        return None
+    tv = sub(o, a)
+    u = dot(tv, pv) / det
+    if u < -1e-6 or u > 1 + 1e-6:
+        return None
+    qv = cross(tv, e1)
+    v = dot(d, qv) / det
+    if v < -1e-6 or u + v > 1 + 1e-6:
+        return None
+    t = dot(e2, qv) / det
+    return t if t > 1e-6 else None
+
+
+def sink_scalp(m, head, faces, margin=0.006):
+    """The head's skin under a covering (hair, a hat: `faces`, triangles of points) moved in to just beneath
+    it, wherever the covering's flat faces dip under the head's curve: hidden skin, so only the covering's own
+    shape shows, and no scalp through it. The head's own surface only (not the ears, the nose, the neck)."""
+    c = head.c
+    for i, p in enumerate(m.pos):
+        if m.mat[i] != "skin":
+            continue
+        d = sub(p, c)
+        r = length(d)
+        if r < 1e-6:
+            continue
+        dn = mul(d, 1.0 / r)
+        if r > head.radius(dn) + 0.003:  # (an ear, the nose: standing off the head; a vertex already sunk is inside)
+            continue
+        near = None
+        for a, b, cc in faces:
+            t = _ray(c, dn, a, b, cc)
+            if t is not None and (near is None or t < near):
+                near = t
+        if near is not None and near - margin < r:
+            m.pos[i] = add(c, mul(dn, max(near - margin, 0.3 * r)))
 
 
 def fringe(m, head, az0, az1, n, el_top, edge, thick, locks=None, mat="hair", w=W):
@@ -202,10 +299,13 @@ STYLES = [style_swept, style_bob, style_ponytail, style_buns, style_spiky, style
 STYLE_NAMES = ["Swept", "Bob", "Ponytail", "Buns", "Spiky", "Braid"]
 
 
-def player_hair(head):
+def player_hair(head, body=None):
+    """The six styles, each its own mesh; `body`: the scalp there sunk under every one of them (sink_scalp)."""
     out = []
     for fn in STYLES:
         m = Mesh()
         fn(m, head)
         out.append(m)
+        if body is not None:
+            sink_scalp(body, head, [(m.pos[a], m.pos[b], m.pos[c]) for a, b, c in m.tris])
     return out

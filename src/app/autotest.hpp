@@ -24,8 +24,10 @@
 //   wander <steps>              the dragon cared for sets off on the Wanderings; that many steps walked
 //   festival                    the Lantern Festival's eve (every other quest done, the lanterns lit)
 //   goto <x> <y> [<fx> <fy>]    in the valley: stand there (metres), your partner called; facing (fx, fy)
+//   stand <place> <x> <y> <fx> <fy>  the same, at a spot of a place's own frame, facing another of its spots
 //   challenge <c> <cup>         (in the valley) straight into a challenge's cup (core/world Challenge:
 //                               0 Fruit Catch, 1 Sky Rings, 2 Lantern Trial; cup 1 Ember .. 4 Starfire)
+//                               (a third number: the board it's picked at, 10 the orchard's)
 //   autoplay <on|off>           the challenges play themselves (the pilot flies, the lanterns, throws)
 //   cups <fruit> <rings> <lantern>   the highest cup won in each (their ribbons too)
 //   battle <what> ...           1.0 battles (app/battle_feature.hpp battleCommand): start <league>

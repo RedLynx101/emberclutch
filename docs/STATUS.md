@@ -2,8 +2,39 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): **1.0 released** (D152); the Universal-DB request sent (Noah); **the trailer cut, V5** (D154): 1:27 from 6x footage with the game's own sounds, Lily narrating, the vertical cut and three thumbnails, on the review page for Noah, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-03 · **Milestone:** **1.0.1 in hand (D155): fixes from Noah's play, unreleased until he says.** Before: **the road to 1.0 (D142, [plan](plan/release-1.0.md)): **1.0 released** (D152); the Universal-DB request sent (Noah); **the trailer cut, V5** (D154): 1:27 from 6x footage with the game's own sounds, Lily narrating, the vertical cut and three thumbnails, on the review page for Noah, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
+
+## Now: 1.0.1, the first bundle of fixes after the release (D155, 2026-10-03). **Not released: Noah says when.**
+
+Noah's notes from his own play after 1.0. All built, tested (387,524 checks, 0 failures) and looked at in the
+headless emulator (`tests/autotest/fix101a.txt`, `fix101b.txt`: `-Headless -TimeoutSec 420`). The game says
+`1.0.1` (the Makefile's `VERSION`); `docs/release/notes-v1.0.1.md` is the notes' draft. **No tag, no GitHub
+release, no CIA yet**: more fixes may join the bundle first. Not yet on the 3DS (push when Noah says).
+
+- **Mirror Lake** was under its beach in 1.0: the place's anchor sat at its path's end, 14 m from the water,
+  where the sand is 2 m higher, so the jetty, boat and bench were buried (only the rod and lamp showed) and the
+  boat's wall stopped you unseen. `make_valley.py` `lake_shore` puts the anchor on the shore; `build_lake` sets
+  its reeds, pads, rocks and bench by the real beach; the jetty is a deck (`addPlaceDecks`, the lake's `jetty`
+  anchor); Sky Rings' two points there moved back 14.25 m (same courses); Fig's map page is at `lake 6 -1`.
+- **The den's cliff** is straight only at the den and the falls (`cliff_at`); the props are scattered on 1.0's
+  ground first and refitted (`refit`), so no tree elsewhere moved. `--straight` gives 1.0's ground.
+- **Places page** (`care_pages.cpp`): all eighteen slots, `???` till found, a tap tracks either (the map shows
+  a search circle for one not found; the tracked panel says `???`). **Lantern dots**, gold lit and grey dark,
+  there and on the map's pins (`lanternDot`), `Lanterns: n of 8`, and "The great lantern lights on festival
+  night." Noah's 7 of 8 was the arena's great lantern, not a lost one.
+- **Frostspire Hollow:** Tove is home once the Hollow is found (`story/hollow.story`); A at the cave door goes
+  to her (`feature_hollow.cpp` `kDoorFolk`), the camera with you.
+- **Wren** speaks once (`kFlagMetSteward` set as her talk ends); **Sky Rings from the orchard's board** returns
+  to it (`Scene::home`); **the trophy** at the 3D's focus, two thirds the size.
+- **Hair:** `hair.py` `sink_scalp` and `lift_over`; `tools/people/check_hair.py` (all 19 people, 6 styles ok).
+- **Caldera:** the league's board drawn once (the model's); modelled boards' paper 3 cm proud (no flicker).
+- **Villagers' walls** follow them when the story moves them.
+- **README:** the trailer's picture and link (https://youtu.be/GZZhfeaHGZA).
+- The autotest gained `stand <place> <x> <y> <fx> <fy>` and `challenge <id> <cup> [<board's place>]`.
+
+**Next:** Noah plays it (FTP when he says: 192.168.68.51:5000); more fixes into the bundle as he finds them;
+the release (tag, CIA, notes, QR still points at latest) only on his word.
 
 ## Tooling: headless emulator checks (2026-09-30)
 - `tools\autotest.ps1 <script> -Headless` runs autotests in Azahar 2126.1.1 inside a WSL distro
@@ -19,7 +50,7 @@
   virtual `%APPDATA%`, which WSL can't see; both runners now copy it through `%TEMP%`, and `autotest.sh`
   warns when a `--dsp` path can't be opened (D154).
 
-## Now: the trailer, cut (V4-V5, 2026-10-02)
+## Before: the trailer, cut (V4-V5, 2026-10-02; on YouTube: https://youtu.be/GZZhfeaHGZA)
 - **Noah:** Lily's voice; "Still pixelated, so work with that how you will. Whatever works best"; "Report back to
   me with the full thing".
 - **The footage at 6x (D154):** `tools\film\capture.ps1` films `tests/film/*.txt` in Azahar at resolution

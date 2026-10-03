@@ -939,9 +939,15 @@ void doAction(App& app, ValleyScene& s) {
             if (s.actionExtra >= 0 && s.actionExtra < s.extraCount) {
                 const vext::Feature& ft = vext::feature(s.extraFeature[s.actionExtra]);
                 if (ft.act) {
+                    const Vec3 was = s.you.pos;
                     lendStage(app, s);
                     ft.act(app, s.extra[s.actionExtra], s.stage);
                     takeStage(s);
+                    if (std::hypot(s.you.pos.x - was.x, s.you.pos.y - was.y) > 1.0f) {  // (it moved you, from the Hollow's cave door to Tove: the camera comes too)
+                        s.wcam = WalkCamera{};
+                        s.wcam.yaw = s.you.heading;
+                        s.wcam.update(s.you, 0, s.valley, 0.0f, &s.camWalls);
+                    }
                 }
             }
             break;
@@ -985,6 +991,14 @@ void getOff(App& app, ValleyScene& s) {
 
 void update(App& app, const Input& in) {
     refreshStorySpots(app, vs().valley);  // (D137: where the story stands the villagers this frame)
+    // Their walls go with them (1.0.1: set once as the valley loaded, a villager the story moved left a wall
+    // nobody could see where they'd stood, and could be walked through where they stood now). They're the last
+    // kVillagers of the solids (enterValley).
+    if (ValleyScene& vsc = vs(); vsc.solids.size() >= static_cast<std::size_t>(kVillagers))
+        for (int k = 0; k < kVillagers; ++k) {
+            const Vec3 p = villagerAt(vsc.valley, static_cast<Villager>(k));
+            vsc.solids[vsc.solids.size() - kVillagers + k].at = {p.x, p.y};
+        }
     ValleyScene& s = vs();
     app.simAccum += app.dt;
     if (app.simAccum >= 1.0f) {
@@ -1092,6 +1106,7 @@ void update(App& app, const Input& in) {
     if (talking(app)) {  // listening: the world waits (your partner idles beside you)
         updateTalk(app, in);
         if (!talking(app) && wrenOpensChallenges(app)) {  // Wren's hello, or "ready when you are": the picker
+            app.game.world.flags |= kFlagMetSteward;  // (just talked with: met, so the board doesn't greet you twice)
             keepPlace(app);
             openChallenges(app, kPlaceArena);
             return;
@@ -1705,7 +1720,7 @@ void drawBottom(App& app, const Input& touch) {
         const world::PlaceInfo& info = world::placeInfo(p.id);
         C2D_DrawCircleSolid(m.x, m.y, 0.5f, 4.5f, theme::kDenPlum);
         C2D_DrawCircleSolid(m.x, m.y, 0.5f, 3.5f, fromRgb(info.pin));
-        if (info.lantern && world::lanternLit(app.game, p.id)) C2D_DrawCircleSolid(m.x + 4, m.y - 4, 0.5f, 1.8f, theme::kClutchGold);
+        if (info.lantern) lanternDot(m.x + 4, m.y - 4, 1.8f, world::lanternLit(app.game, p.id));  // (1.0.1: grey while dark)
         if (in.tapped && std::hypot(in.tx - m.x, in.ty - m.y) < 9) tappedPlace = p.id;
     }
     // A dragon out on the Wanderings: its loop, faint, and where it's got to (D69).

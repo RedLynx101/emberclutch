@@ -111,7 +111,7 @@ enum FlagId : u16 {
     kFOnceWrenB69a411c = 45,
     kFCaughtWhiskers = 46,
     kFOnceTam35d991de = 47,
-    kFOnceToveDba44eb1 = 48,
+    kFOnceTove94906144 = 64,
     kFOnceToveE54eba31 = 49,
     kFOnceWren1ba6bddd = 50,
     kFOnceMarigoldB0ba5117 = 51,

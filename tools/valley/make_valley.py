@@ -176,6 +176,25 @@ PATHS = [
 ]
 
 
+# The den's cliff is dead straight and sheer between here (the den at y 60, the falls at 190, the lodge at 242:
+# they're built to it), and beyond, north and south, it bows back toward the mountains, wanders and eases into a
+# steep hillside (1.0.1, Noah: on the map "a large straight cliff, which is fine near the waterfall and den, but
+# the rest should not be a straight line cliff"). WANDER off: 1.0's ground, straight end to end; the props are
+# still scattered on that (one random stream: any change of ground would move every later tree in the valley).
+CLIFF_STRAIGHT = (0.0, 280.0)
+WANDER = True
+
+
+def cliff_at(y):
+    """(Where the den's cliff stands at y, how wide its step is: 4 m is sheer.)"""
+    if not WANDER:
+        return CLIFF_X, 4.0
+    away = max(CLIFF_STRAIGHT[0] - y, y - CLIFF_STRAIGHT[1], 0.0)
+    k = smoothstep(0.0, 170.0, away)
+    w = (fbm(y / 150.0 + 3.1, 0.5, 3, 23) - 0.5) * 2.0
+    return CLIFF_X + k * (-55.0 + 150.0 * w), 4.0 + 13.0 * k
+
+
 def base_height(x, y):
     """The land before the places are shaped into it; also the ground without the den's cliff."""
     r = math.hypot(x, y) / HALF
@@ -189,9 +208,13 @@ def base_height(x, y):
     h += 170.0 * math.exp(-(((x - CRAG[0]) / 90.0) ** 2 + ((y - CRAG[1]) / 110.0) ** 2))
     h0 = h  # the valley floor, before the den's plateau
     # The den's plateau with its sheer cliff.
-    band = smoothstep(-330.0, -220.0, y) * (1.0 - smoothstep(480.0, 600.0, y))
+    if WANDER:  # (its ends let down over 300 m, not 110: the south end was a second wall, square to the first)
+        band = smoothstep(-480.0, -170.0, y) * (1.0 - smoothstep(400.0, 660.0, y))
+    else:
+        band = smoothstep(-330.0, -220.0, y) * (1.0 - smoothstep(480.0, 600.0, y))
     plateau = PLATEAU + 8.0 * (fbm(x / 80.0, y / 80.0, 3, 5) - 0.5)
-    step = 1.0 / (1.0 + math.exp((x - CLIFF_X) / 4.0))
+    cx, cw = cliff_at(y)
+    step = 1.0 / (1.0 + math.exp(max(-60.0, min(60.0, (x - cx) / cw))))
     h = h + (max(h, plateau) - h) * step * band
     # The Nesting Stone's hill.
     d = math.hypot(x - STONE_HILL[0], y - STONE_HILL[1])
@@ -536,9 +559,17 @@ def region_colour(x, y, h, slope):
     return c
 
 
-def build():
-    print("[valley] heights...")
-    hs = [[height(X0 + i * SPACING, Y0 + j * SPACING) for i in range(N)] for j in range(N)]
+def heights(reuse=None):
+    """Every sample's height; `reuse`: another ground's, kept east of the cliff's reach (the same there)."""
+    east = CLIFF_X + 260.0
+    return [[reuse[j][i] if reuse and X0 + i * SPACING > east else height(X0 + i * SPACING, Y0 + j * SPACING)
+             for i in range(N)] for j in range(N)]
+
+
+def build(hs=None):
+    if hs is None:
+        print("[valley] heights...")
+        hs = heights()
     print("[valley] colours...")
     cols = [[None] * N for _ in range(N)]
     sl = math.sqrt(sum(v * v for v in SUN))
@@ -663,6 +694,64 @@ def scatter(hs):
     return props
 
 
+def refit(props, old, hs):
+    """The props as 1.0's ground had them, fitted to this one where the cliff moved: a tree left on the new
+    slope or a rock left on what's now level is taken out, and what the old cliff kept bare (its face, the strip
+    either side) is planted as the woods are, so no straight line of bare ground stays behind."""
+    def moved(x, y):
+        return abs(ground(hs, x, y) - ground(old, x, y)) > 0.75
+
+    out, gone = [], 0
+    for p in props:
+        x, y, kind = p[0], p[1], p[2]
+        if moved(x, y):
+            h, sl = ground(hs, x, y), slope_at(hs, x, y)
+            cx, _ = cliff_at(y)
+            keep = (sl > 0.35) if kind == K_ROCK else (sl < 0.25) if kind == K_FLOWERS else \
+                (sl <= 0.5 and abs(x - cx) >= 14 and h >= WATER + 1.5)
+            if not keep:
+                gone += 1
+                continue
+        out.append(p)
+    rng = random.Random(1001)
+    planted = 0
+    for gy in range(int(Y0), int(Y0 + 2 * HALF), 11):
+        for gx in range(int(CLIFF_X - 240), int(CLIFF_X + 60), 11):
+            x, y = gx + rng.uniform(0, 11), gy + rng.uniform(0, 11)
+            lone, pine, size_p, size_t = rng.random(), rng.random(), rng.uniform(7.0, 12.0), rng.uniform(5.5, 9.0)
+            shade, yaw = rng.randrange(256), rng.randrange(256)
+            if math.hypot(x, y) > HALF * 0.95:
+                continue
+            ho = ground(old, x, y)
+            if not (slope_at(old, x, y) > 0.5 or abs(x - CLIFF_X) < 14 or (x < CLIFF_X and ho < PLATEAU - 12)):
+                continue  # (1.0's ground let a tree stand here: its woods are already as they were)
+            h = ground(hs, x, y)
+            cx, _ = cliff_at(y)
+            if h < WATER + 1.5 or slope_at(hs, x, y) > 0.5 or abs(x - cx) < 14 or h > 150:
+                continue
+            forest = fbm(x / 120.0, y / 120.0, 3, 41)
+            if forest < 0.52 and lone > 0.08:
+                continue
+            if near_place(x, y, 10.0) or near_path(x, y, 6.0) or near_water(x, y, 10.0):
+                continue
+            kind = K_PINE if h > 70 or (forest > 0.62 and pine < 0.3) else K_TREE
+            out.append((x, y, kind, size_p if kind == K_PINE else size_t, shade, yaw))
+            planted += 1
+    print(f"[valley] the cliff's props: {gone} taken out, {planted} planted")
+    return out
+
+
+def lake_shore(hs, x, y):
+    """The lake's place stands on its shore, down the beach from its path's end: where the sand is 0.6 m over the
+    water, as its model is built (places.json water_z -0.6). (1.0 had it at the path's end, 14 m up the beach
+    where the sand is 2 m higher: the jetty, the boat and the bench lay under it, only the rod and the lamp
+    showing, and the boat's wall stood in the way unseen.)"""
+    for k in range(240):
+        if ground(hs, x, y - 0.25 * k) <= WATER + 0.6:
+            return y - 0.25 * k
+    return y
+
+
 def places(hs):
     out = []
     for pid, (x, y, fr, fh, heading) in PLACES.items():
@@ -670,7 +759,7 @@ def places(hs):
             isl = ISLANDS[0]
             out.append((pid, isl[0], isl[1], isl[2], heading))
         elif pid == P_LAKE:
-            out.append((pid, x, y, WATER + 0.6, heading))  # places.json water_z -0.6
+            out.append((pid, x, lake_shore(hs, x, y), WATER + 0.6, heading))  # places.json water_z -0.6
         elif pid == P_MILL:
             out.append((pid, x, y, WATER + MILL_WATER, heading))
         elif pid == P_GROTTO:
@@ -742,8 +831,18 @@ def write_png(path, cols, props, plc):
 def main():
     argv = sys.argv[1:]
     out = argv[argv.index("--out") + 1] if "--out" in argv else os.path.join(ROOT, "romfs", "valley", "skyreach.evl")
-    hs, cols = build()
-    props = scatter(hs)
+    global WANDER
+    WANDER = False  # 1.0's ground first: the props are scattered on it, so not one tree elsewhere moves
+    print("[valley] heights (1.0's cliff, for the props)...")
+    old = heights()
+    props = scatter(old)
+    WANDER = "--straight" not in argv
+    if WANDER:
+        print("[valley] heights (the cliff wandering)...")
+        hs, cols = build(heights(reuse=old))
+        props = refit(props, old, hs)
+    else:
+        hs, cols = build(old)
     plc = places(hs)
     size, hmin, hmax = write(out, hs, cols, props, plc)
     kinds = [sum(1 for p in props if p[2] == k) for k in range(7)]

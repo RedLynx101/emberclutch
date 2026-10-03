@@ -57,6 +57,7 @@ struct Scene {
     float resultsT = 0;
     bool autoplay = false;
     int autoStart = -1;  // a scripted run: this challenge's cup starts at once
+    int home = kPlaceArena;  // the board you came to (a cup plays at its own place; you come back here: 1.0.1)
 };
 
 Scene& sc() {
@@ -136,7 +137,7 @@ void standAtBoard(App& app, Set& s) {
 void backToPicker(App& app) {
     Set& s = stage::get();
     sc().phase = Phase::Picker;
-    s.place = challenge::placeOf(static_cast<Challenge>(sc().pick));
+    s.place = sc().home;  // (Sky Rings picked at the orchard ended at Wren's board, the Arena: 1.0.1)
     standAtBoard(app, s);
 }
 
@@ -530,10 +531,13 @@ void drawTop(App& app) {
             r3d::ChallengeProp p;
             p.kind = r3d::PropKind::Trophy;
             p.variant = static_cast<u8>(s.pick);
-            // Up on the left, above the card (the dragon has the middle).
-            p.at = s.eye + fwd * 3.2f + right * -1.2f + Vec3{0, 0, 0.3f - 0.08f * std::sin(app.t * 2.0f)};
+            // Up on the left, above the card (the dragon has the middle). Just behind the 3D's focus, placed as it
+            // was at 3.2 m: there it stood far in front of the screen and leapt out of it; and two thirds the
+            // size, clear of the race's clock above it (1.0.1).
+            const float d = std::fmax(4.0f, length(s.target - s.eye)) + 0.4f, k = d / 3.2f;
+            p.at = s.eye + fwd * d + right * (-1.2f * k) + Vec3{0, 0, (0.3f - 0.08f * std::sin(app.t * 2.0f)) * k};
             p.yaw = app.t * 1.4f;
-            p.scale = 1.4f * clampf(c.resultsT * 2.0f, 0.0f, 1.0f);
+            p.scale = 0.95f * k * clampf(c.resultsT * 2.0f, 0.0f, 1.0f);
             p.look = trophyLook(s.pick, s.cup);
             stage::addProp(s, p);
         }
@@ -934,6 +938,7 @@ void openChallenges(App& app, int place) {
     s.clip = ClipId::Count;
     s.speedsSet = false;
     s.place = place == kPlaceOrchard ? kPlaceOrchard : kPlaceArena;
+    c.home = s.place;
     s.snapCam = true;
     c.phase = Phase::Picker;
     // What's offered first: the orchard's own; at the arena the Lantern Trial on the festival night
@@ -951,15 +956,16 @@ void openChallenges(App& app, int place) {
     app.scene = SceneId::Challenge;
     audio::playSfx(audio::Sfx::DoorWood, 1.2f, 0.6f);
     if (s.valley) standAtBoard(app, s);
-    // Meeting Wren at her board counts as meeting her.
-    if (s.place == kPlaceArena && !(app.game.world.flags & kFlagMetSteward)) {
+    // Meeting Wren at her board counts as meeting her. (Met any way counts: her story flag too. 1.0.1: met
+    // through another talk, only the world's flag unset, she said her piece again over the board each time.)
+    if (s.place == kPlaceArena && !(app.game.world.flags & kFlagMetSteward) && !story::flag(app.game, story::kFMetWren)) {
         startTalk(app, Villager::Steward);
     }
 }
 
-void openChallengeCup(App& app, int challengeId, int cup) {
+void openChallengeCup(App& app, int challengeId, int cup, int from) {
     const int place = challenge::placeOf(static_cast<Challenge>(challengeId % kChallenges));
-    openChallenges(app, place);
+    openChallenges(app, from >= 0 ? from : place);  // (from: the board it's picked at, the orchard's or the arena's)
     app.talk.active = false;
     sc().pick = challengeId % kChallenges;
     sc().cup = cup < challenge::kEmber ? challenge::kEmber : (cup > challenge::kStarfire ? challenge::kStarfire : cup);

@@ -110,7 +110,7 @@ def player_a():
     slab(m, (0.14, -0.02, zh - 0.02), (0.94, 0.34, 0.0), (-0.34, 0.94, 0.0), (0.0, 0.0, 1.0), (0.06, 0.028, 0.055),
          "leather", rigid("hips"))
     limbs(p, boot=(0.1, 0.052, "leather"))
-    p.hair = player_hair(p.head)
+    p.hair = player_hair(p.head, p.body)
     return finish(p, zhip + 0.012)
 
 
@@ -141,7 +141,7 @@ def player_b():
         arm(p, side, sleeve_mat="white", sleeve_r=0.064, sleeve_len=0.5, forearm_r=0.034, hand_r=0.041, seg=5)
         shin(p, side, "leather_dark", r=0.042, seg=5)
         shoe(p, side, "leather", size=(0.05, 0.076, 0.048), seg=5)
-    p.hair = player_hair(p.head)
+    p.hair = player_hair(p.head, p.body)
     return finish(p, zhip + 0.012)
 
 

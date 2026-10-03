@@ -164,7 +164,9 @@ const float kPlaceSolids[][3] = {
     {2.400f, -17.000f, 2.300f},
     {0.000f, -17.700f, 1.000f},
     {-0.950f, -8.400f, 0.300f},
-    {2.500f, -6.200f, 1.300f},
+    {2.640f, -7.340f, 0.750f},
+    {2.500f, -6.200f, 0.750f},
+    {2.360f, -5.060f, 0.750f},
     {-1.900f, 0.600f, 0.550f},
     {2.100f, 0.900f, 0.700f},
     {-8.600f, 0.800f, 0.800f},
@@ -393,17 +395,17 @@ const PlaceRow kPlaceRows[] = {
     {12.000f, true, {0.000f, -0.400f}, true, {2.417f, 3.510f, 1.920f}, 80, 12, 0.000f},  // vault
     {12.000f, true, {0.000f, 0.000f}, true, {3.480f, 1.000f, 1.920f}, 92, 14, 0.000f},  // trailhead
     {21.000f, true, {0.000f, 15.400f}, true, {0.000f, -15.660f, 4.840f}, 106, 45, 0.000f},  // arena
-    {6.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 151, 7, -0.600f},  // lake
-    {14.000f, true, {0.000f, 5.600f}, false, {0.000f, 0.000f, 0.000f}, 158, 7, 0.000f},  // keeper
-    {7.000f, false, {0.000f, 0.000f}, true, {0.942f, 2.651f, 1.920f}, 165, 8, 0.000f},  // isles
-    {12.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 173, 28, 0.000f},  // orchard
-    {17.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 201, 12, -1.300f},  // mill
-    {7.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 213, 31, 0.000f},  // grotto
-    {12.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 244, 25, 0.000f},  // ruins
-    {30.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 269, 28, 0.000f},  // caldera
-    {30.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 297, 22, 0.000f},  // glade
-    {18.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 319, 23, 0.000f},  // cove
-    {15.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 342, 29, 0.000f},  // hollow
+    {6.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 151, 9, -0.600f},  // lake
+    {14.000f, true, {0.000f, 5.600f}, false, {0.000f, 0.000f, 0.000f}, 160, 7, 0.000f},  // keeper
+    {7.000f, false, {0.000f, 0.000f}, true, {0.942f, 2.651f, 1.920f}, 167, 8, 0.000f},  // isles
+    {12.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 175, 28, 0.000f},  // orchard
+    {17.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 203, 12, -1.300f},  // mill
+    {7.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 215, 31, 0.000f},  // grotto
+    {12.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 246, 25, 0.000f},  // ruins
+    {30.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 271, 28, 0.000f},  // caldera
+    {30.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 299, 22, 0.000f},  // glade
+    {18.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 321, 23, 0.000f},  // cove
+    {15.000f, false, {0.000f, 0.000f}, false, {0.000f, 0.000f, 0.000f}, 344, 29, 0.000f},  // hollow
 };
 
 const float kMarketEggStand[3] = {-3.792f, 4.520f, 1.500f};
@@ -418,6 +420,8 @@ struct AnchorRow {
 };
 
 const float kAnchorPoints[][3] = {
+    {0.000f, 0.900f, 0.300f},
+    {0.000f, -8.600f, 0.300f},
     {0.000f, 0.000f, 0.250f},
     {-8.900f, 0.000f, 0.000f},
     {8.900f, 0.000f, 0.000f},
@@ -445,19 +449,20 @@ const float kAnchorPoints[][3] = {
 };
 
 const AnchorRow kAnchorRows[] = {
-    {14, "ring", 0, 1},  // caldera
-    {14, "sides", 1, 2},  // caldera
-    {14, "board", 3, 1},  // caldera
-    {15, "stage", 4, 1},  // glade
-    {15, "rivals", 5, 4},  // glade
-    {15, "judges", 9, 1},  // glade
-    {15, "stalls", 10, 2},  // glade
-    {15, "board", 12, 1},  // glade
-    {16, "fisher", 13, 1},  // cove
-    {16, "fish_spot", 14, 1},  // cove
-    {16, "jetty", 15, 1},  // cove
-    {16, "shells", 16, 5},  // cove
-    {17, "arena", 21, 1},  // hollow
-    {17, "wild_door", 22, 1},  // hollow
-    {17, "keeper", 23, 1},  // hollow
+    {7, "jetty", 0, 2},  // lake
+    {14, "ring", 2, 1},  // caldera
+    {14, "sides", 3, 2},  // caldera
+    {14, "board", 5, 1},  // caldera
+    {15, "stage", 6, 1},  // glade
+    {15, "rivals", 7, 4},  // glade
+    {15, "judges", 11, 1},  // glade
+    {15, "stalls", 12, 2},  // glade
+    {15, "board", 14, 1},  // glade
+    {16, "fisher", 15, 1},  // cove
+    {16, "fish_spot", 16, 1},  // cove
+    {16, "jetty", 17, 1},  // cove
+    {16, "shells", 18, 5},  // cove
+    {17, "arena", 23, 1},  // hollow
+    {17, "wild_door", 24, 1},  // hollow
+    {17, "keeper", 25, 1},  // hollow
 };

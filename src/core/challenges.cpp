@@ -213,11 +213,13 @@ struct Design {
 // (the campaign's quest 6 flies it); Flame: low over the lake, past the Market to the orchard;
 // Blaze: the other way round, lower, weaving, to finish skimming the lake; Starfire: the long
 // one, up to the Nesting Stone's hill and down into the Market, weaving hard.
+// (1.0.1: the lake's place moved 14.25 m down its beach, onto the shore; its two points here moved back by as
+// much, so the courses run where they did.)
 const Design kDesigns[kCups] = {
     {{{kPlaceArena, 0, 0, 34}, {kPlaceOrchard, 0, 0, 104}, {kPlaceMarket, 0, 0, 153}}, 3, 6.5f, 80, 0, 0, 1.45f, true},
-    {{{kPlaceArena, 0, 0, 30}, {kPlaceLake, 0, -40, 7}, {kPlaceMarket, 0, -4, 24}, {kPlaceOrchard, 0, 2, 18}},
+    {{{kPlaceArena, 0, 0, 30}, {kPlaceLake, 0, -25.75f, 7}, {kPlaceMarket, 0, -4, 24}, {kPlaceOrchard, 0, 2, 18}},
      4, 5.5f, 66, 6, 3, 1.3f, false},
-    {{{kPlaceArena, 0, 0, 24}, {kPlaceOrchard, -4, 6, 10}, {kPlaceMarket, 0, -4, 16}, {kPlaceLake, -20, -60, 4}},
+    {{{kPlaceArena, 0, 0, 24}, {kPlaceOrchard, -4, 6, 10}, {kPlaceMarket, 0, -4, 16}, {kPlaceLake, -20, -45.75f, 4}},
      4, 4.8f, 56, 10, 4, 1.2f, false},
     {{{kPlaceArena, 0, 0, 30}, {kPlaceOrchard, 0, 0, 22}, {kPlaceStone, 0, 0, 20}, {kPlaceMarket, 0, 0, 14}},
      4, 4.2f, 50, 13, 6, 1.1f, false},

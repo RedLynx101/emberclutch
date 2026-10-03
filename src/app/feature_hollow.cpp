@@ -213,29 +213,55 @@ bool deeper(App& app, vext::Stage& st, int floor) {
 }
 
 // ---------------------------------------------------------------------------- the feature
+constexpr u8 kKeeperFolk = 0, kDoorFolk = 1;  // (Folk ids: Tove, and the cave door)
+
 int folk(const App& app, const Valley& v, Vec3 near, float radius, vext::Folk* out, int cap) {
     if (cap < 1 || !v.place(kPlaceHollow)) return 0;
     story::Spot away;  // (the story has her elsewhere: at the Vault after your first glide, D137)
     if (story::spotOf(app.game, story::kPTove, nowLocal(app), away)) return 0;
+    int n = 0;
     vext::Folk& f = out[0];
     f.look = keeperLook(v);
-    if (std::hypot(f.look.at.x - near.x, f.look.at.y - near.y) > radius) return 0;
-    f.shown = true;
-    f.name = str::kHollowKeeper;
-    f.prompt = str::kPromptHollow;
-    f.id = 0;
-    f.voice = 1;
-    f.pitch = 1.4f;
-    f.person = story::kPTove;
-    f.reach = 2.6f;
-    f.clip = "sit_ground";  // (sat by her camp, getting up to wave as you come: workstream D)
-    return 1;
+    if (std::hypot(f.look.at.x - near.x, f.look.at.y - near.y) <= radius) {
+        f.shown = true;
+        f.name = str::kHollowKeeper;
+        f.prompt = str::kPromptHollow;
+        f.id = kKeeperFolk;
+        f.voice = 1;
+        f.pitch = 1.4f;
+        f.person = story::kPTove;
+        f.reach = 2.6f;
+        f.clip = "sit_ground";  // (sat by her camp, getting up to wave as you come: workstream D)
+        ++n;
+    }
+    // The cave door (1.0.1): the way down looks like the door's to open, and A did nothing there. A at it takes
+    // you over to Tove, who sends you down as ever.
+    if (n < cap) {
+        vext::Folk& d = out[n];
+        d = vext::Folk{};
+        d.look.at = at3(v, hollow::wildDoor());
+        if (std::hypot(d.look.at.x - near.x, d.look.at.y - near.y) <= radius) {
+            d.shown = false;
+            d.name = str::kHollowTitle;
+            d.prompt = str::kPromptHollowDoor;
+            d.id = kDoorFolk;
+            d.reach = 3.4f;
+            ++n;
+        }
+    }
+    return n;
 }
 
 void act(App& app, const vext::Folk& who, vext::Stage& st) {
     showTip(app, tips::kTipHollow);
     Hollow& s = ho();
-    (void)who;
+    if (who.id == kDoorFolk && st.valley) {  // from the cave door: over to her camp, before her
+        const r3d::PersonView tove = keeperLook(*st.valley);
+        const Vec3 fwd{std::sin(tove.heading), -std::cos(tove.heading), 0};
+        st.you = tove.at + fwd * 2.0f;
+        st.youHeading = std::atan2(tove.at.x - st.you.x, -(tove.at.y - st.you.y));
+        st.pal = st.you + Vec3{fwd.y, -fwd.x, 0} * 1.8f;
+    }
     if (story::hasImportantTalk(app.game, story::kPTove, nowLocal(app))) {  // the story's Tove first (D137)
         startStoryTalk(app, story::kPTove);
     } else {

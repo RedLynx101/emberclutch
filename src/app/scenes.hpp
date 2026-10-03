@@ -52,7 +52,7 @@ const char* challengeMusic(const App& app);
 // The valley's music near a 1.0 place with its own (Suno batch 4, as each file arrives); null: the valley's.
 const char* valleyPlaceMusic(const App& app);
 // Scripted runs (autotest): straight into a cup; the challenges play themselves while on.
-void openChallengeCup(App& app, int challenge, int cup);
+void openChallengeCup(App& app, int challenge, int cup, int from = -1);  // (from: the board's place, else the challenge's own)
 void setChallengeAutoplay(bool on);
 // What the valley lends them (scene_valley.cpp): its landscape once loaded (nullptr before), its
 // sky for the time of day (the top, the horizon and fog, the light on the land).

@@ -187,6 +187,7 @@ ndspWaveBuf g_stingerBufs[kStingerSlices];
 Clip g_clips[static_cast<int>(Sfx::Count)][kMaxTakes];
 u8 g_takes[static_cast<int>(Sfx::Count)] = {};     // takes loaded
 u8 g_nextTake[static_cast<int>(Sfx::Count)] = {};  // the one to play next
+CueSink g_cue = nullptr;                            // the trailer's cue sheet (autotest film)
 ndspWaveBuf g_sfxBufs[kSfxCount][kSfxSlices];
 int g_nextSfx = 0;
 Clip g_beds[static_cast<int>(Bed::Count)];
@@ -492,6 +493,7 @@ void playMusic(const char* slug) {
     if (!g_ok) return;
     const char* s = slug ? slug : "";
     if (std::strcmp(s, g_wanted) == 0) return;
+    if (g_cue) g_cue("music", s[0] ? s : "-", 1.0f, 1.0f, 0.0f);
     LightLock_Lock(&g_lock);
     std::snprintf(g_wanted, sizeof(g_wanted), "%s", s);
     LightLock_Unlock(&g_lock);
@@ -562,6 +564,7 @@ bool hasMusic(const char* slug) {
 
 void playStinger(const char* slug) {
     if (!g_ok || !slug) return;
+    if (g_cue) g_cue("stinger", slug, 1.0f, 1.0f, 0.0f);
     LightLock_Lock(&g_lock);
     std::snprintf(g_stingerWanted, sizeof(g_stingerWanted), "%s", slug);
     g_stingerReq = true;
@@ -581,7 +584,8 @@ void playSfx(Sfx s, float pitch, float gain) {
         }
         return;
     }
-    const Clip& c = g_clips[i][g_nextTake[i]];
+    const int take = g_nextTake[i];
+    const Clip& c = g_clips[i][take];
     g_nextTake[i] = static_cast<u8>((g_nextTake[i] + 1) % g_takes[i]);  // takes in turn
     // A free channel if there is one, else the one used longest ago.
     int slot = g_nextSfx;
@@ -602,6 +606,14 @@ void playSfx(Sfx s, float pitch, float gain) {
             gain *= t.gain;
             lowpass = t.lowpassHz;
         }
+    }
+    if (g_cue) {
+        char file[40];
+        if (take == 0)
+            std::snprintf(file, sizeof(file), "%s", kSfxFiles[i]);
+        else
+            std::snprintf(file, sizeof(file), "%s-%d", kSfxFiles[i], take + 1);
+        g_cue("sfx", file, pitch, gain, lowpass);
     }
     if (lowpass > 0.0f)
         ndspChnIirBiquadSetParamsLowPassFilter(ch, lowpass, 0.707f);  // turns the channel's filter on
@@ -657,9 +669,20 @@ void playLetter(char c, float pitch, float gain) {
     setupChannel(ch, 1, static_cast<long>(clip.rate * pitch));
     ndspChnIirBiquadSetEnable(ch, false);
     setMix(ch, g_sfxVol * gain * 0.7f);
+    if (g_cue) {
+        char letter[16];
+        std::snprintf(letter, sizeof(letter), "v%d/%c", g_voice, lower);
+        g_cue("letter", letter, pitch, gain * 0.7f, 0.0f);  // (its first 2,600 frames, at the clip's rate)
+    }
     const u32 frames = clip.frames < 2600 ? clip.frames : 2600;  // just the letter's start: a quick blip
     queueSlices(ch, clip.data, 1, frames, g_sfxBufs[slot], 1);
 }
+
+void setCueSink(CueSink sink) { g_cue = sink; }
+
+const char* bedFile(Bed b) { return kBedFiles[static_cast<int>(b)]; }
+
+float bedLevel(Bed b) { return g_bedLevel[static_cast<int>(b)] * kBedGain[static_cast<int>(b)]; }
 
 void setBed(Bed b, float level) {
     const int i = static_cast<int>(b);

@@ -14,6 +14,7 @@ draw = ImageDraw.Draw(sheet)
 for i, p in enumerate(paths):
     x, y = (i % cols) * 400, (i // cols) * 262
     sheet.paste(Image.open(p).convert("RGB"), (x, y))
-    draw.text((x + 6, y + 245), os.path.basename(p).rsplit("_", 1)[0], fill=(245, 196, 81))
+    name = os.path.splitext(os.path.basename(p))[0]
+    draw.text((x + 6, y + 245), name[:-4] if name.endswith("_top") else name, fill=(245, 196, 81))
 sheet.save(out)
 print(f"[film] {len(paths)} reels -> {out}")

@@ -61,9 +61,16 @@ before a change, compare after.
 | One run (a `/tmp/ec-autotest.*` folder in portable mode: `user/config`, `user/sdmc`, `user/log`) | `tools/wsl/autotest.sh` |
 | The PowerShell side (paths, saves, PNGs, sheets, memory check) | `tools/autotest.ps1 -Headless` |
 
-The DSP firmware (`dspfirm.cdc`, dumped from a 3DS) is copied from Azahar's Windows SD card
-into each run. Without it ndsp doesn't start and the game runs with the sound off ("AUDIO OFF"
-in the overlay), so the audio code wouldn't be tested.
+The DSP firmware (`dspfirm.cdc`) is copied from Azahar's Windows SD card into each run. Without
+it ndsp doesn't start and the game runs with the sound off ("AUDIO OFF" in the overlay), so the
+audio code wouldn't be tested. Azahar's DSP is high-level emulation: the file is only looked for,
+never run, so the one on this PC (a placeholder) starts the sound as well as a dump would.
+
+**It goes through %TEMP%** (2026-10-02, the trailer's cue sheets): a PowerShell started by a packaged
+app (the Claude desktop app) can see that app's virtual `%APPDATA%`, which WSL can't, and the file
+sat only there. `autotest.ps1` passed WSL a path it couldn't open, and every headless run until
+then was silent without a word. Both PowerShell runners now copy it to `%TEMP%\emberclutch-dsp\`
+first, and `autotest.sh` warns if a `--dsp` path can't be opened.
 
 ### Keeping it off the desktop
 

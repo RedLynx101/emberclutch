@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-10-02 — The trailer, V4-V5: the cut
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D154 | **The trailer is cut from 6x footage with the game's own sounds.** No install: Azahar renders at `resolution_factor` 6 on an Xvfb display the layout's exact size (single screen 2400x1440, side by side 4320x1440); the game, filming, hands over each frame (`film/ready`, `film/ack`) and waits while `tools/wsl/grab.py` reads the display with libX11 into the PC's own ffmpeg through WSL interop (and sizes Azahar's window itself: with no window manager its fullscreen request did nothing). The game writes a cue sheet per reel (every sound it starts, the beds' levels, the stylus, by frame) and the edit plays those sounds on those frames. Every headless run had been silent (the DSP firmware sat in the Claude app's virtual `%APPDATA%`, which WSL can't see): both runners copy it through `%TEMP%` now. `tools/film/edit.py` makes the 1:27 trailer (title-theme, skyreach from its bar-4 build with its drums on the take-off, a hush for the lanterns, title-theme's close under the end card; Lily's lines on their beats; the title and end card in the title screen's look; -14 LUFS, -1 dBTP) and the 33-second vertical cut; `thumbs.py` three thumbnails; `qa.py` checks a render frame by frame. Shots changed: the valley's reveal (a crane past the waterfall: the old one met fog), the lanterns at full night (the village, then home), the Dragondex's taps, the egg and the hatching longer | Noah: "Review done. Continue, you got this. Report back to me with the full thing"; on the footage: "Still pixelated, so work with that how you will. Whatever works best. You can use the camera from the players perspective and/or free cam as desired" | Approved (the cut: Noah's review) |
+
 ## 2026-10-02 — The trailer, V1-V3: the footage and the voices
 
 | # | Decision | Why | Status |

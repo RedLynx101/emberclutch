@@ -26,7 +26,14 @@ key START
 wait 0.5
 tap 160 136
 wait 1
+# (each dragon met, tapped in turn: the Pouncer, the Curlstone, the rare Crestwing, the Pouncer again)
 film start s15_dex both
-wait 3.5
+wait 0.7
+tap 141 83
+wait 1.1
+tap 284 105
+wait 1.1
+tap 141 39
+wait 1.0
 film stop
 quit

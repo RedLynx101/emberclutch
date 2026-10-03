@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -69,7 +70,18 @@ u8* g_fbBottom = nullptr;
 // columns, bottom to top, BGR), at a fixed 1/60 s a frame (main.cpp) so the footage plays at its own pace.
 FILE* g_filmTop = nullptr;
 FILE* g_filmBottom = nullptr;
-bool g_filmArmed = false, g_filmStopping = false;
+bool g_filmOn = false, g_filmArmed = false, g_filmStopping = false;
+// Or, with film/grab.on (tools/wsl/autotest.sh --grab), the frames read off the emulator's display at its
+// internal resolution (tools/wsl/grab.py): after each frame the game waits for the grabber's word.
+bool g_filmGrab = false, g_filmGrabGone = false;
+std::string g_filmName;
+int g_filmIndex = 0;
+// And its cue sheet, film/<name>.cues: "<frame> <kind> <file> <pitch> <gain> <lowpass Hz>" for every sound
+// the game starts while filming (audio::setCueSink), and the beds' levels as they change, so the edit can
+// put the game's own sounds under the frames they belong to.
+FILE* g_filmCues = nullptr;
+int g_filmFrame = 0;  // the frame being made (counted as each is finished)
+float g_bedLogged[static_cast<int>(audio::Bed::Count)] = {};
 u8* g_filmFbTop = nullptr;
 u8* g_filmFbBottom = nullptr;
 float g_view[7] = {-1};      // the free camera's last pose set by view or camera (place, eye, target)
@@ -78,8 +90,48 @@ float g_camFrom[7] = {-1};   // a camera move's start
 void filmClose() {
     if (g_filmTop) std::fclose(g_filmTop);
     if (g_filmBottom) std::fclose(g_filmBottom);
-    g_filmTop = g_filmBottom = nullptr;
-    g_filmArmed = g_filmStopping = false;
+    if (g_filmCues) std::fclose(g_filmCues);
+    g_filmTop = g_filmBottom = g_filmCues = nullptr;
+    audio::setCueSink(nullptr);
+    g_filmOn = g_filmArmed = g_filmStopping = false;
+}
+
+void filmCue(const char* kind, const char* name, float pitch, float gain, float lowpassHz) {
+    if (g_filmCues) std::fprintf(g_filmCues, "%d %s %s %.3f %.3f %.0f\n", g_filmFrame, kind, name, pitch, gain, lowpassHz);
+}
+
+// The grabber's turn (tools/wsl/grab.py): two vblanks so the frame is on the screens (the swap comes at the
+// next one), then film/ready says which frame it is and the game waits, a vblank at a time, for film/ack to
+// name it. A grabber that has gone (film/grab.on removed) is given up on: the rest isn't filmed.
+void filmHandOver() {
+    gspWaitForVBlank();
+    gspWaitForVBlank();
+    char line[96];
+    std::snprintf(line, sizeof(line), "%s %d\n", g_filmName.c_str(), g_filmIndex);
+    if (FILE* f = std::fopen("sdmc:/3ds/emberclutch/film/ready.tmp", "wb")) {
+        std::fputs(line, f);
+        std::fclose(f);
+        std::remove("sdmc:/3ds/emberclutch/film/ready");
+        std::rename("sdmc:/3ds/emberclutch/film/ready.tmp", "sdmc:/3ds/emberclutch/film/ready");
+    }
+    // (no vblank count for a deadline: with the frame limiter off they fly by faster than the grabber's
+    // ffmpeg starts. It takes film/grab.on away when it stops, so that's what ends a wait in vain.)
+    bool answered = false, there = true;
+    for (int i = 1; !answered && there; ++i) {
+        gspWaitForVBlank();
+        if (FILE* a = std::fopen("sdmc:/3ds/emberclutch/film/ack", "rb")) {
+            char got[96] = {};
+            if (std::fgets(got, sizeof(got), a)) answered = std::strcmp(got, line) == 0;  // (the same "<reel> <frame>")
+            std::fclose(a);
+        }
+        if (!answered && i % 300 == 0) {
+            FILE* on = std::fopen("sdmc:/3ds/emberclutch/film/grab.on", "rb");
+            there = on != nullptr;
+            if (on) std::fclose(on);
+        }
+    }
+    if (!answered) g_filmGrab = false, g_filmGrabGone = true;
+    ++g_filmIndex;
 }
 
 // film start <name> [both] | film stop | film clean on|off (the top screen's interface hidden: app.film)
@@ -89,12 +141,30 @@ void filmCommand(App& app, const char* rest) {
     if (std::strcmp(word, "start") == 0 && name[0]) {
         filmClose();
         mkdir("sdmc:/3ds/emberclutch/film", 0777);
-        char path[128];
-        std::snprintf(path, sizeof(path), "sdmc:/3ds/emberclutch/film/%s_top.raw", name);
-        g_filmTop = std::fopen(path, "wb");
-        if (std::strcmp(more, "both") == 0) {
-            std::snprintf(path, sizeof(path), "sdmc:/3ds/emberclutch/film/%s_bottom.raw", name);
-            g_filmBottom = std::fopen(path, "wb");
+        g_filmOn = true;
+        g_filmName = name;
+        g_filmIndex = 0;
+        g_filmFrame = 0;
+        char cues[128];
+        std::snprintf(cues, sizeof(cues), "sdmc:/3ds/emberclutch/film/%s.cues", name);
+        g_filmCues = std::fopen(cues, "wb");
+        if (g_filmCues) {
+            const char* now = audio::currentMusic();
+            std::fprintf(g_filmCues, "0 music-now %s 1.000 %.3f 0\n", now && now[0] ? now : "-", audio::musicSeconds());
+            audio::setCueSink(filmCue);
+        }
+        for (float& l : g_bedLogged) l = -1.0f;
+        FILE* on = std::fopen("sdmc:/3ds/emberclutch/film/grab.on", "rb");
+        g_filmGrab = on != nullptr && !g_filmGrabGone;
+        if (on) std::fclose(on);
+        if (!g_filmGrab) {
+            char path[128];
+            std::snprintf(path, sizeof(path), "sdmc:/3ds/emberclutch/film/%s_top.raw", name);
+            g_filmTop = std::fopen(path, "wb");
+            if (std::strcmp(more, "both") == 0) {
+                std::snprintf(path, sizeof(path), "sdmc:/3ds/emberclutch/film/%s_bottom.raw", name);
+                g_filmBottom = std::fopen(path, "wb");
+            }
         }
     } else if (std::strcmp(word, "stop") == 0) {
         g_filmStopping = true;
@@ -566,16 +636,32 @@ Input next(App& app) {
         g_lastX = x;
         g_lastY = y;
     }
+    // (the cue sheet: where the stylus is, each frame it's down, so the edit can show the touch)
+    if (g_filmCues && g_filmOn && !g_filmStopping && touching)
+        std::fprintf(g_filmCues, "%d touch %.0f,%.0f 1.000 1.000 0\n", g_filmFrame, x, y);
     g_wasTouching = touching;
     if (g_at >= g_cmds.size() && !app.quit) app.quit = true;  // the script is over
     return in;
 }
 
 void beforeFrameEnd() {
-    if (g_filmTop && !g_filmStopping) {
+    if (g_filmOn && !g_filmStopping) {
         g_filmFbTop = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, nullptr, nullptr);
         g_filmFbBottom = g_filmBottom ? gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, nullptr, nullptr) : nullptr;
         g_filmArmed = true;
+        if (g_filmCues) {  // (the beds as they fade: a line when one has moved a little)
+            for (int b = 0; b < static_cast<int>(audio::Bed::Count); ++b) {
+                const float level = audio::bedLevel(static_cast<audio::Bed>(b));
+                const float was = g_bedLogged[b];
+                if (was < 0.0f || std::fabs(level - was) > 0.01f || (level == 0.0f && was != 0.0f)) {
+                    if (was >= 0.0f || level > 0.0f)
+                        std::fprintf(g_filmCues, "%d bed %s 1.000 %.3f 0\n", g_filmFrame,
+                                     audio::bedFile(static_cast<audio::Bed>(b)), level);
+                    g_bedLogged[b] = level;
+                }
+            }
+        }
+        ++g_filmFrame;  // (sounds from here on belong to the next frame)
     }
     if (g_pending.empty()) return;
     g_fbTop = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, nullptr, nullptr);
@@ -585,6 +671,10 @@ void beforeFrameEnd() {
 }
 
 void afterFrameBegin() {
+    if (g_filmArmed && g_filmGrab) {  // last frame, finished: on the screens for the grabber to read off
+        filmHandOver();
+        g_filmArmed = false;
+    }
     if (g_filmArmed) {  // last frame, finished now: onto the reel
         // (copied through the CPU first: written straight from the framebuffer, the emulator's file
         // service read its memory without the GPU's latest drawing, and moving shots came out shredded)
@@ -611,7 +701,7 @@ void afterFrameBegin() {
 
 bool shooting() { return g_active && !g_pending.empty(); }
 
-bool filming() { return g_active && g_filmTop != nullptr; }
+bool filming() { return g_active && g_filmOn; }
 
 void log(const char* fmt, ...) {
     if (!g_active) return;

@@ -23,11 +23,13 @@ hour 10
 valley
 wait 4
 film clean on
-# (a crane up and out from the den's door: low by the door looking out, then high over the meadow)
-view 0 0 10 2.5 0 60 3
+# (a crane up from the den's doorstep: the cliff's waterfall into its pool, the keeper's lodge and the
+# valley beyond in the morning haze. The den's frame: +x south, +y east; the falls 130 m north. The old
+# view east from the door met only fog: past 260 m the fog has everything)
+view 0 -8 18 3 -130 15 34
 wait 1.5
 film start s06_valley
-camera 6 0 0 50 30 0 170 0
+camera 6 0 -50 85 42 -128 18 28
 film stop
 key X
 wait 0.5
@@ -37,6 +39,6 @@ wait 3
 view 1 -6 -9 2.6 0 4 1.5
 wait 1
 film start s07_market
-camera 5 1 -5 -7.6 2.5 0 4 1.5
+camera 6.5 1 -5 -7.6 2.5 0 4 1.5
 film stop
 quit

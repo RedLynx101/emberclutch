@@ -2,7 +2,7 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): **1.0 released** (D152); the Universal-DB request sent (Noah); **the trailer at V3** (D153): the footage and seven voices on the review page for Noah's pick, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-02 · **Milestone:** **the road to 1.0 (D142, [plan](plan/release-1.0.md)): **1.0 released** (D152); the Universal-DB request sent (Noah); **the trailer cut, V5** (D154): 1:27 from 6x footage with the game's own sounds, Lily narrating, the vertical cut and three thumbnails, on the review page for Noah, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (private `RedLynx101/emberclutch`)
 
 ## Tooling: headless emulator checks (2026-09-30)
@@ -15,8 +15,32 @@
   Performance is still signed off on the 3DS: no emulator models its timing.
 - Found on the way: with the fixed clock, Azahar shifts the time by the PC's time zone (fixed by
   running it in UTC), and the async file reads and presentation made animations drift (off).
+- **Found 2026-10-02: every headless run had been silent.** The DSP firmware sat only in the Claude app's
+  virtual `%APPDATA%`, which WSL can't see; both runners now copy it through `%TEMP%`, and `autotest.sh`
+  warns when a `--dsp` path can't be opened (D154).
 
-## Now: the trailer, V3 done: the footage and the voices (2026-10-02)
+## Now: the trailer, cut (V4-V5, 2026-10-02)
+- **Noah:** Lily's voice; "Still pixelated, so work with that how you will. Whatever works best"; "Report back to
+  me with the full thing".
+- **The footage at 6x (D154):** `tools\film\capture.ps1` films `tests/film/*.txt` in Azahar at resolution
+  factor 6 (2400x1440 a screen), the game handing each frame to `tools/wsl/grab.py` (no install); 23 reels in
+  `build/film/grab/*.mkv`, each with its cue sheet (`build/film/runs/<script>/film/<reel>.cues`: the sounds the
+  game played, by frame). About 45 minutes for all eleven scripts, three at a time.
+- **The cut:** `py -3.12 tools/film/edit.py` (`--cut tall` the vertical one, `--preview`, `--stills t,t`,
+  `--check`) into `build/film/edit/trailer.mp4` (1:27, 1080p60, -14 LUFS) and `trailer.srt`, `shorts.mp4`
+  (0:33); `tools/film/qa.py` checks a render; `thumbs.py` makes `build/film/thumbs/` (three to pick from);
+  `narration.py` cuts Lily's six passages (three takes each, all heard back word for word by speech to text).
+- **Shots changed:** the valley's reveal (the waterfall), the lanterns at full night (the village, then home),
+  the Dragondex's taps, the egg and the hatching longer.
+- On the review page (version 27, collection `video2`, `plans` slugs `trailer-cut`, `trailer-shorts`,
+  `trailer-thumb`; `docs/plan/video-check-2.md`): a 720p preview (13.7 MB), the vertical cut, the thumbnails.
+  Two critique passes made: the opening's pushes (in on the cracking egg, wide on the burst), the take-off cut on
+  the action (the game's camera swing between is skipped), the night village lifted, the edit's own ambience
+  where the free camera muted the game's, the vertical cut's captions one at a time.
+- **Next:** Noah's notes on the cut and his thumbnail; then YouTube is his to upload (title, description,
+  chapters and tags in `docs/plan/trailer.md`).
+
+## Before: the trailer, V3 done: the footage and the voices (2026-10-02)
 - **Noah:** "go with your suggestions, you're the creative director"; the Universal Updater issue sent;
   "Finish V3, which is where I should review the voice samples, then switch you to max".
 - **The footage (D153):** the game's own 400x240 frames (Azahar's high-resolution dump needs a download):

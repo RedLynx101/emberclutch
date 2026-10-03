@@ -1,4 +1,4 @@
-# The video: a trailer of the game (planned; not made yet)
+# The video: a trailer of the game (cut: V5, 2026-10-02, for Noah's review)
 
 Noah, 2026-10-01: *"We will also plan on a well-crafted video you make of the game using various
 in-emulator camera shots and such (on a custom version of the game you build to do that)... You could
@@ -91,6 +91,32 @@ No story spoilers past the festival's lanterns; no champions or deep places.
   you to max after those are settled").
 - **V2:** the script and captions (`docs/plan/trailer-script.md`); seven voice samples
   (`tools/film/voice_samples.py`: six from the library and Noah's own cloned voice).
+- **V3 (Noah):** Lily's voice; "Still pixelated, so work with that how you will... You can use the camera from
+  the players perspective and/or free cam as desired."
+- **V4-V5, the cut (D154):**
+  - **6x, no install.** Azahar draws at `resolution_factor` 6 on an Xvfb display exactly the layout's size
+    (single screen 2400x1440; side by side 4320x1440 for the two-screen scripts). The game, filming, hands
+    over each frame (`film/ready`, `film/ack`) and waits while `tools/wsl/grab.py` reads it off the display
+    with libX11 and pipes it into the PC's own ffmpeg (WSL interop). With no window manager, the fullscreen
+    request does nothing, so the grabber sizes Azahar's window itself. 8x was no sharper than 6x once scaled
+    to 1080p; 6x is about 1-3 frames a second per run, three runs at once.
+  - **The cue sheets.** While filming, the game writes `film/<reel>.cues`: every effect (its take, pitch,
+    gain, muffling), stinger, music change, villager letter, the beds' levels and the stylus, on its frame.
+    The edit lays the game's own sounds on those frames.
+  - **Silent headless runs, fixed.** The DSP firmware sat in the Claude app's virtual `%APPDATA%`, which WSL
+    can't see, so every headless run had been silent; the runners now copy it through `%TEMP%`
+    (docs/tech/headless-emulator.md).
+  - **Shots changed:** the valley's reveal cranes up past the waterfall from the den's door (the old view east
+    met only fog); the lanterns at 22:00, the village's and then home's (`s14b_home`); the Dragondex taps
+    through the dragons met; the egg 6 s and the hatching 9.5 s.
+  - **The edit** (`tools/film/edit.py`): the music in three movements on its bar lines (title-theme from 0.62 s
+    in, so its bar 4 lands on the burst; skyreach from its bar-4 build, its drums on the take-off; after a
+    hush, title-theme's close from its bar 68, its last chord under the end card); the narration on its
+    beats, the music ducked under it; the cues' sounds and beds; the top screen 16:9 full-bleed, the care
+    and the Dex as a 3DS's two screens; the title and end card in the title screen's look; -14 LUFS,
+    -1 dBTP. `tools/film/qa.py` checks a render frame by frame; `narration.py` cuts Lily's passages into
+    lines (heard back by speech to text); `thumbs.py` the three thumbnails; `--cut tall` the 33-second
+    vertical cut.
 
 ## Steps and gates
 1. **V0, this plan.** Keep or Change it on the review page.
@@ -122,18 +148,18 @@ dragon-raising game for the 3DS: ...".)
 > neglected dragon only sulks until you make up.
 >
 > Download (free): https://github.com/RedLynx101/emberclutch/releases/latest
-> Universal Updater: search for "Emberclutch"
+> Universal Updater: search for "Emberclutch" (this line once it's listed)
 > The guide (PDF): (the release's guide link)
 > Source code (MIT): https://github.com/RedLynx101/emberclutch
 >
 > Chapters
 > 0:00 Hatching
-> 0:12 Caring
-> 0:24 Skyreach Valley
-> 0:38 Riding
-> 0:46 Battles, shows and races
-> 1:02 The Lantern Festival
-> 1:10 Get it
+> 0:14 Caring
+> 0:28 Skyreach Valley
+> 0:39 Riding
+> 0:50 Battles, shows and races
+> 1:03 The lanterns
+> 1:13 Get it
 >
 > Made by Noah Hicks, for Emi. Music by Noah Hicks (made with Suno); code and tools written with Claude
 > (Anthropic). Footage captured from the game running in the Azahar emulator.

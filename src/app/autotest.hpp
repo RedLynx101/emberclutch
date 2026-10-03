@@ -37,7 +37,10 @@
 //   quit                        leave (writes shots/done.txt)
 // The trailer's footage (docs/plan/trailer.md):
 //   film start <name> [both]    every frame of the top screen (both: the bottom too) appended raw to
-//                               sdmc:/3ds/emberclutch/film/<name>_top.raw, the game stepped 1/60 s a frame
+//                               sdmc:/3ds/emberclutch/film/<name>_top.raw, the game stepped 1/60 s a frame;
+//                               with film/grab.on (autotest.sh --grab) each frame handed to the grabber
+//                               instead, at the emulator's resolution; and its cue sheet, film/<name>.cues
+//                               (every sound started, the beds' levels and the stylus, by frame)
 //   film stop                   the reel closed
 //   film clean on|off           the top screen's interface hidden (app.film): names, hints, prompts, toasts
 //   camera <s> <place> <ex ey ez tx ty tz>   the free camera eased from its last view to this one in s seconds

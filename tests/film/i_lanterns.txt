@@ -25,18 +25,29 @@ tap 238 56
 wait 0.3
 key SELECT
 wait 0.5
-# Shot 14: the valley's lanterns lit, at night over Market Village.
+# Shot 14: the valley's lanterns lit, at night: Market Village (its windows lit, its festival lantern),
+# then home, the den's lantern glowing at its door. (Dusk at 20:30 was dim and grey: full night glows.)
 light
-hour 20.5
+hour 22
 valley
 wait 3
 film clean on
 travel 1
 wait 3
-# (close on the Market's lit festival lantern at dusk, pushing in slowly)
-view 1 -9 22 3.2 1.5 9.9 2.4
+# (low across the square at night toward the festival lantern, the lit houses behind)
+view 1 8 26 1.6 1.5 9.9 2.6
 wait 1.5
 film start s14_lanterns
-camera 6 1 -4 16 2.6 1.5 9.9 2.3
+camera 6 1 -6 18 2.2 1.5 9.9 2.4
+film stop
+key X
+wait 0.3
+travel 0
+wait 3
+# (the den's door: its lantern alight, you and your dragon beside it, pushing in to the glow)
+view 0 6 14 3 1.68 5.6 1.9
+wait 1.5
+film start s14b_home
+camera 5 0 2 9 2.2 1.68 5.6 1.9
 film stop
 quit

@@ -5,6 +5,10 @@
 #               [--speed <percent, 0 = as fast as it goes>] [--clock fixed|system] [--new3ds]
 #               [--dsp <dspfirm.cdc>] [--gpu <adapter name, e.g. NVIDIA>]
 #               [--scale <internal resolution factor, 1..10>] [--dump <video.mkv>]
+#               [--screen <WxH of the virtual display>] [--layout <Azahar layout_option>] [--fullscreen]
+#               [--grab <out prefix, a Windows path>] [--ffmpeg <ffmpeg.exe, a WSL path>]
+# --grab films the trailer at the emulator's internal resolution (tools/wsl/grab.py): the game, filming,
+# waits after each frame (autotest film start) until the frame has been read off the display.
 # --scale and --dump are for the trailer's footage (docs/plan/trailer.md): Azahar's own video dump,
 # every emulated frame at the internal resolution (both screens, the top above the bottom).
 # Every run gets its own emulator folder (config, SD card, log) under /tmp, so runs never share
@@ -14,7 +18,7 @@
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
-game="" script="" out="" save_in="" dsp="" gpu="" timeout=180 speed=0 clock=fixed new3ds=false scale=1 dump="" dump_format=matroska dump_encoder=libx264 dump_options="crf:12,preset:veryfast"
+game="" script="" out="" save_in="" dsp="" gpu="" timeout=180 speed=0 clock=fixed new3ds=false scale=1 screen=1280x1024 layout=0 fullscreen="" grab="" ffmpeg="" dump="" dump_format=matroska dump_encoder=libx264 dump_options="crf:12,preset:veryfast"
 fixed_time=1780308000  # 2026-06-01 10:00 on the 3DS clock: the same morning every run
 while (($#)); do
     case $1 in
@@ -29,6 +33,11 @@ while (($#)); do
         --clock) clock=$2; shift ;;
         --new3ds) new3ds=true ;;
         --scale) scale=$2; shift ;;
+        --screen) screen=$2; shift ;;
+        --layout) layout=$2; shift ;;
+        --fullscreen) fullscreen=-f ;;
+        --grab) grab=$2; shift ;;
+        --ffmpeg) ffmpeg=$2; shift ;;
         --dump) dump=$2; shift ;;
         --dump-encoder) dump_format=$2 dump_encoder=$3 dump_options=$4; shift 3 ;;
         *) echo "unknown option $1" >&2; exit 64 ;;
@@ -70,8 +79,10 @@ sd=$user/sdmc/3ds/emberclutch
 mkdir -p "$user/config" "$sd"
 cp "$game" "$run/game.3dsx"  # off /mnt/c: reading a 75 MB romfs across the bridge is slow
 cp "$script" "$sd/autotest.txt"
-# ndsp needs the DSP firmware dumped from a 3DS; without it the game runs with the sound off.
+# ndsp needs a dspfirm.cdc; without it the game runs with the sound off. (Said out loud: a path
+# that couldn't be opened from here once left every run silent without a word.)
 [[ -n $dsp && -f $dsp ]] && cp "$dsp" "$user/sdmc/3ds/dspfirm.cdc"
+[[ -n $dsp && ! -f $dsp ]] && echo "warning: no DSP firmware at $dsp (not visible from WSL?): the sound is off" >&2
 if [[ -n $save_in ]]; then
     for f in save.a save.b; do [[ -f $save_in/$f ]] && cp "$save_in/$f" "$sd/"; done
 fi
@@ -83,7 +94,7 @@ if [[ $clock == fixed ]]; then
     export TZ=UTC
 fi
 sed -e "s/@FRAME_LIMIT@/$speed/" -e "s/@NEW_3DS@/$new3ds/" \
-    -e "s/@INIT_CLOCK@/$init_clock/" -e "s/@INIT_TIME@/$fixed_time/" -e "s/@SCALE@/$scale/" -e "s|@DUMP_FORMAT@|$dump_format|" -e "s|@DUMP_ENCODER@|$dump_encoder|" -e "s|@DUMP_OPTIONS@|$dump_options|" \
+    -e "s/@INIT_CLOCK@/$init_clock/" -e "s/@INIT_TIME@/$fixed_time/" -e "s/@SCALE@/$scale/" -e "s/@LAYOUT@/$layout/" -e "s|@DUMP_FORMAT@|$dump_format|" -e "s|@DUMP_ENCODER@|$dump_encoder|" -e "s|@DUMP_OPTIONS@|$dump_options|" \
     "$here/qt-config.ini" > "$user/config/qt-config.ini"
 
 # WSLg hands every distro a Wayland display (and an X one) that show up on the Windows
@@ -104,15 +115,30 @@ start_ms=$(date +%s%3N)
 (cd "$run" && exec setsid bash -c '
     for _ in $(seq 30); do
         n=$((100 + RANDOM % 900))
-        Xvfb ":$n" -screen 0 1280x1024x24 -nolisten tcp 2> "$1/xvfb.txt" &
+        Xvfb ":$n" -screen 0 "${4}x24" -nolisten tcp 2> "$1/xvfb.txt" &
         sleep 0.3
         if kill -0 $! 2>/dev/null; then
             export DISPLAY=":$n"
-            if [[ -n $3 ]]; then exec "$2" -d "$3" "$1/game.3dsx"; else exec "$2" "$1/game.3dsx"; fi
+            echo ":$n" > "$1/display.txt"
+            args=()
+            [[ -n $5 ]] && args+=("$5")
+            [[ -n $3 ]] && args+=(-d "$3")
+            exec "$2" "${args[@]}" "$1/game.3dsx"
         fi
     done
-    echo "Xvfb did not start"; cat "$1/xvfb.txt"; exit 1' _ "$run" "$app" "${dump:+$run/dump.mkv}" > "$run/stdout.txt" 2>&1) &
+    echo "Xvfb did not start"; cat "$1/xvfb.txt"; exit 1' _ "$run" "$app" "${dump:+$run/dump.mkv}" "$screen" "$fullscreen" \
+    > "$run/stdout.txt" 2>&1) &
 emu_pid=$!
+grab_pid=""
+if [[ -n $grab ]]; then
+    # The trailer's frames, read off the display as the game hands each one over (tools/wsl/grab.py).
+    mkdir -p "$sd/film"
+    touch "$sd/film/grab.on"
+    for _ in $(seq 100); do [[ -f $run/display.txt ]] && break; sleep 0.1; done
+    python3 "$here/grab.py" --display "$(cat "$run/display.txt")" --film "$sd/film" --size "$screen" \
+        --out "$grab" --ffmpeg "$ffmpeg" > "$run/grab.txt" 2>&1 &
+    grab_pid=$!
+fi
 
 status=2
 deadline=$(( $(date +%s) + timeout ))
@@ -122,6 +148,11 @@ while (( $(date +%s) < deadline )); do
     sleep 0.25
 done
 [[ $status == 0 ]] && sleep 0.5  # the last picture's file finishing
+if [[ -n $grab_pid ]]; then
+    touch "$sd/film/grab.end"  # (the grabber closes its last reel and stops)
+    for _ in $(seq 600); do kill -0 "$grab_pid" 2>/dev/null || break; sleep 0.1; done
+    kill "$grab_pid" 2>/dev/null || true
+fi
 ms=$(( $(date +%s%3N) - start_ms ))
 elapsed=$(printf "%d.%01d" $((ms / 1000)) $((ms % 1000 / 100)))
 
@@ -134,6 +165,7 @@ mkdir -p "$out/save"
 for f in save.a save.b; do [[ -f $sd/$f ]] && cp "$sd/$f" "$out/save/"; done
 [[ -f $user/log/azahar_log.txt ]] && cp "$user/log/azahar_log.txt" "$out/"
 cp "$run/stdout.txt" "$out/emulator_stdout.txt"
+[[ -f $run/grab.txt ]] && cp "$run/grab.txt" "$out/grab.txt"
 if [[ -n $dump ]]; then
     # (the emulator first: the dump's last frames are written as it closes)
     kill -TERM -- -"$emu_pid" 2>/dev/null || true

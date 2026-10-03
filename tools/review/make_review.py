@@ -31,11 +31,11 @@ OUT = ROOT / "build" / "review"
 MANIFEST = ROOT / "tools" / "audio" / "sfx_manifest.json"
 SYNTH_COMMIT = "4014997"  # (romfs/sfx before batch 4: the synthesised stand-ins)
 RUN_READY = True  # the run's checklist on the page (once the build is ready for the 3DS)
-RUN_DOC = "docs/plan/video-check-1.md"  # the run's steps
-RUN_KEY = "video1"      # its database collection (each run its own: run 31's notes stay under `run31`)
+RUN_DOC = "docs/plan/video-check-2.md"  # the run's steps
+RUN_KEY = "video2"      # its database collection (each run its own: run 31's notes stay under `run31`)
 LABS = []  # banner labs this run (run 28's eight all held: D147; 28G is the game's banner, D148)
 SHOW_SOUNDS = False    # the sounds and music sections (Noah: not needed for run 21)
-PAGE_TITLE = "Emberclutch: Skyreach Valley, the trailer (V3): the footage and the voices"  # (the long run's own page was "Emberclutch Review")
+PAGE_TITLE = "Emberclutch: Skyreach Valley, the trailer (V5): the cut"  # (the long run's own page was "Emberclutch Review")
 BATCHES = ["docs/audio/sfx-batch-4.json", "docs/audio/sfx-life-prompts.json", "docs/audio/sfx-duels-prompts.json"]
 
 # Where each sound plays (what to listen for), by slug.
@@ -517,7 +517,7 @@ def guide() -> list[dict]:
 # The trailer's V3 check (docs/plan/trailer.md): the voice samples (tools/film/voice_samples.py) to pick from,
 # and every reel's middle frame and a small preview (tools/film/capture.ps1). Collection `plans` (slugs
 # trailer-voice, trailer-footage).
-VIDEO = True
+VIDEO = False  # (V3's footage and voices: the trailer below supersedes it)
 VIDEO_HEAD = {"nav": "The trailer", "kicker": "R6 · V3", "title": "The trailer's footage, and its voice",
               "intro": "Every shot captured from the game itself, and seven voices reading the same two lines. "
                        "Pick a voice; mark the footage Keep or Change."}
@@ -559,6 +559,40 @@ def video() -> list[dict]:
              "images": images}]
 
 
+# The trailer's V5 check (docs/plan/trailer.md): the cut (a 720p preview, under the page's 15 MB a file; the full
+# 1080p one is sent to Noah directly), the vertical cut for Shorts, and the three thumbnails. Collection `plans`
+# (slugs trailer-cut, trailer-shorts, trailer-thumb).
+TRAILER = True
+TRAILER_HEAD = {"nav": "The trailer", "kicker": "R6 · V5", "title": "The trailer, cut",
+                "intro": "Every frame from the game, rendered at six times the 3DS's resolution, in its own music, its own "
+                         "sounds and Lily's voice. Watch it, mark Keep or Change, and pick a thumbnail."}
+
+
+def trailer() -> list[dict]:
+    tdir = OUT / "video" / "trailer"
+    tdir.mkdir(parents=True, exist_ok=True)
+    edit = ROOT / "build" / "film" / "edit"
+    shutil.copy(edit / "trailer_720.mp4", tdir / "trailer.mp4")
+    shutil.copy(edit / "shorts_720.mp4", tdir / "shorts.mp4")
+    images = []
+    for name, cap in [("a_fly", "A: the wings"), ("b_hatch", "B: the hatchling"), ("c_egg", "C: the egg")]:
+        shutil.copy(ROOT / "build" / "film" / "thumbs" / f"{name}.jpg", tdir / f"{name}.jpg")
+        images.append({"src": f"video/trailer/{name}.jpg", "cap": cap})
+    video = ('<video controls preload="metadata" playsinline src="video/trailer/{src}" '
+             'style="width:100%;{extra}border-radius:8px;background:#000"></video>')
+    return [{"slug": "trailer-cut", "kicker": "R6 · V5", "title": "The trailer (1:27)",
+             "body": video.format(src="trailer.mp4", extra="") +
+             "<p>A 720p preview. The full file (1080p, 60 frames a second, for YouTube) is "
+             "<code>build/film/edit/trailer.mp4</code>, with its captions in <code>trailer.srt</code>.</p>"},
+            {"slug": "trailer-shorts", "kicker": "R6 · V5", "title": "The vertical cut (0:33, for Shorts)",
+             "body": video.format(src="shorts.mp4", extra="max-width:360px;display:block;margin:0 auto;") +
+             "<p>The same shots, lines and sounds, upright: the hatching as the hook, the take-off on the drums, "
+             "the montage, the end card.</p>"},
+            {"slug": "trailer-thumb", "kicker": "pick one", "title": "The thumbnail",
+             "body": "<p>Three to pick from, shown as YouTube will (1280x720). Put your pick (A, B or C) in the note.</p>",
+             "images": images}]
+
+
 ANSWERS = """**Max or xhigh for the video?** Not much better for building it: the film build, the capture and the titles
 page are engineering, and xhigh does those as well. Where max earns its cost is the edit, looking hard at every
 pass's frames and fixing the worst over more passes. So xhigh to build and capture, max for the edit's critique
@@ -588,8 +622,9 @@ def main() -> None:
     data = {"sounds": sounds() + made_sounds() if SHOW_SOUNDS else [], "music": music() if SHOW_SOUNDS else [],
             "run": run_list() if RUN_READY else {}, "dragons": dragons() if DRAGONS else [],
             "people": {}, "looks": looks() if LOOKS else {},
-            "plans": video() if VIDEO else (guide() if GUIDE else (isles() if ISLES else banners())),
-            "plansHead": VIDEO_HEAD if VIDEO else (GUIDE_HEAD if GUIDE else (ISLES_HEAD if ISLES else PLANS_HEAD))}
+            "plans": trailer() if TRAILER else (video() if VIDEO else (guide() if GUIDE else (isles() if ISLES else banners()))),
+            "plansHead": TRAILER_HEAD if TRAILER else (VIDEO_HEAD if VIDEO else (GUIDE_HEAD if GUIDE else
+                                                                                   (ISLES_HEAD if ISLES else PLANS_HEAD)))}
     page = (Path(__file__).with_name("review_template.html").read_text(encoding="utf-8")
             .replace("/*DATA*/null", json.dumps(data, ensure_ascii=False))
             .replace("/*TITLE*/", PAGE_TITLE)

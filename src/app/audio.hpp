@@ -89,6 +89,15 @@ void playStinger(const char* slug);
 void playSfx(Sfx s, float pitch = 1.0f, float gain = 1.0f);  // gain: 0..1 of the SFX volume
 void setVolumes(u8 music, u8 sfx);  // 0..100
 
+// The trailer's cue sheet (autotest `film`, docs/plan/trailer.md): while a sink is set, every sound effect
+// (the take's file, its pitch and gain, any muffling), stinger, change of music and villager's letter is
+// told to it as it starts, so the edit can lay the game's own sounds under the frames they belong to.
+using CueSink = void (*)(const char* kind, const char* name, float pitch, float gain, float lowpassHz);
+void setCueSink(CueSink sink);
+// A bed's file and its level now (its gain included, as it fades), for the cue sheet.
+const char* bedFile(Bed b);
+float bedLevel(Bed b);
+
 // Call once per frame from the main thread (fades, volume).
 void update(float dt);
 

@@ -80,8 +80,15 @@ if ($Headless) {
         "--clock", $(if ($SystemClock) { "system" } else { "fixed" }))
     if ($saveIn -and (Test-Path $saveIn)) { $wslArgs += @("--save-in", (ConvertTo-WslPath $saveIn)) }
     if ($New3DS) { $wslArgs += "--new3ds" }
-    $dsp = Join-Path $env:APPDATA "Azahar\sdmc\3ds\dspfirm.cdc"  # the sound (ndsp needs it)
-    if (Test-Path $dsp) { $wslArgs += @("--dsp", (ConvertTo-WslPath $dsp)) }
+    # The sound: ndsp needs a dspfirm.cdc on the SD card. Copied to %TEMP% first: this PowerShell can see a
+    # packaged app's virtual %APPDATA% that WSL can't, and a path WSL can't open left every run silent.
+    $dsp = Join-Path $env:APPDATA "Azahar\sdmc\3ds\dspfirm.cdc"
+    if (Test-Path $dsp) {
+        $stage = Join-Path $env:TEMP "emberclutch-dsp"
+        New-Item -ItemType Directory -Force $stage | Out-Null
+        Copy-Item $dsp (Join-Path $stage "dspfirm.cdc") -Force
+        $wslArgs += @("--dsp", (ConvertTo-WslPath (Join-Path $stage "dspfirm.cdc")))
+    }
     & wsl.exe @wslArgs | ForEach-Object { "headless: $_" }
     $finished = $LASTEXITCODE -eq 0
     $shots = Join-Path $raw "shots"

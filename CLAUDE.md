@@ -37,6 +37,9 @@ session, and add new decisions to the log.
   Then `tools\shotdiff.ps1 <script> -Save` before a change and `tools\shotdiff.ps1 <script>`
   after it lists only the pictures that changed (diffs in `build/autotest/<script>/diff/`).
   Setup or repair: `tools\wsl\install.ps1`. Never for performance: sign that off on the 3DS.
+- Trailer (docs/plan/trailer.md): `tools\film\capture.ps1` films `tests/film/*.txt` at 6x, each reel with a
+  cue sheet of the sounds the game played (`-Native`: the 400x240 frames); `py -3.12 tools/film/edit.py` cuts it
+  (`--cut tall`, `--stills 12.5,40`, `--check`, `--preview`); `tools/film/qa.py` checks a render.
 - Push to 3DS: `tools\run.ps1 -Address <ip>` (Homebrew Launcher, press Y) or
   `tools\deploy_ftp.ps1 -FtpHost <ip>` (ftpd, port 5000)
 - Azahar keeps a stale touch map if its window is resized, maximized or fullscreened while

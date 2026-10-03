@@ -26,6 +26,29 @@ the game and the guide; the captions carry the beats on screen. Every picture is
 
 About 860 characters of narration in all.
 
+## As cut (V5, `tools/film/edit.py`)
+1:27 in all. The pictures are 6x renders now (not the 400x240 above); the words are as written, line 2 split
+at its pause.
+
+| At | Picture | Music | Lily |
+|---|---|---|---|
+| 0:00.8 | The egg by firelight, a slow push | title-theme (from 0.62 s in) | *In a valley above the clouds...* |
+| 0:06.3 | The hatching: the burst at 0:09.2 on bar 4, the first cry at 0:11.3 | | *Keep it warm, and one morning...* (the burst) *someone says hello.* |
+| 0:11.9 | The title over the hatchling | the strings' entry (bar 5) | |
+| 0:14.6 | Pet, feed (a bar each), brush, bathe (a half bar): both screens | | *Pet it. Feed it. Brush it. Bathe it.* |
+| 0:22.7 | Day, evening, night, morning, dissolving | | *Day by day, in real time, it grows.* |
+| 0:28.1 | Through a white bloom: the crane past the waterfall | | *Then the door opens on Skyreach Valley.* (*A valley to explore*) |
+| 0:33.5 | The Market on its lead | (title-theme dropping away at 0:37.8) | *Walk it on its lead. Meet the villagers. And when it's grown...* |
+| 0:39.6 | The hop on; the take-off | skyreach's bar-4 build, its drums at 0:40.9 | *climb on.* |
+| 0:42.7 | The flight; the isles at golden hour | | (*Raise it. Ride it.*) |
+| 0:50.1 | Battle, show, the Dragondex, rings, the catch | a shot every bar or bar and a half | *Battle in the league. Shine on the show stage.* (*Fourteen kinds of dragon*) *Race the Sky Rings. Or just go fishing.* |
+| 1:03.1 | The village's lanterns at night | a hush (the last downbeat ringing on) | *And when the lanterns are lit, the whole valley glows.* |
+| 1:05.8 | Home's lantern; asleep by the hearth | title-theme's close (bar 68) | *Nothing ever dies here. A forgotten dragon only sulks, until you make up.* |
+| 1:13.9 | The end card: the wordmark, the egg aglow, the lines | its last chord (bar 72) | *Emberclutch: Skyreach Valley. Free, for the Nintendo 3DS.* |
+
+The vertical cut (0:33, `--cut tall`): the burst at 0:00.5, the care, the take-off on the drums at 0:10.9, the
+montage a bar a shot, the end card on the last chord; its lines shown as captions.
+
 ## The voice samples
 Each candidate reads the same two lines, the opening and the close:
 

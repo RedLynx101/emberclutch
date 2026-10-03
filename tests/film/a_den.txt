@@ -10,10 +10,14 @@ tips
 hour 21
 wait 1.5
 film clean on
+# (the egg long enough for the trailer's first line; the hatch to the hatchling's looking about,
+# for the title over it)
 film start s01_egg
-drag 130 100 190 115 0.8
-drag 190 115 130 100 0.8
-drag 130 100 190 115 0.8
+drag 130 100 190 115 1.0
+drag 190 115 130 100 1.0
+drag 130 100 190 115 1.0
+drag 190 115 130 100 1.0
+drag 130 100 190 115 1.0
 wait 0.6
 film stop
 key SELECT
@@ -21,7 +25,7 @@ wait 0.3
 tap 238 81
 key SELECT
 film start s02_hatch
-wait 6.5
+wait 9.5
 film stop
 name Cinder
 wait 4

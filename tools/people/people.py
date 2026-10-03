@@ -214,11 +214,15 @@ def sanctuary():
     h, m = p.head, p.body
     sb_face(p, eye=(0.032, 0.045), ears="pointed", brows=dict(el=11.0, width=0.04, thick=0.01, arch=0.006),
             open_top=0)  # (run 22: you saw through his head between the hat and his hair)
+    # (1.0.1: two rows, the upper one under the hat's brim. One row is a flat face from the crown to the nape,
+    # and with the scalp kept under it the back of his head was cut off at a slant. He's at his triangle budget:
+    # the hair has eight sides for it, the hat seven and the bucket five.)
     shell(m, h, lambda az: angle_blend(az, {0: 20, 40: 16, 80: 4, 110: -14, 150: -34, 180: -38}),
-          lambda az, f: 0.02 + 0.016 * (1 - f), n_az=10, rows=1, locks=lambda k, az: 9 if k % 2 == 0 else 0)
+          lambda az, f: 0.02 + 0.016 * (1 - f), n_az=8, rows=2, row_bias=0.77,
+          locks=lambda k, az: 9 if k % 2 == 0 else 0)
     top, cyh = h.c[2] + h.azt, h.c[1]
     lathe(m, [(top + 0.04, 0.105, 0.105, 0.105, cyh), (top - 0.055, 0.182, 0.182, 0.182, cyh),
-              (top - 0.072, 0.33, 0.33, 0.33, cyh), (top - 0.08, 0.19, 0.19, 0.19, cyh)], 8, "leather", HEAD,
+              (top - 0.072, 0.33, 0.33, 0.33, cyh), (top - 0.08, 0.19, 0.19, 0.19, cyh)], 7, "leather", HEAD,
           cap_top=top + 0.055)
     zn, zc, zsp, zh, zhip, zk = heights(p)
     tw = torso_weights(p)
@@ -234,8 +238,8 @@ def sanctuary():
     c = hand_c(p, "L")  # the bucket hangs from the right hand
     bx, by, rim, bot = c[0] - 0.028, c[1], c[2] - 0.085, c[2] - 0.19
     hw = rigid("hand_L")
-    lathe(m, [(rim, 0.064, 0.064, 0.064, by), (bot, 0.054, 0.054, 0.054, by)], 7, "metal", hw, cap_bottom=bot, cx=bx)
-    lathe(m, [(rim - 0.008, 0.06, 0.06, 0.06, by)], 7, "sole", hw, cap_top=rim - 0.012, cx=bx)
+    lathe(m, [(rim, 0.064, 0.064, 0.064, by), (bot, 0.054, 0.054, 0.054, by)], 5, "metal", hw, cap_bottom=bot, cx=bx)
+    lathe(m, [(rim - 0.008, 0.06, 0.06, 0.06, by)], 5, "sole", hw, cap_top=rim - 0.012, cx=bx)
     tube(m, [(bx - 0.064, by, rim + 0.004), (bx, by, c[2] + 0.01), (bx + 0.064, by, rim + 0.004)], [0.006] * 3, 3,
          "metal", hw)
     return finish(p, zhip + 0.012)
@@ -397,8 +401,10 @@ def tam():
           0.01, n=6, rows=2)
     # (run 22: a hairline across his forehead under the hat read as one long brow down to his beard;
     # his hair now shows only at the sides and back, under the sou'wester's brim)
+    # (1.0.1: three rows, round the head's curve. One row is a flat face from the crown to the nape, and with
+    # the scalp kept under it the back of his head was cut off at a slant.)
     shell(m, h, lambda az: angle_blend(az, {0: 52, 45: 40, 80: 6, 100: -14, 180: -30}),
-          lambda az, f: 0.02, n_az=10, rows=1, locks=lambda k, az: 8 if (k % 2 == 0 and abs(az) > 70) else 0)
+          lambda az, f: 0.02, n_az=10, rows=3, locks=lambda k, az: 8 if (k % 2 == 0 and abs(az) > 70) else 0)
     top, cyh = h.c[2] + h.azt, h.c[1]  # the sou'wester: a round crown, a brim longer at the back
     lathe(m, [(top + 0.03, 0.09, 0.09, 0.09, cyh), (top - 0.05, 0.19, 0.19, 0.19, cyh)], 9, "extra", HEAD,
           cap_top=top + 0.045)

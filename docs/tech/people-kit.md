@@ -20,7 +20,7 @@ blender -b -P tools/blender/people_model.py -- --out C:/abs/build/people [--only
 | `tools/people/rig.py` | the skeleton, Blender-convention rest matrices, the game's pose and skinning maths |
 | `tools/people/geom.py` | low-poly primitives (lathe, tube, ellipsoid, decals on the head, ribbons ...) |
 | `tools/people/body.py` | shared parts: layout, head and face, eyes, arms, legs, shoes, skirt weights |
-| `tools/people/hair.py` | hair shells, the six player styles, fringes, beards; `sink_scalp` and `lift_over` keep the scalp under every shell (1.0.1: a flat hair face across the head's curve let the skin through at the back) |
+| `tools/people/hair.py` | hair shells, the six player styles, fringes, beards; `sink_scalp` and `lift_over` keep the scalp under every shell (1.0.1: a flat hair face across the head's curve let the skin through at the back). A shell that shows below a hat needs two rows or more: one row is flat from crown to nape and cuts the back of the head off (Tam, Bram) |
 | `tools/people/people.py` | the eight people |
 | `tools/people/looks.py` | palette slot use, the creator's colours, each villager's palette (sRGB bytes) |
 | `tools/people/person_clips.py` | the clip library |

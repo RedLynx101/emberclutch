@@ -28,6 +28,9 @@ release yet**: more fixes may join the bundle first. **On Noah's 3DS** (2026-10-
 - **Wren** speaks once (`kFlagMetSteward` set as her talk ends); **Sky Rings from the orchard's board** returns
   to it (`Scene::home`); **the trophy** at the 3D's focus, two thirds the size.
 - **Hair:** `hair.py` `sink_scalp` and `lift_over`; `tools/people/check_hair.py` (all 19 people, 6 styles ok).
+  Then Tam's and Bram's (Noah, on the 3DS: "the back of Tam's head is cut short"): their hair was one row, a flat
+  face from crown to nape, and the scalp kept under it left the head cut off at a slant. Tam has three rows, Bram
+  two (within 600 triangles: his hat seven sides, his bucket five). Pip's one row is under his cap: fine.
 - **Caldera:** the league's board drawn once (the model's); modelled boards' paper 3 cm proud (no flicker).
 - **Villagers' walls** follow them when the story moves them.
 - **README:** the trailer's picture and link (https://youtu.be/GZZhfeaHGZA).

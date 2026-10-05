@@ -4,8 +4,9 @@ Your save carries over as it is: install this over 1.0.1.
 
 ## Changed
 
-- **A dragon's Training page** (its level, stats and moves, on the bottom screen) has its words a size larger,
-  with the rows respaced so nothing touches.
+- **A dragon's profile** (About, Training, Record and Family, on the bottom screen) has its words a size larger
+  on every page, with the rows respaced so nothing touches. About lists what a dragon wears across the page,
+  so long names keep their size.
 
 ## Fixed
 

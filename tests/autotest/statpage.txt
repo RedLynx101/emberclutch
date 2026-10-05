@@ -1,5 +1,6 @@
-# After 1.0.1 (Noah: "the text is a tad small"): the profile's Training page with its words a size up, for a
-# hatchling and a grown dragon, and the move picker over it.
+# 1.0.2 (D157; Noah: "the text is a tad small"): the profile's four pages with their words a size up. Training for a
+# hatchling and a grown dragon, and the move picker over it; About bare and dressed in the longest names; Record
+# empty and full; Family.
 overlay off
 wait 2.5
 name Noah
@@ -17,12 +18,27 @@ tips
 skip 9
 tap 298 16
 wait 1.2
+shot a01-about-bare
 key R
 wait 0.6
 shot s01-hatchling-new
+key R
+wait 0.6
+shot r01-record-empty
+key R
+wait 0.6
+shot f01-family
 record
-wait 0.5
+wear 1 10 18 26 3
+key R
+wait 0.6
+shot a02-about-dressed
+key R
+wait 0.6
 shot s02-hatchling-trained
+key R
+wait 0.6
+shot r02-record-full
 tap 264 219
 wait 0.8
 key SELECT
@@ -38,6 +54,8 @@ wait 0.5
 xp 60000
 tap 298 16
 wait 1.2
+key L
+wait 0.6
 shot s03-grown-training
 tap 238 120
 wait 0.6

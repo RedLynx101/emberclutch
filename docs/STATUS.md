@@ -13,10 +13,16 @@ Noah says).
 
 - **The profile's Training page, its words a size up** (Noah: "a tad small"): `src/app/profile_ui.cpp`
   `profileTraining` and `movePicker`. Checked with `tests/autotest/statpage.txt` (a new hatchling, a trained
-  one, a grown level 42 with twelve moves known, the picker open and cancelled) and `u_pages.txt`.
+  one, a grown level 42 with twelve moves known, the picker open and cancelled; About bare and in the four
+  longest accessory names; Record empty and full; Family) and `u_pages.txt`.
 - **The move picker's tap-through** (in 1.0 and 1.0.1): the tap that opened it also chose a move in it
   (`g_pickFresh`).
-- The profile's other pages (About, Record, Family) still have their words at the old sizes: not asked for yet.
+- **The profile's other pages too** (Noah: "Do the other tabs too as needed"): **About** in rows across the page
+  (what it is, its traits, what it wears two by two with the wardrobe's button beside them, its dye, what you've
+  found out; the two half-width columns squeezed a long name back to its old size), 0.34-0.38 to 0.40-0.42;
+  **Record** with its five boxes wider and taller (labels 0.32 to 0.40), the cups' rows 0.40 and their columns
+  18 px apart; **Family** with names 0.44-0.48 and kinds 0.38-0.40. `care_ui.cpp` `profileAbout`, `kinBox`,
+  `profileFamily`; `profile_ui.cpp` `profileRecord`. The Journal's dragon tab draws the same About page.
 
 ## Before: 1.0.1 released (D156, 2026-10-03): the first bundle of fixes after 1.0 (D155)
 

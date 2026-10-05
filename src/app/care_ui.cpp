@@ -526,14 +526,14 @@ u32 glowOf(const Dragon& d, u8 alpha = 255) {
 void kinBox(App& app, Rect r, const SaveData& s, int who, const char* role) {
     panel(r, withAlpha(theme::kShell, who >= 0 ? 0.16f : 0.07f));
     if (who < 0) {
-        textCentered(app, role ? role : str::kUnknownKin, r.x + r.w / 2, r.y + r.h / 2, 0.36f, withAlpha(theme::kShell, 0.45f),
+        textCentered(app, role ? role : str::kUnknownKin, r.x + r.w / 2, r.y + r.h / 2, 0.42f, withAlpha(theme::kShell, 0.45f),
                      r.w - 6);
         return;
     }
-    const Dragon& k = s.dragons[who];
-    heart(r.x + 11, r.y + r.h / 2, 7, glowOf(k));
-    text(app, k.name, r.x + 20, r.y + 3, 0.38f, theme::kShell, C2D_AlignLeft, r.w - 23);
-    text(app, kindTitle(k), r.x + 20, r.y + r.h / 2 + 1, 0.32f, withAlpha(theme::kShell, 0.7f), C2D_AlignLeft, r.w - 23);
+    const Dragon& k = s.dragons[who];  // (1.0.2: its name and kind a size up, the heart drawn in a little for them)
+    heart(r.x + 9, r.y + r.h / 2, 6, glowOf(k));
+    text(app, k.name, r.x + 18, r.y + 2, 0.44f, theme::kShell, C2D_AlignLeft, r.w - 20);
+    text(app, kindTitle(k), r.x + 18, r.y + r.h / 2 + 1, 0.38f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, r.w - 20);
 }
 
 }  // namespace
@@ -544,56 +544,59 @@ void profileAbout(App& app, const Dragon& d, s64 now, const Input* in) {
         std::snprintf(line, sizeof(line), "%s %s  -  %d%% %s", kindTitle(d), str::kEggSuffix,
                       static_cast<int>(eggProgress(d) * 100), str::kIncubated);
         textCentered(app, line, 160, 110, 0.5f, theme::kShell, 300);
-        textCentered(app, originText(d), 160, 134, 0.42f, withAlpha(theme::kShell, 0.75f), 300);
+        textCentered(app, originText(d), 160, 136, 0.46f, withAlpha(theme::kShell, 0.75f), 300);
         return;
     }
     char kind[40];
     kindName(d, kind, sizeof(kind));
     std::snprintf(line, sizeof(line), "%s %s %s  -  %s %d", sexName(d.sex), kind, stageName(d.stage),
                   str::kDay, daysSinceHatch(d, now) + 1);
-    textCentered(app, line, 160, 76, 0.46f, theme::kShell, 304);
+    textCentered(app, line, 160, 73, 0.46f, theme::kShell, 304);
     std::snprintf(line, sizeof(line), "%s  -  %s", mannerName(d.manner), str::kBond);
     const float w = textWidth(app, line, 0.44f);
-    text(app, line, 160 - (w + 70) / 2, 86, 0.44f, withAlpha(theme::kShell, 0.85f), C2D_AlignLeft);
+    text(app, line, 160 - (w + 70) / 2, 81, 0.44f, withAlpha(theme::kShell, 0.85f), C2D_AlignLeft);
     for (int h = 0; h < 5; ++h)  // bond, a heart per 200
-        heart(160 - (w + 70) / 2 + w + 10 + h * 13, 94, 5.5f, d.bond >= (h + 1) * 200 ? glowOf(d) : withAlpha(theme::kShell, 0.25f));
-    // What it wears and its dye (left; 1.0: its stats are on the Training page now, D90) and what
-    // it is (right): its element(s) and how rare its kind is, its manner and its traits (DR3,
-    // D77-D78). The accessories' names come from workstream P (app/profile_hooks).
-    text(app, str::kWears, 14, 102, 0.38f, theme::kClutchGold, C2D_AlignLeft);
-    bool wearsAny = false;
-    for (int k = 0; k < kWearSlots; ++k) {
-        const char* name = d.wear[k] != kNone ? hooks::accessoryName(d.wear[k]) : "";
-        if (!name[0]) continue;
-        text(app, name, 22 + (k % 2) * 70, 116 + (k / 2) * 13, 0.34f, theme::kShell, C2D_AlignLeft, 68);
-        wearsAny = true;
-    }
-    if (!wearsAny) text(app, str::kWearNothing, 22, 116, 0.34f, withAlpha(theme::kShell, 0.5f), C2D_AlignLeft, 130);
-    std::snprintf(line, sizeof(line), str::kDye, d.dye && hooks::dyeName(d.dye)[0] ? hooks::dyeName(d.dye) : str::kDyeNatural);
-    if (d.dye) C2D_DrawCircleSolid(18, 150, 0.5f, 3.5f, fromRgb(hooks::dyeColour(d.dye)));
-    text(app, line, d.dye ? 26 : 14, 143, 0.34f, withAlpha(theme::kShell, 0.8f), C2D_AlignLeft, 140);
-    if (in && button(app, {236, 148, 76, 18}, str::kDressUp, *in)) {  // the wardrobe (workstream P)
-        const int index = static_cast<int>(&d - app.game.dragons);
-        if (!hooks::openWardrobe(app, index)) showToast(app, str::kWardrobeSoon);
-    }
+        heart(160 - (w + 70) / 2 + w + 10 + h * 13, 89, 5.5f, d.bond >= (h + 1) * 200 ? glowOf(d) : withAlpha(theme::kShell, 0.25f));
+    // (1.0.2, Noah: "the text is a tad small". The page's small words are a size up, 0.34-0.38 to 0.40-0.42,
+    // and each kind of thing has rows of its own across the page: in two half-width columns a longer name was
+    // squeezed back down to the size it had.)
+    // What it is: its element(s) and how rare its kind is, then its traits (DR3, D77-D78; its manner is up top).
     const KindInfo& ki = kindInfo(d.kind < kindCount() ? d.kind : 0);
     char els[32];
     kindElements(d.kind, els, sizeof(els));
     std::snprintf(line, sizeof(line), "%s, %s", els, rarityName(ki.rarity));
-    text(app, line, 160, 104, 0.36f, theme::kShell, C2D_AlignLeft, 152);
-    for (int t = 0; t < d.traitCount && t < kDragonTraits; ++t) {  // (its manner is up top)
+    text(app, line, 14, 98, 0.42f, theme::kShell, C2D_AlignLeft, 292);
+    for (int t = 0; t < d.traitCount && t < kDragonTraits; ++t) {
         const bool rareTrait = traitTier(d.traits[t]) >= 2;
-        text(app, traitName(d.traits[t]), 160 + (t % 2) * 76, 120 + (t / 2) * 14, 0.36f,
-             rareTrait ? theme::kClutchGold : withAlpha(theme::kShell, 0.9f), C2D_AlignLeft, 74);
+        text(app, traitName(d.traits[t]), 14 + t * 100, 112, 0.42f, rareTrait ? theme::kClutchGold : withAlpha(theme::kShell, 0.9f),
+             C2D_AlignLeft, 96);
     }
+    // What it wears, two by two (1.0: its stats are on the Training page now, D90; the accessories' names come
+    // from workstream P, app/profile_hooks), the wardrobe's button beside them, and its dye under them.
+    text(app, str::kWears, 14, 128, 0.42f, theme::kClutchGold, C2D_AlignLeft);
+    int worn = 0;
+    for (int k = 0; k < kWearSlots; ++k) {
+        const char* name = d.wear[k] != kNone ? hooks::accessoryName(d.wear[k]) : "";
+        if (!name[0]) continue;
+        text(app, name, 62 + (worn % 2) * 88, 128 + (worn / 2) * 14, 0.4f, theme::kShell, C2D_AlignLeft, 85);
+        ++worn;
+    }
+    if (!worn) text(app, str::kWearNothing, 62, 128, 0.4f, withAlpha(theme::kShell, 0.5f), C2D_AlignLeft, 150);
+    if (in && button(app, {238, 130, 76, 22}, str::kDressUp, *in)) {  // the wardrobe (workstream P)
+        const int index = static_cast<int>(&d - app.game.dragons);
+        if (!hooks::openWardrobe(app, index)) showToast(app, str::kWardrobeSoon);
+    }
+    std::snprintf(line, sizeof(line), str::kDye, d.dye && hooks::dyeName(d.dye)[0] ? hooks::dyeName(d.dye) : str::kDyeNatural);
+    if (d.dye) C2D_DrawCircleSolid(18, 164, 0.5f, 4.0f, fromRgb(hooks::dyeColour(d.dye)));
+    text(app, line, d.dye ? 27 : 14, 157, 0.4f, withAlpha(theme::kShell, 0.8f), C2D_AlignLeft, 280);
     // What you've found out.
     if (d.known & kKnownSweetSpot) std::snprintf(line, sizeof(line), str::kSweetSpotIs, sweetSpotText(d));
     else std::snprintf(line, sizeof(line), "%s", str::kSweetSpotUnknown);
-    textCentered(app, line, 160, 170, 0.4f, theme::kClutchGold, 300);
+    textCentered(app, line, 160, 178, 0.42f, theme::kClutchGold, 300);
     if ((d.known & kKnownFavourite) && d.favoriteFood < static_cast<int>(Food::Count))
         std::snprintf(line, sizeof(line), str::kFavouriteIs, foodInfo(static_cast<Food>(d.favoriteFood)).name);
     else std::snprintf(line, sizeof(line), "%s", str::kFavouriteUnknown);
-    textCentered(app, line, 160, 185, 0.4f, theme::kClutchGold, 300);
+    textCentered(app, line, 160, 192, 0.42f, theme::kClutchGold, 300);
 }
 
 namespace {
@@ -610,23 +613,23 @@ void profileFamily(App& app, const Dragon& d) {
             C2D_DrawLine(gx[k] + 37, 104, line, px, 118, line, 1.5f, 0.5f);
             kinBox(app, {gx[k], 70, 74, 34}, s, f.grand[k], nullptr);
         }
-        C2D_DrawLine(82, 152, line, 160, 164, line, 1.5f, 0.5f);
-        C2D_DrawLine(238, 152, line, 160, 164, line, 1.5f, 0.5f);
+        C2D_DrawLine(82, 152, line, 160, 162, line, 1.5f, 0.5f);
+        C2D_DrawLine(238, 152, line, 160, 162, line, 1.5f, 0.5f);
         kinBox(app, {27, 118, 110, 34}, s, f.mother, str::kMother);
         kinBox(app, {183, 118, 110, 34}, s, f.father, str::kFather);
     } else {
         panel({30, 92, 260, 44}, withAlpha(theme::kShell, 0.1f));
-        textCentered(app, originText(d), 160, 114, 0.46f, theme::kShell, 250);
-        C2D_DrawLine(160, 136, line, 160, 164, line, 1.5f, 0.5f);
+        textCentered(app, originText(d), 160, 114, 0.5f, theme::kShell, 250);
+        C2D_DrawLine(160, 136, line, 160, 162, line, 1.5f, 0.5f);
     }
-    const Rect me{95, 164, 130, 32};
+    const Rect me{90, 162, 140, 35};
     panel(me, withAlpha(theme::kClutchGold, 0.3f));
     heart(me.x + 12, me.y + me.h / 2, 7.5f, glowOf(d));
-    text(app, d.name, me.x + 22, me.y + 2, 0.42f, theme::kShell, C2D_AlignLeft, me.w - 26);
+    text(app, d.name, me.x + 23, me.y + 2, 0.48f, theme::kShell, C2D_AlignLeft, me.w - 27);
     char young[32];
     if (f.young > 0) std::snprintf(young, sizeof(young), str::kYoungCount, f.young);
     else std::snprintf(young, sizeof(young), "%s", kindTitle(d));
-    text(app, young, me.x + 22, me.y + 17, 0.34f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, me.w - 26);
+    text(app, young, me.x + 23, me.y + 18, 0.4f, withAlpha(theme::kShell, 0.8f), C2D_AlignLeft, me.w - 27);
 }
 
 // The profile (tap the heartglow; WP8): about it (its looks, stats, what you've found out)

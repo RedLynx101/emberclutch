@@ -101,7 +101,7 @@ void badge(float cx, float cy, float r, int which, bool won) {
 }
 
 void heading(App& app, const char* s, float x, float y) {
-    text(app, s, x, y, 0.4f, theme::kClutchGold, C2D_AlignLeft);
+    text(app, s, x, y, 0.44f, theme::kClutchGold, C2D_AlignLeft);
 }
 
 // Swapping a move: what it knows, two columns; a tap takes it (or Cancel).
@@ -187,7 +187,7 @@ void profileTraining(App& app, const Input& in, Dragon& d) {
     C2D_DrawRectSolid(88, 183, 0.5f, 8, 8, theme::kEmber);
     text(app, str::kTabTraining, 99, 179, 0.38f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, 58);
     // Its four moves (workstream B's core/battle through the hooks); a tap swaps one.
-    text(app, str::kMoves, 166, 93, 0.44f, theme::kClutchGold, C2D_AlignLeft);
+    heading(app, str::kMoves, 166, 93);
     u8 moves[kMoveSlots];
     hooks::equippedMoves(d, moves);
     int filled = 0;
@@ -237,13 +237,15 @@ void profileTraining(App& app, const Input& in, Dragon& d) {
 void profileRecord(App& app, const Input& in, const Dragon& d) {
     char line[80];
     // Its titles, from the leagues it has won (core/trainer).
-    heading(app, str::kTitles, 14, 66);
+    // (1.0.2: the page's words a size up, as the Training page's. The five boxes are wider and taller for their
+    // labels, 0.32 to 0.40, and the cups' columns stand a little further apart for the names under them.)
+    heading(app, str::kTitles, 14, 65);
     if (d.battleTitle || d.showTitle) {
         std::snprintf(line, sizeof(line), "%s%s%s", trainer::battleTitleName(d.battleTitle),
                       d.battleTitle && d.showTitle ? "  -  " : "", trainer::showTitleName(d.showTitle));
-        text(app, line, 64, 66, 0.4f, theme::kShell, C2D_AlignLeft, 140);
+        text(app, line, 66, 65, 0.44f, theme::kShell, C2D_AlignLeft, 146);
     } else {
-        text(app, str::kNoTitles, 64, 66, 0.4f, withAlpha(theme::kShell, 0.5f), C2D_AlignLeft, 140);
+        text(app, str::kNoTitles, 66, 65, 0.44f, withAlpha(theme::kShell, 0.5f), C2D_AlignLeft, 146);
     }
     // Your badge case (all your dragons', D138): a league's badge once it's won, the Champion's from
     // Wren once Solenne is beaten; a tap names one.
@@ -262,34 +264,34 @@ void profileRecord(App& app, const Input& in, const Dragon& d) {
     const int values[5] = {d.battleWins, d.showWins, d.wildWins, d.frostDeepest, app.game.progress.duelsWon};
     const char* const labels[5] = {str::kBattleWins, str::kShowWins, str::kWildWins, str::kHollowDeepest, str::kYourDuels};
     for (int k = 0; k < 5; ++k) {
-        const Rect r{12.0f + k * 60.0f, 86, 56, 34};
+        const Rect r{6.0f + k * 62.0f, 83, 60, 38};
         panel(r, withAlpha(theme::kShell, 0.12f));
         std::snprintf(line, sizeof(line), "%d", values[k]);
-        textCentered(app, line, r.x + r.w / 2, r.y + 12, 0.6f, values[k] ? theme::kClutchGold : withAlpha(theme::kShell, 0.4f));
-        textCentered(app, labels[k], r.x + r.w / 2, r.y + 28, 0.32f, withAlpha(theme::kShell, 0.75f), r.w - 4);
+        textCentered(app, line, r.x + r.w / 2, r.y + 12, 0.62f, values[k] ? theme::kClutchGold : withAlpha(theme::kShell, 0.4f));
+        textCentered(app, labels[k], r.x + r.w / 2, r.y + 30, 0.4f, withAlpha(theme::kShell, 0.8f), r.w - 3);
     }
     // The challenge cups won with it: a row for each challenge, Ember to Starfire.
     std::snprintf(line, sizeof(line), "%s  %d", str::kCupsWon, trainer::cupCount(d));
-    heading(app, line, 14, 126);
+    heading(app, line, 14, 125);
     for (int c = 0; c < kChallenges; ++c) {
-        const float y = 142 + c * 15;
-        text(app, str::kChallengeShort[c], 14, y, 0.33f, withAlpha(theme::kShell, 0.8f), C2D_AlignLeft, 72);
-        for (int cup = 1; cup <= kCups; ++cup) trophy(98 + (cup - 1) * 16, y + 6, 10, trainer::wonCup(d, c, cup));
+        const float y = 141 + c * 15;
+        text(app, str::kChallengeShort[c], 14, y, 0.4f, withAlpha(theme::kShell, 0.85f), C2D_AlignLeft, 78);
+        for (int cup = 1; cup <= kCups; ++cup) trophy(101 + (cup - 1) * 18, y + 7, 10, trainer::wonCup(d, c, cup));
     }
     // The columns run from the Ember cup to the Starfire.
-    text(app, str::kCupNames[0], 91, 186, 0.3f, withAlpha(theme::kShell, 0.5f), C2D_AlignLeft);
-    text(app, str::kCupNames[kCups - 1], 153, 186, 0.3f, withAlpha(theme::kShell, 0.5f), C2D_AlignRight);
+    text(app, str::kCupNames[0], 93, 186, 0.36f, withAlpha(theme::kShell, 0.55f), C2D_AlignLeft);
+    text(app, str::kCupNames[kCups - 1], 164, 186, 0.36f, withAlpha(theme::kShell, 0.55f), C2D_AlignRight);
     // Its ribbons (the pageant's themes won).
     std::snprintf(line, sizeof(line), "%s  %d", str::kRibbons, trainer::ribbonCount(d));
-    heading(app, line, 176, 126);
+    heading(app, line, 182, 125);
     int shown = 0;
-    for (int t = 0; t < 16; ++t) {
+    for (int t = 0; t < 16; ++t) {  // (up to sixteen: seven to a row, three rows down to the buttons)
         if (!((d.ribbons >> t) & 1u)) continue;
         const Rgb c = hsvToRgb(static_cast<u8>(t * 37), 150, 235);
-        rosette(186 + (shown % 7) * 18, 148 + (shown / 7) * 22, 5.5f, fromRgb(c));
+        rosette(191 + (shown % 7) * 18, 148 + (shown / 7) * 19, 5.5f, fromRgb(c));
         ++shown;
     }
-    if (shown == 0) text(app, str::kWearNothing, 178, 144, 0.36f, withAlpha(theme::kShell, 0.45f), C2D_AlignLeft, 130);
+    if (shown == 0) text(app, str::kWearNothing, 184, 143, 0.42f, withAlpha(theme::kShell, 0.45f), C2D_AlignLeft, 124);
 }
 
 }  // namespace ec::care

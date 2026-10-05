@@ -7,9 +7,9 @@
 
 ## Now: 1.0.2, the next bundle (D157, begun 2026-10-05). **Not released: Noah says when.**
 
-The game says `1.0.2`; `docs/release/notes-v1.0.2.md` is the notes' draft. Committed and pushed; **not on the 3DS
-yet** (the player build: `tools/package_cia.ps1 -Player`, then `tools/deploy_ftp.ps1 -FtpHost <ip> -Player`, when
-Noah says).
+The game says `1.0.2`; `docs/release/notes-v1.0.2.md` is the notes' draft. Committed and pushed; **on Noah's 3DS for
+testing** (2026-10-05, the player build at commit 90cbbb0: `tools/package_cia.ps1 -Player`, then
+`tools/deploy_ftp.ps1 -FtpHost 192.168.68.55 -Player`; the 3DSX in place, the CIA in `/cias`).
 
 - **The profile's Training page, its words a size up** (Noah: "a tad small"): `src/app/profile_ui.cpp`
   `profileTraining` and `movePicker`. Checked with `tests/autotest/statpage.txt` (a new hatchling, a trained

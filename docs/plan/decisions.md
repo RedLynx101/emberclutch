@@ -2,6 +2,12 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
+## 2026-10-05 — 1.0.2: the next bundle, begun
+
+| # | Decision | Why | Status |
+|---|---|---|---|
+| D157 | **1.0.2 gathers what Noah finds after 1.0.1, unreleased until he says** (as D155). First in it: **the profile's Training page has its words a size up** (0.32-0.38 to 0.38-0.46: stat names and values 0.46, moves 0.44, their power and the key 0.38, the experience line 0.42), the stats 16 px apart and the moves' rows a pixel taller so nothing touches, and "No moves learned yet" in the rows' place instead of over the fourth; and **the move picker keeps the tap that opened it to itself** (1.0 passed it on, so a slot's tap took whichever move lay under the stylus and the picker was never seen) | Noah, 2026-10-05: "please expand the text size cleanly without overlapping things. The text is a tad small"; the picker's fault found checking it (`tests/autotest/statpage.txt`) | Approved (Noah's note) |
+
 ## 2026-10-03 — 1.0.1: the first bundle of fixes after the release
 
 | # | Decision | Why | Status |

@@ -1,0 +1,48 @@
+# After 1.0.1 (Noah: "the text is a tad small"): the profile's Training page with its words a size up, for a
+# hatchling and a grown dragon, and the move picker over it.
+overlay off
+wait 2.5
+name Noah
+tap 160 107
+wait 1.5
+tap 60 120
+wait 2
+key SELECT
+wait 0.3
+tap 238 81
+key SELECT
+name Cinder
+wait 11
+tips
+skip 9
+tap 298 16
+wait 1.2
+key R
+wait 0.6
+shot s01-hatchling-new
+record
+wait 0.5
+shot s02-hatchling-trained
+tap 264 219
+wait 0.8
+key SELECT
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+tap 82 106
+wait 0.3
+key SELECT
+wait 0.5
+xp 60000
+tap 298 16
+wait 1.2
+shot s03-grown-training
+tap 238 120
+wait 0.6
+shot s04-move-picker
+tap 274 74
+wait 0.5
+shot s05-picker-closed
+quit

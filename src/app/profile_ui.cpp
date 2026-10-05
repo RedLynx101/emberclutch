@@ -26,6 +26,7 @@ namespace {
 constexpr int kStatMax = 10 + kMaxTrained;  // a kind's best plus all training can add
 int g_pickSlot = -1;                        // a move slot being swapped (-1: none)
 u32 g_pickFor = 0;                          // ...on this dragon
+bool g_pickFresh = false;                   // ...opened by this frame's tap (which isn't the picker's to take)
 
 u32 moveColour(const hooks::MoveView& m) {
     return m.element >= 0 ? fromRgb(elementGlow(m.element)) : withAlpha(theme::kShell, 0.8f);
@@ -104,26 +105,32 @@ void heading(App& app, const char* s, float x, float y) {
 }
 
 // Swapping a move: what it knows, two columns; a tap takes it (or Cancel).
-void movePicker(App& app, const Input& in, Dragon& d) {
+void movePicker(App& app, const Input& tap, Dragon& d) {
+    // The tap that opened it is spent (1.0 passed it on: the slot's own tap took whichever move lay under the
+    // stylus, and the picker was gone before it was ever seen).
+    const Input none{};
+    const Input& in = g_pickFresh ? none : tap;
+    g_pickFresh = false;
     C2D_DrawRectSolid(0, 62, 0.5f, 320, 138, withAlpha(theme::kDenPlum, 0.97f));
-    text(app, str::kPickMove, 12, 66, 0.46f, theme::kClutchGold, C2D_AlignLeft, 210);
-    if (button(app, {236, 64, 76, 18}, str::kCancel, in)) {
+    text(app, str::kPickMove, 12, 65, 0.5f, theme::kClutchGold, C2D_AlignLeft, 214);
+    if (button(app, {236, 64, 76, 20}, str::kCancel, in)) {
         g_pickSlot = -1;
         return;
     }
     u8 known[12];
     const int n = hooks::knownMoves(d, known, 12);
-    for (int k = 0; k < n; ++k) {
+    for (int k = 0; k < n; ++k) {  // (six rows of two at most, down to the buttons)
         hooks::MoveView m;
         if (!hooks::moveView(known[k], m)) continue;
-        const Rect r{10.0f + (k % 2) * 152.0f, 84.0f + (k / 2) * 17.0f, 148, 15};
+        const Rect r{10.0f + (k % 2) * 152.0f, 88.0f + (k / 2) * 18.5f, 148, 17};
         panel(r, withAlpha(theme::kShell, 0.14f));
-        C2D_DrawCircleSolid(r.x + 8, r.y + r.h / 2, 0.5f, 3.5f, moveColour(m));
-        text(app, m.name, r.x + 16, r.y + 1, 0.34f, theme::kShell, C2D_AlignLeft, 90);
+        C2D_DrawCircleSolid(r.x + 8, r.y + r.h / 2, 0.5f, 3.8f, moveColour(m));
         char pow[16];
         if (m.status) std::snprintf(pow, sizeof(pow), "%s", str::kStatusMove);
         else std::snprintf(pow, sizeof(pow), str::kPower, m.power);
-        text(app, pow, r.x + r.w - 4, r.y + 2, 0.3f, withAlpha(theme::kShell, 0.7f), C2D_AlignRight);
+        const float powW = textWidth(app, pow, 0.36f);
+        text(app, m.name, r.x + 16, r.y + 1, 0.4f, theme::kShell, C2D_AlignLeft, r.w - 16 - powW - 10);
+        text(app, pow, r.x + r.w - 4, r.y + 2, 0.36f, withAlpha(theme::kShell, 0.75f), C2D_AlignRight);
         if (in.released && r.contains(in.rx, in.ry)) {
             if (hooks::equipMove(d, g_pickSlot, known[k])) {
                 audio::playSfx(audio::Sfx::Confirm);
@@ -142,13 +149,15 @@ void profileTraining(App& app, const Input& in, Dragon& d) {
     showTip(app, tips::kTipProfile);
     if (g_pickSlot >= 0 && g_pickFor != d.id) g_pickSlot = -1;  // (another dragon now)
     char line[64];
+    // (After 1.0.1, Noah: "the text is a tad small". The page's words are a size up, 0.32-0.38 to 0.38-0.46, and
+    // its rows respaced to hold them: the stats 16 px apart, the moves' rows a pixel taller, the key under them.)
     // Its level and how far to the next.
     const int level = trainer::levelOf(d);
     std::snprintf(line, sizeof(line), str::kLevel, level);
     text(app, line, 12, 62, 0.72f, theme::kClutchGold, C2D_AlignLeft, 100, Face::Title);
     u32 into = 0, span = 0;
     trainer::levelProgress(d, into, span);
-    const Rect bar{118, 70, 190, 8};
+    const Rect bar{118, 68, 190, 9};
     panel(bar, theme::kTrack);
     if (span == 0) {
         panel(bar, theme::kClutchGold);
@@ -157,45 +166,58 @@ void profileTraining(App& app, const Input& in, Dragon& d) {
         if (into > 0) panel({bar.x, bar.y, std::fmax(4.0f, bar.w * into / static_cast<float>(span)), bar.h}, theme::kClutchGold);
         std::snprintf(line, sizeof(line), str::kXpToNext, static_cast<unsigned long>(into), static_cast<unsigned long>(span));
     }
-    text(app, line, bar.x + bar.w, 80, 0.34f, withAlpha(theme::kShell, 0.75f), C2D_AlignRight, bar.w);
+    text(app, line, bar.x + bar.w, 78, 0.42f, withAlpha(theme::kShell, 0.8f), C2D_AlignRight, 100);  // (clear of "Moves" under it)
     // Its stats: the kind's points (gold) and what training added (ember), out of what's possible.
     for (int k = 0; k < kDragonStats; ++k) {
-        const float y = 98 + k * 15;
-        text(app, str::kStatNames[k], 12, y, 0.38f, theme::kShell, C2D_AlignLeft, 48);
+        const float y = 97 + k * 16;
+        text(app, str::kStatNames[k], 12, y, 0.46f, theme::kShell, C2D_AlignLeft, 52);
         const int base = trainer::statPoints(d, k) - (d.trained[k] > kMaxTrained ? kMaxTrained : d.trained[k]);
         const int total = trainer::statPoints(d, k);
-        const Rect sb{62, y + 4, 70, 7};
+        const Rect sb{68, y + 5, 60, 8};
         panel(sb, theme::kTrack);
         const float per = sb.w / kStatMax;
         C2D_DrawRectSolid(sb.x, sb.y, 0.5f, per * base, sb.h, theme::kClutchGold);
         if (total > base) C2D_DrawRectSolid(sb.x + per * base, sb.y, 0.5f, per * (total - base), sb.h, theme::kEmber);
         std::snprintf(line, sizeof(line), "%d", total);
-        text(app, line, 152, y, 0.38f, theme::kShell, C2D_AlignRight);
+        text(app, line, 154, y, 0.46f, theme::kShell, C2D_AlignRight);
     }
     // The key: kind and trained.
-    C2D_DrawRectSolid(14, 177, 0.5f, 7, 7, theme::kClutchGold);
-    text(app, kindTitle(d), 24, 173, 0.32f, withAlpha(theme::kShell, 0.7f), C2D_AlignLeft, 56);
-    C2D_DrawRectSolid(86, 177, 0.5f, 7, 7, theme::kEmber);
-    text(app, str::kTabTraining, 96, 173, 0.32f, withAlpha(theme::kShell, 0.7f), C2D_AlignLeft, 60);
+    C2D_DrawRectSolid(14, 183, 0.5f, 8, 8, theme::kClutchGold);
+    text(app, kindTitle(d), 25, 179, 0.38f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, 58);
+    C2D_DrawRectSolid(88, 183, 0.5f, 8, 8, theme::kEmber);
+    text(app, str::kTabTraining, 99, 179, 0.38f, withAlpha(theme::kShell, 0.75f), C2D_AlignLeft, 58);
     // Its four moves (workstream B's core/battle through the hooks); a tap swaps one.
-    heading(app, str::kMoves, 166, 92);
+    text(app, str::kMoves, 166, 93, 0.44f, theme::kClutchGold, C2D_AlignLeft);
     u8 moves[kMoveSlots];
     hooks::equippedMoves(d, moves);
     int filled = 0;
     for (int k = 0; k < kMoveSlots; ++k) {
-        const Rect r{164, 108.0f + k * 22, 148, 19};
+        hooks::MoveView m;
+        filled += hooks::moveView(moves[k], m);
+    }
+    for (int k = 0; k < kMoveSlots; ++k) {
+        const Rect r{164, 110.0f + k * 22, 148, 20};
         hooks::MoveView m;
         const bool has = hooks::moveView(moves[k], m);
-        filled += has;
-        panel(r, withAlpha(g_pickSlot == k ? theme::kClutchGold : theme::kShell, g_pickSlot == k ? 0.4f : 0.13f));
-        if (has) {
-            C2D_DrawCircleSolid(r.x + 9, r.y + r.h / 2, 0.5f, 4.5f, moveColour(m));
-            text(app, m.name, r.x + 18, r.y + 2, 0.38f, theme::kShell, C2D_AlignLeft, 86);
-            if (m.status) std::snprintf(line, sizeof(line), "%s", str::kStatusMove);
-            else std::snprintf(line, sizeof(line), str::kPower, m.power);
-            text(app, line, r.x + r.w - 5, r.y + 4, 0.32f, withAlpha(theme::kShell, 0.7f), C2D_AlignRight);
+        if (filled == 0) {  // none yet: one panel saying so, in its rows' place (the words lay over the fourth "-")
+            if (k == 0) {
+                const Rect all{164, 110, 148, 86};
+                panel(all, withAlpha(theme::kShell, 0.13f));
+                textCentered(app, str::kNoMovesYetA, all.x + all.w / 2, all.y + all.h / 2 - 9, 0.42f, withAlpha(theme::kShell, 0.7f), 140);
+                textCentered(app, str::kNoMovesYetB, all.x + all.w / 2, all.y + all.h / 2 + 9, 0.42f, withAlpha(theme::kShell, 0.7f), 140);
+            }
         } else {
-            textCentered(app, str::kNoMove, r.x + r.w / 2, r.y + r.h / 2, 0.4f, withAlpha(theme::kShell, 0.35f));
+            panel(r, withAlpha(g_pickSlot == k ? theme::kClutchGold : theme::kShell, g_pickSlot == k ? 0.4f : 0.13f));
+            if (has) {
+                C2D_DrawCircleSolid(r.x + 9, r.y + r.h / 2, 0.5f, 4.5f, moveColour(m));
+                if (m.status) std::snprintf(line, sizeof(line), "%s", str::kStatusMove);
+                else std::snprintf(line, sizeof(line), str::kPower, m.power);
+                const float powW = textWidth(app, line, 0.38f);
+                text(app, m.name, r.x + 18, r.y + 2, 0.44f, theme::kShell, C2D_AlignLeft, r.w - 18 - powW - 11);
+                text(app, line, r.x + r.w - 5, r.y + 3, 0.38f, withAlpha(theme::kShell, 0.75f), C2D_AlignRight);
+            } else {
+                textCentered(app, str::kNoMove, r.x + r.w / 2, r.y + r.h / 2, 0.44f, withAlpha(theme::kShell, 0.35f));
+            }
         }
         if (in.released && r.contains(in.rx, in.ry) && g_pickSlot < 0) {
             u8 known[1];
@@ -204,11 +226,11 @@ void profileTraining(App& app, const Input& in, Dragon& d) {
             } else {
                 g_pickSlot = k;
                 g_pickFor = d.id;
+                g_pickFresh = true;
                 audio::playSfx(audio::Sfx::Tap);
             }
         }
     }
-    if (filled == 0) text(app, str::kNoMovesYet, 238, 184, 0.3f, withAlpha(theme::kShell, 0.55f), C2D_AlignCenter, 148);
     if (g_pickSlot >= 0) movePicker(app, in, d);
 }
 

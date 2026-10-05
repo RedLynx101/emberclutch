@@ -56,6 +56,7 @@
 //   gleam <n>                   your Gleam set
 //   hoard <n>                   n of each trinket in the hoard
 //   wear <head> <neck> <back> <tail> <dye>   what it wears (core/accessories ids, 255: none), its dye
+//   traits <a> <b> <c>          the traits of the dragon cared for (core/kinds ids, -1: none)
 //   critters <what>             the valley's critters (app/wildlife.hpp): spawn <kind>, act [kind], clear,
 //                               journal, friends, log (kinds: 0 songbird 1 rabbit 2 snow hare 3 butterfly
 //                               4 frog 5 duck 6 fox)

@@ -24,6 +24,7 @@
 #include "core/story.hpp"
 #include "core/trainer.hpp"
 #include "core/clock.hpp"
+#include "core/kinds.hpp"
 #include "core/place_layout.hpp"
 #include "core/valley.hpp"
 #include "core/wanderings.hpp"
@@ -38,7 +39,7 @@ constexpr const char* kShots = "sdmc:/3ds/emberclutch/shots";
 enum class Op : u8 { Wait, Tap, Hold, Drag, Key, KeyHold, Pad, Shot, ShotIn, Name, Skip, Overlay, Splash, Travel, Light, View,
                      Creator, Wander, Festival, Goto, Stand, Challenge, Autoplay, Cups, Valley, Hour, Quit, TrialFix,
                      Sound,  // (sounds, 1.0: bed, sfx, sfxcheck)
-                     Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard, Wear,  // (U: Open .. Wear)
+                     Open, Xp, Record, Needs, Track, Tips, Gleam, Hoard, Wear, Traits,  // (U: Open .. Traits)
                      Energy, Cove,  // (workstream C)
                      Pageant, Ground,
                      Battle /* 1.0 battles (workstream B) */, Critters /* workstream L */,
@@ -270,6 +271,7 @@ u32 keyNamed(const char* s) {
     else if (w == "gleam") { c.op = Op::Gleam; nums(1); }
     else if (w == "hoard") { c.op = Op::Hoard; nums(1); }
     else if (w == "wear") { c.op = Op::Wear; nums(5); }
+    else if (w == "traits") { c.op = Op::Traits; nums(3); }  // traits <a> <b> <c>: the cared-for dragon's (core/kinds ids, -1 none)
     else if (w == "pg") { c.op = Op::Pageant; c.text = rest; }  // the pageant: pg give / wear / show ...
     else if (w == "battle") { c.op = Op::Battle; c.text = rest; }  // 1.0 battles (workstream B)
     else if (w == "critters") { c.op = Op::Critters; c.text = rest; }  // the valley's critters (app/wildlife.hpp command)
@@ -608,6 +610,14 @@ Input next(App& app) {
             case Op::Track: trainer::track(app.game, static_cast<Tracked>(static_cast<int>(c.a[0])), static_cast<int>(c.a[1])); done = true; break;
             case Op::Tips: app.game.progress.tips = c.a[0] != 0 ? 0u : 0xFFFFFFFFu; done = true; break;
             case Op::Gleam: app.game.gleam = static_cast<u32>(c.a[0]); done = true; break;
+            case Op::Traits: {  // (the profile's About page with the most it can show)
+                Dragon& d = activeDragon(app);
+                d.traitCount = 0;
+                for (int k = 0; k < kDragonTraits; ++k)
+                    if (c.a[k] >= 0 && c.a[k] < traitCount()) d.traits[d.traitCount++] = static_cast<u8>(c.a[k]);
+                done = true;
+                break;
+            }
             case Op::Wear: {  // what the dragon cared for wears (core/accessories ids, 255 none) and its dye
                 Dragon& d = activeDragon(app);
                 for (int k = 0; k < kWearSlots; ++k) d.wear[k] = static_cast<u8>(c.a[k]);

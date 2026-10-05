@@ -33,6 +33,13 @@ wear 1 10 18 26 3
 key R
 wait 0.6
 shot a02-about-dressed
+# The most it can show: three traits (a rare colouring's), the longest names, one of them a rare trait (gold).
+traits 14 12 30
+wait 0.4
+shot a03-about-three-traits
+traits 13 31 17
+wait 0.4
+shot a04-about-three-more
 key R
 wait 0.6
 shot s02-hatchling-trained

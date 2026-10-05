@@ -13,8 +13,9 @@ Noah says).
 
 - **The profile's Training page, its words a size up** (Noah: "a tad small"): `src/app/profile_ui.cpp`
   `profileTraining` and `movePicker`. Checked with `tests/autotest/statpage.txt` (a new hatchling, a trained
-  one, a grown level 42 with twelve moves known, the picker open and cancelled; About bare and in the four
-  longest accessory names; Record empty and full; Family) and `u_pages.txt`.
+  one, a grown level 42 with twelve moves known, the picker open and cancelled; About bare, in the four
+  longest accessory names, and with three traits, the most there are, in the longest names (the autotest's new
+  `traits <a> <b> <c>`); Record empty and full; Family) and `u_pages.txt`.
 - **The move picker's tap-through** (in 1.0 and 1.0.1): the tap that opened it also chose a move in it
   (`g_pickFresh`).
 - **The profile's other pages too** (Noah: "Do the other tabs too as needed"): **About** in rows across the page

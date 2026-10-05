@@ -2,13 +2,15 @@
 
 *Live handoff page. Update it at the end of every work session.*
 
-**Updated:** 2026-10-05 · **Milestone:** **1.0.2 in hand (D157), unreleased until Noah says; 1.0.1 released (D155, D156).** Before: **the road to 1.0 (D142, [plan](plan/release-1.0.md)): **1.0 released** (D152); the Universal-DB request sent (Noah); **the trailer cut, V5** (D154): 1:27 from 6x footage with the game's own sounds, Lily narrating, the vertical cut and three thumbnails, on the review page for Noah, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
+**Updated:** 2026-10-05 · **Milestone:** **1.0.2 released (D157, D158); 1.0.1 before it (D155, D156).** Before: **the road to 1.0 (D142, [plan](plan/release-1.0.md)): **1.0 released** (D152); the Universal-DB request sent (Noah); **the trailer cut, V5** (D154): 1:27 from 6x footage with the game's own sounds, Lily narrating, the vertical cut and three thumbnails, on the review page for Noah, the guide and the trailer planned, the repo set up as open source** (before: the Living Valley pass, D135-D141, [plan](plan/living-valley.md), [story](design/story.md)). The game is **Emberclutch: Skyreach Valley** (D120). Run 24 came back with the plans kept and seven fixes (0.10.1, D143); the new banner is settled (D144-D148: the freezes were the textures' alignment; Noah's pick, lab 28G, is the game's banner); the plan to tie up 1.0 is D142. Before: Beta 1 (`v0.3.0-beta`), Alpha 2 (`v0.2.0-alpha2`).
 · **Branch:** `main` (public `RedLynx101/emberclutch`)
 
-## Now: 1.0.2, the next bundle (D157, begun 2026-10-05). **Not released: Noah says when.**
+## Now: 1.0.2 released (D158, 2026-10-05): the profile's words a size up, the move picker (D157)
 
-The game says `1.0.2`; `docs/release/notes-v1.0.2.md` is the notes' draft. Committed and pushed; **on Noah's 3DS for
-testing** (2026-10-05, the player build at commit 90cbbb0: `tools/package_cia.ps1 -Player`, then
+The game says `1.0.2`; `docs/release/notes-v1.0.2.md` are its notes. **Released on Noah's word** ("Looks good.
+Please push as a new update and release on github", after the build on his 3DS): `tools/release/release.ps1`
+(the draft, from `dist/player/`: the build he tested), then `-Publish` (the tag `v1.0.2` on main; FBI's QR link
+answers with the new CIA). What he finds next goes into a 1.0.3 bundle, released the same way. **On Noah's 3DS** (2026-10-05, the player build at commit 90cbbb0: `tools/package_cia.ps1 -Player`, then
 `tools/deploy_ftp.ps1 -FtpHost 192.168.68.55 -Player`; the 3DSX in place, the CIA in `/cias`).
 
 - **The profile's Training page, its words a size up** (Noah: "a tad small"): `src/app/profile_ui.cpp`

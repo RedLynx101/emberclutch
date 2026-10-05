@@ -2,10 +2,11 @@
 
 Approved decisions, newest first. "Approved" means the project owner signed off.
 
-## 2026-10-05 — 1.0.2: the next bundle, begun
+## 2026-10-05 — 1.0.2: the profile's words, the move picker
 
 | # | Decision | Why | Status |
 |---|---|---|---|
+| D158 | **v1.0.2 is out.** D157's bundle as it stood: the profile's four pages with their words a size up and the move picker keeping the tap that opened it, seen by Noah on his 3DS in the player build first. `tools/release/release.ps1` made the draft from that same build's files (`dist/player/`) and the guide, then published it: the tag `v1.0.2` on main, FBI's QR link answering with the new CIA. Later fixes go into a 1.0.3 bundle | Noah, on the 3DS: "Looks good. Please push as a new update and release on github" | Approved |
 | D157 | **1.0.2 gathers what Noah finds after 1.0.1, unreleased until he says** (as D155). First in it: **the profile's Training page has its words a size up** (0.32-0.38 to 0.38-0.46: stat names and values 0.46, moves 0.44, their power and the key 0.38, the experience line 0.42), the stats 16 px apart and the moves' rows a pixel taller so nothing touches, and "No moves learned yet" in the rows' place instead of over the fourth; **its other three pages follow** (About in full-width rows, 0.40-0.42; Record's boxes wider for 0.40 labels; Family's names 0.44-0.48); and **the move picker keeps the tap that opened it to itself** (1.0 passed it on, so a slot's tap took whichever move lay under the stylus and the picker was never seen) | Noah, 2026-10-05: "please expand the text size cleanly without overlapping things. The text is a tad small", then "Do the other tabs too as needed"; the picker's fault found checking it (`tests/autotest/statpage.txt`) | Approved (Noah's note) |
 
 ## 2026-10-03 — 1.0.1: the first bundle of fixes after the release
